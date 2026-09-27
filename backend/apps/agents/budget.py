@@ -35,7 +35,7 @@ CAP_REASON = "budget_cap"
 ZERO = Decimal("0.00")
 
 
-def _month(tenant: Tenant) -> tuple[datetime.datetime, datetime.datetime]:
+def month(tenant: Tenant) -> tuple[datetime.datetime, datetime.datetime]:
     """The current calendar month of the bank's own time zone, as a half-open UTC range."""
     zone = ZoneInfo(tenant.timezone)
     first = timezone.now().astimezone(zone).date().replace(day=1)
@@ -51,7 +51,7 @@ def spend(tenant: Tenant) -> Decimal:
     """What the bank's own agents' runs cost this month, and the summaries drafted for the
     agents it runs itself. Only a run of one of the bank's own agents counts: a platform run
     has no `tenant_agent`, so it is never in it."""
-    start, end = _month(tenant)
+    start, end = month(tenant)
     runs = AgentRun.objects.filter(
         tenant_id=tenant.id, tenant_agent__isnull=False, started_at__gte=start, started_at__lt=end
     ).aggregate(total=Sum("cost"))["total"]

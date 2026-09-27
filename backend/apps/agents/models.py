@@ -25,6 +25,7 @@ import enum
 import uuid
 from typing import Any
 
+from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -278,6 +279,10 @@ class ResearchRequest(models.Model):
         max_length=16, choices=_choices(ResearchRequestStatus), default=ResearchRequestStatus.QUEUED.value
     )
     result_summary = models.TextField(blank=True)
+    # c11-research-requests: what a `check_url` fetched, kept as text and never rendered or
+    # followed, and the content screen's flags on it or on the topic (AGT-07).
+    fetched_text = models.TextField(blank=True)
+    risk_flags = ArrayField(models.CharField(max_length=40), default=list, blank=True)
     batch_proposal_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)

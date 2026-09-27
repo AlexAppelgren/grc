@@ -1643,6 +1643,49 @@ Built on these defaults; each stays yours to overrule.
       unfiltered rather than a list that would hold fewer gaps than the count said.
       Default if you say nothing: it stays so; a two-status filter on `/gaps` would make
       it exact.
+## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
+
+**Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
+how the console may write an agent definition, while `agent` and `agent_version` read as
+library rows that only a proposal's approval may reach.
+
+- [x] **How may the console write an agent definition?** Agent definitions, agent versions
+      and platform agent settings are platform configuration, not library rows. The console
+      writes them directly through `agents/seeds/console.py`, behind
+      `agent_definitions.manage`, a fresh passkey and a person's session, with one audit row
+      carrying no tenant and the assertion. The library fence names the three in one
+      platform-configuration list (`PlatformConfigurationGuard`) and still refuses every
+      other model, route, proposal kind and watch module. CLAUDE.md section 5 gains no
+      exception line. Built by `c11-agent-config-platform`; AGT-S4 is green.
+
+Defaults taken; nothing waits on them.
+
+- [ ] **A bank's run log no longer lists bleqq's runs.** `GET /agent-runs` from a bank's
+      session returns its own runs only; the console reads bleqq's with
+      `GET /console/agent-runs` (the default "no prompts, tools, budgets, run rows or costs"
+      under "What may a bank see of bleqq's watch?"). What a bank sees of bleqq's watch is
+      `GET /agents/platform`. Row-level security still lets a bank read a library run; the
+      narrowing is the read's. `c11-run-history` (same wave) owns that read and may have
+      taken the other reading ("platform runs never carry cost to a bank"); the integrator
+      keeps this one.
+- [ ] **A run opens on the newest version still published.** When every version is
+      retired a run is refused with 409 `no_published_version`.
+
+## c11-agent-config-platform: agent definitions as platform configuration (2026-09-25, AGT-03, D-102)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **The console keeps the database's `seed` door.** The three console writers open the
+      same door as the reference seed, which the database accepts on every inventory table,
+      because a door of their own would change the database trigger, the door lint and the
+      library database guard, none of them this package's. What keeps the writers to agent
+      rows is the fence: `agents/seeds/console.py` may name no library model but `Agent`
+      and `AgentVersion`, and only the three console routes reach it. Default: keep it so.
+      The alternative is a `platform_config` door accepted only by `agent` and
+      `agent_version`, a small hardening for a later package.
+- [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
+      screen that publishes and retires a version is not built yet, and its journey belongs
+      to the package that builds it.
 
 ## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-1xx)
 
@@ -1864,50 +1907,6 @@ Nothing waits for these; each has the default the build took.
       "Reads our register" or "Library only" pill, rather than a guess. Every seeded admin
       holds both. Say if the entry should carry the effective reach itself.
 
-## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
-
-**Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
-how the console may write an agent definition, while `agent` and `agent_version` read as
-library rows that only a proposal's approval may reach.
-
-- [x] **How may the console write an agent definition?** Agent definitions, agent versions
-      and platform agent settings are platform configuration, not library rows. The console
-      writes them directly through `agents/seeds/console.py`, behind
-      `agent_definitions.manage`, a fresh passkey and a person's session, with one audit row
-      carrying no tenant and the assertion. The library fence names the three in one
-      platform-configuration list (`PlatformConfigurationGuard`) and still refuses every
-      other model, route, proposal kind and watch module. CLAUDE.md section 5 gains no
-      exception line. Built by `c11-agent-config-platform`; AGT-S4 is green.
-
-Defaults taken; nothing waits on them.
-
-- [ ] **A bank's run log no longer lists bleqq's runs.** `GET /agent-runs` from a bank's
-      session returns its own runs only; the console reads bleqq's with
-      `GET /console/agent-runs` (the default "no prompts, tools, budgets, run rows or costs"
-      under "What may a bank see of bleqq's watch?"). What a bank sees of bleqq's watch is
-      `GET /agents/platform`. Row-level security still lets a bank read a library run; the
-      narrowing is the read's. `c11-run-history` (same wave) owns that read and may have
-      taken the other reading ("platform runs never carry cost to a bank"); the integrator
-      keeps this one.
-- [ ] **A run opens on the newest version still published.** When every version is
-      retired a run is refused with 409 `no_published_version`.
-
-## c11-agent-config-platform: agent definitions as platform configuration (2026-09-25, AGT-03, D-102)
-
-Defaults taken; nothing waits on them.
-
-- [ ] **The console keeps the database's `seed` door.** The three console writers open the
-      same door as the reference seed, which the database accepts on every inventory table,
-      because a door of their own would change the database trigger, the door lint and the
-      library database guard, none of them this package's. What keeps the writers to agent
-      rows is the fence: `agents/seeds/console.py` may name no library model but `Agent`
-      and `AgentVersion`, and only the three console routes reach it. Default: keep it so.
-      The alternative is a `platform_config` door accepted only by `agent` and
-      `agent_version`, a small hardening for a later package.
-- [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
-      screen that publishes and retires a version is not built yet, and its journey belongs
-      to the package that builds it.
-
 ## acc-scoped-reads: what a bank's own agent reads in the library, answered by default (2026-09-25, ACC-02, ACC-04, ACC-07)
 
 - [ ] Default taken: only an agent access credential is narrowed. A bank's own API key bound
@@ -1993,3 +1992,51 @@ Defaults taken; nothing waits on them.
       whole bank's, and tenant A's Ask journeys run in parallel. The cap half stays tenant A's.
       The AGT-S5 journey narrows the scope to Sweden, because the screen offers only the bank's
       own markets (Sweden and Denmark in the seed); the integration test narrows to SE and FI.
+## c11-fe-console-batch-retag: the batch review screen and the console re-tag (2026-09-25, PRO-04, AGT-05)
+
+- [ ] **The batch result links to no audit entry.** The card draws "Open the audit entry" on
+      a decided batch, but the only audit read, `GET /audit-events`, is a bank's: a platform
+      session reads nothing there, and no console audit screen exists. Default taken: the
+      result shows how many records changed and how many did not, who decided and when, and
+      no link. Say if the console should get a read of the library zone's audit rows (a
+      platform route and screen, not a chunk 11 package today); the link then points at the
+      batch's entry.
+- [ ] **A re-tag request is sent as one sentence.** `POST /console/research-requests` takes a
+      free-text `topic`, so the form joins the change, the term (label and `dimension:key`),
+      which obligations and why into one sentence for bleqq's agent, and does not send the
+      card's "Source" field, which the request has no place for. Default if you say
+      nothing: it stays; structured fields would be a contract change in
+      `c11-research-requests`.
+- [ ] **The console follows its re-tag through a new status read.** The brief named
+      `GET /research-requests/{requestId}`, a bank's route behind `agents.manage` and a
+      tenant, which a console session can never reach. `GET /console/research-requests/{requestId}`
+      behind `proposals.review` is declared instead, with `batchProposalId` on every
+      research request; it answers 501 until `c11-research-requests` fills it.
+
+## c11-research-requests: research requests and the console's re-tag (2026-09-27, AGT-05, PRO-04, D-98)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **A request is refused at the cap, not before it.** A research request is refused when
+      the bank has set no cap or this month's spend has reached it (`budget.at_cap`, as the
+      brief says "a bank at its cap"), while the scheduler and run now also refuse a run
+      whose `AGENT_RUN_BUDGET_LIMIT` would not fit under what is left. The run still carries
+      that limit. Default: keep it; the alternative is the stricter rule for requests too.
+- [ ] **A web address is fetched while the request is made.** `check_url` fetches the page
+      in the request itself (at most `RESEARCH_URL_TIMEOUT_SECONDS` per connection and
+      `RESEARCH_URL_MAX_REDIRECTS` redirects), so an address that is private, redirects to a
+      private one or answers nothing is refused to the person at once, and the run opens
+      with the screened text already kept. Only port 443 is fetched, and the connection goes
+      to the address that was checked. Default: keep it; the alternative is a worker task.
+- [ ] **The topic reaches a model only through the bank's own run (D-98).** This package
+      makes no model call: the topic is kept on the bank's request, screened, and never in a
+      log, audit, outbox or run row. The runner that works the request (the Agent SDK leg,
+      AGT-06) must send it through `apps.shared.ai`, the logged wrapper the bank's switch
+      stops; that leg's package owns the proof.
+- [ ] **The re-tag is answered by `watch-sweeper`, and its batch is filed through
+      `requests.file_retag`.** No runner files a batch yet: the mock runner in E2E files
+      none, so the console's re-tag form shows the request working and never a batch there.
+      AGT-S7 proves the batch at the integration level. `RESEARCH_REQUESTS_PER_MONTH` is 30.
+- [ ] **A run stopped from outside reads as `failed`**, on a research request and in "What
+      bleqq watches" (whose read broke on the `interrupted` status two merged packages
+      brought together; fixed here).

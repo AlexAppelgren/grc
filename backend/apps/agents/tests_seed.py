@@ -86,6 +86,7 @@ class ChunkElevenSeed(TestCase):
         sweeper = Agent.objects.get(key=EXPECTED_CHUNK11.platform_agent)
         self.assertEqual(sorted(sweeper.versions.values_list("version_number", flat=True)), list(EXPECTED_CHUNK11.platform_versions))
         # The shipped folder stays current, so keys can still be minted for it (H43, D-93).
+        # The definition stays on the folder the build ships; a run pins the newest version.
         self.assertEqual(sweeper.current_version, EXPECTED_CHUNK11.platform_versions[0])
         scheduled = AgentRun.objects.filter(tenant__isnull=True, api_key__isnull=True, trigger=RunTrigger.SCHEDULE.value)
         self.assertEqual(

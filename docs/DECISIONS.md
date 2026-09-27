@@ -145,6 +145,7 @@ D-92, D-94 and D-96 wait for their packages. D-98 to D-101 record Alex's answers
 platform agent settings are platform configuration), and `c11-agent-config-platform` writes
 its row. D-103 is `x-hardening-proposals`', which wrote it as D-9x; the R2 wave 1
 integration gave it D-102 before Alex's D-102 existed, and wave 2's moved it. D-104 is `inventory-search-filters`, Alex's inventory search and filters of 2026-09-25, numbered when it merged into main, and D-105 his full CodeQL analysis for pull requests of 2026-09-27. An R2 row written on a branch is numbered
+integration gave it D-102 before Alex's D-102 existed, and wave 2's moved it. An R2 row written on a branch is numbered
 D-9x or D-1xx with its package named in it and takes the next free number on merge.
 The next new ADR is 0061: 0059 is D-91's, and 0060 is reserved for D-92 (`c9-triage`).
 

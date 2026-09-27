@@ -334,6 +334,18 @@ CELERY_BEAT_SCHEDULE["agents-tenant"] = {
     "schedule": AGENT_BEAT_INTERVAL_MINUTES * 60,
 }
 
+# --- c11-research-requests (AGT-05) -------------------------------------------------------
+# How many research requests a bank may make in a calendar month of its own time zone,
+# until plans exist (R3); past it a request is 429 `plan_limit_reached`. A `check_url` fetch:
+# the seconds one connection may take, the most bytes of a page kept, and how many
+# redirects are followed, each hop checked for a public https host first.
+RESEARCH_REQUESTS_PER_MONTH = env_int("RESEARCH_REQUESTS_PER_MONTH", 30)
+RESEARCH_URL_TIMEOUT_SECONDS = env_int("RESEARCH_URL_TIMEOUT_SECONDS", 5)
+RESEARCH_URL_MAX_BYTES = env_int("RESEARCH_URL_MAX_BYTES", 1_000_000)
+RESEARCH_URL_MAX_REDIRECTS = env_int("RESEARCH_URL_MAX_REDIRECTS", 3)
+if min(RESEARCH_REQUESTS_PER_MONTH, RESEARCH_URL_TIMEOUT_SECONDS, RESEARCH_URL_MAX_BYTES) < 1 or RESEARCH_URL_MAX_REDIRECTS < 0:
+    raise ImproperlyConfigured("The RESEARCH_* settings must be positive, and RESEARCH_URL_MAX_REDIRECTS at least 0")
+
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")

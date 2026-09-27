@@ -53,7 +53,16 @@ from django.db.models import Max, Q
 from django.utils import timezone
 
 from apps.agents import budget, definitions, opener
-from apps.agents.models import Agent, AgentCadence, AgentRun, AgentScopeKind, AgentVersion, RunTrigger, TenantAgent
+from apps.agents.models import (
+    Agent,
+    AgentCadence,
+    AgentRun,
+    AgentScopeKind,
+    AgentVersion,
+    ResearchRequest,
+    RunTrigger,
+    TenantAgent,
+)
 from apps.agents.tenant_agents import lock_tenant, next_run_at, pause
 from apps.collab.logic import notify
 from apps.collab.models import NotificationKind
@@ -249,6 +258,30 @@ def open_tenant_run(tenant_agent: TenantAgent, *, trigger: RunTrigger, requested
         tenant_agent=tenant_agent,
         requested_by=requested_by,
         budget_limit=limit,
+    )
+
+
+def open_request_run(research_request: ResearchRequest, *, requested_by: User, agent_key: str = "") -> AgentRun:
+    """The run a research request asks for (AGT-05), with the request on it. A bank's request
+    runs its own agent in the bank's zone under the run budget; the console's re-tag runs
+    bleqq's agent `agent_key` in no tenant's zone, over the jurisdictions it covers and no
+    bank's markets. What stops a bank's request (its AI switch, its cap, its plan) is
+    `requests.py`'s to check first."""
+    tenant_agent = research_request.tenant_agent
+    if tenant_agent is not None:
+        agent, limit, scope = tenant_agent.agent, _run_budget_limit(), None
+    else:
+        agent = Agent.objects.get(key=agent_key, scope=AgentScopeKind.PLATFORM.value)
+        limit, scope = None, {"jurisdictions": _covered(agent)}
+    return opener.open_run(
+        pinned=_pinned(agent),
+        trigger=RunTrigger.REQUEST,
+        actor=Actor(kind=ActorType.USER, id=requested_by.id, label=requested_by.name),
+        tenant_agent=tenant_agent,
+        requested_by=requested_by,
+        budget_limit=limit,
+        scope=scope,
+        research_request=research_request,
     )
 
 

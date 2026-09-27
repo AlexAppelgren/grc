@@ -210,6 +210,8 @@ CONSOLE_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("updatePlatformAgentSettings", "put", f"{DEFINITIONS}/{AGENT_KEY}/settings", SETTINGS_BODY, perms.AGENT_DEFINITIONS_MANAGE, True),
     ("listPlatformRuns", "get", CONSOLE_RUNS, None, perms.AGENT_DEFINITIONS_MANAGE, False),
     ("createRetagRequest", "post", "/api/v1/console/research-requests", {"topic": "Re-tag custody records with Client money."}, perms.PROPOSALS_REVIEW, False),
+    # c11-fe-console-batch-retag: the console's re-tag form follows its request to the batch.
+    ("getRetagRequest", "get", f"/api/v1/console/research-requests/{KEY}", None, perms.PROPOSALS_REVIEW, False),
 ]
 # (name, method, url, body, permission). `{id}` is filled with a record of the caller's own
 # bank, of another bank, or with nothing, by the test that needs one.
@@ -242,6 +244,9 @@ SERVED = {
     "resumeTenantAgent",
     "interruptAgentRun",
 }
+SERVED = {"listTenantAgents", "createTenantAgent", "updateTenantAgent", "getAgentBudget", "putAgentBudget"}
+# c11-research-requests (tests_requests.py).
+SERVED |= {"listResearchRequests", "createResearchRequest", "getResearchRequest"}
 # Which record each id route addresses: a bank's own agent, its run, or its request.
 ID_KIND = {
     "updateTenantAgent": "agent",
@@ -367,6 +372,9 @@ class ConsoleAgentRouteGates(TestCase):
             "getPlatformAgentSettings",
             "updatePlatformAgentSettings",
             "listPlatformRuns",
+            # c11-research-requests: tests_requests.py.
+            "createRetagRequest",
+            "getRetagRequest",
         }
         for name, method, url, body, permission, _ in CONSOLE_ROUTES:
             if name in built:
@@ -602,9 +610,9 @@ class RunListGainsChunk11(TestCase):
         self.assertEqual(response.status_code, 200, response.content)
         return [row["id"] for row in response.json()["items"]]
 
-    def test_without_a_filter_the_bank_reads_its_own_runs_and_no_library_run(self) -> None:
+    def test_without_a_filter_the_bank_reads_its_own_runs_and_never_the_librarys(self) -> None:
         ids = self._ids("")
-        self.assertNotIn(str(self.library.id), ids, "bleqq's runs are the console's (ADR 0053)")
+        self.assertNotIn(str(self.library.id), ids)
         self.assertIn(str(self.bank.run.id), ids)
         self.assertNotIn(str(self.other.run.id), ids)
 

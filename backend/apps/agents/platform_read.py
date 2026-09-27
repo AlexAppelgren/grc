@@ -11,13 +11,12 @@ its own, so `name` is its stable key and the screen renders the words.
 from __future__ import annotations
 
 import datetime
-from typing import cast
+from typing import Literal, cast
 
 from django.db.models import Exists, OuterRef
 from django.utils.timezone import now as clock
 
-from apps.agents.models import Agent, AgentCadence, AgentRun, AgentScopeKind, AgentVersion
-from apps.agents.runs import RunState
+from apps.agents.models import Agent, AgentCadence, AgentRun, AgentScopeKind, AgentVersion, RunStatus
 from apps.agents.schemas import Cadence, PlatformWatchItem, PlatformWatchLastRun, PlatformWatchPage
 
 # What each cadence word means as a span, keyed on the immutable kind (as
@@ -65,11 +64,16 @@ def _item(agent: Agent, last: AgentRun | None, now: datetime.datetime) -> Platfo
         cadence=cast(Cadence, agent.default_cadence),
         next_run_at=_next_run(agent.default_cadence, last, now),
         last_run=(
-            PlatformWatchLastRun(finished_at=last.finished_at, status=cast(RunState, last.status))
+            PlatformWatchLastRun(finished_at=last.finished_at, status=_status(last.status))
             if last is not None
             else None
         ),
     )
+
+
+def _status(status: str) -> Literal["running", "succeeded", "failed"]:
+    """A run stopped from outside reads to a bank as one that stopped early: `failed`."""
+    return "failed" if status == RunStatus.INTERRUPTED.value else cast(Literal["running", "succeeded", "failed"], status)
 
 
 def _next_run(cadence: str, last: AgentRun | None, now: datetime.datetime) -> datetime.datetime | None:
