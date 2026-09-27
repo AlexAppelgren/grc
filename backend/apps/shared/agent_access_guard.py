@@ -18,20 +18,38 @@ row is written after the response.
 
 Every other key passes untouched: a bank's unbound key and bleqq's own agent keys keep
 the scopes and routes they had.
+
+The scope statement (ACC-07). A narrowed agent must never read silence as "nothing
+applies", so every answer to an agent access credential, an error included, states the
+scope it was answered in, through this one mechanism: once past its rate, `check` marks the
+request, and `ScopeStatementMiddleware` adds `Agent-Access-Scope` to the response, a JSON
+object in ASCII (`scope_statement`): the entry by id and name, the departments and products
+it serves, whether they narrow what it reads, and the "as of" date, today where the bank is.
+A personal token naming no entry states no entry and no narrowing. `POST
+/agent-access/what-applies` carries the same statement in its body as `scope`.
 """
 
 from __future__ import annotations
 
 import functools
+import json
+import uuid
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.core.cache import cache
-from django.http import HttpRequest
+from django.db import transaction
+from django.http import HttpRequest, HttpResponse
 
 from apps.shared.authentication import ApiKeyAuth, Principal
 from apps.shared.errors import ProblemError
 from apps.shared.permissions import step_up_of
 from apps.shared.routes import RegisteredOperation, iter_operations
+
+if TYPE_CHECKING:
+    from apps.agents.schemas import AgentAccessScopeStatement
+    from apps.shared.models import Tenant
 
 READ_METHODS: frozenset[str] = frozenset({"GET", "HEAD", "OPTIONS"})
 # A read that takes a body (ACC-05): search, what applies and the MCP server's one endpoint.
@@ -43,6 +61,8 @@ READ_ONLY_ALLOWED: frozenset[tuple[str, str]] = frozenset(
 # config/urls.py mounts the API here; Django's resolver reports the route with it.
 API_ROUTE_PREFIX = "api/v1/"
 RATE_WINDOW_SECONDS = 60
+SCOPE_HEADER = "Agent-Access-Scope"
+_STATED = "agent_access_scope_principal"
 
 
 @functools.cache
@@ -82,6 +102,7 @@ def check(request: HttpRequest, principal: Principal) -> None:
     if not principal.is_agent_access:
         return
     _limit_rate(principal)
+    setattr(request, _STATED, principal)
     operation = operation_of(request)
     from apps.governance import access_log
 
@@ -94,3 +115,56 @@ def check(request: HttpRequest, principal: Principal) -> None:
         return
     if operation is None or (operation.method, operation.path) not in READ_ONLY_ALLOWED:
         raise ProblemError(status=403, code="read_only_credential", detail="This key or token reads and cannot change anything.")
+
+
+def scope_statement(principal: Principal, tenant: Tenant) -> AgentAccessScopeStatement:
+    """The scope an agent access credential is answered in (ACC-07), read under the bank's
+    row-level security: the tenant must be activated."""
+    from apps.agents.models import AgentAccess
+    from apps.agents.schemas import AgentAccessScopeStatement, AgentAccessUnitRef
+    from apps.library.reading import today_for
+
+    entry = (
+        None
+        if principal.agent_access_id is None
+        else AgentAccess.objects.filter(pk=principal.agent_access_id).prefetch_related("departments__department", "products__product").first()  # ordering: pk lookup, at most one row
+    )
+    departments = [] if entry is None else sorted((row.department for row in entry.departments.all()), key=lambda unit: (unit.name, unit.id))
+    products = [] if entry is None else sorted((row.product for row in entry.products.all()), key=lambda product: (product.name, product.id))
+    return AgentAccessScopeStatement(
+        entry=None if entry is None else AgentAccessUnitRef(id=entry.id, name=entry.name),
+        departments=[AgentAccessUnitRef(id=unit.id, name=unit.name) for unit in departments],
+        products=[AgentAccessUnitRef(id=product.id, name=product.name) for product in products],
+        narrowed=bool(departments or products),
+        as_of=today_for(tenant),
+    )
+
+
+def _header(tenant_id: uuid.UUID, principal: Principal) -> str | None:
+    from apps.shared import tenancy
+    from apps.shared.models import Tenant
+
+    with transaction.atomic():
+        tenancy.activate(tenant_id)
+        tenant = Tenant.objects.filter(pk=tenant_id).first()  # ordering: pk lookup, at most one row
+        if tenant is None:  # pragma: no cover - a live credential's bank exists
+            return None
+        statement = scope_statement(principal, tenant)
+    return json.dumps(statement.model_dump(mode="json", by_alias=True), ensure_ascii=True, separators=(",", ":"))
+
+
+class ScopeStatementMiddleware:
+    """Adds `Agent-Access-Scope` to every answer to an agent access credential that passed
+    its rate (ACC-07), after the response, in a transaction of its own."""
+
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        response = self.get_response(request)
+        principal: Principal | None = getattr(request, _STATED, None)
+        if principal is not None and principal.tenant_id is not None:
+            value = _header(principal.tenant_id, principal)
+            if value is not None:
+                response[SCOPE_HEADER] = value
+        return response

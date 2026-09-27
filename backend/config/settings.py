@@ -127,6 +127,9 @@ MIDDLEWARE = [
     # acc-entries-and-log (ACC-08): the access log row of an agent access credential's call,
     # written after the response.
     "apps.governance.access_log.AccessLogMiddleware",
+    # acc-what-applies (ACC-07): the scope statement on every answer to an agent access
+    # credential.
+    "apps.shared.agent_access_guard.ScopeStatementMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",
@@ -1031,6 +1034,16 @@ SUPPORT_ACCESS_REQUEST_TTL_HOURS = env_int("SUPPORT_ACCESS_REQUEST_TTL_HOURS", 2
 SCOPE_ITEM_DESCRIPTION_MAX_CHARS = env_int("SCOPE_ITEM_DESCRIPTION_MAX_CHARS", 2000)
 if SCOPE_ITEM_DESCRIPTION_MAX_CHARS < 1:
     raise ImproperlyConfigured("Refusing to boot: SCOPE_ITEM_DESCRIPTION_MAX_CHARS must be at least 1.")
+# ===== acc-what-applies: what applies to a bank's own agent (ACC-06, ACC-07) =====
+# The longest description `POST /agent-access/what-applies` takes, in characters, and how
+# many words a footprint term's usage note must share with it to be named as outside the
+# entry's scope (a label matches when all its words are in the description).
+AGENT_ACCESS_DESCRIPTION_MAX_CHARS = env_int("AGENT_ACCESS_DESCRIPTION_MAX_CHARS", 2000)
+AGENT_ACCESS_NOTE_MATCH_WORDS = env_int("AGENT_ACCESS_NOTE_MATCH_WORDS", 2)
+if min(AGENT_ACCESS_DESCRIPTION_MAX_CHARS, AGENT_ACCESS_NOTE_MATCH_WORDS) < 1:
+    raise ImproperlyConfigured(
+        "Refusing to boot: AGENT_ACCESS_DESCRIPTION_MAX_CHARS and AGENT_ACCESS_NOTE_MATCH_WORDS must each be at least 1."
+    )
 
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========
