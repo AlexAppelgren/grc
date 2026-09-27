@@ -229,8 +229,13 @@ until he exercises it on the test deployment.
   mypy, compliance lint, requirements coverage, contract drift, the API documentation gate
   and search evaluation. It then stops, as the plan expects, at "OpenAPI/TS: artefacts match
   the contract": the only drift is the regenerated descriptions of this package's edits,
-  which the integrator commits (a cloud session never does). The gates after it were run by
-  hand on the regenerated tree: RESULTS_AFTER_OPENAPI. The two container builds and their
+  which the integrator commits (a cloud session never does). With the regenerated artefacts
+  left uncommitted in the tree, that gate is green and the run continues: the frontend's lint,
+  typecheck, coverage, messages, copy drift and build green; the full E2E suite red in a run
+  whose seed was taken at 23:58 in Stockholm and whose journeys ran after midnight (13
+  date-anchored journeys a day apart, H114). Re-run after midnight: 187 passed and NFR-S7's
+  Today at 504 ms against 500 (H115); the next full run green, 188 passed and the 15 skipped
+  exactly the `test.fixme` journeys, none flaky; `@coldstart` green. The two container builds and their
   Trivy scans need Docker, which the session does not have; CI runs them on `candidate`.
 - **No R2 route answers 501:** the only `not_built` left in production code is `POST
   /exports` for the kinds chunk 12 builds (R3); the case file export is built. Descriptions
@@ -250,7 +255,8 @@ until he exercises it on the test deployment.
   suite on four workers, per module (each TestCase class timed in its worker, set-up
   included), 3404 worker-seconds over 261 modules; dealt to the ten CI shards they come out even at about 340 seconds each.
 - **Hardening:** H1, H2, H3, H4, H8, H12, H38 and H100 checked against code and test and
-  marked fixed. Open at medium or higher: H80 (high when a real runner is switched on;
+  marked fixed; H114 (an E2E run across the tenant's midnight) and H115 (Today near its
+  screen budget under load) added. Open at medium or higher: H80 (high when a real runner is switched on;
   latent, since only the mock runs), H107 and H108 (performance, H108 waits on Alex).
 - **Owner-blocked:** clamd on Railway (D-101), the D-07 model key and EU path, the D-09
   embedding key and retrieval baseline, the test deployment and legal on standard titles;

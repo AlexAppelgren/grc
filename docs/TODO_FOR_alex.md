@@ -55,6 +55,10 @@ holds the gate results.
   taken: a small follow-on package (`orgUnitId` on the team's create and edit, with its
   audit row and a journey step); nothing reads a team's department for a permission, so no
   one sees more or less than they should meanwhile.
+- **Also found at the close, no decision needed:** an E2E run that seeds before the bank's
+  midnight and walks its journeys after it fails every date-anchored journey (H114, a test
+  harness fix); and Today sat at 504 to 578 ms against its 500 ms screen budget in one full
+  run on this session's machine, green in the next (H115).
 
 **Defaults this package took:**
 - An R2 row whose every scenario is un-skipped and green reads `built`, and what it does not
