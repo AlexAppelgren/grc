@@ -159,7 +159,7 @@ class TenantsScenarioTests(ScenarioTestCase):
                     today + datetime.timedelta(days=3), datetime.time(12), tzinfo=ZoneInfo(tenant.timezone)
                 )
             )
-            reminded = {(row.user_id, row.on_behalf_of_id) for row in reminders.send_triage_reminders(tenant)}
+            reminded = {(row.user_id, row.on_behalf_of_id) for row in reminders.send_reminders(tenant)}
         self.assertIn((delegate.id, absent.id), reminded)
         self.assertNotIn(absent.id, {user_id for user_id, _ in reminded})
         # And may sign off, the audit event naming the delegate as actor and the approver as delegated

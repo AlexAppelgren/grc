@@ -226,7 +226,6 @@ BUILT = {
 
 
 # The operations whose module has landed, each proved by its own tests, not by a 501.
-BUILT: set[str] = set()
 # c9-signoff (apps/cases/tests_signoff.py).
 BUILT |= {"requestSignoff", "approveSignoff", "sendBackSignoff"}
 
