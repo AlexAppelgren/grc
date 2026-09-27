@@ -1044,6 +1044,25 @@ if min(AGENT_ACCESS_DESCRIPTION_MAX_CHARS, AGENT_ACCESS_NOTE_MATCH_WORDS) < 1:
     raise ImproperlyConfigured(
         "Refusing to boot: AGENT_ACCESS_DESCRIPTION_MAX_CHARS and AGENT_ACCESS_NOTE_MATCH_WORDS must each be at least 1."
     )
+# ===== acc-summary-j11: the drafted summary above what applies (ACC-06, ACC-09) =====
+# How long what-applies waits for the model before it answers the list without a summary
+# (`timeout`), how many of the list's first obligations the model is shown, and the
+# summary's own ceiling beneath LLM_MAX_TOKENS. The price of a model call in minor units
+# per million tokens (the provider's list price for LLM_MODEL, Verification_Log), which a
+# summary's cost on its AI log row is computed from and counted against the bank's
+# monthly cap on its own agents.
+WHAT_APPLIES_SUMMARY_DEADLINE_MS = env_int("WHAT_APPLIES_SUMMARY_DEADLINE_MS", 2000)
+WHAT_APPLIES_SUMMARY_FACTS = env_int("WHAT_APPLIES_SUMMARY_FACTS", 20)
+WHAT_APPLIES_SUMMARY_MAX_TOKENS = env_int("WHAT_APPLIES_SUMMARY_MAX_TOKENS", 400)
+LLM_PRICE_INPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_INPUT_MINOR_PER_MTOK", 500)
+LLM_PRICE_OUTPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_OUTPUT_MINOR_PER_MTOK", 2500)
+if min(WHAT_APPLIES_SUMMARY_DEADLINE_MS, WHAT_APPLIES_SUMMARY_FACTS, WHAT_APPLIES_SUMMARY_MAX_TOKENS) < 1 or min(
+    LLM_PRICE_INPUT_MINOR_PER_MTOK, LLM_PRICE_OUTPUT_MINOR_PER_MTOK
+) < 0:
+    raise ImproperlyConfigured(
+        "Refusing to boot: WHAT_APPLIES_SUMMARY_DEADLINE_MS, WHAT_APPLIES_SUMMARY_FACTS and "
+        "WHAT_APPLIES_SUMMARY_MAX_TOKENS must each be at least 1, and the LLM prices at least 0."
+    )
 
 # ===== d89-scope-items-logic: the regulatory scope request's caps (FP-02, OWN-01, H24) =====
 # The most terms, and the most scope items, one regulatory scope request may add or remove,

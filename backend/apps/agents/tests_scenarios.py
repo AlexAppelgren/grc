@@ -1295,7 +1295,10 @@ class AgentsScenarioTests(TestCase):
         tenancy.activate(tenant.id)
         stored = ApiKey.objects.get(pk=issued.json()["id"])
         self.assertEqual((stored.key_prefix, stored.key_hash), tokens.parse_api_key(plain))
-        self.assertNotIn(plain.rsplit("_", 1)[-1], stored.key_hash)
+        # The secret is everything after the prefix, and may itself hold "_" (base64url).
+        secret = plain.split("_", 2)[2]
+        self.assertNotEqual(stored.key_hash, secret)
+        self.assertNotIn(secret, stored.key_hash)
         listed = admin("GET", f"/{entry['id']}", step_up=False).json()
         self.assertEqual([(key["id"], key["lastUsedAt"]) for key in listed["keys"]], [(issued.json()["id"], None)])
         self.assertNotIn("plainKey", listed["keys"][0])
@@ -1324,12 +1327,60 @@ class AgentsScenarioTests(TestCase):
         tenancy.activate(tenant.id)
         self.assertTrue(LoginEvent.objects.filter(tenant=tenant, api_key_id=issued.json()["id"], event="key_revoked").exists())
 
-    @skip("pending: ACC-S5 (ACC-06, chunk 11)")
     def test_acc_s5(self) -> None:
         """ACC-S5
 
         What applies returns a labelled summary above a full list the model never shortens (ACC-06).
         """
+        from apps.agents.schemas import WHAT_APPLIES_NOTICE
+        from apps.agents.tests_what_applies import ORDER_ROUTING, TradingBank
+        from apps.agents.tests_what_applies_summary import Failing, Recording, cap
+        from apps.library import testing as library_testing
+
+        # Given an entry with tenant reach on and eleven register entries in its scope. The
+        # general entry names no department, so its scope is the whole footprint: four of
+        # the bank's duties, and seven more that carry no term.
+        bank = TradingBank(slug="acc-s5")
+        act = library_testing.instrument(key="acc-s5-conduct", regime="regime:securities")
+        duties = [bank.execution, bank.records, bank.outsourcing, bank.card] + [
+            library_testing.obligation(act, key=f"acc-s5-duty-{n}", titles={"en": f"Conduct duty {n}"}) for n in range(1, 8)
+        ]
+        for duty in duties:
+            bank.decide(duty, "The bank routes client orders")
+        cap(bank.tenant, "5.00")
+        eleven = {duty.stable_key for duty in duties}
+
+        def ask(llm: Recording) -> dict[str, Any]:
+            with mock.patch("apps.shared.ai.get_llm", return_value=llm):
+                response = bank.ask(self.client, bank.general_key, ORDER_ROUTING)
+            self.assertEqual(response.status_code, 200, response.content)
+            return dict(response.json())
+
+        # When it asks what applies to "a new order-routing service for professional clients".
+        body = ask(Recording())
+        # Then the response carries a summary labelled as AI-drafted, with a fixed sentence
+        # that the bank's confirmed applicability is the decision.
+        summary = body["summary"]
+        self.assertEqual((summary["status"], summary["aiGenerated"], summary["notice"]), ("drafted", True, WHAT_APPLIES_NOTICE))
+        self.assertTrue(summary["text"])
+        # And the AI output log records the model, its version, the purpose and the citations.
+        tenancy.activate(bank.tenant.id)
+        [row] = AiGeneration.objects.filter(tenant_id=bank.tenant.id)
+        self.assertEqual((row.model, row.model_version, row.purpose), ("mock", "0", "what_applies"))
+        self.assertEqual({citation["label"] for citation in row.citations}, eleven)
+        self.assertLessEqual(set(summary["citations"]), eleven)
+        # And the full list holds all eleven, ranked, with none removed by the model, each
+        # with the bank's confirmed applicability.
+        self.assertEqual((body["total"], {item["stableKey"] for item in body["items"]}), (11, eleven))
+        self.assertTrue(all(item["decision"]["applicability"] == "applies" for item in body["items"]))
+        ranked = [item["stableKey"] for item in body["items"]]
+        # When the model call fails or the tenant's AI off switch is on, then the eleven are
+        # still returned, in the same order, and the summary slot says why there is none.
+        failed = ask(Failing())
+        self.assertEqual(([item["stableKey"] for item in failed["items"]], failed["summary"]["reason"]), (ranked, "model_failed"))
+        Tenant.objects.filter(pk=bank.tenant.id).update(ai_enabled=False)
+        off = ask(Recording())
+        self.assertEqual(([item["stableKey"] for item in off["items"]], off["summary"]["reason"]), (ranked, "ai_off"))
 
     def test_acc_s6(self) -> None:
         """ACC-S6

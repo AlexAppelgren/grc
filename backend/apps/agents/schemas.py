@@ -1380,6 +1380,10 @@ class AgentAccessScopeStatement(CamelSchema):
     )
 
 
+# The fixed sentence every what-applies summary slot carries (ACC-06, AGENT_ACCESS.md section 6).
+WHAT_APPLIES_NOTICE = "AI-drafted guidance only: your bank's own confirmed applicability is the decision."
+
+
 class WhatAppliesInput(WriteBody):
     """`POST /agent-access/what-applies`: what the agent is building, buying or reviewing."""
 
@@ -1446,17 +1450,57 @@ class WhatAppliesOutsideScope(CamelSchema):
 
 
 class WhatAppliesSummary(CamelSchema):
-    """The slot for the short summary a model drafts above the list (ACC-06). The list below it
-    is the answer; a summary is guidance and the bank's confirmed applicability is the decision."""
+    """The short summary a model drafts above the list (ACC-06), or why there is none. The list
+    below it is the answer and is never shortened by it: a summary is guidance, and the bank's
+    confirmed applicability is the decision."""
 
     status: Literal["drafted", "not_drafted"] = Field(
         description=(
             "`drafted` when `text` holds a summary a model drafted; `not_drafted` when there is "
-            "none, which leaves the list whole and unchanged. Every answer is `not_drafted` for now."
+            "none, which leaves the list whole and unchanged, and `reason` says why."
         ),
-        examples=["not_drafted"],
+        examples=["drafted"],
     )
-    text: str | None = Field(description="The drafted summary, labelled as AI-drafted wherever it is shown; null when not drafted.")
+    reason: Literal["model_failed", "timeout", "ai_off", "budget_cap", "nothing_to_summarise", "later_page"] | None = Field(
+        description=(
+            "Why there is no summary, null when there is one: `model_failed` (the model could not "
+            "answer), `timeout` (it did not answer within `WHAT_APPLIES_SUMMARY_DEADLINE_MS`, "
+            f"{settings.WHAT_APPLIES_SUMMARY_DEADLINE_MS} milliseconds unless the operator sets it), "
+            "`ai_off` (the bank switched its AI features off, so no model was asked), `budget_cap` "
+            "(the bank's monthly cap on its own agents is reached, or none is set, so no model was "
+            "asked), `nothing_to_summarise` (no shared obligation a model may read is in the list) "
+            "or `later_page` (a summary is drafted with the first page only, `offset` 0)."
+        ),
+        examples=[None],
+    )
+    ai_generated: bool = Field(
+        description=(
+            "True when `text` was drafted by a model: show it labelled as AI-drafted, beside "
+            "`notice`, and never as the bank's decision. False when there is no summary."
+        ),
+        examples=[True],
+    )
+    notice: str = Field(
+        description=(
+            "A fixed sentence, the same on every answer, to show with any summary: it is "
+            "guidance, and the bank's own confirmed applicability is the decision."
+        ),
+        examples=[WHAT_APPLIES_NOTICE],
+    )
+    text: str | None = Field(
+        description=(
+            "The drafted summary, in English, citing obligations by stable key in square "
+            "brackets, such as `[mifid2-best-execution]`. Null when not drafted."
+        ),
+        examples=["Best execution applies to order routing for professional clients [mifid2-best-execution]."],
+    )
+    citations: list[str] = Field(
+        description=(
+            "The stable keys of the obligations the summary cites, in the order first cited, each "
+            "one on the list below. Empty when there is no summary."
+        ),
+        examples=[["mifid2-best-execution"]],
+    )
 
 
 class WhatAppliesItem(CamelSchema):
@@ -1496,7 +1540,14 @@ class WhatAppliesAnswer(CamelSchema):
             "examples": [
                 {
                     "scope": _SCOPE_EXAMPLE,
-                    "summary": {"status": "not_drafted", "text": None},
+                    "summary": {
+                        "status": "drafted",
+                        "reason": None,
+                        "aiGenerated": True,
+                        "notice": WHAT_APPLIES_NOTICE,
+                        "text": "Best execution applies to order routing for professional clients [mifid2-best-execution].",
+                        "citations": ["mifid2-best-execution"],
+                    },
                     "items": [],
                     "total": 0,
                     "registerRead": "included",
@@ -1516,7 +1567,7 @@ class WhatAppliesAnswer(CamelSchema):
     )
 
     scope: AgentAccessScopeStatement = Field(description="The scope this answer was given in: the entry, its departments and products, and the date.")
-    summary: WhatAppliesSummary = Field(description="The slot for a model-drafted summary above the list, and whether it holds one.")
+    summary: WhatAppliesSummary = Field(description="The model-drafted summary above the list, labelled as AI-drafted, or why there is none.")
     items: list[WhatAppliesItem] = Field(
         description=(
             "This page of the full list: every shared obligation in the bank's footprint and the "

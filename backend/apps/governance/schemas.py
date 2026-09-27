@@ -324,10 +324,11 @@ _PURPOSES = (
     "`change_summary` (a plain-language summary of a change), `scope_suggestion` (a "
     "suggested scope term or flag), `link_suggestion` (a suggested obligation link), "
     "`translation` (a machine translation of library text), `answer` (an Ask answer for "
-    "one bank) and `agent_review` (a confirming agent's decision on another agent's work: "
+    "one bank), `agent_review` (a confirming agent's decision on another agent's work: "
     "approving, correcting or rejecting a proposal, or confirming a watch item's curation, "
     "with the model behind it reported by that agent; only the platform reads these, so a "
-    "bank's log never lists one)"
+    "bank's log never lists one), and `what_applies` (the short summary drafted above what "
+    "applies to one bank's own agent, its cost counted against the bank's monthly cap)"
 )
 _STATUSES = (
     "`draft` (nobody has stood behind it yet, which is how every row starts and how a "

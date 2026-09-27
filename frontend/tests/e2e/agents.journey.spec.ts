@@ -1,4 +1,4 @@
-import type { APIResponse } from '@playwright/test';
+import type { APIRequestContext, APIResponse } from '@playwright/test';
 
 import {
   answered,
@@ -10,6 +10,7 @@ import {
   SWEEPER_RUN_ON_V2,
   versionRow,
 } from './support/agent-definitions';
+import { agentWith, allowAccessStepUps, enableEntryReach, entriesReachOff, issueEntryKey, registerEntry, revokeEntry, switchTenantReachOff, switchTenantReachOn } from './support/agent-access';
 import { mintAgentKey, revokeAgentKey } from './support/agent-key';
 import { askForRetag, askOurAgent } from './support/agent-requests';
 import { expect, test } from './support/api-guard';
@@ -38,6 +39,25 @@ const J4_MODEL = 'agent pipeline 0.4';
 // What one sweep spends (ID-10): open and close its run, read the terms, find the duty,
 // register the change, file the proposal. Nothing reaches the library but through the queue.
 const J4_SCOPES = ['agent-runs:write', 'library:read', 'search:read', 'changes:write', 'proposals:write'];
+
+// acc-summary-j11: J-11's trading world as backend/apps/shared/e2e_seed.py EXPECTED_J11 seeds it.
+const J11 = {
+  department: 'Trading',
+  team: 'trading',
+  tradingObligations: ['obl-trading-order-routing-best-result', 'obl-trading-algo-pre-trade-controls'],
+  cardObligation: 'obl-cards-interchange-caps',
+} as const;
+const J11_PURPOSE = 'Builds the order-routing service.';
+// An order router that also touches card issuing, which a Trading entry cannot see.
+const J11_DESCRIPTION = 'A new order-routing service that also issues virtual cards to trading clients';
+type WhatApplies = {
+  scope: { entry: { name: string }; departments: { name: string }[]; narrowed: boolean; asOf: string };
+  summary: { status: string; aiGenerated: boolean; notice: string; text: string | null; citations: string[] };
+  items: { stableKey: string; refLabel: string; instrument: { shortName: string }; decision: { applicability: string; applicabilityReason: string | null; interpretation: string | null } | null }[];
+  total: number;
+  registerRead: string;
+  outsideScope: { terms: { dimension: { label: string }; term: { label: string } }[]; advice: string | null };
+};
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -466,15 +486,140 @@ test.describe('agents journeys', () => {
     }
   });
 
-  test.fixme("ACC-S1: An entry is registered, narrowed to a department, and revoking it stops its credentials", async () => {
-    // pending: ACC-S1 (ACC-01, J-11, chunk 11)
+  // --- acc-summary-j11 (ACC-01, ACC-06, ACC-07, J-11) ---------------------------------------
+  // The admin registers the entry and issues its key on the admin screens with a passkey;
+  // the agent is the REST API and that key. Every entry is named for its attempt, so a retry
+  // never reads an earlier one's, and every teardown revokes it, on failure too.
+
+  test("ACC-S1: An entry is registered, narrowed to a department, and revoking it stops its credentials", async ({ page, playwright, apiGuard }) => {
+    test.setTimeout(120_000);
+    allowFreshContext(apiGuard);
+    allowAccessStepUps(apiGuard);
+    await signInAs(page, LOGINS.admin);
+    const entryId = await registerEntry(page, { name: `Trading platform coding agent ${Date.now()}`, purpose: J11_PURPOSE, team: J11.team, departments: [J11.department] });
+    let agent: APIRequestContext | undefined;
+    try {
+      // The key is shown once, and the entry lists it with no last use.
+      const key = await issueEntryKey(page, entryId, 'Build server', ['library:read']);
+      await expect(page.locator(`[data-key-id="${key.id}"]`)).toContainText('never used');
+      await expect(page.locator('[data-plain-key]')).toHaveCount(0);
+      agent = await agentWith(playwright, key.plainKey);
+      // A duty of the department's products reads; one carrying only the card product
+      // type answers 404, the answer another tenant would get.
+      expect((await agent.get(`/api/v1/obligations/${J11.tradingObligations[0]}`)).status()).toBe(200);
+      const card = await agent.get(`/api/v1/obligations/${J11.cardObligation}`);
+      expect(card.status()).toBe(404);
+      expect(await card.text()).not.toContain(J11.cardObligation);
+      // Revoking the entry stops the key on its next call, and the security log shows it.
+      await revokeEntry(page, entryId);
+      expect((await agent.get(`/api/v1/obligations/${J11.tradingObligations[0]}`)).status()).toBe(401);
+      await page.goto('/admin/security-log');
+      await expect(page.locator('[data-event="key_revoked"]').first()).toBeVisible();
+    } finally {
+      await agent?.dispose();
+      await revokeEntry(page, entryId);
+    }
   });
 
-  test.fixme("ACC-S6: A narrowed entry never narrows silently", async () => {
-    // pending: ACC-S6 (ACC-07, AC-ACC1, chunk 11)
+  test("ACC-S6: A narrowed entry never narrows silently", async ({ page, playwright, apiGuard }) => {
+    test.setTimeout(120_000);
+    allowFreshContext(apiGuard);
+    allowAccessStepUps(apiGuard);
+    await signInAs(page, LOGINS.admin);
+    const name = `Trading platform coding agent ${Date.now()}`;
+    const entryId = await registerEntry(page, { name, purpose: J11_PURPOSE, team: J11.team, departments: [J11.department] });
+    let agent: APIRequestContext | undefined;
+    try {
+      const key = await issueEntryKey(page, entryId, 'Build server', ['library:read']);
+      agent = await agentWith(playwright, key.plainKey);
+      const response = await agent.post('/api/v1/agent-access/what-applies', { data: { description: 'a feature that issues virtual cards against a trading account' } });
+      expect(response.status(), await response.text()).toBe(200);
+      const body = (await response.json()) as WhatApplies;
+      // The answer states the entry, its departments and products and its "as of" date.
+      expect(body.scope.narrowed).toBe(true);
+      expect(body.scope.entry.name).toBe(name);
+      expect(body.scope.departments.map((unit) => unit.name)).toEqual([J11.department]);
+      expect(body.scope.asOf).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      // It names card issuing and cards among what it could not see, and says to ask compliance.
+      const outside = body.outsideScope.terms.map((row) => `${row.dimension.label}: ${row.term.label}`);
+      expect(outside).toContain('Licensed activity: Card issuing');
+      expect(outside).toContain('Product type: Cards');
+      expect(body.outsideScope.advice).toBe('ask_compliance');
+      // No record carrying those terms appears anywhere in the response.
+      expect(await response.text()).not.toContain(J11.cardObligation);
+    } finally {
+      await agent?.dispose();
+      await revokeEntry(page, entryId);
+    }
   });
 
-  test.fixme("ACC-S13 J-11 @smoke: a bank's coding agent reads what applies to it", async () => {
-    // pending: ACC-S13 (ACC-01 to ACC-08, AC-ACC1, AC-ACC2, AC-ACC4, J-11, chunk 11)
+  test("ACC-S13 J-11 @smoke: a bank's coding agent reads what applies to it", async ({ page, browser, playwright, apiGuard }, testInfo) => {
+    test.setTimeout(240_000);
+    allowFreshContext(apiGuard);
+    allowAccessStepUps(apiGuard);
+    // The second holder of security.manage works in a context of their own (four eyes).
+    const security = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
+    const securityPage = await security.newPage();
+    apiGuard.watch(securityPage);
+    await signInAs(page, LOGINS.admin);
+    // The admin registers the Trading team's coding agent, narrowed to Trading's products,
+    // and issues it a key with a step-up.
+    const entryId = await registerEntry(page, { name: `Trading platform coding agent ${Date.now()}`, purpose: J11_PURPOSE, team: J11.team, departments: [J11.department] });
+    let agent: APIRequestContext | undefined;
+    try {
+      const key = await issueEntryKey(page, entryId, 'Build server', ['library:read', 'tenant:read']);
+      // Two different people holding security.manage switch tenant reach on, and the
+      // admin enables it on the entry.
+      await signInAs(securityPage, LOGINS.securityAdmin);
+      await switchTenantReachOn(page, securityPage);
+      await enableEntryReach(page, entryId);
+
+      // The agent asks what applies to a new order-routing service.
+      agent = await agentWith(playwright, key.plainKey);
+      const response = await agent.post('/api/v1/agent-access/what-applies', { data: { description: J11_DESCRIPTION } });
+      expect(response.status(), await response.text()).toBe(200);
+      const body = (await response.json()) as WhatApplies;
+      // It receives the bank's confirmed applicability and reading, with citations.
+      expect(body.registerRead).toBe('included');
+      for (const stableKey of J11.tradingObligations) {
+        const row = body.items.find((item) => item.stableKey === stableKey);
+        expect(row, `${stableKey} is on the list`).toBeDefined();
+        expect(row?.decision?.applicability).toBe('applies');
+        expect(row?.decision?.applicabilityReason).toBeTruthy();
+        expect(row?.decision?.interpretation).toBeTruthy();
+        expect(row?.instrument.shortName).toBeTruthy();
+        expect(row?.refLabel).toBeTruthy();
+      }
+      // The full list sits beneath a summary labelled as AI-drafted, citing it by stable key.
+      expect(body.summary.status).toBe('drafted');
+      expect(body.summary.aiGenerated).toBe(true);
+      expect(body.summary.notice).toBe("AI-drafted guidance only: your bank's own confirmed applicability is the decision.");
+      expect(body.summary.citations.length).toBeGreaterThan(0);
+      for (const cited of body.summary.citations) expect(body.items.map((item) => item.stableKey)).toContain(cited);
+      expect(body.total).toBeGreaterThanOrEqual(J11.tradingObligations.length);
+      // A line names card issuing as outside its scope.
+      expect(body.outsideScope.terms.map((row) => row.term.label)).toContain('Card issuing');
+      expect(body.outsideScope.advice).toBe('ask_compliance');
+      expect(await response.text()).not.toContain(J11.cardObligation);
+
+      // A card obligation's stable key answers 404, and a write answers 403.
+      expect((await agent.get(`/api/v1/obligations/${J11.cardObligation}`)).status()).toBe(404);
+      const write = await agent.post('/api/v1/proposals', { data: {} });
+      expect(write.status()).toBe(403);
+      expect(((await write.json()) as { code: string }).code).toBe('read_only_credential');
+
+      // Revoking the entry stops the agent's next call.
+      await revokeEntry(page, entryId);
+      expect((await agent.post('/api/v1/agent-access/what-applies', { data: { description: J11_DESCRIPTION } })).status()).toBe(401);
+    } finally {
+      // Teardown, on failure too: the entry revoked, no entry reaching the register, and the
+      // organisation's reach off again, as every other journey expects it.
+      await agent?.dispose();
+      await revokeEntry(page, entryId);
+      entriesReachOff();
+      await switchTenantReachOff(page);
+      await security.close();
+    }
   });
+  // --- end acc-summary-j11 -------------------------------------------------------------------
 });

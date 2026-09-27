@@ -98,7 +98,7 @@ def replying(*deltas: str, stop_reason: str = "end_turn") -> Any:
     """A model that writes exactly these words, whatever it was given, and stops for
     `stop_reason`."""
 
-    def stream(self: llm.MockLlm, *, system: str, prompt: str, max_tokens: int) -> Iterator[str | llm.Completion]:
+    def stream(self: llm.MockLlm, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | llm.Completion]:
         yield from deltas
         yield llm.Completion(
             text="".join(deltas), model="mock", model_version="0", input_tokens=1, output_tokens=1, stop_reason=stop_reason

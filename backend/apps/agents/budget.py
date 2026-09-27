@@ -20,6 +20,8 @@ from django.utils import timezone
 
 from apps.agents.models import AgentRun, TenantAgent, TenantAgentBudget
 from apps.agents.schemas import AgentBudgetInput
+from apps.governance import ai_log
+from apps.governance.models import AiPurpose
 from apps.agents.tenant_agents import lock_tenant, pause
 from apps.identity.models import User
 from apps.shared.audit import Actor, ActorType, record
@@ -44,13 +46,15 @@ def month(tenant: Tenant) -> tuple[datetime.datetime, datetime.datetime]:
 
 
 def spend(tenant: Tenant) -> Decimal:
-    """What the bank's own agents' runs cost this month. Only a run of one of the bank's own
-    agents counts: a platform run has no `tenant_agent`, so it is never in it."""
+    """What the bank's own agents' runs cost this month, and the summaries drafted for the
+    agents it runs itself. Only a run of one of the bank's own agents counts: a platform run
+    has no `tenant_agent`, so it is never in it."""
     start, end = month(tenant)
-    total = AgentRun.objects.filter(
+    runs = AgentRun.objects.filter(
         tenant_id=tenant.id, tenant_agent__isnull=False, started_at__gte=start, started_at__lt=end
     ).aggregate(total=Sum("cost"))["total"]
-    return ZERO if total is None else Decimal(total).quantize(ZERO)
+    summaries = ai_log.cost_minor_between(tenant.id, AiPurpose.WHAT_APPLIES, start, end)
+    return (Decimal(runs or 0) + Decimal(summaries) / 100).quantize(ZERO)
 
 
 def cap_of(tenant: Tenant) -> Decimal | None:
