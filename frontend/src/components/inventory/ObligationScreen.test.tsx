@@ -531,8 +531,12 @@ describe('the diff sentence', () => {
   });
 });
 
-// The panels their packages have filled; each is tested in its own file.
-const FILLED: ReadonlySet<string> = new Set(['Tags']);
+// The panels their packages have filled, one line each; each is tested in its own file.
+const FILLED: ReadonlySet<string> = new Set([
+  'Tags', // c10-fe-obligation-tags
+  'Applicability', // c8-ui-applicability-status
+  'Status', // c8-ui-applicability-status
+]);
 
 describe('the panel stubs', () => {
   it('render nothing until their packages fill them', async () => {

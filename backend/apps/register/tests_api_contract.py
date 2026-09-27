@@ -82,7 +82,10 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("getStatementOfApplicability", "get", f"/api/v1/obligations/{OBLIGATION}/statement-of-applicability?entity={ENTITY}", None, perms.REGISTER_READ, False),
     ("listDuties", "get", f"/api/v1/obligations/{OBLIGATION}/duties", None, perms.REGISTER_READ, False),
     ("completeDutyOccurrence", "post", f"/api/v1/duty-occurrences/{RECORD}/complete", COMPLETE_BODY, perms.REGISTER_EDIT, False),
+    # c8-ui-applicability-status: the legal entities an obligation spans (tests_applicability.py).
+    ("listSpannedEntities", "get", f"/api/v1/obligations/{OBLIGATION}/register/entities", None, perms.REGISTER_READ, False),
 ]
+
 
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
     if body is None:
@@ -214,6 +217,7 @@ BUILT = {
     # c8-units-paste-soa (REG-08): tests_soa.py
     "getStatementOfApplicability",
     "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
+    "listSpannedEntities",  # c8-ui-applicability-status, tests_applicability.py
 }
 
 
