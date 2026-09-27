@@ -27,6 +27,10 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   watch: { ready: '[data-change-rows] [data-change]' },
   inventory: { ready: '[data-obligation-rows] [data-obligation]' },
   roadmap: { ready: '[data-roadmap-card]' },
+  // c8-ui-gaps-risk: the bank's gaps, which another journey may close or accept.
+  gaps: { ready: `[data-gap-rows] [data-gap]${OR_EMPTY}` },
+  // c8-ui-mywork: the caller's own work, which may be empty for a person who owns nothing.
+  'my-work': { ready: `[data-work-section] [data-work-item]${OR_EMPTY}` },
   briefing: { ready: `[data-lead-card], [data-brief-item]${OR_EMPTY}` },
   // At rest Ask asks nothing of the ask route (the question stays out of the
   // URL); it is ready when the permission gate has read the session and the
@@ -40,6 +44,7 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'admin-footprint': { ready: '[data-footprint-dimensions] [data-dimension]' },
   'admin-api-keys': { ready: `[data-keys-list] [data-key-id]${OR_EMPTY}` },
   'admin-security-log': { ready: '[data-security-log] [data-event]' },
+  'admin-support-access': { ready: `[data-support-section] [data-grant-id]${OR_EMPTY}` },
   'admin-audit-log': { ready: '[data-audit-log] [data-audit-row]' },
   'admin-ai-log': { ready: `[data-ai-log] [data-ai-row]${OR_EMPTY}` },
   'admin-workflow': { ready: '[data-workflow-form] [data-workflow-field]' },
@@ -53,6 +58,7 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'console-tenants': { ready: '[data-tenants-list] [data-tenant-id]' },
   'console-agent-keys': { ready: `[data-agent-keys-list] [data-agent-key-id]${OR_EMPTY}` },
   'console-evaluation': { ready: `[data-eval-questions] [data-question-key]${OR_EMPTY}` },
+  'console-support-access': { ready: `[data-support-grants] [data-grant-id]${OR_EMPTY}` },
 };
 
 /**

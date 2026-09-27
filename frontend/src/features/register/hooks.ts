@@ -22,6 +22,7 @@ import type {
   RegisterGapPage,
   RegisterGapPatch,
   RegisterGapQuery,
+  RegisterInternalItemPage,
   RegisterInternalLink,
   RegisterInternalLinkBody,
   RegisterInternalLinkPage,
@@ -29,7 +30,9 @@ import type {
   RegisterInterpretationBody,
   RegisterPageQuery,
   RegisterPatch,
+  RegisterPerson,
   RegisterRiskAcceptanceBody,
+  RegisterSpannedEntity,
   RegisterStatementOfApplicability,
   RegisterUnit,
   RegisterUnitBody,
@@ -64,6 +67,7 @@ export const registerKeys = {
   statement: (obligationId: string, entity: string, page: RegisterPageQuery) => [...registerKeys.obligation(obligationId), 'statement', entity, page] as const,
   duties: (obligationId: string, page: RegisterPageQuery) => [...registerKeys.obligation(obligationId), 'duties', page] as const,
   gapList: (filters: RegisterGapQuery, page: RegisterPageQuery) => ['register', 'gaps', filters, page] as const,
+  items: (q: string) => ['register', 'items', q] as const,
 };
 
 /** Refetches every register read, which is what a stale write's Reload does. */
@@ -101,6 +105,11 @@ export function useInterpretation(obligationId: string): UseQueryResult<Register
 
 export function useInternalLinks(obligationId: string, page: RegisterPageQuery = {}): UseQueryResult<RegisterInternalLinkPage> {
   return useQuery({ queryKey: registerKeys.links(obligationId, page), queryFn: () => register.listInternalLinks(obligationId, page) });
+}
+
+/** The link dialog's search over the bank's own items, read only while the dialog picks. */
+export function useInternalItems(q: string, enabled: boolean): UseQueryResult<RegisterInternalItemPage> {
+  return useQuery({ queryKey: registerKeys.items(q), queryFn: () => register.listInternalItems(q), enabled });
 }
 
 export function useUnits(obligationId: string, entity?: string, page: RegisterPageQuery = {}): UseQueryResult<RegisterUnitPage> {
@@ -188,4 +197,15 @@ export function usePasteUnits(obligationId: string): UseMutationResult<RegisterU
 
 export function useCompleteDutyOccurrence(): UseMutationResult<RegisterDutyCompletion, unknown, { occurrenceId: string; body: RegisterDutyCompleteBody }> {
   return useRegisterWrite(({ occurrenceId, body }) => register.completeDutyOccurrence(occurrenceId, body));
+}
+
+// c8-ui-applicability-status: the entities an answer can be given for, and the people an
+// owner or contact picker offers. Neither changes with a register write.
+
+export function useSpannedEntities(obligationId: string): UseQueryResult<RegisterSpannedEntity[]> {
+  return useQuery({ queryKey: ['register-span', obligationId], queryFn: () => register.listSpannedEntities(obligationId) });
+}
+
+export function usePeople(enabled = true): UseQueryResult<RegisterPerson[]> {
+  return useQuery({ queryKey: ['reference', 'people'], queryFn: register.listPeople, enabled });
 }

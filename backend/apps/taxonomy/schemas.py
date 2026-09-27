@@ -1955,7 +1955,8 @@ _TAGGING_SUBJECT_TYPE = (
     "The kind of record being tagged, at most 64 characters, one of:\n"
     "- `obligation`: a library obligation the bank can read (`GET /obligations`);\n"
     "- `change`: a regulatory change in the library (`GET /changes`);\n"
-    "- `change_case`: one of this bank's own cases for a change.\n"
+    "- `change_case`: one of this bank's own cases for a change;\n"
+    "- `tenant_obligation`: one of this bank's own register entries, its judgement on one obligation.\n"
     "Any other kind answers 422 `unsupported_subject`. A tag is the bank's own marker and never "
     "changes the library record it sits on: another bank never sees it."
 )
@@ -2062,7 +2063,7 @@ class TaggingRecordTags(CamelSchema):
     )
 
     subject_type: str = Field(
-        description="The kind of the record, as sent: `obligation`, `change` or `change_case`.", examples=["obligation"]
+        description="The kind of the record, as sent: `obligation`, `change`, `change_case` or `tenant_obligation`.", examples=["obligation"]
     )
     subject_id: UUID = Field(description="The id of the record, a UUID, as sent.", examples=["5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"])
     tags: list[TaggingTagRef] = Field(
@@ -2126,7 +2127,7 @@ class TaggingBatchOutcome(CamelSchema):
         )
     )
     subject_type: str = Field(
-        description="The kind of every record in the batch, as sent: `obligation`, `change` or `change_case`.",
+        description="The kind of every record in the batch, as sent: `obligation`, `change`, `change_case` or `tenant_obligation`.",
         examples=["obligation"],
     )
     gained: TaggingIds = Field(

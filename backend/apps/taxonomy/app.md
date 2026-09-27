@@ -63,20 +63,20 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | VOC-01 | Every extendable list is rows in three tiers; only kinds are code | M | R1 | built |
 | VOC-02 | One vocabulary screen per surface: real pill in light and dark, usage count, inline rename, drag to reorder, retire, merge | M | R1 | built |
-| VOC-03 | Create where you use it: "Create" with `vocab.manage`, "Suggest" without, both with a near-duplicate hint | S | R2 | in_progress |
+| VOC-03 | Create where you use it: "Create" with `vocab.manage`, "Suggest" without, both with a near-duplicate hint | S | R2 | built |
 | VOC-04 | Statuses are tenant-defined inside fixed categories; a category never goes empty | M | R2 | built |
 | VOC-05 | Tenant scales for compliance status and risk mapped to fixed ordinals | S | R2 | built |
-| VOC-06 | Reason lists for dismissal, closure and risk acceptance | S | R2 | in_progress |
+| VOC-06 | Reason lists for dismissal, closure and risk acceptance | S | R2 | built |
 | VOC-07 | Library vocabulary changes go through the proposal queue | M | R1 | built |
-| VOC-08 | Bulk tagging from list views with preview and one audit entry | S | R2 | in_progress |
+| VOC-08 | Bulk tagging from list views with preview and one audit entry | S | R2 | built |
 | VOC-09 | Tenant configuration is versioned, exportable and importable | S | R3 | pending |
 | FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict, except an opt-in dimension (standards), which matches only what the scope names; an obligation also needs its instrument's regime | M | R1 | built |
 | FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term | M | R1 | built |
 | FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it. R1 covers the feed, inventory, roadmap, briefing and search; reports apply it in chunk 12 | M | R1 | built |
 | FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
-| ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | pending |
 | OWN-01 | A scope item (name, jurisdiction and regime terms, official reference, public source addresses) is added through the regulatory scope request: `footprint.request` asks, a different person with `footprint.approve` approves with a passkey; no API key reaches it, approving widens no term, and no agent ever writes one (D-89, D-91) | M | R2 | pending |
+| ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | in_progress |
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-VOC1** An admin adds a change type, a tag and a sub-status with no deploy:
@@ -163,6 +163,26 @@ And the four obligations still render the label
 And the picker and the filter no longer offer it
 And the row still exists with active false
 ```
+
+> **Note — what a tenant list counts and what its merge moves (c8-vocab-register-usage).**
+> A tenant list names its `links` in `registry.py` like a library list: `tenant_tag`
+> (taggings), `compliance_status` (register entries and their entity rows), `risk_rating`
+> (entries, entity rows and a gap's severity), `gap_status`, `gap_source` and
+> `risk_acceptance_reason` (gaps), `link_kind` (internal items) and `team` (the owner of an
+> entry, an entity row, a gap, a licence or an internal item; a member's team; a live
+> participant). The count is one query per list and the merge a fixed number of statements
+> per table in the request's transaction, with one `vocabulary.merged` audit row naming the
+> ids moved and dropped. A record already carrying the kept value keeps one link: a tagging
+> or a team membership so doubled is dropped, a participant is stamped removed, and two
+> internal items that would share a name refuse the merge (409 `duplicate_key`). A merge
+> between two fixed categories (a compliance category, a risk level, a gap state) is 422,
+> because it would move a status without the step that moves one. The assessment ledger is
+> history and keeps the value it named. A team that owns open work (an entry or entity row,
+> a gap not closed, a licence not withdrawn, an active internal item) is not retired, even
+> with `confirm`: 409 `open_work` with the counts in `openWork`. A tenant list holds at most
+> `TENANT_LIST_MAX_ROWS` rows (422 `list_full`). A register entry (`tenant_obligation`)
+> takes a tag like an obligation, read under `register.read`. Tests:
+> `tests_vocabulary.RegisterUsage`.
 
 ### VOC-S5 — Merging re-points duplicates in one audited transaction `@integration` `@e2e` (VOC-02)
 ```gherkin

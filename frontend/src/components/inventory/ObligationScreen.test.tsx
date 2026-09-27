@@ -294,6 +294,19 @@ describe('ObligationScreen', () => {
     await waitFor(() => expect(document.querySelector('[data-legal-text] [lang="sv"]')?.textContent).toBe(sv.text));
   });
 
+  it('leads the head of the bank\'s own record with "Private to us", its instrument outlined (OWN-04)', async () => {
+    serve({ ...research, privateToUs: true });
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await screen.findByRole('heading', { level: 1 });
+    const header = document.querySelectorAll('[data-header-pills] [data-pill]');
+    expect([...header].map((pill) => [pill.textContent, pill.getAttribute('data-pill'), pill.hasAttribute('data-outlined')])).toEqual([
+      ['Private to us', 'information', true],
+      ['FFFS 2017:2', 'information', true],
+      ['Securities', 'information', false],
+      ['Binding', 'information', false],
+    ]);
+  });
+
   it('reads "Standard" in the binding slot of a duty under a standard, never "Guidance, comply or explain"', async () => {
     serve({ ...research, bindingLevel: { key: 'standard', kind: 'standard', label: 'Standard edition' }, binding: false });
     renderIn(<ObligationScreen obligationId="ob-1" />);
@@ -531,9 +544,22 @@ describe('the diff sentence', () => {
   });
 });
 
+// The panels their packages have filled; each is tested in its own file.
+const FILLED: ReadonlySet<string> = new Set([
+  'Applicability', // c8-ui-applicability-status
+  'Status', // c8-ui-applicability-status
+  'Tags', // c10-fe-bulk-tagging
+  'Units', // c8-ui-units
+  // c8-ui-links-history-participants; c10-fe-comments-panel (features/collab/CommentsPanel.test.tsx).
+  'Links',
+  'History',
+  'Participants',
+  'Comments',
+]);
+
 describe('the panel stubs', () => {
   it('render nothing until their packages fill them', async () => {
-    for (const name of PANELS) {
+    for (const name of PANELS.filter((panel) => !FILLED.has(panel))) {
       const actual = await vi.importActual<Record<string, (props: { obligationId: string }) => ReactNode>>(`./Obligation${name}Panel`);
       const Panel = actual[`Obligation${name}Panel`] as (props: { obligationId: string }) => ReactNode;
       const { container, unmount } = render(<Panel obligationId="ob-1" />);

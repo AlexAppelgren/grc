@@ -1,4 +1,7 @@
+import type { Locator, Page } from '@playwright/test';
+
 import { expect, test } from './support/api-guard';
+import { allowRegisterEntryPending, openObligation, signInElsewhere } from './support/obligation-page';
 import { LOGINS, allowFreshContext, signInAs } from './support/passkeys';
 
 // home: the @e2e scenarios from backend/apps/home/app.md (playbook Appendix B).
@@ -30,13 +33,20 @@ function seededQuarterText(offsetDays: number): string {
 
 const NEAR_OFFSET = 20;
 const FAR_OFFSET = 120;
+// c8-seed-org-register and c8-ui-home-register: the remediating gap on the ESMA warnings,
+// its target 60 days ahead and Johan its owner, and the certificate of Example Bank AB, its
+// next audit 163 days ahead and its expiry 790, Sara its owner (apps/shared/e2e_seed.py).
+const SEEDED_GAP = 'The warning can be dismissed with one tap and the choice is not logged';
+const GAP_TARGET_OFFSET = 60;
+const CERTIFICATE = 'ISO/IEC 27001';
+const AUDIT_OFFSET = 163;
+const EXPIRY_OFFSET = 790;
 
 test.describe('home journeys', () => {
   test("HOM-S1: Today shows the next dates, the lead item, what needs a decision and source health", async ({ page, apiGuard }) => {
-    // The reworded scenario (chunk 6 ruling 2): standing is chunk 8's, so it is
-    // not asserted here. "A reader without watch.read gets no lead and no
-    // source panel" is proved at the backend (apps/home/tests_home.py): every
-    // seeded system role holds watch.read, so no E2E login can drive that step.
+    // "A reader without watch.read gets no lead and no source panel", and one without
+    // register.read no standing, are proved at the backend (apps/home/tests_home.py) and in
+    // TodayScreen.test.tsx: every seeded system role holds both, so no E2E login can drive them.
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);
 
@@ -46,17 +56,17 @@ test.describe('home journeys', () => {
     // rows it holds: the seed grows as later chunks add their own reforms, and a
     // count assertion turns every such addition into a false failure here (the
     // chunk 5 watch seed did exactly that, 2026-09-21). What this journey owns is
-    // that its own cases are present, ordered, and that the out-of-scope one is not.
+    // that its lead case is present, the list is in date order, and the
+    // out-of-scope one is not. The +120-day reform is the roadmap's to show
+    // (HOM-S4): the register's own nearer dates, reviews and gap targets, fill
+    // the short list ahead of it since the roadmap carries them (c8-ui-home-register).
     const comingUp = page.locator('[data-coming-up]');
     const items = comingUp.locator('[data-roadmap-item]');
     await expect(items.filter({ hasText: 'FI adopts amended rules on paying for investment research' })).toHaveCount(1);
-    await expect(items.filter({ hasText: 'Amended reporting of securities financing transactions' })).toHaveCount(1);
-    // Ordered against each other, never against the top of the list: chunk 5's
-    // seed dates one reform 2027-01-01, a literal, which reaches the top ahead
-    // of the +20-day lead from 12 December 2026 and flipped a first-row check.
-    const titles = await items.allInnerTexts();
-    const leadAt = titles.findIndex((text) => text.includes('FI adopts amended rules on paying for investment research'));
-    expect(leadAt).toBeLessThan(titles.findIndex((text) => text.includes('Amended reporting of securities financing transactions')));
+    // Every row stated to the day, compared by its day: a quarter or a month prints no day.
+    const days = (await items.allInnerTexts()).map((text) => Date.parse(`${text.split('\n')[0]} UTC`)).filter((at) => !Number.isNaN(at));
+    expect(days.length).toBeGreaterThan(1);
+    expect(days).toEqual([...days].sort((a, b) => a - b));
     await expect(comingUp.getByText('Insurance distribution guidance outside our scope')).toHaveCount(0);
     await expect(comingUp.getByText(/\d+ dated items ahead/)).toBeVisible();
 
@@ -74,12 +84,66 @@ test.describe('home journeys', () => {
     // journey owns is that the panel counts triage at all (2026-09-21).
     await expect(decide.getByText(/\d+ changes? needs? triage\./)).toBeVisible();
     await expect(decide.getByText(/proposal.*pending review/)).toBeVisible();
+    // R2's decisions (x-decide-now-counts): the officer holds risk.accept.approve, and neither
+    // cases.signoff nor security.manage, so only the risk line is theirs.
+    await expect(decide.getByRole('link', { name: /\d+ risk acceptances? to approve\./ })).toHaveAttribute('href', '/gaps');
+    await expect(decide.getByText(/waiting for your sign-off/)).toHaveCount(0);
+    await expect(decide.getByText(/support access requests? to decide/)).toHaveCount(0);
+    await expect(decide.getByText(/tenant reach requests? to decide/)).toHaveCount(0);
 
     const sources = page.locator('[data-source-health]');
     // The panel counts the sources the seed holds, and chunk 5 added three more, so the
     // sentence is asserted by shape and the failed source this journey seeded by name.
     await expect(sources).toContainText(/Sources: \d+ of \d+ checked\./);
     await expect(sources).toContainText('EBA news feed (E2E) failed.');
+
+    // Where we stand (c8-ui-home-register): a number per line, not the number, because other
+    // journeys record statuses and gaps as they run. Each line leads to the list it counts.
+    const standing = page.locator('[data-standing]');
+    await expect(standing.getByRole('heading', { name: 'Where we stand' })).toBeVisible();
+    await expect(standing.getByRole('link', { name: /^\d+ obligations? appl(y|ies) to us\.$/ })).toHaveAttribute('href', '/inventory?applicability=applies');
+    for (const [name, key] of [
+      ['Compliant', 'compliant'],
+      ['Partly compliant', 'partly_compliant'],
+      ['Gap', 'gap'],
+      ['Not assessed', 'not_assessed'],
+    ] as const) {
+      await expect(standing.getByRole('link', { name, exact: true })).toHaveAttribute('href', `/inventory?applicability=applies&complianceStatus=${key}`);
+    }
+    await expect(standing.locator('[data-standing-line="partly"]')).toContainText(/Partly compliant\s*[1-9]\d*/);
+    await expect(standing.getByText(/^\d+ gaps? open or in remediation$/)).toBeVisible();
+
+    await standing.getByRole('link', { name: 'Partly compliant', exact: true }).click();
+    await expect(page).toHaveURL(/\/inventory\?applicability=applies&complianceStatus=partly_compliant$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Inventory' })).toBeVisible();
+    await page.goBack();
+    await page.locator('[data-standing]').getByRole('link', { name: 'See the gaps' }).click();
+    await expect(page).toHaveURL(/\/gaps$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Gaps' })).toBeVisible();
+  });
+
+  // What needs a decision is counted per person: each line is one the reader's permissions
+  // unlock, and each leads to where that decision is made. A number, not the number: other
+  // journeys add and decide these requests as they run.
+  test('HOM-S1: Decide now shows an approver the sign-offs and risk acceptances they may decide', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.approver);
+
+    const decide = page.locator('[data-decide-now]');
+    await expect(decide.getByRole('link', { name: /\d+ cases? waiting for your sign-off\./ })).toHaveAttribute('href', '/watch?tab=inProgress');
+    await expect(decide.getByRole('link', { name: /\d+ risk acceptances? to approve\./ })).toHaveAttribute('href', '/gaps');
+    await expect(decide.getByText(/support access requests? to decide/)).toHaveCount(0);
+    await expect(decide.getByText(/needs? triage/)).toHaveCount(0);
+  });
+
+  test('HOM-S1: Decide now shows an admin the support access and tenant reach requests to decide', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.admin);
+
+    const decide = page.locator('[data-decide-now]');
+    await expect(decide.getByRole('link', { name: /\d+ support access requests? to decide\./ })).toHaveAttribute('href', '/admin/support-access');
+    await expect(decide.getByRole('link', { name: /\d+ tenant reach requests? to decide\./ })).toHaveAttribute('href', '/admin/security');
+    await expect(decide.getByText(/waiting for your sign-off/)).toHaveCount(0);
   });
 
   test('HOM-S2: The same short list appears on a phone', async ({ page, apiGuard }) => {
@@ -138,8 +202,8 @@ test.describe('home journeys', () => {
   });
 
   test('HOM-S4: The roadmap shows the quarters ahead with their regulatory dates', async ({ page, apiGuard }) => {
-    // Reworded (chunk 6 ruling 3): the internal branches ("Our deadline") have
-    // no R1 producer, so only the regulatory branch is proved here.
+    // The regulatory branch, then the bank's own deadlines beside it (c8-ui-home-register):
+    // the seeded gap's target, named with what it is and its owner, opening its obligation.
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);
     await page.goto('/roadmap');
@@ -162,6 +226,21 @@ test.describe('home journeys', () => {
 
     await detail.getByRole('link', { name: 'Open change' }).click();
     await expect(page).toHaveURL(/\/watch\//);
+
+    await page.goto('/roadmap');
+    await page.getByRole('button', { name: 'Our deadlines' }).click();
+    await expect(page).toHaveURL(/\/roadmap\?kind=internal$/);
+    const target = page.locator('[data-roadmap-card^="gap_target:"]').filter({ hasText: SEEDED_GAP });
+    await expect(target).toContainText('Our deadline · Gap target date · Johan Berg');
+    await expect(target).toContainText(seededDateText(GAP_TARGET_OFFSET));
+    // Only our own: no regulatory date under this chip.
+    await expect(page.locator('[data-roadmap-card^="change_date:"]')).toHaveCount(0);
+    await target.click();
+    const ours = page.locator('[data-roadmap-detail]');
+    await expect(ours.getByRole('heading', { name: SEEDED_GAP })).toBeVisible();
+    await expect(ours.locator('[data-our-deadline]')).toContainText('Johan Berg');
+    await ours.getByRole('link', { name: 'Open obligation' }).click();
+    await expect(page).toHaveURL(/\/inventory\/obligations\//);
   });
 
   test('HOM-S5: Upcoming changes are public facts and the calendar feed is revocable', async ({ page, apiGuard }) => {
@@ -247,26 +326,226 @@ test.describe('home journeys', () => {
     await expect(detail.getByText('6+ months', { exact: true })).toBeVisible();
     // The date and the days left follow the pill as plain text, not a second pill.
     await expect(detail).toContainText(seededDateText(FAR_OFFSET));
+
+    // One of our own deadlines wears "Our deadline" in the brand tone instead of an urgency.
+    await page.locator('[data-roadmap-card^="gap_target:"]').filter({ hasText: SEEDED_GAP }).click();
+    const ours = page.locator('[data-roadmap-detail]');
+    await expect(ours.locator('[data-pill="brand"]')).toHaveText('Our deadline');
+    await expect(ours.locator('[data-pill]')).toHaveCount(1);
+    await expect(ours).toContainText(seededDateText(GAP_TARGET_OFFSET));
+    await expect(ours).toContainText(/in \d+ days/);
   });
 });
+
+// c8-ui-mywork: the seed's names My work's journeys read (apps/shared/e2e_seed.py).
+const RESEARCH_PAYMENTS = 'Pay for third-party research only under the permitted models';
+const DORA_REGISTER = 'Keep a register of information on ICT third-party arrangements';
+const SUITABILITY = 'Assess suitability when giving investment advice';
+const J9_CHANGED_OBLIGATION = 'obl-dora-ict-register';
+const RETAIL_BANKING = 'Retail Banking';
+
+/** My work by its address, settled on its sections or its empty state. */
+async function openMyWork(page: Page): Promise<void> {
+  await page.goto('/work');
+  await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
+  await expect(page.locator('[data-work-section]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+}
+
+/** The rows about one record, found by their title: a change's row names its obligation too. */
+function workItems(page: Page, title: string, within = '[data-work-item]'): Locator {
+  return page.locator(within).filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+}
+
+function workRow(page: Page, bucket: string, title: string): Locator {
+  return workItems(page, title, `[data-work-section="${bucket}"] [data-work-item]`);
+}
 
 // PRD 0.3: My work (HOM-05, J-9) and a certificate's dates on the roadmap
 // (HOM-03, TEN-02). Each stays test.fixme until the task in
 // docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
 test.describe('my work and certificate deadlines', () => {
-  test.fixme("HOM-S7: My work lists what I'm responsible for or take part in, most urgent first", async () => {
-    // pending: HOM-S7 (HOM-05, AC-HOM1)
+  // c8-ui-mywork. The seed's people (apps/shared/e2e_seed.py, EXPECTED_ORG_REGISTER): the
+  // scenarios' Anna is the owner login, Johan Berg (J9_OWNER); Karin is the head of Retail
+  // Banking, Karin Ek; Erik is the J-9 contributor, Viktor Hedlund. Johan owns the overdue
+  // research-payments review, the DORA register the confirmed change is linked to and the
+  // internal item "Research procurement"; his team Retail compliance owns the suitability duty.
+  test("HOM-S7: My work lists what I'm responsible for or take part in, most urgent first", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.owner);
+    // My work is in the rail, with no permission of its own.
+    await page.getByRole('link', { name: 'My work', exact: true }).first().click();
+    await expect(page.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
+
+    const overdue = workRow(page, 'overdue', RESEARCH_PAYMENTS);
+    await expect(overdue).toContainText("You're responsible");
+    await expect(overdue).toContainText(/\d+ days? overdue/);
+    await expect(overdue.getByRole('link', { name: RESEARCH_PAYMENTS })).toHaveAttribute('href', /\/inventory\/obligations\//);
+    // Each item appears once, in its most urgent section.
+    await expect(workItems(page, RESEARCH_PAYMENTS)).toHaveCount(1);
+    // The team's obligation, with the team as the reason, and the internal item, which has no page.
+    await expect(workItems(page, SUITABILITY)).toContainText('Your team is responsible');
+    const item = workItems(page, 'Research procurement', '[data-work-item="internal_item"]');
+    await expect(item).toHaveCount(1);
+    await expect(item).toContainText("You're responsible");
+    await expect(item.getByRole('link')).toHaveCount(0);
+    // Decisions stay on Today.
+    await page.getByRole('link', { name: 'Open Today' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'What is coming, and where we stand' })).toBeVisible();
   });
 
-  test.fixme("HOM-S9: A department head sees the department's work, naming who is responsible", async () => {
-    // pending: HOM-S9 (HOM-05, TEN-02, TEN-03)
+  test("HOM-S9: A department head sees the department's work, naming who is responsible", async ({ page, apiGuard, browser }, testInfo) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.departmentHead);
+    const read = page.waitForResponse((r) => r.url().includes('/api/v1/me/work') && r.url().includes('scope=unit'));
+    await openMyWork(page);
+
+    // She opens on her department, and every row names who is responsible.
+    await expect(page.getByRole('group', { name: 'Whose work' }).getByRole('button', { name: RETAIL_BANKING })).toHaveAttribute('aria-pressed', 'true');
+    await expect(workItems(page, SUITABILITY).first()).toContainText('Retail compliance is responsible');
+    await expect(workItems(page, RESEARCH_PAYMENTS).first()).toContainText('Johan Berg is responsible');
+    const unit = new URL((await read).url()).searchParams.get('unit');
+    expect(unit).not.toBeNull();
+
+    // Johan opens the same department by its address: a filter, so he sees the same work.
+    const johan = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.owner);
+    await johan.goto(`/work?unit=${unit}`);
+    await expect(johan.getByRole('group', { name: 'Whose work' }).getByRole('button', { name: 'This department' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(workItems(johan, SUITABILITY).first()).toContainText('Retail compliance is responsible');
+    await expect(workItems(johan, RESEARCH_PAYMENTS).first()).toContainText('Johan Berg is responsible');
+    await johan.context().close();
+
+    // Her choice is remembered on this device.
+    await page.getByRole('group', { name: 'Whose work' }).getByRole('button', { name: 'Mine' }).click();
+    await page.reload();
+    await expect(page.getByRole('group', { name: 'Whose work' }).getByRole('button', { name: 'Mine' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test.fixme("HOM-S13 J-9 @smoke: Monday morning", async () => {
-    // pending: HOM-S13 (HOM-05, COL-04, TEN-03, J-9)
+  test("HOM-S13 J-9 @smoke: Monday morning", async ({ page, apiGuard, browser }, testInfo) => {
+    allowFreshContext(apiGuard);
+    allowRegisterEntryPending(apiGuard);
+    await signInAs(page, LOGINS.owner);
+    await openMyWork(page);
+
+    // Johan's overdue review, and the change linked to the obligation he is responsible for.
+    await expect(workRow(page, 'overdue', RESEARCH_PAYMENTS)).toContainText("You're responsible");
+    const linked = page.locator('[data-work-section="aware"] [data-work-item="change_case"]').filter({ hasText: `Linked to ${DORA_REGISTER}` });
+    await expect(linked.first()).toBeVisible();
+
+    // He opens that obligation and adds Viktor as a participant.
+    await openObligation(page, J9_CHANGED_OBLIGATION);
+    const panel = page.locator('[data-participants-panel]');
+    await expect(panel.locator('[data-participants-empty]').or(panel.locator('[data-participant-id]')).first()).toBeVisible();
+    const viktorRow = panel.locator('[data-participant-id]').filter({ hasText: 'Viktor Hedlund' });
+    let taking = false;
+    try {
+      await panel.getByRole('button', { name: 'Add a participant' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Add a participant' });
+      await dialog.getByRole('searchbox', { name: 'Person or team' }).fill('Viktor');
+      await dialog.getByRole('radio', { name: /^Viktor Hedlund/ }).click();
+      await dialog.getByRole('button', { name: 'Add' }).click();
+      await expect(dialog).toBeHidden();
+      await expect(viktorRow).toHaveCount(1);
+      taking = true;
+
+      // Viktor's My work lists it because he takes part.
+      const viktor = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.participant);
+      allowRegisterEntryPending(apiGuard);
+      await openMyWork(viktor);
+      const his = workItems(viktor, DORA_REGISTER);
+      await expect(his.first()).toContainText('You take part');
+
+      // Karin's department view names Johan as responsible for it.
+      const karin = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.departmentHead);
+      await openMyWork(karin);
+      await expect(karin.getByRole('group', { name: 'Whose work' }).getByRole('button', { name: RETAIL_BANKING })).toHaveAttribute('aria-pressed', 'true');
+      await expect(workItems(karin, DORA_REGISTER, '[data-work-item="tenant_obligation"]').first()).toContainText('Johan Berg is responsible');
+      await karin.context().close();
+
+      // Viktor leaves, and the obligation leaves his My work.
+      await openObligation(viktor, J9_CHANGED_OBLIGATION);
+      const own = viktor.locator('[data-participants-panel] [data-participant-id]').filter({ hasText: 'Viktor Hedlund' });
+      const leaving = viktor.waitForResponse((r) => r.url().includes('/participants/') && r.request().method() === 'DELETE');
+      await own.getByRole('button', { name: 'Leave' }).click();
+      expect((await leaving).status()).toBe(204);
+      taking = false;
+      await openMyWork(viktor);
+      await expect(workItems(viktor, DORA_REGISTER)).toHaveCount(0);
+      await viktor.context().close();
+
+      // The audit log holds both events on the register entry: Viktor, reserved for this
+      // journey, leaving, and Johan adding him.
+      await page.goto('/admin/audit-log');
+      await expect(page.getByRole('heading', { level: 1, name: 'Audit log' })).toBeVisible();
+      const event = (action: string, by: string) => page.locator(`[data-audit-row][data-action="${action}"]`).filter({ hasText: `By ${by}` });
+      await event('participant.left', 'Viktor Hedlund').first().locator('[data-only-record]').click();
+      await expect(event('participant.left', 'Viktor Hedlund').first()).toBeVisible();
+      await expect(event('participant.added', 'Johan Berg').first()).toBeVisible();
+    } finally {
+      // Johan takes Viktor off again if the journey stopped half-way, as the seed had it.
+      if (taking) {
+        await page.reload();
+        await viktorRow.getByRole('button', { name: 'Remove' }).click();
+        await expect(viktorRow).toHaveCount(0);
+      }
+    }
   });
 
-  test.fixme("HOM-S15: A certificate's expiry and next audit are our deadlines, never in the calendar feed", async () => {
-    // pending: HOM-S15 (HOM-03, HOM-04, TEN-02, AC-TEN1)
+  test("HOM-S15: A certificate's expiry and next audit are our deadlines, never in the calendar feed", async ({ page, apiGuard }) => {
+    // HOM-S15 (HOM-03, HOM-04, TEN-02, AC-TEN1): the seeded certificate's next audit and its
+    // expiry are on the roadmap as our deadlines, with the owner, the certificate and its
+    // legal entity, and a calendar feed carries neither. "When the licence is withdrawn,
+    // neither date appears" is proved at the backend (apps/home/tests_scenarios.py
+    // ::test_hom_s15): no screen withdraws a certificate yet (the organisation screen's
+    // licences are c8-ui-organisation's), and a journey never writes around the UI.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto('/roadmap?kind=internal');
+
+    const audit = page.locator('[data-roadmap-card^="certificate_audit:"]').filter({ hasText: CERTIFICATE });
+    const expiry = page.locator('[data-roadmap-card^="certificate_expiry:"]').filter({ hasText: CERTIFICATE });
+    await expect(audit).toContainText('Our deadline · Certificate audit · Sara Lindqvist');
+    await expect(audit).toContainText(seededDateText(AUDIT_OFFSET));
+    await expect(page.getByRole('heading', { name: seededQuarterText(AUDIT_OFFSET), exact: true })).toBeVisible();
+    await expect(expiry).toContainText('Our deadline · Certificate expires · Sara Lindqvist');
+    await expect(expiry).toContainText(seededDateText(EXPIRY_OFFSET));
+    await expect(page.getByRole('heading', { name: seededQuarterText(EXPIRY_OFFSET), exact: true })).toBeVisible();
+
+    await audit.click();
+    const detail = page.locator('[data-roadmap-detail]');
+    await expect(detail.locator('[data-pill="brand"]')).toHaveText('Our deadline');
+    const facts = detail.locator('[data-our-deadline]');
+    await expect(facts).toContainText('Certificate audit');
+    await expect(facts).toContainText('Sara Lindqvist');
+    await expect(facts).toContainText('Example Bank AB');
+
+    // Never in the calendar feed: a feed made now carries the regulatory dates and neither of these.
+    await page.getByRole('link', { name: 'Subscribe to calendar feed' }).click();
+    await expect(page).toHaveURL(/\/me\/calendar-feeds$/);
+    const answered = page.waitForResponse((r) => r.url().endsWith('/api/v1/calendar-feeds') && r.request().method() === 'POST' && r.ok());
+    await page.getByRole('button', { name: 'New feed' }).click();
+    const { feed } = (await (await answered).json()) as { feed: { id: string } };
+    const row = page.locator(`[data-feed-id="${feed.id}"]`);
+    try {
+      const shown = page.getByRole('dialog', { name: 'Copy this address into your calendar' });
+      const address = (await shown.locator('[data-feed-address]').innerText()).trim();
+      const served = await page.request.get(address);
+      expect(served.status()).toBe(200);
+      const ics = (await served.text()).replace(/\r\n[ \t]/g, '');
+      expect(ics).toContain('SUMMARY:In force: FI adopts amended rules on paying for investment research\r\n');
+      const compact = (offset: number) => seededDay(offset).toISOString().slice(0, 10).replaceAll('-', '');
+      for (const absent of [CERTIFICATE, 'Sara Lindqvist', compact(AUDIT_OFFSET), compact(EXPIRY_OFFSET)]) expect(ics).not.toContain(absent);
+      await shown.getByRole('button', { name: 'Done' }).click();
+      await expect(shown).toBeHidden();
+    } finally {
+      // Teardown that runs on failure too: a live address never outlives the attempt.
+      await page.goto('/me/calendar-feeds');
+      await expect(row).toBeVisible();
+      if ((await row.getByRole('button', { name: /^Revoke the feed created / }).count()) > 0) {
+        await row.getByRole('button', { name: /^Revoke the feed created / }).click();
+        const confirm = page.getByRole('dialog', { name: /^Revoke the feed created .+\?$/ });
+        await confirm.getByRole('button', { name: 'Revoke', exact: true }).click();
+        await expect(row.getByText('Revoked', { exact: true })).toBeVisible();
+      }
+    }
   });
 });

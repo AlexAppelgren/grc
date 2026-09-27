@@ -177,6 +177,23 @@ export function caseStatusLabel(category: CaseCategory, t: Translate): string {
   return t(CASE_STATUS_KEY[category]);
 }
 
+/** What a case's status reads from: its fixed category and the bank's own sub-status inside it, if any. */
+export interface CaseStatusFacts {
+  category: CaseCategory;
+  subStatus?: { key: string; label: string } | null;
+}
+
+/**
+ * The workflow status a header or a row shows: the bank's own sub-status label
+ * where the case carries one ("Waiting for legal" under assessing), the
+ * category's phrase otherwise. The key stays the category's, because a
+ * sub-status changes the words and never the tone or what a guard reads (CAS-S13).
+ */
+export function workflowStatusOf(caseFacts: CaseStatusFacts, t: Translate): VocabularyRef {
+  const label = caseFacts.subStatus?.label ?? caseStatusLabel(caseFacts.category, t);
+  return { key: caseFacts.category, label };
+}
+
 export function factsOfChange(row: ChangeRow, t: Translate): ChangeFacts {
   const urgency = rowUrgency(row);
   return {
@@ -185,7 +202,7 @@ export function factsOfChange(row: ChangeRow, t: Translate): ChangeFacts {
     flags: row.flags.map((flag) => ({ key: flag.ref.key, label: flag.ref.label })),
     suggested: isSuggested(row),
     machineConfirmed: isMachineConfirmed(row),
-    ...(row.case === null ? {} : { workflowStatus: { key: row.case.category, label: caseStatusLabel(row.case.category, t) } }),
+    ...(row.case === null ? {} : { workflowStatus: workflowStatusOf(row.case, t) }),
   };
 }
 

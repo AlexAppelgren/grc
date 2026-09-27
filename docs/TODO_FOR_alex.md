@@ -1190,6 +1190,7 @@ to confirm it, which `r1-close-and-readiness` rewords when it sets WAT-03 and WA
       Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
       note says only that each national body adopts the edition under its own
       reference. A person verifies them before the note names any.
+
 ## ai-log-read: a shared "So what?" reads each bank's own review state (2026-09-23, AUD-02)
 
 - [ ] **A library "So what?" in the AI log shows the reading bank's own review, not one
@@ -1266,21 +1267,6 @@ Nothing waits for these; each has the default the build took.
       cards still to be drawn above) is drawn: `design/screens/admin-footprint.html`, state 20.
       New string `footprint.noneFollowed`: "None followed." / "Ingen följs.".
 
-
-## lib-standard-e2e-seed: the first standard exists for tests and E2E only (2026-09-23, INV-08, FP-01)
-
-- [ ] Default taken until you answer "Legal, before any standard is seeded" above:
-      ISO/IEC 27001:2022 and its one conformance duty live in
-      `backend/apps/library/fixtures/e2e_standard.json`, which only `seed_e2e`
-      loads. `prototype_data.json`, which `seed_demo` loads, holds no standard,
-      and `check_prototype_data.py` refuses one there. The edition is titled by
-      its reference alone, never its official title, and the duty's wording is
-      ours. When you answer yes, moving the rows into the prototype fixture is
-      the whole change.
-- [ ] The instrument's national-adoptions note names no adoption reference: the
-      Nordic adoptions (SS-EN, DS/EN, NS-EN, SFS-EN) were never verified, so the
-      note says only that each national body adopts the edition under its own
-      reference. A person verifies them before the note names any.
 
 ## watch-standards: a standard's term needs a standards body, and publishers are not read (2026-09-23, WAT-07, D-45)
 
@@ -1474,6 +1460,22 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 
 ## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-103)
 
+         confirming agent for its own queue.
+
+## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-102)
+
+## c8-mywork-service: how long a linked change stays on My work (2026-09-25, HOM-05, D-25, D-97)
+
+- [ ] **A confirmed link keeps its change under "Changes on your items" while the
+      case is open.** D-25 puts the 14-day window (`MY_WORK_AWARE_DAYS`) on new
+      obligation versions; it says nothing about how long a linked change stays, so
+      the default taken is: for as long as the bank's case on it is open, unless its
+      key date brings it into "Due soon" first. Default if you say nothing: it stays
+      so. The alternative is the same 14 days from the day the link was confirmed,
+      after which the change drops off My work while the case is still open.
+
+## x-hardening-proposals: a correction now names its source (2026-09-25, H35, D-9x)
+
 - [ ] **The console's correction form gained one field.** A reviewer who changes a
       proposal's wording, date or scope before approving now gives "Source of your
       correction", the link or provision they read the new value in; the server refuses a
@@ -1504,3 +1506,119 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+
+## c9-signoff: evidence can leave a case while it waits for sign-off (2026-09-25)
+
+- [ ] **Should the approval re-check the evidence, or should evidence lock?** A sign-off
+      request needs no open action and one piece of evidence the scanner passed. While
+      the case waits, the actions lock (`c9-actions`, `actions_locked`), but nothing in
+      the plan locks the evidence: `removeEvidence` only sets `removed_at`, and a rescan
+      could mark a file infected. The approval then closes a case whose evidence is gone,
+      because the fixed guard on `signoff → closed` checks only the second person.
+      Default taken: no change, since the guards are fixed (CLAUDE.md section 5) and this
+      package does not own `state.py` or `evidence.py`. Two ways out: (a) `c9-evidence-b`
+      refuses `removeEvidence` with 409 `actions_locked`-style `evidence_locked` while
+      the case is in `signoff`, which mirrors the actions lock; or (b) the
+      `signoff → closed` edge also carries the `no_open_action` and `clean_evidence`
+      guards. The first keeps the state machine as designed; say which.
+## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
+
+- [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
+      second pass is FP-01 unchanged against the entry's terms, so an entry narrowed to
+      Trading sees a standard's records (ISO/IEC 27001) only when a Trading product names
+      that standard. Say if a narrowed entry should instead inherit every standard the bank
+      follows.
+- [ ] Default taken: a department brings its own products and those of every active unit
+      below it; a deactivated unit cuts its branch, and a retired product derives nothing.
+      An entry that names departments or products deriving no term reads nothing
+      (`entry_scope_empty`), and an entry the session cannot see, or one revoked, fails
+      closed the same way rather than reading the whole footprint.
+- [ ] Default taken: rejecting a reach request needs a passkey step-up like approving it,
+      and a reach request is never withdrawn (the requester's colleague rejects it).
+      Switching reach off needs one person and a step-up; on again takes a new request and
+      a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+
+## acc-principal-guard: how an agent access credential is fenced (2026-09-25, ACC-03, ACC-09)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **A token whose person loses a permission is refused, not revoked.** A personal
+      access token stops on the next request when its person is deactivated, leaves
+      the bank, or loses the permission behind any one of its scopes (`library.read`,
+      `search.use`, `roadmap.read`, `register.read`); it is refused whole rather than
+      narrowed. It is a check on every request, so if the person gets the permission
+      back the token works again until it expires. Default: so. The alternative is to
+      stamp the token revoked the first time the check fails.
+- [ ] **A session-only route answers a key or token with the fence's 403.** A key of
+      an agent access entry or a token that reaches a write or a step-up route which
+      takes only a person's session is answered 403 `read_only_credential` or
+      `step_up_required`, not 401, so every such route answers the same way whichever
+      auth it takes. A read it cannot use still answers 401.
+- [ ] **The rate-limit log.** Over `AGENT_ACCESS_RATE_PER_MINUTE` a credential gets 429,
+      and the first refusal of each minute writes one `credential_rate_limited` row in
+      the security log, not one per refused request, so a runaway agent cannot flood
+      the log.
+
+## c8-ui-support-console: what a support session can open in the browser (2026-09-25, TEN-06)
+
+- [ ] **A support session has no tenant screens yet.** Enter on `/console/support-access`
+      opens the support session and the screen then shows the read-only banner, the bank
+      and the end of the window, and Leave. It opens no tenant screen, because every one
+      of them starts with `GET /me`, which is not on the support session's route list
+      (`SUPPORT_READ_ROUTES`, `apps/shared/routes.py`), so it answers 403
+      `support_read_only`; the banner is also not yet mounted in the tenant shell. TEN-S6
+      proves the reads, the logged `support_access.read` rows, the 403 on a write and the
+      401 after a revoke with that session's own requests. Default if you say nothing: a
+      later package adds `GET /me` (the platform person's own profile and the bank's name,
+      nothing of its members) to the list under `tests_support_routes.py`'s review and
+      mounts the banner, so the allowed reads open in the tenant screens.
+- [ ] **The console's own list was built here.** `GET /console/support-access`
+      (`c8-support-access-console-list` in `CHUNK8_TASKS.md`) was in no R2 wave and still
+      answered 501, which the screen needs, so this package built it on that brief:
+      the own-grants policy, no bank active, the bank by name, no member ever named.
+
+## c8-ui-home-register: where Today's standing lines lead (2026-09-25, HOM-01, HOM-03)
+
+- [ ] **Each compliance category opens the inventory through one status key.** `GET /home`
+      counts per fixed category, but the inventory filters by one status key
+      (`complianceStatus`, c8-inventory-overlay). Default taken: a category's line opens
+      `/inventory?applicability=applies&complianceStatus=<key>` with the bank's system
+      status of that category (or the first it added, if the system row was retired). A
+      bank that adds a second status under a category sees the obligations in the system
+      one only. The alternative is a category filter on `GET /obligations`, a contract
+      change for another package.
+- [ ] **The open gaps open the whole gap list.** The count is gaps open or in
+      remediation, and `/gaps` filters by one status key, so "See the gaps" opens `/gaps`
+      unfiltered rather than a list that would hold fewer gaps than the count said.
+      Default if you say nothing: it stays so; a two-status filter on `/gaps` would make
+      it exact.
+
+## c11-proposal-batches-decide: deciding a batch row by row (2026-09-25, PRO-04, D-1xx)
+
+- [ ] **Who decides a re-tag batch an agent files.** Built: a second person holding
+      `proposals.review`, with a passkey, and never the proposer. An agent reviewer is
+      refused (409 `person_review_required`) and no API key reaches the route. Default if you
+      say nothing: it stays person-only.
+- [ ] **A large batch is slow to approve.** Each approved row re-indexes its obligation in the
+      same transaction, about 25 ms a row, so approving a full batch of 100 takes a couple of
+      seconds, over the 250 ms budget (a logged warning, not an error). Default if you say
+      nothing: it stays in one transaction, as PRO-02 asks; a background job is the change if
+      it is felt.
+
+## security-review-c8: two questions from the chunk 8 security review (2026-09-27)
+
+The review is `docs/reviews/CHUNK8_REVIEW.md`. Its medium findings are fixed; these two are
+policy, each built on a default you may overrule.
+
+- [ ] **A Statement of Applicability unit's title in the audit trail (HARDENING H50).** A unit's
+      reference and title are in the bank's own words and are written into the before and
+      after values of its audit rows, as a name. R2_CROSS_CUTTING (m) keeps a person's typed
+      text out of audit values and names no exception for a title. Default if you say nothing:
+      the next package in `apps/register` keeps the reference and names the title as edited,
+      as `updateGap` does for its typed fields. The alternative is to accept a record's own
+      name in its audit values, as org units, products and gaps' `subject_title` already are.
+- [ ] **Link rows deleted when a link ends (HARDENING H62).** `team_member`,
+      `licence_service_term` and `tenant_product_term` rows are deleted when a membership or a
+      link ends, each with its before and after in the audit row. Section 5 says nothing is
+      overwritten; R2_CROSS_CUTTING (l) lists actions, internal links and units as never
+      deleted and does not list these. Default: link rows may go, the audit keeps them.

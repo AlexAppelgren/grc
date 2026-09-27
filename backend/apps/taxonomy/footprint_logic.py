@@ -540,7 +540,9 @@ def _decide(
     request.version += 1
     request.preview = preview.model_dump(by_alias=True)
     request.save(update_fields=["status", "decided_by", "decided_at", "decision_note", "version", "preview"])
-    after: dict[str, Any] = {"status": status.value, "version": request.version, "note": note, "preview": request.preview}
+    # The note a person typed stays on the request row; the audit value carries no tenant
+    # text (CHUNK10_TASKS rule 13).
+    after: dict[str, Any] = {"status": status.value, "version": request.version, "preview": request.preview}
     record(
         action=action,
         actor=actor,

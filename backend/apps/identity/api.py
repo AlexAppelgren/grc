@@ -45,6 +45,7 @@ from apps.identity.schemas import (
     MemberInvite,
     MemberOut,
     MemberPatch,
+    MemberTeamsBody,
     MembersPage,
     MePatch,
     MEMBER_SESSIONS_EXAMPLE,
@@ -1003,6 +1004,49 @@ def update_member(request: HttpRequest, body: MemberPatch, user_id: uuid.UUID = 
     return MemberOut.model_validate(members_logic.member_detail(membership.tenant_id, membership.user_id, _order(request)))
 
 
+# c8-ten-teams-people (TEN-03, D-21): which teams a member is in, set on the member row.
+_TEAMS_MEMBER_ID = Path(
+    ...,
+    description=(
+        "The account identifier of a current member of the bank this session is signed in to, "
+        "the UUID `GET /tenant/members` lists as `userId`. A deactivated member, a member of "
+        "another bank or an unknown identifier all answer `unknown_member` alike."
+    ),
+)
+
+
+@router.put(
+    "/tenant/members/{user_id}/teams",
+    response=MemberOut,
+    auth=SessionAuth(),
+    operation_id="setMemberTeams",
+    by_alias=True,
+    summary="Put a member in the teams they work in",
+)
+@requires_permission(perms.MEMBERS_MANAGE)
+def set_member_teams(request: HttpRequest, body: MemberTeamsBody, user_id: uuid.UUID = _TEAMS_MEMBER_ID) -> MemberOut:
+    """Sets the whole set of teams a member is in and answers the member as they now stand,
+    their team keys included. A team can own work and take part in it, and its notices go to
+    the people in it, so this decides who hears about a team's work; what the team owns stays
+    with the team. Creating, renaming and retiring a team is the bank's `team` list at
+    `/vocab/team`.
+
+    Needs `members.manage` on a person's session in the bank; API keys cannot reach it. Writes
+    one audit event `member.teams_changed` per call, holding the member's team keys before and
+    after, even when nothing changed.
+
+    Errors: `unknown_member` (422) when the person is not a current member of this bank;
+    `unknown_key` (422) for a team the bank does not have, or a retired team the member is not
+    already in, and then nothing is saved; `validation_error` (422) for a missing `teams`, more
+    than 50 keys or a key over 80 characters; `permission_denied` (403) without
+    `members.manage`; `unauthenticated` (401) without a live session.
+    """
+    membership = members_logic.set_member_teams(
+        tenant=_tenant(request), actor=session_logic.actor_of(_actor_user(request)), user_id=user_id, keys=body.teams
+    )
+    return MemberOut.model_validate(members_logic.member_detail(membership.tenant_id, membership.user_id, _order(request)))
+
+
 @router.delete(
     "/tenant/members/{user_id}",
     response={204: None},
@@ -1024,9 +1068,14 @@ def deactivate_member(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> 
     `members.manage`, so the last one cannot be removed. Writes a "session_revoked" entry to
     the security log for each ended session, and the audit events `session.revoked` for each
     and `member.deactivated` with how many sessions and invitations were closed. Answers 204.
-    Removing someone already removed answers `not_found`.
+    Removing someone already removed answers `not_found`. A member who still owns work, takes
+    part in items or is in a team is refused and nothing changes: `GET
+    /tenant/members/{userId}/open-work` shows what they hold and `POST
+    /tenant/members/{userId}/remove` hands it on and removes them in one step.
 
-    Errors: `last_admin` (409) for the last member holding `members.manage`; `not_found`
+    Errors: `reassignment_required` (422) while the member holds work, listing in `errors`
+    each kind they hold as `field` with its `count`; `last_admin` (409) for the last member
+    holding `members.manage`; `not_found`
     (404) when the person is not a current member; `permission_denied` (403) without
     `members.manage`; `unauthenticated` (401) without a live session.
     """

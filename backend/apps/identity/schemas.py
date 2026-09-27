@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from django.conf import settings
 from pydantic import ConfigDict, Field, JsonValue, ModelWrapValidatorHandler, ValidationInfo, model_validator
@@ -297,7 +297,9 @@ class SessionTokens(CamelSchema):
             "other route answers 403 `enrolment_only` until a passkey is registered, and that "
             "registration replaces it with a full session. `full`: a normal signed-in session "
             "with the person's own permissions in their bank, or on the platform for platform "
-            "staff."
+            "staff. `support`: platform support reading one bank under a grant the bank approved; it "
+            "reaches the reads the grant allows and nothing else, answering 403 "
+            "`support_read_only` anywhere else and 401 `support_access_ended` once the grant ends."
         )
     )
     expires_in: int = Field(
@@ -1048,12 +1050,24 @@ class MeTenant(CamelSchema):
     )
 
 
-class MeCounts(CamelSchema):
-    """The queue counts behind Today's "Decide now" panel: three independent reads, each
-    filtered by the caller's own permissions rather than refused, so a reader without a
-    permission sees a true zero and not a 403 that would take the whole panel away."""
+class MeDepartment(CamelSchema):
+    """A department the caller heads (TEN-02, HOM-05, D-21): a business area, business unit or
+    function of the bank whose head is the caller."""
 
-    # HOM-01, D-23.
+    id: uuid.UUID = Field(description="The department's identifier, a UUID of this bank's organisation, as `GET /tenant/org-units` lists it.")
+    name: str = Field(description="The department's name as the bank wrote it, such as `Retail Banking`, for display only.")
+
+
+class MeCounts(CamelSchema):
+    """The queue counts behind Today's "Decide now" panel: eight independent reads, each
+    filtered by the caller's own permissions rather than refused, so a reader without a
+    permission sees a true zero and not a 403 that would take the whole panel away. The four
+    decision counts (sign-offs, risk acceptances, support access requests and tenant reach
+    requests) count only what the caller may decide: a request the caller made themselves is
+    never counted, because four eyes would refuse them. There is no applicability count:
+    applicability is set by one person and never requested (D-75)."""
+
+    # HOM-01, D-23; x-decide-now-counts: CAS-06, REG-03, TEN-06, ACC-08.
 
     triage: int = Field(
         ge=0,
@@ -1087,6 +1101,42 @@ class MeCounts(CamelSchema):
             "more. Every member reads their own, so no permission is needed."
         ),
         examples=[4],
+    )
+    signoffs: int = Field(
+        ge=0,
+        description=(
+            "How many of this bank's cases wait for a sign-off (status `signoff`) that someone "
+            "other than the caller asked for, 0 or more. 0 without `cases.signoff`; a case the "
+            "caller sent for sign-off is never counted, because they may not sign it off."
+        ),
+        examples=[1],
+    )
+    risk_acceptances: int = Field(
+        ge=0,
+        description=(
+            "How many of this bank's gaps have a risk acceptance waiting for approval, asked "
+            "for by someone other than the caller, 0 or more. Only a gap still open or being "
+            "remediated counts. 0 without `risk.accept.approve`."
+        ),
+        examples=[2],
+    )
+    support_access_requests: int = Field(
+        ge=0,
+        description=(
+            "How many requests from platform support to read this bank are pending: asked "
+            "for, not yet approved or declined, and not lapsed. 0 or more, and 0 without "
+            "`security.manage`."
+        ),
+        examples=[1],
+    )
+    tenant_reach_requests: int = Field(
+        ge=0,
+        description=(
+            "How many requests to switch on tenant reach wait for a decision, asked for by "
+            "someone other than the caller: 0 or 1, since a bank has at most one pending. 0 "
+            "without `security.manage`."
+        ),
+        examples=[0],
     )
 
 
@@ -1220,7 +1270,7 @@ class Me(CamelSchema):
                     "enrolmentPending": False,
                     "passkeyCount": 2,
                     "stepUpValidUntil": None,
-                    "counts": {"triage": 3, "proposals": 2, "assignedToMe": 1, "unreadNotifications": 4},
+                    "counts": {"triage": 3, "proposals": 2, "assignedToMe": 1, "unreadNotifications": 4, "signoffs": 1, "riskAcceptances": 2, "supportAccessRequests": 1, "tenantReachRequests": 0},
                     "lastVisitAt": "2026-09-18T07:00:00Z",
                     "notificationPrefs": {
                         "weeklyDigest": True,
@@ -1229,6 +1279,7 @@ class Me(CamelSchema):
                         "assignments": True,
                         "weeklyBriefing": True,
                     },
+                    "headOf": [{"id": "5b1d7c2e-8f3a-4d6b-9c0e-2a4f6b8d0c1e", "name": "Retail Banking"}],
                 }
             ]
         }
@@ -1306,8 +1357,8 @@ class Me(CamelSchema):
     counts: MeCounts | None = Field(
         description=(
             "The caller's own queue counts for 'Decide now', or null for a platform session, "
-            "which has no tenant to count against. Each of the three counts is 0 rather than "
-            "refused when the caller's permissions do not unlock it."
+            "which has no tenant to count against. Each count is 0 rather than refused when "
+            "the caller's permissions do not unlock it."
         )
     )
     last_visit_at: datetime | None = Field(
@@ -1324,6 +1375,15 @@ class Me(CamelSchema):
             "What the person has chosen to be told about in this bank, each switch on unless "
             "they turned it off, or null for a platform session, which belongs to no bank. "
             "`PATCH /me` changes it."
+        )
+    )
+    head_of: list[MeDepartment] = Field(
+        description=(
+            "The active departments of this bank the caller is the head of, by name: the business "
+            "areas, business units and functions an administrator named them head of on the "
+            "organisation screen. A legal entity or a group is never a department. My work offers "
+            "a department view for each. Empty for someone who heads none, for a platform session "
+            "and for an enrolment session."
         )
     )
 
@@ -1456,6 +1516,7 @@ _EXAMPLE_MEMBER: dict[str, JsonValue] = {
     "lastSeenAt": "2026-09-22T06:58:04Z",
     "passkeyCount": 2,
     "activeSessions": 1,
+    "teams": ["compliance"],
 }
 _EXAMPLE_INVITATION: dict[str, JsonValue] = {
     "id": "7d2e9b14-6a3c-4f58-b1d0-3e8c5a7f2b96",
@@ -1613,6 +1674,16 @@ class MemberOut(CamelSchema):
             "`GET /tenant/members/{user_id}/sessions`."
         )
     )
+    teams: list[str] = Field(
+        description=(
+            "The keys of the bank's teams the person is in, in the team list's order, such as "
+            "`compliance`; empty when they are in none. Each is a row of the bank's own `team` "
+            "vocabulary, which an administrator may extend, so read the labels from "
+            "`GET /vocab/team` and never match on a label. A deactivated member keeps the teams "
+            "they were in until their removal ends them. `PUT /tenant/members/{user_id}/teams` "
+            "sets them."
+        )
+    )
 
 
 class MembersPage(CamelSchema):
@@ -1687,6 +1758,24 @@ class MemberPatch(CamelSchema):
             "The member's new job title in this bank, at most 200 characters, surrounding spaces "
             "trimmed; an empty string clears it. Leave it out, or send null (the default), to keep "
             "it as it is. Changing only the title needs no step-up."
+        ),
+    )
+
+
+class MemberTeamsBody(WriteBody):
+    """`PUT /tenant/members/{user_id}/teams`: the whole set of teams a member is in."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"teams": ["compliance", "retail-compliance"]}]})
+
+    teams: list[Annotated[str, Field(max_length=80)]] = Field(
+        max_length=50,
+        description=(
+            "The keys of every team the member is to be in, at most 50 keys of at most 80 "
+            "characters each, such as `compliance`; the set replaces the old one, a key named "
+            "twice counts once and an empty list takes the member out of every team. Each is a "
+            "key of the bank's own `team` vocabulary (`GET /vocab/team`), which an administrator "
+            "may extend. A key the bank does not have, or a retired team the member is not "
+            "already in, is refused with `unknown_key`; a retired team they are in may be kept."
         ),
     )
 
@@ -1925,8 +2014,8 @@ class PermissionOut(CamelSchema):
 _TENANT_KEY_SCOPES_TEXT = (
     "`library:read` reads the shared library's instruments, provisions and obligations; "
     "`search:read` searches it; `upcoming:read` reads the public regulatory dates coming up; "
-    "`tenant:read` is set aside for reading the bank's own profile, and no route reads with it "
-    "yet; and `proposals:write` files a proposal to the shared library, which changes nothing "
+    "`tenant:read` reads the bank's register only as an agent access entry, so a key bound to "
+    "no entry holds it to no effect; and `proposals:write` files a proposal to the shared library, which changes nothing "
     "until someone independent approves it. No scope "
     "writes a library record. `agent-runs:write`, `sources:write`, `changes:write` and "
     "`proposals:review` belong to the platform's own agents and are refused on a bank's key."

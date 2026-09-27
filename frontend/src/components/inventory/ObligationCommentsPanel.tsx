@@ -1,8 +1,9 @@
 'use client';
 
-// The comment thread on the obligation (COL-01); filled by c10-fe-comments-panel.
-// ObligationScreen mounts it once, at its place in design/screens/tenant-obligation.html;
-// the panel's own package fills this file and never edits the page. Until then it renders nothing.
-export function ObligationCommentsPanel({ obligationId: _obligationId }: { obligationId: string }) {
-  return null;
+import { CommentsPanel } from '@/features/collab/CommentsPanel';
+
+// The comment thread on the obligation (COL-01). The comments are the bank's own,
+// kept in its tenant zone, on the shared library record.
+export function ObligationCommentsPanel({ obligationId }: { obligationId: string }) {
+  return <CommentsPanel subject={{ subjectType: 'obligation', subjectId: obligationId }} />;
 }

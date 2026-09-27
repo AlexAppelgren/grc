@@ -55,6 +55,9 @@ GAPS_EDIT = "gaps.edit"  # compliance officer, owner
 APPLICABILITY_APPROVE = "applicability.approve"  # compliance officer, approver
 RISK_ACCEPT_APPROVE = "risk.accept.approve"  # compliance officer, approver
 PROPOSALS_CREATE = "proposals.create"  # compliance officer
+# The bank's own queue (INV-07, OWN-03; D-57, ADR 0050): approve or reject a proposal of the
+# bank's own record. A tenant permission and never a platform grant or an API key scope.
+PRIVATE_RECORDS_APPROVE = "private_records.approve"  # compliance officer, approver
 EXPORTS_CREATE = "exports.create"  # admin, compliance officer, approver, auditor
 AI_LOG_READ = "ai_log.read"  # admin, compliance officer, approver, auditor
 MEMBERS_MANAGE = "members.manage"  # admin
@@ -103,6 +106,7 @@ TENANT_PERMISSIONS: frozenset[str] = frozenset(
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
+        PRIVATE_RECORDS_APPROVE,
         EXPORTS_CREATE,
         AI_LOG_READ,
         MEMBERS_MANAGE,
@@ -133,7 +137,7 @@ ALL_PERMISSIONS: frozenset[str] = TENANT_PERMISSIONS | PLATFORM_PERMISSIONS
 # Four eyes applies to every approve permission: never the requester (PRD §6). Not to
 # `applicability.approve`: one person sets applicability after a confirmation (D-75).
 APPROVE_PERMISSIONS: frozenset[str] = frozenset(
-    {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW}
+    {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW, PRIVATE_RECORDS_APPROVE}
 )
 
 # ---------------------------------------------------------------------------------------
@@ -183,6 +187,7 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
         PROPOSALS_CREATE,
+        PRIVATE_RECORDS_APPROVE,
         EXPORTS_CREATE,
         AI_LOG_READ,
         VOCAB_MANAGE,
@@ -197,6 +202,7 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
         CASES_SIGNOFF,
         APPLICABILITY_APPROVE,
         RISK_ACCEPT_APPROVE,
+        PRIVATE_RECORDS_APPROVE,
         EXPORTS_CREATE,
         AI_LOG_READ,
     },
@@ -291,6 +297,7 @@ PERMISSION_DESCRIPTIONS: dict[str, str] = {
     APPLICABILITY_APPROVE: "Set whether an obligation applies, after confirming it.",
     RISK_ACCEPT_APPROVE: "Approve a risk acceptance requested by someone else.",
     PROPOSALS_CREATE: "Propose a change to the shared library.",
+    PRIVATE_RECORDS_APPROVE: "Approve or reject a proposal of the organisation's own records, filed by someone else.",
     EXPORTS_CREATE: "Create exports.",
     AI_LOG_READ: "Read the AI generation log.",
     MEMBERS_MANAGE: "Invite, change and deactivate members; re-issue enrolment; revoke sessions.",
@@ -361,6 +368,8 @@ _PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the who
 # c10-collab-contract.
 _SELF_NOTIFICATIONS = "Acts only on the caller's own notification rows; no parameter reaches another person's (COL-02)."
 _SELF_MY_COMMENTS = "Returns the caller's own comments and mentions, filtered afterwards by each subject's read permission (COL-01)."
+_LOGIC_MY_WORK = "Any member's session opens My work, their own or any department's; the service applies register.read to register entries and internal items and cases.read to cases, row by row and count by count, and names a kind it left out in permissionLimited rather than refusing the page (HOM-05, D-23). The department view is a filter and never a grant."
+_LOGIC_CASE_PARTICIPANT_REMOVAL = "A person may always leave their own participation in a case; removing anyone else's needs cases.contribute, which the logic checks on the row (D-19, COL-04)."
 _LOGIC_COMMENT_SUBJECT = "The gate is the read permission of the subject's kind, which `collab/subjects.py` decides per record; the write also needs `comments.write` (COL-01)."
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
@@ -510,6 +519,20 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
     ("GET", "/calendar/feed.ics"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
 
+    # c10-collab-contract (chunk 10, COL-01, COL-02, HOM-05). The three inbox routes and
+    # GET /me/comments act on the caller's own rows; the comment reads and writes are gated
+    # per record by the subject registry (collab/subjects.py). PATCH and DELETE
+    # /comments/{comment_id} carry comments.write and are not listed here.
+    ("GET", "/notifications"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("POST", "/notifications/{notification_id}/read"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("POST", "/notifications/read-all"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
+    ("GET", "/me/comments"): Ungated(UngatedReason.SELF, _SELF_MY_COMMENTS),
+    ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+    ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+
+    # c8-mywork-routes (chunk 8, HOM-05).
+    ("GET", "/me/work"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_MY_WORK),
+
     # c8-tenants-contract (TEN-02, TEN-03, TEN-06, COL-04). The bank's organisation, its teams
     # and who from the platform may look in are read by every member: the pickers, the
     # department view and the Support access panel need them. Writes keep their permission.
@@ -528,16 +551,11 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         "pickers need the bank's active members, as ids and names only; `GET /tenant/members` "
         "stays under members.manage (COL-04, TEN-03).",
     ),
-    # c10-collab-contract (chunk 10, COL-01, COL-02, HOM-05). The three inbox routes and
-    # GET /me/comments act on the caller's own rows; the comment reads and writes are gated
-    # per record by the subject registry (collab/subjects.py). PATCH and DELETE
-    # /comments/{comment_id} carry comments.write and are not listed here.
-    ("GET", "/notifications"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
-    ("POST", "/notifications/{notification_id}/read"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
-    ("POST", "/notifications/read-all"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
-    ("GET", "/me/comments"): Ungated(UngatedReason.SELF, _SELF_MY_COMMENTS),
-    ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
-    ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+    # c9-case-participants (chunk 9, COL-04, CAS-03). Listing and adding carry cases.read and
+    # cases.contribute; removal is gated in logic, because leaving needs no permission.
+    ("DELETE", "/changes/{change_id}/participants/{participant_id}"): Ungated(
+        UngatedReason.LOGIC_GATE, _LOGIC_CASE_PARTICIPANT_REMOVAL
+    ),
 }
 
 

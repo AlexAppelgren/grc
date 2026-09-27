@@ -62,6 +62,22 @@ COMMENT_WRITES = [
     ("deleteComment", "delete", f"/api/v1/comments/{THING}", None),
 ]
 ROUTES = READS + OWN_WRITES + COMMENT_WRITES
+# c10-inbox-and-my-comments: what a built route answers a member past every gate (THING is
+# nobody's notification, so marking it is 404).
+BUILT = {"listNotifications": 200, "markNotificationRead": 404, "markAllNotificationsRead": 204, "listMyComments": 200}
+
+# What a landed module answers a session past every gate, instead of the stub's 501: the
+# comments (c10-comments-mentions) name a record, or a comment, this bank does not hold.
+LANDED: dict[str, tuple[int, str]] = {
+    "listComments": (404, "not_found"),
+    "addComment": (404, "not_found"),
+    "editComment": (404, "not_found"),
+    "deleteComment": (404, "not_found"),
+}
+
+
+def _answer(name: str) -> tuple[int, str]:
+    return LANDED.get(name, (501, "not_built"))
 
 
 def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
@@ -124,7 +140,7 @@ class CollabRouteGates(TestCase):
         with self._member(set()):
             for name, method, url, body in READS + OWN_WRITES:
                 with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, 501)
+                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, BUILT.get(name, _answer(name)[0]))
 
     def test_a_platform_session_belongs_to_no_bank_and_gets_404(self) -> None:
         with stub_session(user_principal(permissions={perms.COMMENTS_WRITE}, subject_id=self.person.id)):
@@ -164,15 +180,22 @@ class CollabRouteGates(TestCase):
             for name, method, url, body in ROUTES:
                 with self.subTest(operation=name):
                     response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 501)
-                    self.assertEqual(response.json()["code"], "not_built")
+                    if name in BUILT:
+                        self.assertEqual(response.status_code, BUILT[name])
+                        continue
+                    self.assertEqual((response.status_code, response.json()["code"]), _answer(name))
                     self.assertEqual(response.headers["Content-Type"], "application/problem+json")
                     self.assertNotIn("traceback", response.content.decode().lower())
 
 
 class CollabContractShape(TestCase):
     def test_the_eight_operations_are_published_with_their_ids_and_gates(self) -> None:
-        collab = {op.operation_id: op for op in iter_operations(api) if op.view_func.__module__ == "apps.collab.api"}
+        # The participant routes (c8-participants) are gated and pinned in tests_participants.py.
+        collab = {
+            op.operation_id: op
+            for op in iter_operations(api)
+            if op.view_func.__module__ == "apps.collab.api" and "/participants" not in op.path
+        }
         self.assertEqual(set(collab), {name for name, _, _, _ in ROUTES})
         gated = {name for name, op in collab.items() if perms.gate_of(op.view_func) is not None}
         self.assertEqual(gated, {"editComment", "deleteComment"})

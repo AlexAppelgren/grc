@@ -1,11 +1,12 @@
 """Routes of the home app: auth class, permission or scope, step-up where playbook 4.2
 lists the action, no business logic (playbook 4.1).
 
-Nine operations, all nine declared here at once, each calling a named function in the module
+Nine operations were declared here at once, each calling a named function in the module
 that owns it. Declaring the whole contract first was deliberate: the four screens and the
 newsletter agent were built against it while the logic was still arriving, and a screen that
 calls a stub is better than a screen built against a shape nobody committed to. All nine are
-built now, so nothing here answers 501 any more.
+built now, so nothing here answers 501 any more. The tenth, `GET /me/work`, arrived in R2
+with the service it calls (`apps/home/my_work.py`, HOM-05, D-23).
 
 The four calendar-feed operations serve the shape D-52 and ADR 0045 decided: the address is
 `/api/v1/calendar/feed.ics?token=<prefix>.<secret>`, a person keeps at most
@@ -28,6 +29,11 @@ gates listed in `UNGATED_BY_DESIGN` and still answer the structured 403 with
   prints the route without the query while a hosting edge writes whole request lines
   (D-52, ADR 0045; the one named exception to CONVENTIONS 3.6). Unknown, malformed, revoked
   and expired tokens leave it by one refusal, so nothing about a token can be probed.
+
+`GET /me/work` is a third logic gate, of another shape: any member's session opens it, and
+the service applies each record's own read permission to every row and every count, naming
+the kinds left out in `permissionLimited`. A single permission would take a person's whole
+page away over one kind of record they may not read (D-23).
 
 `GET /upcoming` is served by `apps/home/calendar.py` and the four subscription
 operations by `apps/home/feed.py`: one reads library records and writes nothing, the other
@@ -55,7 +61,7 @@ from ninja import Path, Query, Router
 from apps.home import briefing as briefing_reads
 from apps.home import calendar as calendar_reads
 from apps.home import feed as feed_logic
-from apps.home import logic, roadmap
+from apps.home import logic, my_work, roadmap
 from apps.home.schemas import (
     FEED_TOKEN_MAX,
     UPCOMING_ITEM_EXAMPLE,
@@ -65,6 +71,8 @@ from apps.home.schemas import (
     HomeCalendarFeed,
     HomeCalendarFeedCreated,
     HomeCalendarFeedInput,
+    HomeWorkPage,
+    HomeWorkQuery,
     HomeRoadmap,
     HomeRoadmapQuery,
     HomeUpcomingItem,
@@ -175,14 +183,13 @@ def get_home(request: HttpRequest) -> Any:
     A read: it changes nothing and writes no audit row. A person's session holding
     `roadmap.read`, which every system role holds. Each panel is filtered by the reader's own
     permissions rather than the page being refused: a reader without `watch.read` gets a 200
-    with `lead` and `sources` null and sees the rest. What is dated and what leads are
-    filtered by the bank's regulatory scope (FP-03); the library half of every row is the same
-    for every bank and the case half never leaves this one.
+    with `lead` and `sources` null, and one without `register.read` with `standing` null and
+    no register deadline in `comingUp`, and sees the rest. What is dated, what leads and what
+    is counted in `standing` are filtered by the bank's regulatory scope (FP-03); the library
+    half of every row is the same for every bank and the bank's half never leaves this one.
 
-    Two panels of the design are answered elsewhere on purpose. What needs a decision is the
-    `counts` object on `GET /me` (D-23), so one number has one source. The compliance standing
-    arrives with the obligation register in a later chunk, because "0 gaps" before a register
-    exists is a false statement about the bank.
+    What needs a decision is answered elsewhere on purpose: it is the `counts` object on
+    `GET /me` (D-23), so one number has one source.
 
     `comingUp` is the first rows of `GET /roadmap` with no filter and `roadmapCount` is how
     many that read holds in all, both from the one roadmap query, so the panel can never name
@@ -200,6 +207,8 @@ def get_home(request: HttpRequest) -> Any:
         tenant,
         language_order(request, tenant=tenant),
         watch_reader=who.has_permission(perms.WATCH_READ),
+        register_reader=who.has_permission(perms.REGISTER_READ),
+        cases_reader=who.has_permission(perms.CASES_READ),
     )
 
 
@@ -297,9 +306,9 @@ def get_briefing(request: HttpRequest, week_start: datetime.date = Path(..., des
 @requires_permission(perms.ROADMAP_READ)
 @answers_problems
 def get_roadmap(request: HttpRequest, query: Query[HomeRoadmapQuery]) -> Any:
-    """The bank's calendar of regulation: every dated change it has open work on, earliest
-    first, with the quarter keys the screen draws its roster from. Call it for the roadmap
-    page, and with `from` and `to` to look at one window.
+    """The bank's calendar of regulation: every dated change it has open work on and every
+    deadline of its own, earliest first, with the quarter keys the screen draws its roster
+    from. Call it for the roadmap page, and with `from` and `to` to look at one window.
 
     A read: it changes nothing and writes no audit row. A person's session holding
     `roadmap.read`, which every system role holds. What is listed respects the bank's
@@ -307,16 +316,22 @@ def get_roadmap(request: HttpRequest, query: Query[HomeRoadmapQuery]) -> Any:
     person looks outside the scope. Each row carries library facts beside this bank's own case
     status, so two banks reading the same reform see the same date and different work.
 
-    An item is here while all three are true: the bank's case for the change is open (a
-    `closed` or `dismissed` case has left), the change is inside the bank's regulatory scope,
-    and its date is today or later in the bank's own time zone. A date that has gone leaves
-    the roadmap and stays on the change itself, so a `from` earlier than the bank's today
-    widens nothing. The quarter key on every item is computed in that same time zone, which
+    A regulatory item is here while all three are true: the bank's case for the change is
+    open (a `closed` or `dismissed` case has left), the change is inside the bank's regulatory
+    scope, and its date is today or later in the bank's own time zone; a date the source
+    stated as a month, a quarter or a year stays until that period has ended. The bank's own
+    deadlines, each with its owner, are the next reviews of register entries and entity rows
+    that are not marked as not applying, the target dates of open or remediating gaps and the
+    open occurrences of recurring duties, on obligations inside the regulatory scope and only
+    for a reader holding `register.read`; an open in-scope case's internal deadline and the due
+    dates of its actions that are neither done nor removed, only for a reader holding
+    `cases.read`; and a certificate's expiry and next audit until its licence row is
+    withdrawn. A date that has gone leaves the roadmap and stays on the change itself, so a
+    `from` earlier than the bank's today widens nothing. The quarter key on every item is computed in that same time zone, which
     is why two banks an hour apart can open the same day in two quarters.
 
     A window with nothing in it is a 200 with an empty `items` and an empty `quarters`, never
-    a 404, and `kind=internal` answers the same way in this release because the branches that
-    produce the bank's own deadlines have not shipped yet.
+    a 404.
 
     The whole window is answered at once rather than paged, because the screen draws a roster
     of every quarter ahead; narrow it with `from` and `to` rather than by paging.
@@ -328,7 +343,62 @@ def get_roadmap(request: HttpRequest, query: Query[HomeRoadmapQuery]) -> Any:
     `kind`, `from` and `to` when it seems to have no effect.
     """
     tenant = caller_tenant(request)
-    return roadmap.roadmap_items(tenant, language_order(request, tenant=tenant), query)
+    return roadmap.roadmap_items(
+        tenant,
+        language_order(request, tenant=tenant),
+        query,
+        register_reader=principal(request).has_permission(perms.REGISTER_READ),
+        cases_reader=principal(request).has_permission(perms.CASES_READ),
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# My work (HOM-05, COL-01, COL-04, D-23, D-24, D-25, D-97)
+# ---------------------------------------------------------------------------------------
+@router.get(
+    "/me/work",
+    response=HomeWorkPage,
+    auth=SESSION,
+    operation_id="getMyWork",
+    by_alias=True,
+    summary="See what you are responsible for or take part in",
+)
+@answers_problems
+def get_my_work(request: HttpRequest, query: Query[HomeWorkQuery]) -> Any:
+    """My work: every record the caller, or one of the caller's teams, is responsible for or
+    takes part in, in four sections: overdue, due soon, changes on your items and everything
+    else. With `scope=unit` it is the same list for a department: what the teams of that
+    organisation unit and of every unit below it, and those teams' active members, are
+    responsible for or take part in, each row naming who. Call it for the My work page.
+
+    A read: it changes nothing and writes no audit row. Any person's session in a bank; no API
+    key reaches it. The department view is a filter and never a grant: any member may open any
+    department. Every row and every count is filtered by the reader's own permissions, register
+    entries and internal items by `register.read` and cases by `cases.read`, and a kind left
+    out is named in `permissionLimited`, so the page never answers 403 as a whole. The bank's
+    regulatory scope hides nothing here: a person never loses sight of their own items when the
+    scope narrows (D-24). Decisions waiting for the caller are counted on `GET /me`, not here.
+
+    "Changes on your items" holds open cases on a change with a confirmed link to a record on
+    the list, confirmed by a person or by an agent independent of the one that suggested it
+    (D-97); new versions of an obligation on the list, and comments on a record on the list,
+    mentions included, from the last `MY_WORK_AWARE_DAYS` days (14 by default). The caller's
+    own confirmations, approvals and comments never appear there, and neither does a link
+    nobody confirmed. A comment is shown as the day it was written, never its text.
+
+    Pages with `limit` and `offset`, 20 rows by default and 100 at most; `bucket` keeps one
+    section, while `counts` always covers all four. Nothing to do is a 200 with an empty
+    `items` and zero counts.
+
+    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
+    finish enrolling, `not_found` for a platform session, which belongs to no bank, and for a
+    `unit` the bank does not have, and `validation_error` for `scope=unit` without a `unit`,
+    `scope=mine` with one, a `bucket` other than the four, or a `limit` outside 1 to 100.
+    """
+    # Ungated by design: logic-gate (each record kind's read permission, applied per row).
+    tenant = caller_tenant(request)
+    caller_user(request)
+    return my_work.page(tenant, principal(request), language_order(request, tenant=tenant), query)
 
 
 # ---------------------------------------------------------------------------------------

@@ -23,6 +23,7 @@ from apps.shared.permissions import (
     APPROVE_PERMISSIONS,
     CASES_SIGNOFF,
     FOOTPRINT_APPROVE,
+    PRIVATE_RECORDS_APPROVE,
     PROPOSALS_REVIEW,
     RISK_ACCEPT_APPROVE,
 )
@@ -39,6 +40,9 @@ FOUR_EYES_TABLES: list[tuple[str, str]] = [
     # c8-register-models (register 0002, REG-03): risk acceptance. The person who accepts a
     # gap's risk is never the person who asked for it.
     ("gap", "gap_four_eyes"),
+    # acc-scope-and-reach (governance 0004, ACC-08): tenant reach is requested by one person
+    # holding security.manage and approved or rejected by another.
+    ("tenant_reach_request", "tenant_reach_request_four_eyes"),
 ]
 
 # PRO-04 (proposals 0008): a batch's parent is a `proposal` row, so `proposal_four_eyes`
@@ -72,7 +76,9 @@ class FourEyesGuard(TestCase):
     def test_the_approve_permissions_are_exactly_the_prd_list(self) -> None:
         self.assertEqual(
             APPROVE_PERMISSIONS,
-            {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW},
+            # PRIVATE_RECORDS_APPROVE decides a bank's own proposal on the same `proposal` row, so
+            # `proposal_four_eyes` above is its constraint too (D-57, d89-proposal-owner).
+            {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW, PRIVATE_RECORDS_APPROVE},
         )
         # One person sets applicability after a confirmation dialog, no second approver (D-75).
         self.assertNotIn(APPLICABILITY_APPROVE, APPROVE_PERMISSIONS)

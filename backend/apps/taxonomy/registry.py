@@ -4,9 +4,13 @@ columns exposed as `extra{}`, how usage is counted and how a merge re-points. Ad
 list is adding an entry; the routes, the screen component and the agents' vocabulary
 read need no change (AC-VOC1).
 
-A library list names its `links`: every library and watch column that holds one of its
-values. The usage count and the merge's re-point both read them, so a list counts
-exactly the records a merge would move. This module reads only: the writes that re-point
+Every list something references names its `links`: each library and watch column that
+holds one of a library list's values, and each register, organisation and collaboration
+column that holds one of a tenant list's. The usage count and the merge's re-point both
+read them, so a list counts exactly the records a merge would move. An append-only
+ledger (a compliance assessment) is history, so it neither counts nor moves: it keeps the
+value it named, which stays resolvable because a merged-away value is retired, never
+deleted. This module reads only: the writes that re-point
 rows live in apps/taxonomy/repoint.py (tenant rows), apps/proposals/apply.py (library
 rows) and apps/watch/write.py (watch rows), so the library fence's AST heuristic sees no
 write beside a library model's name.
@@ -20,7 +24,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from typing import Any
 
-from django.db.models import Count, IntegerField, OuterRef, QuerySet, Subquery, Value
+from django.db.models import Count, IntegerField, OuterRef, Q, QuerySet, Subquery, Value
 from django.db.models.functions import Coalesce
 
 from apps.library.models import (
@@ -35,8 +39,11 @@ from apps.library.models import (
     ObligationTag,
     Provision,
 )
+from apps.collab.models import Participant
+from apps.register.models import Gap, TenantObligation, TenantObligationScope
 from apps.taxonomy import repoint
 from apps.taxonomy.repoint import Link, Moves
+from apps.tenants.models import InternalItem, Licence, TeamMember
 from apps.watch.models import ChangeTerm, RegulatoryChange, Source
 from apps.taxonomy.models import (
     CaseStatusCategory,
@@ -86,6 +93,7 @@ from apps.taxonomy.models import (
     RiskRatingLabel,
     SourceKind,
     SourceKindLabel,
+    Tagging,
     TenantTag,
     TenantTagLabel,
     TermDimension,
@@ -119,7 +127,7 @@ def _uses(*links: Link) -> Callable[[QuerySet[Any]], QuerySet[Any]]:
     GROUP BY over the list, so a join through one table cannot multiply another's count."""
 
     def per_table(link: Link) -> Coalesce:
-        rows = link.model._default_manager.filter(**{link.field: OuterRef("pk")}).order_by().values(link.field)
+        rows = link.rows().filter(**{link.field: OuterRef("pk")}).order_by().values(link.field)
         return Coalesce(Subquery(rows.annotate(uses=Count("pk")).values("uses")), 0)
 
     def annotate(queryset: QuerySet[Any]) -> QuerySet[Any]:
@@ -149,7 +157,8 @@ class VocabularyList:
     usage: Callable[[QuerySet[Any]], QuerySet[Any]] = _no_usage
     repoint: Callable[..., Moves] = repoint.nothing_to_repoint  # (source, target, *, dry_run) -> ids moved and dropped per table
     references: dict[str, str] = field(default_factory=dict)  # extra field -> related list
-    links: tuple[Link, ...] = ()  # library lists: every library and watch column holding a value
+    links: tuple[Link, ...] = ()  # every column holding a value, which the usage count and the merge read
+    open_work: Callable[[Any], dict[str, int]] | None = None  # tenant lists: the open work a row owns, per table
 
     @property
     def is_library(self) -> bool:
@@ -163,6 +172,42 @@ def _values(kind: type[Any]) -> tuple[str, ...]:
 def _library(entry: VocabularyList, *links: Link) -> VocabularyList:
     """A library list counted and merged through `links`."""
     return replace(entry, usage=_uses(*links), repoint=repoint.library_links(links), links=links)
+
+
+def _tenant(entry: VocabularyList, *links: Link) -> VocabularyList:
+    """A tenant list counted and merged through `links` (VOC-02, H32)."""
+    return replace(entry, usage=_uses(*links), repoint=repoint.tenant_links(links), links=links)
+
+
+# Every register, organisation and collaboration row a team is named on (TEN-03, COL-04):
+# as the owner, as a member's team, or as a live participant. A person in both teams of a
+# merge stays in the one kept, and a team taking part in a record beside the team it is
+# merged into is stamped removed there, never deleted.
+TEAM_LINKS = (
+    Link(TenantObligation, "owner_team"),
+    Link(TenantObligationScope, "owner_team"),
+    Link(Gap, "owner_team"),
+    Link(Licence, "owner_team"),
+    Link(InternalItem, "owner_team"),
+    Link(TeamMember, "team", ("user",)),
+    Link(Participant, "team", ("tenant_obligation", "case", "user"), removable=True),
+)
+# What a team owns that is still open: a register entry and an entity row while they
+# exist, a gap until it is closed, a licence until it is withdrawn, an internal item while
+# it is active. A retired team would own it with nobody to pick it up.
+TEAM_OPEN_WORK: tuple[tuple[type[Any], Q], ...] = (
+    (TenantObligation, Q()),
+    (TenantObligationScope, Q()),
+    (Gap, ~Q(status__kind=GapCategory.CLOSED.value)),
+    (Licence, Q(withdrawn_on__isnull=True)),
+    (InternalItem, Q(active=True)),
+)
+
+
+def team_open_work(team: Any) -> dict[str, int]:
+    """The open work `team` owns, counted per table; tables with none are left out."""
+    counts = {model._meta.db_table: model._default_manager.filter(still_open, owner_team=team).count() for model, still_open in TEAM_OPEN_WORK}
+    return {table: count for table, count in counts.items() if count}
 
 
 REGISTRY: dict[str, VocabularyList] = {
@@ -196,20 +241,38 @@ REGISTRY: dict[str, VocabularyList] = {
             fixed_keys=True, usage=_uses(Link(Instrument, "jurisdiction"), Link(Authority, "jurisdiction")),
         ),
         # --- tier 3: tenant lists, managed with vocab.manage ---
-        VocabularyList("tenant_tag", TENANT_TIER, TenantTag, TenantTagLabel, usage=_count("taggings"), repoint=repoint.tenant_tag),
-        VocabularyList("link_kind", TENANT_TIER, LinkKind, LinkKindLabel),
+        # A record that already carries the tag a merge moves to keeps one tagging (the
+        # unique constraint), so the duplicate is dropped and not counted as moved.
+        _tenant(VocabularyList("tenant_tag", TENANT_TIER, TenantTag, TenantTagLabel), Link(Tagging, "tag", ("subject_type", "subject_id"))),
+        # An internal item's name is unique per kind and the item is never deleted, so a
+        # merge that would give two items one name is refused until a person renames one.
+        _tenant(VocabularyList("link_kind", TENANT_TIER, LinkKind, LinkKindLabel), Link(InternalItem, "kind", ("name",), drop_twins=False)),
         VocabularyList("effort_size", TENANT_TIER, EffortSize, EffortSizeLabel),
-        VocabularyList("compliance_status", TENANT_TIER, ComplianceStatus, ComplianceStatusLabel, "compliance_category", _values(ComplianceCategory), True, ("ordinal",)),
-        # The tone reads the fixed level, never the editable ordinal (VOC-05).
-        VocabularyList("risk_rating", TENANT_TIER, RiskRating, RiskRatingLabel, "risk_level", _values(RiskLevel), True, ("ordinal",)),
+        # The register's current status rows count and move; the assessment ledger keeps
+        # the status each assessment named (REG-04).
+        _tenant(
+            VocabularyList("compliance_status", TENANT_TIER, ComplianceStatus, ComplianceStatusLabel, "compliance_category", _values(ComplianceCategory), True, ("ordinal",)),
+            Link(TenantObligation, "compliance_status"),
+            Link(TenantObligationScope, "compliance_status"),
+        ),
+        # The tone reads the fixed level, never the editable ordinal (VOC-05). A gap's
+        # severity is a risk rating too.
+        _tenant(
+            VocabularyList("risk_rating", TENANT_TIER, RiskRating, RiskRatingLabel, "risk_level", _values(RiskLevel), True, ("ordinal",)),
+            Link(TenantObligation, "risk_rating"),
+            Link(TenantObligationScope, "risk_rating"),
+            Link(Gap, "severity"),
+        ),
         VocabularyList("case_sub_status", TENANT_TIER, CaseSubStatus, CaseSubStatusLabel, "case_status", _values(CaseStatusCategory), True),
         VocabularyList("dismissal_reason", TENANT_TIER, DismissalReason, DismissalReasonLabel),
         VocabularyList("close_reason", TENANT_TIER, ClosureReason, ClosureReasonLabel, "close_reason", _values(CloseReason), True),
         # Chunk 8's register lists (REG-03, VOC-04, VOC-06, TEN-03).
-        VocabularyList("gap_status", TENANT_TIER, GapStatus, GapStatusLabel, "gap_category", _values(GapCategory), True),
-        VocabularyList("gap_source", TENANT_TIER, GapSource, GapSourceLabel),
-        VocabularyList("risk_acceptance_reason", TENANT_TIER, RiskAcceptanceReason, RiskAcceptanceReasonLabel),
-        VocabularyList("team", TENANT_TIER, Team, TeamLabel, extra_fields=("email",)),
+        _tenant(VocabularyList("gap_status", TENANT_TIER, GapStatus, GapStatusLabel, "gap_category", _values(GapCategory), True), Link(Gap, "status")),
+        _tenant(VocabularyList("gap_source", TENANT_TIER, GapSource, GapSourceLabel), Link(Gap, "source")),
+        _tenant(VocabularyList("risk_acceptance_reason", TENANT_TIER, RiskAcceptanceReason, RiskAcceptanceReasonLabel), Link(Gap, "acceptance_reason")),
+        # A team that owns open work is not retired: its work is moved first, by a merge or
+        # by reassigning it (TEN-03).
+        replace(_tenant(VocabularyList("team", TENANT_TIER, Team, TeamLabel, extra_fields=("email",)), *TEAM_LINKS), open_work=team_open_work),
     )
 }
 

@@ -318,6 +318,47 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=proposer.actor title=existing.title": (
         "The retry of the same platform-only batch filing: the same platform proposer and the title it filed."
     ),
+    # c8-ten-reassignment (TEN-05): the subject type is one of four tenant tables, picked per kind.
+    "apps/tenants/reassignment.py record(_SUBJECT_TYPE[kind]) tenant_id=tenant.id actor=actor title=_title(kind, row, headings)": (
+        "A member's removal moving a register entry, an entity's row, a gap or an internal item: "
+        "the subject is one of those four tenant tables, never a library one, and the row is "
+        "written in the removing bank's zone under its own tenant id, by the bank's administrator."
+    ),
+    # c10-comments-mentions: a comment on a record is always the bank's own row.
+    "apps/collab/comments.py record(subject_type) tenant_id=tenant.id actor=actor title=title": (
+        "A comment written on a record: the row always carries the writer's bank, so no other "
+        "bank reads it, and the title is the record's own title, never the comment's text."
+    ),
+    "apps/collab/comments.py record(comment.subject_type) tenant_id=tenant.id actor=actor title=title": (
+        "A comment edited or deleted by its author: the same bank's own row, titled by the "
+        "record the comment is on."
+    ),
+    # c10-e2e-seed-comments: the E2E seed writes the same rows the comment routes write.
+    "apps/shared/e2e_seed.py record(comment.subject_type) tenant_id=comment.tenant_id actor=Actor.system('seed_e2e') title=title": (
+        "A seeded comment added, edited or deleted: the row carries the comment's own bank, "
+        "the actor is the seed, and the title is the record's own title, never the comment's text."
+    ),
+    # c8-seed-org-register
+    "apps/shared/e2e_seed.py record(subject_type) tenant_id=tenant.id actor=Actor.system('seed_e2e') title=title": (
+        "The E2E seed's one audit row per seeded organisation and register row: the tenant id is "
+        "always the activated seeded bank's, never None, so the row stays in that bank's zone; the "
+        "subject types are tenant tables and the title is a seed fixture's name or stable key."
+    ),
+    # c11-proposal-batches-decide (PRO-04, PRO-S8).
+    "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=reviewer.actor title=proposal.title": (
+        "A batch's decision is a platform person's (proposals.review, a session route, and decide refuses "
+        "a caller inside a bank); the title is the platform-filed batch's."
+    ),
+    "apps/proposals/batch.py record(logic.OBLIGATION_TARGET) tenant_id=None actor=reviewer.actor title=proposal.title": (
+        "A rejected row of the same platform-only decision, titled by the platform-filed batch."
+    ),
+    # c9-case-participants (COL-04): the one add and the one removal both subjects share.
+    "apps/collab/participants.py record(subject.audit_type) tenant_id=tenant_id actor=actor title=subject.title": (
+        "A person or a team joining or leaving a bank's register entry or case: the subject type "
+        "is `tenant_obligation` or `change_case`, never a library type, `tenant_id` is the "
+        "caller's bank and never None, and the title is the library's own title of the "
+        "obligation or the change."
+    ),
 }
 
 

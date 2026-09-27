@@ -118,6 +118,8 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # c8-support-session-guard: a support session reads its allow-list and nothing else.
+    "apps.shared.middleware.SupportReadOnlyMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",
@@ -573,6 +575,16 @@ PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000)
 PROPOSAL_BATCH_MAX_ROWS = env_int("PROPOSAL_BATCH_MAX_ROWS", 100)
 
 # ---------------------------------------------------------------------------------------
+# ===== REG-07 how often a recurring duty may recur (c8-recurring-duty-proposal) ==========
+# A recurring duty's rule is an RFC 5545 RRULE a proposer writes, and every bank's
+# occurrences are expanded from it (apps/library/recurrence.py). A rule that would fall due
+# more often than this in ten years is refused when it is proposed (422
+# `invalid_recurrence`), so a bad rule cannot become a denial of service. 120 is monthly
+# for ten years; a regulatory duty recurs yearly, quarterly or monthly.
+# ---------------------------------------------------------------------------------------
+RECURRENCE_MAX_OCCURRENCES = env_int("RECURRENCE_MAX_OCCURRENCES", 120)
+
+# ---------------------------------------------------------------------------------------
 # ===== PRO-03 how far back "what changed in the library" looks ===========================
 # A reader who has never marked the library as seen has no bookmark to read from, so the
 # list falls back to this many days. Long enough that a first visit is not empty and a
@@ -619,6 +631,14 @@ CELERY_BEAT_SCHEDULE["outbox-deliver"] = {
 # zone and no insert can span two.
 # ---------------------------------------------------------------------------------------
 CASE_CREATION_BATCH = env_int("CASE_CREATION_BATCH", 100)
+
+# ---------------------------------------------------------------------------------------
+# ===== CAS-04 how many actions one case may carry (apps/cases/actions.py, c9-actions) ====
+# A case's live actions are read whole by the case file and the sign-off guard, so one case
+# cannot grow without bound and push those reads past the 250 ms budget. Adding one more
+# than this answers 409 `too_many_actions`; a removed action no longer counts.
+# ---------------------------------------------------------------------------------------
+CASE_ACTIONS_MAX = env_int("CASE_ACTIONS_MAX", 200)
 
 # ---------------------------------------------------------------------------------------
 # ===== WAT-01 when a watched source has gone stale (apps/watch/sources.py) ===============
@@ -726,6 +746,15 @@ CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30)
 # stays short however many a person has replaced over the years, which is what lets it go
 # unpaged (the live ones are capped above).
 CALENDAR_FEED_REVOKED_SHOWN = env_int("CALENDAR_FEED_REVOKED_SHOWN", 5)
+
+# ---------------------------------------------------------------------------------------
+# Participants (COL-04, D-18, c8-participants)
+# How many people and teams may take part in one register entry or case at once. A record
+# that everyone takes part in tells nobody anything, and every participant is a recipient of
+# every notification about it, so the list is capped; adding past the cap answers 422
+# `too_many_participants`. `apps/collab/participants.py` reads it on every add.
+# ---------------------------------------------------------------------------------------
+MAX_PARTICIPANTS_PER_RECORD = env_int("MAX_PARTICIPANTS_PER_RECORD", 50)
 # How often one address may be fetched. A calendar client polls every few hours, so this
 # is generous for every real client and still bounds what someone who found an address
 # can pull from it. It is per token, so a flood on one address leaves the others answering.
@@ -748,6 +777,14 @@ SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the officia
 SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
 
 # ---------------------------------------------------------------------------------------
+# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) =====
+# ---------------------------------------------------------------------------------------
+# The most applicability answers one confirmed call stores (POST /applicability). Each row
+# is a write and an audit event in one transaction, so the cap keeps a call inside the API
+# budget; a longer call is refused whole and stores nothing.
+REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
+
+# ---------------------------------------------------------------------------------------
 # ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
 # How many distinct records one tagging preview or batch may name. A list page holds at
 # most 100 rows, so two pages' worth covers every selection a screen makes, and the one
@@ -765,6 +802,40 @@ BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
 # for a new one. The job row stays. A bank's policy may be stricter, so it is a setting.
 # ---------------------------------------------------------------------------------------
 EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
+
+# ---------------------------------------------------------------------------------------
+# ===== HOM-05 My work's windows (apps/home/my_work.py, c8-mywork-service, D-23, D-25) ===
+# A row is "due soon" when its next date is today or within MY_WORK_DUE_SOON_DAYS; the
+# tenant's reminder lead replaces it once COL-02 lands. A new version of an obligation stays
+# under "Changes on your items" for MY_WORK_AWARE_DAYS after it was applied: a fixed window
+# needs no write on every page load. Each is at least 1, or the app refuses to boot.
+# ---------------------------------------------------------------------------------------
+MY_WORK_DUE_SOON_DAYS = env_int("MY_WORK_DUE_SOON_DAYS", 30)
+MY_WORK_AWARE_DAYS = env_int("MY_WORK_AWARE_DAYS", 14)
+if min(MY_WORK_DUE_SOON_DAYS, MY_WORK_AWARE_DAYS) < 1:
+    raise ImproperlyConfigured("Refusing to boot: MY_WORK_DUE_SOON_DAYS and MY_WORK_AWARE_DAYS are each at least 1.")
+
+# ---------------------------------------------------------------------------------------
+# ===== COL-01 comments on a record (apps/collab/comments.py, c10-comments-mentions) =====
+# A comment is a note to colleagues, not a document: the cap bounds what one request can
+# store and what a thread of twenty costs to read. An edit is for a slip noticed at once;
+# after the window the author may delete but not rewrite what others have already read
+# (CHUNK10_TASKS ruling 10). Both are settings because neither number is a rule.
+# ---------------------------------------------------------------------------------------
+COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000)
+COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
+
+# ---------------------------------------------------------------------------------------
+# ===== Tenant list cap (c8-vocab-register-usage, H32) ====================================
+# How many rows, retired ones included, one of a bank's own vocabulary lists may hold.
+# `GET /vocab/{list}` answers a whole list with its usage counts, so the list must stay a
+# size one read can serve inside the API budget. Adding past it answers 422 `list_full`.
+# `apps/taxonomy/tenant_lists_logic.py` reads it. There is no value that means "no limit",
+# so the process refuses to boot below 1.
+# ---------------------------------------------------------------------------------------
+TENANT_LIST_MAX_ROWS = env_int("TENANT_LIST_MAX_ROWS", 500)
+if TENANT_LIST_MAX_ROWS < 1:
+    raise ImproperlyConfigured("TENANT_LIST_MAX_ROWS must be at least 1.")
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
@@ -819,6 +890,13 @@ REFRESH_COOKIE_SECURE = not DEBUG
 # An API key's last_used_at (and its key_used security-log row) is written at most this
 # often, so a busy agent does not turn every call into a write (ID-10).
 API_KEY_LAST_USED_THROTTLE_SECONDS = env_int("API_KEY_LAST_USED_THROTTLE_SECONDS", 60)
+# ===== c8-ten-support-grants: TEN-06 support access (D-49, ADR 0042) =====
+# The longest window platform support may ask a bank for, in hours; a longer request answers
+# 422. The window starts when the bank approves.
+SUPPORT_ACCESS_MAX_HOURS = env_int("SUPPORT_ACCESS_MAX_HOURS", 4)
+# How long a request nobody decides stays open before it reads as lapsed, in hours.
+SUPPORT_ACCESS_REQUEST_TTL_HOURS = env_int("SUPPORT_ACCESS_REQUEST_TTL_HOURS", 24)
+
 # ===== acc-foundation: agent access credentials (ACC-03, ACC-09, ADRs 0055 and 0056) =====
 # The longest a service key of an agent access entry, and a personal access token, may live;
 # a token cannot be minted without an expiry. And the requests one such credential may make

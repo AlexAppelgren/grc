@@ -56,7 +56,12 @@ export const destinations: readonly Destination[] = [
   { id: 'today', href: '/', labelKey: 'nav.today', surface: 'tenant', anyOfPermissions: [], dockRank: 1, group: 'primary' },
   { id: 'watch', href: '/watch', labelKey: 'nav.watch', surface: 'tenant', anyOfPermissions: ['watch.read'], dockRank: 2, group: 'primary' },
   { id: 'inventory', href: '/inventory', labelKey: 'nav.inventory', surface: 'tenant', anyOfPermissions: ['library.read'], dockRank: 3, group: 'primary' },
+  // c8-ui-mywork (HOM-05): any member, in the secondary group with no dockRank, since the
+  // dock's four are taken; the rail lists it from 1024 px and the More sheet below that.
+  { id: 'my-work', href: '/work', labelKey: 'nav.myWork', surface: 'tenant', anyOfPermissions: [], group: 'secondary' },
   { id: 'roadmap', href: '/roadmap', labelKey: 'nav.roadmap', surface: 'tenant', anyOfPermissions: ['roadmap.read'], group: 'secondary' },
+  // c8-ui-gaps-risk: the bank's gaps across the register (REG-03).
+  { id: 'gaps', href: '/gaps', labelKey: 'nav.gaps', surface: 'tenant', anyOfPermissions: ['register.read'], group: 'secondary' },
   // The briefing (HOM-02): reached from Today's lead card and the mailed
   // link, never the rail or the More sheet. `parent` names a destination
   // nothing renders children for (only 'admin' and the account parent do),
@@ -74,6 +79,9 @@ export const destinations: readonly Destination[] = [
   { id: 'admin-footprint', href: '/admin/footprint', labelKey: 'nav.admin.footprint', surface: 'tenant', anyOfPermissions: FOOTPRINT_PERMISSIONS, group: 'admin', parent: 'admin' },
   { id: 'admin-api-keys', href: '/admin/api-keys', labelKey: 'nav.admin.apiKeys', surface: 'tenant', anyOfPermissions: ['integrations.manage'], group: 'admin', parent: 'admin' },
   { id: 'admin-security-log', href: '/admin/security-log', labelKey: 'nav.admin.securityLog', surface: 'tenant', anyOfPermissions: ['security.manage'], group: 'admin', parent: 'admin' },
+  // Support access (TEN-06, D-49): any member reads who from platform support
+  // asked and who was let in; approve, decline and revoke need security.manage.
+  { id: 'admin-support-access', href: '/admin/support-access', labelKey: 'nav.admin.supportAccess', surface: 'tenant', anyOfPermissions: [], group: 'admin', parent: 'admin' },
   { id: 'admin-audit-log', href: '/admin/audit-log', labelKey: 'nav.admin.auditLog', surface: 'tenant', anyOfPermissions: ['audit.read'], group: 'admin', parent: 'admin' },
   { id: 'admin-ai-log', href: '/admin/ai-log', labelKey: 'nav.admin.aiLog', surface: 'tenant', anyOfPermissions: ['ai_log.read'], group: 'admin', parent: 'admin' },
   // The bank's workflow policy (COL-02, TEN-01): its own section, gated by
@@ -100,6 +108,8 @@ export const destinations: readonly Destination[] = [
   { id: 'console-agent-keys', href: '/console/agent-keys', labelKey: 'nav.console.agentKeys', surface: 'console', anyOfPermissions: ['agent_definitions.manage'], group: 'primary' },
   // The search evaluation set (SRC-05): the library editor's, beside Sources.
   { id: 'console-evaluation', href: '/console/evaluation', labelKey: 'nav.console.evaluation', surface: 'console', anyOfPermissions: ['eval.manage'], group: 'primary' },
+  // Support access (TEN-06): the platform admin asks a bank to read, and enters a grant it approved.
+  { id: 'console-support-access', href: '/console/support-access', labelKey: 'nav.console.supportAccess', surface: 'console', anyOfPermissions: ['support_access.grant'], group: 'primary' },
 ];
 
 /** The console's landing: it sends each person on to the first console destination they may open. */

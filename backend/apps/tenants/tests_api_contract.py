@@ -51,6 +51,21 @@ BUILT_BEFORE = {
     "createConsoleTenant",
 }
 
+# Routes of the table whose logic has landed: past every gate they answer with the real
+# thing, which their own module proves, so the 501 rows below leave them out.
+BUILT_SINCE = {
+    # c8-ten-support-grants (TEN-06): tests_support_access.py.
+    "requestConsoleSupportAccess",
+    "listTenantSupportAccess",
+    "approveSupportAccess",
+    "declineSupportAccess",
+    "revokeSupportAccess",
+    # c8-support-session-guard (TEN-06): apps/shared/tests_support_session.py.
+    "enterConsoleSupportAccess",
+    # c8-ui-support-console (TEN-06): tests_support_access.py, ConsoleList.
+    "listConsoleSupportAccess",
+}
+
 ORG_UNIT_BODY = {"kind": "business_area", "name": "Retail Banking"}
 ORG_UNIT_PATCH = {"name": "Retail and Private Banking"}
 LICENCE_BODY = {"licenceType": "credit_institution", "reference": "FI 12-3456"}
@@ -322,6 +337,28 @@ class TenantsRoutesHideAnotherBanksRecords(TenantsContractCase):
 
 class TenantsRouteStubs(TenantsContractCase):
     VERSIONED = {"updateOrgUnit", "updateLicence", "updateProduct"}
+    # c8-ten-organisation: real logic, proved in tests_org_units.py and tests_products.py.
+    # c8-ten-teams-people: built, and proven in tests_teams.py and tests_reference_people.py.
+    BUILT = {
+        "listOrgUnits",
+        "createOrgUnit",
+        "updateOrgUnit",
+        "listLicences",
+        "createLicence",
+        "updateLicence",
+        "listProducts",
+        "createProduct",
+        "updateProduct",
+        # c8-ten-teams-people's people picker, ported by c8-ui-soa-j10 for J-10's owner picker:
+        # proved in tests_reference_people.py.
+        "listPeople",
+    }
+    # c8-ten-teams-people: built, and proven in tests_teams.py and tests_reference_people.py.
+    BUILT |= {"listTeams", "listTeamMembers", "listPeople"}
+    # c8-ten-reassignment: built, and proven in tests_reassignment.py.
+    BUILT |= {"getMemberOpenWork", "removeMember"}
+    # c8-ten-support-grants, c8-support-session-guard, c8-ui-support-console (TEN-06).
+    BUILT |= BUILT_SINCE
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
         with stub_session(self.everything()):
@@ -337,9 +374,11 @@ class TenantsRouteStubs(TenantsContractCase):
         """Past every gate, in a real bank as a real member, or in the console: 501 `not_built`,
         in the one problem shape, with nothing of the server in it. Replaced row by row as
         each logic lands."""
-        calls = [(route, self.everything()) for route in self.records.routes()]
+        calls = [(route, self.everything()) for route in self.records.routes() if route[0] not in self.BUILT]
         calls += [(route, self.console()) for route in self.records.console_routes()]
         for (name, method, url, body, _permission, _step_up), who in calls:
+            if name in self.BUILT:
+                continue
             headers = {**AS_SESSION, "HTTP_IF_MATCH": '"1"'} if method == "patch" else AS_SESSION
             with self.subTest(operation=name), stub_session(who):
                 response = _call(self.client, method, url, body, headers)
@@ -356,12 +395,13 @@ class TenantsRouteStubs(TenantsContractCase):
                 if permission is not None:
                     continue
                 with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, 501)
+                    expected = 200 if name in self.BUILT else 501
+                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, expected)
 
-    def test_a_known_permission_on_the_people_picker_reaches_the_stub(self) -> None:
+    def test_a_known_permission_on_the_people_picker_is_answered(self) -> None:
         with stub_session(self.everything(permissions=frozenset())):
             response = self.client.get(f"/api/v1/reference/people?permission={perms.CASES_SIGNOFF}", **AS_SESSION)
-        self.assertEqual(response.status_code, 501)
+        self.assertEqual(response.status_code, 200)
 
 
 class PermissionDescriptions(TestCase):

@@ -162,6 +162,24 @@ LIBRARY_ZONE_APPS = frozenset({"library", "taxonomy", "watch", "search", "agents
 # What a console request passes as the reader's language order.
 ORDER = ["en"]
 SOURCE_URL = "https://www.fi.se/"
+# A recurring duty on an obligation in force (REG-07, c8-recurring-duty-proposal), sourced
+# field by field as apps/proposals/tests_create.py files it.
+DUTY_PAYLOAD = {"title": "Yearly attestation", "recurrenceRule": "FREQ=YEARLY;BYMONTH=3;BYMONTHDAY=31"}
+
+
+def duty_body(obligation: Obligation) -> dict[str, Any]:
+    return {
+        "kind": "new_recurring_duty",
+        "title": "A yearly attestation",
+        "payload": dict(DUTY_PAYLOAD),
+        "targetType": "obligation",
+        "targetId": str(obligation.id),
+        "fieldSources": dict.fromkeys(DUTY_PAYLOAD, SOURCE_URL),
+        "sourceLabel": "",
+        "sourceUrl": "",
+    }
+
+
 SO_WHAT = {
     "text": "Teams that pay for external research should confirm that documented criteria exist.",
     "model": "agent pipeline 0.4",
@@ -606,6 +624,7 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
                 tenancy.clear_tenant()
                 provision = Provision.objects.get(stable_key=PROVISION_KEY)
             decided.append(self._approved_body(provision_version_body(provision)))
+            decided.append(self._approved_body(duty_body(self.obligation)))
         # The census: a kind added to ProposalKind fails here until it is approved above. A
         # member added ahead of its payload schema (`obligation_scope`, PRO-04) cannot be
         # filed, which is proven below; it joins the census the moment its schema lands.
@@ -632,6 +651,8 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
         self.assertTrue(SearchChunk.objects.filter(source_id=version.id).exists())
         self.assertEqual(Obligation.objects.get(stable_key=OBLIGATION_KEY).instrument.stable_key, INSTRUMENT_KEY)
         self.assertEqual(Provision.objects.get(stable_key=PROVISION_KEY).versions.count(), 2)
+        duty = RecurringDuty.objects.get(applied_by_proposal=next(p for p in decided if p.kind == "new_recurring_duty"))
+        self.assertEqual((duty.obligation_id, duty.verified_origin, duty.approved_by_id), (self.obligation.id, "user", self.reviewer.id))
 
     def test_an_independent_agent_approves_every_kind_it_may_as_the_app_role(self) -> None:
         """D-79 as lifted on 2026-09-23: an agent's approval of every kind whose record can
@@ -679,6 +700,7 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
             },
             instrument_body(),
             obligation_body(instrument=INSTRUMENT_KEY),
+            duty_body(self.obligation),
         ]
         decided: list[Proposal] = []
         with as_the_app_role():
@@ -731,7 +753,9 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
         version = ObligationVersion.objects.get(applied_by_proposal=next(p for p in decided if p.kind == "new_obligation_version"))
         instrument = Instrument.objects.get(stable_key=INSTRUMENT_KEY)
         obligation = Obligation.objects.get(stable_key=OBLIGATION_KEY)
-        for record in (version, instrument, obligation):
+        duty = RecurringDuty.objects.get(applied_by_proposal=next(p for p in decided if p.kind == "new_recurring_duty"))
+        self.assertEqual(duty.created_by_agent_id, proposing.agent.id)
+        for record in (version, instrument, obligation, duty):
             with self.subTest(record=type(record).__name__):
                 self.assertEqual((record.verified_origin, record.verified_by_agent_id), ("agent", confirming.agent.id))
         self.assertEqual(AiGeneration.objects.filter(agent_run=confirming_run).count(), len(bodies))
