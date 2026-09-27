@@ -233,7 +233,9 @@ def complete_occurrence(
             before={"status": before},
             after={
                 "status": DutyStatus.DONE.value,
-                "note": occurrence.note or None,
+                # The note is the bank's own words: the row says one was left, never what it
+                # says (R2_CROSS_CUTTING (m); security-review-c8 M1).
+                "noted": bool(occurrence.note),
                 "nextOccurrenceId": None if following is None else str(following.id),
                 "nextDueDate": None if following is None else following.due_date.isoformat(),
             },

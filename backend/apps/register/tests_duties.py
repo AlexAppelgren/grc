@@ -12,6 +12,7 @@ written; with the hook removed from applicability.py no first occurrence was wri
 from __future__ import annotations
 
 import datetime
+import json
 from typing import Any
 
 from django.db import IntegrityError, transaction
@@ -25,7 +26,7 @@ from apps.register.models import DutyOccurrence, TenantObligation, TenantObligat
 from apps.register.tests_applicability import Bank, banks_duty, seed_library
 from apps.shared import factories
 from apps.shared.audit import Actor
-from apps.shared.models import AuditEvent
+from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 
 V1 = "/api/v1"
@@ -199,6 +200,18 @@ class Completing(DutyTestCase):
         self.assertEqual(self.audit(duties.DUTY_COMPLETED), 1)
         self.activate(self.a.tenant)
         self.assertEqual(DutyOccurrence.objects.get(pk=occurrence.pk).version, 2)
+
+    def test_the_note_stays_on_the_occurrence_and_out_of_the_audit_trail_and_the_outbox(self) -> None:
+        """A completion note is the bank's own words: the audit row and its outbox event say
+        a note was left, never what it says (R2_CROSS_CUTTING (m); security-review-c8 M1)."""
+        [occurrence] = self.first()
+        response = self.complete(occurrence, note="Filed late: the regulator's portal was down")
+        self.assertEqual(response.status_code, 200, response.content)
+        event = AuditEvent.objects.get(action=duties.DUTY_COMPLETED, subject_id=occurrence.id)
+        payloads = list(OutboxEvent.objects.filter(audit_event=event).values_list("payload", flat=True))
+        written = json.dumps([event.before, event.after, event.summary, event.subject_title, payloads])
+        self.assertNotIn("portal", written)
+        self.assertIs(event.after["noted"], True)
 
     def test_a_next_occurrence_already_present_is_not_written_twice(self) -> None:
         [occurrence] = self.first()
