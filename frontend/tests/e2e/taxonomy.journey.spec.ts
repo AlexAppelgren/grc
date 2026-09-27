@@ -1,6 +1,7 @@
 import type { Browser, Locator, Page, TestInfo } from '@playwright/test';
 
 import { expect, test, type ApiGuard } from './support/api-guard';
+import { allowRegisterEntryPending } from './support/obligation-page';
 import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
 import { approveQueueProposal } from './support/watch';
 
@@ -365,8 +366,10 @@ test.describe('taxonomy journeys', () => {
     // commit, then the tag on each row and usable as the "Our tags" filter. The seed's
     // tag (e2e_seed.py, EXPECTED_BULK_TAGGING) stands in for "Custody", which VOC-S2
     // creates. Which rows already carry it is read off the rows, by identity; the
-    // journey takes the tag back off the rows it added it to, on failure too.
+    // journey takes the tag back off the rows it added it to, on failure too. The
+    // obligation page it opens reads the register entry, whose read is still pending.
     allowFreshContext(apiGuard);
+    allowRegisterEntryPending(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);
     await page.goto(`/inventory?asOf=${INVENTORY_AS_OF}&scope=all`);
     await expect(page.locator('[data-obligation-rows]')).toBeVisible();
