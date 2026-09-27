@@ -53,6 +53,15 @@ def _tenant_obligation(tenant: Tenant) -> Any:
     return factories.register_entry(tenant, _obligation(tenant).id)
 
 
+def _tenant_agent(tenant: Tenant) -> Any:
+    # c11-scheduler: one of the bank's own agents, the subject a cap pause notifies about.
+    from apps.agents.models import TenantAgent
+    from apps.agents.tests_tenant_agents import tenant_definition
+
+    tenancy.activate(tenant.id)
+    return TenantAgent.objects.create(tenant=tenant, agent=tenant_definition(f"bank-notify-{uuid.uuid4().hex[:6]}"))
+
+
 # One builder per registered subject kind: a registry row without one fails the registry
 # test, so a kind cannot be added without proving its lookup and its title.
 BUILDERS: dict[str, Callable[[Tenant], Any]] = {
@@ -60,6 +69,7 @@ BUILDERS: dict[str, Callable[[Tenant], Any]] = {
     "change_case": _change_case,
     "action": _action,
     "tenant_obligation": _tenant_obligation,
+    "tenant_agent": _tenant_agent,
 }
 
 
