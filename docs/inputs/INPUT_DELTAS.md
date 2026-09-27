@@ -988,6 +988,20 @@ Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-2
 - Every string filter of `GET /obligations` and `GET /instruments` is at most 80 characters
   (`instrument`, `dutyType`, `regime`, each `term`, `tag` and `tenantTag` item), as the key
   columns are; a longer one answers 422 `validation_error` (hardening H27).
+acc-register-read (ACC-04, ACC-08, D-76), 2026-09-25:
+
+- `GET /register-entries` (`listRegisterEntries`) and `GET /register-entries/{obligationId}`
+  (`readRegisterEntry`) are new: the register as a bank's own agent reads it, which the
+  designed contract does not have (AGENT_ACCESS.md names the list `GET /register`, a path the
+  designed contract never declared). The per-obligation read is a separate operation rather
+  than the same one with a filter, and rather than `getRegisterEntry` taking a key: it takes
+  the obligation as a path parameter so an obligation outside the entry's scope answers 404,
+  never a filtered 200 (AGENT_ACCESS.md section 7), and it answers D-76's fields alone, where
+  a person's `getRegisterEntry` also carries the risk rating and the evidence location. Both
+  take `ApiKeyAuth` only with `tenant:read`, and answer 403 `tenant_reach_off` unless the
+  bank's tenant reach and the entry's own toggle are both on. The row shape,
+  `RegisterDecision`, is one per obligation with its legal entities and live linked items
+  nested; the list pages 20 by default and 100 at most (D-1xx, acc-register-read).
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
@@ -1670,25 +1684,6 @@ existed; building them on `gap` as `c8-register-models` shaped it changes these 
   without it; closing a gap clears an acceptance still waiting on it.
 - A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
   `c8-units-paste-soa` adds the column.
-`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
-third column the R2 plan names (`acts_as_user`), are built with these departures:
-
-- `agent_access.owner_team_id` is required, not "null until chunk 8 lands teams": the team
-  list has landed and every bank has the system team `compliance` (ACC-01 names the team).
-  `revoked_at` and `revoked_by_id` are columns, and a CHECK keeps `active` false exactly when
-  `revoked_at` is set. An entry is revoked, never deleted (`delete()` refuses).
-- Every reference is also a composite `(tenant_id, …)` key: the team, the departments
-  (`org_unit`) and products (`tenant_product`) of the joins, the creator and revoker (into
-  `membership (tenant_id, user_id)`), and on `api_key` the entry and `acts_as_user`.
-- `api_key.kind` is the tier-one kind `credential_kind` (`service`, `personal`); every key
-  before identity 0007 is `service`. CHECKs: a personal token has a tenant, a person and an
-  expiry and no agent, and only a token acts as a person; a key bound to an entry has a
-  tenant and no agent definition (it is not one of the agents we run); an entry's key and
-  every token hold only `AGENT_ACCESS_SCOPES` (`library:read`, `search:read`,
-  `upcoming:read`, `tenant:read`), so "reads and nothing else" (ADR 0055) is the
-  database's rule as well as the code's.
-- `login_event.method` gains `personal_token`; `login_event.event` gains `token_created`,
-  `token_used`, `token_revoked` and `credential_rate_limited`. Choices only, no schema change.
 
 ## acc-entries-and-log. The access log of a bank's own agents (2026-09-25, governance 0005)
 
@@ -1703,8 +1698,9 @@ it was written.
 
 ## c8-register-models. The register as tables (2026-09-25, register 0001 and 0002)
 
-`docs/plans/briefs/AGENT_ACCESS.md` section 3's three tables and two columns, plus the
-third column the R2 plan names (`acts_as_user`), are built with these departures:
+Sections 7 and 19 of `schema.sql` (`tenant_obligation`, `tenant_obligation_scope`,
+`compliance_assessment`, `gap`, `interpretation`, `internal_link`) are built with these
+departures:
 
 - `applicability` is the tier-one kind `Applicability` with `applies`, `does_not_apply`
   and `not_assessed` (the designed `not_applicable` and `under_assessment` renamed to the
