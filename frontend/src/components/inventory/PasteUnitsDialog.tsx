@@ -65,6 +65,7 @@ const SERVER_REFUSAL: Record<PasteProblem, MessageKey> = {
   reference_too_long: 'obligationUnits.refusedReferenceLong',
   title_too_long: 'obligationUnits.refusedTitleLong',
   empty_line: 'obligationUnits.refusedEmpty',
+  reason_missing: 'obligationUnits.refusedReason',
 };
 
 interface CheckedLine extends PastedLine {

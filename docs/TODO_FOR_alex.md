@@ -1674,6 +1674,7 @@ Built on these defaults; each stays yours to overrule.
       and a reach request is never withdrawn (the requester's colleague rejects it).
       Switching reach off needs one person and a step-up; on again takes a new request and
       a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+
 ## c9-fe-signoff-casefile: Request sign-off is disabled until the server says it can be asked for (2026-09-25)
 
 - [ ] **Disabled or enabled?** The design card leaves Request sign-off enabled and shows the
@@ -1685,18 +1686,6 @@ Built on these defaults; each stays yours to overrule.
       owner chooses Request sign-off" and receives the 409: with this default the journey
       shows the disabled button and its reason instead, and proves the 409 in
       `tests_scenarios.py`. Say if the card should win.
-- [ ] **Should the approval re-check the evidence, or should evidence lock?** A sign-off
-      request needs no open action and one piece of evidence the scanner passed. While
-      the case waits, the actions lock (`c9-actions`, `actions_locked`), but nothing in
-      the plan locks the evidence: `removeEvidence` only sets `removed_at`, and a rescan
-      could mark a file infected. The approval then closes a case whose evidence is gone,
-      because the fixed guard on `signoff → closed` checks only the second person.
-      Default taken: no change, since the guards are fixed (CLAUDE.md section 5) and this
-      package does not own `state.py` or `evidence.py`. Two ways out: (a) `c9-evidence-b`
-      refuses `removeEvidence` with 409 `actions_locked`-style `evidence_locked` while
-      the case is in `signoff`, which mirrors the actions lock; or (b) the
-      `signoff → closed` edge also carries the `no_open_action` and `clean_evidence`
-      guards. The first keeps the state machine as designed; say which.
 
 ## c10-out-of-office: a member's absence with a delegate, defaults taken (2026-09-25, TEN-04, COL-02)
 
@@ -1716,6 +1705,7 @@ Built by default; nothing waits on you. Say if any should change.
       must hold the absent approver's approve permissions, a sign-off request already reaches
       them on their own account, and `c10-reminders-core`'s rule gives them one row without
       "on behalf of". Reminders for kinds the delegate is not a candidate for carry the stamp.
+
 ## c10-fe-notifications: a case notification cannot link to its case yet (2026-09-25, COL-02)
 
 The inbox links an obligation's notification to `/inventory/obligations/{id}` and a change's to
@@ -1726,6 +1716,7 @@ always land on Not found. Needs a choice before COL-S1's journey ("Erik finds th
 link back to the case"): either `notify()` names a case by its change (`subject_type` `change`, the
 change id), or the notification gains the change id, or the frontend adds a `/cases/{caseId}` page that
 redirects to its change. The second keeps the case's own read check (`cases.read`) on the row.
+
 ## c11-fe-admin-agents: the bank's agents page (2026-09-25, AGT-03, AGT-04, AGT-05, ADM-01)
 
 Nothing waits for these; each has the default the build took.
@@ -1763,6 +1754,7 @@ Nothing waits for these; each has the default the build took.
 - [ ] Default taken: a key sent with no expiry lives `AGENT_ACCESS_KEY_MAX_DAYS` (90); a
       later one is refused (`expiry_too_late`). Revoking an entry twice answers 409
       `invalid_transition`; revoking one key twice is a safe retry.
+
 ## acc-mcp-transport: the MCP server's transport (2026-09-25, ACC-05)
 
 Built on these defaults; each stays yours to overrule.
@@ -1796,6 +1788,7 @@ Built on these defaults; each stays yours to overrule.
       `requested`, so the approver sees exactly what they approve; it is `in_scope` only after
       the second person's passkey approval, and `declined` if the request is rejected or
       withdrawn. No key and no agent writes one either way.
+
 ## c11-agent-config-platform: agent definitions as platform configuration (2026-09-25, AGT-03, D-102)
 
 Defaults taken; nothing waits on them.

@@ -165,7 +165,7 @@ describe('TodayScreen', () => {
   });
 
   it('a waiting decision alone keeps the page off the empty state', async () => {
-    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null };
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null, standing: null };
     const zeros = { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 1 };
     serve({ status: 200, data: quiet }, { status: 200, data: { ...me, permissions: ['security.manage'], counts: zeros } });
     render(shell(<TodayScreen />, ['security.manage']));
