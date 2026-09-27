@@ -45,9 +45,9 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, and contributor teams, recorded as the case's team participants | M | R2 | in_progress |
 | CAS-04 | Actions with owner and due date, locked while sign-off is pending, exportable as tickets. Chunk 9 builds the actions; the ticket export is `c13-tickets-export` (INT-S3) | M | R2 | in_progress |
 | CAS-05 | Evidence as file, link or reference, scanned, hashed, streamed through permission checks | M | R2 | built |
-| CAS-06 | Sign-off only with no open action and at least one piece of evidence, only by a second person, with step-up | M | R2 | pending |
+| CAS-06 | Sign-off only with no open action and at least one piece of evidence, only by a second person, with step-up | M | R2 | built |
 | CAS-07 | A case file that stands alone, as text and as an export | M | R2 | pending |
-| CAS-08 | Every response lists allowed transitions; concurrent edits are refused, never merged silently | M | R2 | pending |
+| CAS-08 | Every response lists allowed transitions; concurrent edits are refused, never merged silently | M | R2 | in_progress |
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -194,7 +194,7 @@ Then the export job produces the same content as a document and its download is 
 Given a case in assessing
 When it is read
 Then allowedTransitions lists exactly the categories the guards permit from assessing
-When a client posts a transition to closed directly
+When a client posts the sign-off approval, which the machine does not allow from assessing
 Then the request answers 409 with code "invalid_transition"
 ```
 
@@ -255,4 +255,11 @@ Then the case is back in "Needs triage" and both moves stay in its history
 Given a case waiting for sign-off requested by someone else
 When a person closes it without action
 Then the request answers 409 with code "invalid_transition"
+```
+
+### CAS-S18 — Send-back returns a case to implementing and a fresh request is possible `@integration` (CAS-06, CAS-08)
+```gherkin
+Given a case waiting for sign-off with two completed actions
+When the approver chooses "Send back" with a note
+Then the case reads implementing, the actions can be edited again, the note is in the audit trail, and a fresh sign-off request is possible
 ```
