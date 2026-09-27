@@ -52,6 +52,7 @@ from apps.library.schemas import (
     VersionDiffQuery,
 )
 from apps.proposals.apply import apply_reverification
+from apps.register import overlay
 from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
@@ -318,11 +319,12 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     require_library_read(request)
     who = principal(request)
     register_reader = who.has_permission(perms.REGISTER_READ)
-    reading.refuse_bank_filters(who.tenant_id, query, register_reader=register_reader)
+    reading.refuse_bank_filters(who.tenant_id, query)
+    overlay.refuse_filters_without_register(query, register_reader=register_reader)
     tenant = caller_tenant(request)
     order = language_order(request, tenant=tenant)
-    items, total = reading.obligation_page(tenant, order, query, limit=page.limit, offset=page.offset, register_reader=register_reader)
-    return ObligationPage(items=items, total=total)
+    items, total = reading.obligation_page(tenant, order, query, limit=page.limit, offset=page.offset)
+    return ObligationPage(items=items if register_reader else [overlay.withheld(item) for item in items], total=total)
 
 
 @router.get(
@@ -368,8 +370,8 @@ def get_obligation(
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     require_library_read(request)
     tenant = caller_tenant(request)
-    register_reader = principal(request).has_permission(perms.REGISTER_READ)
-    return reading.obligation_detail(tenant, language_order(request, tenant=tenant), obligation_id, query, register_reader=register_reader)
+    card = reading.obligation_detail(tenant, language_order(request, tenant=tenant), obligation_id, query)
+    return card if principal(request).has_permission(perms.REGISTER_READ) else overlay.withheld(card)
 
 
 @router.get(

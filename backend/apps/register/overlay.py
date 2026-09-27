@@ -21,18 +21,23 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Collection
-from typing import Any, NamedTuple, TypeVar
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeVar
 
 from django.contrib.postgres.expressions import ArraySubquery
 from django.db.models import CharField, Case, Exists, F, IntegerField, OuterRef, Q, QuerySet, Subquery, UUIDField, Value, When
 from django.db.models.functions import Coalesce, JSONObject
+from pydantic import BaseModel
 
 from apps.register.models import Applicability, TenantObligation, TenantObligationScope
 from apps.register.schemas import Applicability as ApplicabilityAnswer
 from apps.register.schemas import RegisterPersonRef, RegisterVocabRef
+from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ComplianceCategory, ComplianceStatus, ComplianceStatusLabel, TeamLabel
 from apps.taxonomy.reading import label_of
+
+if TYPE_CHECKING:
+    from apps.library.schemas import ObligationQuery
 
 # Worst first. The rank is the category's, fixed in code, because the bank may relabel and
 # reorder its own rows: not assessed ranks below partly, since nobody has shown compliance.
@@ -149,3 +154,28 @@ def _ref(key: str, kind: str | None, labels: list[dict[str, Any]], order: list[s
     texts = {label["language"]: label["text"] for label in labels}
     original = next((label["language"] for label in labels if label["original"]), None)
     return RegisterVocabRef(key=key, kind=kind, label=label_of(texts, order, original=original, key=key))
+
+
+# ---------------------------------------------------------------------------------------
+# Who reads it (security-review-c8 M3): the overlay is the bank's register, so only a
+# person holding register.read reads it or narrows by it.
+# ---------------------------------------------------------------------------------------
+_Carrier = TypeVar("_Carrier", bound=BaseModel)
+
+
+def withheld(carrier: _Carrier) -> _Carrier:
+    """`carrier` (an inventory row or the obligation card) with its overlay read as for an
+    obligation nobody has answered: no answer, no status, no owner."""
+    return carrier.model_copy(update=EMPTY._asdict())
+
+
+def refuse_filters_without_register(query: ObligationQuery, *, register_reader: bool) -> None:
+    """403 `permission_denied` for an overlay filter from a caller who may not read the
+    register, so the filters cannot answer what the rows withhold."""
+    sent = (query.applicability, query.compliance_status, query.owner, query.owner_team)
+    if not register_reader and any(value is not None for value in sent):
+        raise ProblemError(
+            status=403,
+            code="permission_denied",
+            detail="applicability, complianceStatus, owner and ownerTeam filter by the bank's register, which needs register.read.",
+        )
