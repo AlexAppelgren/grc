@@ -193,4 +193,23 @@ fixed) / accepted. Every fix has a test that was red before it.
 - **Static.** ruff; mypy; `makemigrations --check`; `migrate_from_zero`;
   `compliance_check.py --all` (0 findings); `requirements_coverage.py`; `api_docs_gate.py`;
   `contract_drift.py` (0 unexplained).
-- **Frontend, E2E and `prepush.sh --quick`.** These are recorded in the session's report.
+- **Final backend run.** The whole suite on the final tree: 3,335 tests, 0 failures, 68
+  skipped as pending scenarios.
+- **Frontend.** lint, typecheck (on a regenerated, uncommitted contract), the whole vitest
+  suite (1,664 tests), `check:messages` and `check:copy-drift` are green. Two merge seams
+  were fixed first: the roadmap's `duty_due` phrase, and the navigation test's order with My
+  work.
+- **E2E.**
+  - The whole suite ran (140 passed). Every journey this review's fixes touch passed:
+    register, library and inventory, tenants' TEN-S6 and home.
+  - Two failures were merge seams, fixed: NFR-S7 had no screen budget for My work, and the
+    phone's More-sheet baseline predated Gaps (re-drawn for Linux).
+  - The demo and public-page journeys and ID-S25 failed on the stale demo recordings: the
+    recorded `GET /home` predates `standing`. With a local re-recording, not committed
+    (R2_CROSS_CUTTING (f)), the public, demo, identity and shared specs pass (35 passed).
+  - ID-S11 failed only in the parallel full run. Three merged journeys (collab, home,
+    register) now sign in as the seeded owner, which ID-S11 assumes it has to itself. It
+    passes on its own and is the integrator's (a roster login reserved for it).
+- **`prepush.sh --quick`.** Green up to "OpenAPI/TS: artefacts match the contract", which is
+  the integrator's, since the two generated files are never committed here. The frontend
+  gates after it were run by hand and are green. gitleaks is green.
