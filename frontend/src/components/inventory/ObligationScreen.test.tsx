@@ -552,6 +552,8 @@ const FILLED: ReadonlySet<string> = new Set([
   'Links', // c8-ui-links-history-participants
   'History', // c8-ui-links-history-participants
   'Participants', // c8-ui-links-history-participants
+  'Gaps', // c8-ui-gaps-risk
+  'Units', // c8-ui-units
   'Comments', // c10-fe-comments-panel, tested in features/collab/CommentsPanel.test.tsx
 ]);
 
