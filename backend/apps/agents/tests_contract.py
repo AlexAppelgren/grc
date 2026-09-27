@@ -235,6 +235,11 @@ TENANT_ROUTES: list[tuple[str, str, str, Any, str]] = [
 SERVED = {
     "listTenantAgents", "createTenantAgent", "updateTenantAgent", "getAgentBudget", "putAgentBudget",
     "listPlatformWatch",  # built by c11-run-history; tests_platform_read.py proves it
+    # `c11-tenant-controls-cap` (tests_control.py).
+    "runTenantAgentNow",
+    "pauseTenantAgent",
+    "resumeTenantAgent",
+    "interruptAgentRun",
 }
 # Which record each id route addresses: a bank's own agent, its run, or its request.
 ID_KIND = {
