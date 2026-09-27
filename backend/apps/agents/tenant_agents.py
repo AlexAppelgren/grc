@@ -27,7 +27,8 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
-from apps.agents.models import Agent, AgentCadence, TenantAgent, TenantAgentBudget
+from apps.agents.logic import definition_by_key, live_term_keys, term_keys
+from apps.agents.models import AgentCadence, TenantAgent, TenantAgentBudget
 from apps.agents.platform import refuse_platform_agent
 from apps.agents.schemas import TenantAgentInput, TenantAgentScope, TenantAgentUpdate
 from apps.identity.models import User
@@ -35,7 +36,6 @@ from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
-from apps.taxonomy.models import TaxonomyTerm
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
 from apps.watch.keys import resolve_keys
 
@@ -108,10 +108,10 @@ def _check_scope(scope: TenantAgentScope) -> dict[str, list[str]]:
     `unknown_key` with the valid keys, so one refusal teaches the whole list."""
     resolve_keys("jurisdiction", scope.jurisdictions)
     terms = list(dict.fromkeys(scope.terms))
-    known = set(TaxonomyTerm.objects.filter(key__in=terms, active=True).values_list("key", flat=True))
+    known = live_term_keys(terms)
     unknown = [key for key in terms if key not in known]
     if unknown:
-        valid = list(TaxonomyTerm.objects.filter(active=True).order_by("key").values_list("key", flat=True).distinct())
+        valid = term_keys()
         raise VocabularyProblem(
             f"Not a taxonomy term key: {', '.join(unknown)}.",
             code="unknown_key",
@@ -189,7 +189,7 @@ def _person(who: Principal) -> tuple[User, Actor]:
 def create_tenant_agent(*, who: Principal, tenant: Tenant, body: TenantAgentInput) -> dict[str, Any]:
     """`POST /agents`: a switched-off agent of the bank's own from a tenant-scoped definition.
     The fence answers first, so one of bleqq's agents writes nothing."""
-    definition = Agent.objects.filter(key=body.agent).first()  # ordering: unique key, at most one row
+    definition = definition_by_key(body.agent)
     if definition is None:
         raise ValidationError("No agent definition has that key.", code="unknown_key")
     refuse_platform_agent(definition)
