@@ -47,6 +47,9 @@ FOUR_EYES_TABLES: list[tuple[str, str]] = [
 # the batch's proposer. (table, trigger, the clause its function must hold.)
 FOUR_EYES_TRIGGERS: list[tuple[str, str, str]] = [
     ("proposal_batch_row", "proposal_batch_row_decision_guard", "proposed_by_user_id = NEW.decided_by_id"),
+    # acc-scope-and-reach (governance 0004, ACC-08): tenant reach is requested by one person
+    # holding security.manage and approved or rejected by another.
+    ("tenant_reach_request", "tenant_reach_request_four_eyes"),
 ]
 
 

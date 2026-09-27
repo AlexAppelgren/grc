@@ -37,6 +37,7 @@ from django.utils import timezone
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, TeamLabel, VocabularySuggestion
 from apps.taxonomy.models import ComplianceStatus
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -666,3 +667,18 @@ def personal_token(
             expires_at=timezone.now() + timedelta(days=90),
         )
     return SimpleNamespace(id=row.id, row=row, plain_key=plain)
+
+
+# acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
+def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
+    """The tenant's pending request for tenant reach, reused when one waits, because a
+    second cannot."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        waiting = TenantReachRequest.objects.filter(tenant=tenant, status=ApprovalStatus.PENDING.value).first()  # ordering: at most one pending row per tenant, by constraint
+    if waiting is not None:
+        return waiting
+    requester = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantReachRequest.objects.create(tenant=tenant, requested_by=requester)

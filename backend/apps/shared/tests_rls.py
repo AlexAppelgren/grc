@@ -227,6 +227,10 @@ TENANT_ONLY_TABLES = [
     # entry or a case. Every key is composite (apps/collab/tests_participants.py proves the
     # database refuses a cross-tenant user, team, entry or case).
     "participant",
+    # acc-scope-and-reach (governance 0004, ACC-08): a bank's requests for tenant reach and its
+    # one row of reach state. Each person and the approving request are composite keys.
+    "tenant_reach_request",
+    "tenant_reach",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the
