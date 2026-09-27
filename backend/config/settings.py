@@ -996,6 +996,12 @@ SUPPORT_ACCESS_MAX_HOURS = env_int("SUPPORT_ACCESS_MAX_HOURS", 4)
 # How long a request nobody decides stays open before it reads as lapsed, in hours.
 SUPPORT_ACCESS_REQUEST_TTL_HOURS = env_int("SUPPORT_ACCESS_REQUEST_TTL_HOURS", 24)
 
+# ===== d89-scope-items-model: the bank's own scope items (OWN-01, D-91) =====
+# The longest description a scope item may carry; the boundary refuses a longer one.
+SCOPE_ITEM_DESCRIPTION_MAX_CHARS = env_int("SCOPE_ITEM_DESCRIPTION_MAX_CHARS", 2000)
+if SCOPE_ITEM_DESCRIPTION_MAX_CHARS < 1:
+    raise ImproperlyConfigured("Refusing to boot: SCOPE_ITEM_DESCRIPTION_MAX_CHARS must be at least 1.")
+
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========
 # ---------------------------------------------------------------------------------------

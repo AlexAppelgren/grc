@@ -1796,3 +1796,14 @@ Built on these defaults; each stays yours to overrule.
       answer 403 `agent_access_only` on `/mcp`; they keep the REST API.
 - [ ] **No caching of the tool list.** `ttlMs` is 0 and `cacheScope` `private`, because
       reach can be switched off at any moment and the list must follow it at once.
+
+## d89-scope-items-model: what a scope item row holds (2026-09-25, OWN-01, D-91)
+
+- [ ] Default taken: a scope item names one jurisdiction, one regime term and one public
+      https address, as the package's acceptance says; PRD OWN-01 speaks of terms and
+      addresses in the plural. A bank that needs more asks for a second item. Say if one item
+      should carry several of each (a join table per list, no other change).
+- [ ] Default taken: the item row is written with the request that asks for it, as
+      `requested`, so the approver sees exactly what they approve; it is `in_scope` only after
+      the second person's passkey approval, and `declined` if the request is rejected or
+      withdrawn. No key and no agent writes one either way.

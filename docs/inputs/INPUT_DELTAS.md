@@ -1922,3 +1922,29 @@ row per call an agent access credential makes (`api_key_id`, `agent_access_id`,
 `(tenant_id, …)` keys; the credential is a plain key into the mixed `api_key` table. It holds
 no content column. A tenant ledger under D-53: the purge deletes a row whole ten years after
 it was written.
+
+## d89-scope-items-model. Scope items on the regulatory scope request (2026-09-25, taxonomy 0012, OWN-01, D-91)
+
+Version 0.3 of the schema has no scope item: PRD 0.7's OWN-01 adds one (D-89, ADR 0059).
+Taxonomy 0012 builds it on the regulatory scope request rather than beside it:
+
+- `scope_item` is new, a tenant table under enabled and forced row-level security: `key`
+  (stable, unique per bank), `name`, `description` (capped by
+  `SCOPE_ITEM_DESCRIPTION_MAX_CHARS`), `jurisdiction_id`, `regime_term_id`,
+  `official_reference`, `source_url` and `status`. The address is an https page on a public
+  host, checked by the model's validator at the boundary and its scheme again by the check
+  `scope_item_source_https`. One jurisdiction and one regime term per item, and one address:
+  a bank that needs more asks for a second item.
+- `scope_item_status` is a new tier-one kind (§1): `requested` while the request that adds
+  the item waits, `in_scope` once approved, `declined` when that request is rejected or
+  withdrawn, `removed` once an approved request takes it out. The item row is written with
+  its request, so the request carries what the approver sees; it is in scope only after the
+  approval.
+- `footprint_change_scope_item` is new: the request, the item and `action` (`added` or
+  `removed`, `footprint_action`), unique per request and item. The decision stays the
+  request's, so `footprint_change_request_four_eyes` and the one-waiting-request rule cover
+  it unchanged.
+- `footprint_history.term_id` becomes nullable and `scope_item_id` is added; the check
+  `footprint_history_term_or_scope_item` demands exactly one. The table stays append-only.
+- Every reference to a tenant row is also a composite `(tenant_id, …)` key, so
+  `footprint_change_request` and `scope_item` gain `UNIQUE (tenant_id, id)`.
