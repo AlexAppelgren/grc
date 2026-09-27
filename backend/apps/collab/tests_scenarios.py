@@ -299,12 +299,15 @@ class CollabScenarioTests(ScenarioTestCase):
         """
         run_col_s9(self)
 
-    @skip("pending: COL-S10 (COL-02, COL-04, chunk 10)")
+    # COL-S10 (c10-producers)
     def test_col_s10(self) -> None:
         """COL-S10
 
         Participation, confirmed links and new versions notify the people involved, once, if they can read (COL-02, COL-04).
         """
+        from apps.collab.tests_producers import run_col_s10
+
+        run_col_s10(self)
 
     # COL-S11 (c10-reminders-escalation-reviews)
     def test_col_s11(self) -> None:
