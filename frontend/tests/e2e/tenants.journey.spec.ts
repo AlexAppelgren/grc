@@ -37,6 +37,8 @@ async function bearerOf(page: Page): Promise<Record<string, string>> {
   const refreshed = await page.request.post(`${BACKEND_URL}/api/v1/auth/refresh`);
   expect(refreshed.status(), 'the session the UI opened refreshes').toBe(200);
   return { Authorization: `Bearer ${((await refreshed.json()) as { accessToken: string }).accessToken}` };
+}
+
 // c11-fe-admin-security (ADM-S1, ID-08): the admin sets the bank's session limits. Above the
 // platform maximum the server's 422 renders under its field; a limit at the maximum saves
 // behind the passkey step-up. The limits the bank had are restored whatever happens, so no

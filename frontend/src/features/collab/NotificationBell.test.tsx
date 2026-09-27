@@ -53,9 +53,8 @@ function me(unreadNotifications: number | null): Me {
     enrolmentPending: false,
     passkeyCount: 1,
     stepUpValidUntil: null,
-    counts: unreadNotifications === null ? null : { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications },
+    counts: unreadNotifications === null ? null : { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 },
     lastVisitAt: null,
-    headOf: [],
     notificationPrefs: null,
   };
 }
