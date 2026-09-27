@@ -97,6 +97,11 @@ class RemoveEvidence(EvidenceTestCase):
         self.assertIsNone(self.row(body["id"]).removed_at)
         self.assertEqual(self.audit_rows(evidence_logic.REMOVED), [], "a refusal writes no audit row")
 
+        added = self.attach({"kind": "reference", "name": "Policy 13"})
+        self.assertEqual(added.status_code, 409, "nor can evidence join what the request was made with")
+        self.assertEqual(added.json()["code"], "evidence_locked")
+        self.assertEqual(len(self.audit_rows(evidence_logic.ATTACHED)), 1, "only the first attach is on record")
+
     def test_another_banks_removal_is_404(self) -> None:
         body = self.attach({"kind": "reference", "name": "Policy 12"}).json()["evidence"]
         other = bank_with_case()
