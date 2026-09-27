@@ -47,15 +47,29 @@ _WEEKDAY_CADENCES = (AgentCadence.WEEKLY.value, AgentCadence.MONTHLY.value)
 _MONDAY = 1
 
 
-def own_agent(tenant_agent_id: uuid.UUID) -> TenantAgent:
+def own_agent(tenant_agent_id: uuid.UUID, *, lock: bool = False) -> TenantAgent:
     """The caller's bank's own agent, read under row-level security: another bank's agent
     and one that does not exist are the same 404. It is fenced before it is returned, so
-    every control that starts here refuses one of bleqq's agents."""
-    agent = TenantAgent.objects.select_related("agent", "paused_by").filter(pk=tenant_agent_id).first()  # ordering: pk lookup, at most one row
+    every control that starts here refuses one of bleqq's agents. A writer that saves the
+    whole row, or decides on its pause, asks for `lock`, so a pause committed meanwhile is
+    waited for and read rather than written over."""
+    queryset = TenantAgent.objects.select_related("agent", "paused_by")
+    if lock:
+        queryset = queryset.select_for_update(of=("self",))
+    agent = queryset.filter(pk=tenant_agent_id).first()  # ordering: pk lookup, at most one row
     if agent is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
     refuse_platform_agent(agent.agent)
     return agent
+
+
+def refuse_stopped(agent: TenantAgent) -> None:
+    """A switched-off or paused agent starts no run, whoever asks: run now and a research
+    request alike."""
+    if not agent.enabled:
+        raise ProblemError(status=409, code="agent_disabled", detail="The agent is switched off. Switch it on first.")
+    if agent.paused_at is not None:
+        raise ProblemError(status=409, code="agent_paused", detail="The agent is paused. Resume it first.")
 
 
 def lock_tenant(tenant: Tenant, purpose: str) -> None:
@@ -235,7 +249,7 @@ def create_tenant_agent(*, who: Principal, tenant: Tenant, body: TenantAgentInpu
 def update_tenant_agent(*, who: Principal, tenant: Tenant, tenant_agent_id: uuid.UUID, body: TenantAgentUpdate) -> dict[str, Any]:
     """`PATCH /agents/{tenantAgentId}`: what the body sends and nothing else. Switching on
     needs the bank's monthly cap first; switching off is always allowed."""
-    agent = own_agent(tenant_agent_id)
+    agent = own_agent(tenant_agent_id, lock=True)
     before = _state(agent)
     sent = body.model_fields_set
     if body.cadence is not None:

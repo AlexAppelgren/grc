@@ -50,6 +50,9 @@ def policy_out(tenant: Tenant) -> dict[str, Any]:
 
 
 def _check_maximums(idle_minutes: int | None, absolute_hours: int | None) -> None:
+    if idle_minutes is not None and idle_minutes < settings.SESSION_IDLE_MINUTES_MIN:
+        message = f"The idle limit is at least {settings.SESSION_IDLE_MINUTES_MIN} minutes, longer than a sign-in stays fresh."
+        raise ProblemError(status=422, code="validation_error", detail=message, errors=[{"field": "sessionIdleMinutes", "message": message}])
     errors = []
     if idle_minutes is not None and idle_minutes > settings.SESSION_IDLE_MINUTES_MAX:
         errors.append({"field": "sessionIdleMinutes", "message": f"The idle limit can be at most {settings.SESSION_IDLE_MINUTES_MAX} minutes."})

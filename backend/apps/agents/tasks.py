@@ -183,16 +183,18 @@ def run_platform_agents() -> None:
 # ---------------------------------------------------------------------------------------
 # A bank's own agents
 # ---------------------------------------------------------------------------------------
-def _run_budget_limit() -> Decimal:
+def run_budget_limit() -> Decimal:
     return Decimal(settings.AGENT_RUN_BUDGET_LIMIT).quantize(budget.ZERO)
 
 
-def _fits_the_cap(tenant: Tenant, limit: Decimal) -> bool:
-    """Whether a run may start under the cap. The bank's spend is serialized for the rest of
-    the transaction, so a beat and a run now cannot both take the last of it."""
-    lock_tenant(tenant, "agent_spend")
+def fits_the_cap(tenant: Tenant, limit: Decimal) -> bool:
+    """Whether a run may start under the cap: what the month's runs have spent or may still
+    spend (`budget.held`), plus this run's limit. The bank's spend is serialized for the rest
+    of the transaction, so a beat, a run now and a research request cannot both take the
+    last of it."""
+    lock_tenant(tenant, budget.SPEND_LOCK)
     cap = budget.cap_of(tenant)
-    return cap is not None and budget.spend(tenant) + limit <= cap
+    return cap is not None and budget.held(tenant) + limit <= cap
 
 
 def _notify_cap(tenant_agent: TenantAgent) -> None:
@@ -237,8 +239,8 @@ def open_tenant_run(tenant_agent: TenantAgent, *, trigger: RunTrigger, requested
             raise
         _skipped(agent=agent, reason=refused.code, tenant_id=tenant.id, after=opener.schedule_of(tenant_agent))
         return None
-    limit = _run_budget_limit()
-    if not _fits_the_cap(tenant, limit):
+    limit = run_budget_limit()
+    if not fits_the_cap(tenant, limit):
         if not scheduled:
             raise ValidationError(
                 "This run could cost more than is left of the bank's monthly cap on its own agents.",
@@ -269,7 +271,7 @@ def open_request_run(research_request: ResearchRequest, *, requested_by: User, a
     `requests.py`'s to check first."""
     tenant_agent = research_request.tenant_agent
     if tenant_agent is not None:
-        agent, limit, scope = tenant_agent.agent, _run_budget_limit(), None
+        agent, limit, scope = tenant_agent.agent, run_budget_limit(), None
     else:
         agent = Agent.objects.get(key=agent_key, scope=AgentScopeKind.PLATFORM.value)
         limit, scope = None, {"jurisdictions": _covered(agent)}

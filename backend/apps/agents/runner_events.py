@@ -12,7 +12,11 @@ that every bank reads, nor another bank's.
 The cap's second point is here (AGT-04): an event that leaves a bank's own run open with the
 month's spend past the bank's monthly cap stops the run through the runner and pauses the
 agent with the reason `budget_cap`, notifying the people who hold `agents.manage`, as the
-scheduler does before a run starts. A platform run has no cap of a bank's to meet.
+scheduler does before a run starts. It reads the spend under the same lock as the
+scheduler, so two runs' events cannot each miss the other's cost. A platform run has no cap
+of a bank's to meet. An event for a bank that has switched its AI features off since the run
+started stops the run with the reason `feature_off`, and pauses nothing: the switch is the
+whole bank's, and switching back on lets the agent's next run start.
 
 What a bank's own agent finds for an approved scope item arrives as findings (OWN-02, ADR
 0059): `apply_finding` checks the run is that research, running, in the zone applying it,
@@ -36,13 +40,15 @@ from pydantic import ValidationError as SchemaError
 
 from apps.agents import budget, control, tenant_agents
 from apps.agents.models import AgentRun, ResearchRequestKind, RunStatus
+from apps.agents.tenant_agents import lock_tenant
 from apps.agents.tasks import _notify_cap as notify_cap  # the scheduler's own notice, never a copy
 from apps.agents.schemas import AgentRunFinish, AgentRunStats
 from apps.proposals import tenant_agent
 from apps.proposals.models import Proposal
-from apps.shared import tenancy
+from apps.shared import ai, tenancy
 from apps.shared.adapters.agent_runner import RunnerEvent
 from apps.shared.audit import Actor, record
+from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 
 ACTOR = Actor.system("agent_runner")
@@ -142,12 +148,19 @@ def apply_event(event: RunnerEvent) -> AgentRun:
 
 
 def _hold_to_the_cap(run: AgentRun) -> None:
-    """Stop an open run of a bank's own agent whose cost has taken the month's spend past the
-    bank's cap, and pause the agent. Reaching the cap is not passing it."""
+    """Stop an open run of a bank's own agent whose bank has switched its AI off, or whose
+    cost has taken the month's spend past the bank's cap, pausing the agent for the cap.
+    Reaching the cap is not passing it."""
     tenant_agent = run.tenant_agent
     if tenant_agent is None:
         return
+    try:
+        ai.ensure_enabled()
+    except ProblemError as off:
+        control.stop(run, by=None, reason=off.code)
+        return
     tenant = Tenant.objects.get(pk=tenant_agent.tenant_id)
+    lock_tenant(tenant, budget.SPEND_LOCK)
     cap = budget.cap_of(tenant)
     if cap is not None and budget.spend(tenant) <= cap:
         return

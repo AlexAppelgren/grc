@@ -2160,3 +2160,25 @@ The review is `docs/reviews/CHUNK10_REVIEW.md`. Both medium findings are fixed; 
       leave by mail to that bank's own members. The alternative is library titles only,
       with an internal item named by its kind.
 
+
+## security-review-c11: chunk 11's security review (2026-09-27, AGT-03 to AGT-06, PRO-04, ID-08)
+
+The review is `docs/reviews/CHUNK11_REVIEW.md`. One high and nine medium findings are fixed
+in the package; nothing waits on you for them. Defaults taken:
+
+- [ ] **The runner leg must apply runner events before a real runner is switched on (H80).**
+      Nothing polls a runner today, so a real run would never report its cost and the cap
+      would hold only at open. No environment you deploy can run an agent yet (both runners
+      are refused at boot), so this is recorded, not fixed here. Default: lifting ADR 0047's
+      refusal waits on H80.
+- [ ] **The idle limit has a floor of 15 minutes (`SESSION_IDLE_MINUTES_MIN`).** The web app
+      refreshes a session only when its 10-minute access token runs out, so a shorter idle
+      limit signed working people out. A bank asking for less gets a 422; a stored lower
+      value reads as 15. Say if you want the floor elsewhere (it must exceed
+      `ACCESS_TOKEN_TTL_MINUTES`).
+- [ ] **The person who asked for a re-tag cannot approve its batch.** A second editor
+      decides it, as for any proposal. Enforced in the logic; the database backstop is H93.
+- [ ] **Should raising the agents' monthly cap need a passkey step-up (H83)?** It needs
+      `agents.manage` only; the AI switch needs a step-up. Default: unchanged until you say.
+- [ ] **May a bank add a draft agent definition (H85)?** `tenant-source-watch` v1 is a draft,
+      and every bank agent runs on it. Default: unchanged, since the E2E journeys add it.

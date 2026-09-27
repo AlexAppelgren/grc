@@ -7,9 +7,11 @@ Every request opens a run with the trigger `request` and the request on it
 is its run's. A bank's request is checked in this order, each refusal writing nothing:
 an agent of its own at all (409 `no_tenant_agent`, since no bank commands one of bleqq's),
 the agent named (404 another bank's, 403 one it may not steer), the fields its kind takes,
-the source or the address, the plan's monthly number (429 `plan_limit_reached`), the AI
-switch (422 `feature_off`) and the cap (422 `budget_cap_reached`, read as `budget.at_cap`: a
-request inherits the cap the bank set).
+the source, the plan's monthly number (429 `plan_limit_reached`), the AI switch (422
+`feature_off`), the agent switched off or paused (409, as run now), the cap (422
+`budget_cap_reached`: the run's budget must fit under it, read under the same lock as run
+now and the scheduler, `tasks.fits_the_cap`), and only then the address, so a request
+that would be refused fetches nothing.
 
 **What a bank writes stays in the bank (D-98).** The topic is the bank's own text: length
 capped by the schema, screened as untrusted (`risk_flags`), stored on the bank's request
@@ -22,7 +24,10 @@ switch stops.
 host every address of which is public, never a standards publisher (D-45), and follows no
 redirect it would not have accepted as the first address. The connection goes to the
 address that was checked, so the name cannot move between the check and the connect. What
-comes back is screened and stored as text: never executed, never rendered as HTML.
+comes back is screened and stored as text: never executed, never rendered as HTML. The
+whole fetch, every read and every redirect, has one deadline
+(`RESEARCH_URL_TOTAL_SECONDS`), and a watchdog shuts the socket when it passes, so a page
+that answers a byte at a time, headers or body, cannot hold the request.
 
 The console's re-tag opens a run of bleqq's `RETAG_AGENT` in no tenant's zone and reads no
 bank's row; what that run finds is filed by `file_retag` through `batch.create_batch()`,
@@ -31,10 +36,13 @@ the one writer of a batch (PRO-04).
 
 from __future__ import annotations
 
+import contextlib
 import http.client
 import ipaddress
 import socket
 import ssl
+import threading
+import time
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -49,7 +57,7 @@ from apps.agents import budget, tasks
 from apps.agents.models import AgentRun, ResearchRequest, ResearchRequestKind, ResearchRequestStatus, RunStatus, TenantAgent
 from apps.agents.schemas import ResearchRequestInput, ResearchRequestOut, ResearchRequestPage, RetagRequestInput
 from apps.agents.screen import screen_all
-from apps.agents.tenant_agents import lock_tenant, own_agent
+from apps.agents.tenant_agents import lock_tenant, own_agent, refuse_stopped
 from apps.identity.models import User
 from apps.proposals import batch
 from apps.proposals.logic import Proposer
@@ -184,8 +192,6 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
     if body.source_id is not None:
         _checked_source(body.source_id)
     user, actor = _person(who)
-    # Fetched before the bank's requests are serialized below, so a slow page holds no lock.
-    fetched_text = _fetch(body.url) if body.url is not None else ""
     with transaction.atomic():
         lock_tenant(tenant, "research_requests")
         start, end = budget.month(tenant)
@@ -200,10 +206,12 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
             ai.ensure_enabled()
         except ProblemError as off:
             raise ValidationError(off.detail, code="feature_off") from None
-        if budget.at_cap(tenant):
+        refuse_stopped(tenant_agent)
+        if not tasks.fits_the_cap(tenant, tasks.run_budget_limit()):
             raise ValidationError(
-                "Your organisation's agents have reached this month's cap, or no cap is set.", code="budget_cap_reached"
+                "This run could cost more than is left of this month's cap, or no cap is set.", code="budget_cap_reached"
             )
+        fetched_text = _fetch(body.url) if body.url is not None else ""
         request = ResearchRequest.objects.create(
             tenant=tenant,
             tenant_agent=tenant_agent,
@@ -265,10 +273,18 @@ def _not_allowed(reason: str) -> ValidationError:
     return ValidationError(f"That address cannot be checked: {reason}", code="url_not_allowed")
 
 
+# IPv6 prefixes that carry an IPv4 address in their last 32 bits: NAT64 (RFC 6052) and the
+# deprecated IPv4-compatible form. Either is judged as the IPv4 address it carries.
+_WRAPS_IPV4 = (ipaddress.IPv6Network("64:ff9b::/96"), ipaddress.IPv6Network("::/96"))
+
+
 def _public(address: str) -> bool:
-    ip = ipaddress.ip_address(address.split("%", 1)[0])
-    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
-        ip = ip.ipv4_mapped
+    ip: ipaddress.IPv4Address | ipaddress.IPv6Address = ipaddress.ip_address(address.split("%", 1)[0])
+    if isinstance(ip, ipaddress.IPv6Address):
+        if ip.ipv4_mapped is not None:
+            ip = ip.ipv4_mapped
+        elif any(ip in prefix for prefix in _WRAPS_IPV4):
+            ip = ipaddress.IPv4Address(int(ip) & 0xFFFFFFFF)
     return ip.is_global and not ip.is_multicast
 
 
@@ -283,12 +299,11 @@ def _resolve(host: str) -> list[str]:
 def _allowed(url: str) -> tuple[str, str, str]:
     """The host, the checked address and the path an address may be fetched at, or
     `url_not_allowed`."""
-    parts = urlsplit(url)
     try:
-        port = parts.port
+        parts = urlsplit(url)
+        port, host = parts.port, (parts.hostname or "").rstrip(".").lower()
     except ValueError:
-        raise _not_allowed("its port is not a number.") from None
-    host = (parts.hostname or "").rstrip(".").lower()
+        raise _not_allowed("it is not a well-formed address.") from None
     if parts.scheme != "https" or not host or port not in (None, 443) or parts.username or parts.password:
         raise _not_allowed("only an https address on the standard port, with no user name, is checked.")
     if any(host == listed or host.endswith(f".{listed}") for listed in settings.STANDARDS_PUBLISHER_HOSTS):
@@ -320,34 +335,79 @@ class _CheckedConnection(http.client.HTTPSConnection):
         self.sock = self.tls.wrap_socket(raw, server_hostname=self.host)
 
 
-def _get(*, host: str, address: str, target: str) -> Fetched:
-    """One GET, following nothing (the network's door, replaced in tests)."""
+def _left(deadline: float) -> float:
+    """The seconds a socket may wait now: at most one connection's timeout, and never past
+    the fetch's deadline."""
+    left = deadline - time.monotonic()
+    if left <= 0:
+        raise Unreachable()
+    return min(left, settings.RESEARCH_URL_TIMEOUT_SECONDS)
+
+
+def _read_body(response: Any, *, deadline: float, sock: Any = None) -> bytes:
+    """At most `RESEARCH_URL_MAX_BYTES` of the body, one network read at a time (`read1`),
+    each waiting no longer than the deadline allows, so a body sent a byte at a time is cut
+    off there."""
+    body = b""
+    while len(body) < settings.RESEARCH_URL_MAX_BYTES:
+        wait = _left(deadline)
+        if sock is not None:
+            sock.settimeout(wait)
+        piece = response.read1(min(64 * 1024, settings.RESEARCH_URL_MAX_BYTES - len(body)))
+        if not piece:
+            break
+        body += piece
+    return body
+
+
+def _cut(connection: Any) -> None:
+    """Shut the connection's socket, which ends a read blocked in http.client, where the
+    status line and the headers are read and no deadline of ours is checked."""
+    if connection.sock is not None:
+        with contextlib.suppress(OSError):
+            connection.sock.shutdown(socket.SHUT_RDWR)
+
+
+def _get(*, host: str, address: str, target: str, deadline: float) -> Fetched:
+    """One GET, following nothing, within the fetch's deadline (the network's door,
+    replaced in tests). A watchdog shuts the socket at the deadline, so a server that sends
+    its headers a byte at a time is cut off as one that sends its body so."""
     connection = _CheckedConnection(host, address)
+    connection.timeout = _left(deadline)
+    watchdog = threading.Timer(deadline - time.monotonic(), _cut, args=(connection,))
+    watchdog.daemon = True
+    watchdog.start()
     try:
         connection.request("GET", target, headers={"User-Agent": "bleqq-research/1", "Accept": "text/html, text/plain"})
         response = connection.getresponse()
         return Fetched(
             status=response.status,
             location=response.getheader("Location") or "",
-            body=response.read(settings.RESEARCH_URL_MAX_BYTES),
+            body=_read_body(response, deadline=deadline, sock=connection.sock),
             charset=response.headers.get_content_charset() or "utf-8",
         )
     except (OSError, http.client.HTTPException) as failure:
         raise Unreachable() from failure
     finally:
+        watchdog.cancel()
         connection.close()
 
 
 def _fetch(url: str) -> str:
-    """The page at `url` as text, each redirect checked as the first address was."""
+    """The page at `url` as text, each redirect checked as the first address was, the whole
+    of it within one deadline."""
+    deadline = time.monotonic() + settings.RESEARCH_URL_TOTAL_SECONDS
     for _ in range(settings.RESEARCH_URL_MAX_REDIRECTS + 1):
         host, address, target = _allowed(url)
         try:
-            answer = _get(host=host, address=address, target=target)
+            answer = _get(host=host, address=address, target=target, deadline=deadline)
         except Unreachable:
             raise ValidationError("That address could not be reached.", code="url_unreachable") from None
         if answer.status in _REDIRECTS and answer.location:
-            url = urljoin(url, answer.location)
+            try:
+                url = urljoin(url, answer.location)
+            except ValueError:
+                raise _not_allowed("it redirects to an address that is not well formed.") from None
             continue
         if not 200 <= answer.status < 300:
             raise ValidationError("That address did not answer with a page.", code="url_unreachable")

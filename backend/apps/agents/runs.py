@@ -239,8 +239,8 @@ def _record_replay(run: AgentRun, who: Principal, summary: str) -> None:
 def _own_run(api_key_id: uuid.UUID | None, run_id: uuid.UUID) -> AgentRun:
     """The run this key opened, locked until the caller's transaction ends (H36). Another
     key's run, and one that never existed, answer the same 404: which run ids exist is not
-    something a key may probe for. No key at all (a person naming a run) finds nothing,
-    because every run was opened by a key.
+    something a key may probe for. No key at all finds the keyless runs the scheduler and
+    requests open, so a person naming a run is refused first (`refuse_person_run`).
 
     Every caller writes: a close, or a filing that names the run. The lock is what makes the
     run's status true for the whole write, so a close waits for a filing in flight and counts
@@ -316,6 +316,16 @@ def require_open_run(who: Principal, run_id: uuid.UUID | None) -> AgentRun:
     check or a registered change. A bank's key is refused first (`refuse_tenant_key`)."""
     refuse_tenant_key(who)
     return require_open_run_of_key(who.subject_id, run_id)
+
+
+def refuse_person_run(person: Any, run_id: uuid.UUID | None) -> None:
+    """A person files under no agent run: a run opened by the scheduler or a request has no
+    key, so `_own_run` alone would find it for a proposer who carries none, and a person's
+    work would read as the agent's and spend the run's budget. It answers the 404 a run of
+    another key answers, whatever the id, so it tells a person nothing about which runs
+    exist."""
+    if person is not None and run_id is not None:
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
 
 
 def require_open_run_of_key(api_key_id: uuid.UUID | None, run_id: uuid.UUID | None) -> AgentRun:

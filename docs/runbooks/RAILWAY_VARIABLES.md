@@ -98,6 +98,8 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `RESEARCH_URL_TIMEOUT_SECONDS` | api | `5` | `5` | `5` | The seconds one connection of a `check_url` request's fetch may take (AGT-05, c11-research-requests) |
 | `RESEARCH_URL_MAX_BYTES` | api | `1000000` | `1000000` | `1000000` | The most bytes of a fetched page a `check_url` request keeps (AGT-05, c11-research-requests) |
 | `RESEARCH_URL_MAX_REDIRECTS` | api | `3` | `3` | `3` | How many redirects a `check_url` fetch follows, each checked for a public https host first; past it the request answers 422 `url_unreachable` (AGT-05, c11-research-requests) |
+| `RESEARCH_URL_TOTAL_SECONDS` | api | `15` | `15` | `15` | The most seconds one `check_url` fetch may take in all, every read and redirect together, so a page that answers a byte at a time cannot hold the request; past it the request answers 422 `url_unreachable` (security-review-c11, AGT-05) |
+| `SESSION_IDLE_MINUTES_MIN` | api | `15` | `15` | `15` | The shortest idle limit a bank may set on its sessions, in minutes (ID-08). It must exceed `ACCESS_TOKEN_TTL_MINUTES`, because a session is refreshed only when its access token runs out; the app refuses to boot otherwise, and a stored limit below it is read as it (security-review-c11) |
 
 ## Testing, observability, budgets
 

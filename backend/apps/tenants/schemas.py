@@ -1344,10 +1344,12 @@ class SecurityPolicyBody(WriteBody):
         ge=1,
         description=(
             "How many whole minutes a session may go without being refreshed before it ends, "
-            "at least 1 and at most the platform maximum that `GET /tenant/security-policy` "
-            "returns as `sessionIdleMinutesMax`, or null for the platform default. A JSON "
-            "number, never a string. Above the maximum is refused with "
-            "`above_platform_maximum`; below 1 with `validation_error`."
+            "at least the platform floor (15 minutes by default, always longer than an access "
+            "token lives, so a person who is working is never signed out as idle) and at most "
+            "the platform maximum that `GET /tenant/security-policy` returns as "
+            "`sessionIdleMinutesMax`, or null for the platform default. A JSON number, never a "
+            "string. Above the maximum is refused with `above_platform_maximum`; below the "
+            "floor with `validation_error`, naming this field."
         ),
     )
     session_absolute_hours: int | None = Field(

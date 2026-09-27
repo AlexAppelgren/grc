@@ -98,6 +98,9 @@ test.describe('agents journeys', () => {
     await page.goto('/console/agents');
     await page.locator('[data-agent-definition="watch-sweeper"]').getByRole('link').click();
     await expect(page).toHaveURL(/\/console\/agents\/watch-sweeper$/);
+    // Settle the link's own read first: openDefinition reloads the page, and a read still in
+    // flight from the click would be the response it waits for, with no body to read.
+    await expect(page.locator('[data-agent-versions] [data-agent-version]').first()).toBeVisible();
     const before = await openDefinition(page, 'watch-sweeper');
     expect(before).toEqual(expect.arrayContaining([1, 2]));
     const current = Math.max(...before);
@@ -139,8 +142,8 @@ test.describe('agents journeys', () => {
     }
   });
 
-  // AGT-S5 and AGT-S6 steer tenant A's one seeded agent and its cap, and AGT-S7's requests
-  // open runs of that agent, so they run one after the other rather than beside each other.
+  // AGT-S5, AGT-S6 and AGT-S7 steer tenant A's one seeded agent and its cap, so they run
+  // one after the other rather than beside each other.
   test.describe('a bank steers its own agent', () => {
     test.describe.configure({ mode: 'serial' });
 
@@ -271,24 +274,28 @@ test.describe('agents journeys', () => {
       // for a re-tag in the console. Each is a job whose run opens at once. The mock runner
       // files no batch, so the re-tag stays "being prepared" here; the batch it files is
       // proven by AGT-S7's integration test. The topic is the attempt's own, so a retry never
-      // reads an earlier attempt's request.
+      // reads an earlier attempt's request. A request's run must fit under the cap as run
+      // now's does, and the seeded month leaves no room, so the cap is raised first and put
+      // back after, beside AGT-S5 and AGT-S6 rather than during them.
       test.setTimeout(120_000);
       allowFreshContext(apiGuard);
       const attempt = `${Date.now()}`;
       const topic = `DORA subcontracting ${attempt}`;
 
       await signInAs(page, LOGINS.admin);
-      await page.goto('/admin/agents');
-      const checked = await askOurAgent(page, { source: 'fi.se sweep (E2E)' });
-      const researched = await askOurAgent(page, { topic });
-      expect([checked.kind, researched.kind]).toEqual(['check_source', 'research_topic']);
-      expect(researched.tenantAgentId).toBe(checked.tenantAgentId);
-      const ours = page.locator('[data-research-list]');
-      await expect(ours.locator(`[data-research-request="${checked.id}"]`)).toContainText('Check this source now');
-      await expect(ours.locator(`[data-research-request="${researched.id}"]`)).toContainText(topic);
-      // Each request opened a run of tenant A's one seeded agent: stop them, so the agent is
-      // as seeded for the journeys that steer it.
-      await restoreSeededAgent(page);
+      try {
+        await openAgents(page);
+        await setCap(page, '40.00');
+        const checked = await askOurAgent(page, { source: 'fi.se sweep (E2E)' });
+        const researched = await askOurAgent(page, { topic });
+        expect([checked.kind, researched.kind]).toEqual(['check_source', 'research_topic']);
+        expect(researched.tenantAgentId).toBe(checked.tenantAgentId);
+        const ours = page.locator('[data-research-list]');
+        await expect(ours.locator(`[data-research-request="${checked.id}"]`)).toContainText('Check this source now');
+        await expect(ours.locator(`[data-research-request="${researched.id}"]`)).toContainText(topic);
+      } finally {
+        await restoreSeededAgent(page);
+      }
       await signOut(page);
 
       await signInAs(page, LOGINS.editor);

@@ -48,16 +48,7 @@ def run_now(
     """`POST /agents/{tenantAgentId}/runs`: one run now, outside the cadence."""
     with transaction.atomic():
         agent = tenant_agents.own_agent(tenant_agent_id)
-        if not agent.enabled:
-            raise ProblemError(
-                status=409,
-                code="agent_disabled",
-                detail="The agent is switched off. Switch it on first.",
-            )
-        if agent.paused_at is not None:
-            raise ProblemError(
-                status=409, code="agent_paused", detail="The agent is paused. Resume it first."
-            )
+        tenant_agents.refuse_stopped(agent)
         run = tasks.open_tenant_run(agent, trigger=RunTrigger.MANUAL, requested_by=_person(who))
     if run is None:  # pragma: no cover - only a scheduled run is skipped without an answer
         raise AssertionError("a run a person asked for either opens or is refused")

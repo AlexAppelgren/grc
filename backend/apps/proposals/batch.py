@@ -37,6 +37,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.agents import runs
+from apps.agents.models import AgentRun
 from apps.agents.screen import screen_all
 from apps.library.reading import active_shared_obligations, obligation_headings, obligation_scope_terms, terms_of, unknown_provision_keys
 from apps.proposals import logic, standards
@@ -173,6 +174,7 @@ def create_batch(
         # first, and this refuses any other caller writing from inside a bank.
         raise ProblemError(status=403, code="permission_denied", detail="A bank does not re-tag the shared library.")
     run = None
+    runs.refuse_person_run(proposer.user, agent_run_id)
     if proposer.api_key_id is not None or agent_run_id is not None:
         run = runs.require_open_run_of_key(proposer.api_key_id, agent_run_id)
     if kind not in BATCH_KINDS:
@@ -339,6 +341,13 @@ def _decisions(decision: ProposalBatchDecision) -> tuple[dict[uuid.UUID, tuple[s
     return named, rest
 
 
+def _requested_by(proposal: Proposal) -> uuid.UUID | None:
+    """The person whose request opened the agent run that filed `proposal`, if any."""
+    if proposal.agent_run_id is None:
+        return None
+    return AgentRun.objects.filter(pk=proposal.agent_run_id).values_list("requested_by_id", flat=True).first()  # ordering: pk lookup, at most one row
+
+
 def decide(*, proposal: Proposal, decision: ProposalBatchDecision, reviewer: Reviewer, step_up_assertion_id: uuid.UUID | None) -> Proposal:
     """Decide a batch whole or row by row (PRO-04, PRO-S8), in one transaction of its own.
 
@@ -346,8 +355,8 @@ def decide(*, proposal: Proposal, decision: ProposalBatchDecision, reviewer: Rev
     `person_review_required`: a re-tag batch is decided by a person), a caller inside a bank
     (403), and a malformed body. Then, under the batch's lock, a decided batch is 409
     `invalid_transition`, and the batch's proposer is 409 `four_eyes_violation`, the call
-    deciding nothing at all. The proposer is the person who asked for the re-tag: the
-    console's form files it in their name. A row named that does not belong to the batch is
+    deciding nothing at all. So is the person who asked for the re-tag whose run filed the
+    batch (`_requested_by`): the agent only carried out their request. A row named that does not belong to the batch is
     422 `unknown_key`, and one already decided is 409 `invalid_transition`.
 
     A pending row whose record was retired or moved since the batch was filed is stale: named
@@ -366,7 +375,7 @@ def decide(*, proposal: Proposal, decision: ProposalBatchDecision, reviewer: Rev
         proposal.refresh_from_db(from_queryset=Proposal.objects.select_for_update())
         if proposal.status != ProposalStatus.OPEN.value:
             raise ValidationError("This batch has already been decided.", code="invalid_transition")
-        if proposal.proposed_by_user_id == reviewer.user.id:
+        if proposal.proposed_by_user_id == reviewer.user.id or _requested_by(proposal) == reviewer.user.id:
             raise ValidationError("A batch is decided by someone other than the person who asked for it.", code="four_eyes_violation")
         rows = list(
             ProposalBatchRow.objects.select_for_update(of=("self",))

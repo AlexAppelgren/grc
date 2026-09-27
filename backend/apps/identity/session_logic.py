@@ -84,7 +84,9 @@ def actor_of(user: User) -> Actor:
 def limits(tenant_id: uuid.UUID | None) -> tuple[timedelta, timedelta]:
     """The idle and absolute limits of a session in `tenant_id`: its bank's policy, the
     platform default where the bank sets none (or for a platform session), and never above
-    the platform maximum, even for a row written around the policy route's check. Activates
+    the platform maximum, even for a row written around the policy route's check. The idle
+    limit is never below `SESSION_IDLE_MINUTES_MIN`, which outlasts an access token, so a
+    person who is working is never signed out as idle. Activates
     the tenant, as every session in it runs there."""
     idle, absolute = settings.SESSION_IDLE_MINUTES_DEFAULT, settings.SESSION_ABSOLUTE_HOURS_DEFAULT
     if tenant_id is not None:
@@ -94,7 +96,7 @@ def limits(tenant_id: uuid.UUID | None) -> tuple[timedelta, timedelta]:
             idle = policy.session_idle_minutes or idle
             absolute = policy.session_absolute_hours or absolute
     return (
-        timedelta(minutes=min(idle, settings.SESSION_IDLE_MINUTES_MAX)),
+        timedelta(minutes=max(min(idle, settings.SESSION_IDLE_MINUTES_MAX), settings.SESSION_IDLE_MINUTES_MIN)),
         timedelta(hours=min(absolute, settings.SESSION_ABSOLUTE_HOURS_MAX)),
     )
 

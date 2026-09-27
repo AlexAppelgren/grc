@@ -771,10 +771,7 @@ def create(
     injection screen (AGT-07, H40) and stored exactly as it arrived; what the screen finds
     is kept on the proposal, which the queue shows, and keeps the approval for a person."""
     run = None
-    if proposer.user is not None and agent_run_id is not None:
-        # A person files under no run. Runs the worker opens carry no key, so without this a
-        # keyless lookup would find one (d89-agent-research): answered as it always was.
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+    runs.refuse_person_run(proposer.user, agent_run_id)
     if proposer.agent_id is not None or agent_run_id is not None:
         run = runs.require_open_run_of_key(proposer.api_key_id, agent_run_id)
     validated_kind(kind)
