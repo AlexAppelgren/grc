@@ -9,6 +9,7 @@ when a scenario here and a heading in app.md drift apart.
 Prefixes hosted: ACC, INT.
 """
 
+from typing import Any
 from unittest import skip
 
 from django.test import TestCase
@@ -86,7 +87,7 @@ class IntegrationsScenarioTests(TestCase):
         cap(bank.tenant, "5.00")
         llm = Recording()
 
-        def ask(**page: object) -> dict[str, object]:
+        def ask(**page: Any) -> dict[str, Any]:
             with mock.patch("apps.shared.ai.get_llm", return_value=llm):
                 response = bank.ask(self.client, bank.general_key, **page)
             self.assertEqual(response.status_code, 200, response.content)
@@ -94,7 +95,7 @@ class IntegrationsScenarioTests(TestCase):
 
         # When it lists them without a page size, then 20 are returned of the 250.
         first = ask()
-        self.assertEqual((len(first["items"]), first["total"]), (settings.API_PAGE_SIZE_DEFAULT, 250))  # type: ignore[arg-type]
+        self.assertEqual((len(first["items"]), first["total"]), (settings.API_PAGE_SIZE_DEFAULT, 250))
         # And a page size of 500 is refused with the maximum named.
         refused = bank.ask(self.client, bank.general_key, limit=500)
         self.assertEqual(refused.status_code, 422)
@@ -115,11 +116,11 @@ class IntegrationsScenarioTests(TestCase):
         asked = len(llm.calls)
         cap(bank.tenant, "0.00")
         capped = ask()
-        self.assertEqual((capped["summary"]["reason"], capped["total"]), ("budget_cap", 250))  # type: ignore[index]
+        self.assertEqual((capped["summary"]["reason"], capped["total"]), ("budget_cap", 250))
         # When the tenant's AI off switch is on, then no model call is made for that tenant
         # and the list is still returned.
         cap(bank.tenant, "5.00")
         Tenant.objects.filter(pk=bank.tenant.id).update(ai_enabled=False)
         off = ask()
-        self.assertEqual((off["summary"]["reason"], off["total"], len(off["items"])), ("ai_off", 250, 20))  # type: ignore[index, arg-type]
+        self.assertEqual((off["summary"]["reason"], off["total"], len(off["items"])), ("ai_off", 250, 20))
         self.assertEqual(len(llm.calls), asked, "neither the cap nor the switch let a model be asked")
