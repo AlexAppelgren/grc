@@ -1879,3 +1879,13 @@ ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
 - The `support_access.read` row is written in the request's transaction, as the brief says;
   a handler that rolls a refused request back (`answers_problems`, a 404) takes the row with
   it, so the log holds every read that answered.
+
+## 21. The change page's case carries its assessment and close note (2026-09-25, c9-fe-triage-assessment)
+
+The case panels card has every panel read the case from `GET /changes/{changeId}`, but the
+workflow block (§19) carried neither the impact assessment nor the note of a one-person
+close, which only a write's `CasesCase` answered, so a reload lost both. `WatchCaseWorkflow`
+gains `assessment` (`CasesAssessment`, null before the case reaches assessing) and
+`closedNote`, as `CasesCase` names them. The assessment is joined to the case in the block's
+one case query, so the read costs one label query more only when the assessment names an
+effort. Both are tenant content in the bank's own zone.
