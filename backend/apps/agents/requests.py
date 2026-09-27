@@ -26,8 +26,8 @@ redirect it would not have accepted as the first address. The connection goes to
 address that was checked, so the name cannot move between the check and the connect. What
 comes back is screened and stored as text: never executed, never rendered as HTML. The
 whole fetch, every read and every redirect, has one deadline
-(`RESEARCH_URL_TOTAL_SECONDS`), so a page that answers a byte at a time cannot hold the
-request.
+(`RESEARCH_URL_TOTAL_SECONDS`), and a watchdog shuts the socket when it passes, so a page
+that answers a byte at a time, headers or body, cannot hold the request.
 
 The console's re-tag opens a run of bleqq's `RETAG_AGENT` in no tenant's zone and reads no
 bank's row; what that run finds is filed by `file_retag` through `batch.create_batch()`,
@@ -36,10 +36,12 @@ the one writer of a batch (PRO-04).
 
 from __future__ import annotations
 
+import contextlib
 import http.client
 import ipaddress
 import socket
 import ssl
+import threading
 import time
 import uuid
 from dataclasses import dataclass
@@ -358,11 +360,23 @@ def _read_body(response: Any, *, deadline: float, sock: Any = None) -> bytes:
     return body
 
 
+def _cut(connection: Any) -> None:
+    """Shut the connection's socket, which ends a read blocked in http.client, where the
+    status line and the headers are read and no deadline of ours is checked."""
+    if connection.sock is not None:
+        with contextlib.suppress(OSError):
+            connection.sock.shutdown(socket.SHUT_RDWR)
+
+
 def _get(*, host: str, address: str, target: str, deadline: float) -> Fetched:
     """One GET, following nothing, within the fetch's deadline (the network's door,
-    replaced in tests)."""
+    replaced in tests). A watchdog shuts the socket at the deadline, so a server that sends
+    its headers a byte at a time is cut off as one that sends its body so."""
     connection = _CheckedConnection(host, address)
     connection.timeout = _left(deadline)
+    watchdog = threading.Timer(deadline - time.monotonic(), _cut, args=(connection,))
+    watchdog.daemon = True
+    watchdog.start()
     try:
         connection.request("GET", target, headers={"User-Agent": "bleqq-research/1", "Accept": "text/html, text/plain"})
         response = connection.getresponse()
@@ -375,6 +389,7 @@ def _get(*, host: str, address: str, target: str, deadline: float) -> Fetched:
     except (OSError, http.client.HTTPException) as failure:
         raise Unreachable() from failure
     finally:
+        watchdog.cancel()
         connection.close()
 
 

@@ -96,7 +96,8 @@ with its guard named (F11). The low findings are HARDENING rows H50 to H65.
   requests took every API thread.
 - Fix: one deadline per fetch, `RESEARCH_URL_TOTAL_SECONDS` (15 by default, an env setting),
   shared by every hop; the body is read one network read at a time (`read1`), each waiting
-  no longer than what is left. Tests: `OneDeadlinePerFetch`. The same class fixes two low
+  no longer than what is left, and a watchdog shuts the socket at the deadline, which also
+  ends a status line or headers sent a byte at a time inside `http.client`. Tests: `OneDeadlinePerFetch`. The same class fixes two low
   findings at the same boundary: a malformed address or redirect (`https://[x]/`) answers 422
   `url_not_allowed` instead of 500, and an IPv4 address inside NAT64 (`64:ff9b::/96`) or the
   IPv4-compatible form (`::/96`) is judged as that IPv4 address.

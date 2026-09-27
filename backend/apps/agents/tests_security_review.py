@@ -19,6 +19,7 @@ app, each written before its fix:
 from __future__ import annotations
 
 import datetime
+import threading
 import uuid
 from decimal import Decimal
 from typing import Any
@@ -32,7 +33,7 @@ from django.test.utils import CaptureQueriesContext
 from apps.agents import requests, runner_events, tasks, tenant_agents
 from apps.agents.models import AgentRun, RunStatus, RunTrigger, TenantAgent, TenantAgentBudget
 from apps.agents.tests_control import ControlCase, Interrupting, with_interrupts
-from apps.agents.tests_requests import JSON, PAGE, TOPIC, RequestCase, RetagCase
+from apps.agents.tests_requests import JSON, PAGE, PUBLIC, TOPIC, RequestCase, RetagCase
 from apps.agents.tests_tasks import WEDNESDAY, BankBeatCase, Recorded, frozen, with_runner
 from apps.shared import factories, tenancy
 from apps.shared.adapters.agent_runner import RunnerEvent
@@ -154,6 +155,10 @@ class ARequestStopsWhereRunNowStops(RequestCase):
         self.resolve.assert_not_called()
 
 
+# The network's door itself: RequestCase replaces `requests._get` in every test.
+REAL_GET = requests._get
+
+
 class Dripping:
     """A response that answers one byte per read and one second of the clock per byte."""
 
@@ -182,6 +187,40 @@ class OneDeadlinePerFetch(RequestCase):
         clock = [0.0]
         with mock.patch.object(requests.time, "monotonic", side_effect=lambda: clock[0]):
             self.assertEqual(requests._read_body(Dripping(clock), deadline=100.0), b"xxxxx")
+
+    def test_a_server_that_drips_its_headers_is_cut_off_at_the_deadline(self) -> None:
+        """The body's reads check the deadline; the status line and headers are read by
+        http.client itself, so a watchdog shuts the socket when the deadline passes."""
+        cut = threading.Event()
+
+        class Sock:
+            def shutdown(self, how: int) -> None:
+                cut.set()
+
+            def settimeout(self, value: float) -> None:
+                pass
+
+        class Stalled:
+            def __init__(self, host: str, address: str) -> None:
+                self.sock = Sock()
+                self.timeout = 5.0
+
+            def request(self, method: str, target: str, headers: dict[str, str]) -> None:
+                pass
+
+            def getresponse(self) -> Any:
+                if not cut.wait(timeout=5):
+                    raise AssertionError("the watchdog never cut the connection")
+                raise OSError("connection shut down")
+
+            def close(self) -> None:
+                pass
+
+        with mock.patch.object(requests, "_CheckedConnection", Stalled):
+            started = requests.time.monotonic()
+            with self.assertRaises(requests.Unreachable):
+                REAL_GET(host="www.fi.se", address=PUBLIC, target="/", deadline=started + 0.2)
+        self.assertLess(requests.time.monotonic() - started, 2.0)
 
     def test_every_hop_shares_the_one_deadline(self) -> None:
         self.get.side_effect = [
