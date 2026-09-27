@@ -1960,3 +1960,14 @@ worked-case CHECK still requires a person. `triageChange` takes it as `ownerTeam
 `TenantMemberOpenWork` and the removal now count and move `case`, `action` and
 `duty_occurrence`, the kinds its contract already named: a case and an action pass to a
 person only, and a case only to a member holding `cases.work`.
+
+## c11-research-requests. A research request keeps what it fetched (2026-09-27, agents 0008)
+
+`research_request` (schema v0.3 PART 3) gains two columns: `fetched_text`, the page a
+`check_url` request fetched, kept as text for the bank's agent and never rendered or
+followed, and `risk_flags`, the content screen's flags (AGT-07) on that text or on the
+topic, as `change_document.risk_flags` carries them. Both default to empty. The request's
+`status` is written when its run opens (`running`, or `failed` when the runner could not
+start it); after that a read answers its run's state (`succeeded` as `done`, `failed` and
+`interrupted` as `failed`), so no second writer keeps the two in step. `completed_at` is
+written when a re-tag's run files its batch.

@@ -241,6 +241,8 @@ SERVED = {
     "resumeTenantAgent",
     "interruptAgentRun",
 }
+# c11-research-requests (tests_requests.py).
+SERVED |= {"listResearchRequests", "createResearchRequest", "getResearchRequest"}
 # Which record each id route addresses: a bank's own agent, its run, or its request.
 ID_KIND = {
     "updateTenantAgent": "agent",
@@ -366,6 +368,9 @@ class ConsoleAgentRouteGates(TestCase):
             "getPlatformAgentSettings",
             "updatePlatformAgentSettings",
             "listPlatformRuns",
+            # c11-research-requests: tests_requests.py.
+            "createRetagRequest",
+            "getRetagRequest",
         }
         for name, method, url, body, permission, _ in CONSOLE_ROUTES:
             if name in built:

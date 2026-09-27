@@ -472,12 +472,13 @@ def create_retag_request(request: HttpRequest, body: RetagRequestInput) -> Any:
     independent reviewer approves it. The request itself is a job: read its status later.
 
     A person's session in the platform console holding `proposals.review`; a bank asks its
-    own agents with `POST /research-requests` and never re-tags the library. Records one
-    audit event naming the person.
+    own agents with `POST /research-requests` and never re-tags the library. It opens one
+    run of bleqq's agent in no bank's zone and reads no bank's record. Records one audit
+    event naming the person, and one more when the run files its batch.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
-    `validation_error` (422) for a topic that is empty or too long. Published ahead of the
-    logic that will fill it, and answering 501 `not_built` until that ships.
+    Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`,
+    and for every bank's session; `validation_error` (422) for a topic that is empty or too
+    long; `no_published_version` (409) when bleqq's agent has no version to run.
     """
     return requests.create_retag(who=principal(request), body=body)
 
@@ -508,8 +509,7 @@ def get_retag_request(
     the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
-    `not_found` (404) for a request that is not a re-tag. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a request that is not a re-tag.
     """
     return requests.get_retag(request_id=request_id)
 
@@ -825,8 +825,7 @@ def list_research_requests(request: HttpRequest, page: Query[PageQuery]) -> Any:
     nothing to the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) when `limit` is above 100. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `validation_error` (422) when `limit` is above 100.
     """
     tenant = caller_tenant(request)
     return requests.list_requests(tenant=tenant, limit=page.limit, offset=page.offset)
@@ -844,17 +843,29 @@ def list_research_requests(request: HttpRequest, page: Query[PageQuery]) -> Any:
 @answers_problems
 def create_research_request(request: HttpRequest, body: ResearchRequestInput) -> Any:
     """Asks one of the bank's own agents to run now, check a registered source or a web
-    address now, or research a topic. The request is a job: it is queued and returned at
-    once, and its run follows. It counts against the bank's monthly cap, and what the agent
-    finds stays in the bank's own zone.
+    address now, or research a topic. The request is a job: its run opens at once and the
+    request is returned with it; read its status from `GET /research-requests/{requestId}`.
+    It runs under the bank's monthly cap, and what the agent finds stays in the bank's own
+    zone. A web address is fetched once, here, over https from a public host, and what came
+    back is kept as text for the agent, never shown as a page. The topic is the bank's own
+    text: it is never logged and reaches a model only through the bank's own agent.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event naming the person and the kind, never the topic's text.
+    event naming the person and the kind, never the topic's text or the address.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for an agent the bank does not have; `validation_error` (422) for a
-    topic or address that is empty, too long or missing for its kind. Published ahead of
-    the logic that will fill it, and answering 501 `not_built` until that ships.
+    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
+    for an agent the bank may not steer; `not_found` (404) for an agent or source the bank
+    does not have; `no_tenant_agent` (409) when the bank has no agent of its own, since
+    bleqq's agents take no requests; `no_published_version` (409) when the agent has no
+    version to run; `validation_error` (422) for a topic or address that is empty, too long,
+    missing for its kind or sent for another kind; `source_not_checked` (422) for a source
+    the agents do not check; `url_not_allowed` (422) for an address that is not https on the
+    standard port, carries a user name, is a standards publisher's, or is or redirects to a
+    host off the public internet; `url_unreachable` (422) when the address answers no page
+    within `RESEARCH_URL_MAX_REDIRECTS` redirects; `feature_off` (422) when the bank has
+    switched its AI features off; `budget_cap_reached` (422) when the bank has set no cap or
+    this month's spend has reached it; `plan_limit_reached` (429) past the bank's
+    `RESEARCH_REQUESTS_PER_MONTH` requests this month.
     """
     tenant = caller_tenant(request)
     return requests.create_request(who=principal(request), tenant=tenant, body=body)
@@ -881,8 +892,7 @@ def get_research_request(
     nothing to the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for a request the bank does not have. Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a request the bank does not have.
     """
     return requests.get_request(tenant=caller_tenant(request), request_id=request_id)
 

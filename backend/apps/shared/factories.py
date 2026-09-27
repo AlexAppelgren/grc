@@ -620,6 +620,7 @@ def closed_case(tenant: Tenant, *, actions: int = 2, evidence: int = 3, so_what_
 def tenant_agent(tenant: Tenant) -> object:
     """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
     bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
+    from apps.agents import testing as agent_build
     from apps.agents.models import TenantAgent
     from apps.agents import testing as agent_build
 
