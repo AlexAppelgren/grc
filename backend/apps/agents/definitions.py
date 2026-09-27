@@ -7,7 +7,7 @@ body pasted into a request, so what runs is what was reviewed into the tree. A p
 version is never rewritten: a run points at the version it opened with (`runs.open_run`),
 and retiring one only stops new runs. Every write needs a fresh passkey at the route and
 leaves one audit row with no tenant, because it changes what runs for every bank at once.
-The rows are platform configuration (D-102, ADR 0059), written through the console's door
+The rows are platform configuration (D-102, ADR 0062), written through the console's door
 in `seeds/console.py`, the one place the library fence lets an agent definition be written.
 """
 
@@ -126,7 +126,7 @@ def publish_version(*, who: Principal, agent_key: str, body: AgentVersionInput) 
     actor, person_id = platform_person(who)
     with transaction.atomic():
         agent = _agent(agent_key, lock=True)
-        published = list(agent.versions.values_list("version_no", flat=True))
+        published = list(agent.versions.values_list("version_number", flat=True))
         if body.version_no in published:
             raise ProblemError(
                 status=409, code="version_exists", detail=f"Version {body.version_no} is already published."
@@ -142,13 +142,13 @@ def publish_version(*, who: Principal, agent_key: str, body: AgentVersionInput) 
             actor=actor,
             subject_type=SUBJECT_TYPE,
             subject_id=version.id,
-            subject_title=f"{agent.key} v{version.version_no}",
-            summary=f"Version {version.version_no} of agent {agent.key} published.",
+            subject_title=f"{agent.key} v{version.version_number}",
+            summary=f"Version {version.version_number} of agent {agent.key} published.",
             tenant_id=None,
             before=before,
             after={
                 "currentVersion": agent.current_version,
-                "versionNo": version.version_no,
+                "versionNo": version.version_number,
                 "model": version.model,
                 "tools": version.tools,
                 "changeNote": version.change_note,
@@ -165,7 +165,7 @@ def retire_version(*, who: Principal, agent_key: str, version_no: int) -> AgentV
     actor, _ = platform_person(who)
     with transaction.atomic():
         agent = _agent(agent_key, lock=True)
-        version = agent.versions.select_related("published_by").filter(version_no=version_no).first()  # ordering: unique per agent
+        version = agent.versions.select_related("published_by").filter(version_number=version_no).first()  # ordering: unique per agent
         if version is None:
             raise ProblemError(status=404, code="not_found", detail="Not found.")
         if version.retired_at is not None:
@@ -182,8 +182,8 @@ def retire_version(*, who: Principal, agent_key: str, version_no: int) -> AgentV
             actor=actor,
             subject_type=SUBJECT_TYPE,
             subject_id=version.id,
-            subject_title=f"{agent.key} v{version.version_no}",
-            summary=f"Version {version.version_no} of agent {agent.key} retired.",
+            subject_title=f"{agent.key} v{version.version_number}",
+            summary=f"Version {version.version_number} of agent {agent.key} retired.",
             tenant_id=None,
             before={"retiredAt": None},
             after={"retiredAt": version.retired_at.isoformat() if version.retired_at else None},

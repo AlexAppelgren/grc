@@ -1,4 +1,4 @@
-"""The console's writes to bleqq's agent definitions (AGT-03, ADM-02, D-102, ADR 0059):
+"""The console's writes to bleqq's agent definitions (AGT-03, ADM-02, D-102, ADR 0062):
 publishing a shipped version folder, retiring a version, and a platform agent's settings.
 
 `agent` and `agent_version` are platform configuration, not library facts: nothing in them
@@ -30,7 +30,7 @@ def publish(agent: Agent, definition: Definition, *, change_note: str, published
     with library_write(f"{REASON}: publish {agent.key} v{definition.version}"):
         version = AgentVersion.objects.create(
             agent=agent,
-            version_no=definition.version,
+            version_number=definition.version,
             model=definition.model,
             prompt_path=definition.prompt,
             tools=list(definition.tools),
@@ -44,7 +44,7 @@ def publish(agent: Agent, definition: Definition, *, change_note: str, published
 
 def retire(version: AgentVersion) -> AgentVersion:
     """`retired_at`, the one change the append-only trigger lets through, once."""
-    with library_write(f"{REASON}: retire {version.agent_id} v{version.version_no}"):
+    with library_write(f"{REASON}: retire {version.agent_id} v{version.version_number}"):
         version.retired_at = timezone.now()
         version.save(update_fields=["retired_at"])
     return version

@@ -5,7 +5,7 @@ A platform agent's cadence, the jurisdictions it sweeps and its budget live on i
 row and are the same for every bank; no tenant column sits beside them and no tenant path
 writes them. `refuse_platform_agent` is the fence every tenant control calls first.
 
-The console changes a platform agent's settings, platform configuration (D-102, ADR 0059),
+The console changes a platform agent's settings, platform configuration (D-102, ADR 0062),
 through `seeds/console.py`, the one door the library fence opens to an agent row, and reads bleqq's runs: a platform surface that
 carries platform facts, so no bank's run, name or figure is on it.
 """
@@ -18,7 +18,7 @@ from django.db import transaction
 from django.db.models import Count, OuterRef, QuerySet, Subquery
 from django.db.models.functions import Coalesce
 
-from apps.agents import definitions, runs
+from apps.agents import definitions
 from apps.agents.models import Agent, AgentRun, AgentScopeKind
 from apps.agents.schemas import (
     AgentRunListPage,
@@ -32,7 +32,6 @@ from apps.shared import permissions as perms
 from apps.shared.audit import record
 from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
-from apps.taxonomy.schemas import PersonRef
 from apps.watch.keys import resolve_keys
 
 

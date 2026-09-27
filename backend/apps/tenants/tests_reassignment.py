@@ -43,7 +43,7 @@ def owned_work(tenant: Tenant, erik: User, officer: User) -> SimpleNamespace:
     legal = factories.team(tenant, key="legal", label="Legal", members=(erik,))
     cards = factories.team(tenant, key="cards", label="Cards", members=(erik, officer))
     duties = [collab_testing.obligation() for _ in range(5)]
-    entity = factories.department(tenant, name="Example Bank AB", head=None, kind=OrgUnitKind.LEGAL_ENTITY)
+    entity = factories.headed_unit(tenant, name="Example Bank AB", head=None, kind=OrgUnitKind.LEGAL_ENTITY)
     with transaction.atomic():
         tenancy.activate(tenant.id)
         actor = factories.user_actor(user_id=officer.id)
