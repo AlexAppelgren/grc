@@ -151,7 +151,7 @@ def publish_version(*, who: Principal, agent_key: str, body: AgentVersionInput) 
                 "versionNo": version.version_number,
                 "model": version.model,
                 "tools": version.tools,
-                "changeNote": version.change_note,
+                "changeNote": version.change_note,  # compliance: record-content platform staff's note on bleqq's own agent version, no bank's text (tenant_id=None; CHUNK11_TASKS asks the audit row to carry it)
             },
             step_up_assertion_id=who.step_up_assertion_id,
         )
