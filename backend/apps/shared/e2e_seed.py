@@ -37,6 +37,9 @@ from apps.agents.seeds import seed_agent_definitions
 from apps.cases import matching as case_matching
 from apps.cases.creation import CHANGE_REGISTERED
 from apps.cases.models import Action, AssessmentApplies, CaseTransition, ChangeCase, ImpactAssessment
+from apps.collab import logic as collab_logic
+from apps.collab import subjects as collab_subjects
+from apps.collab.models import Comment, CommentMention, CommentRevision, Notification, NotificationKind
 from apps.home import tasks as home_tasks
 from apps.identity import invitation_logic, roles_logic, tokens
 from apps.identity.models import (
@@ -84,6 +87,8 @@ from apps.register import logic as register_logic
 from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
 from apps.taxonomy.models import ComplianceStatus, GapSource, GapStatus, LinkKind, RiskRating, Team
 from apps.tenants.models import InternalItem, Licence, LicenceServiceTerm, OrgUnit, TeamMember, TenantProduct, TenantProductTerm
+# c8-ui-links-history-participants
+from apps.collab.models import Participant
 
 
 @dataclass(frozen=True)
@@ -1870,10 +1875,14 @@ def seed_e2e() -> dict[str, int]:
         chunk5_cases = seed_chunk5_cases(tenants)
         # c9-e2e-seed: one case per journey that moves one, after the logins it names.
         case_journeys = seed_case_journeys(tenants)
+        # c10-e2e-seed-comments: after the cases and the logins its comments name.
+        comments = seed_comments(tenants)
         seed_watched_market_change()
         seed_standard_change()
         # c8-seed-org-register: after the logins and chunk 5's links.
         seed_org_register(tenants)
+        # c8-ui-links-history-participants: after the register entries it names.
+        seed_participants(tenants)
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
@@ -1891,6 +1900,7 @@ def seed_e2e() -> dict[str, int]:
         "home_cases": home_cases,
         "chunk5_cases": chunk5_cases,
         "case_journeys": case_journeys,
+        "comments": comments,
         "machine_confirmed": machine_confirmed,
         "eval_questions": eval_questions,
         **library,
@@ -2290,6 +2300,142 @@ def _seed_record(case: ChangeCase, action: str, after: dict[str, Any], before: d
         after=after,
     )
 # --- end c9-e2e-seed ----------------------------------------------------------------------------
+
+
+# --- c10-e2e-seed-comments (COL-01, COL-02) -----------------------------------------------------
+# What the comments panel, the inbox, My work and J-8 read: tenant A's comments on a case and on
+# an obligation, one edited with the text it replaced, one deleted, the reader mentioned on both
+# records with one mention read and one not, and the login whose role reads no case mentioned on
+# the case and told nothing about it; tenant B's one comment on the obligation tenant A discusses,
+# so J-8 proves the two never meet. Every moment is the bank's own anchor less a fixed offset.
+COMMENT_EDITED_AFTER = datetime.timedelta(minutes=10)
+COMMENT_DELETED_AFTER = datetime.timedelta(minutes=5)
+COMMENT_READ_AFTER = datetime.timedelta(hours=1)
+# A home case, not a case journey's, whose trail c9-e2e-seed counts row by row.
+_COMMENTED_CASE = EXPECTED_HOME.later_change
+_COMMENTED_OBLIGATION = "obl-dora-ict-register"
+
+
+@dataclass(frozen=True)
+class SeedComment:
+    """One seeded comment. `subject_key` is the change's stable key for a bank's case and the
+    obligation's for an obligation. `edited_from` is the text an edit replaced; `read_by` names
+    the mentioned people who have already read their notification."""
+
+    id: uuid.UUID
+    tenant_slug: str
+    subject_type: str
+    subject_key: str
+    author: str
+    body: str
+    before_anchor: datetime.timedelta
+    mentions: tuple[str, ...] = ()
+    edited_from: str | None = None
+    deleted: bool = False
+    read_by: tuple[str, ...] = ()
+
+
+EXPECTED_COMMENTS: tuple[SeedComment, ...] = (
+    SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-00000000c001"), TENANT_A_SLUG, "change_case", _COMMENTED_CASE, OWNER_A,
+        "The reporting fields are mapped. The open questions are listed in the assessment, and the operations team is briefed next week.",
+        datetime.timedelta(days=3, hours=2),
+        edited_from="The fields are mapped; the open questions are in the assessment.",
+    ),
+    SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-00000000c002"), TENANT_A_SLUG, "change_case", _COMMENTED_CASE, OFFICER_A,
+        "Oskar, can you confirm whether the new reporting fields change what we send for securities lending? Axel, for your awareness.",
+        datetime.timedelta(days=2, hours=1),
+        mentions=("reader@example-bank.test", "library-only@example-bank.test"),
+    ),
+    SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-00000000c003"), TENANT_A_SLUG, "obligation", _COMMENTED_OBLIGATION, CONTRIBUTOR_A,
+        "Oskar, does the register also need the sub-outsourcing chain for the card processor?",
+        datetime.timedelta(days=5, hours=3),
+        mentions=("reader@example-bank.test",),
+        read_by=("reader@example-bank.test",),
+    ),
+    SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-00000000c004"), TENANT_A_SLUG, "obligation", _COMMENTED_OBLIGATION, OWNER_A,
+        "Posted on the wrong record, please ignore.",
+        datetime.timedelta(days=4, hours=2),
+        deleted=True,
+    ),
+    SeedComment(
+        uuid.UUID("00000000-0000-4000-a000-00000000c005"), TENANT_B_SLUG, "obligation", _COMMENTED_OBLIGATION, "admin@second-bank.test",
+        "The register must be complete before we file it with Finanstilsynet.",
+        datetime.timedelta(days=1, hours=4),
+    ),
+)
+
+
+def comment_moment(spec: SeedComment, anchor: datetime.datetime) -> datetime.datetime:
+    return anchor - spec.before_anchor
+
+
+def seed_comments(tenants: list[Tenant]) -> int:
+    """c10-e2e-seed-comments: each comment with its mentions, its revision and its audit rows
+    through record(), and the mention notifications through notify(), the one writer, whose
+    recipient check decides who is told. Written once: a comment that exists is left as it is,
+    so a second run changes nothing."""
+    by_slug = {tenant.slug: tenant for tenant in tenants}
+    users = {user.email: user for user in User.objects.filter(email__in={login.email for login in SEED_LOGINS})}
+    for spec in EXPECTED_COMMENTS:
+        tenant = by_slug[spec.tenant_slug]
+        tenancy.activate(tenant.id)
+        if not Comment.objects.filter(pk=spec.id).exists():
+            _seed_comment(tenant, spec, users)
+    tenancy.clear_tenant()
+    return len(EXPECTED_COMMENTS)
+
+
+def _seed_comment(tenant: Tenant, spec: SeedComment, users: dict[str, User]) -> None:
+    if spec.subject_type == "change_case":
+        subject_id = ChangeCase.objects.get(change__stable_key=spec.subject_key).id
+    else:
+        subject_id = _obligation_id(spec.subject_key)
+    subject = collab_subjects.subject(spec.subject_type)
+    author = users[spec.author]
+    title = subject.title(subject.lookup(subject_id), roles_logic.language_order(author, tenant))
+    at = comment_moment(spec, case_anchor(tenant.timezone))
+    comment = Comment(id=spec.id, tenant=tenant, subject_type=spec.subject_type, subject_id=subject_id, author=author, body=spec.edited_from or spec.body, created_at=at)
+    # The raw save keeps the anchored moment rather than the seed's wall clock, as the case ledger does.
+    comment.save_base(raw=True)
+    mentioned = [users[email].id for email in spec.mentions]
+    CommentMention.objects.bulk_create(CommentMention(tenant=tenant, comment=comment, user_id=person) for person in mentioned)
+    _seed_comment_record(comment, title, "comment.added", {"commentId": str(comment.id), "mentionUserIds": [str(person) for person in mentioned]})
+    told = collab_logic.notify(
+        tenant_id=tenant.id, kind=NotificationKind.MENTION, subject_type=spec.subject_type, subject_id=subject_id,
+        candidates=[(person, "mention") for person in mentioned if person != author.id],
+    )
+    Notification.objects.filter(pk__in=[row.id for row in told]).update(created_at=at)
+    readers = {users[email].id for email in spec.read_by}
+    Notification.objects.filter(pk__in=[row.id for row in told if row.user_id in readers]).update(read_at=at + COMMENT_READ_AFTER)
+    if spec.edited_from:
+        revision = CommentRevision(tenant=tenant, comment=comment, body=spec.edited_from, edited_by=author, created_at=at + COMMENT_EDITED_AFTER)
+        revision.save_base(raw=True)
+        Comment.objects.filter(pk=comment.id).update(body=spec.body, edited_at=at + COMMENT_EDITED_AFTER)
+        _seed_comment_record(comment, title, "comment.edited", {"commentId": str(comment.id), "revisionId": str(revision.id)})
+    if spec.deleted:
+        Comment.objects.filter(pk=comment.id).update(deleted_at=at + COMMENT_DELETED_AFTER)
+        _seed_comment_record(comment, title, "comment.deleted", {"commentId": str(comment.id)})
+
+
+def _seed_comment_record(comment: Comment, title: str, action: str, after: dict[str, Any]) -> None:
+    """The audit row the comment routes write, with ids in `after` and never the text."""
+    record(
+        action=action,
+        actor=SEED_ACTOR,
+        subject_type=comment.subject_type,
+        subject_id=comment.subject_id,
+        subject_title=title,
+        summary="Seeded for E2E journeys.",
+        tenant_id=comment.tenant_id,
+        after=after,
+    )
+# --- end c10-e2e-seed-comments ------------------------------------------------------------------
+
+
 # --- c8-seed-org-register (TEN-02, TEN-03, TEN-05, HOM-05, REG-01 to REG-05) -------------
 # Each bank's organisation and register, from the prototype fixture (`tenant`,
 # `tenant_obligations`, `gaps`, `internal_links`) and the organisation card
@@ -2923,3 +3069,33 @@ def restore_leaver() -> None:
                 Gap.objects.filter(pk=gap_row.pk).update(owner=leaver, owner_team=None, version=gap_row.version + 1)
                 _seeded(tenant, "gap", gap_row, gap.obligation, {"ownerId": str(leaver.id)})
 # --- end c8-ui-departments-teams-removal ------------------------------------------------------
+
+# --- c8-ui-links-history-participants (COL-04, COL-S6, COL-S7) ------------------------------
+# COL-S7: the Reader takes part in one register entry, added by the compliance officer, and
+# leaves it on their own. COL-S6: the obligation the compliance officer adds people and a
+# team to, which has no register entry until the first add creates it.
+PARTICIPATION_OBLIGATION = "obl-costs-charges"
+PARTICIPANT = "reader@example-bank.test"
+PARTICIPANT_ADDED_BY = _SARA
+NO_ENTRY_OBLIGATION = "obl-idd-demands-needs"
+
+
+def seed_participants(tenants: list[Tenant]) -> None:
+    """One live participation of the Reader on tenant A's entry, recorded through record()
+    like every seeded row. A reseed finds it live and writes nothing; after COL-S7 has left
+    it, a reseed puts it back."""
+    tenant = next(t for t in tenants if t.slug == TENANT_A_SLUG)
+    tenancy.activate(tenant.id)
+    entry = TenantObligation.objects.get(obligation_id=_obligation_id(PARTICIPATION_OBLIGATION))
+    person = User.objects.get(email=PARTICIPANT)
+    if not Participant.objects.filter(tenant_obligation=entry, user=person, removed_at__isnull=True).exists():
+        row = Participant.objects.create(
+            tenant=tenant,
+            tenant_obligation=entry,
+            user=person,
+            added_by=User.objects.get(email=PARTICIPANT_ADDED_BY),
+            added_at=_at(datetime.datetime.now(ZoneInfo(tenant.timezone)).date(), -6, tenant.timezone),
+        )
+        _seeded(tenant, "participant", row, PARTICIPATION_OBLIGATION, {"tenantObligationId": str(entry.id), "userId": str(person.id)})
+    tenancy.clear_tenant()
+# --- end c8-ui-links-history-participants ----------------------------------------------------

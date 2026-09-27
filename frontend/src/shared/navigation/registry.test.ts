@@ -30,6 +30,7 @@ describe('navigation registry (playbook 6.2)', () => {
       'today',
       'watch',
       'inventory',
+      'my-work',
       'roadmap',
       'search',
       'admin',
@@ -82,8 +83,8 @@ describe('navigation registry (playbook 6.2)', () => {
     expect(unlocks([], [])).toBe(true);
     expect(unlocks(['watch.read'], [])).toBe(false);
     expect(unlocks(['members.manage', 'vocab.manage'], ['vocab.manage'])).toBe(true);
-    expect(visibleDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
-    expect(visibleDestinations('tenant', ['search.use']).map((d) => d.id)).toEqual(['today', 'search']);
+    expect(visibleDestinations('tenant', []).map((d) => d.id)).toEqual(['today', 'my-work']);
+    expect(visibleDestinations('tenant', ['search.use']).map((d) => d.id)).toEqual(['today', 'my-work', 'search']);
   });
 
   it('orders the phone dock by rank', () => {
@@ -109,7 +110,8 @@ describe('navigation registry (playbook 6.2)', () => {
     expect(moreDestinations('console', all).map((d) => d.id)).toEqual(['console-change-facts', 'console-agent-keys', 'console-evaluation', 'console-support-access']);
 
     expect(dockDestinations('tenant', []).map((d) => d.id)).toEqual(['today']);
-    expect(moreDestinations('tenant', []).map((d) => d.id)).toEqual([]);
+    // My work needs no permission (HOM-05), so even an empty list has it in More.
+    expect(moreDestinations('tenant', []).map((d) => d.id)).toEqual(['my-work']);
 
     // A ranked destination the person cannot open is skipped; the rest move up
     // and the empty slot stays empty rather than taking Roadmap or Admin.
@@ -120,7 +122,7 @@ describe('navigation registry (playbook 6.2)', () => {
 
   it('knows when the current page lives in More, account pages included', () => {
     const all = destinations.flatMap((d) => d.anyOfPermissions);
-    for (const path of ['/roadmap', '/admin/members', '/me/sessions', '/me/calendar-feeds']) {
+    for (const path of ['/work', '/roadmap', '/admin/members', '/me/sessions', '/me/calendar-feeds']) {
       expect(isInMore('tenant', all, path)).toBe(true);
     }
     for (const path of ['/', '/watch', '/watch/42']) {
@@ -155,12 +157,12 @@ describe('navigation registry (playbook 6.2)', () => {
     expect(childDestinations('admin', ['footprint.request']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint', 'admin-support-access']);
     expect(childDestinations('admin', ['footprint.approve']).map((d) => d.id)).toEqual(['admin-organisation', 'admin-footprint', 'admin-support-access']);
     // An approver who holds nothing else still reaches /admin to find it.
-    expect(visibleDestinations('tenant', ['footprint.approve']).map((d) => d.id)).toEqual(['today', 'admin']);
+    expect(visibleDestinations('tenant', ['footprint.approve']).map((d) => d.id)).toEqual(['today', 'my-work', 'admin']);
     expect(childDestinations(ACCOUNT_PARENT, []).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions']);
     // Calendar feeds needs the grant the roadmap needs (HOM-04), so it joins the
     // account links only for a reader who holds it, and never unlocks anything else.
     expect(childDestinations(ACCOUNT_PARENT, ['roadmap.read']).map((d) => d.href)).toEqual(['/me/passkeys', '/me/sessions', '/me/calendar-feeds']);
-    expect(visibleDestinations('tenant', ['roadmap.read']).map((d) => d.id)).toEqual(['today', 'roadmap']);
+    expect(visibleDestinations('tenant', ['roadmap.read']).map((d) => d.id)).toEqual(['today', 'my-work', 'roadmap']);
     // Children never reach the rail or the dock.
     const all = destinations.flatMap((d) => d.anyOfPermissions);
     expect(visibleDestinations('tenant', all).every((d) => d.parent === undefined)).toBe(true);

@@ -77,11 +77,11 @@ _COMMENT_ID = (
 )
 
 
-def _member(request: HttpRequest) -> None:
+def _member(request: HttpRequest) -> Any:
     """A person's session in a bank: a platform session has no bank and gets the 404 every
-    tenant read gives it."""
+    tenant read gives it. Returns the caller."""
     caller_tenant(request)
-    caller_user(request)
+    return caller_user(request)
 
 
 # ---------------------------------------------------------------------------------------
@@ -112,13 +112,10 @@ def list_notifications(request: HttpRequest, query: Query[CollabNotificationQuer
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, `not_found` for a platform session, which belongs to no bank, and
     `validation_error` for a `limit` above the maximum or below 1.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: self (the caller's own notification rows).
-    _member(request)
-    return inbox.list_notifications()
+    user = _member(request)
+    return inbox.list_notifications(user=user, unread=query.unread, limit=query.limit, offset=query.offset)
 
 
 @router.post(
@@ -141,13 +138,10 @@ def mark_all_notifications_read(request: HttpRequest) -> Any:
 
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, and `not_found` for a platform session, which belongs to no bank.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: self (the caller's own notification rows).
-    _member(request)
-    return inbox.mark_all_read()
+    inbox.mark_all_read(user=_member(request))
+    return 204, None
 
 
 @router.post(
@@ -171,13 +165,10 @@ def mark_notification_read(
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, and `not_found` for a platform session or for a notification that is
     not the caller's own, in their bank.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: self (the caller's own notification rows).
-    _member(request)
-    return inbox.mark_read()
+    inbox.mark_read(user=_member(request), notification_id=notification_id)
+    return 204, None
 
 
 # ---------------------------------------------------------------------------------------
@@ -208,14 +199,12 @@ def list_comments(request: HttpRequest, query: Query[CollabCommentQuery]) -> Any
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, `not_found` for a platform session and for a record the bank does not
     hold or the caller may not read, and `validation_error` for a missing or malformed kind or
-    id, or a `limit` outside 1 to 100. A kind comments are not taken on is refused with a 422.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    id, or a `limit` outside 1 to 100. A kind comments are not taken on is refused with a 422
+    `unsupported_subject`.
     """
     # Ungated by design: logic-gate (the read permission of the subject's kind, per record).
     _member(request)
-    return comments.list_comments()
+    return comments.list_comments(who=principal(request), user=caller_user(request), query=query)
 
 
 @router.post(
@@ -244,18 +233,21 @@ def add_comment(request: HttpRequest, body: CollabCommentInput) -> Any:
     finish enrolling, `permission_denied` without `comments.write` (naming it in
     `requiredPermission`), `not_found` for a platform session and for a record the bank does
     not hold or the caller may not read, and `validation_error` for an empty text, a field the
-    body does not name or a malformed id. A kind comments are not taken on, a text longer than
-    the deployment allows and a mentioned id that is not a member of the bank are refused with
-    a 422.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    body does not name, a malformed id or a text of only spaces. A kind comments are not taken
+    on is refused with a 422 `unsupported_subject`, a text longer than the deployment allows
+    (4,000 characters unless configured otherwise) with a 422 `comment_too_long`, and a
+    mentioned id that is not a member of the bank with a 422 `unknown_member`, the same answer
+    for another bank's member as for an id nobody holds; each writes nothing.
     """
     # Ungated by design: logic-gate (the read permission of the subject's kind, per record);
     # comments.write is checked here so the 403 names it before the logic runs.
     require_any(request, perms.COMMENTS_WRITE)
     _member(request)
-    return comments.add_comment()
+    user = caller_user(request)
+    created = comments.add_comment(
+        who=principal(request), actor=actor_for(request, user), user=user, tenant=caller_tenant(request), payload=body
+    )
+    return 201, created
 
 
 @router.patch(
@@ -284,15 +276,22 @@ def edit_comment(
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, `permission_denied` without `comments.write` (naming it in
     `requiredPermission`), `not_found` for a platform session and for a comment the bank does
-    not hold, and `validation_error` for an empty text or a field the body does not name. An
-    edit by someone other than the author is refused with a 403, and one after the window
-    with a 409.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    not hold or whose record the caller may not read, and `validation_error` for an empty text,
+    a text of only spaces or a field the body does not name. A text longer than the deployment
+    allows is refused with a 422 `comment_too_long`, an edit by someone other than the author
+    with a 403 `not_author`, and one after the window or of a deleted comment with a 409
+    `edit_window_closed`; each keeps nothing.
     """
     _member(request)
-    return comments.edit_comment()
+    user = caller_user(request)
+    return comments.edit_comment(
+        who=principal(request),
+        actor=actor_for(request, user),
+        user=user,
+        tenant=caller_tenant(request),
+        comment_id=comment_id,
+        body=body.body,
+    )
 
 
 @router.delete(
@@ -317,13 +316,15 @@ def delete_comment(request: HttpRequest, comment_id: uuid.UUID = Path(..., descr
     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
     finish enrolling, `permission_denied` without `comments.write` (naming it in
     `requiredPermission`), and `not_found` for a platform session and for a comment the bank
-    does not hold. A delete by someone other than the author is refused with a 403.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    does not hold or whose record the caller may not read. A delete by someone other than the
+    author is refused with a 403 `not_author`.
     """
     _member(request)
-    return comments.delete_comment()
+    user = caller_user(request)
+    comments.delete_comment(
+        who=principal(request), actor=actor_for(request, user), user=user, tenant=caller_tenant(request), comment_id=comment_id
+    )
+    return 204, None
 
 
 # ---------------------------------------------------------------------------------------
@@ -346,7 +347,7 @@ def list_my_comments(request: HttpRequest, query: Query[CollabMyCommentQuery]) -
     A read: it changes nothing and writes no audit row. Any person's session in a bank; no API
     key reaches it. Only comments on records the caller can read today are listed; the kinds
     of record the caller's role cannot read are named in `permissionLimitedKinds`, never the
-    records themselves.
+    records themselves. A deleted comment has no text left to read and is not listed.
 
     Pages with `limit` and `offset`, 20 rows by default and 100 at most. Nothing to show is a
     200 with an empty `items`.
@@ -355,13 +356,17 @@ def list_my_comments(request: HttpRequest, query: Query[CollabMyCommentQuery]) -
     finish enrolling, `not_found` for a platform session, which belongs to no bank, and
     `validation_error` for an `about` other than `written` or `mentioned`, or a `limit`
     outside 1 to 100.
-
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
     # Ungated by design: self (the caller's own comments and mentions).
-    _member(request)
-    return me_comments.list_my_comments()
+    tenant = caller_tenant(request)
+    return me_comments.list_my_comments(
+        who=principal(request),
+        user=caller_user(request),
+        tenant=tenant,
+        about=query.about,
+        limit=query.limit,
+        offset=query.offset,
+    )
 
 
 # ---------------------------------------------------------------------------------------

@@ -550,6 +550,11 @@ const FILLED: ReadonlySet<string> = new Set([
   'Status', // c8-ui-applicability-status
   'Tags', // c10-fe-bulk-tagging
   'Units', // c8-ui-units
+  // c8-ui-links-history-participants; c10-fe-comments-panel (features/collab/CommentsPanel.test.tsx).
+  'Links',
+  'History',
+  'Participants',
+  'Comments',
 ]);
 
 describe('the panel stubs', () => {

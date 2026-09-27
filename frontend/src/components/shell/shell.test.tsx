@@ -177,7 +177,7 @@ describe('the rail on desktop', () => {
   it('keeps the registry groups, in order, separated by space and no headings', () => {
     renderShell();
     const groups = [...mainNav().querySelectorAll('[data-nav-group]')].map((g) => g.getAttribute('data-nav-group'));
-    expect(groups).toEqual(['primary', 'admin']);
+    expect(groups).toEqual(['primary', 'secondary', 'admin']);
     expect(within(mainNav()).queryAllByRole('heading')).toHaveLength(0);
     expect(within(mainNav()).queryAllByRole('separator')).toHaveLength(0);
   });
@@ -460,7 +460,7 @@ describe('at compact width: the tab bar', () => {
 
     const groups = [...dialog.querySelectorAll('[data-nav-group]')];
     expect(groups.map((g) => g.getAttribute('data-nav-group'))).toEqual(['secondary', 'admin']);
-    expect(groups.flatMap((g) => within(g as HTMLElement).getAllByRole('link').map((l) => l.getAttribute('href')))).toEqual(['/roadmap', '/admin']);
+    expect(groups.flatMap((g) => within(g as HTMLElement).getAllByRole('link').map((l) => l.getAttribute('href')))).toEqual(['/work', '/roadmap', '/admin']);
     for (const link of groups.flatMap((g) => within(g as HTMLElement).getAllByRole('link'))) {
       expect(link.className).toContain('min-h-11');
       expect(link.querySelector('svg[aria-hidden="true"]')).toHaveClass('size-4');
@@ -607,11 +607,12 @@ describe('at compact width: the tab bar', () => {
     expect(within(sheet()).queryByRole('group', { name: 'Language' })).toBeNull();
   });
 
-  it('shows only what the permissions unlock: Today and More, and the account in the sheet', () => {
+  it('shows only what the permissions unlock: Today and More, and My work and the account in the sheet', () => {
     renderShell({ permissions: [] });
     expect(within(tabBar()).getAllByRole('link').map((l) => l.textContent)).toEqual(['Today']);
     openMore();
-    expect(sheet().querySelectorAll('[data-nav-group]')).toHaveLength(0);
+    // My work needs no permission (HOM-05); nothing else is unlocked.
+    expect([...sheet().querySelectorAll('[data-nav-group] a')].map((l) => l.getAttribute('href'))).toEqual(['/work']);
     expect(within(sheet()).getByRole('group', { name: 'Account' })).toBeInTheDocument();
   });
 

@@ -218,6 +218,14 @@ Then it appears on Anna's My work under "Changes on your items" for the awarenes
 And the application log, the audit after value and the outbox payload for these requests hold ids and never the comment text
 ```
 
+The journey runs on the seeded comments (c8-ui-mywork; `EXPECTED_COMMENTS` in
+`apps/shared/e2e_seed.py`): Anna's mentions are the Reader Oskar Lund's, one on a case and one
+on the DORA register; "My comments" is read as the owner Johan Berg, whose deleted comment is
+not listed; the login without `cases.read` is the library-only Axel Norén. My work has no
+composer of its own: a mention links to its record, whose comments panel carries the
+composer and the line on who can read comments. Johan's comment reaching Anna's "Changes on
+your items" and the log, audit and outbox sweep are proved by `test_col_s12` alone.
+
 ### COL-S13 — Notification preferences mute a kind for one person, never an escalation `@integration` (COL-02)
 ```gherkin
 Given Anna has turned mentions off and Erik has not

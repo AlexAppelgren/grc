@@ -5,7 +5,7 @@ own audit event; a removal stamps `removed_at` and leaves the link row and the i
 bank's item or link is 404; a kind off the bank's list is 422 `unknown_key`; a second live
 link of the same item is 409 `already_linked`; the read costs a fixed number of queries.
 
-Operations exercised: listInternalLinks, addInternalLink, removeInternalLink.
+Operations exercised: listInternalLinks, addInternalLink, removeInternalLink, listInternalItems.
 """
 
 from __future__ import annotations
@@ -34,6 +34,8 @@ POLICY = {"kind": "policy", "label": "Client asset policy", "externalRef": "POL-
 # The queries of one read however many links: the obligation and its titles, the page, the
 # kinds' labels and the total.
 LIST_QUERIES = 5
+# The item picker's read: the page, the kinds' labels and the total.
+ITEM_QUERIES = 3
 
 
 def seed_library() -> None:
@@ -234,3 +236,54 @@ class InternalLinks(RegisterWorld):
         with self.assertNumQueries(LIST_QUERIES):
             page = links.list_links(tenant=self.w.bank, order=["en"], obligation_id=self.w.obligation.id, limit=2, offset=1)
         self.assertEqual((page.total, [row.label for row in page.items]), (5, ["Control 0", "Control 1"]))
+
+
+class InternalItemPicker(RegisterWorld):
+    """`GET /internal-items` (c8-ui-links-history-participants): the items the link dialog
+    offers to pick, the bank's own and active ones only, found by name or reference."""
+
+    def item(self, tenant: Tenant, kind: str, name: str, reference: str = "", active: bool = True) -> InternalItem:
+        self.activate(tenant)
+        return InternalItem.objects.create(
+            tenant=tenant, kind=LinkKind.objects.get(key=kind), name=name, reference=reference, active=active
+        )
+
+    def get(self, user: Any, tenant: Tenant, query: str = "") -> Any:
+        return self.client.get(f"{V1}/internal-items{query}", **sign_in(user, tenant=tenant))
+
+    def test_a_reader_finds_the_banks_active_items_by_name_or_reference_and_never_another_banks(self) -> None:
+        control = self.item(self.w.bank, "control", "Daily reconciliation", "CTL-203")
+        process = self.item(self.w.bank, "procedure", "Month-end reconciliation", "PRO-07")
+        policy = self.item(self.w.bank, "policy", "Client asset policy", "POL-014")
+        self.item(self.w.bank, "policy", "Retired reconciliation policy", active=False)
+        self.item(self.w.other_bank, "control", "Their reconciliation")
+        found = self.get(self.w.reader, self.w.bank, "?q=reconc")
+        self.assertEqual(found.status_code, 200, found.content)
+        self.assertEqual([row["id"] for row in found.json()["items"]], [str(control.id), str(process.id)])
+        self.assertEqual(found.json()["total"], 2)
+        self.assertEqual(
+            found.json()["items"][0],
+            {"id": str(control.id), "kind": {"key": "control", "kind": None, "label": "Control"}, "name": "Daily reconciliation", "reference": "CTL-203"},
+        )
+        by_reference = self.get(self.w.reader, self.w.bank, "?q=pol-014").json()
+        self.assertEqual([row["id"] for row in by_reference["items"]], [str(policy.id)])
+        everything = self.get(self.w.reader, self.w.bank).json()
+        self.assertEqual(everything["total"], 3)
+        self.assertEqual(self.get(self.w.other_officer, self.w.other_bank, "?q=reconc").json()["total"], 1)
+
+    def test_nothing_matching_is_an_empty_page_and_a_long_query_is_refused(self) -> None:
+        self.assertEqual(self.get(self.w.reader, self.w.bank, "?q=nothing").json(), {"items": [], "total": 0})
+        response = self.get(self.w.reader, self.w.bank, "?q=" + "x" * 301)
+        self.assertEqual((response.status_code, response.json()["code"]), (422, "validation_error"))
+
+    def test_the_read_costs_the_same_queries_for_one_item_or_many(self) -> None:
+        self.item(self.w.bank, "policy", "Policy 0")
+        self.activate(self.w.bank)
+        with self.assertNumQueries(ITEM_QUERIES):
+            links.list_items(order=["en"], query="", limit=20, offset=0)
+        for n in range(1, 5):
+            self.item(self.w.bank, "control", f"Control {n}")
+        self.activate(self.w.bank)
+        with self.assertNumQueries(ITEM_QUERIES):
+            page = links.list_items(order=["en"], query="", limit=2, offset=1)
+        self.assertEqual((page.total, [row.name for row in page.items]), (5, ["Control 2", "Control 3"]))

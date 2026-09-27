@@ -270,9 +270,11 @@ class CollabCommentCreated(CollabComment):
 
     undelivered_mentions: list[PersonRef] = Field(
         description=(
-            "The mentioned people who were not notified because they cannot read this record, "
-            "so the composer can say by name that the mention did not reach them. It never says "
-            "why. Empty when everyone mentioned was notified."
+            "The mentioned people who were not notified, so the composer can say by name that the "
+            "mention did not reach them: someone who cannot read this record, is no longer an "
+            "active member or has switched mentions off. It never says which. The author is never "
+            "notified of their own mention and never listed here. Empty when everyone mentioned "
+            "was notified."
         )
     )
 
@@ -342,12 +344,16 @@ class CollabCommentPatch(WriteBody):
     body: str = Field(min_length=1, description=_BODY_IN, examples=["@Erik Holm can you check the custody angle before Thursday?"])
 
 
+# The change a `change_case` comment's case is on, in the examples below.
+_MY_COMMENT_CHANGE = "b41c7e2a-9d3f-4e61-8a05-2f7d6c1e9b48"
+
+
 class CollabMyComment(CollabComment):
     """One comment on My work's "Comments and mentions" panel: the comment and the title of
     the record it is on, so the row can link there (COL-01, HOM-05)."""
 
     model_config = ConfigDict(
-        json_schema_extra={"examples": [{**_COMMENT_EXAMPLE, "subjectTitle": _NOTIFICATION_EXAMPLE["title"]}]}
+        json_schema_extra={"examples": [{**_COMMENT_EXAMPLE, "subjectTitle": _NOTIFICATION_EXAMPLE["title"], "changeId": _MY_COMMENT_CHANGE}]}
     )
 
     subject_title: str = Field(
@@ -356,6 +362,14 @@ class CollabMyComment(CollabComment):
             "and its link. A record's title, never text a person typed in a comment."
         ),
         examples=[_NOTIFICATION_EXAMPLE["title"]],
+    )
+    change_id: uuid.UUID | None = Field(
+        description=(
+            "On a comment on a `change_case`, the regulatory change the case is on, as a uuid: the "
+            "change page opens on the change, not on the case, so the row's link needs it. Null on "
+            "a comment on any other kind of record."
+        ),
+        examples=["b41c7e2a-9d3f-4e61-8a05-2f7d6c1e9b48"],
     )
 
 
@@ -381,7 +395,7 @@ class CollabMyCommentPage(CamelSchema):
         json_schema_extra={
             "examples": [
                 {
-                    "items": [{**_COMMENT_EXAMPLE, "subjectTitle": _NOTIFICATION_EXAMPLE["title"]}],
+                    "items": [{**_COMMENT_EXAMPLE, "subjectTitle": _NOTIFICATION_EXAMPLE["title"], "changeId": _MY_COMMENT_CHANGE}],
                     "total": 1,
                     "permissionLimitedKinds": [],
                 }

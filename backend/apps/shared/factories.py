@@ -553,22 +553,6 @@ def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
 # which needs seed_term_dimensions() and seed_taxonomy_terms().
 # ---------------------------------------------------------------------------------------
 def department(
-    tenant: Tenant,
-    *,
-    name: str | None = None,
-    parent: OrgUnit | None = None,
-    head: User | None = None,
-    kind: OrgUnitKind = OrgUnitKind.BUSINESS_UNIT,
-) -> OrgUnit:
-    """An org unit of `tenant` (a business unit unless `kind` says otherwise) with a head, under `parent`."""
-    with transaction.atomic():
-        tenancy.activate(tenant.id)
-        return OrgUnit.objects.create(
-            tenant=tenant, kind=kind.value, name=name or f"Unit {next(_counter)}", parent=parent, head_user=head
-        )
-
-
-def department(
     tenant: Tenant, *, name: str | None = None, parent: OrgUnit | None = None, head: User | None = None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA
 ) -> OrgUnit:
     """A department of `tenant` with a head, under `parent` (c8-ten-organisation, c8-ten-teams-people)."""
