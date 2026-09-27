@@ -2266,3 +2266,15 @@ Defaults taken; nothing waits on them.
 - [ ] **The scope screen still reads "Waiting for your agent" while research runs.** The
       item's `research` state is computed as waiting until more states are built
       (d89-scope-items-logic's default); the journey waits on the run, not on the screen.
+
+## r2-int-w567: My work stays out of the public demo, answered by default (2026-09-27, HOM-05)
+
+- [ ] **Should the public demo show My work?** Waves 5 to 7 add My work (`/work`) to the
+      navigation. Its answers come from `GET /me/work` and `GET /me/comments`, and the demo's
+      recordings guard (`frontend/src/features/demo/demo.test.ts`) refuses any recorded
+      answer under `/me/`, the rule that keeps a person's sessions, keys and settings out of
+      the public page. Default taken (7d42d375): the guard stands and the demo walk leaves My work out,
+      as it does administration and the account screens, so a visitor who opens it in the
+      demo reads the demo's "not recorded" message. If you want it in the demo, the change
+      is to name `/me/work` and `/me/comments` as allowed in that guard and drop the
+      exclusion in `frontend/tests/e2e/demo.journey.spec.ts`.
