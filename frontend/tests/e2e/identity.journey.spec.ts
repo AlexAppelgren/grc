@@ -261,11 +261,17 @@ test.describe('identity journeys', () => {
     try {
       await signInAs(otherPage, LOGINS.owner);
 
+      // By identity, not by count: the case journeys sign the same person in on devices of
+      // their own, in parallel. The second device's own session is its current one.
+      await otherPage.goto('/me/sessions');
+      const otherId = await otherPage.locator('[data-session-id][data-current]').getAttribute('data-session-id');
       await page.goto('/me/sessions');
-      await expect(page.locator('[data-session-id]')).toHaveCount(2);
-      const theirs = page.locator('[data-session-id]:not([data-current])');
+      const theirs = page.locator(`[data-session-id="${otherId}"]`);
+      await expect(theirs).toBeVisible();
+      await expect(theirs).not.toHaveAttribute('data-current');
       await theirs.getByRole('button', { name: 'Sign out this device' }).click();
-      await expect(page.locator('[data-session-id]')).toHaveCount(1);
+      await expect(theirs).toHaveCount(0);
+      await expect(page.locator('[data-session-id][data-current]')).toHaveCount(1);
 
       // The other device's next request answers 401 and it lands on the public page.
       await otherPage.goto('/me/sessions');

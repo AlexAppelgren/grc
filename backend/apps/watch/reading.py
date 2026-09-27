@@ -455,12 +455,16 @@ def _person(user: Any) -> PersonRef | None:
 def _workflow_of(base: WatchChangeCase, *, reader: uuid.UUID | None, order: list[str]) -> WatchCaseWorkflow:
     """The change page's workflow block beside what a feed row says (CAS-02 to CAS-08).
 
-    Two queries whatever the case holds — the case with its people and reasons joined, and
-    the guards' facts — and one label query per reason the case carries. The moves come
+    Two queries whatever the case holds — the case with its people, reasons and assessment
+    joined, and the guards' facts — and one label query per reason and per effort the case
+    carries. The moves come
     from the state machine through `case_facts()`, the same facts every guard reads, for
     this reader: the sign-off guard compares them with whoever asked.
     """
-    case = ChangeCase.objects.select_related(*case_logic.CASE_JOINS).get(pk=base.id)
+    # Imported here: apps.cases.assessment reads the urgency labels from this module.
+    from apps.cases.assessment import assessment_of
+
+    case = ChangeCase.objects.select_related(*case_logic.CASE_JOINS, "assessment__effort", "assessment__saved_by").get(pk=base.id)
     facts = case_logic.case_facts(case, actor=reader)
     allowed = case_state.allowed_transitions(CaseStatusCategory(case.status), facts)
     dismissed = _tenant_refs(DismissalReasonLabel, [case.dismissed_reason] if case.dismissed_reason else [], order)
@@ -478,6 +482,9 @@ def _workflow_of(base: WatchChangeCase, *, reader: uuid.UUID | None, order: list
         signed_off_by=_person(case.signed_off_by),
         close_reason=closed.get(case.close_reason_id) if case.close_reason_id else None,
         closed_at=case.closed_at,
+        closed_note=case.closed_note or None,
+        # A reverse one-to-one joined above: no row reads as None, never as a query.
+        assessment=assessment_of(getattr(case, "assessment", None), order),
         open_action_count=facts.open_action_count,
         # Sign-off is asked for only from implementing, so "the machine allows the move to
         # signoff" is the whole rule; nothing here restates it.
