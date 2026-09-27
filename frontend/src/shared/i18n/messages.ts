@@ -1,3 +1,5 @@
+import enAdminAgents from '@/messages/admin-agents/en.json';
+import svAdminAgents from '@/messages/admin-agents/sv.json';
 import enAuth from '@/messages/auth/en.json';
 import svAuth from '@/messages/auth/sv.json';
 import enBriefing from '@/messages/briefing/en.json';
@@ -10,6 +12,8 @@ import enConsole from '@/messages/console/en.json';
 import svConsole from '@/messages/console/sv.json';
 import enConsoleAgentKeys from '@/messages/console-agent-keys/en.json';
 import svConsoleAgentKeys from '@/messages/console-agent-keys/sv.json';
+import enConsoleAgents from '@/messages/console-agents/en.json';
+import svConsoleAgents from '@/messages/console-agents/sv.json';
 import enConsoleChangeFacts from '@/messages/console-change-facts/en.json';
 import svConsoleChangeFacts from '@/messages/console-change-facts/sv.json';
 import enConsoleSources from '@/messages/console-sources/en.json';
@@ -57,6 +61,12 @@ import enVocabularies from '@/messages/vocabularies/en.json';
 import svVocabularies from '@/messages/vocabularies/sv.json';
 import enWatch from '@/messages/watch/en.json';
 import svWatch from '@/messages/watch/sv.json';
+// c11-fe-admin-security
+import enAdminSecurity from '@/messages/admin-security/en.json';
+import svAdminSecurity from '@/messages/admin-security/sv.json';
+// acc-fe-admin
+import enAgentAccess from '@/messages/agent-access/en.json';
+import svAgentAccess from '@/messages/agent-access/sv.json';
 // c10-fe-workflow-policy: the workflow policy page (COL-02, TEN-01).
 import enWorkflow from '@/messages/workflow/en.json';
 import svWorkflow from '@/messages/workflow/sv.json';
@@ -68,12 +78,14 @@ import svWorkflow from '@/messages/workflow/sv.json';
 // merge below never silently drops copy. `sv` is typed against `en`, so a key
 // missing in one language fails `tsc` as well as the check.
 const en = {
+  ...enAdminAgents,
   ...enAuth,
   ...enBriefing,
   ...enCalendarFeeds,
   ...enCommon,
   ...enConsole,
   ...enConsoleAgentKeys,
+  ...enConsoleAgents,
   ...enConsoleChangeFacts,
   ...enConsoleSources,
   ...enDev,
@@ -98,16 +110,22 @@ const en = {
   ...enToday,
   ...enVocabularies,
   ...enWatch,
+  // c11-fe-admin-security
+  ...enAdminSecurity,
+  // acc-fe-admin
+  ...enAgentAccess,
   ...enWorkflow,
 };
 
 const sv = {
+  ...svAdminAgents,
   ...svAuth,
   ...svBriefing,
   ...svCalendarFeeds,
   ...svCommon,
   ...svConsole,
   ...svConsoleAgentKeys,
+  ...svConsoleAgents,
   ...svConsoleChangeFacts,
   ...svConsoleSources,
   ...svDev,
@@ -132,6 +150,10 @@ const sv = {
   ...svToday,
   ...svVocabularies,
   ...svWatch,
+  // c11-fe-admin-security
+  ...svAdminSecurity,
+  // acc-fe-admin
+  ...svAgentAccess,
   ...svWorkflow,
 };
 

@@ -42,6 +42,13 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'admin-security-log': { ready: '[data-security-log] [data-event]' },
   'admin-audit-log': { ready: '[data-audit-log] [data-audit-row]' },
   'admin-ai-log': { ready: `[data-ai-log] [data-ai-row]${OR_EMPTY}` },
+  // acc-fe-admin
+  'admin-agents-access': { ready: `[data-access-list] [data-entry-id]${OR_EMPTY}` },
+  // acc-fe-admin: the rows c11-fe-admin-agents, c11-fe-admin-security and c11-fe-console-agents
+  // registered without, so the completeness check above holds on the merged tree.
+  'admin-agents': { ready: `[data-platform-watch] [data-platform-agent]${OR_EMPTY}` },
+  'admin-security': { ready: '[data-session-policy]' },
+  'console-agents': { ready: `[data-agent-definitions] [data-agent-definition]${OR_EMPTY}` },
   'admin-workflow': { ready: '[data-workflow-form] [data-workflow-field]' },
   'me-passkeys': { ready: '[data-passkey-id]' },
   'me-sessions': { ready: '[data-session-id]' },
