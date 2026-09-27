@@ -14,11 +14,13 @@ from typing import Literal
 
 from django.conf import settings
 from pydantic import ConfigDict, Field
+from pydantic.json_schema import JsonDict
 
 # `AiCitation` lives beside `AgentDecision` in apps/shared/schemas.py, which cites with it
 # and which a governance import would turn into a cycle; it is re-exported here for the
 # modules that already read it from this app.
 from apps.shared.schemas import AiCitation, AuditSnapshot, CamelSchema, WriteBody
+from apps.taxonomy.schemas import PersonRef
 
 
 class AuditEventQuery(CamelSchema):
@@ -841,4 +843,104 @@ class ProblemReportClose(WriteBody):
             "it stays in the report and reaches no audit row, outbox event, log line or model."
         ),
         examples=["Version 2 says ten years; the screen showed version 1, which said five."],
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# Tenant reach (acc-scope-and-reach; ACC-08, D-72, ADR 0057)
+# ---------------------------------------------------------------------------------------
+_REACH_REQUEST_EXAMPLE: JsonDict = {
+    "id": "0c9e7d24-5b1a-4f3e-8a6d-2e4f1b7c9a30",
+    "status": "pending",
+    "requestedBy": {"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Erik Holm"},
+    "requestedAt": "2026-09-25T08:10:00Z",
+    "decidedBy": None,
+    "decidedAt": None,
+    "version": 1,
+}
+
+
+class TenantReachRequestRow(CamelSchema):
+    """One request to let the bank's register reach the agents it runs itself (ACC-08): who
+    asked, and who decided. Reach is switched on only when a second person holding
+    `security.manage` approves it with a passkey."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_REACH_REQUEST_EXAMPLE]})
+
+    id: uuid.UUID = Field(
+        description="The request's identifier, a UUID that never changes; the approve and reject calls take it in their path.",
+        examples=["0c9e7d24-5b1a-4f3e-8a6d-2e4f1b7c9a30"],
+    )
+    status: Literal["pending", "approved", "rejected"] = Field(
+        description=(
+            "Where the request stands, one of three fixed values. `pending`: waiting for a second "
+            "person; reach is unchanged, and a bank has at most one pending request. `approved`: a "
+            "second person approved it with a passkey and reach was switched on at that moment. "
+            "`rejected`: a second person turned it down and reach stayed off. Only `pending` can "
+            "still change; the other two are final. A kind in code, never extended by an administrator."
+        ),
+        examples=["pending"],
+    )
+    requested_by: PersonRef = Field(description="The member holding `security.manage` who asked for reach, by id and name.")
+    requested_at: datetime = Field(
+        description="When the request was made, a UTC timestamp set by the server.", examples=["2026-09-25T08:10:00Z"]
+    )
+    decided_by: PersonRef | None = Field(
+        default=None,
+        description=(
+            "The second member who approved or rejected it, by id and name, never the requester: "
+            "the database refuses that. Null while the request is pending."
+        ),
+    )
+    decided_at: datetime | None = Field(
+        default=None,
+        description="When it was approved or rejected, a UTC timestamp set by the server; null while pending.",
+        examples=["2026-09-25T09:02:00Z"],
+    )
+    version: int = Field(
+        description=(
+            "The request's version, starting at 1 and raised by one when it is decided. Send it in "
+            "`If-Match` on approve or reject to be told, with `stale_write` (409), when it moved on."
+        ),
+        examples=[1],
+    )
+
+
+class TenantReachView(CamelSchema):
+    """Whether the bank's own register may reach the agents it runs itself (ACC-08), and the
+    request waiting for a second person, if any. With reach off, every agent access entry
+    reads the shared library only, whatever the entry's own setting says."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"enabled": False, "changedBy": None, "changedAt": None, "pending": _REACH_REQUEST_EXAMPLE}
+            ]
+        }
+    )
+
+    enabled: bool = Field(
+        description=(
+            "True when two different people holding `security.manage` switched reach on and nobody "
+            "has switched it off since; then an agent access entry whose own toggle is on may read "
+            "the bank's register decisions. False, the default for every bank, means every entry "
+            "reads the shared library only."
+        ),
+        examples=[False],
+    )
+    changed_by: PersonRef | None = Field(
+        default=None,
+        description=(
+            "The member who last switched reach on (by approving a request) or off, by id and name; "
+            "null for a bank that never switched it."
+        ),
+    )
+    changed_at: datetime | None = Field(
+        default=None,
+        description="When reach was last switched on or off, a UTC timestamp set by the server; null if never.",
+        examples=["2026-09-25T09:02:00Z"],
+    )
+    pending: TenantReachRequestRow | None = Field(
+        default=None,
+        description="The request waiting for a second person, or null when none waits.",
     )

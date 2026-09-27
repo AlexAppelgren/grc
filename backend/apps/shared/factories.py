@@ -18,7 +18,7 @@ need one live in the app's own `testing.py`, which the fence exempts:
 |---|---|
 | An instrument, a provision, an obligation | `apps/library/testing.py` |
 | A source, a source check, a change with its timeline, pages, flags, scope terms and obligation links | `apps/watch/testing.py` |
-| An agent, a platform key bound to it, a platform run | `apps/agents/testing.py` |
+| An agent, a platform key bound to it, a platform run, a definition a bank may add | `apps/agents/testing.py` |
 | A bank's case, its obligation-link decision, two banks with different footprints | `apps/cases/testing.py` |
 """
 
@@ -33,7 +33,8 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, ScopeItem, Team, VocabularySuggestion
+from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -184,6 +185,30 @@ def footprint_request(tenant: Tenant) -> FootprintChangeRequest:
         return FootprintChangeRequest.objects.create(tenant=tenant, requested_by=requester)
 
 
+def scope_item(tenant: Tenant) -> ScopeItem:
+    """The tenant-isolation guard's record for the scope item route (d89-scope-items-logic,
+    OWN-01): one of the bank's own scope items, on the reference jurisdictions and terms,
+    which it seeds when they are missing (the seeds are idempotent)."""
+    from apps.library.models import Jurisdiction
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.taxonomy import terms_logic
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+
+    for seed in (seed_languages, seed_jurisdictions, seed_library_vocabularies, seed_term_dimensions, seed_taxonomy_terms):
+        seed()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        item: ScopeItem = ScopeItem.objects.create(
+            tenant=tenant,
+            key=f"scope-item-{uuid.uuid4().hex[:8]}",
+            name="Local crypto-asset rules",
+            jurisdiction=Jurisdiction.objects.get(key="se"),
+            regime_term=terms_logic.term_by_ref("regime", "securities"),
+            source_url="https://www.fi.se/sv/vara-register/",
+        )
+    return item
+
+
 def vocabulary_suggestion(tenant: Tenant) -> SimpleNamespace:
     """The tenant-isolation guard's record for suggestion routes. Its path carries the list
     as well as the id, so it names both: a list that exists means the only thing between
@@ -306,3 +331,30 @@ def case_evidence(tenant: Tenant) -> SimpleNamespace:
             scanned_at=timezone.now(),
         )
     return SimpleNamespace(id=evidence.id, case=row)
+# acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
+def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
+    """The tenant's pending request for tenant reach, reused when one waits, because a
+    second cannot."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        waiting = TenantReachRequest.objects.filter(tenant=tenant, status=ApprovalStatus.PENDING.value).first()  # ordering: at most one pending row per tenant, by constraint
+    if waiting is not None:
+        return waiting
+    requester = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantReachRequest.objects.create(tenant=tenant, requested_by=requester)
+
+
+# c11-tenant-agents-budget-scope (AGT-04). The definition is a library row, so
+# `apps/agents/testing.py` (the fence exempts it) builds it, as the case builders above do.
+def tenant_agent(tenant: Tenant) -> object:
+    """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
+    bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
+    from apps.agents import testing as agent_build
+    from apps.agents.models import TenantAgent
+
+    definition = agent_build.tenant_definition("isolation-bank-watch")
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantAgent.objects.create(tenant=tenant, agent=definition)

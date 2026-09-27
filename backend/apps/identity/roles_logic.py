@@ -248,7 +248,7 @@ def update_role(
     permissions: Iterable[str] | None,
     step_up_assertion_id: uuid.UUID | None,
 ) -> TenantRole:
-    before = {"permissions": sorted(role.permissions), "usage_note": role.usage_note, "labels": _labels_dict(role)}
+    before = {"permissions": sorted(role.permissions), "usage_note": role.usage_note, "labels": _labels_dict(role)}  # compliance: record-content a role's own label and usage note are the values its audit row records (AUD-01)
     if permissions is not None and role.is_system:
         raise ValidationError("A system role's permissions follow the product; relabel it instead.", code="system_role")
     if permissions is not None:
@@ -259,7 +259,7 @@ def update_role(
     if labels:
         _write_labels(tenant, role, _validate_labels(labels))
     role = TenantRole.objects.prefetch_related("labels").get(pk=role.pk)
-    after = {"permissions": sorted(role.permissions), "usage_note": role.usage_note, "labels": _labels_dict(role)}
+    after = {"permissions": sorted(role.permissions), "usage_note": role.usage_note, "labels": _labels_dict(role)}  # compliance: record-content a role's own label and usage note are the values its audit row records (AUD-01)
     record(
         action="role.updated",
         actor=actor,

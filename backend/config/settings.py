@@ -279,6 +279,67 @@ AGENT_RUNNER = env_str("AGENT_RUNNER", "mock")  # mock | managed_agents
 # The longest topic a research or re-tag request may carry, in characters: the text is a
 # bank's own (or the console's) and is validated at the boundary before anything reads it.
 AGENT_RESEARCH_TOPIC_MAX_CHARS = env_int("AGENT_RESEARCH_TOPIC_MAX_CHARS", 500)
+
+# --- c11-tenant-agents-budget-scope (AGT-04) ---------------------------------------------
+# Plan limits on a bank's own agents, until plans exist (R3): the most frequent cadence a
+# bank may set (`daily`, `weekly` or `monthly`; `manual` is always allowed), and how many
+# agents of its own a bank may add. The hour, in the bank's own time zone, a scheduled run
+# starts when the bank names none.
+AGENT_MIN_CADENCE = env_str("AGENT_MIN_CADENCE", "weekly")
+if AGENT_MIN_CADENCE not in ("daily", "weekly", "monthly"):
+    raise ImproperlyConfigured(f"AGENT_MIN_CADENCE must be daily, weekly or monthly, got {AGENT_MIN_CADENCE!r}")
+AGENTS_PER_TENANT_MAX = env_int("AGENTS_PER_TENANT_MAX", 3)
+AGENT_DEFAULT_RUN_HOUR = env_int("AGENT_DEFAULT_RUN_HOUR", 6)
+if not 0 <= AGENT_DEFAULT_RUN_HOUR <= 23:
+    raise ImproperlyConfigured(f"AGENT_DEFAULT_RUN_HOUR must be an hour from 0 to 23, got {AGENT_DEFAULT_RUN_HOUR}")
+
+# --- c11-scheduler (AGT-03, AGT-04, AGT-06) ----------------------------------------------
+# How often the two agent beats fire, in minutes: bleqq's (apps.agents.tasks.
+# run_platform_agents) and the banks' (schedule_tenant_agents). The most runs of bleqq's
+# agents one beat starts, so a beat never starts the whole library at once; the rest start
+# on the next beat. The most one run of a bank's own agent may spend, in EUR: a run starts
+# only when the month's spend plus this still fits under the bank's cap, and it is stored
+# on the run as its `budget_limit`.
+from decimal import Decimal, InvalidOperation  # noqa: E402 this block's own import, kept beside it
+
+AGENT_BEAT_INTERVAL_MINUTES = env_int("AGENT_BEAT_INTERVAL_MINUTES", 15)
+AGENT_RUNS_PER_BEAT = env_int("AGENT_RUNS_PER_BEAT", 5)
+AGENT_RUN_BUDGET_LIMIT = env_str("AGENT_RUN_BUDGET_LIMIT", "5.00")
+if AGENT_BEAT_INTERVAL_MINUTES < 1 or AGENT_RUNS_PER_BEAT < 1:
+    raise ImproperlyConfigured("AGENT_BEAT_INTERVAL_MINUTES and AGENT_RUNS_PER_BEAT must each be at least 1")
+try:
+    _run_budget_limit = Decimal(AGENT_RUN_BUDGET_LIMIT)
+except InvalidOperation:
+    _run_budget_limit = Decimal(0)
+if not (_run_budget_limit.is_finite() and Decimal(0) < _run_budget_limit < Decimal(100_000_000)):
+    raise ImproperlyConfigured(f"AGENT_RUN_BUDGET_LIMIT must be an amount in EUR above zero, got {AGENT_RUN_BUDGET_LIMIT!r}")
+CELERY_BEAT_SCHEDULE["agents-platform"] = {
+    "task": "apps.agents.tasks.run_platform_agents",
+    "schedule": AGENT_BEAT_INTERVAL_MINUTES * 60,
+}
+CELERY_BEAT_SCHEDULE["agents-tenant"] = {
+    "task": "apps.agents.tasks.schedule_tenant_agents",
+    "schedule": AGENT_BEAT_INTERVAL_MINUTES * 60,
+}
+
+# --- c11-research-requests (AGT-05) -------------------------------------------------------
+# How many research requests a bank may make in a calendar month of its own time zone,
+# until plans exist (R3); past it a request is 429 `plan_limit_reached`. A `check_url` fetch:
+# the seconds one connection may take, the most bytes of a page kept, and how many
+# redirects are followed, each hop checked for a public https host first.
+RESEARCH_REQUESTS_PER_MONTH = env_int("RESEARCH_REQUESTS_PER_MONTH", 30)
+RESEARCH_URL_TIMEOUT_SECONDS = env_int("RESEARCH_URL_TIMEOUT_SECONDS", 5)
+RESEARCH_URL_MAX_BYTES = env_int("RESEARCH_URL_MAX_BYTES", 1_000_000)
+RESEARCH_URL_MAX_REDIRECTS = env_int("RESEARCH_URL_MAX_REDIRECTS", 3)
+if min(RESEARCH_REQUESTS_PER_MONTH, RESEARCH_URL_TIMEOUT_SECONDS, RESEARCH_URL_MAX_BYTES) < 1 or RESEARCH_URL_MAX_REDIRECTS < 0:
+    raise ImproperlyConfigured("The RESEARCH_* settings must be positive, and RESEARCH_URL_MAX_REDIRECTS at least 0")
+# d89-agent-research (OWN-02, D-98, ADR 0061): the longest each of a scope item's text fields
+# (its name, official reference and source address) may be when it reaches the bank's own
+# agent; each is cut to it before it leaves the worker.
+SCOPE_RESEARCH_TEXT_MAX_CHARS = env_int("SCOPE_RESEARCH_TEXT_MAX_CHARS", 2000)
+if SCOPE_RESEARCH_TEXT_MAX_CHARS < 1:
+    raise ImproperlyConfigured("SCOPE_RESEARCH_TEXT_MAX_CHARS must be at least 1")
+
 MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
@@ -831,6 +892,20 @@ if min(AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS, AGENT_ACCESS_RATE_PER
         "Refusing to boot: AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS and "
         "AGENT_ACCESS_RATE_PER_MINUTE must each be at least 1."
     )
+
+# ===== d89-scope-items-model: the bank's own scope items (OWN-01, D-91) =====
+# The longest description a scope item may carry; the boundary refuses a longer one.
+SCOPE_ITEM_DESCRIPTION_MAX_CHARS = env_int("SCOPE_ITEM_DESCRIPTION_MAX_CHARS", 2000)
+if SCOPE_ITEM_DESCRIPTION_MAX_CHARS < 1:
+    raise ImproperlyConfigured("Refusing to boot: SCOPE_ITEM_DESCRIPTION_MAX_CHARS must be at least 1.")
+
+# ===== d89-scope-items-logic: the regulatory scope request's caps (FP-02, OWN-01, H24) =====
+# The most terms, and the most scope items, one regulatory scope request may add or remove,
+# each list on its own: every entry costs lookups, a link row and, on approval, a history
+# and an audit row, so the list is bounded at the boundary rather than by the body size.
+FOOTPRINT_CHANGE_MAX_TERMS = env_int("FOOTPRINT_CHANGE_MAX_TERMS", 50)
+if FOOTPRINT_CHANGE_MAX_TERMS < 1:
+    raise ImproperlyConfigured("Refusing to boot: FOOTPRINT_CHANGE_MAX_TERMS must be at least 1.")
 
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========
