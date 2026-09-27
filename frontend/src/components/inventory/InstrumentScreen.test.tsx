@@ -75,6 +75,9 @@ const researchObligation: Obligation = {
   tenantTags: [],
   privateToUs: false,
   complianceStatus: null,
+  applicability: 'under_assessment',
+  firstLineOwner: null,
+  ownerTeam: null,
 };
 
 const ME = {
