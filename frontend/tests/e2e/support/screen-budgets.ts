@@ -43,8 +43,12 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'admin-api-keys': { ready: `[data-keys-list] [data-key-id]${OR_EMPTY}` },
   'admin-security-log': { ready: '[data-security-log] [data-event]' },
   'admin-support-access': { ready: `[data-support-section] [data-grant-id]${OR_EMPTY}` },
+  // c11-fe-admin-security: the session limits form, drawn once the bank's policy is read.
+  'admin-security': { ready: '[data-session-policy]' },
   'admin-audit-log': { ready: '[data-audit-log] [data-audit-row]' },
   'admin-ai-log': { ready: `[data-ai-log] [data-ai-row]${OR_EMPTY}` },
+  // c11-fe-admin-agents: what bleqq watches, read by every member; the seed may publish none.
+  'admin-agents': { ready: `[data-platform-watch] [data-platform-agent]${OR_EMPTY}` },
   'admin-workflow': { ready: '[data-workflow-form] [data-workflow-field]' },
   // The seed may hold no notification for the reader measured: the empty inbox is an answer too.
   notifications: { ready: `[data-notifications-list] [data-notification-id]${OR_EMPTY}` },

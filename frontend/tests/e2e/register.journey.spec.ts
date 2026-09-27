@@ -14,7 +14,7 @@ import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
 // entity by the name the seed gave it (backend/apps/shared/e2e_seed.py). Product
 // governance spans Example Bank AB and the insurer, and the seed keeps a status row
 // for the bank and the fund company; the ISO/IEC 27001 duty spans all three and no
-// seeded bank follows it, so it is reached through "Show outside our scope".
+// seeded bank follows it, so it is reached through the inventory's "All" scope.
 const SPANNING = 'obl-product-governance';
 const STANDARD = 'iso-iec-27001-2022-conformance';
 const BANK = 'Example Bank AB';
@@ -25,9 +25,9 @@ const SPANNING_REASON = 'We both manufacture and distribute instruments.';
 const FONDER_NOTE = 'Negative target markets are not yet set for the two newest funds.';
 
 async function openObligation(page: Page, stableKey: string, outside = false): Promise<void> {
-  await page.goto(outside ? '/inventory?regime=ai_ict' : '/inventory');
+  // Outside the scope is the inventory's own "All" scope, kept in the URL (D-104).
+  await page.goto(outside ? '/inventory?regime=ai_ict&scope=all' : '/inventory');
   await expect(page.locator('[data-obligation-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
-  if (outside) await page.getByRole('button', { name: 'Show outside our scope' }).click();
   await page.locator(`[data-obligation="${stableKey}"]`).click();
   await expect(page.locator(`[data-obligation="${stableKey}"] [data-header-pills]`)).toBeVisible();
   await expect(page.locator('[data-applicability-panel]')).toBeVisible();

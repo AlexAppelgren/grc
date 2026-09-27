@@ -50,13 +50,14 @@ test.describe('home journeys', () => {
     const comingUp = page.locator('[data-coming-up]');
     const items = comingUp.locator('[data-roadmap-item]');
     await expect(items.filter({ hasText: 'FI adopts amended rules on paying for investment research' })).toHaveCount(1);
-    await expect(items.filter({ hasText: 'Amended reporting of securities financing transactions' })).toHaveCount(1);
-    // Ordered against each other, never against the top of the list: chunk 5's
-    // seed dates one reform 2027-01-01, a literal, which reaches the top ahead
-    // of the +20-day lead from 12 December 2026 and flipped a first-row check.
+    // Ordered against each other, never against the top of the list: chunk 5's seed dates
+    // one reform 2027-01-01, a literal. Since c8-home-standing-roadmap the bank's own
+    // reviews and gap targets share the panel, so the later seeded reform can fall past its
+    // rows; HOM-S4 proves it on the roadmap. Where it is shown, it follows the lead.
     const titles = await items.allInnerTexts();
     const leadAt = titles.findIndex((text) => text.includes('FI adopts amended rules on paying for investment research'));
-    expect(leadAt).toBeLessThan(titles.findIndex((text) => text.includes('Amended reporting of securities financing transactions')));
+    const laterAt = titles.findIndex((text) => text.includes('Amended reporting of securities financing transactions'));
+    expect(laterAt === -1 || leadAt < laterAt).toBe(true);
     await expect(comingUp.getByText('Insurance distribution guidance outside our scope')).toHaveCount(0);
     await expect(comingUp.getByText(/\d+ dated items ahead/)).toBeVisible();
 
