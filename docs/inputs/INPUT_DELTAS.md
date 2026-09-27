@@ -1470,7 +1470,6 @@ forced row-level security, each child's case a composite key `(tenant_id, case_i
   has nowhere to record it. A CHECK per kind: only a file carries a storage key, and it
   carries its hash, size and type with it; a link carries a url.
 
-## 19. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
 ## 18. A bank's workflow policy is six columns and a route of its own (2026-09-25, c10-workflow-policy)
 
 The designed `tenant.settings` blob is six columns on `tenant` (shared 0009):
@@ -1775,3 +1774,26 @@ The chunk 8 brief's `c8-home-register-feeds` is built as this package, with thes
 - The register's two branches need `register.read`; a certificate's dates are any member's,
   as `GET /tenant/org-units/{id}/licences` is. A gap's target is listed whatever the answer
   on its obligation; a review is left out where the answer is "does not apply".
+
+## c8-support-session-guard. The support session (2026-09-25, identity 0009)
+
+ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
+
+- `user_session.kind` gains `support`, beside the `support_access` column the brief names,
+  so the signed access token carries the kind and the read-only guard
+  (`SupportReadOnlyMiddleware`) refuses a route off the allow-list before any row is read,
+  whatever auth class the route takes. A CHECK keeps the kind and the grant together, and
+  `(tenant_id, support_access_id)` is a composite key to `support_access (tenant_id, id)`,
+  which gains that unique constraint; no policy is added anywhere.
+- Beside `SUPPORT_READ_ROUTES`, `SUPPORT_SESSION_ROUTES` lets the session call
+  `POST /auth/refresh` and `POST /auth/sign-out`, which act on its refresh cookie alone; the
+  web client sends its bearer on sign-out. A refresh on an ended grant revokes the session
+  and answers 401 `support_access_ended`.
+- Entering signs the console session out ("replaces" it), so "the ones after that answer
+  404" in TEN-S6 is the platform person's next console session.
+- The route sweep accepts 501 `not_built` on a listed read whose logic has not landed
+  (chunk 9's `listActions`, `listEvidence`, `getCaseFile`), beside 2xx and 404.
+- The `support_access.read` row is written in the request's transaction, as the brief says;
+  a handler that rolls a refused request back (`answers_problems`, a 404) takes the row with
+  it, so the log holds every read that answered.
+

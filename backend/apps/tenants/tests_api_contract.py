@@ -51,6 +51,21 @@ BUILT_BEFORE = {
     "createConsoleTenant",
 }
 
+# Routes of the table whose logic has landed: past every gate they answer with the real
+# thing, which their own module proves, so the 501 rows below leave them out.
+BUILT_SINCE = {
+    # c8-ten-support-grants (TEN-06): tests_support_access.py.
+    "requestConsoleSupportAccess",
+    "listTenantSupportAccess",
+    "approveSupportAccess",
+    "declineSupportAccess",
+    "revokeSupportAccess",
+    # c8-support-session-guard (TEN-06): apps/shared/tests_support_session.py.
+    "enterConsoleSupportAccess",
+    # c8-ui-support-console (TEN-06): tests_support_access.py, ConsoleList.
+    "listConsoleSupportAccess",
+}
+
 ORG_UNIT_BODY = {"kind": "business_area", "name": "Retail Banking"}
 ORG_UNIT_PATCH = {"name": "Retail and Private Banking"}
 LICENCE_BODY = {"licenceType": "credit_institution", "reference": "FI 12-3456"}
@@ -341,6 +356,8 @@ class TenantsRouteStubs(TenantsContractCase):
     BUILT |= {"listTeams", "listTeamMembers", "listPeople"}
     # c8-ten-reassignment: built, and proven in tests_reassignment.py.
     BUILT |= {"getMemberOpenWork", "removeMember"}
+    # c8-ten-support-grants, c8-support-session-guard, c8-ui-support-console (TEN-06).
+    BUILT |= BUILT_SINCE
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
         with stub_session(self.everything()):

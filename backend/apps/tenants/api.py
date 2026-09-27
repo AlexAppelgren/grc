@@ -12,7 +12,7 @@ which RFC 9457 `code` to branch on. The standard is
 import uuid
 from typing import Any, cast
 
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponse
 from ninja import Path, Query, Router
 
 from apps.identity.models import User
@@ -22,7 +22,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import Principal, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, caller_tenant, if_match
+from apps.taxonomy.http import actor_for, caller_tenant, caller_user, if_match
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.schemas import PersonRef
 from apps.tenants import logic, organisation, people, products, reassignment, support_access, teams
@@ -887,8 +887,7 @@ def list_tenant_support_access(request: HttpRequest, page: PageQuery = Query(...
     never asked is a 200 with `total` 0.
 
     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
-    session that belongs to no bank; `unauthenticated` (401). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    session that belongs to no bank; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     return support_access.list_for_tenant(tenant=caller_tenant(request), limit=page.limit, offset=page.offset)
@@ -915,10 +914,10 @@ def approve_support_access(request: HttpRequest, grant_id: uuid.UUID = Path(...,
     assertion, in the same transaction.
 
     Errors: `not_found` (404) for a request that is not the bank's own; `four_eyes_violation`
-    (409) when the approver is the person who asked; `step_up_required` (403) without a fresh
-    passkey assertion;
-    `permission_denied` (403) without `security.manage`; `unauthenticated` (401). Published
-    ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+    (409) when the approver is the person who asked; `invalid_transition` (422) for a request
+    that is no longer pending, because it was decided or lapsed; `step_up_required` (403)
+    without a fresh passkey assertion; `permission_denied` (403) without `security.manage`;
+    `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return support_access.approve(
@@ -944,10 +943,9 @@ def decline_support_access(request: HttpRequest, grant_id: uuid.UUID = Path(...,
 
     Needs `security.manage`. Recorded in the audit log as `support_access.declined`.
 
-    Errors: `not_found` (404) for a request that is not the bank's own;
-    `permission_denied` (403) without `security.manage`;
-    `unauthenticated` (401). Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    Errors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`
+    (422) for a request that is no longer pending, because it was decided or lapsed;
+    `permission_denied` (403) without `security.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return support_access.decline(tenant=tenant, actor=actor_for(request), grant_id=grant_id)
@@ -969,10 +967,10 @@ def revoke_support_access(request: HttpRequest, grant_id: uuid.UUID = Path(..., 
 
     Needs `security.manage`. Recorded in the audit log as `support_access.revoked`.
 
-    Errors: `not_found` (404) for a request that is not the bank's own;
-    `permission_denied` (403) without `security.manage`;
-    `unauthenticated` (401). Published ahead of the logic that will fill it, and answering 501
-    `not_built` until that ships.
+    Errors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`
+    (422) for a grant that is not open, because it is still pending, was declined or revoked,
+    or its window passed; `permission_denied` (403) without `security.manage`;
+    `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return support_access.revoke(tenant=tenant, actor=actor_for(request), grant_id=grant_id)
@@ -1007,10 +1005,11 @@ def request_console_support_access(
     Errors: `validation_error` (422) for a blank purpose, a window under an hour or above the
     maximum, or a field the body does not name; `not_found` (404) for a bank that does not
     exist; `permission_denied` (403) without `support_access.grant`; `unauthenticated` (401).
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
     """
-    return support_access.request_access(tenant_id=tenant_id, actor=actor_for(request), body=body)
+    requester = caller_user(request)
+    return support_access.request_access(
+        tenant_id=tenant_id, requester=requester, actor=actor_for(request, requester), body=body
+    )
 
 
 @router.get(
@@ -1031,10 +1030,13 @@ def list_console_support_access(request: HttpRequest, page: PageQuery = Query(..
     audit event. A caller who never asked is a 200 with `total` 0.
 
     Errors: `validation_error` (422) for a page size above 100; `permission_denied` (403)
-    without `support_access.grant`; `unauthenticated` (401). Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    without `support_access.grant`; `unauthenticated` (401).
     """
-    return support_access.my_grants(actor=actor_for(request), limit=page.limit, offset=page.offset)
+    return support_access.my_grants(
+        principal=request.auth,  # type: ignore[attr-defined]
+        limit=page.limit,
+        offset=page.offset,
+    )
 
 
 @router.post(
@@ -1049,26 +1051,30 @@ def list_console_support_access(request: HttpRequest, page: PageQuery = Query(..
 @requires_step_up
 def enter_console_support_access(
     request: HttpRequest,
+    response: HttpResponse,
     grant_id: uuid.UUID = Path(
         ..., description="One of the caller's own approved grants, as a UUID; anybody else's, or one that is not active, answers 404."
     ),
 ) -> Any:
     """Replaces the caller's console session with a support session in the bank that approved
-    the grant, and answers with its access token. The session reads under the bank's own
-    row-level security, never writes, and ends with the grant's window or the bank's
+    the grant, and answers with its access token; the refresh token arrives as a cookie in the
+    same response, and the console session is signed out. The session reads under the bank's
+    own row-level security, never writes, and ends with the grant's window or the bank's
     revocation; every request under it is written to the bank's audit log as
-    `support_access.read`.
+    `support_access.read`. A route it may not read answers 403 `support_read_only`, and once
+    the grant has ended every request answers 401 `support_access_ended`.
 
     Needs the platform permission `support_access.grant` and a fresh passkey step-up.
     Recorded in the bank's audit log as `support_access.entered` with the step-up assertion.
 
     Errors: `not_found` (404) for a grant that is not the caller's own or not active;
     `step_up_required` (403) without a fresh passkey assertion; `permission_denied` (403)
-    without `support_access.grant`; `unauthenticated` (401). Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    without `support_access.grant`; `unauthenticated` (401).
     """
     return support_access.enter(
-        actor=actor_for(request),
+        principal=request.auth,  # type: ignore[attr-defined]
         grant_id=grant_id,
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        request=request,
+        response=response,
     )
