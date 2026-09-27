@@ -7,7 +7,8 @@ session's, or in the worker the run's), and never from a request body. Row-level
 on `proposal` then keeps an owned row out of the console, which runs with no tenant, and
 out of every other bank; the policy's own proofs as cw_app are apps/shared/tests_rls.py. The
 bank's own queue is declared behind its real gate, `private_records.approve` with a step-up
-on approval, and answers 501 once it has loaded the proposal under row-level security.
+on approval, and loads the proposal under row-level security first; what it then does is
+apps/proposals/tests_private_approval.py (d89-private-records).
 
 A test client's requests share one transaction here, so a console request after a bank's
 starts with `tenancy.clear_tenant()`, the zone a console request has in production.
@@ -184,13 +185,13 @@ class TheConsoleNeverSeesAnOwnedProposal(OwnedProposalTestCase):
 
 
 class TheBanksOwnQueueIsDeclared(OwnedProposalTestCase):
-    def test_the_list_answers_behind_its_gate_and_then_not_built(self) -> None:
+    def test_the_list_answers_behind_its_gate(self) -> None:
         self._refused(self.client.get(f"{V1}/private-proposals"), 401, "unauthenticated")
         self._refused(self._get("/private-proposals", sign_in(self.reader, tenant=self.bank)), 403, "permission_denied")
         self._refused(self._get("/private-proposals", sign_in(self.editor)), 403, "permission_denied")
-        self._refused(self._get("/private-proposals", sign_in(self.approver, tenant=self.bank)), 501, "not_built")
+        self.assertEqual(self._get("/private-proposals", sign_in(self.approver, tenant=self.bank)).status_code, 200)
 
-    def test_approve_answers_behind_its_gate_under_row_level_security_and_then_not_built(self) -> None:
+    def test_approve_answers_behind_its_gate_under_row_level_security(self) -> None:
         owned = self._owned(self.bank, self.officer)
         body = {"note": "Checked against the regulation."}
         path = f"/private-proposals/{owned.id}/approve"
@@ -202,7 +203,7 @@ class TheBanksOwnQueueIsDeclared(OwnedProposalTestCase):
         self._refused(self._post(f"/private-proposals/{uuid.uuid4()}/approve", body, approver), 404, "not_found")
         self._refused(self._post("/private-proposals/not-a-uuid/approve", body, approver), 404, "not_found")
         self._refused(self._post(path, {**body, "payloadOverrides": {}}, approver), 422, "validation_error")
-        self._refused(self._post(path, body, approver), 501, "not_built")
+        self.assertEqual(self._post(path, body, approver).json()["status"], "approved")
 
     def test_a_shared_proposal_is_not_the_bank_s_own(self) -> None:
         tenancy.activate(self.bank.id)
@@ -212,13 +213,13 @@ class TheBanksOwnQueueIsDeclared(OwnedProposalTestCase):
         self._refused(self._post(f"/private-proposals/{shared.id}/approve", {}, approver), 404, "not_found")
         self._refused(self._post(f"/private-proposals/{shared.id}/reject", {"rejectionCode": "duplicate", "note": "Held."}, approver), 404, "not_found")
 
-    def test_reject_answers_behind_its_gate_under_row_level_security_and_then_not_built(self) -> None:
+    def test_reject_answers_behind_its_gate_under_row_level_security(self) -> None:
         owned = self._owned(self.bank, self.officer)
         body = {"rejectionCode": "duplicate", "note": "We already hold this as our own."}
         path = f"/private-proposals/{owned.id}/reject"
         self._refused(self._post(path, body, sign_in(self.reader, tenant=self.bank)), 403, "permission_denied")
         self._refused(self._post(path, body, sign_in(self.other_approver, tenant=self.other_bank)), 404, "not_found")
-        self._refused(self._post(path, body, sign_in(self.approver, tenant=self.bank)), 501, "not_built")
+        self.assertEqual(self._post(path, body, sign_in(self.approver, tenant=self.bank)).json()["status"], "rejected")
 
 
 class ThePermissionIsTheBanksAlone(TestCase):

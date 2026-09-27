@@ -33,7 +33,8 @@ from types import SimpleNamespace
 from django.db import transaction
 from django.utils import timezone
 
-from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, ScopeItem, Team, VocabularySuggestion
+from apps.taxonomy.models import ApprovalStatus, ComplianceStatus, FootprintChangeRequest, ScopeItem, Team, VocabularySuggestion
+from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
@@ -53,7 +54,10 @@ from apps.identity.models import (
     WebAuthnCredential,
 )
 from apps.library.models import Language
-from apps.library.seeds import LANGUAGES
+from apps.library import testing as library_testing
+from apps.library.seeds import LANGUAGES, seed_jurisdictions, seed_languages
+from apps.register.logic import ensure_register_entry
+from apps.register.models import Applicability, DutyOccurrence, SoaUnit, TenantObligationScope
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
@@ -279,6 +283,68 @@ def support_access(tenant: Tenant) -> SupportAccess:
 
 
 # ---------------------------------------------------------------------------------------
+# acc-principal-guard: an agent access entry and its two credential kinds (ACC-03).
+# ---------------------------------------------------------------------------------------
+def agent_access_entry(tenant: Tenant, *, name: str = "Trading platform coding agent") -> SimpleNamespace:
+    """A live agent access entry of `tenant`, owned by its seeded compliance team and
+    registered by a new admin. Activates the tenant."""
+    from apps.agents.models import AgentAccess
+    from apps.taxonomy.models import Team
+
+    admin = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = AgentAccess.objects.create(
+            tenant=tenant,
+            name=name,
+            purpose="Builds the order-routing service.",
+            owner_team=Team.objects.get(key="compliance"),
+            created_by=admin,
+        )
+    return SimpleNamespace(id=row.id, row=row, admin=admin)
+
+
+def entry_key(tenant: Tenant, entry: SimpleNamespace, *, scopes: Iterable[str] = ("library:read",)) -> SimpleNamespace:
+    """A service key bound to `entry`: `.id`, `.row` and `.plain_key`."""
+    plain, prefix, key_hash = tokens.new_api_key()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = ApiKey.objects.create(
+            tenant=tenant, agent_access_id=entry.id, name="Entry key", key_prefix=prefix, key_hash=key_hash, scopes=list(scopes)
+        )
+    return SimpleNamespace(id=row.id, row=row, plain_key=plain)
+
+
+def agent_access_key(tenant: Tenant) -> SimpleNamespace:
+    """A live entry of `tenant` with one service key, addressed as the key's revoke route
+    names them (acc-entries-and-log)."""
+    entry = agent_access_entry(tenant)
+    key = entry_key(tenant, entry)
+    return SimpleNamespace(id=key.id, entry=entry, key=key, params={"uuidstr:entry_id": entry.id, "uuidstr:key_id": key.id})
+
+
+def personal_token(
+    tenant: Tenant, person: User, *, scopes: Iterable[str] = ("library:read",), entry: SimpleNamespace | None = None
+) -> SimpleNamespace:
+    """A personal access token acting as `person`, a member of `tenant`, expiring in 90 days."""
+    plain, prefix, key_hash = tokens.new_api_key()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = ApiKey.objects.create(
+            tenant=tenant,
+            kind="personal",
+            acts_as_user=person,
+            agent_access_id=entry.id if entry is not None else None,
+            name="Personal token",
+            key_prefix=prefix,
+            key_hash=key_hash,
+            scopes=list(scopes),
+            expires_at=timezone.now() + timedelta(days=90),
+        )
+    return SimpleNamespace(id=row.id, row=row, plain_key=plain)
+
+
+# ---------------------------------------------------------------------------------------
 # c9-case-contract: the tenant-isolation guard's records for the case workflow routes.
 # A case names a library change, so the case itself is built by `apps/cases/testing.py`
 # (the fence exempts it); the children are this bank's own rows and are built here.
@@ -358,3 +424,114 @@ def tenant_agent(tenant: Tenant) -> object:
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return TenantAgent.objects.create(tenant=tenant, agent=definition)
+
+
+# c8-reg-status: the tenant-isolation guard's record for a legal entity's register row.
+def register_entity(tenant: Tenant) -> SimpleNamespace:
+    """A legal entity of `tenant`. The route reads the entity under row-level security before
+    it looks at the obligation, so another bank asking for it is refused as if it never
+    existed; apps/register/tests_status.py proves the same under a real shared obligation."""
+    from apps.tenants.models import OrgUnit, OrgUnitKind
+
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entity = OrgUnit.objects.create(tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=f"Example Entity {next(_counter)} AB")
+    return SimpleNamespace(id=entity.id, params={"obligation_id": uuid.uuid4()})
+
+
+# --- c8-reg-applicability ---------------------------------------------------------------
+def legal_entity(tenant: Tenant, *, name: str = "Example Bank AB", entity_term_id: uuid.UUID | None = None, active: bool = True) -> OrgUnit:
+    """An org unit of the legal-entity kind in `tenant`, carrying the entity term whose id is
+    given (a `legal_entity` dimension term, by id so this file names no library model)."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(
+            tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=name, entity_term_id=entity_term_id, active=active
+        )
+
+
+# c8-reg-units (REG-08, D-41): the tenant-isolation guard's record for unit routes.
+def soa_unit(tenant: Tenant) -> SoaUnit:
+    """A live Statement of Applicability unit of `tenant`: under a fresh standard's
+    conformance duty (built by apps/library/testing.py), for a legal entity whose
+    conformance row applies, so the only thing between another tenant and it is tenancy."""
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+        edition = library_testing.instrument(
+            key=f"unit-standard-{n}", jurisdiction="intl", regime="regime:ai_ict", level="standard", binding=False
+        )
+        duty = library_testing.obligation(edition, key=f"unit-standard-{n}-conformance", duty_type="governance")
+    officer = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.id, actor=user_actor(user_id=officer.id))
+        status = ComplianceStatus.objects.get(is_default=True, active=True)
+        entity = OrgUnit.objects.create(tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=f"Entity {n} AB")
+        scope = TenantObligationScope.objects.create(
+            tenant=tenant,
+            tenant_obligation=entry,
+            org_unit=entity,
+            applicability=Applicability.APPLIES.value,
+            applicability_reason="Certified",
+            applicability_decided_at=timezone.now(),
+            applicability_decided_by=officer,
+            compliance_status=status,
+        )
+        return SoaUnit.objects.create(tenant=tenant, scope=scope, reference=f"X.{n}", title="Our own words", compliance_status=status)
+
+
+# c8-duty-occurrences (REG-07): the tenant-isolation guard's record for the completion route.
+def duty_occurrence(tenant: Tenant) -> DutyOccurrence:
+    """An upcoming occurrence of a fresh obligation's quarterly duty (both built by
+    apps/library/testing.py) on `tenant`'s register entry, so the only thing between another
+    tenant and it is tenancy."""
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+        law = library_testing.instrument(key=f"duty-law-{n}", regime="regime:securities")
+        duty = library_testing.recurring_duty(library_testing.obligation(law, key=f"duty-law-{n}-report"))
+    officer = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.obligation_id, actor=user_actor(user_id=officer.id))
+        return DutyOccurrence.objects.create(tenant=tenant, recurring_duty=duty, tenant_obligation=entry, due_date=timezone.localdate())
+
+
+# c8-reg-links-history (REG-05): the tenant-isolation guard's record for DELETE /internal-links/{id}.
+def internal_link(tenant: Tenant) -> SimpleNamespace:
+    """A live link of `tenant` to a fresh library obligation, with the item it points at.
+    The obligation comes from apps/library/testing.py, the one place a test writes the
+    library; the reference rows it needs are seeded idempotently first."""
+    from apps.library import testing as library_testing
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.register.logic import ensure_register_entry
+    from apps.register.models import InternalLink
+    from apps.taxonomy.models import LinkKind
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+    from apps.tenants.models import InternalItem
+
+    n = next(_counter)
+    with transaction.atomic():
+        seed_languages()
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        seed_taxonomy_terms()
+    act = library_testing.instrument(key=f"factory-act-{n}", regime="regime:securities")
+    duty = library_testing.obligation(act, key=f"factory-act-{n}/1")
+    person = member_user(tenant, roles=("compliance_officer",))
+    actor = Actor(kind=ActorType.USER, id=person.id, label=person.name)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=duty.id, actor=actor)
+        item = InternalItem.objects.create(tenant=tenant, kind=LinkKind.objects.get(key="policy"), name=f"Policy {n}")
+        link = InternalLink.objects.create(
+            tenant=tenant, tenant_obligation=entry, internal_item=item, label=item.name, created_by=person
+        )
+    return SimpleNamespace(id=link.id, link=link)

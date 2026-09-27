@@ -33,7 +33,7 @@ import pydantic
 from django.core.exceptions import ValidationError
 
 from apps.library.models import Instrument, Obligation, RecordStatus
-from apps.library.reading import active_obligation, active_provision, shared_instrument, terms_of
+from apps.library.reading import active_instrument, active_obligation, active_provision, terms_of
 from apps.proposals.models import ProposalKind
 from apps.proposals.schemas import (
     ProposalObligationPayload,
@@ -133,9 +133,9 @@ def check_payload(
     if isinstance(payload, ProposalObligationVersionPayload) and target_id is not None:
         instrument, terms = active_obligation(target_id).instrument, payload.terms
     elif isinstance(payload, ProposalObligationPayload):
-        instrument, terms, ref_label = shared_instrument(payload.instrument), payload.terms or [], payload.ref_label
+        instrument, terms, ref_label = active_instrument(payload.instrument), payload.terms or [], payload.ref_label
     elif isinstance(payload, ProposalProvisionPayload):
-        instrument, terms = shared_instrument(payload.instrument), None
+        instrument, terms = active_instrument(payload.instrument), None
     elif isinstance(payload, ProposalProvisionVersionPayload) and target_id is not None:
         instrument, terms = active_provision(target_id).instrument, None
     else:

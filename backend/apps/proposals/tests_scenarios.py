@@ -6,7 +6,7 @@ field; S3, S4 and S7 follow with approval, corrections and the tenant's view; PR
 R2. Never delete a scenario without updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): createProposal,
-approveProposal, rejectProposal.
+approveProposal, rejectProposal, approvePrivateProposal, rejectPrivateProposal.
 
 Prefixes hosted: PRO.
 """
@@ -18,7 +18,7 @@ import re
 import uuid
 from datetime import date
 from typing import Any
-from unittest import mock, skip
+from unittest import mock
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -47,6 +47,7 @@ from apps.shared.audit import Actor
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.routes import iter_operations
 from apps.shared.tenancy import library_write
+from apps.shared.tenancy import tenant_task
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.proposals.tests_kinds import (
     INSTRUMENT_KEY,
@@ -109,7 +110,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
     def _obligation(self) -> Obligation:
         """An obligation to propose a new version of. Chunk 3 seeds the real library; a
         scenario needs one record, written as the seeds write theirs."""
-        with library_write("scenario"):
+        with library_write("scenario"), tenancy.platform_zone():
             instrument = Instrument.objects.create(
                 stable_key="fffs-2017-2",
                 short_name="FFFS 2017:2",
@@ -143,7 +144,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
 
     def _version_one(self, obligation: Obligation) -> ObligationVersion:
         """The version in force before the proposal: chunk 3 seeds these, a scenario needs one."""
-        with library_write("scenario"):
+        with library_write("scenario"), tenancy.platform_zone():
             version = ObligationVersion.objects.create(obligation=obligation, version_number=1, effective_from=date(2024, 1, 1))
             ObligationSummary.objects.create(version=version, language_id="sv", text=VERSION_ONE_SV, is_original=True)
             ObligationTerm.objects.create(obligation=obligation, term=self._term("legal_entity", "bank"))
@@ -653,7 +654,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         reads = [
             op.path.format(**ids)
             for op in iter_operations(api)
-            if op.method == "GET" and all(name in ids for name in re.findall(r"{(\w+)}", op.path))
+            if op.method == "GET" and all(name in ids for name in re.findall(r"{([^}]+)}", op.path))
         ]
         self.assertIn(f"/proposals/{proposal['id']}", reads, "the proposal beside the reported duty is read too")
         for person in (self.editor, factories.platform_user(roles=("platform_admin",))):
@@ -963,16 +964,95 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(listed.status_code, 200, listed.content)
         self.assertIn(str(obligation.id), [item["id"] for item in listed.json()["items"]])
 
-    @skip("pending: PRO-S12 (INV-07, PRO-03, chunk 11)")
+    # --- d89-private-records: the bank's own queue (INV-07, OWN-03, PRO-03) -------------------
+    def _own_filing(self, key: str) -> dict[str, Any]:
+        """A new instrument of the bank's own, as `logic.create` takes it, by an authority the
+        library holds."""
+        seed_authorities()
+        body = instrument_body(key=key, officialRef=key.upper(), shortName=key.upper())
+        return {
+            "kind": body["kind"],
+            "title": body["title"],
+            "payload": body["payload"],
+            "field_sources": body["fieldSources"],
+            "source_label": body["sourceLabel"],
+            "source_url": body["sourceUrl"],
+        }
+
+    def _found_by_the_banks_agent(self, key: str) -> Proposal:
+        """What the bank's own research agent files for a scope item: in the worker, under the
+        bank's run, with no key (ADR 0059). The runner-event channel is d89-agent-research's;
+        its write is this one `logic.create` call."""
+
+        @tenant_task
+        def file_finding(tenant_id: uuid.UUID) -> Proposal:
+            proposal, _ = logic.create(
+                proposer=logic.Proposer(actor=factories.agent_actor(label="Scope researcher")), private=True, **self._own_filing(key)
+            )
+            return proposal
+
+        tenancy.clear_tenant()
+        return file_finding(self.tenant.id)
+
     def test_pro_s12(self) -> None:
         """PRO-S12
 
         A private proposal is approved inside the bank and never reaches the console (INV-07, PRO-03).
-
-        Drives approvePrivateProposal and rejectPrivateProposal once d89-private-records fills
-        them; until then their gate, their 404 under row-level security and their 501 are
-        apps/proposals/tests_private_contract.py (d89-proposal-owner).
         """
+        approver = factories.member(self.tenant, roles=("approver",)).user
+        officer = sign_in(self.officer, tenant=self.tenant, step_up=True)
+        # The officer proposes a private instrument; the server sets the owner, and a body
+        # that names one is refused.
+        body = instrument_body(key="own-pro-s12", officialRef="OWN-PRO-S12", shortName="OWN-PRO-S12")
+        named = self._post("/proposals", {**body, "ownerTenantId": str(self.tenant.id)}, officer)
+        self.assertEqual((named.status_code, named.json()["code"]), (422, "validation_error"))
+        self.activate(self.tenant)
+        proposal, _ = logic.create(
+            proposer=logic.Proposer(actor=factories.user_actor(user_id=self.officer.id), user=self.officer),
+            private=True,
+            **self._own_filing("own-pro-s12"),
+        )
+        self.assertEqual(proposal.owner_tenant_id, self.tenant.id)
+
+        editor = sign_in(self.editor, step_up=True)
+        self.assertNotIn(proposal.id, [row["id"] for row in self.client.get(f"{V1}/proposals", **editor).json()["items"]])
+        fetched = self.client.get(f"{V1}/proposals/{proposal.id}", **editor)
+        self.assertEqual((fetched.status_code, fetched.json()["code"]), (404, "not_found"))
+
+        path = f"/private-proposals/{proposal.id}/approve"
+        refused = self._post(path, {}, sign_in(self.officer, tenant=self.tenant, step_up=True))
+        self.assertEqual((refused.status_code, refused.json()["code"]), (409, "four_eyes_violation"))
+        approved = self._post(path, {}, sign_in(approver, tenant=self.tenant, step_up=True))
+        self.assertEqual((approved.status_code, approved.json()["status"]), (200, "approved"), approved.content)
+
+        self.activate(self.tenant)
+        instrument = Instrument.objects.get(stable_key="own-pro-s12")
+        self.assertEqual(instrument.owner_tenant_id, self.tenant.id)
+        for action, subject in (("proposal.approved", proposal.id), ("instrument.created", instrument.id)):
+            event = AuditEvent.objects.get(action=action, subject_id=subject)
+            self.assertEqual(event.tenant_id, self.tenant.id, action)
+            self.assertIsNotNone(event.step_up_assertion_id, action)
+            self.assertEqual(OutboxEvent.objects.get(audit_event=event).tenant_id, self.tenant.id, action)
+
+        # A member's proposal against a shared record stays shared and reaches the console.
+        obligation = self._obligation()
+        source = "https://www.fi.se/"
+        shared = self._post(
+            "/proposals",
+            {
+                "kind": "new_obligation_version",
+                "title": "Version 2 of the advice duty",
+                "targetType": "obligation",
+                "targetId": str(obligation.id),
+                "payload": {"summaries": {"en": "The institution assesses the client."}, "originalLanguage": "en", "effectiveFrom": "2027-01-01"},
+                "fieldSources": {"summaries.en": source, "effectiveFrom": source},
+                "sourceUrl": source,
+            },
+            sign_in(self.officer, tenant=self.tenant),
+        ).json()
+        tenancy.clear_tenant()
+        self.assertIsNone(Proposal.objects.get(pk=shared["id"]).owner_tenant_id)
+        self.assertIn(shared["id"], [row["id"] for row in self.client.get(f"{V1}/proposals", **sign_in(self.editor)).json()["items"]])
 
     def test_pro_s13(self) -> None:
         """PRO-S13
@@ -1284,9 +1364,63 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(approved.status_code, 200, approved.content)
         self.assertEqual(approved.json()["status"], "approved")
 
-    @skip("pending: PRO-S15 (OWN-03, INV-07, PRO-03, AC-OWN1, chunk 11)")
     def test_pro_s15(self) -> None:
         """PRO-S15
 
         The bank's own queue decides what its own agent filed (OWN-03, INV-07, PRO-03, AC-OWN1).
         """
+        approver = factories.member(self.tenant, roles=("approver",)).user
+        reader = factories.member(self.tenant, roles=("reader",)).user
+        other = factories.tenant(slug="bank-b")
+        other_approver = factories.member(other, roles=("approver",)).user
+        first = self._found_by_the_banks_agent("own-pro-s15-a")
+        second = self._found_by_the_banks_agent("own-pro-s15-b")
+
+        # The bank's own queue lists both; the console's never does, and its fetch is a 404.
+        queue = self.client.get(f"{V1}/private-proposals", **sign_in(approver, tenant=self.tenant)).json()
+        self.assertEqual([row["id"] for row in queue["items"]], [str(first.id), str(second.id)])
+        self.assertEqual({row["origin"] for row in queue["items"]}, {"agent"})
+        console = sign_in(self.editor, step_up=True)
+        self.assertEqual([row["id"] for row in self.client.get(f"{V1}/proposals", **console).json()["items"]], [])
+        for proposal in (first, second):
+            fetched = self.client.get(f"{V1}/proposals/{proposal.id}", **console)
+            self.assertEqual((fetched.status_code, fetched.json()["code"]), (404, "not_found"))
+
+        approve = f"/private-proposals/{first.id}/approve"
+        without = self._post(approve, {}, sign_in(reader, tenant=self.tenant, step_up=True))
+        self.assertEqual((without.status_code, without.json()["code"]), (403, "permission_denied"))
+        stale = self._post(approve, {}, sign_in(approver, tenant=self.tenant))
+        self.assertEqual((stale.status_code, stale.json()["code"]), (403, "step_up_required"))
+        approved = self._post(approve, {}, sign_in(approver, tenant=self.tenant, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.activate(self.tenant)
+        instrument = Instrument.objects.get(stable_key="own-pro-s15-a")
+        self.assertEqual((instrument.owner_tenant_id, instrument.created_origin, instrument.verified_origin), (self.tenant.id, "agent", "user"))
+        decided = AuditEvent.objects.get(action="proposal.approved", subject_id=first.id)
+        self.assertEqual((decided.tenant_id, decided.actor_id), (self.tenant.id, approver.id))
+        filed = AuditEvent.objects.get(action="proposal.created", subject_id=first.id)
+        self.assertEqual((filed.tenant_id, filed.actor_type, filed.actor_label), (self.tenant.id, "agent", "Scope researcher"))
+
+        reject = f"/private-proposals/{second.id}/reject"
+        session = sign_in(approver, tenant=self.tenant)
+        no_reason = self._post(reject, {}, session)
+        self.assertEqual((no_reason.status_code, no_reason.json()["code"]), (422, "reason_required"))
+        self.activate(self.tenant)
+        self.assertEqual(Proposal.objects.get(pk=second.id).status, ProposalStatus.OPEN.value)
+        rejected = self._post(reject, {"rejectionCode": "duplicate", "note": "We already hold this rule."}, session)
+        self.assertEqual((rejected.status_code, rejected.json()["status"]), (200, "rejected"), rejected.content)
+        self.activate(self.tenant)
+        self.assertFalse(Instrument.objects.filter(stable_key="own-pro-s15-b").exists())
+        self.assertEqual(AuditEvent.objects.get(action="proposal.rejected", subject_id=second.id).tenant_id, self.tenant.id)
+
+        # Tenant B's fetch of either is a 404, and no API key of any scope reaches the routes.
+        b = sign_in(other_approver, tenant=other, step_up=True)
+        tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        every_scope = agents_testing.agent_key(scopes=tuple(sorted(perms.ALL_SCOPES)))
+        bank_key = factories.api_key(self.tenant, scopes=tuple(sorted(perms.TENANT_KEY_SCOPES)))
+        for proposal in (first, second):
+            for verb, body in (("approve", {}), ("reject", {"rejectionCode": "duplicate", "note": "Held."})):
+                answer = self._post(f"/private-proposals/{proposal.id}/{verb}", body, b)
+                self.assertEqual((answer.status_code, answer.json()["code"]), (404, "not_found"))
+                for key in (every_scope, bank_key):
+                    self.assertEqual(self._post(f"/private-proposals/{proposal.id}/{verb}", body, {"HTTP_X_API_KEY": key.plain_key}).status_code, 401)

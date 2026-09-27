@@ -327,7 +327,8 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     library does not hold yet, with its regime); "new_obligation" (a duty the library does
     not hold yet, under an instrument it does, with its first summary and scope);
     "new_provision" (a node of a law's text, with its first verbatim text);
-    "new_provision_version" (a provision's text in force from a date); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire", "vocabulary_restore" or
+    "new_provision_version" (a provision's text in force from a date); "new_recurring_duty"
+    (a schedule an obligation in force falls due on, as an RFC 5545 rule); "vocabulary_create", "vocabulary_relabel", "vocabulary_retire", "vocabulary_restore" or
     "vocabulary_merge" (a row of a shared list); or "term_create" or "term_update" (a
     taxonomy term).
 
@@ -347,7 +348,11 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     has no provision of its own yet, and gives `sourceUrl`, the link the new record keeps
     as its own source. An instrument's `regime` is a term of the regime dimension, written
     `regime:<key>`. A new provision is sourced like a new record, and a provision version
-    like an obligation version. A standard's text is licensed, so nothing of it enters: no
+    like an obligation version. A recurring duty names its obligation as `targetType`
+    `obligation` and `targetId`, is sourced like an obligation version, field by field, and
+    carries one RRULE line at a day or coarser without DTSTART, which must fall due at least
+    once and at most `RECURRENCE_MAX_OCCURRENCES` times (120 unless the platform sets another
+    number) in the next ten years; a key bound to no agent cannot propose one. A standard's text is licensed, so nothing of it enters: no
     provision under a standard, and only https links as sources on a standard's one
     conformance obligation, which carries exactly one standard term. The proposal is
     linked to the bank it was filed in, and
@@ -378,6 +383,8 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
     an obligation with a term of a dimension that mirrors the jurisdiction list;
     `duplicate_key` (409) when a new record's key is already a record's;
+    `invalid_recurrence` (422) when a recurring duty's rule does not parse, is finer than a
+    day, never falls due, or falls due more often than the cap in ten years;
     `validation_error` (422) for a body the schema or the kind's payload refuses, a
     `sourceUrl` that is not an https link on any kind, or a summary or text longer than
     `PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number);
@@ -549,7 +556,9 @@ def approve_proposal(
     adds or renames a term of a dimension that mirrors the jurisdiction list, or scopes an
     obligation with one, which a proposal filed before that rule may still ask for;
     `standard_term_only_on_standards` (422) when the payload, as proposed or as corrected,
-    puts a standard's term on an obligation whose instrument is not a standard.
+    puts a standard's term on an obligation whose instrument is not a standard;
+    `invalid_recurrence` (422) when a recurring duty's rule, as proposed or as corrected, no
+    longer falls due between once and the cap in the ten years from today.
     """
     reviewer = require_reviewer(request)
     step_up_assertion_id = enforce_step_up(request) if reviewer.user is not None else None
@@ -855,12 +864,12 @@ _PRIVATE_PATH = Path(
 @requires_permission(perms.PRIVATE_RECORDS_APPROVE)
 @answers_problems
 def list_private_proposals(request: HttpRequest, page: Query[PageQuery]) -> PrivateProposalPage:
-    """Every proposal of this organisation's own records: the instruments and obligations the
-    shared library does not hold, filed by a person here or found by the organisation's own
-    research agent for a regulation it added to its scope. Call it for the organisation's own
-    queue, where a second person decides each one. Nothing here is the shared library's, and
-    nothing here ever reaches the platform console or another organisation: row-level security
-    keeps each organisation's rows its own.
+    """Every proposal of this organisation's own records still waiting for a decision (`status`
+    `open`): the instruments and obligations the shared library does not hold, filed by a
+    person here or found by the organisation's own research agent for a regulation it added to
+    its scope. Call it for the organisation's own queue, where a second person decides each
+    one. Nothing here is the shared library's, and nothing here ever reaches the platform
+    console or another organisation: row-level security keeps each organisation's rows its own.
 
     Reading it changes nothing and records nothing. Paginated: 20 rows by default and 100 at
     most, with a larger limit refused rather than quietly trimmed, oldest first so the queue is
@@ -873,10 +882,9 @@ def list_private_proposals(request: HttpRequest, page: Query[PageQuery]) -> Priv
 
     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
     without `private_records.approve`; `validation_error` (422) when the page size or offset is
-    out of range; `not_built` (501) for every call. Published ahead of the logic that will fill
-    it, and answering 501 until that ships.
+    out of range.
     """
-    return private_approval.queue(limit=page.limit, offset=page.offset)
+    return private_approval.queue(reader=caller_user(request), limit=page.limit, offset=page.offset)
 
 
 @router.post(
@@ -900,19 +908,25 @@ def approve_private_proposal(request: HttpRequest, body: PrivateProposalApproveB
     proposal as it then stands, with `status` `approved`.
 
     Needs `private_records.approve`, stepped up fresh with a passkey; the assertion's id is
-    written on the audit rows. The approver is never the proposer: the four-eyes constraint
-    refuses that row on its own. An agent never approves here.
+    written on the audit rows, which never carry the note. The approver is never the proposer:
+    the four-eyes constraint refuses that row on its own. An agent never approves here, so a
+    record an agent found reads as found by the agent and approved by this person.
 
     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
     without `private_records.approve`; `step_up_required` (403) without a fresh passkey
     assertion; `not_found` (404) for another organisation's proposal, a proposal to the shared
-    library, one that does not exist and anything that is not a UUID; `validation_error` (422)
-    for a field the body does not name or a note longer than 2000 characters; `not_built`
-    (501) for every proposal of this organisation's own. Published ahead of the logic that
-    will fill it, and answering 501 until that ships.
+    library, one that does not exist and anything that is not a UUID; `four_eyes_violation`
+    (409) when the caller filed the proposal; `invalid_transition` (409) when it is already
+    decided; `duplicate_key` (409) when its key was taken while it waited; `unknown_key` (422)
+    when a row it names was retired while it waited; `validation_error` (422) for a field the
+    body does not name, a note longer than 2000 characters, or a record whose instrument is
+    not the organisation's own.
     """
+    user = caller_user(request)
     return private_approval.approve(
         proposal=private_approval.by_id(uuid_or_404(proposal_id)),
+        reviewer=user,
+        actor=actor_for(request, user),
         note=body.note,
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
@@ -937,17 +951,22 @@ def reject_private_proposal(request: HttpRequest, body: PrivateProposalRejectBod
     proposal as it then stands, with `status` `rejected`.
 
     Needs `private_records.approve`, with no step-up, since a rejection adds nothing. The
-    person rejecting is never the proposer.
+    person rejecting is never the proposer. The audit and outbox rows carry the reason's key
+    and never the note.
 
     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
     without `private_records.approve`; `not_found` (404) for another organisation's proposal, a
     proposal to the shared library, one that does not exist and anything that is not a UUID;
-    `validation_error` (422) for a field the body does not name or a note longer than 2000
-    characters; `not_built` (501) for every proposal of this organisation's own. Published ahead
-    of the logic that will fill it, and answering 501 until that ships.
+    `four_eyes_violation` (409) when the caller filed the proposal; `invalid_transition` (409)
+    when it is already decided; `reason_required` (422) without a live row of the rejection
+    reason list or without a note; `validation_error` (422) for a field the body does not name
+    or a note longer than 2000 characters.
     """
+    user = caller_user(request)
     return private_approval.reject(
         proposal=private_approval.by_id(uuid_or_404(proposal_id)),
+        reviewer=user,
+        actor=actor_for(request, user),
         rejection_code=body.rejection_code,
         note=body.note,
     )

@@ -12,7 +12,11 @@ and apps/shared/factories.py writes no library model. Terms are addressed as
 from __future__ import annotations
 
 import datetime
-from collections.abc import Iterable, Mapping
+import uuid
+from collections.abc import Iterable, Iterator, Mapping
+from contextlib import contextmanager
+
+from django.db import transaction
 
 from apps.library.models import (
     Authority,
@@ -31,16 +35,32 @@ from apps.library.models import (
     Provision,
     ProvisionText,
     ProvisionVersion,
+    RecurringDuty,
 )
 from apps.identity.models import User
 from apps.proposals.models import OriginType
 from apps.shared.models import Tenant
+from apps.shared import tenancy
 from apps.shared.tenancy import library_write
 from apps.taxonomy.models import DutyType, InstrumentLevel, LibraryTag, ProvisionKind, RelationType, TaxonomyTerm
 
 REASON = "test builder"
 SOURCE_URL = "https://www.example.test/source"
 DEFAULT_VERSIONS: tuple[tuple[datetime.date | None, Mapping[str, str]], ...] = ((None, {"en": "The duty as it reads."}),)
+
+
+@contextmanager
+def _in_zone(owner_id: uuid.UUID | None) -> Iterator[None]:
+    """Write a record and its children in the zone the record lives in, as its door would:
+    the shared library's from a session with no bank, a bank's own record from that bank.
+    A child's policy accepts nothing else (library 0012), and a test that activated a bank
+    before building the shared library gets that bank back afterwards. The zone is left
+    outside the door's savepoint, so a write the database refuses is rolled back before the
+    session's own zone is put back."""
+    with transaction.atomic(), tenancy.platform_zone(), library_write(REASON):
+        if owner_id is not None:
+            tenancy.activate(owner_id)
+        yield
 
 
 def term(ref: str) -> TaxonomyTerm:
@@ -81,7 +101,7 @@ def instrument(
     `jurisdiction` names another jurisdiction by key, such as a Danish, a Norwegian or a
     Union one. `regime` is a `regime:<key>` term and required, as the database requires it
     (D-39)."""
-    with library_write(REASON):
+    with _in_zone(owner_tenant.id if owner_tenant else None):
         row = Instrument.objects.create(
             stable_key=key,
             short_name=short_name or key.upper(),
@@ -112,7 +132,7 @@ def relate_instruments(
     """Files `target` beside `source` (INV-01): `source` "implements", "elaborates" or
     "amends" `target`, the direction the fixture and the lineage read both use. `from_ref`
     is the place in `source` that does it and `to_ref` the place in `target` it reaches."""
-    with library_write(REASON):
+    with _in_zone(source.owner_tenant_id):
         return InstrumentRelation.objects.create(
             from_instrument=source,
             to_instrument=target,
@@ -126,7 +146,7 @@ def relate_instruments(
 def provision(on: Instrument, *, key: str, ref_label: str = "9 kap.", kind: str = "chapter", parent: Provision | None = None, heading: str = "", sort_order: int = 0) -> Provision:
     """A node of an instrument's tree, which an obligation cites and which carries its own
     verbatim text versions (`provision_version()` below), never an obligation's."""
-    with library_write(REASON):
+    with _in_zone(on.owner_tenant_id):
         return Provision.objects.create(
             stable_key=key,
             instrument=on,
@@ -149,7 +169,7 @@ def provision_version(
 ) -> ProvisionVersion:
     """A verbatim text version of `on` (INV-02): write-once, like an obligation's version.
     The first language given is the original; every other one is a machine translation."""
-    with library_write(REASON):
+    with _in_zone(on.instrument.owner_tenant_id):
         version = ProvisionVersion.objects.create(
             provision=on, version_number=version_no, effective_from=effective_from, transitional_note=transitional_note
         )
@@ -160,7 +180,7 @@ def provision_version(
 
 def relate(source: Obligation, target: Obligation, *, relation: str = "related") -> None:
     """Files `target` beside `source`, the direction the fixture writes a relation in."""
-    with library_write(REASON):
+    with _in_zone(source.owner_tenant_id):
         ObligationRelation.objects.create(
             from_obligation=source, to_obligation=target, relation_type=RelationType.objects.get(key=relation)
         )
@@ -193,7 +213,7 @@ def obligation(
 ) -> Obligation:
     """An obligation of `on`. `versions` are `(effective_from, {language: summary})` in
     version order, numbered from 1; a null date means since always."""
-    with library_write(REASON):
+    with _in_zone(owner_tenant.id if owner_tenant else None):
         row = Obligation.objects.create(
             stable_key=key,
             instrument=on,
@@ -290,3 +310,13 @@ def standard() -> Obligation:
         duty_type="governance",
         terms=("standard:iso_iec_27001",),
     )
+
+
+def recurring_duty(on: Obligation, *, title: str = "Quarterly report to the supervisor", rule: str = "FREQ=MONTHLY;BYMONTH=3,6,9,12;BYMONTHDAY=-1", note: str = "", status: str = "active") -> RecurringDuty:
+    """A duty `on` carries on a schedule (REG-07), as an approved proposal would write it:
+    proposed by a person, `rule` an RFC 5545 RRULE. Written in its obligation's zone, as a
+    child of it (library 0012)."""
+    with _in_zone(on.owner_tenant_id):
+        return RecurringDuty.objects.create(
+            obligation=on, title=title, recurrence_rule=rule, due_rule_note=note, status=status, created_origin=OriginType.USER.value
+        )

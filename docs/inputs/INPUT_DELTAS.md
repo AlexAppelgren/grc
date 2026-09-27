@@ -970,6 +970,21 @@ behind their real gates and answer 501 `not_built` until `collab/inbox.py`,
   `@requires_permission("comments.write")` and leave the author check to the logic. A
   platform session belongs to no bank and gets 404.
 
+acc-register-read (ACC-04, ACC-08, D-76), 2026-09-25:
+
+- `GET /register-entries` (`listRegisterEntries`) and `GET /register-entries/{obligationId}`
+  (`readRegisterEntry`) are new: the register as a bank's own agent reads it, which the
+  designed contract does not have (AGENT_ACCESS.md names the list `GET /register`, a path the
+  designed contract never declared). The per-obligation read is a separate operation rather
+  than the same one with a filter, and rather than `getRegisterEntry` taking a key: it takes
+  the obligation as a path parameter so an obligation outside the entry's scope answers 404,
+  never a filtered 200 (AGENT_ACCESS.md section 7), and it answers D-76's fields alone, where
+  a person's `getRegisterEntry` also carries the risk rating and the evidence location. Both
+  take `ApiKeyAuth` only with `tenant:read`, and answer 403 `tenant_reach_off` unless the
+  bank's tenant reach and the entry's own toggle are both on. The row shape,
+  `RegisterDecision`, is one per obligation with its legal entities and live linked items
+  nested; the list pages 20 by default and 100 at most (D-1xx, acc-register-read).
+
 Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-25:
 
 - `GET /obligations` gains the deferred tag filter as two repeatable filters, because a row
@@ -988,6 +1003,41 @@ Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-2
 - Every string filter of `GET /obligations` and `GET /instruments` is at most 80 characters
   (`instrument`, `dutyType`, `regime`, each `term`, `tag` and `tenantTag` item), as the key
   columns are; a longer one answers 422 `validation_error` (hardening H27).
+
+Chunk 8 (the register overlay on the inventory, c8-inventory-overlay), 2026-09-25:
+
+- The obligation row and `GET /obligations/{id}` gain the caller's bank's register overlay:
+  `applicability` in the register's words (`applies`, `not_applicable`,
+  `under_assessment`), `firstLineOwner` and `ownerTeam`. `complianceStatus` is now the
+  bank's own `{key, kind, label}` row (the register's `RegisterVocabRef`, the same three
+  fields as before), null unless the duty applies, and the worst applying legal entity's
+  status where the bank records one per entity. "Applies" means the entry or any entity
+  row says so. There is no pending-approval marker (D-75).
+- `GET /obligations` gains the filters `applicability`, `complianceStatus`, `owner` (a
+  member's id) and `ownerTeam` (a team key), each string at most 80 characters. A key the
+  bank has no row for matches nothing, as `dutyType` does; a caller that belongs to no bank
+  sending one answers 422 `unknown_filter`, as `tenantTag` does.
+
+acc-scoped-reads (ACC-02, ACC-04, ACC-05, ACC-07), 2026-09-25:
+
+- `GET /obligations/{obligationId}` (`getObligation`) takes the obligation's id or its
+  stable key in the one path segment, because AGENT_ACCESS.md section 6 has an agent's
+  `get_obligation` read `GET /obligations/{stableKey}` and a second path for the same card
+  would be a second read path. A value written as a UUID is always the id; anything else,
+  letters, digits, hyphens and underscores up to 120 characters, is the key. A slug that is
+  no UUID now answers 404 where it answered 422 as a malformed id.
+- `POST /search` (`search`) takes `ApiKeyAuth` beside the session: a bank's key holding
+  `search:read` searches, and an agent access credential's search is narrowed to its
+  entry's scope. The designed contract has it session-only; the body and the answer are
+  unchanged.
+- Every library read (`listObligations`, `getObligation`, `getObligationDiff`,
+  `getRecordSources`, `listInstruments`, `getInstrument`, `listInstrumentProvisions`,
+  `getProvisionDiff`), `search` and `listUpcoming` confine an agent access credential to
+  shared records inside the footprint and its entry's scope; a record beyond them answers
+  the 404 of a missing one. For such a credential `footprint` all or watched, and
+  `inFootprint` false on search, answer 422 `unknown_filter`, and an overlay or `tenantTag`
+  filter answers 403 `tenant_reach_off` unless tenant reach is on for the bank and the
+  entry. No schema changes.
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
@@ -1633,6 +1683,17 @@ enabled and forced row-level security, with these departures on purpose:
   `Content-Disposition: attachment` and `Cache-Control: no-store`, and records every
   download in the audit log. There is no `DownloadLink`.
 
+## acc-entries-and-log. The access log of a bank's own agents (2026-09-25, governance 0005)
+
+`schema.sql` has no table for AGENT_ACCESS.md section 9's access log. `agent_access_call` is
+new: a tenant table under forced row-level security, append-only by the shared trigger, one
+row per call an agent access credential makes (`api_key_id`, `agent_access_id`,
+`acting_user_id`, `tool`, `filters`, `record_count`, `scopes`, `scope_narrowed`,
+`scope_terms`, `duration_ms`, `status`, `at`). The entry and the person are composite
+`(tenant_id, …)` keys; the credential is a plain key into the mixed `api_key` table. It holds
+no content column. A tenant ledger under D-53: the purge deletes a row whole ten years after
+it was written.
+
 ## c8-register-models. The register as tables (2026-09-25, register 0001 and 0002)
 
 Sections 7 and 19 of `schema.sql` (`tenant_obligation`, `tenant_obligation_scope`,
@@ -1771,7 +1832,7 @@ start it); after that a read answers its run's state (`succeeded` as `done`, `fa
 `interrupted` as `failed`), so no second writer keeps the two in step. `completed_at` is
 written when a re-tag's run files its batch.
 
-## 18. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
+## 20. A proposal owned by a bank, and the bank's own queue declared (2026-09-25, d89-proposal-owner)
 
 §5's private-records row, built for INV-07 and OWN-03 (D-57, D-89, ADR 0050, ADR 0059):
 
@@ -1806,3 +1867,41 @@ item open research by the bank's own agent (D-89, D-91, ADR 0059). Agents 0009 a
   into `scope_item`; the check `research_request_scope_item_kind` sets it exactly on a
   `scope_item` request, and the partial unique index `research_request_one_per_scope_item`
   researches an item once.
+
+## d89-private-records. The bank's own queue decided (2026-09-27, INV-07, OWN-03, OWN-04)
+
+§20's routes now answer (D-57, ADR 0050, ADR 0059; D-1xx, d89-private-records):
+
+- `GET /private-proposals` answers the bank's own open proposals only, oldest first, as
+  `PrivateProposalPage`; a decided proposal leaves it.
+- `POST /private-proposals/{proposalId}/approve` and `/reject` answer `PrivateProposalRow`
+  and add the errors the shared queue's decisions answer: `four_eyes_violation` and
+  `invalid_transition` (409), `reason_required` (422) on a rejection, and on approval
+  `duplicate_key` (409) and `unknown_key` or `validation_error` (422) from the apply.
+- New code `private_provisions_not_supported` (422): a provision under a bank's own
+  instrument, or filed as the bank's own. A bank's own obligation names a bank's own
+  instrument, and a shared one a shared instrument, else 422 `validation_error`.
+- A support session's library reads leave the bank's own records out and answer 404 for
+  their addresses. No schema changes.
+
+## c8-support-session-guard. The support session (2026-09-25, identity 0009)
+
+ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
+
+- `user_session.kind` gains `support`, beside the `support_access` column the brief names,
+  so the signed access token carries the kind and the read-only guard
+  (`SupportReadOnlyMiddleware`) refuses a route off the allow-list before any row is read,
+  whatever auth class the route takes. A CHECK keeps the kind and the grant together, and
+  `(tenant_id, support_access_id)` is a composite key to `support_access (tenant_id, id)`,
+  which gains that unique constraint; no policy is added anywhere.
+- Beside `SUPPORT_READ_ROUTES`, `SUPPORT_SESSION_ROUTES` lets the session call
+  `POST /auth/refresh` and `POST /auth/sign-out`, which act on its refresh cookie alone; the
+  web client sends its bearer on sign-out. A refresh on an ended grant revokes the session
+  and answers 401 `support_access_ended`.
+- Entering signs the console session out ("replaces" it), so "the ones after that answer
+  404" in TEN-S6 is the platform person's next console session.
+- The route sweep accepts 501 `not_built` on a listed read whose logic has not landed
+  (chunk 9's `listActions`, `listEvidence`, `getCaseFile`), beside 2xx and 404.
+- The `support_access.read` row is written in the request's transaction, as the brief says;
+  a handler that rolls a refused request back (`answers_problems`, a 404) takes the row with
+  it, so the log holds every read that answered.
