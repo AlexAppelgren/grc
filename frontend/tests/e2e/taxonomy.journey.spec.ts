@@ -1,4 +1,4 @@
-import type { Browser, Page, TestInfo } from '@playwright/test';
+import type { Browser, Locator, Page, TestInfo } from '@playwright/test';
 
 import { expect, test, type ApiGuard } from './support/api-guard';
 import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
@@ -75,6 +75,34 @@ async function addTenantValue(page: Page, label: string, usageNote = ''): Promis
   await dialog.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(dialog).toBeHidden();
   await expect(valueRow(page, label)).toHaveCount(1);
+}
+
+// VOC-S6: the obligation whose "Our tags" the journey writes; no other journey tags it.
+const TAGGED_OBLIGATION = 'obl-dora-ict-register';
+
+// VOC-S12: the six obligations and the tag the seed gives it (backend/apps/shared/e2e_seed.py,
+// EXPECTED_BULK_TAGGING); two of the six already carry the tag. The label is a row, not copy.
+const BULK_TAG_KEY = 'asset_safeguarding';
+const BULK_TAG_LABEL = 'Asset safeguarding';
+const BULK_TAGGED = [
+  'obl-isk-control-statements',
+  'obl-priips-kid',
+  'obl-client-assets',
+  'obl-switch-documentation',
+  'obl-isk-approved-assets',
+  'obl-esma-warnings',
+] as const;
+
+/** The bank's tag on a row: an outlined pill with the tag's label. */
+function bulkTagPill(row: Locator) {
+  return row.locator('[data-pill][data-outlined]').filter({ hasText: new RegExp(`^${BULK_TAG_LABEL}$`) });
+}
+
+/** From the inventory to the card, by stable key, until its tags panel has read the record. */
+async function openTaggedObligation(page: Page): Promise<void> {
+  await openInventory(page);
+  await page.locator(`[data-obligation="${TAGGED_OBLIGATION}"]`).click();
+  await expect(page.locator('[data-obligation-tags] [role="combobox"]')).toBeEnabled();
 }
 
 /** The second person of a four-eyes journey, in their own browser, held to the same API guard. */
@@ -222,12 +250,56 @@ test.describe('taxonomy journeys', () => {
     await expect(page.locator(`[data-value-key="${from}"]`)).toHaveCount(1);
   });
 
-  test.fixme("VOC-S6: Create where you use it offers Create or Suggest by permission", async () => {
-    // pending: VOC-S6 (VOC-03). VOC-03 is priority S, release R2 (decided with
-    // the coordinator in chunk 2). The picker component exists
-    // (components/vocabularies/VocabularyPicker.tsx, with Create and Propose
-    // and unit tests); this journey needs a record screen that hosts it and
-    // the Suggest path for members without vocab.manage, both R2.
+  test("VOC-S6: Create where you use it offers Create or Suggest by permission", async ({ page, browser, apiGuard }, testInfo) => {
+    // VOC-S6 (VOC-03), on the obligation card's "Our tags" (VOC-08, one record):
+    // the admin creates a tag where it is used and it goes on the record; a
+    // member without vocab.manage reads the tags, cannot remove one, and the
+    // same picker offers Suggest; the suggestion waits on the admin's Suggested tab.
+    const created = 'Market sounding';
+    const suggested = 'Conflicts register';
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.admin);
+    await openTaggedObligation(page);
+    const panel = page.locator('[data-obligation-tags]');
+    const createdTag = panel.locator('[data-obligation-tag]').filter({ hasText: new RegExp(`^${created}`) });
+    try {
+      await panel.getByLabel('Add a tag').fill(created);
+      await expect(panel.locator('[data-picker-last="create"]')).toBeVisible();
+      await panel.locator('[data-picker-last="create"]').click();
+      await panel.getByRole('button', { name: 'Create and select' }).click();
+      await expect(createdTag).toHaveCount(1);
+
+      const member = await secondPerson(browser, apiGuard, testInfo, LOGINS.reader);
+      try {
+        await openTaggedObligation(member);
+        const memberPanel = member.locator('[data-obligation-tags]');
+        await expect(memberPanel.locator('[data-obligation-tag]').filter({ hasText: new RegExp(`^${created}`) })).toHaveCount(1);
+        await expect(memberPanel.getByRole('button', { name: new RegExp(`^Remove ${created}$`) })).toHaveCount(0);
+        await memberPanel.getByLabel('Suggest a tag').fill(suggested);
+        await expect(memberPanel.locator('[data-picker-last="create"]')).toHaveCount(0);
+        await memberPanel.locator('[data-picker-last="suggest"]').click();
+        await memberPanel.getByRole('button', { name: 'Send suggestion' }).click();
+        await expect(memberPanel.locator('[data-picker-suggested]')).toBeVisible();
+        // A suggestion is not a tag: the record still carries only what the admin put on it.
+        await expect(memberPanel.locator('[data-obligation-tag]').filter({ hasText: new RegExp(`^${suggested}`) })).toHaveCount(0);
+      } finally {
+        await member.context().close();
+      }
+
+      await openList(page, TAGS);
+      await page.getByRole('button', { name: /^Suggested \(\d+\)$/ }).click();
+      const suggestion = page.locator('[data-suggestion]').filter({ hasText: new RegExp(suggested) });
+      await expect(suggestion).toHaveCount(1);
+      await suggestion.getByRole('button', { name: 'Decline' }).click();
+      await expect(suggestion).toHaveCount(0);
+    } finally {
+      // Teardown, on failure too: the record carries no tag of this journey's.
+      await openTaggedObligation(page);
+      if ((await createdTag.count()) > 0) {
+        await panel.getByRole('button', { name: new RegExp(`^Remove ${created}$`) }).click();
+        await expect(createdTag).toHaveCount(0);
+      }
+    }
   });
 
   test("VOC-S7: A near-duplicate is refused with the near match offered", async ({ page, apiGuard }) => {
@@ -287,8 +359,78 @@ test.describe('taxonomy journeys', () => {
     await expect(valueRow(page, 'Outsourcing')).toHaveCount(0);
   });
 
-  test.fixme("VOC-S12: Bulk tagging from a list previews and writes one audit entry", async () => {
-    // pending: VOC-S12 (VOC-08)
+  test("VOC-S12: Bulk tagging from a list previews and writes one audit entry", async ({ page, apiGuard }) => {
+    // VOC-S12 (VOC-08), on the inventory: six rows selected, one of the bank's tags
+    // chosen, the preview naming which would gain it and which already carry it, one
+    // commit, then the tag on each row and usable as the "Our tags" filter. The seed's
+    // tag (e2e_seed.py, EXPECTED_BULK_TAGGING) stands in for "Custody", which VOC-S2
+    // creates. Which rows already carry it is read off the rows, by identity; the
+    // journey takes the tag back off the rows it added it to, on failure too.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await page.goto(`/inventory?asOf=${INVENTORY_AS_OF}&scope=all`);
+    await expect(page.locator('[data-obligation-rows]')).toBeVisible();
+
+    const ids = new Map<string, string>();
+    const carried: string[] = [];
+    for (const key of BULK_TAGGED) {
+      const row = page.locator(`[data-obligation="${key}"]`);
+      await expect(row).toBeVisible();
+      ids.set(key, ((await row.getAttribute('href')) ?? '').split('/').at(-1) ?? '');
+      if ((await bulkTagPill(row).count()) > 0) carried.push(key);
+    }
+    const gaining = BULK_TAGGED.filter((key) => !carried.includes(key));
+    expect(carried.length).toBeGreaterThan(0);
+    expect(gaining.length).toBeGreaterThan(0);
+    const idsOf = (keys: readonly string[]) => keys.map((key) => ids.get(key)).sort();
+
+    try {
+      for (const key of BULK_TAGGED) await page.locator(`[data-obligation-select="${key}"]`).check();
+      await expect(page.locator('[data-bulk-selection]')).toContainText(`${BULK_TAGGED.length} selected`);
+      await page.locator('[data-bulk-selection]').getByRole('button', { name: 'Tag', exact: true }).click();
+
+      const dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Tag', { exact: true }).fill(BULK_TAG_LABEL.slice(0, 9));
+      await dialog.locator(`[data-picker-option="${BULK_TAG_KEY}"]`).click();
+      await dialog.getByRole('button', { name: 'Preview' }).click();
+
+      // The preview: the six by id, split into would gain and already carry, nothing written yet.
+      const gains = dialog.locator('[data-bulk-preview-row="gains"]');
+      const carries = dialog.locator('[data-bulk-preview-row="carries"]');
+      await expect(gains).toHaveCount(gaining.length);
+      await expect(carries).toHaveCount(carried.length);
+      expect((await gains.evaluateAll((rows) => rows.map((row) => row.getAttribute('data-obligation-id')))).sort()).toEqual(idsOf(gaining));
+      expect((await carries.evaluateAll((rows) => rows.map((row) => row.getAttribute('data-obligation-id')))).sort()).toEqual(idsOf(carried));
+      await expect(dialog.locator('[data-bulk-count="gained"] dd')).toHaveText(String(gaining.length));
+      await expect(dialog.locator('[data-bulk-count="already"] dd')).toHaveText(String(carried.length));
+      await expect(dialog.locator('[data-bulk-count="skipped"] dd')).toHaveText('0');
+
+      // One commit: the server's answer says what the one batch did.
+      await dialog.getByRole('button', { name: new RegExp(`^Tag ${gaining.length} obligations$`) }).click();
+      await expect(dialog).toBeHidden();
+      await expect(page.locator('[data-bulk-tag-done]')).toContainText(`added to ${gaining.length} obligations. ${carried.length} already carried it.`);
+      await expect(page.locator('[data-bulk-selection]')).toHaveCount(0);
+      for (const key of BULK_TAGGED) await expect(bulkTagPill(page.locator(`[data-obligation="${key}"]`))).toHaveCount(1);
+
+      // The tag is a filter: the six are listed under it, and every row listed carries it.
+      await page.getByRole('combobox', { name: 'Our tags' }).selectOption({ label: BULK_TAG_LABEL });
+      await expect(page).toHaveURL(new RegExp(`tenantTag=${BULK_TAG_KEY}`));
+      for (const key of BULK_TAGGED) await expect(page.locator(`[data-obligation="${key}"]`)).toBeVisible();
+      const listed = page.locator('[data-obligation-rows] [data-obligation]');
+      for (const row of await listed.all()) await expect(bulkTagPill(row)).toHaveCount(1);
+    } finally {
+      // Back to the seed: off the rows this journey tagged, one card at a time.
+      for (const key of gaining) {
+        await page.goto(`/inventory/obligations/${ids.get(key)}`);
+        const panel = page.locator('[data-obligation-tags]');
+        await expect(panel.locator('[role="combobox"]')).toBeEnabled();
+        const remove = panel.getByRole('button', { name: `Remove ${BULK_TAG_LABEL}` });
+        if ((await remove.count()) > 0) {
+          await remove.click();
+          await expect(panel.locator(`[data-obligation-tag="${BULK_TAG_KEY}"]`)).toHaveCount(0);
+        }
+      }
+    }
   });
 
   test("VOC-S15 J-5 @smoke: a flag is added, used, rendered as brand, renamed and merged", async ({ page, browser, apiGuard }, testInfo) => {
