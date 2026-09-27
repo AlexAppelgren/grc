@@ -49,7 +49,7 @@ def _snapshot() -> dict[str, Any]:
     tenancy.clear_tenant()
     shot: dict[str, Any] = {
         "agents": list(Agent.objects.order_by("key").values_list("key", "current_version")),
-        "versions": list(AgentVersion.objects.order_by("agent__key", "version_no").values()),
+        "versions": list(AgentVersion.objects.order_by("agent__key", "version_number").values()),
         "platform_runs": list(AgentRun.objects.filter(tenant__isnull=True).order_by("id").values()),
         "batches": list(Proposal.objects.filter(is_batch=True).order_by("id").values()),
         "rows": list(ProposalBatchRow.objects.order_by("id").values()),
@@ -84,15 +84,15 @@ class ChunkElevenSeed(TestCase):
     def test_the_sweeper_has_two_published_versions_and_a_platform_run_on_each(self) -> None:
         tenancy.clear_tenant()
         sweeper = Agent.objects.get(key=EXPECTED_CHUNK11.platform_agent)
-        self.assertEqual(sorted(sweeper.versions.values_list("version_no", flat=True)), list(EXPECTED_CHUNK11.platform_versions))
+        self.assertEqual(sorted(sweeper.versions.values_list("version_number", flat=True)), list(EXPECTED_CHUNK11.platform_versions))
         self.assertEqual(sweeper.current_version, EXPECTED_CHUNK11.platform_versions[-1])
         scheduled = AgentRun.objects.filter(tenant__isnull=True, api_key__isnull=True, trigger=RunTrigger.SCHEDULE.value)
         self.assertEqual(
-            set(scheduled.filter(agent=sweeper).values_list("agent_version__version_no", flat=True)),
+            set(scheduled.filter(agent=sweeper).values_list("agent_version__version_number", flat=True)),
             set(EXPECTED_CHUNK11.platform_versions),
         )
         # The older version's run is the earlier one: publishing never re-points a run.
-        older, newer = (scheduled.filter(agent=sweeper, agent_version__version_no=n).get() for n in EXPECTED_CHUNK11.platform_versions)
+        older, newer = (scheduled.filter(agent=sweeper, agent_version__version_number=n).get() for n in EXPECTED_CHUNK11.platform_versions)
         self.assertLess(older.started_at, newer.started_at)
         self.assertTrue(scheduled.filter(agent__key=EXPECTED_CHUNK11.confirming_agent).exists())
 

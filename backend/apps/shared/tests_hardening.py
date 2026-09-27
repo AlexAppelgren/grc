@@ -308,6 +308,7 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/taxonomy/tagging_logic.py record(subject_type) tenant_id=tenant.id actor=actor title=title": (
         "A bank's own tag going on or off one record: `tenant.id` is a bank's id and never "
         "None, so the row stays in that bank's zone even when the record is a library one."
+    ),
     # c8-seed-org-register
     "apps/shared/e2e_seed.py record(subject_type) tenant_id=tenant.id actor=Actor.system('seed_e2e') title=title": (
         "The E2E seed's one audit row per seeded organisation and register row: the tenant id is "
