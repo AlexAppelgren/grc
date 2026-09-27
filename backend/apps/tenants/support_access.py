@@ -17,10 +17,12 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from typing import NamedTuple
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
+from django.db import transaction
 from django.utils import timezone
 
 from apps.identity import roles_logic
@@ -31,7 +33,7 @@ from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
-from apps.shared.models import Tenant
+from apps.shared.models import AuditEvent, Tenant
 from apps.taxonomy.schemas import PersonRef
 from apps.tenants import mail
 from apps.tenants.models import SupportAccess, SupportAccessLevel, SupportAccessStatus
@@ -245,13 +247,23 @@ def enter(
     return SessionTokens(access_token=bundle.access_token, session_kind=bundle.session.kind, expires_in=bundle.expires_in)
 
 
-def record_read(*, principal: Principal, method: str, route: str, path_ids: dict[str, str]) -> None:
+class PendingRead(NamedTuple):
+    """A request's read row, kept on the request until it has ended (`keep_read`)."""
+
+    event_id: uuid.UUID
+    principal: Principal
+    method: str
+    route: str
+    path_ids: dict[str, str]
+
+
+def record_read(*, principal: Principal, method: str, route: str, path_ids: dict[str, str]) -> PendingRead:
     """One `support_access.read` row in the bank for a request under a grant: who, which
     grant, the method, the route template and its path ids. Never a query string, a body or
     anything the bank wrote."""
     assert principal.support_access_id is not None and principal.tenant_id is not None  # a support principal
     user = User.objects.get(pk=principal.subject_id)
-    record(
+    event = record(
         action="support_access.read",
         actor=Actor(kind=ActorType.USER, id=user.id, label=user.name),
         subject_type="support_access",
@@ -261,6 +273,18 @@ def record_read(*, principal: Principal, method: str, route: str, path_ids: dict
         tenant_id=principal.tenant_id,
         after={"method": method, "route": route, "pathIds": path_ids, "platformUserId": str(user.id)},
     )
+    return PendingRead(event.id, principal, method, route, path_ids)
+
+
+def keep_read(pending: PendingRead) -> None:
+    """Once the request's transaction has ended: write its read row again if a refusal
+    rolled it back, so every request under a grant stays logged, a refused one included
+    (ADR 0042; security-review-c8 M5). A committed row is left as it is."""
+    assert pending.principal.tenant_id is not None  # a support principal
+    with transaction.atomic():
+        tenancy.activate(pending.principal.tenant_id)
+        if not AuditEvent.objects.filter(pk=pending.event_id).exists():
+            record_read(principal=pending.principal, method=pending.method, route=pending.route, path_ids=pending.path_ids)
 
 
 def waiting_count(*, exclude_user_id: uuid.UUID | None) -> int:

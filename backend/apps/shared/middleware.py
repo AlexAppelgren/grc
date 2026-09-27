@@ -151,13 +151,23 @@ class SupportReadOnlyMiddleware:
     the template Django resolved, never the raw path, so a path id cannot smuggle a request
     onto the list; a path that resolves to no API route is refused as well, and one that
     resolves to nothing at all reaches no view and is Django's 404. Whether the
-    grant is still open is the auth layer's, per request (apps/identity/session_logic.py)."""
+    grant is still open is the auth layer's, per request (apps/identity/session_logic.py).
+    After the response it makes sure the request's `support_access.read` row outlived the
+    request's transaction."""
 
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
-        return self.get_response(request)
+        response = self.get_response(request)
+        pending = getattr(request, "support_read", None)
+        if pending is not None:
+            # After the view's transaction: a refusal that rolled the read row back leaves
+            # the request logged all the same (ADR 0042; security-review-c8 M5).
+            from apps.tenants import support_access
+
+            support_access.keep_read(pending)
+        return response
 
     def process_view(
         self, request: HttpRequest, view_func: Callable[..., Any], view_args: tuple[Any, ...], view_kwargs: dict[str, Any]

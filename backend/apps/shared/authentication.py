@@ -187,7 +187,8 @@ class SessionAuth(HttpBearer):
 def _log_support_read(request: HttpRequest, principal: Principal) -> None:
     """One `support_access.read` audit row in the bank for each request a support session
     makes (TEN-06, ADR 0042), written here, once the grant is proven live, in the request's
-    transaction: the route template and its path ids, never the query string or the body.
+    transaction, and again after it by `SupportReadOnlyMiddleware` if a refusal rolled it
+    back: the route template and its path ids, never the query string or the body.
     The read-only guard (apps/shared/middleware.py) has already refused a route off the
     allow-list, so every row names a route on it."""
     from apps.shared.agent_access_guard import operation_of
@@ -195,7 +196,9 @@ def _log_support_read(request: HttpRequest, principal: Principal) -> None:
 
     operation = operation_of(request)
     match = getattr(request, "resolver_match", None)
-    support_access.record_read(
+    # Kept on the request for the read-only guard, which writes it again after the request
+    # if a refusal rolled it back (ADR 0042; security-review-c8 M5).
+    request.support_read = support_access.record_read(  # type: ignore[attr-defined]
         principal=principal,
         method=request.method or "",
         route=operation.path if operation is not None else "",
