@@ -58,6 +58,9 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'admin-agents-access': { ready: `[data-access-list] [data-entry-id]${OR_EMPTY}` },
   'me-passkeys': { ready: '[data-passkey-id]' },
   'me-sessions': { ready: '[data-session-id]' },
+  // r2-perf: the row c10-fe-prefs-and-ooo registered its destination without. The
+  // screen answers with the away panel or, for a member at work, the form.
+  'me-out-of-office': { ready: '[data-away], [data-out-of-office-form]' },
   'me-calendar-feeds': { ready: `[data-feeds-list] [data-feed-id]${OR_EMPTY}` },
   'me-tokens': { ready: `[data-tokens-list] [data-token-id]${OR_EMPTY}` },
   'console-queue': { ready: `[data-proposal-rows] [data-proposal-id]${OR_EMPTY}` },

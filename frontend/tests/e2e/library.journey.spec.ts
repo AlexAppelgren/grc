@@ -265,7 +265,10 @@ test.describe('library journeys', () => {
     await page.goto('/inventory?applicability=applies&complianceStatus=partly_compliant&asOf=2026-06-30');
     const costs = page.locator(`[data-obligation-rows] [data-obligation="${COSTS}"]`);
     await expect(costs.getByText('Applies', { exact: true })).toHaveAttribute('data-pill', 'positive');
-    await page.locator('[data-inventory-filters]').getByLabel('As of').fill('2026-10-01');
+    await page.getByRole('button', { name: 'Filters', exact: true }).click();
+    const sheet = page.getByRole('dialog', { name: 'Filters' });
+    await sheet.getByLabel('As of').fill('2026-10-01');
+    await sheet.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(page.locator('[data-as-of="2026-10-01"]')).toBeVisible();
     await expect(page).toHaveURL(/[?&]applicability=applies&complianceStatus=partly_compliant(&|$)/);
     await expect(costs.getByText('Applies', { exact: true })).toHaveAttribute('data-pill', 'positive');

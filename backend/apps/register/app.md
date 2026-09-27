@@ -218,6 +218,7 @@ internal items or creates it from the same call, with its kind (a `link_kind` ro
 reference, url, owner person or team, org unit, external system and reference and review
 dates, one audit event each. The dialog finds an item to pick through `GET /internal-items`, the bank's
 active items by name or reference under `register.read`. Every link points at an item, which carries the kind; the link
+dates, one audit event each. Every link points at an item, which carries the kind; the link
 keeps its own label, url and external reference. Removing a link stamps `removed_at` and
 `removed_by`; the link row and the item stay, and the list shows live links only.
 
@@ -244,6 +245,11 @@ Then the next occurrence 2027-03-31 is generated in the tenant's timezone
 ("Our deadline") with its owner, and completing it generates exactly 2027-03-31 in the
 tenant's timezone, which takes its place on the roadmap. The first occurrence is written when
 applicability becomes "applies", never on a read.
+`@integration` is green up to its roadmap line (c8-duty-occurrences): the occurrence due
+2026-12-31 reads back through `listDuties`, and completing it generates exactly 2027-03-31 in
+the tenant's timezone. The roadmap line ("the duty appears with 'Our deadline'") is the
+roadmap's duty branch, which `c8-home-register-feeds` builds and asserts in this test. The
+first occurrence is written when applicability becomes "applies", never on a read.
 
 ### REG-S11 — A stale write on a register row is refused `@integration` (REG-02)
 ```gherkin

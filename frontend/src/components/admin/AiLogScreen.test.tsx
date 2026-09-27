@@ -176,7 +176,7 @@ describe('AI log', () => {
     renderScreen(() => ({ status: 200, data: { items: [], total: 0 } }));
     await screen.findByText('Nothing logged yet');
     const options = within(screen.getByLabelText('Purpose')).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
-    expect(options).toEqual(['', 'so_what', 'change_summary', 'scope_suggestion', 'link_suggestion', 'translation', 'answer']);
+    expect(options).toEqual(['', 'so_what', 'change_summary', 'scope_suggestion', 'link_suggestion', 'translation', 'answer', 'what_applies']);
     const states = within(screen.getByLabelText('Review')).getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
     expect(states).toEqual(['', 'draft', 'confirmed', 'edited', 'rejected']);
   });

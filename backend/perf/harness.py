@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import statistics
 import time
 from collections.abc import Callable, Mapping
@@ -74,11 +75,13 @@ class RouteFailed(RuntimeError):
 @dataclass(frozen=True)
 class Call:
     """What every request of one measurement sends: the values of the path's
-    `{placeholders}`, the query string and a JSON body."""
+    `{placeholders}`, the query string and a JSON body, or bytes sent as they are under
+    `content_type`, as a multipart upload is."""
 
     params: Mapping[str, object] = field(default_factory=dict)
     query: Mapping[str, str] = field(default_factory=dict)
     body: object = None
+    content_type: str = "application/json"
 
 
 @dataclass(frozen=True)
@@ -92,6 +95,14 @@ class PerfRoute:
     fixture: Callable[[], Call] = Call
     budget: str = "API_BUDGET_MS"  # the name of the setting that holds the budget
     status: int = 200
+    # A second way of calling the same operation (another principal, another load), kept
+    # apart from the first in the report and the baseline.
+    variant: str = ""
+
+    @property
+    def key(self) -> str:
+        """What the report prints and the baseline is keyed on."""
+        return f"{self.operation} ({self.variant})" if self.variant else self.operation
 
 
 @dataclass(frozen=True)
@@ -146,11 +157,11 @@ def measure(route: PerfRoute) -> Measurement:
             url = API_PREFIX + filled
             if call.query:
                 url += "?" + urlencode(call.query)
-            data = "" if call.body is None else json.dumps(call.body)
+            data = call.body if isinstance(call.body, bytes) else "" if call.body is None else json.dumps(call.body)
             # An exception that escapes the route becomes the 500 a caller would get, which
             # fails this row instead of ending the whole report with a traceback.
             client = Client(raise_request_exception=False)
-            send = partial(client.generic, method, url, data=data, content_type="application/json", **headers)
+            send = partial(client.generic, method, url, data=data, content_type=call.content_type, **headers)
             for sample in range(settings.PERF_SAMPLES + 1):  # sample 0 is the warm-up, dropped
                 with transaction.atomic():  # rolled back: the next request finds what this one found
                     # The log keeps only its newest 9000 entries; once full, a capture reads
@@ -166,7 +177,7 @@ def measure(route: PerfRoute) -> Measurement:
             transaction.set_rollback(True)
     ordered = sorted(timings)
     return Measurement(
-        operation=route.operation,
+        operation=route.key,
         median_ms=statistics.median(ordered),
         p95_ms=ordered[math.ceil(0.95 * len(ordered)) - 1],
         queries=max(counts),
@@ -178,7 +189,8 @@ def measure(route: PerfRoute) -> Measurement:
 def _resolve(operation: str) -> tuple[str, str]:
     for registered in iter_operations(api):
         if registered.operation_id == operation:
-            return registered.method, registered.path
+            # A converter (`{uuidstr:entry_id}`) is the router's business; the fixture names the parameter.
+            return registered.method, re.sub(r"\{\w+:(\w+)\}", r"{\1}", registered.path)
     raise RouteFailed(f"{operation} is not an operation of the API")
 
 

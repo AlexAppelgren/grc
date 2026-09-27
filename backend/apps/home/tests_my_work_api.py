@@ -647,7 +647,8 @@ def run_hom_s11(test: TestCase) -> None:
 
     comment(bank, bank.johan, "obligation", discussed.id)
     comment(bank, bank.anna, "obligation", own.id)
-    with tenancy.platform_zone(), library_write("test fixture"):
+    # A version is written in its obligation's zone, the shared library's (library 0012).
+    with transaction.atomic(), tenancy.platform_zone(), library_write("test fixture"):
         ObligationVersion.objects.create(obligation=own, version_number=2, approved_by=bank.anna)
     now = aware()
     test.assertEqual(date_of(now[str(amended.id)])[:2], ("aware", "version_applied"))

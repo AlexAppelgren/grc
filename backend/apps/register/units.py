@@ -28,7 +28,6 @@ from apps.register.schemas import (
     UNIT_REFERENCE_MAX,
     UNIT_TITLE_MAX,
     RegisterApplicabilityManyBody,
-    RegisterApplicabilityRow,
     RegisterPersonRef,
     RegisterUnit,
     RegisterUnitBody,
@@ -337,20 +336,21 @@ def paste_units(
         return RegisterUnitPaste(dry_run=True, rows=rows, created=0)
 
     created = _insert_many(tenant=tenant, actor=actor, scope=scope, lines=[(row.reference, row.title) for row in rows])
+    # Plain dicts, not schema instances: ninja re-reads a nested schema through its
+    # attribute getter, whose missed camelCase lookups fall back to Django's template
+    # resolver, a cost per field and line that a 93-line paste feels (r2-perf, NFR-02).
     answers = [
-        RegisterApplicabilityRow(
-            obligation_id=obligation_id, unit_id=unit.id, applicability=pasted.applicability, reason=(pasted.reason or "").strip()
-        )
+        {"obligationId": obligation_id, "unitId": unit.id, "applicability": pasted.applicability, "reason": (pasted.reason or "").strip()}
         for unit, pasted in zip(created, body.lines, strict=True)
         if pasted.applicability is not None
     ]
     if answers:
         applicability.set_applicability_many(
-            tenant=tenant, actor=actor, order=order, body=RegisterApplicabilityManyBody(rows=answers)
+            tenant=tenant, actor=actor, order=order, body=RegisterApplicabilityManyBody.model_validate({"rows": answers})
         )
     for row, unit in zip(rows, created, strict=True):
         row.outcome, row.unit_id = "created", unit.id
-    return RegisterUnitPaste(dry_run=False, rows=rows, created=len(created))
+    return RegisterUnitPaste.model_construct(dry_run=False, rows=rows, created=len(created))  # every row already validated
 
 
 def _half_decided(pasted: RegisterUnitPasteLine) -> str | None:

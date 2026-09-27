@@ -125,6 +125,61 @@ and screen has a recorded baseline inside its budget.
 - **Not yet:** real-model and real-embedder timings wait for the D-07 and D-09 keys; the
   load profile and the deployed measurement are chunk 14's.
 
+## R2 performance pass (`r2-perf`, NFR-02)
+
+2026-09-27, on `claude/r2w7-r2-perf-f0h7ud`, built on the nine wave-4 to wave-6 packages it
+names. Every R2 API operation has a recorded baseline, the heavy reads are measured at scale,
+and what runs over budget is fixed or named in HARDENING.
+
+- **API:** `backend/perf/routes.py` gains three blocks, `r2-perf: chunk 8`, `chunk 9-10` and
+  `chunk 11`: 141 R2 operations and 7 second ways of calling one (My work as a department
+  head, the inventory filtered by the overlay, what applies, the register reads and MCP with
+  a personal token beside an entry's key, search as an entry's key), each as the principal
+  that calls it, with a step-up where the route asks for one and the real key or token where
+  an agent calls. Heavy calls run at their caps: applicability and a paste at
+  `REGISTER_BULK_MAX`, the tagging preview at `BULK_TAGGING_MAX_RECORDS`, the Statement of
+  Applicability at Annex A's 93 units, the inbox at 5,000 rows, the evidence upload through
+  the mock scanner, the case file export, what applies inside `WHAT_APPLIES_SUMMARY_DEADLINE_MS`
+  (about 125 ms median against 2 s). `publishAgentVersion` is the one operation left out:
+  it publishes only the next version from a folder the build ships, and no seeded
+  definition is one version behind such a folder. `baseline.json` holds all 287 rows,
+  recorded on a fresh `seed_e2e` slot (E2E_MODE on). The harness learnt a raw multipart
+  body, path converters and a row's variant for this (`perf/harness.py`, tested).
+- **Over budget on the seeded slot:** a 100-line paste of units (477 ms p95, H109),
+  approving the 12-row batch (378 ms, H111, as its decision row already said), marking 5,000
+  notifications read (338 ms, H110) and R1's tenant creation (280 ms, now 521 queries, H112).
+  100 applicability answers sit at the edge (244 ms p95). Everything else is inside its
+  budget; the slowest R2 reads are what applies, the MCP tool calls and the obligations
+  list, all under 170 ms p95.
+- **At scale:** a slot of 3,000 obligations, 8,144 chunks, three legal entities, 415 register
+  entries, 204 gaps and a 30-person department (391 rows on its My work). Hybrid search took
+  5.9 s, 5.1 s of it just-in-time compilation that library 0012's child policies set off;
+  JIT is now off on every connection (D-1xx r2-perf, H105) and the search answers in 370 ms
+  median, 412 ms p95 against 1.5 s. A department's My work read the title of every row;
+  it now reads the page's (H106): 130 ms median, 240 to 270 ms p95. Still over: the reader's
+  obligations list (270 ms median, 330 ms p95, the footprint judged twice per row through
+  library 0012's child policy, H107 and H9) and the roadmap, which has no end without `to`
+  (711 items, 634 ms, a product question for Alex, H108). The register reader's filtered
+  list (128 ms p95) and a member's own My work (67 ms p95) are well inside.
+- **Screens:** every destination reaches its real data inside 500 ms on the merged tree
+  (NFR-S7, three green runs against `next start`); the R2 screens' medians are in the UI
+  plan, the slowest the inventory at about 340 ms and Today at about 330 ms. The inventory
+  had doubled to about 520 ms by reading the closed Filters sheet's terms, scope and duty
+  types on landing; it reads them when the sheet opens now (H113). Out of office, which
+  joined the registry without a screen budget, has its row.
+- **Merged guards:** the merge of the nine packages left six guards red that each package
+  had green on its own branch (the agents contract's served list, a participant route both
+  gated and ungated, a fixture import in the factories, the chunk 8 to 10 tests writing
+  library children from a bank's zone, a publish audit row carrying a typed note, and
+  frontend fixtures and catalogs); each is fixed as its package had it. Journeys the chunk 8,
+  9 and 11 packages wrote before main's D-104 inventory now walk it: the register's standard
+  journeys reach an outside duty through "Show all items", INV-S4's overlay step sets "As of"
+  in the Filters sheet, AGT-S6 asks on `/ask`, and the sign-off journeys open a case by its
+  stable key as the triage journeys do; AGT-S7, whose runs stay running under the mock
+  runner, runs after AGT-S5 and AGT-S6 instead of beside them.
+- **Not yet:** real-model and real-embedder timings wait for the D-07 and D-09 keys; the
+  load profile and the deployed measurement are chunk 14's.
+
 ## R1 close (`r1-close-and-readiness`, 2026-09-24)
 
 R1 (chunks 0 to 7) is implemented and tested on `claude/r1w5-r1-close-and-readiness-6gi2py`,

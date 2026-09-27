@@ -98,7 +98,9 @@ def set_applicability_many(
     answers = [_Answer(row.obligation_id, row.org_unit_id, row.unit_id, row.applicability, row.reason) for row in body.rows]
     if len({answer[:3] for answer in answers}) < len(answers):
         raise ValidationError("Each obligation, legal entity or unit may be answered once in a call.", code="validation_error")
-    return RegisterApplicabilityMany(items=_store(tenant=tenant, actor=actor, order=order, answers=answers, expected_version=None))
+    # Built, not validated again: every item is already a validated answer, and ninja re-reads
+    # a nested schema through a getter whose missed camelCase lookups cost per field and row.
+    return RegisterApplicabilityMany.model_construct(items=_store(tenant=tenant, actor=actor, order=order, answers=answers, expected_version=None))
 
 
 def entities_spanned(obligation_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, list[OrgUnit]]:

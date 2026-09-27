@@ -1,697 +1,1437 @@
 {
   "acceptCaseObligationLink": {
-    "medianMs": 18.1,
-    "p95Ms": 19.7,
+    "medianMs": 19.4,
+    "p95Ms": 20.1,
     "queries": 28
   },
+  "addAction": {
+    "medianMs": 23.9,
+    "p95Ms": 27.0,
+    "queries": 20
+  },
+  "addCaseParticipant": {
+    "medianMs": 35.7,
+    "p95Ms": 41.0,
+    "queries": 27
+  },
   "addChangeDocument": {
-    "medianMs": 12.4,
-    "p95Ms": 15.4,
+    "medianMs": 13.1,
+    "p95Ms": 16.7,
     "queries": 26
   },
   "addChangeEvent": {
-    "medianMs": 11.6,
-    "p95Ms": 12.9,
+    "medianMs": 14.9,
+    "p95Ms": 16.4,
     "queries": 26
   },
+  "addComment": {
+    "medianMs": 28.3,
+    "p95Ms": 31.7,
+    "queries": 26
+  },
+  "addEvidence": {
+    "medianMs": 25.5,
+    "p95Ms": 33.2,
+    "queries": 18
+  },
+  "addInternalLink": {
+    "medianMs": 17.2,
+    "p95Ms": 18.5,
+    "queries": 25
+  },
+  "addObligationParticipant": {
+    "medianMs": 31.2,
+    "p95Ms": 37.8,
+    "queries": 31
+  },
   "approveFootprintRequest": {
-    "medianMs": 36.7,
-    "p95Ms": 38.6,
+    "medianMs": 39.5,
+    "p95Ms": 43.3,
     "queries": 38
   },
+  "approvePrivateProposal": {
+    "medianMs": 23.4,
+    "p95Ms": 28.8,
+    "queries": 36
+  },
   "approveProposal": {
-    "medianMs": 51.2,
-    "p95Ms": 58.6,
+    "medianMs": 53.0,
+    "p95Ms": 66.3,
     "queries": 66
   },
+  "approveRiskAcceptance": {
+    "medianMs": 31.7,
+    "p95Ms": 35.9,
+    "queries": 27
+  },
+  "approveSignoff": {
+    "medianMs": 40.4,
+    "p95Ms": 46.2,
+    "queries": 30
+  },
+  "approveSupportAccess": {
+    "medianMs": 14.2,
+    "p95Ms": 17.8,
+    "queries": 17
+  },
+  "approveTenantReach": {
+    "medianMs": 17.6,
+    "p95Ms": 21.5,
+    "queries": 21
+  },
   "ask": {
-    "medianMs": 43.8,
-    "p95Ms": 47.5,
+    "medianMs": 53.3,
+    "p95Ms": 70.7,
     "queries": 20
   },
   "closeProblemReport": {
-    "medianMs": 14.6,
-    "p95Ms": 15.6,
+    "medianMs": 15.9,
+    "p95Ms": 17.1,
     "queries": 19
   },
+  "closeWithoutAction": {
+    "medianMs": 38.7,
+    "p95Ms": 46.0,
+    "queries": 28
+  },
+  "completeDutyOccurrence": {
+    "medianMs": 16.2,
+    "p95Ms": 17.8,
+    "queries": 23
+  },
   "confirmChangeCuration": {
-    "medianMs": 35.0,
-    "p95Ms": 39.3,
+    "medianMs": 32.6,
+    "p95Ms": 38.4,
     "queries": 33
   },
   "confirmSoWhat": {
-    "medianMs": 12.2,
-    "p95Ms": 12.7,
+    "medianMs": 13.0,
+    "p95Ms": 14.3,
     "queries": 19
   },
   "consoleReissueEnrolment": {
-    "medianMs": 25.1,
-    "p95Ms": 31.5,
+    "medianMs": 28.0,
+    "p95Ms": 33.4,
     "queries": 39
   },
+  "createAgentAccessKey": {
+    "medianMs": 12.2,
+    "p95Ms": 13.2,
+    "queries": 19
+  },
   "createAgentKey": {
-    "medianMs": 10.2,
-    "p95Ms": 12.0,
+    "medianMs": 10.6,
+    "p95Ms": 13.1,
     "queries": 20
   },
   "createApiKey": {
-    "medianMs": 8.4,
-    "p95Ms": 9.2,
+    "medianMs": 9.8,
+    "p95Ms": 10.9,
     "queries": 15
   },
   "createCalendarFeed": {
-    "medianMs": 11.8,
-    "p95Ms": 13.6,
+    "medianMs": 11.4,
+    "p95Ms": 11.9,
     "queries": 18
   },
   "createChange": {
-    "medianMs": 36.7,
-    "p95Ms": 40.6,
+    "medianMs": 29.2,
+    "p95Ms": 31.2,
     "queries": 40
   },
   "createConsoleTenant": {
-    "medianMs": 171.3,
-    "p95Ms": 198.7,
-    "queries": 371
+    "medianMs": 244.9,
+    "p95Ms": 280.0,
+    "queries": 521
   },
   "createEvalQuestion": {
-    "medianMs": 10.0,
-    "p95Ms": 12.9,
+    "medianMs": 10.1,
+    "p95Ms": 11.6,
     "queries": 21
   },
-  "createFootprintRequest": {
-    "medianMs": 48.8,
-    "p95Ms": 52.2,
-    "queries": 43
-  },
-  "createProposal": {
-    "medianMs": 22.1,
-    "p95Ms": 24.6,
-    "queries": 29
-  },
-  "createRole": {
-    "medianMs": 16.8,
-    "p95Ms": 17.8,
-    "queries": 28
-  },
-  "createSource": {
-    "medianMs": 13.2,
-    "p95Ms": 16.2,
-    "queries": 25
-  },
-  "createTerm": {
-    "medianMs": 18.1,
-    "p95Ms": 22.1,
-    "queries": 24
-  },
-  "createVocabularyRow": {
-    "medianMs": 22.1,
-    "p95Ms": 25.0,
-    "queries": 28
-  },
-  "deactivateMember": {
-    "medianMs": 15.4,
-    "p95Ms": 17.4,
-    "queries": 20
-  },
-  "declineVocabularySuggestion": {
-    "medianMs": 10.9,
-    "p95Ms": 13.1,
-    "queries": 16
-  },
-  "findSimilar": {
-    "medianMs": 30.8,
-    "p95Ms": 35.8,
-    "queries": 12
-  },
-  "finishAgentRun": {
-    "medianMs": 16.9,
-    "p95Ms": 19.6,
-    "queries": 25
-  },
-  "getBriefing": {
-    "medianMs": 39.9,
-    "p95Ms": 42.2,
-    "queries": 28
-  },
-  "getCalendarIcs": {
-    "medianMs": 19.1,
-    "p95Ms": 22.9,
-    "queries": 18
-  },
-  "getChange": {
-    "medianMs": 33.4,
-    "p95Ms": 36.9,
-    "queries": 25
-  },
-  "getCurrentBriefing": {
-    "medianMs": 42.6,
-    "p95Ms": 59.3,
-    "queries": 28
-  },
-  "getEvalBaseline": {
-    "medianMs": 4.8,
-    "p95Ms": 6.9,
-    "queries": 7
-  },
-  "getFootprint": {
-    "medianMs": 39.5,
-    "p95Ms": 42.9,
-    "queries": 32
-  },
-  "getHome": {
-    "medianMs": 47.2,
-    "p95Ms": 58.0,
-    "queries": 29
-  },
-  "getInstrument": {
-    "medianMs": 20.5,
-    "p95Ms": 23.5,
-    "queries": 18
-  },
-  "getMe": {
-    "medianMs": 15.6,
-    "p95Ms": 21.4,
-    "queries": 17
-  },
-  "getObligation": {
-    "medianMs": 37.9,
-    "p95Ms": 55.2,
-    "queries": 31
-  },
-  "getObligationDiff": {
-    "medianMs": 11.5,
-    "p95Ms": 12.5,
-    "queries": 13
-  },
-  "getProduct": {
-    "medianMs": 0.5,
-    "p95Ms": 0.6,
-    "queries": 2
-  },
-  "getProposal": {
-    "medianMs": 17.8,
-    "p95Ms": 19.9,
-    "queries": 16
-  },
-  "getProvisionDiff": {
-    "medianMs": 10.8,
-    "p95Ms": 12.6,
-    "queries": 13
-  },
-  "getRecordSources": {
-    "medianMs": 9.4,
-    "p95Ms": 14.4,
-    "queries": 11
-  },
-  "getRoadmap": {
-    "medianMs": 17.4,
-    "p95Ms": 18.5,
-    "queries": 15
-  },
-  "getSourceCoverage": {
-    "medianMs": 12.2,
-    "p95Ms": 15.4,
-    "queries": 10
-  },
-  "getTenant": {
-    "medianMs": 11.6,
+  "createExport": {
+    "medianMs": 10.6,
     "p95Ms": 12.3,
     "queries": 16
   },
-  "getVocabularyRow": {
-    "medianMs": 9.6,
-    "p95Ms": 13.0,
-    "queries": 12
+  "createFootprintRequest": {
+    "medianMs": 52.5,
+    "p95Ms": 58.3,
+    "queries": 43
   },
-  "inviteMember": {
-    "medianMs": 20.1,
-    "p95Ms": 23.2,
+  "createGap": {
+    "medianMs": 32.1,
+    "p95Ms": 40.3,
     "queries": 29
   },
+  "createLicence": {
+    "medianMs": 24.5,
+    "p95Ms": 26.8,
+    "queries": 26
+  },
+  "createOrgUnit": {
+    "medianMs": 15.2,
+    "p95Ms": 17.6,
+    "queries": 18
+  },
+  "createProduct": {
+    "medianMs": 28.4,
+    "p95Ms": 36.1,
+    "queries": 29
+  },
+  "createProposal": {
+    "medianMs": 18.9,
+    "p95Ms": 22.6,
+    "queries": 29
+  },
+  "createProposalBatch": {
+    "medianMs": 32.1,
+    "p95Ms": 39.8,
+    "queries": 29
+  },
+  "createResearchRequest": {
+    "medianMs": 36.2,
+    "p95Ms": 42.0,
+    "queries": 43
+  },
+  "createRetagRequest": {
+    "medianMs": 22.9,
+    "p95Ms": 24.4,
+    "queries": 35
+  },
+  "createRole": {
+    "medianMs": 19.2,
+    "p95Ms": 23.3,
+    "queries": 28
+  },
+  "createSource": {
+    "medianMs": 13.4,
+    "p95Ms": 14.6,
+    "queries": 25
+  },
+  "createTenantAgent": {
+    "medianMs": 13.8,
+    "p95Ms": 15.7,
+    "queries": 21
+  },
+  "createTerm": {
+    "medianMs": 17.8,
+    "p95Ms": 20.5,
+    "queries": 24
+  },
+  "createUnit": {
+    "medianMs": 20.0,
+    "p95Ms": 23.2,
+    "queries": 24
+  },
+  "createVocabularyRow": {
+    "medianMs": 26.1,
+    "p95Ms": 31.7,
+    "queries": 29
+  },
+  "deactivateMember": {
+    "medianMs": 21.9,
+    "p95Ms": 27.1,
+    "queries": 29
+  },
+  "decideProposalBatch": {
+    "medianMs": 350.1,
+    "p95Ms": 377.5,
+    "queries": 350
+  },
+  "declineSupportAccess": {
+    "medianMs": 15.5,
+    "p95Ms": 19.6,
+    "queries": 17
+  },
+  "declineVocabularySuggestion": {
+    "medianMs": 11.6,
+    "p95Ms": 14.4,
+    "queries": 16
+  },
+  "deleteAction": {
+    "medianMs": 25.9,
+    "p95Ms": 29.9,
+    "queries": 19
+  },
+  "deleteComment": {
+    "medianMs": 16.9,
+    "p95Ms": 18.4,
+    "queries": 20
+  },
+  "dismissChange": {
+    "medianMs": 40.5,
+    "p95Ms": 52.2,
+    "queries": 28
+  },
+  "downloadEvidence": {
+    "medianMs": 15.0,
+    "p95Ms": 16.0,
+    "queries": 17
+  },
+  "downloadExport": {
+    "medianMs": 13.3,
+    "p95Ms": 18.0,
+    "queries": 17
+  },
+  "editComment": {
+    "medianMs": 18.6,
+    "p95Ms": 21.5,
+    "queries": 22
+  },
+  "enterConsoleSupportAccess": {
+    "medianMs": 22.0,
+    "p95Ms": 31.4,
+    "queries": 35
+  },
+  "findSimilar": {
+    "medianMs": 42.2,
+    "p95Ms": 49.2,
+    "queries": 12
+  },
+  "finishAgentRun": {
+    "medianMs": 14.9,
+    "p95Ms": 19.7,
+    "queries": 25
+  },
+  "getAgentAccess": {
+    "medianMs": 15.4,
+    "p95Ms": 19.1,
+    "queries": 15
+  },
+  "getAgentBudget": {
+    "medianMs": 9.4,
+    "p95Ms": 10.3,
+    "queries": 12
+  },
+  "getAgentDefinition": {
+    "medianMs": 8.2,
+    "p95Ms": 10.5,
+    "queries": 9
+  },
+  "getBriefing": {
+    "medianMs": 50.8,
+    "p95Ms": 60.9,
+    "queries": 33
+  },
+  "getCalendarIcs": {
+    "medianMs": 19.9,
+    "p95Ms": 21.5,
+    "queries": 18
+  },
+  "getCaseFile": {
+    "medianMs": 49.0,
+    "p95Ms": 59.2,
+    "queries": 23
+  },
+  "getChange": {
+    "medianMs": 56.8,
+    "p95Ms": 63.8,
+    "queries": 27
+  },
+  "getCurrentBriefing": {
+    "medianMs": 50.9,
+    "p95Ms": 53.3,
+    "queries": 33
+  },
+  "getEvalBaseline": {
+    "medianMs": 4.3,
+    "p95Ms": 5.3,
+    "queries": 7
+  },
+  "getExport": {
+    "medianMs": 7.8,
+    "p95Ms": 9.8,
+    "queries": 10
+  },
+  "getFootprint": {
+    "medianMs": 45.3,
+    "p95Ms": 53.4,
+    "queries": 32
+  },
+  "getHome": {
+    "medianMs": 172.8,
+    "p95Ms": 187.3,
+    "queries": 51
+  },
+  "getInstrument": {
+    "medianMs": 23.4,
+    "p95Ms": 24.3,
+    "queries": 18
+  },
+  "getInterpretation": {
+    "medianMs": 11.5,
+    "p95Ms": 12.2,
+    "queries": 12
+  },
+  "getMe": {
+    "medianMs": 17.3,
+    "p95Ms": 22.2,
+    "queries": 19
+  },
+  "getMemberOpenWork": {
+    "medianMs": 22.1,
+    "p95Ms": 29.4,
+    "queries": 22
+  },
+  "getMyOutOfOffice": {
+    "medianMs": 8.2,
+    "p95Ms": 10.1,
+    "queries": 11
+  },
+  "getMyWork": {
+    "medianMs": 60.0,
+    "p95Ms": 71.1,
+    "queries": 34
+  },
+  "getMyWork (head)": {
+    "medianMs": 66.2,
+    "p95Ms": 72.8,
+    "queries": 36
+  },
+  "getObligation": {
+    "medianMs": 56.0,
+    "p95Ms": 66.4,
+    "queries": 33
+  },
+  "getObligationDiff": {
+    "medianMs": 15.1,
+    "p95Ms": 17.4,
+    "queries": 13
+  },
+  "getPlatformAgentSettings": {
+    "medianMs": 5.3,
+    "p95Ms": 5.6,
+    "queries": 8
+  },
+  "getProduct": {
+    "medianMs": 0.5,
+    "p95Ms": 0.8,
+    "queries": 2
+  },
+  "getProposal": {
+    "medianMs": 17.6,
+    "p95Ms": 19.8,
+    "queries": 16
+  },
+  "getProposalBatch": {
+    "medianMs": 31.5,
+    "p95Ms": 40.7,
+    "queries": 13
+  },
+  "getProvisionDiff": {
+    "medianMs": 17.6,
+    "p95Ms": 20.1,
+    "queries": 13
+  },
+  "getRecordSources": {
+    "medianMs": 10.2,
+    "p95Ms": 12.2,
+    "queries": 11
+  },
+  "getRegisterEntry": {
+    "medianMs": 21.2,
+    "p95Ms": 24.2,
+    "queries": 16
+  },
+  "getResearchRequest": {
+    "medianMs": 9.4,
+    "p95Ms": 10.2,
+    "queries": 11
+  },
+  "getRetagRequest": {
+    "medianMs": 7.2,
+    "p95Ms": 9.0,
+    "queries": 9
+  },
+  "getRoadmap": {
+    "medianMs": 100.1,
+    "p95Ms": 115.9,
+    "queries": 27
+  },
+  "getSecurityPolicy": {
+    "medianMs": 7.5,
+    "p95Ms": 8.2,
+    "queries": 10
+  },
+  "getSourceCoverage": {
+    "medianMs": 12.3,
+    "p95Ms": 13.7,
+    "queries": 10
+  },
+  "getStatementOfApplicability": {
+    "medianMs": 64.8,
+    "p95Ms": 71.3,
+    "queries": 30
+  },
+  "getTenant": {
+    "medianMs": 17.1,
+    "p95Ms": 18.3,
+    "queries": 20
+  },
+  "getTenantReach": {
+    "medianMs": 9.8,
+    "p95Ms": 11.4,
+    "queries": 11
+  },
+  "getVocabularyRow": {
+    "medianMs": 10.6,
+    "p95Ms": 12.9,
+    "queries": 12
+  },
+  "interruptAgentRun": {
+    "medianMs": 16.5,
+    "p95Ms": 19.7,
+    "queries": 21
+  },
+  "inviteMember": {
+    "medianMs": 21.1,
+    "p95Ms": 23.5,
+    "queries": 29
+  },
+  "listActions": {
+    "medianMs": 19.3,
+    "p95Ms": 22.2,
+    "queries": 12
+  },
+  "listAgentAccess": {
+    "medianMs": 17.8,
+    "p95Ms": 19.4,
+    "queries": 16
+  },
+  "listAgentAccessCalls": {
+    "medianMs": 17.1,
+    "p95Ms": 21.9,
+    "queries": 12
+  },
   "listAgentDefinitions": {
-    "medianMs": 5.5,
-    "p95Ms": 5.7,
+    "medianMs": 8.9,
+    "p95Ms": 9.6,
     "queries": 9
   },
   "listAgentKeys": {
-    "medianMs": 6.5,
-    "p95Ms": 7.2,
+    "medianMs": 7.2,
+    "p95Ms": 7.7,
     "queries": 9
   },
   "listAgentRuns": {
-    "medianMs": 14.0,
-    "p95Ms": 14.7,
+    "medianMs": 22.2,
+    "p95Ms": 24.1,
     "queries": 9
   },
   "listAiGenerations": {
-    "medianMs": 18.4,
-    "p95Ms": 23.6,
+    "medianMs": 19.0,
+    "p95Ms": 24.8,
     "queries": 10
   },
   "listApiKeys": {
     "medianMs": 6.0,
-    "p95Ms": 7.4,
+    "p95Ms": 7.0,
     "queries": 10
   },
+  "listAssessments": {
+    "medianMs": 18.1,
+    "p95Ms": 21.9,
+    "queries": 16
+  },
   "listAuditEvents": {
-    "medianMs": 14.6,
-    "p95Ms": 21.7,
+    "medianMs": 13.9,
+    "p95Ms": 17.3,
     "queries": 10
   },
   "listAuthorities": {
-    "medianMs": 9.8,
-    "p95Ms": 10.7,
+    "medianMs": 9.0,
+    "p95Ms": 11.3,
     "queries": 12
   },
   "listCalendarFeeds": {
-    "medianMs": 9.9,
-    "p95Ms": 14.7,
+    "medianMs": 9.8,
+    "p95Ms": 10.6,
     "queries": 13
   },
+  "listCaseParticipants": {
+    "medianMs": 24.9,
+    "p95Ms": 30.1,
+    "queries": 15
+  },
   "listChanges": {
-    "medianMs": 39.2,
-    "p95Ms": 59.8,
+    "medianMs": 41.3,
+    "p95Ms": 45.1,
     "queries": 22
   },
+  "listComments": {
+    "medianMs": 17.1,
+    "p95Ms": 21.3,
+    "queries": 15
+  },
   "listConsoleChanges": {
-    "medianMs": 25.9,
-    "p95Ms": 34.0,
+    "medianMs": 26.2,
+    "p95Ms": 38.4,
     "queries": 17
   },
+  "listConsoleSupportAccess": {
+    "medianMs": 8.8,
+    "p95Ms": 10.6,
+    "queries": 11
+  },
   "listConsoleTenants": {
-    "medianMs": 6.7,
-    "p95Ms": 7.1,
+    "medianMs": 6.8,
+    "p95Ms": 8.8,
     "queries": 9
   },
+  "listDuties": {
+    "medianMs": 13.6,
+    "p95Ms": 14.8,
+    "queries": 14
+  },
   "listEvalQuestions": {
-    "medianMs": 8.6,
-    "p95Ms": 9.5,
+    "medianMs": 9.6,
+    "p95Ms": 14.3,
     "queries": 9
   },
   "listEvalRuns": {
     "medianMs": 5.4,
-    "p95Ms": 5.9,
+    "p95Ms": 5.8,
     "queries": 9
   },
+  "listEvidence": {
+    "medianMs": 20.4,
+    "p95Ms": 23.5,
+    "queries": 12
+  },
+  "listExports": {
+    "medianMs": 8.9,
+    "p95Ms": 9.5,
+    "queries": 11
+  },
   "listFootprintRequests": {
-    "medianMs": 27.9,
-    "p95Ms": 31.2,
+    "medianMs": 30.5,
+    "p95Ms": 38.8,
     "queries": 24
   },
   "listInstrumentProvisions": {
-    "medianMs": 15.4,
-    "p95Ms": 16.4,
+    "medianMs": 24.6,
+    "p95Ms": 26.7,
     "queries": 17
   },
   "listInstruments": {
-    "medianMs": 38.4,
-    "p95Ms": 55.0,
+    "medianMs": 41.1,
+    "p95Ms": 43.8,
     "queries": 23
   },
+  "listInternalItems": {
+    "medianMs": 11.3,
+    "p95Ms": 14.2,
+    "queries": 13
+  },
+  "listInternalLinks": {
+    "medianMs": 17.0,
+    "p95Ms": 18.2,
+    "queries": 15
+  },
   "listInvitations": {
-    "medianMs": 11.1,
-    "p95Ms": 12.4,
+    "medianMs": 11.5,
+    "p95Ms": 12.6,
     "queries": 15
   },
   "listJurisdictions": {
-    "medianMs": 10.6,
-    "p95Ms": 12.7,
+    "medianMs": 10.4,
+    "p95Ms": 12.1,
     "queries": 12
   },
   "listLanguages": {
-    "medianMs": 5.0,
-    "p95Ms": 5.3,
+    "medianMs": 5.8,
+    "p95Ms": 6.7,
     "queries": 9
   },
   "listLibraryUpdates": {
-    "medianMs": 51.7,
-    "p95Ms": 57.7,
+    "medianMs": 45.5,
+    "p95Ms": 51.7,
     "queries": 26
   },
+  "listLicences": {
+    "medianMs": 16.9,
+    "p95Ms": 19.2,
+    "queries": 15
+  },
   "listMemberSessions": {
-    "medianMs": 9.5,
-    "p95Ms": 11.8,
+    "medianMs": 9.0,
+    "p95Ms": 9.4,
     "queries": 12
   },
   "listMembers": {
-    "medianMs": 17.9,
-    "p95Ms": 19.7,
-    "queries": 14
+    "medianMs": 22.0,
+    "p95Ms": 24.8,
+    "queries": 15
+  },
+  "listMyComments": {
+    "medianMs": 20.1,
+    "p95Ms": 22.7,
+    "queries": 18
   },
   "listMyPasskeys": {
-    "medianMs": 5.9,
-    "p95Ms": 7.5,
+    "medianMs": 5.8,
+    "p95Ms": 7.0,
     "queries": 9
   },
   "listMySessions": {
     "medianMs": 6.7,
-    "p95Ms": 7.6,
+    "p95Ms": 7.1,
     "queries": 10
   },
+  "listNotifications": {
+    "medianMs": 19.5,
+    "p95Ms": 21.3,
+    "queries": 12
+  },
   "listObligationChanges": {
-    "medianMs": 36.9,
-    "p95Ms": 38.8,
+    "medianMs": 42.4,
+    "p95Ms": 48.3,
     "queries": 23
   },
+  "listObligationGaps": {
+    "medianMs": 24.2,
+    "p95Ms": 25.8,
+    "queries": 17
+  },
+  "listObligationParticipants": {
+    "medianMs": 14.8,
+    "p95Ms": 16.0,
+    "queries": 16
+  },
   "listObligations": {
-    "medianMs": 56.4,
-    "p95Ms": 67.3,
-    "queries": 30
+    "medianMs": 75.7,
+    "p95Ms": 89.2,
+    "queries": 32
+  },
+  "listObligations (overlay)": {
+    "medianMs": 77.5,
+    "p95Ms": 86.6,
+    "queries": 32
+  },
+  "listOrgUnits": {
+    "medianMs": 13.4,
+    "p95Ms": 15.7,
+    "queries": 13
+  },
+  "listPeople": {
+    "medianMs": 12.6,
+    "p95Ms": 15.9,
+    "queries": 10
   },
   "listPermissions": {
-    "medianMs": 4.8,
-    "p95Ms": 5.2,
+    "medianMs": 5.0,
+    "p95Ms": 5.3,
     "queries": 8
   },
+  "listPlatformRuns": {
+    "medianMs": 28.2,
+    "p95Ms": 38.4,
+    "queries": 9
+  },
+  "listPlatformWatch": {
+    "medianMs": 9.3,
+    "p95Ms": 10.2,
+    "queries": 10
+  },
+  "listPrivateProposals": {
+    "medianMs": 11.2,
+    "p95Ms": 13.9,
+    "queries": 11
+  },
   "listProblemReports": {
-    "medianMs": 14.1,
-    "p95Ms": 17.8,
+    "medianMs": 12.7,
+    "p95Ms": 15.0,
+    "queries": 14
+  },
+  "listProducts": {
+    "medianMs": 16.4,
+    "p95Ms": 20.5,
     "queries": 14
   },
   "listProposals": {
-    "medianMs": 24.2,
-    "p95Ms": 26.0,
+    "medianMs": 27.3,
+    "p95Ms": 32.4,
     "queries": 13
   },
+  "listRegisterEntries": {
+    "medianMs": 49.2,
+    "p95Ms": 58.1,
+    "queries": 36
+  },
+  "listRegisterEntries (token)": {
+    "medianMs": 53.7,
+    "p95Ms": 62.2,
+    "queries": 39
+  },
+  "listRegisterGaps": {
+    "medianMs": 23.6,
+    "p95Ms": 28.9,
+    "queries": 15
+  },
+  "listResearchRequests": {
+    "medianMs": 9.2,
+    "p95Ms": 11.2,
+    "queries": 11
+  },
   "listRoles": {
-    "medianMs": 9.8,
-    "p95Ms": 10.2,
+    "medianMs": 10.4,
+    "p95Ms": 16.6,
     "queries": 12
   },
   "listSecurityLog": {
-    "medianMs": 5.6,
-    "p95Ms": 5.8,
+    "medianMs": 6.2,
+    "p95Ms": 7.1,
     "queries": 10
   },
   "listSources": {
-    "medianMs": 8.4,
-    "p95Ms": 9.8,
+    "medianMs": 8.1,
+    "p95Ms": 9.0,
     "queries": 13
   },
+  "listSpannedEntities": {
+    "medianMs": 17.4,
+    "p95Ms": 20.8,
+    "queries": 17
+  },
   "listTaxonomyDimensions": {
-    "medianMs": 14.9,
-    "p95Ms": 15.9,
+    "medianMs": 16.9,
+    "p95Ms": 21.2,
     "queries": 12
   },
+  "listTeamMembers": {
+    "medianMs": 11.1,
+    "p95Ms": 13.4,
+    "queries": 12
+  },
+  "listTeams": {
+    "medianMs": 12.4,
+    "p95Ms": 20.6,
+    "queries": 13
+  },
+  "listTenantAgents": {
+    "medianMs": 9.4,
+    "p95Ms": 12.7,
+    "queries": 11
+  },
   "listTenantProposals": {
-    "medianMs": 8.8,
-    "p95Ms": 10.7,
+    "medianMs": 8.9,
+    "p95Ms": 10.5,
     "queries": 10
   },
+  "listTenantSupportAccess": {
+    "medianMs": 11.1,
+    "p95Ms": 12.3,
+    "queries": 11
+  },
   "listTerms": {
-    "medianMs": 30.2,
-    "p95Ms": 32.2,
+    "medianMs": 34.0,
+    "p95Ms": 52.6,
+    "queries": 14
+  },
+  "listUnits": {
+    "medianMs": 24.6,
+    "p95Ms": 36.5,
     "queries": 14
   },
   "listUpcoming": {
-    "medianMs": 16.4,
-    "p95Ms": 18.7,
+    "medianMs": 18.1,
+    "p95Ms": 20.2,
     "queries": 14
   },
   "listVocabularies": {
-    "medianMs": 29.6,
-    "p95Ms": 31.9,
-    "queries": 48
+    "medianMs": 27.0,
+    "p95Ms": 29.5,
+    "queries": 32
   },
   "listVocabularyRows": {
-    "medianMs": 10.9,
+    "medianMs": 11.1,
     "p95Ms": 12.5,
     "queries": 12
   },
   "listVocabularySuggestions": {
-    "medianMs": 8.2,
-    "p95Ms": 11.0,
+    "medianMs": 8.8,
+    "p95Ms": 9.8,
     "queries": 11
   },
+  "markAllNotificationsRead": {
+    "medianMs": 182.1,
+    "p95Ms": 338.3,
+    "queries": 16
+  },
+  "markNotificationRead": {
+    "medianMs": 11.8,
+    "p95Ms": 16.3,
+    "queries": 16
+  },
   "markVisit": {
-    "medianMs": 8.4,
-    "p95Ms": 9.5,
+    "medianMs": 8.0,
+    "p95Ms": 8.4,
     "queries": 14
   },
+  "mcpMessage (tools/call get_obligation, key)": {
+    "medianMs": 93.8,
+    "p95Ms": 103.9,
+    "queries": 58
+  },
+  "mcpMessage (tools/call search, token)": {
+    "medianMs": 86.7,
+    "p95Ms": 113.4,
+    "queries": 42
+  },
+  "mcpMessage (tools/list, key)": {
+    "medianMs": 8.6,
+    "p95Ms": 10.2,
+    "queries": 26
+  },
+  "mcpMessage (tools/list, token)": {
+    "medianMs": 11.9,
+    "p95Ms": 13.8,
+    "queries": 29
+  },
   "mergeVocabularyRow": {
-    "medianMs": 21.0,
-    "p95Ms": 23.2,
+    "medianMs": 16.7,
+    "p95Ms": 19.1,
     "queries": 21
   },
   "openInvitation": {
-    "medianMs": 8.3,
-    "p95Ms": 8.7,
+    "medianMs": 7.7,
+    "p95Ms": 9.4,
     "queries": 16
   },
   "passkeyAuthenticateOptions": {
-    "medianMs": 3.0,
-    "p95Ms": 3.3,
+    "medianMs": 3.1,
+    "p95Ms": 4.1,
     "queries": 8
   },
   "passkeyAuthenticateVerify": {
-    "medianMs": 11.4,
-    "p95Ms": 13.4,
-    "queries": 19
+    "medianMs": 13.6,
+    "p95Ms": 18.3,
+    "queries": 24
   },
   "passkeyRegisterOptions": {
-    "medianMs": 10.8,
-    "p95Ms": 15.3,
+    "medianMs": 9.4,
+    "p95Ms": 9.9,
     "queries": 16
   },
   "passkeyRegisterVerify": {
-    "medianMs": 13.8,
-    "p95Ms": 17.5,
+    "medianMs": 13.1,
+    "p95Ms": 14.5,
     "queries": 22
   },
-  "rateAnswer": {
-    "medianMs": 9.1,
-    "p95Ms": 10.0,
-    "queries": 15
+  "pasteUnits": {
+    "medianMs": 422.8,
+    "p95Ms": 477.3,
+    "queries": 824
   },
-  "recordSourceCheck": {
-    "medianMs": 14.6,
-    "p95Ms": 19.6,
-    "queries": 26
-  },
-  "refreshSession": {
-    "medianMs": 5.2,
-    "p95Ms": 5.7,
-    "queries": 11
-  },
-  "reissueEnrolment": {
-    "medianMs": 25.6,
-    "p95Ms": 29.2,
-    "queries": 36
-  },
-  "rejectFootprintRequest": {
-    "medianMs": 33.1,
-    "p95Ms": 36.9,
-    "queries": 31
-  },
-  "rejectProposal": {
-    "medianMs": 13.4,
-    "p95Ms": 17.2,
-    "queries": 20
-  },
-  "removeCaseObligationLink": {
-    "medianMs": 18.0,
-    "p95Ms": 20.3,
-    "queries": 28
-  },
-  "removeMyPasskey": {
-    "medianMs": 9.2,
-    "p95Ms": 13.1,
-    "queries": 16
-  },
-  "renameMyPasskey": {
-    "medianMs": 8.6,
-    "p95Ms": 10.4,
-    "queries": 15
-  },
-  "reorderVocabulary": {
-    "medianMs": 17.4,
-    "p95Ms": 20.2,
-    "queries": 22
-  },
-  "replaceChangeObligations": {
-    "medianMs": 22.0,
-    "p95Ms": 24.2,
-    "queries": 30
-  },
-  "reportInstrumentProblem": {
-    "medianMs": 10.8,
-    "p95Ms": 12.0,
-    "queries": 16
-  },
-  "reportObligationProblem": {
-    "medianMs": 12.0,
-    "p95Ms": 13.4,
-    "queries": 17
-  },
-  "requestCode": {
-    "medianMs": 11.3,
-    "p95Ms": 12.1,
-    "queries": 21
-  },
-  "resendInvitation": {
-    "medianMs": 16.8,
-    "p95Ms": 18.8,
-    "queries": 21
-  },
-  "restoreVocabularyRow": {
-    "medianMs": 15.2,
-    "p95Ms": 19.3,
+  "pauseTenantAgent": {
+    "medianMs": 12.5,
+    "p95Ms": 14.4,
     "queries": 18
   },
-  "retireRole": {
-    "medianMs": 13.8,
-    "p95Ms": 15.1,
-    "queries": 21
+  "previewTagging": {
+    "medianMs": 15.4,
+    "p95Ms": 18.6,
+    "queries": 14
   },
-  "retireVocabularyRow": {
-    "medianMs": 14.4,
-    "p95Ms": 24.3,
-    "queries": 18
+  "putAgentBudget": {
+    "medianMs": 17.9,
+    "p95Ms": 21.7,
+    "queries": 23
   },
-  "reverifyObligation": {
-    "medianMs": 11.6,
-    "p95Ms": 12.4,
-    "queries": 21
-  },
-  "revokeAgentKey": {
-    "medianMs": 10.9,
-    "p95Ms": 12.3,
-    "queries": 20
-  },
-  "revokeApiKey": {
-    "medianMs": 9.9,
-    "p95Ms": 10.6,
-    "queries": 19
-  },
-  "revokeCalendarFeed": {
-    "medianMs": 9.8,
-    "p95Ms": 10.6,
-    "queries": 16
-  },
-  "revokeInvitation": {
-    "medianMs": 13.2,
+  "putMyOutOfOffice": {
+    "medianMs": 15.1,
     "p95Ms": 18.6,
     "queries": 19
   },
-  "revokeMemberSessions": {
-    "medianMs": 14.3,
-    "p95Ms": 16.2,
-    "queries": 18
-  },
-  "revokeMySession": {
-    "medianMs": 9.4,
-    "p95Ms": 14.3,
-    "queries": 17
-  },
-  "saveSoWhat": {
-    "medianMs": 12.2,
-    "p95Ms": 12.8,
+  "putSecurityPolicy": {
+    "medianMs": 15.8,
+    "p95Ms": 18.1,
     "queries": 19
   },
-  "search": {
-    "medianMs": 38.6,
-    "p95Ms": 56.1,
-    "queries": 10
+  "rateAnswer": {
+    "medianMs": 9.8,
+    "p95Ms": 10.9,
+    "queries": 15
   },
-  "setTenantAi": {
-    "medianMs": 16.8,
-    "p95Ms": 17.8,
-    "queries": 24
+  "readRegisterEntry": {
+    "medianMs": 38.1,
+    "p95Ms": 50.3,
+    "queries": 36
   },
-  "signOut": {
-    "medianMs": 5.9,
-    "p95Ms": 7.6,
-    "queries": 14
+  "recordSourceCheck": {
+    "medianMs": 13.4,
+    "p95Ms": 13.9,
+    "queries": 26
   },
-  "startAgentRun": {
-    "medianMs": 10.0,
-    "p95Ms": 12.6,
+  "refreshSession": {
+    "medianMs": 8.1,
+    "p95Ms": 11.0,
+    "queries": 15
+  },
+  "registerAgentAccess": {
+    "medianMs": 23.2,
+    "p95Ms": 25.0,
+    "queries": 26
+  },
+  "reissueEnrolment": {
+    "medianMs": 27.6,
+    "p95Ms": 30.2,
+    "queries": 36
+  },
+  "rejectFootprintRequest": {
+    "medianMs": 35.2,
+    "p95Ms": 37.2,
+    "queries": 31
+  },
+  "rejectPrivateProposal": {
+    "medianMs": 11.9,
+    "p95Ms": 18.1,
+    "queries": 19
+  },
+  "rejectProposal": {
+    "medianMs": 14.1,
+    "p95Ms": 16.7,
+    "queries": 20
+  },
+  "rejectTenantReach": {
+    "medianMs": 14.2,
+    "p95Ms": 17.3,
+    "queries": 18
+  },
+  "removeCaseObligationLink": {
+    "medianMs": 18.8,
+    "p95Ms": 24.6,
+    "queries": 28
+  },
+  "removeCaseParticipant": {
+    "medianMs": 23.7,
+    "p95Ms": 29.6,
+    "queries": 19
+  },
+  "removeEvidence": {
+    "medianMs": 25.4,
+    "p95Ms": 34.4,
+    "queries": 19
+  },
+  "removeInternalLink": {
+    "medianMs": 9.9,
+    "p95Ms": 12.2,
+    "queries": 16
+  },
+  "removeMember": {
+    "medianMs": 74.2,
+    "p95Ms": 84.1,
+    "queries": 74
+  },
+  "removeMyPasskey": {
+    "medianMs": 9.1,
+    "p95Ms": 9.9,
+    "queries": 16
+  },
+  "removeObligationParticipant": {
+    "medianMs": 17.7,
+    "p95Ms": 22.0,
     "queries": 21
   },
-  "stepUpOptions": {
-    "medianMs": 10.4,
+  "removeUnit": {
+    "medianMs": 15.2,
+    "p95Ms": 20.0,
+    "queries": 17
+  },
+  "renameMyPasskey": {
+    "medianMs": 8.9,
+    "p95Ms": 9.6,
+    "queries": 15
+  },
+  "reopenGap": {
+    "medianMs": 30.3,
+    "p95Ms": 32.5,
+    "queries": 25
+  },
+  "reorderVocabulary": {
+    "medianMs": 18.0,
+    "p95Ms": 19.4,
+    "queries": 22
+  },
+  "replaceChangeObligations": {
+    "medianMs": 24.5,
+    "p95Ms": 27.6,
+    "queries": 30
+  },
+  "reportInstrumentProblem": {
+    "medianMs": 10.9,
     "p95Ms": 12.9,
     "queries": 16
   },
+  "reportObligationProblem": {
+    "medianMs": 12.3,
+    "p95Ms": 14.1,
+    "queries": 17
+  },
+  "requestCode": {
+    "medianMs": 8.4,
+    "p95Ms": 10.1,
+    "queries": 21
+  },
+  "requestConsoleSupportAccess": {
+    "medianMs": 16.9,
+    "p95Ms": 17.8,
+    "queries": 17
+  },
+  "requestRiskAcceptance": {
+    "medianMs": 29.4,
+    "p95Ms": 32.1,
+    "queries": 24
+  },
+  "requestSignoff": {
+    "medianMs": 45.2,
+    "p95Ms": 54.2,
+    "queries": 32
+  },
+  "requestTenantReach": {
+    "medianMs": 13.1,
+    "p95Ms": 18.4,
+    "queries": 22
+  },
+  "resendInvitation": {
+    "medianMs": 14.9,
+    "p95Ms": 17.2,
+    "queries": 21
+  },
+  "restoreChange": {
+    "medianMs": 38.1,
+    "p95Ms": 46.3,
+    "queries": 27
+  },
+  "restoreVocabularyRow": {
+    "medianMs": 13.0,
+    "p95Ms": 16.4,
+    "queries": 18
+  },
+  "resumeTenantAgent": {
+    "medianMs": 12.2,
+    "p95Ms": 15.1,
+    "queries": 18
+  },
+  "retireAgentVersion": {
+    "medianMs": 13.1,
+    "p95Ms": 15.3,
+    "queries": 23
+  },
+  "retireRole": {
+    "medianMs": 16.3,
+    "p95Ms": 17.5,
+    "queries": 21
+  },
+  "retireVocabularyRow": {
+    "medianMs": 14.3,
+    "p95Ms": 19.0,
+    "queries": 18
+  },
+  "reverifyObligation": {
+    "medianMs": 11.1,
+    "p95Ms": 14.7,
+    "queries": 21
+  },
+  "revokeAgentAccess": {
+    "medianMs": 25.2,
+    "p95Ms": 28.5,
+    "queries": 23
+  },
+  "revokeAgentAccessKey": {
+    "medianMs": 19.0,
+    "p95Ms": 20.3,
+    "queries": 23
+  },
+  "revokeAgentKey": {
+    "medianMs": 10.5,
+    "p95Ms": 11.9,
+    "queries": 20
+  },
+  "revokeApiKey": {
+    "medianMs": 10.7,
+    "p95Ms": 13.1,
+    "queries": 19
+  },
+  "revokeCalendarFeed": {
+    "medianMs": 9.7,
+    "p95Ms": 12.2,
+    "queries": 16
+  },
+  "revokeInvitation": {
+    "medianMs": 12.7,
+    "p95Ms": 14.8,
+    "queries": 19
+  },
+  "revokeMemberSessions": {
+    "medianMs": 13.0,
+    "p95Ms": 15.6,
+    "queries": 18
+  },
+  "revokeMySession": {
+    "medianMs": 9.2,
+    "p95Ms": 11.6,
+    "queries": 17
+  },
+  "revokeSupportAccess": {
+    "medianMs": 14.1,
+    "p95Ms": 23.1,
+    "queries": 17
+  },
+  "runTenantAgentNow": {
+    "medianMs": 25.9,
+    "p95Ms": 32.8,
+    "queries": 36
+  },
+  "saveAssessment": {
+    "medianMs": 37.5,
+    "p95Ms": 46.7,
+    "queries": 28
+  },
+  "saveInterpretation": {
+    "medianMs": 18.3,
+    "p95Ms": 19.8,
+    "queries": 22
+  },
+  "saveSoWhat": {
+    "medianMs": 16.0,
+    "p95Ms": 18.6,
+    "queries": 19
+  },
+  "search": {
+    "medianMs": 52.1,
+    "p95Ms": 66.5,
+    "queries": 10
+  },
+  "search (agent key)": {
+    "medianMs": 67.4,
+    "p95Ms": 80.1,
+    "queries": 28
+  },
+  "sendBackSignoff": {
+    "medianMs": 37.2,
+    "p95Ms": 45.2,
+    "queries": 27
+  },
+  "setAgentAccessReach": {
+    "medianMs": 22.1,
+    "p95Ms": 28.2,
+    "queries": 22
+  },
+  "setApplicability": {
+    "medianMs": 29.3,
+    "p95Ms": 33.5,
+    "queries": 30
+  },
+  "setApplicabilityMany": {
+    "medianMs": 221.2,
+    "p95Ms": 243.5,
+    "queries": 416
+  },
+  "setMemberTeams": {
+    "medianMs": 25.9,
+    "p95Ms": 31.5,
+    "queries": 28
+  },
+  "setTenantAi": {
+    "medianMs": 22.9,
+    "p95Ms": 25.3,
+    "queries": 28
+  },
+  "signOut": {
+    "medianMs": 6.3,
+    "p95Ms": 8.1,
+    "queries": 14
+  },
+  "startAgentRun": {
+    "medianMs": 11.6,
+    "p95Ms": 14.9,
+    "queries": 22
+  },
+  "startAssessment": {
+    "medianMs": 41.5,
+    "p95Ms": 49.5,
+    "queries": 32
+  },
+  "stepUpOptions": {
+    "medianMs": 9.2,
+    "p95Ms": 10.2,
+    "queries": 16
+  },
   "stepUpVerify": {
-    "medianMs": 13.9,
+    "medianMs": 12.9,
     "p95Ms": 16.2,
     "queries": 22
   },
   "suggestVocabularyRow": {
-    "medianMs": 15.1,
-    "p95Ms": 19.5,
+    "medianMs": 16.3,
+    "p95Ms": 20.0,
     "queries": 20
   },
-  "unwatchMarket": {
-    "medianMs": 15.9,
-    "p95Ms": 21.8,
-    "queries": 22
+  "switchOffTenantReach": {
+    "medianMs": 13.9,
+    "p95Ms": 15.7,
+    "queries": 19
   },
-  "updateChange": {
-    "medianMs": 30.0,
-    "p95Ms": 31.6,
-    "queries": 35
-  },
-  "updateChangeEvent": {
-    "medianMs": 12.4,
-    "p95Ms": 14.9,
-    "queries": 23
-  },
-  "updateMe": {
-    "medianMs": 19.9,
-    "p95Ms": 23.9,
-    "queries": 23
-  },
-  "updateMember": {
-    "medianMs": 26.9,
-    "p95Ms": 33.9,
-    "queries": 32
-  },
-  "updateRole": {
-    "medianMs": 18.4,
-    "p95Ms": 24.8,
-    "queries": 29
-  },
-  "updateSource": {
-    "medianMs": 13.2,
-    "p95Ms": 19.7,
-    "queries": 24
-  },
-  "updateTenant": {
-    "medianMs": 18.3,
-    "p95Ms": 23.5,
-    "queries": 25
-  },
-  "updateTerm": {
-    "medianMs": 17.6,
-    "p95Ms": 19.9,
-    "queries": 21
-  },
-  "updateVocabularyRow": {
-    "medianMs": 21.1,
-    "p95Ms": 27.0,
-    "queries": 23
-  },
-  "verifyCode": {
-    "medianMs": 9.7,
-    "p95Ms": 13.5,
-    "queries": 16
-  },
-  "verifyInvitationCode": {
-    "medianMs": 10.4,
-    "p95Ms": 13.4,
-    "queries": 16
-  },
-  "watchMarket": {
-    "medianMs": 16.9,
+  "tagRecord": {
+    "medianMs": 16.6,
     "p95Ms": 17.7,
     "queries": 23
   },
+  "tagRecords": {
+    "medianMs": 16.2,
+    "p95Ms": 19.4,
+    "queries": 20
+  },
+  "triageChange": {
+    "medianMs": 45.8,
+    "p95Ms": 51.8,
+    "queries": 32
+  },
+  "untagRecord": {
+    "medianMs": 14.3,
+    "p95Ms": 16.6,
+    "queries": 19
+  },
+  "unwatchMarket": {
+    "medianMs": 16.5,
+    "p95Ms": 18.4,
+    "queries": 22
+  },
+  "updateAction": {
+    "medianMs": 25.9,
+    "p95Ms": 35.0,
+    "queries": 20
+  },
+  "updateAgentAccess": {
+    "medianMs": 24.5,
+    "p95Ms": 28.6,
+    "queries": 26
+  },
+  "updateChange": {
+    "medianMs": 30.7,
+    "p95Ms": 37.6,
+    "queries": 35
+  },
+  "updateChangeEvent": {
+    "medianMs": 13.6,
+    "p95Ms": 16.0,
+    "queries": 23
+  },
+  "updateGap": {
+    "medianMs": 33.8,
+    "p95Ms": 38.2,
+    "queries": 26
+  },
+  "updateLicence": {
+    "medianMs": 21.0,
+    "p95Ms": 26.9,
+    "queries": 23
+  },
+  "updateMe": {
+    "medianMs": 19.3,
+    "p95Ms": 35.5,
+    "queries": 25
+  },
+  "updateMember": {
+    "medianMs": 29.9,
+    "p95Ms": 31.6,
+    "queries": 33
+  },
+  "updateOrgUnit": {
+    "medianMs": 14.8,
+    "p95Ms": 18.3,
+    "queries": 18
+  },
+  "updatePlatformAgentSettings": {
+    "medianMs": 12.4,
+    "p95Ms": 15.2,
+    "queries": 24
+  },
+  "updateProduct": {
+    "medianMs": 19.5,
+    "p95Ms": 26.6,
+    "queries": 22
+  },
+  "updateRegister": {
+    "medianMs": 31.9,
+    "p95Ms": 36.2,
+    "queries": 30
+  },
+  "updateRegisterEntity": {
+    "medianMs": 29.6,
+    "p95Ms": 36.5,
+    "queries": 30
+  },
+  "updateRole": {
+    "medianMs": 19.3,
+    "p95Ms": 23.3,
+    "queries": 29
+  },
+  "updateSource": {
+    "medianMs": 13.4,
+    "p95Ms": 16.3,
+    "queries": 24
+  },
+  "updateTenant": {
+    "medianMs": 23.9,
+    "p95Ms": 25.4,
+    "queries": 29
+  },
+  "updateTenantAgent": {
+    "medianMs": 13.6,
+    "p95Ms": 15.5,
+    "queries": 16
+  },
+  "updateTenantWorkflow": {
+    "medianMs": 25.8,
+    "p95Ms": 27.0,
+    "queries": 28
+  },
+  "updateTerm": {
+    "medianMs": 15.9,
+    "p95Ms": 19.7,
+    "queries": 21
+  },
+  "updateUnit": {
+    "medianMs": 22.4,
+    "p95Ms": 32.2,
+    "queries": 22
+  },
+  "updateVocabularyRow": {
+    "medianMs": 21.0,
+    "p95Ms": 24.6,
+    "queries": 23
+  },
+  "verifyCode": {
+    "medianMs": 12.5,
+    "p95Ms": 14.4,
+    "queries": 21
+  },
+  "verifyInvitationCode": {
+    "medianMs": 11.8,
+    "p95Ms": 13.0,
+    "queries": 21
+  },
+  "watchMarket": {
+    "medianMs": 15.4,
+    "p95Ms": 18.1,
+    "queries": 23
+  },
+  "whatApplies": {
+    "medianMs": 123.7,
+    "p95Ms": 140.2,
+    "queries": 71
+  },
+  "whatApplies (token)": {
+    "medianMs": 123.7,
+    "p95Ms": 161.5,
+    "queries": 74
+  },
   "withdrawFootprintRequest": {
-    "medianMs": 34.1,
-    "p95Ms": 46.0,
+    "medianMs": 37.1,
+    "p95Ms": 39.4,
     "queries": 31
   }
 }

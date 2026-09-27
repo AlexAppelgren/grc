@@ -82,14 +82,12 @@ export function ScopeControl({ value, onChange }: { value: ScopeFilter; onChange
  * no restriction). "Markets we watch" widens only jurisdictions, so it keeps the
  * scope's terms here.
  */
-function useScopedTerms(dimension: string, scope: ScopeFilter): { all: TaxonomyTerm[]; offered: TaxonomyTerm[] } {
+function useScopedTerms(dimension: string, scope: ScopeFilter): TaxonomyTerm[] {
   const all = useTerms(dimension).data ?? [];
   const chosen = useFootprint().data?.dimensions.find((row) => row.dimension.key === dimension);
-  if (scope === 'all' || chosen === undefined || !chosen.restrictsFootprint || chosen.allSelected || chosen.terms.length === 0) {
-    return { all, offered: all };
-  }
+  if (scope === 'all' || chosen === undefined || !chosen.restrictsFootprint || chosen.allSelected || chosen.terms.length === 0) return all;
   const keys = new Set(chosen.terms.map((term) => term.key));
-  return { all, offered: all.filter((term) => keys.has(term.key)) };
+  return all.filter((term) => keys.has(term.key));
 }
 
 /**
@@ -230,58 +228,83 @@ function SetFilters({ chips, onClear }: { chips: { filter: string; value: string
   );
 }
 
-/** The Obligations tab's Filters button, its sheet and the chips of what is set. "As of" keeps its banner rather than a chip. */
+/**
+ * The Obligations tab's Filters button, its sheet and the chips of what is set. "As of" keeps its banner rather than a chip.
+ * The sheet's terms, footprint and duty types are read only while it is open, and a chip's
+ * label only while a filter is set, so the list's first answer never waits behind them (NFR-02).
+ */
 export function InventoryFilterBar({ filters, onChange }: { filters: InventoryFilters; onChange: (next: Partial<InventoryFilters>) => void }) {
+  const cleared = { instrument: '', regime: '', service: '', dutyType: '' };
+  const anySet = filters.instrument !== '' || filters.regime !== '' || filters.service !== '' || filters.dutyType !== '';
+  return (
+    <>
+      <FilterSheet onClear={() => onChange({ ...cleared, asOf: '' })}>
+        <InventorySheetBody filters={filters} onChange={onChange} />
+      </FilterSheet>
+      {anySet ? <InventoryChips filters={filters} onChange={onChange} onClear={() => onChange(cleared)} /> : null}
+    </>
+  );
+}
+
+function InventorySheetBody({ filters, onChange }: { filters: InventoryFilters; onChange: (next: Partial<InventoryFilters>) => void }) {
   const t = useT();
   const regimes = useScopedTerms(REGIME, filters.scope);
   const services = useScopedTerms(SERVICE, filters.scope);
   const dutyTypes = useVocabularyValues(DUTY_TYPE).data ?? [];
-  const instrumentName = useInstrumentName(filters.instrument, filters.scope);
-  const labelOf = (rows: { key: string; label: string }[], key: string) => rows.find((row) => row.key === key)?.label ?? key;
-  const cleared = { instrument: '', regime: '', service: '', dutyType: '' };
-
-  const chips = [
-    ...(filters.instrument === '' ? [] : [{ filter: t('inventory.filter.instrument'), value: instrumentName, onRemove: () => onChange({ instrument: '' }) }]),
-    ...(filters.regime === '' ? [] : [{ filter: t('inventory.filter.regime'), value: labelOf(regimes.all, filters.regime), onRemove: () => onChange({ regime: '' }) }]),
-    ...(filters.service === '' ? [] : [{ filter: t('inventory.filter.service'), value: labelOf(services.all, filters.service), onRemove: () => onChange({ service: '' }) }]),
-    ...(filters.dutyType === '' ? [] : [{ filter: t('inventory.filter.dutyType'), value: labelOf(dutyTypes, filters.dutyType), onRemove: () => onChange({ dutyType: '' }) }]),
-  ];
-
   return (
     <>
-      <FilterSheet onClear={() => onChange({ ...cleared, asOf: '' })}>
-        <InstrumentPicker value={filters.instrument} scope={filters.scope} onChange={(instrument) => onChange({ instrument })} />
-        <ToggleGroup label={t('inventory.filter.regime')} values={regimes.offered} value={filters.regime} onChange={(regime) => onChange({ regime })} />
-        <ToggleGroup label={t('inventory.filter.service')} values={services.offered} value={filters.service} onChange={(service) => onChange({ service })} />
-        <ToggleGroup label={t('inventory.filter.dutyType')} values={dutyTypes} value={filters.dutyType} onChange={(dutyType) => onChange({ dutyType })} />
-        <div>
-          <label htmlFor="inventory-as-of" className="microlabel mb-2 block text-muted">
-            {t('inventory.asOf')}
-          </label>
-          <TextInput id="inventory-as-of" type="date" className="w-auto" value={filters.asOf} onChange={(event) => onChange({ asOf: event.target.value })} />
-        </div>
-      </FilterSheet>
-      <SetFilters chips={chips} onClear={() => onChange(cleared)} />
+      <InstrumentPicker value={filters.instrument} scope={filters.scope} onChange={(instrument) => onChange({ instrument })} />
+      <ToggleGroup label={t('inventory.filter.regime')} values={regimes} value={filters.regime} onChange={(regime) => onChange({ regime })} />
+      <ToggleGroup label={t('inventory.filter.service')} values={services} value={filters.service} onChange={(service) => onChange({ service })} />
+      <ToggleGroup label={t('inventory.filter.dutyType')} values={dutyTypes} value={filters.dutyType} onChange={(dutyType) => onChange({ dutyType })} />
+      <div>
+        <label htmlFor="inventory-as-of" className="microlabel mb-2 block text-muted">
+          {t('inventory.asOf')}
+        </label>
+        <TextInput id="inventory-as-of" type="date" className="w-auto" value={filters.asOf} onChange={(event) => onChange({ asOf: event.target.value })} />
+      </div>
     </>
   );
+}
+
+function InventoryChips({ filters, onChange, onClear }: { filters: InventoryFilters; onChange: (next: Partial<InventoryFilters>) => void; onClear: () => void }) {
+  const t = useT();
+  const regimes = useTerms(REGIME, filters.regime !== '').data ?? [];
+  const services = useTerms(SERVICE, filters.service !== '').data ?? [];
+  const dutyTypes = useVocabularyValues(DUTY_TYPE, false, filters.dutyType !== '').data ?? [];
+  const instrumentName = useInstrumentName(filters.instrument, filters.scope);
+  const labelOf = (rows: { key: string; label: string }[], key: string) => rows.find((row) => row.key === key)?.label ?? key;
+  const chips = [
+    ...(filters.instrument === '' ? [] : [{ filter: t('inventory.filter.instrument'), value: instrumentName, onRemove: () => onChange({ instrument: '' }) }]),
+    ...(filters.regime === '' ? [] : [{ filter: t('inventory.filter.regime'), value: labelOf(regimes, filters.regime), onRemove: () => onChange({ regime: '' }) }]),
+    ...(filters.service === '' ? [] : [{ filter: t('inventory.filter.service'), value: labelOf(services, filters.service), onRemove: () => onChange({ service: '' }) }]),
+    ...(filters.dutyType === '' ? [] : [{ filter: t('inventory.filter.dutyType'), value: labelOf(dutyTypes, filters.dutyType), onRemove: () => onChange({ dutyType: '' }) }]),
+  ];
+  return <SetFilters chips={chips} onClear={onClear} />;
 }
 
 /** The Instruments tab's Filters button: Regime, the one filter GET /instruments takes besides the scope. */
 export function InstrumentFilterBar({ filters, onChange }: { filters: InstrumentFilters; onChange: (next: Partial<InstrumentFilters>) => void }) {
   const t = useT();
-  const regimes = useScopedTerms(REGIME, filters.scope);
+  const regimes = useTerms(REGIME, filters.regime !== '').data ?? [];
   const chips =
     filters.regime === ''
       ? []
-      : [{ filter: t('inventory.filter.regime'), value: regimes.all.find((row) => row.key === filters.regime)?.label ?? filters.regime, onRemove: () => onChange({ regime: '' }) }];
+      : [{ filter: t('inventory.filter.regime'), value: regimes.find((row) => row.key === filters.regime)?.label ?? filters.regime, onRemove: () => onChange({ regime: '' }) }];
   return (
     <>
       <FilterSheet onClear={() => onChange({ regime: '' })}>
-        <ToggleGroup label={t('inventory.filter.regime')} values={regimes.offered} value={filters.regime} onChange={(regime) => onChange({ regime })} />
+        <RegimeToggles scope={filters.scope} value={filters.regime} onChange={(regime) => onChange({ regime })} />
       </FilterSheet>
       <SetFilters chips={chips} onClear={() => onChange({ regime: '' })} />
     </>
   );
+}
+
+function RegimeToggles({ scope, value, onChange }: { scope: ScopeFilter; value: string; onChange: (next: string) => void }) {
+  const t = useT();
+  const regimes = useScopedTerms(REGIME, scope);
+  return <ToggleGroup label={t('inventory.filter.regime')} values={regimes} value={value} onChange={onChange} />;
 }
 
 // c8-ui-inventory-overlay: the bank's register overlay as filters (REG-01, REG-02). Each

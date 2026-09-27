@@ -27,6 +27,7 @@ import io
 import json
 import tempfile
 import time
+import uuid
 from collections.abc import Iterator
 from pathlib import Path
 from types import ModuleType
@@ -58,6 +59,7 @@ class Planted:
     calls = 0
     delays_ms: list[float] = []  # one per request, in order; once empty, `steady_ms`
     steady_ms = 0.0
+    arrived: list[tuple[str, bytes]] = []  # the content type and body of each upload
 
 
 PLANTED = NinjaAPI(urls_namespace="perf-planted")
@@ -99,6 +101,19 @@ def planted_write(request: HttpRequest, slug: str) -> tuple[int, dict[str, bool]
     return 201, {"ok": True}
 
 
+@PLANTED.post("/planted/upload", operation_id="plantedUpload")
+def planted_upload(request: HttpRequest) -> dict[str, bool]:
+    """Keeps what arrived, so a test sees the bytes and the content type the harness sent."""
+    Planted.arrived.append((request.content_type or "", request.body))
+    return {"ok": True}
+
+
+@PLANTED.get("/planted/entries/{uuid:entry_id}", operation_id="plantedEntry")
+def planted_entry(request: HttpRequest, entry_id: uuid.UUID) -> dict[str, str]:
+    """A path with a converter, as the agent access routes have."""
+    return {"entryId": str(entry_id)}
+
+
 @PLANTED.get("/planted/broken", operation_id="plantedBroken")
 def planted_broken(request: HttpRequest) -> dict[str, bool]:
     raise RuntimeError("a bug in the route")
@@ -127,7 +142,7 @@ class PlantedRoutes(TestCase):
     """Runs against the planted API, which the harness resolves operation ids in."""
 
     def setUp(self) -> None:
-        Planted.calls, Planted.delays_ms, Planted.steady_ms = 0, [], 0.0
+        Planted.calls, Planted.delays_ms, Planted.steady_ms, Planted.arrived = 0, [], 0.0, []
         patcher = mock.patch.object(harness, "api", PLANTED)
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -185,6 +200,28 @@ class HarnessMeasures(PlantedRoutes):
         self.assertEqual(Planted.calls, SAMPLES + 1, "every request created the bank: none found the last one's")
         self.assertGreater(result.queries, 0)
         self.assertFalse(Tenant.objects.filter(slug="perf-again").exists())
+
+    def test_a_raw_body_is_sent_as_it_is_under_its_own_content_type(self) -> None:
+        """A multipart upload is bytes under a boundary, which JSON encoding would break."""
+        body = b"--b\r\nfile\r\n--b--\r\n"
+        measure(PerfRoute("plantedUpload", anonymous, fixture=lambda: Call(body=body, content_type="multipart/form-data; boundary=b")))
+
+        self.assertEqual(set(Planted.arrived), {("multipart/form-data", body)})
+        self.assertEqual(len(Planted.arrived), SAMPLES + 1)
+
+    def test_a_path_parameter_behind_a_converter_is_filled_by_its_name(self) -> None:
+        result = measure(PerfRoute("plantedEntry", anonymous, fixture=lambda: Call(params={"entry_id": uuid.uuid4()})))
+
+        self.assertEqual(result.operation, "plantedEntry")
+
+    def test_a_variant_keys_its_measurement_beside_the_operation(self) -> None:
+        """One operation measured two ways, as MCP is with a key and with a token, is two
+        rows the baseline tells apart; the route resolved is the operation's either way."""
+        plain = measure(PerfRoute("plantedSleep", anonymous))
+        variant = measure(PerfRoute("plantedSleep", anonymous, variant="slow path"))
+
+        self.assertEqual((plain.operation, variant.operation), ("plantedSleep", "plantedSleep (slow path)"))
+        self.assertEqual(Planted.calls, 2 * (SAMPLES + 1))
 
     def test_a_route_answering_another_status_fails_instead_of_being_timed(self) -> None:
         with self.assertRaisesMessage(RouteFailed, "plantedWrite answered 201, not 200"):
@@ -269,9 +306,10 @@ class HarnessOnTheRealApi(TestCase):
 
         operations = {registered.operation_id for registered in iter_operations(api)}
         names = [route.operation for route in ROUTES]
+        keys = [route.key for route in ROUTES]
         self.assertTrue(ROUTES)
         self.assertEqual([name for name in names if name not in operations], [])
-        self.assertEqual(len(names), len(set(names)), "one row per operation: the baseline is keyed on it")
+        self.assertEqual(len(keys), len(set(keys)), "one row per operation and variant: the baseline is keyed on it")
 
     def test_every_setting_has_an_env_override_and_is_documented(self) -> None:
         settings_source = (ROOT / "backend" / "config" / "settings.py").read_text(encoding="utf-8")

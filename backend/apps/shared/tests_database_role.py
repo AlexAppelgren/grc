@@ -50,3 +50,24 @@ class DatabaseRoleGuard(TestCase):
             with self.settings(DB_ROLE_GUARD_EXEMPT_COMMANDS=frozenset()):
                 with self.assertRaises(RoleGuardError):
                     db_role_guard.check_at_boot()
+
+
+class JustInTimeCompilationIsOff(TestCase):
+    """r2-perf (NFR-02): the row-level security subqueries lift a hybrid search's estimated
+    cost far above PostgreSQL's `jit_above_cost`, and on a slot of 3,000 obligations the
+    search spent 5.1 s of 5.9 s compiling a plan whose rows took under 400 ms. Every
+    connection the app opens runs with JIT off."""
+
+    databases = {DEFAULT_DB_ALIAS, "app"}
+
+    def test_every_connection_runs_without_jit(self) -> None:
+        for alias in (DEFAULT_DB_ALIAS, "app"):
+            with self.subTest(alias=alias), connections[alias].cursor() as cursor:
+                cursor.execute("SHOW jit")
+                self.assertEqual(cursor.fetchone(), ("off",))
+
+    def test_the_deployed_settings_ask_for_it(self) -> None:
+        from config import settings as deployed
+
+        self.assertEqual(deployed.DATABASES["default"]["OPTIONS"]["options"], "-c jit=off")
+

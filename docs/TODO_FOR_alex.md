@@ -2204,3 +2204,25 @@ Nothing waits for these; each has the default the review took. The review is
 - [ ] **J-8's switched-off agent is tenant A's scope researcher.** J-8 and the chunk 11 seed both
       made tenant A's source watch agent, so the merged seed let whichever ran first decide
       whether it was on. J-8 keeps its fixed id on the scope researcher, which nothing else seeds.
+
+## r2-perf: the R2 performance pass, defaults taken (2026-09-27, NFR-02, HOM-03, HOM-05, REG-02)
+
+Every R2 operation is measured and recorded (`backend/perf/routes.py`, `baseline.json`); these
+are the places it found over budget that a small change could not fix. Nothing waits on you
+unless you want one of them changed.
+
+- [ ] **The roadmap has no end without `to`.** `GET /roadmap` answers everything ahead in one
+      page. On a slot of 3,000 obligations and 415 register entries it answered 711 items in
+      about 640 ms against 250 (HARDENING H108). Default taken: unchanged, because leaving `to`
+      out is documented as "everything ahead". Say if it should be paginated (CLAUDE.md
+      section 6 asks for it) or take a default end date as a setting, such as eighteen months.
+- [ ] **Just-in-time compilation is off on every connection** (D-1xx r2-perf): search at scale
+      went from 5.9 s to 0.37 s. The app sends `-c jit=off` when it connects. If Railway's
+      database is ever reached through a pooler that refuses startup options, run
+      `ALTER ROLE cw_app SET jit = off` once instead. Default: the connection option.
+- [ ] **A committed paste of 100 units runs over 250 ms** (about 420 ms median, 480 ms p95), and
+      100 applicability answers in one call sit at the edge (about 245 ms p95), because each
+      line writes its audit and outbox pair, twice for a pasted unit, as the invariant asks
+      (HARDENING H109). Default: kept, as a person does it rarely and the answer is still
+      under a second. The fix, if you want it, is one savepoint and batched inserts inside
+      `record()`'s mechanics.

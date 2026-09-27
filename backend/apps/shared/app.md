@@ -28,7 +28,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | NFR-01 | Tenant isolation by row-level security, proven per route | M | R1 | built |
-| NFR-02 | Performance budgets of playbook 10. R1's baseline is recorded (`backend/perf/baseline.json`, NFR-S7); real-model and real-embedder timings wait for the D-07 and D-09 keys, the load profile for chunk 14 | M | R1 | built |
+| NFR-02 | Performance budgets of playbook 10. R1's and R2's baselines are recorded (`backend/perf/baseline.json`, NFR-S7; r2-perf measured every R2 route and the heavy reads at scale); real-model and real-embedder timings wait for the D-07 and D-09 keys, the load profile for chunk 14 | M | R1 | built |
 | NFR-03 | The design is reproduced: flow, labels, six-tone pill system, light and dark, WCAG AA | M | R1 | built |
 | NFR-04 | EU-only hosting and the assurance pack of playbook 18 | M | R3 | pending |
 | I18N-02 | UI in `en` and `sv` at R1, the others by R3, from message catalogs. `en` and `sv` are built for R1; `da`, `nb` and `fi` come by R3 | M | R1 | built |
@@ -164,6 +164,19 @@ skeleton that lingers or a `next dev` build fails it. The medians go in the Meas
 > medians are in the UI plan. Real-model and real-embedder timings wait for the D-07 and D-09
 > keys. Chunk 14 adds the load profile, the deployed measurement against `next start` on
 > Railway and the R2 and R3 routes as they land, each as a new block of rows in `routes.py`.
+
+> **Note — NFR-02's R2 part (`r2-perf`, 2026-09-27).** `routes.py` gains the blocks
+> `r2-perf: chunk 8`, `chunk 9-10` and `chunk 11`: all 141 R2 operations but
+> `publishAgentVersion` (it publishes only the next version from a folder the build ships,
+> and no seeded definition has one waiting) and 7 variants, a second way of calling one
+> operation keyed apart in the baseline (My work as a department head, the inventory under
+> the overlay, what applies, the register reads and MCP with a personal token, search as an
+> entry's key). Heavy calls run at their caps. `baseline.json` holds 287 rows recorded on a
+> fresh `seed_e2e` slot; four are over budget and named in HARDENING (H109 to H112). On a slot
+> scaled to 3,000 obligations and a 30-person department, search went from 5.9 s to 0.4 s
+> with just-in-time compilation off (D-1xx r2-perf) and My work for a department to about
+> 130 ms median; the reader's obligations list and the unbounded roadmap stay over (H107,
+> H108). The R2 screens' medians are in the UI plan.
 
 ### NFR-S8 — The pill gallery matches the design card in both themes `@e2e` (NFR-03, AC-NFR3)
 ```gherkin

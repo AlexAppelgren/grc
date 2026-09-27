@@ -115,7 +115,7 @@ All are low, and each names the package that fixes it:
 | H73 | L8: a member's removal can pass work to a suspended person, and a reassigned action's audit row names its typed title |
 
 Already logged by `c9-evidence`, and not repeated: H49 (mock scanner in a deployed
-environment), H50 (no body cap before spooling) and H51 (a failed scan is not re-queued).
+environment), H64 (no body cap before spooling) and H65 (a failed scan is not re-queued).
 
 ## Informational
 
