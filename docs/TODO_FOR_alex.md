@@ -1695,3 +1695,39 @@ always land on Not found. Needs a choice before COL-S1's journey ("Erik finds th
 link back to the case"): either `notify()` names a case by its change (`subject_type` `change`, the
 change id), or the notification gains the change id, or the frontend adds a `/cases/{caseId}` page that
 redirects to its change. The second keeps the case's own read check (`cases.read`) on the row.
+
+- [ ] **The console's correction form gained one field.** A reviewer who changes a
+      proposal's wording, date or scope before approving now gives "Source of your
+      correction", the link or provision they read the new value in; the server refuses a
+      changed value without one (security-review-c4 L5). The design card
+      (`design/screens/console-queue.html`) shows no such field, so it was added in the
+      form's existing style below the scope. Default if you say nothing: it stays. The
+      proposer's replaced source is kept in the approval's audit row, not beside the
+      reviewer's on the queue screen; say if the queue should show both (a column on
+      `proposal`, D-102).
+- [ ] **The confirming agent's next version should name its correction's source.**
+      `backend/agents/library-confirmer/v2/prompt.md` says a correction goes through
+      `payloadOverrides` and does not mention `fieldSources`; a shipped version is never
+      edited, so it stays. Until a v3 says "name in `fieldSources` the page you read each
+      changed value in", an agent's correction without one answers 422 `source_missing`
+      and applies nothing (fails safe; it can still approve as proposed or reject).
+      Default if you say nothing: v3 carries that line when the confirmer next changes.
+
+## c8-ui-support-console: what a support session can open in the browser (2026-09-25, TEN-06)
+
+- [ ] **A support session has no tenant screens yet.** Enter on `/console/support-access`
+      opens the support session and the screen then shows the read-only banner, the bank
+      and the end of the window, and Leave. It opens no tenant screen, because every one
+      of them starts with `GET /me`, which is not on the support session's route list
+      (`SUPPORT_READ_ROUTES`, `apps/shared/routes.py`), so it answers 403
+      `support_read_only`; the banner is also not yet mounted in the tenant shell. TEN-S6
+      proves the reads, the logged `support_access.read` rows, the 403 on a write and the
+      401 after a revoke with that session's own requests. Default if you say nothing: a
+      later package adds `GET /me` (the platform person's own profile and the bank's name,
+      nothing of its members) to the list under `tests_support_routes.py`'s review and
+      mounts the banner, so the allowed reads open in the tenant screens.
+- [ ] **The console's own list was built here.** `GET /console/support-access`
+      (`c8-support-access-console-list` in `CHUNK8_TASKS.md`) was in no R2 wave and still
+      answered 501, which the screen needs, so this package built it on that brief:
+      the own-grants policy, no bank active, the bank by name, no member ever named.
+

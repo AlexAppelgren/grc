@@ -92,6 +92,8 @@ MIDDLEWARE = [
     "apps.shared.middleware.RequestIdMiddleware",
     "django.middleware.common.CommonMiddleware",
     "apps.governance.access_log.AccessLogMiddleware",
+    # c8-support-session-guard: a support session reads its allow-list and nothing else.
+    "apps.shared.middleware.SupportReadOnlyMiddleware",
     "apps.shared.middleware.ServerTimingMiddleware",
 ]
 SECURE_SSL_REDIRECT = False

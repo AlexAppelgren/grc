@@ -40,6 +40,7 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'admin-footprint': { ready: '[data-footprint-dimensions] [data-dimension]' },
   'admin-api-keys': { ready: `[data-keys-list] [data-key-id]${OR_EMPTY}` },
   'admin-security-log': { ready: '[data-security-log] [data-event]' },
+  'admin-support-access': { ready: `[data-support-section] [data-grant-id]${OR_EMPTY}` },
   'admin-audit-log': { ready: '[data-audit-log] [data-audit-row]' },
   'admin-ai-log': { ready: `[data-ai-log] [data-ai-row]${OR_EMPTY}` },
   // acc-fe-admin
@@ -62,6 +63,7 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   'console-tenants': { ready: '[data-tenants-list] [data-tenant-id]' },
   'console-agent-keys': { ready: `[data-agent-keys-list] [data-agent-key-id]${OR_EMPTY}` },
   'console-evaluation': { ready: `[data-eval-questions] [data-question-key]${OR_EMPTY}` },
+  'console-support-access': { ready: `[data-support-grants] [data-grant-id]${OR_EMPTY}` },
 };
 
 /**

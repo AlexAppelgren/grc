@@ -55,6 +55,8 @@ import enRoadmap from '@/messages/roadmap/en.json';
 import svRoadmap from '@/messages/roadmap/sv.json';
 import enSearch from '@/messages/search/en.json';
 import svSearch from '@/messages/search/sv.json';
+import enSupportAccess from '@/messages/support-access/en.json';
+import svSupportAccess from '@/messages/support-access/sv.json';
 import enTenantAdmin from '@/messages/tenant-admin/en.json';
 import svTenantAdmin from '@/messages/tenant-admin/sv.json';
 import enToday from '@/messages/today/en.json';
@@ -126,6 +128,7 @@ const en = {
   ...enPublic,
   ...enRoadmap,
   ...enSearch,
+  ...enSupportAccess,
   ...enTenantAdmin,
   ...enToday,
   ...enVocabularies,
@@ -175,6 +178,7 @@ const sv = {
   ...svPublic,
   ...svRoadmap,
   ...svSearch,
+  ...svSupportAccess,
   ...svTenantAdmin,
   ...svToday,
   ...svVocabularies,

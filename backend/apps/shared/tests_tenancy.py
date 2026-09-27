@@ -276,7 +276,14 @@ class IdentityLookupMode(TestCase):
                     for arg in ast.walk(node):
                         if isinstance(arg, ast.Constant) and isinstance(arg.value, str) and setting.search(arg.value):
                             found.append((f"apps/{rel}", scope, arg.lineno))
-        allowed = {"apps/shared/tenancy.py", "apps/shared/outbox.py::_enter_zone"}
+        allowed = {
+            "apps/shared/tenancy.py",
+            "apps/shared/outbox.py::_enter_zone",
+            # c8-support-session-guard (TEN-06, ADR 0042): `app.platform_user_id`, which one
+            # SELECT-only policy on `support_access` reads, set to the platform caller's own id
+            # for one block and cleared after it (apps/shared/tests_support_session.py).
+            "apps/identity/session_logic.py::own_grants",
+        }
         self.assertEqual(
             self._outside(found, allowed),
             [],
