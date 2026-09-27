@@ -7,9 +7,10 @@
       "product_type:shares",
       "product_type:derivatives",
       "product_type:cards",
-      "licensed_activity:card_issuing"
+      "licensed_activity:card_issuing",
+      "licensed_activity:investment_services"
     ],
-    "held_terms_note": "Terms the prototype fixture does not list: the three product types the E2E seed files itself (apps/shared/e2e_seed.py, EXPECTED_J11.terms), and card issuing, which apps/taxonomy/seeds authors (_EXTRA_TERMS)."
+    "held_terms_note": "Terms the prototype fixture does not list: the three product types and the investment-services licence the E2E seed files itself (apps/shared/e2e_seed.py, EXPECTED_J11.terms), and card issuing, which apps/taxonomy/seeds authors (_EXTRA_TERMS)."
   },
   "authorities": [],
   "instruments": [
