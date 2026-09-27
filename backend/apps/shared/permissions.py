@@ -361,7 +361,6 @@ _PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the who
 # c10-collab-contract.
 _SELF_NOTIFICATIONS = "Acts only on the caller's own notification rows; no parameter reaches another person's (COL-02)."
 _SELF_MY_COMMENTS = "Returns the caller's own comments and mentions, filtered afterwards by each subject's read permission (COL-01)."
-_LOGIC_PARTICIPANT_REMOVAL = "A person may always leave their own participation; removing anyone else's needs register.edit, which the logic checks on the row (D-19, COL-04)."
 _LOGIC_COMMENT_SUBJECT = "The gate is the read permission of the subject's kind, which `collab/subjects.py` decides per record; the write also needs `comments.write` (COL-01)."
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
@@ -521,12 +520,6 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/me/comments"): Ungated(UngatedReason.SELF, _SELF_MY_COMMENTS),
     ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
     ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
-
-    # c8-participants (chunk 8, COL-04). Listing and adding carry register.read and
-    # register.edit; removal is the one gated in logic, because leaving needs no permission.
-    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}"): Ungated(
-        UngatedReason.LOGIC_GATE, _LOGIC_PARTICIPANT_REMOVAL
-    ),
 
     # c8-tenants-contract (TEN-02, TEN-03, TEN-06, COL-04). The bank's organisation, its teams
     # and who from the platform may look in are read by every member: the pickers, the
