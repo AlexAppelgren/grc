@@ -40,7 +40,7 @@ from apps.register.schemas import (
     RegisterVocabRef,
 )
 from apps.shared import permissions as perms
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.shared.vocabulary import label_for
@@ -335,19 +335,20 @@ def paste_units(
     if body.dry_run or any(row.problem for row in rows):
         return RegisterUnitPaste(dry_run=True, rows=rows, created=0)
 
-    created = _insert_many(tenant=tenant, actor=actor, scope=scope, lines=[(row.reference, row.title) for row in rows])
-    # Plain dicts, not schema instances: ninja re-reads a nested schema through its
-    # attribute getter, whose missed camelCase lookups fall back to Django's template
-    # resolver, a cost per field and line that a 93-line paste feels (r2-perf, NFR-02).
-    answers = [
-        {"obligationId": obligation_id, "unitId": unit.id, "applicability": pasted.applicability, "reason": (pasted.reason or "").strip()}
-        for unit, pasted in zip(created, body.lines, strict=True)
-        if pasted.applicability is not None
-    ]
-    if answers:
-        applicability.set_applicability_many(
-            tenant=tenant, actor=actor, order=order, body=RegisterApplicabilityManyBody.model_validate({"rows": answers})
-        )
+    with batched():  # one audit INSERT and one outbox INSERT for every event of the paste
+        created = _insert_many(tenant=tenant, actor=actor, scope=scope, lines=[(row.reference, row.title) for row in rows])
+        # Plain dicts, not schema instances: ninja re-reads a nested schema through its
+        # attribute getter, whose missed camelCase lookups fall back to Django's template
+        # resolver, a cost per field and line that a 93-line paste feels (r2-perf, NFR-02).
+        answers = [
+            {"obligationId": obligation_id, "unitId": unit.id, "applicability": pasted.applicability, "reason": (pasted.reason or "").strip()}
+            for unit, pasted in zip(created, body.lines, strict=True)
+            if pasted.applicability is not None
+        ]
+        if answers:
+            applicability.set_applicability_many(
+                tenant=tenant, actor=actor, order=order, body=RegisterApplicabilityManyBody.model_validate({"rows": answers})
+            )
     for row, unit in zip(rows, created, strict=True):
         row.outcome, row.unit_id = "created", unit.id
     return RegisterUnitPaste.model_construct(dry_run=False, rows=rows, created=len(created))  # every row already validated
