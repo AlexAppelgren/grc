@@ -18,7 +18,7 @@ need one live in the app's own `testing.py`, which the fence exempts:
 |---|---|
 | An instrument, a provision, an obligation | `apps/library/testing.py` |
 | A source, a source check, a change with its timeline, pages, flags, scope terms and obligation links | `apps/watch/testing.py` |
-| An agent, a platform key bound to it, a platform run | `apps/agents/testing.py` |
+| An agent, a platform key bound to it, a platform run, a definition a bank may add | `apps/agents/testing.py` |
 | A bank's case, its obligation-link decision, two banks with different footprints | `apps/cases/testing.py` |
 """
 
@@ -34,6 +34,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Team, VocabularySuggestion
+from apps.governance.models import TenantReachRequest
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.identity import roles_logic, tokens
 from apps.identity.models import (
@@ -206,6 +207,95 @@ def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None)
 
 
 # ---------------------------------------------------------------------------------------
+# acc-principal-guard: an agent access entry and its two credential kinds (ACC-03).
+# ---------------------------------------------------------------------------------------
+def agent_access_entry(tenant: Tenant, *, name: str = "Trading platform coding agent") -> SimpleNamespace:
+    """A live agent access entry of `tenant`, owned by its seeded compliance team and
+    registered by a new admin. Activates the tenant."""
+    from apps.agents.models import AgentAccess
+
+    admin = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = AgentAccess.objects.create(
+            tenant=tenant,
+            name=name,
+            purpose="Builds the order-routing service.",
+            owner_team=Team.objects.get(key="compliance"),
+            created_by=admin,
+        )
+    return SimpleNamespace(id=row.id, row=row, admin=admin)
+
+
+def entry_key(tenant: Tenant, entry: SimpleNamespace, *, scopes: Iterable[str] = ("library:read",)) -> SimpleNamespace:
+    """A service key bound to `entry`: `.id`, `.row` and `.plain_key`."""
+    plain, prefix, key_hash = tokens.new_api_key()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = ApiKey.objects.create(
+            tenant=tenant, agent_access_id=entry.id, name="Entry key", key_prefix=prefix, key_hash=key_hash, scopes=list(scopes)
+        )
+    return SimpleNamespace(id=row.id, row=row, plain_key=plain)
+
+
+def agent_access_key(tenant: Tenant) -> SimpleNamespace:
+    """A live entry of `tenant` with one service key, addressed as the key's revoke route
+    names them (acc-entries-and-log)."""
+    entry = agent_access_entry(tenant)
+    key = entry_key(tenant, entry)
+    return SimpleNamespace(id=key.id, entry=entry, key=key, params={"uuidstr:entry_id": entry.id, "uuidstr:key_id": key.id})
+
+
+def personal_token(
+    tenant: Tenant, person: User, *, scopes: Iterable[str] = ("library:read",), entry: SimpleNamespace | None = None
+) -> SimpleNamespace:
+    """A personal access token acting as `person`, a member of `tenant`, expiring in 90 days."""
+    plain, prefix, key_hash = tokens.new_api_key()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        row = ApiKey.objects.create(
+            tenant=tenant,
+            kind="personal",
+            acts_as_user=person,
+            agent_access_id=entry.id if entry is not None else None,
+            name="Personal token",
+            key_prefix=prefix,
+            key_hash=key_hash,
+            scopes=list(scopes),
+            expires_at=timezone.now() + timedelta(days=90),
+        )
+    return SimpleNamespace(id=row.id, row=row, plain_key=plain)
+
+
+# acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
+def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
+    """The tenant's pending request for tenant reach, reused when one waits, because a
+    second cannot."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        waiting = TenantReachRequest.objects.filter(tenant=tenant, status=ApprovalStatus.PENDING.value).first()  # ordering: at most one pending row per tenant, by constraint
+    if waiting is not None:
+        return waiting
+    requester = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantReachRequest.objects.create(tenant=tenant, requested_by=requester)
+
+
+
+# c11-tenant-agents-budget-scope (AGT-04)
+def tenant_agent(tenant: Tenant) -> object:
+    """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
+    bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
+    from apps.agents.models import TenantAgent
+    from apps.agents.testing import tenant_definition
+
+    definition = tenant_definition("isolation-bank-watch")
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TenantAgent.objects.create(tenant=tenant, agent=definition)
+
+
 # c8-tenants-contract: the tenant-isolation guard's records for the chunk 8 tenants routes
 # (TEN-02, TEN-03, TEN-06). A licence's type is a library term this file may not write;
 # apps/tenants/testing.py, which the library fence exempts, writes it.
