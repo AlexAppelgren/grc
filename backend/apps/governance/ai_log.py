@@ -24,13 +24,14 @@ agent with the change it read is metadata that agent reported about itself (D-66
 
 from __future__ import annotations
 
+import datetime
 import uuid
 from collections.abc import Sequence
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import connection
-from django.db.models import Case, CharField, DateTimeField, Exists, F, OuterRef, Q, QuerySet, Subquery, UUIDField, Value, When
+from django.db.models import Case, CharField, DateTimeField, Exists, F, OuterRef, Q, QuerySet, Subquery, Sum, UUIDField, Value, When
 from django.db.models.functions import Left
 
 from apps.cases.models import ChangeCase
@@ -112,6 +113,15 @@ def log_generation(
         cost_minor=cost_minor,
         stop_reason=stop_reason,
     )
+
+
+def cost_minor_between(tenant_id: uuid.UUID, purpose: AiPurpose, start: datetime.datetime, end: datetime.datetime) -> int:
+    """What a bank's calls of one purpose cost from `start` to before `end`, in minor units:
+    how a what-applies summary counts against the bank's monthly cap (ACC-09). Reads only."""
+    total = AiGeneration.objects.filter(tenant_id=tenant_id, purpose=purpose.value, created_at__gte=start, created_at__lt=end).aggregate(
+        total=Sum("cost_minor")
+    )["total"]
+    return int(total or 0)
 
 
 def answer_of(answer_id: uuid.UUID, tenant_id: uuid.UUID, *, asker_id: uuid.UUID) -> AiGeneration | None:

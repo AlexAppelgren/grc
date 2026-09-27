@@ -22,7 +22,8 @@ from django.utils import timezone
 
 from apps.agents.models import AgentRun, TenantAgent, TenantAgentBudget
 from apps.agents.schemas import AgentBudgetInput
-from apps.governance.models import AiGeneration, AiPurpose
+from apps.governance import ai_log
+from apps.governance.models import AiPurpose
 from apps.agents.tenant_agents import lock_tenant, pause
 from apps.identity.models import User
 from apps.shared.audit import Actor, ActorType, record
@@ -54,10 +55,8 @@ def spend(tenant: Tenant) -> Decimal:
     runs = AgentRun.objects.filter(
         tenant_id=tenant.id, tenant_agent__isnull=False, started_at__gte=start, started_at__lt=end
     ).aggregate(total=Sum("cost"))["total"]
-    summaries = AiGeneration.objects.filter(
-        tenant_id=tenant.id, purpose=AiPurpose.WHAT_APPLIES.value, created_at__gte=start, created_at__lt=end
-    ).aggregate(total=Sum("cost_minor"))["total"]
-    return (Decimal(runs or 0) + Decimal(summaries or 0) / 100).quantize(ZERO)
+    summaries = ai_log.cost_minor_between(tenant.id, AiPurpose.WHAT_APPLIES, start, end)
+    return (Decimal(runs or 0) + Decimal(summaries) / 100).quantize(ZERO)
 
 
 def cap_of(tenant: Tenant) -> Decimal | None:
