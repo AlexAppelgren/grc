@@ -25,7 +25,7 @@ from apps.shared.schemas import PageQuery
 from apps.taxonomy.http import actor_for, caller_tenant, if_match
 from apps.taxonomy.reading import language_order
 from apps.taxonomy.schemas import PersonRef
-from apps.tenants import logic, organisation, people, products, reassignment, support_access, teams
+from apps.tenants import logic, organisation, people, products, reassignment, security_policy, support_access, teams
 from apps.tenants.schemas import (
     ConsoleReissueBody,
     ConsoleSupportAccessBody,
@@ -34,6 +34,8 @@ from apps.tenants.schemas import (
     ConsoleTenantCreateBody,
     ConsoleTenantPage,
     ConsoleTenantRow,
+    SecurityPolicyBody,
+    SecurityPolicyOut,
     SupportAccessGrant,
     SupportAccessPage,
     TenantAiBody,
@@ -1061,4 +1063,75 @@ def enter_console_support_access(
         actor=actor_for(request),
         grant_id=grant_id,
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# c11-security-policy-routes: the bank's session policy (ID-08, ADM-01)
+# ---------------------------------------------------------------------------------------
+@router.get(
+    "/tenant/security-policy",
+    response=SecurityPolicyOut,
+    auth=SessionAuth(),
+    operation_id="getSecurityPolicy",
+    by_alias=True,
+    summary="Read your bank's session limits and the platform's",
+)
+@requires_permission(perms.SECURITY_MANAGE)
+def get_security_policy(request: HttpRequest) -> SecurityPolicyOut:
+    """Returns how long a session of the bank may sit idle and how long it may last at most
+    before its holder signs in again with a passkey, beside the platform's defaults and
+    maximums. Call it when the Security panel of the bank's admin opens, to show the limits
+    and the range an administrator may choose from. A limit the bank has never set reads
+    null, and the platform default applies to it.
+
+    Needs the `security.manage` permission. The answer is always the caller's own bank's;
+    the route names no bank, so no other bank's policy can be asked for. It changes nothing
+    and writes nothing to the audit log.
+
+    Errors: `permission_denied` (403) without `security.manage`, naming it in
+    `requiredPermission`; `unauthenticated` (401) without a session.
+    """
+    return SecurityPolicyOut.model_validate(security_policy.policy_out(logic.get_tenant(_principal(request).tenant_id)))
+
+
+@router.put(
+    "/tenant/security-policy",
+    response=SecurityPolicyOut,
+    auth=SessionAuth(),
+    operation_id="putSecurityPolicy",
+    by_alias=True,
+    summary="Set your bank's session limits",
+)
+@requires_permission(perms.SECURITY_MANAGE)
+@requires_step_up
+def put_security_policy(request: HttpRequest, body: SecurityPolicyBody) -> SecurityPolicyOut:
+    """Replaces the bank's session limits and returns the policy as it now stands. Send
+    both limits: the idle limit in whole minutes and the absolute limit in whole hours, each
+    at most the platform maximum `GET /tenant/security-policy` returns, or null to go back
+    to the platform default. The new limits apply to every session of the bank at its next
+    refresh, including sessions that are already open.
+
+    Needs the `security.manage` permission and a fresh passkey step-up, because how long a
+    session lives is a security change. The change is recorded in the audit log as
+    `security_policy.updated` with both limits before and after and the step-up assertion,
+    in the same transaction as the write, and the bank's other holders of
+    `security.manage` are told. Sending the limits the bank already has changes nothing and
+    is still recorded.
+
+    Errors: `above_platform_maximum` (422) for a limit above its platform maximum, naming
+    the field in `errors`; `validation_error` (422) for a missing limit, one below 1 or not
+    a whole number, or any other field; `step_up_required` (403) without a fresh passkey
+    assertion; `permission_denied` (403) without `security.manage`, naming it in
+    `requiredPermission`; `unauthenticated` (401) without a session.
+    """
+    principal = _principal(request)
+    return SecurityPolicyOut.model_validate(
+        security_policy.set_session_policy(
+            tenant=logic.get_tenant(principal.tenant_id),
+            actor=actor_of(User.objects.get(pk=principal.subject_id)),
+            idle_minutes=body.session_idle_minutes,
+            absolute_hours=body.session_absolute_hours,
+            step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        )
     )

@@ -1474,6 +1474,114 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       changed value in", an agent's correction without one answers 422 `source_missing`
       and applies nothing (fails safe; it can still approve as proposed or reject).
       Default if you say nothing: v3 carries that line when the confirmer next changes.
+## acc-principal-guard: how an agent access credential is fenced (2026-09-25, ACC-03, ACC-09)
+
+Built on these defaults; each stays yours to overrule.
+
+- [ ] **A token whose person loses a permission is refused, not revoked.** A personal
+      access token stops on the next request when its person is deactivated, leaves
+      the bank, or loses the permission behind any one of its scopes (`library.read`,
+      `search.use`, `roadmap.read`, `register.read`); it is refused whole rather than
+      narrowed. It is a check on every request, so if the person gets the permission
+      back the token works again until it expires. Default: so. The alternative is to
+      stamp the token revoked the first time the check fails.
+- [ ] **A session-only route answers a key or token with the fence's 403.** A key of
+      an agent access entry or a token that reaches a write or a step-up route which
+      takes only a person's session is answered 403 `read_only_credential` or
+      `step_up_required`, not 401, so every such route answers the same way whichever
+      auth it takes. A read it cannot use still answers 401.
+- [ ] **The rate-limit log.** Over `AGENT_ACCESS_RATE_PER_MINUTE` a credential gets 429,
+      and the first refusal of each minute writes one `credential_rate_limited` row in
+      the security log, not one per refused request, so a runaway agent cannot flood
+      the log.
+
+## acc-scope-and-reach: an entry's scope and tenant reach, answered by default (2026-09-25, ACC-02, ACC-08, D-70, D-72)
+
+- [ ] Default taken: an opt-in dimension keeps its rule inside an entry's scope too. The
+      second pass is FP-01 unchanged against the entry's terms, so an entry narrowed to
+      Trading sees a standard's records (ISO/IEC 27001) only when a Trading product names
+      that standard. Say if a narrowed entry should instead inherit every standard the bank
+      follows.
+- [ ] Default taken: a department brings its own products and those of every active unit
+      below it; a deactivated unit cuts its branch, and a retired product derives nothing.
+      An entry that names departments or products deriving no term reads nothing
+      (`entry_scope_empty`), and an entry the session cannot see, or one revoked, fails
+      closed the same way rather than reading the whole footprint.
+- [ ] Default taken: rejecting a reach request needs a passkey step-up like approving it,
+      and a reach request is never withdrawn (the requester's colleague rejects it).
+      Switching reach off needs one person and a step-up; on again takes a new request and
+      a second person. `GET /tenant/reach` is readable with `security.manage` alone.
+
+## acc-entries-and-log: entries, their keys and the access log, answered by default (2026-09-25, ACC-01, ACC-03, ACC-08)
+
+- [ ] Default taken: a call an agent access credential makes is logged whatever its answer,
+      a refused write or step-up with its 403 included, but a call refused for its rate is
+      not: the security log already keeps one `credential_rate_limited` row a minute for it,
+      and a runaway agent must not flood the access log. A call on a revoked or expired
+      credential is refused before it is anyone's call and is not logged either.
+- [ ] Default taken: a filter is logged as its name, and its value only when the value is a
+      key (a stable key, a vocabulary key, a UUID, a date, a number). `q`, `query`, `text`,
+      `description`, `topic` and `question` keep their name alone, so the log shows that an
+      agent searched, never for what.
+- [ ] Default taken: the log is read on the entry (`GET /agent-access/{entryId}/calls`) under
+      `agent_access.manage`, like the entry itself. Say if an auditor holding `audit.read`
+      should read it too.
+- [ ] Default taken: a key sent with no expiry lives `AGENT_ACCESS_KEY_MAX_DAYS` (90); a
+      later one is refused (`expiry_too_late`). Revoking an entry twice answers 409
+      `invalid_transition`; revoking one key twice is a safe retry.
+
+
+## c11-run-history: what a bank reads of its runs and of bleqq's watch (2026-09-25, AGT-03, AGT-04)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **A bank's run history holds its own runs only.** `GET /agent-runs` in a bank's session
+      no longer lists bleqq's library runs: they reach a bank as watch items and proposals, so
+      no platform cost, token count or model is on a bank's page (the default you took on what
+      a bank sees of bleqq's watch). The console still reads the library's runs. Default:
+      naming another bank's agent in `tenantAgentId` matches no run, as the published contract
+      says, rather than the 404 the chunk 11 brief named; say if you want the 404.
+- [ ] **bleqq's agents have no display name of their own.** `GET /agents/platform` returns the
+      agent's key as `name` and its definition's description as `purpose`; the screen renders
+      the words from its catalog by key. `nextRunAt` is one cadence after the last start, now
+      when an agent never ran or is overdue, and null for a manual one. Say if you want a
+      name column on the definition instead.
+
+## c11-fe-admin-agents: the bank's agents page (2026-09-25, AGT-03, AGT-04, AGT-05, ADM-01)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **A bank cannot list the definitions it may add.** `GET /agent-definitions` is the
+      console's (`agent_definitions.manage`), and no route lists the tenant-scoped ones to a
+      bank. Default: "Add an agent" offers the two tenant-scoped definitions bleqq ships
+      (`tenant-source-watch` as "Source checker", `scope-researcher` as "Scope research"),
+      named in the `admin-agents` catalog; the server refuses any other key with
+      `unknown_key`, which the page renders. Say if you want a bank-facing list route, so a
+      newly published definition shows without a frontend change.
+- [ ] **No name or version on a bank's agent.** The card draws "Name: ours to recognise it
+      by" and a version pill, but `TenantAgentOut` carries neither. Default: an agent is named
+      by its definition and shows no version pill; each run names nothing of its version on
+      the bank's page either. Say if a bank should name its agents.
+- [ ] **Run now, Pause, Resume, Stop run and research requests still answer 501.** The page
+      draws them against the published contract; `c11-tenant-controls-cap` and
+      `c11-research-requests` (wave 5) fill the routes. The research panel shows only once the
+      bank has an agent of its own.
+
+## acc-fe-admin: the Access tab and tenant reach panel, answered by default (2026-09-25, ACC-01, ACC-03, ACC-08)
+
+Nothing waits for these; each has the default the build took.
+
+- [ ] **The key dialog does not print the longest expiry.** `AGENT_ACCESS_KEY_MAX_DAYS` is a
+      server setting no route exposes, so the card's "At most 90 days, so 24 Dec 2026 at the
+      latest" would mean copying the number into the frontend. Default: the hint says a key
+      never lives longer than the platform allows, an empty date takes the longest, and the
+      server's `expiry_too_late` renders under the form. Say if `GET /agent-access/{entryId}`
+      (or a settings read) should carry the maximum so the dialog can name the date.
+- [ ] **Without `security.manage` the Access tab cannot know the organisation's switch.**
+      `GET /tenant/reach` needs it, so a member holding `agent_access.manage` alone sees
+      "Whether our own agents may read our register decisions is set under Security" and no
+      "Reads our register" or "Library only" pill, rather than a guess. Every seeded admin
+      holds both. Say if the entry should carry the effective reach itself.
 
 ## R2 wave 2 integration: one CodeQL finding needs your triage (2026-09-25)
 
@@ -1488,3 +1596,47 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+
+## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
+
+**Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
+how the console may write an agent definition, while `agent` and `agent_version` read as
+library rows that only a proposal's approval may reach.
+
+- [x] **How may the console write an agent definition?** Agent definitions, agent versions
+      and platform agent settings are platform configuration, not library rows. The console
+      writes them directly through `agents/seeds/console.py`, behind
+      `agent_definitions.manage`, a fresh passkey and a person's session, with one audit row
+      carrying no tenant and the assertion. The library fence names the three in one
+      platform-configuration list (`PlatformConfigurationGuard`) and still refuses every
+      other model, route, proposal kind and watch module. CLAUDE.md section 5 gains no
+      exception line. Built by `c11-agent-config-platform`; AGT-S4 is green.
+
+Defaults taken; nothing waits on them.
+
+- [ ] **A bank's run log no longer lists bleqq's runs.** `GET /agent-runs` from a bank's
+      session returns its own runs only; the console reads bleqq's with
+      `GET /console/agent-runs` (the default "no prompts, tools, budgets, run rows or costs"
+      under "What may a bank see of bleqq's watch?"). What a bank sees of bleqq's watch is
+      `GET /agents/platform`. Row-level security still lets a bank read a library run; the
+      narrowing is the read's. `c11-run-history` (same wave) owns that read and may have
+      taken the other reading ("platform runs never carry cost to a bank"); the integrator
+      keeps this one.
+- [ ] **A run opens on the newest version still published.** When every version is
+      retired a run is refused with 409 `no_published_version`.
+
+## c11-agent-config-platform: agent definitions as platform configuration (2026-09-25, AGT-03, D-102)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **The console keeps the database's `seed` door.** The three console writers open the
+      same door as the reference seed, which the database accepts on every inventory table,
+      because a door of their own would change the database trigger, the door lint and the
+      library database guard, none of them this package's. What keeps the writers to agent
+      rows is the fence: `agents/seeds/console.py` may name no library model but `Agent`
+      and `AgentVersion`, and only the three console routes reach it. Default: keep it so.
+      The alternative is a `platform_config` door accepted only by `agent` and
+      `agent_version`, a small hardening for a later package.
+- [ ] **The AGT-S4 journey stays `fixme`.** The integration scenario is green; the console
+      screen that publishes and retires a version is not built yet, and its journey belongs
+      to the package that builds it.
