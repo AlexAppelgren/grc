@@ -13,6 +13,7 @@ import type {
   CloseBody,
   EvidenceForm,
   NoteBody,
+  PersonRef,
   ReasonBody,
   TriageBody,
 } from './types';
@@ -151,4 +152,16 @@ export async function sendBackSignoff(changeId: string, body: NoteBody, version:
 /** The whole case as plain text in the reader's language, as the server wrote it. */
 export async function getCaseFile(changeId: string): Promise<string> {
   return (await api.get<string>(on(changeId, 'case-file'), { responseType: 'text' })).data;
+}
+
+// ---------------------------------------------------------------------------
+// c9-fe-triage-assessment: who may own a case
+// ---------------------------------------------------------------------------
+
+/**
+ * The bank's active members whose roles hold `permission`, by name: an owner
+ * picker offers only people the triage would accept (`cases.work`).
+ */
+export async function listPeople(permission: string): Promise<PersonRef[]> {
+  return (await api.get<PersonRef[]>('/api/v1/reference/people', { params: { permission } })).data;
 }

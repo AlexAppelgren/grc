@@ -261,6 +261,12 @@ _TENANT_LIST = (
     "relabel or retire without a deploy, so read `GET /vocab/{listName}` for the live set "
     "and match on the key, never on the label."
 )
+OWNER_TEAM_REF = (
+    "The team of the bank that owns the case beside its owner, never instead of one, from the "
+    "bank's own `team` vocabulary, whose rows its admin may extend at `GET /vocab/team`; `kind` "
+    "is always null, because teams have no kinds. The team stays when the owner changes or "
+    "leaves the bank. Null when no team was named."
+)
 _PERSON = "A person in this bank, as their id and display name; the only personal data a case carries about them."
 _TIMESTAMP = "an RFC 3339 timestamp in UTC (`2026-09-17T09:12:00Z`)"
 
@@ -285,6 +291,7 @@ CASE_EXAMPLE: JsonDict = {
     "urgencyConfirmed": True,
     "footprintMatch": True,
     "owner": PERSON_EXAMPLE,
+    "ownerTeam": {"key": "cards", "kind": None, "label": "Cards compliance"},
     "triagedBy": {"id": "5b7e2c1a-9d3f-4e8b-a6c4-0f1e2d3c4b5a", "name": "Johan Berg"},
     "triagedAt": "2026-09-17T08:40:00Z",
     "dismissedReason": None,
@@ -488,6 +495,7 @@ class CasesCase(CamelSchema):
         examples=[True],
     )
     owner: PersonRef | None = Field(description=f"Who owns the case, named at triage. {_PERSON} Null before triage.")
+    owner_team: CasesVocabularyRef | None = Field(description=OWNER_TEAM_REF)
     triaged_by: PersonRef | None = Field(description=f"Who triaged the case. {_PERSON} Null before triage.")
     triaged_at: datetime.datetime | None = Field(
         description=f"When the case was triaged, as {_TIMESTAMP}. Null before triage.", examples=["2026-09-17T08:40:00Z"]
@@ -572,7 +580,9 @@ class CasesTriageBody(WriteBody):
 
     model_config = ConfigDict(
         json_schema_extra={
-            "examples": [{"urgency": "within_3_months", "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "subStatus": None}]
+            "examples": [
+                {"urgency": "within_3_months", "ownerId": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "ownerTeam": "cards", "subStatus": None}
+            ]
         }
     )
 
@@ -593,6 +603,17 @@ class CasesTriageBody(WriteBody):
             "this bank who may work a case; anyone else is refused."
         ),
         examples=["8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60"],
+    )
+    owner_team: str | None = Field(
+        default=None,
+        max_length=KEY_MAX,
+        description=(
+            "An optional team that owns the case beside the owner, as the key of an active row "
+            f"of the bank's `team` vocabulary, such as `compliance`. {_TENANT_LIST} At most {KEY_MAX} "
+            "characters. Null or left out for none; a key that is not an active team of this bank "
+            "answers 422 `unknown_key` with the valid keys."
+        ),
+        examples=["cards"],
     )
     sub_status: str | None = Field(
         default=None,

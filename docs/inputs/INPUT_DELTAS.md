@@ -1839,3 +1839,46 @@ ADR 0042's tranche 2 is built with these departures from `CHUNK8_TASKS.md`:
 - **Send-back clears the request.** `signoffRequestedBy` and `signoffRequestedAt` go back
   to null, so the next request is a fresh one; the note is kept on the case's transition
   ledger and never in the audit values.
+
+## 20. Triage, dismissal, restore and the one-person close (2026-09-25, c9-triage)
+
+`triageChange`, `dismissChange`, `restoreChange` and `closeWithoutAction` now answer for
+real, each with the whole `CasesCase` of section 19. Where they differ from `openapi.yaml`:
+
+- **`restoreChange` also undoes a one-person close.** The design moves only `dismissed` to
+  `new`; D-92 (ADR 0060) makes the close without action restorable too, so a case closed by
+  one person with a `no_action` or `not_applicable` reason goes back to triage the same
+  way. A case a second person signed off stays closed: 409 `invalid_transition`.
+- **`closeWithoutAction` leaves `assigned` or `assessing`.** The design has `assigned to
+  closed, closeReason no_action`; the build also closes a case being assessed, with a reason
+  key whose kind is `no_action` or `not_applicable` (D-92). It never leaves `signoff`, whose
+  edge to `closed` is the sign-off's. It is gated by `cases.work`, not by role names.
+- **The owner a triage names must work cases.** `ownerId` must be an active member of the
+  bank whose roles hold `cases.work`; anyone else answers 422 `owner_required`, the same
+  code as no owner at all. A missing `ownerId` is a 422 `validation_error` naming the field.
+- **The audit row carries the keys a move names.** Every move's `case.moved` row carries
+  the status before and after and the new `version`; triage adds `ownerId` and the urgency
+  key, a dismissal and a close add `reasonKey`. The close's note is on the case and its
+  `case_transition` row, never in an audit value.
+
+## 21. The change page's case carries its assessment and close note (2026-09-25, c9-fe-triage-assessment)
+
+The case panels card has every panel read the case from `GET /changes/{changeId}`, but the
+workflow block (§19) carried neither the impact assessment nor the note of a one-person
+close, which only a write's `CasesCase` answered, so a reload lost both. `WatchCaseWorkflow`
+gains `assessment` (`CasesAssessment`, null before the case reaches assessing) and
+`closedNote`, as `CasesCase` names them. The assessment is joined to the case in the block's
+one case query, so the read costs one label query more only when the assessment names an
+effort. Both are tenant content in the bank's own zone.
+
+## c9-owner-team-and-reassign. A team beside a case's owner, and removal covers case work (2026-09-25, cases 0005)
+
+`change_case.owner_team` (the column section 18 left unbuilt) is a nullable key to the bank's
+`team` row, also a composite key `(tenant_id, owner_team_id)` into `team (tenant_id, id)`, so
+the database refuses another bank's team. It sits beside `owner` and never replaces it: the
+worked-case CHECK still requires a person. `triageChange` takes it as `ownerTeam`, a team key
+(the brief's `ownerTeamId`; D-1xx c9-owner-team-and-reassign), and the case answers
+`ownerTeam` as `{key, kind, label}`, on `CasesCase` and on the change page's `case`.
+`TenantMemberOpenWork` and the removal now count and move `case`, `action` and
+`duty_occurrence`, the kinds its contract already named: a case and an action pass to a
+person only, and a case only to a member holding `cases.work`.

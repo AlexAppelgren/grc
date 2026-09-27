@@ -30,7 +30,7 @@ from apps.shared.errors import ProblemError
 from apps.shared.kinds import CaseStatusCategory, CloseReason
 from apps.shared.models import Tenant
 from apps.shared.permissions import CASES_WORK
-from apps.taxonomy.models import CaseSubStatus, CaseSubStatusLabel, ClosureReason, ClosureReasonLabel, DismissalReasonLabel, EffortSizeLabel
+from apps.taxonomy.models import CaseSubStatus, CaseSubStatusLabel, ClosureReason, ClosureReasonLabel, DismissalReasonLabel, EffortSizeLabel, TeamLabel
 from apps.taxonomy.schemas import PersonRef
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
 from apps.watch.keys import resolve_keys
@@ -164,6 +164,12 @@ def _ref(label_model: type[Any], row: Any, order: list[str]) -> CasesVocabularyR
 
 def _assessment(case: ChangeCase, order: list[str]) -> CasesAssessment | None:
     row = ImpactAssessment.objects.select_related("effort", "saved_by").filter(case=case).first()  # ordering: one per case
+    return assessment_of(row, order)
+
+
+def assessment_of(row: ImpactAssessment | None, order: list[str]) -> CasesAssessment | None:
+    """The assessment as every case read answers it, from a row read with its effort and
+    saver; one label query when it names an effort. None before the assessment starts."""
     if row is None:
         return None
     return CasesAssessment(
@@ -193,6 +199,7 @@ def case_response(case: ChangeCase, *, reader: uuid.UUID, order: list[str]) -> C
         urgency_confirmed=case.urgency_confirmed,
         footprint_match=case.footprint_match,
         owner=_person(case.owner),
+        owner_team=_ref(TeamLabel, case.owner_team, order),
         triaged_by=_person(case.triaged_by),
         triaged_at=case.triaged_at,
         dismissed_reason=_ref(DismissalReasonLabel, case.dismissed_reason, order),

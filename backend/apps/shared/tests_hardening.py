@@ -352,6 +352,13 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/proposals/batch.py record(logic.OBLIGATION_TARGET) tenant_id=None actor=reviewer.actor title=proposal.title": (
         "A rejected row of the same platform-only decision, titled by the platform-filed batch."
     ),
+    # c9-case-participants (COL-04): the one add and the one removal both subjects share.
+    "apps/collab/participants.py record(subject.audit_type) tenant_id=tenant_id actor=actor title=subject.title": (
+        "A person or a team joining or leaving a bank's register entry or case: the subject type "
+        "is `tenant_obligation` or `change_case`, never a library type, `tenant_id` is the "
+        "caller's bank and never None, and the title is the library's own title of the "
+        "obligation or the change."
+    ),
 }
 
 

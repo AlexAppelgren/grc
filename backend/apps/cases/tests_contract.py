@@ -218,6 +218,8 @@ BUILT: set[str] = set()
 BUILT |= {"requestSignoff", "approveSignoff", "sendBackSignoff"}
 # c9-assessment (apps/cases/tests_assessment.py) and c9-actions (apps/cases/tests_actions.py).
 BUILT |= {"startAssessment", "saveAssessment", "listActions", "addAction", "updateAction", "deleteAction"}
+# c9-triage (tests_triage.py, tests_close_paths.py) and c9-case-file-export (tests_case_file.py).
+BUILT |= {"triageChange", "dismissChange", "restoreChange", "closeWithoutAction", "getCaseFile"}
 
 
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
