@@ -28,7 +28,7 @@ from typing import Any
 from unittest import mock
 
 from django.core.exceptions import ValidationError
-from django.db import connection
+from django.db import connection, transaction
 from django.test import TestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
@@ -478,7 +478,7 @@ class PermissionsAndFootprint(TestCase):
         cls.policy = bank.internal_item("Custody policy", owner_user=bank.anna)
         change = watch_build.change(title="A linked reform", key_date=None)
         watch_build.obligation_link(change, cls.advice)
-        with watch_write("test fixture"):
+        with tenancy.platform_zone(), watch_write("test fixture"):
             ChangeObligation.objects.filter(change=change).update(
                 confirmed_by=bank.officer, confirmed_at=timezone.now()
             )
@@ -600,7 +600,8 @@ class ChangesOnYourItems(TestCase):
         bank.entry(cls.versioned, first_line_owner=bank.anna)
         cls.self_approved = obligation("Amended by Anna")
         bank.entry(cls.self_approved, first_line_owner=bank.anna)
-        with library_write("test fixture"):
+        # A version is written in its obligation's zone, the shared library's (library 0012).
+        with transaction.atomic(), tenancy.platform_zone(), library_write("test fixture"):
             ObligationVersion.objects.create(
                 obligation=cls.self_approved, version_number=2, approved_by=bank.anna
             )
@@ -613,7 +614,7 @@ class ChangesOnYourItems(TestCase):
         return change, cases_build.case(self.bank.tenant, change)
 
     def confirm(self, change: RegulatoryChange, **confirmer: Any) -> None:
-        with watch_write("test fixture"):
+        with tenancy.platform_zone(), watch_write("test fixture"):
             ChangeObligation.objects.filter(change=change).update(
                 confirmed_at=timezone.now(), **confirmer
             )
@@ -760,7 +761,7 @@ class QueryCount(TestCase):
                 title=f"Reform {n}", key_date=today + DAY, urgency="monitor" if n % 2 else "act_now"
             )
             watch_build.obligation_link(change, duty)
-            with watch_write("test fixture"):
+            with tenancy.platform_zone(), watch_write("test fixture"):
                 ChangeObligation.objects.filter(change=change).update(
                     confirmed_by=bank.officer, confirmed_at=timezone.now()
                 )
@@ -780,3 +781,4 @@ class QueryCount(TestCase):
         self.assertEqual(self.queries(), one)
         self.assertEqual(self.queries(scope="unit", unit=self.bank.retail.id), one_unit)
         self.assertEqual(self.bank.read(self.bank.anna).total, 13 * 3)
+

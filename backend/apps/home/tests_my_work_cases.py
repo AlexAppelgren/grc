@@ -33,7 +33,7 @@ from apps.identity.models import User
 from apps.library import testing as library_build
 from apps.library.models import Obligation
 from apps.register.models import Applicability, DutyOccurrence, DutyStatus, TenantObligation
-from apps.shared import factories
+from apps.shared import factories, tenancy
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.permissions import CASES_READ, REGISTER_READ
 from apps.taxonomy.models import CaseStatusCategory, FootprintTerm, Team
@@ -231,7 +231,7 @@ class LinkedAndOwned(TestCase):
         bank.entry(duty, first_line_owner=bank.anna)
         case = open_case(bank, owner=bank.anna, internal_deadline=bank.today() - DAY)
         watch_build.obligation_link(case.change, duty)
-        with watch_write("test fixture"):
+        with tenancy.platform_zone(), watch_write("test fixture"):
             ChangeObligation.objects.filter(change=case.change).update(
                 confirmed_by=bank.officer, confirmed_at=timezone.now()
             )

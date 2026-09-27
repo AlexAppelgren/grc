@@ -204,7 +204,7 @@
   "console.supportAccess.inside": "Din konsolsession har avslutats. Varje sida du läser i {tenant} finns i dess granskningslogg, och Lämna loggar ut dig.",
   "console.supportAccess.errorTitle": "Kunde inte läsa in din supportåtkomst",
   "console.supportAccess.emptyTitle": "Du har inte bett om åtkomst",
-  "console.supportAccess.emptyBody": "Be en bank när ett problem kräver att du ser det de ser."
+  "console.supportAccess.emptyBody": "Be en bank när ett problem kräver att du ser det de ser.",
 
   "console.queue.kind.retag": "Omtaggning",
   "console.queue.rowCount": "{count, plural, one {# post} other {# poster}}",

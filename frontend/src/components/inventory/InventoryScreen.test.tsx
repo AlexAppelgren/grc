@@ -1098,6 +1098,6 @@ describe('the register overlay on the inventory', () => {
     renderIn(<InventoryScreen />);
     expect(await screen.findByText('No obligations match')).toBeVisible();
     expect(sent.find((request) => request.path === '/api/v1/obligations')?.params).toMatchObject({ applicability: 'applies', ownerTeam: 'cards' });
-    expect(screen.getByRole('link', { name: 'Show outside our scope' })).toHaveAttribute('href', '/inventory?scope=all&applicability=applies&ownerTeam=cards');
+    expect(screen.getByRole('link', { name: 'Show all items' })).toHaveAttribute('href', '/inventory?scope=all&applicability=applies&ownerTeam=cards');
   });
 });

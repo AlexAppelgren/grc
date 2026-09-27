@@ -244,7 +244,6 @@ SERVED = {
     "resumeTenantAgent",
     "interruptAgentRun",
 }
-SERVED = {"listTenantAgents", "createTenantAgent", "updateTenantAgent", "getAgentBudget", "putAgentBudget"}
 # c11-research-requests (tests_requests.py).
 SERVED |= {"listResearchRequests", "createResearchRequest", "getResearchRequest"}
 # Which record each id route addresses: a bank's own agent, its run, or its request.

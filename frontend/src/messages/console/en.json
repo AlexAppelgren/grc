@@ -208,7 +208,7 @@
   "console.supportAccess.inside": "Your console session has ended. Every page you read in {tenant} is in its audit log, and Leave signs you out.",
   "console.supportAccess.errorTitle": "Could not load your support access",
   "console.supportAccess.emptyTitle": "You have not asked for access",
-  "console.supportAccess.emptyBody": "Ask a bank when a problem needs you to see what they see."
+  "console.supportAccess.emptyBody": "Ask a bank when a problem needs you to see what they see.",
 
   "console.queue.kind.retag": "Re-tag",
   "console.queue.rowCount": "{count, plural, one {# record} other {# records}}",
