@@ -35,9 +35,10 @@ import type {
 } from './types';
 
 // Thin typed wrappers returning `.data` (playbook 6.1). The library reads sit
-// under /api/v1; nothing here writes, because proposals are the only door
-// into the library. The server's shapes (openapi.json) are read through the
-// normalisers below into the types the screen and its presentation functions
+// under /api/v1; nothing here writes the library, because proposals are the
+// only door into it: the one write besides a problem report is the bank's own
+// tags, which live in its own zone. The server's shapes (openapi.json) are
+// read through the normalisers below into the types the screen and its presentation functions
 // use, so a difference in shape is absorbed here, once.
 
 const OBLIGATIONS = '/api/v1/obligations';
@@ -264,6 +265,21 @@ export async function getObligationDiff(obligationId: string, lang?: string): Pr
 export async function reportObligationProblem(obligationId: string, body: ProblemReportBody): Promise<ProblemReportCreated> {
   const data = (await api.post<Schemas['ProblemReportCreated']>(`${OBLIGATIONS}/${obligationId}/problem-reports`, body)).data;
   return { id: data.id, status: data.status, createdAt: data.createdAt };
+}
+
+// The bank's own tags on an obligation (VOC-08): markers in the bank's zone, never a
+// library write. Each call answers the obligation's tags as they now stand.
+
+const TAGGINGS = '/api/v1/taggings';
+
+export async function tagObligation(obligationId: string, tagKey: string): Promise<LibraryRef[]> {
+  const body: Schemas['TaggingBody'] = { tagKey, subjectType: 'obligation', subjectId: obligationId };
+  return (await api.post<Schemas['TaggingRecordTags']>(TAGGINGS, body)).data.tags.map(tenantTagOf);
+}
+
+export async function untagObligation(obligationId: string, tagKey: string): Promise<LibraryRef[]> {
+  const body: Schemas['TaggingBody'] = { tagKey, subjectType: 'obligation', subjectId: obligationId };
+  return (await api.post<Schemas['TaggingRecordTags']>(`${TAGGINGS}/remove`, body)).data.tags.map(tenantTagOf);
 }
 
 // Instruments (INV-01, INV-06): the Instruments tab, the instrument filter and the

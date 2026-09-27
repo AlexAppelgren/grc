@@ -77,6 +77,16 @@ async function addTenantValue(page: Page, label: string, usageNote = ''): Promis
   await expect(valueRow(page, label)).toHaveCount(1);
 }
 
+// VOC-S6: the obligation whose "Our tags" the journey writes; no other journey tags it.
+const TAGGED_OBLIGATION = 'obl-dora-ict-register';
+
+/** From the inventory to the card, by stable key, until its tags panel has read the record. */
+async function openTaggedObligation(page: Page): Promise<void> {
+  await openInventory(page);
+  await page.locator(`[data-obligation="${TAGGED_OBLIGATION}"]`).click();
+  await expect(page.locator('[data-obligation-tags] [role="combobox"]')).toBeEnabled();
+}
+
 /** The second person of a four-eyes journey, in their own browser, held to the same API guard. */
 async function secondPerson(browser: Browser, apiGuard: ApiGuard, testInfo: TestInfo, login: string): Promise<Page> {
   const context = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
@@ -222,12 +232,56 @@ test.describe('taxonomy journeys', () => {
     await expect(page.locator(`[data-value-key="${from}"]`)).toHaveCount(1);
   });
 
-  test.fixme("VOC-S6: Create where you use it offers Create or Suggest by permission", async () => {
-    // pending: VOC-S6 (VOC-03). VOC-03 is priority S, release R2 (decided with
-    // the coordinator in chunk 2). The picker component exists
-    // (components/vocabularies/VocabularyPicker.tsx, with Create and Propose
-    // and unit tests); this journey needs a record screen that hosts it and
-    // the Suggest path for members without vocab.manage, both R2.
+  test("VOC-S6: Create where you use it offers Create or Suggest by permission", async ({ page, browser, apiGuard }, testInfo) => {
+    // VOC-S6 (VOC-03), on the obligation card's "Our tags" (VOC-08, one record):
+    // the admin creates a tag where it is used and it goes on the record; a
+    // member without vocab.manage reads the tags, cannot remove one, and the
+    // same picker offers Suggest; the suggestion waits on the admin's Suggested tab.
+    const created = 'Market sounding';
+    const suggested = 'Conflicts register';
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.admin);
+    await openTaggedObligation(page);
+    const panel = page.locator('[data-obligation-tags]');
+    const createdTag = panel.locator('[data-obligation-tag]').filter({ hasText: new RegExp(`^${created}`) });
+    try {
+      await panel.getByLabel('Add a tag').fill(created);
+      await expect(panel.locator('[data-picker-last="create"]')).toBeVisible();
+      await panel.locator('[data-picker-last="create"]').click();
+      await panel.getByRole('button', { name: 'Create and select' }).click();
+      await expect(createdTag).toHaveCount(1);
+
+      const member = await secondPerson(browser, apiGuard, testInfo, LOGINS.reader);
+      try {
+        await openTaggedObligation(member);
+        const memberPanel = member.locator('[data-obligation-tags]');
+        await expect(memberPanel.locator('[data-obligation-tag]').filter({ hasText: new RegExp(`^${created}`) })).toHaveCount(1);
+        await expect(memberPanel.getByRole('button', { name: new RegExp(`^Remove ${created}$`) })).toHaveCount(0);
+        await memberPanel.getByLabel('Suggest a tag').fill(suggested);
+        await expect(memberPanel.locator('[data-picker-last="create"]')).toHaveCount(0);
+        await memberPanel.locator('[data-picker-last="suggest"]').click();
+        await memberPanel.getByRole('button', { name: 'Send suggestion' }).click();
+        await expect(memberPanel.locator('[data-picker-suggested]')).toBeVisible();
+        // A suggestion is not a tag: the record still carries only what the admin put on it.
+        await expect(memberPanel.locator('[data-obligation-tag]').filter({ hasText: new RegExp(`^${suggested}`) })).toHaveCount(0);
+      } finally {
+        await member.context().close();
+      }
+
+      await openList(page, TAGS);
+      await page.getByRole('button', { name: /^Suggested \(\d+\)$/ }).click();
+      const suggestion = page.locator('[data-suggestion]').filter({ hasText: new RegExp(suggested) });
+      await expect(suggestion).toHaveCount(1);
+      await suggestion.getByRole('button', { name: 'Decline' }).click();
+      await expect(suggestion).toHaveCount(0);
+    } finally {
+      // Teardown, on failure too: the record carries no tag of this journey's.
+      await openTaggedObligation(page);
+      if ((await createdTag.count()) > 0) {
+        await panel.getByRole('button', { name: new RegExp(`^Remove ${created}$`) }).click();
+        await expect(createdTag).toHaveCount(0);
+      }
+    }
   });
 
   test("VOC-S7: A near-duplicate is refused with the near match offered", async ({ page, apiGuard }) => {
