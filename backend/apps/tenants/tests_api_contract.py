@@ -49,6 +49,9 @@ BUILT_BEFORE = {
     "consoleReissueEnrolment",
     "listConsoleTenants",
     "createConsoleTenant",
+    # c11-security-policy-routes (ID-08): built, proved in tests_security_policy.py.
+    "getSecurityPolicy",
+    "putSecurityPolicy",
 }
 
 ORG_UNIT_BODY = {"kind": "business_area", "name": "Retail Banking"}
