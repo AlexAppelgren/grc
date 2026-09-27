@@ -17,6 +17,7 @@ import type {
   RegisterGapPage,
   RegisterGapPatch,
   RegisterGapQuery,
+  RegisterInternalItemPage,
   RegisterInternalLink,
   RegisterInternalLinkBody,
   RegisterInternalLinkPage,
@@ -126,6 +127,11 @@ export async function addInternalLink(obligationId: string, body: RegisterIntern
 
 export async function removeInternalLink(linkId: string): Promise<void> {
   await api.delete(`${V1}/internal-links/${id(linkId)}`);
+}
+
+/** The bank's active items whose name or reference holds `q`, for the link dialog to pick. */
+export async function listInternalItems(q: string, page: RegisterPageQuery = {}): Promise<RegisterInternalItemPage> {
+  return (await api.get<RegisterInternalItemPage>(`${V1}/internal-items`, { params: { q, ...page } })).data;
 }
 
 // Statement of Applicability units under a standard's conformance obligation.

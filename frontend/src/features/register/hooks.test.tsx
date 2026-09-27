@@ -30,6 +30,7 @@ describe('register hooks', () => {
         hooks.useUnits('ob1', 'e1'),
         hooks.useStatementOfApplicability('ob1', 'e1'),
         hooks.useDuties('ob1'),
+        hooks.useInternalItems('reconc', true),
       ],
       { wrapper },
     );
@@ -45,10 +46,12 @@ describe('register hooks', () => {
         '/api/v1/obligations/ob1/units',
         '/api/v1/obligations/ob1/statement-of-applicability',
         '/api/v1/obligations/ob1/duties',
+        '/api/v1/internal-items',
       ]),
     );
     const waiting = renderHook(() => hooks.useRegisterEntry('ob2', false), { wrapper });
     expect(waiting.result.current.fetchStatus).toBe('idle');
+    expect(renderHook(() => hooks.useInternalItems('x', false), { wrapper }).result.current.fetchStatus).toBe('idle');
     expect(hooks.registerKeys.units('ob1', undefined, {})).toEqual(['register', 'obligation', 'ob1', 'units', null, {}]);
   });
 

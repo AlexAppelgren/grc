@@ -1819,4 +1819,3 @@ existed; building them on `gap` as `c8-register-models` shaped it changes these 
   without it; closing a gap clears an acceptance still waiting on it.
 - A gap on a Statement of Applicability unit (`unitId`) answers 501 `not_built` until
   `c8-units-paste-soa` adds the column.
-
