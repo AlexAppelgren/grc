@@ -43,7 +43,7 @@ from apps.identity.models import Membership, MembershipRole, TenantRole, User, U
 from apps.identity.roles_logic import roles_by_keys
 from apps.library.models import Obligation, ObligationVersion
 from apps.register.models import Applicability, TenantObligation, TenantObligationScope
-from apps.shared import factories
+from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.tenancy import library_write
@@ -146,7 +146,7 @@ def give_role(bank: Bank, user: User, *, key: str | None = None, permissions: se
 
 
 def confirm(change: RegulatoryChange, **confirmer: Any) -> None:
-    with watch_write("test fixture"):
+    with tenancy.platform_zone(), watch_write("test fixture"):
         ChangeObligation.objects.filter(change=change).update(confirmed_at=timezone.now(), **confirmer)
 
 
@@ -647,7 +647,7 @@ def run_hom_s11(test: TestCase) -> None:
 
     comment(bank, bank.johan, "obligation", discussed.id)
     comment(bank, bank.anna, "obligation", own.id)
-    with library_write("test fixture"):
+    with tenancy.platform_zone(), library_write("test fixture"):
         ObligationVersion.objects.create(obligation=own, version_number=2, approved_by=bank.anna)
     now = aware()
     test.assertEqual(date_of(now[str(amended.id)])[:2], ("aware", "version_applied"))

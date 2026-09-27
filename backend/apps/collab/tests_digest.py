@@ -47,7 +47,7 @@ from apps.identity.models import Membership, MembershipRole, User
 from apps.library.models import Obligation
 from apps.library.reading import today_for
 from apps.register.models import Gap, TenantObligation
-from apps.shared import factories
+from apps.shared import factories, tenancy
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.permissions import REGISTER_READ
 from apps.tenants.models import InternalItem
@@ -142,7 +142,7 @@ class DigestCase(TestCase):
 
         change = watch_build.change(title="Amended rules on client money", key_date=None)
         watch_build.obligation_link(change, cls.undated)
-        with watch_write("test fixture"):
+        with tenancy.platform_zone(), watch_write("test fixture"):
             ChangeObligation.objects.filter(change=change).update(
                 confirmed_by=bank.officer, confirmed_at=timezone.now()
             )
