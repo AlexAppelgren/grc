@@ -970,6 +970,22 @@ behind their real gates and answer 501 `not_built` until `collab/inbox.py`,
   `@requires_permission("comments.write")` and leave the author check to the logic. A
   platform session belongs to no bank and gets 404.
 
+
+acc-register-read (ACC-04, ACC-08, D-76), 2026-09-25:
+
+- `GET /register-entries` (`listRegisterEntries`) and `GET /register-entries/{obligationId}`
+  (`readRegisterEntry`) are new: the register as a bank's own agent reads it, which the
+  designed contract does not have (AGENT_ACCESS.md names the list `GET /register`, a path the
+  designed contract never declared). The per-obligation read is a separate operation rather
+  than the same one with a filter, and rather than `getRegisterEntry` taking a key: it takes
+  the obligation as a path parameter so an obligation outside the entry's scope answers 404,
+  never a filtered 200 (AGENT_ACCESS.md section 7), and it answers D-76's fields alone, where
+  a person's `getRegisterEntry` also carries the risk rating and the evidence location. Both
+  take `ApiKeyAuth` only with `tenant:read`, and answer 403 `tenant_reach_off` unless the
+  bank's tenant reach and the entry's own toggle are both on. The row shape,
+  `RegisterDecision`, is one per obligation with its legal entities and live linked items
+  nested; the list pages 20 by default and 100 at most (D-1xx, acc-register-read).
+
 Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-25:
 
 - `GET /obligations` gains the deferred tag filter as two repeatable filters, because a row
@@ -988,6 +1004,41 @@ Chunk 10 (the obligation row's R2 fields, c10-tag-filters-and-limits), 2026-09-2
 - Every string filter of `GET /obligations` and `GET /instruments` is at most 80 characters
   (`instrument`, `dutyType`, `regime`, each `term`, `tag` and `tenantTag` item), as the key
   columns are; a longer one answers 422 `validation_error` (hardening H27).
+
+Chunk 8 (the register overlay on the inventory, c8-inventory-overlay), 2026-09-25:
+
+- The obligation row and `GET /obligations/{id}` gain the caller's bank's register overlay:
+  `applicability` in the register's words (`applies`, `not_applicable`,
+  `under_assessment`), `firstLineOwner` and `ownerTeam`. `complianceStatus` is now the
+  bank's own `{key, kind, label}` row (the register's `RegisterVocabRef`, the same three
+  fields as before), null unless the duty applies, and the worst applying legal entity's
+  status where the bank records one per entity. "Applies" means the entry or any entity
+  row says so. There is no pending-approval marker (D-75).
+- `GET /obligations` gains the filters `applicability`, `complianceStatus`, `owner` (a
+  member's id) and `ownerTeam` (a team key), each string at most 80 characters. A key the
+  bank has no row for matches nothing, as `dutyType` does; a caller that belongs to no bank
+  sending one answers 422 `unknown_filter`, as `tenantTag` does.
+
+acc-scoped-reads (ACC-02, ACC-04, ACC-05, ACC-07), 2026-09-25:
+
+- `GET /obligations/{obligationId}` (`getObligation`) takes the obligation's id or its
+  stable key in the one path segment, because AGENT_ACCESS.md section 6 has an agent's
+  `get_obligation` read `GET /obligations/{stableKey}` and a second path for the same card
+  would be a second read path. A value written as a UUID is always the id; anything else,
+  letters, digits, hyphens and underscores up to 120 characters, is the key. A slug that is
+  no UUID now answers 404 where it answered 422 as a malformed id.
+- `POST /search` (`search`) takes `ApiKeyAuth` beside the session: a bank's key holding
+  `search:read` searches, and an agent access credential's search is narrowed to its
+  entry's scope. The designed contract has it session-only; the body and the answer are
+  unchanged.
+- Every library read (`listObligations`, `getObligation`, `getObligationDiff`,
+  `getRecordSources`, `listInstruments`, `getInstrument`, `listInstrumentProvisions`,
+  `getProvisionDiff`), `search` and `listUpcoming` confine an agent access credential to
+  shared records inside the footprint and its entry's scope; a record beyond them answers
+  the 404 of a missing one. For such a credential `footprint` all or watched, and
+  `inFootprint` false on search, answer 422 `unknown_filter`, and an overlay or `tenantTag`
+  filter answers 403 `tenant_reach_off` unless tenant reach is on for the bank and the
+  entry. No schema changes.
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
