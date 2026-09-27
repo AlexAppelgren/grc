@@ -14,8 +14,8 @@ Stateless in both protocol eras it serves (docs/plans/Verification_Log.md, 2026-
 
 A body is untrusted input: it is parsed here, never by a schema that answers 422, so a
 malformed message gets the JSON-RPC error the protocol names. A batch is refused. The tool
-list follows the credential (the tools themselves are served by `tools/call`, which is not
-built yet and answers method not found).
+list follows the credential, and `tools/call` runs the REST route behind the tool
+(apps/integrations/mcp_tools.py), in both eras.
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from django.conf import settings
+from django.http import HttpRequest
 
 from apps.shared import permissions as perms
 from apps.shared.authentication import Principal
@@ -39,6 +40,7 @@ from apps.integrations.schemas import (
     McpResult,
     McpResultMeta,
     McpServerCapabilities,
+    McpTextContent,
     McpTool,
     McpToolAnnotations,
     McpToolInputSchema,
@@ -168,7 +170,10 @@ TOOLS: tuple[ToolSpec, ...] = (
             "what_applies",
             "Ask what applies",
             "Given what is being built, bought or reviewed, the full list of obligations in scope that match, with the scope it was answered in and what that scope could not see.",
-            _object({"description": McpToolProperty(type="string", description="What is being built, bought or reviewed, in a few sentences.")}, ["description"]),
+            _object(
+                {"description": McpToolProperty(type="string", description="What is being built, bought or reviewed, in a few sentences."), **_PAGE},
+                ["description"],
+            ),
         ),
         perms.SCOPE_LIBRARY_READ,
     ),
@@ -224,11 +229,12 @@ def _valid_id(value: object) -> bool:
     return isinstance(value, str) or (isinstance(value, int) and not isinstance(value, bool))
 
 
-def handle(body: bytes, headers: Mapping[str, str], principal: Principal) -> Answer:
-    """Answer one POSTed JSON-RPC message. Only an agent access credential is served: a
+def handle(request: HttpRequest, principal: Principal) -> Answer:
+    """Answer the JSON-RPC message POSTed in `request`. Only an agent access credential is served: a
     bank's other keys and bleqq's own agents have the REST API and no business here. A
     browser's `Origin` other than the app's own is refused, as the transport requires
     against DNS rebinding."""
+    headers = request.headers
     if not principal.is_agent_access:
         raise ProblemError(
             status=403, code="agent_access_only", detail="The MCP server serves the key of an agent access entry or a personal access token."
@@ -237,7 +243,7 @@ def handle(body: bytes, headers: Mapping[str, str], principal: Principal) -> Ans
     if origin is not None and origin not in settings.CORS_ALLOWED_ORIGINS:
         return _error(403, None, INVALID_REQUEST, "This origin may not call the MCP server.")
     try:
-        message: Any = json.loads(body.decode("utf-8"))
+        message: Any = json.loads(request.body.decode("utf-8"))
     except (UnicodeDecodeError, ValueError, RecursionError):
         return _error(400, None, PARSE_ERROR, "The body is not UTF-8 JSON.")
     if isinstance(message, list):
@@ -261,7 +267,7 @@ def handle(body: bytes, headers: Mapping[str, str], principal: Principal) -> Ans
         return _error(400, None, METHOD_NOT_FOUND, "This notification is not accepted.")
     if method == "initialize":
         return _initialize(request_id, params)
-    return _request(request_id, method, params, headers, principal)
+    return _request(request, request_id, method, params, headers, principal)
 
 
 def _initialize(request_id: int | str | None, params: dict[str, Any]) -> Answer:
@@ -275,7 +281,9 @@ def _initialize(request_id: int | str | None, params: dict[str, Any]) -> Answer:
     return Answer(200, McpMessage(jsonrpc="2.0", id=request_id, result=result))
 
 
-def _request(request_id: int | str | None, method: str, params: dict[str, Any], headers: Mapping[str, str], principal: Principal) -> Answer:
+def _request(
+    request: HttpRequest, request_id: int | str | None, method: str, params: dict[str, Any], headers: Mapping[str, str], principal: Principal
+) -> Answer:
     header_version = headers.get("MCP-Protocol-Version")
     meta = params.get("_meta")
     meta = meta if isinstance(meta, dict) else {}
@@ -287,7 +295,7 @@ def _request(request_id: int | str | None, method: str, params: dict[str, Any], 
             return _error(400, request_id, INVALID_PARAMS, f"params._meta must carry {META_VERSION} and {META_CAPABILITIES}.")
         if version not in LEGACY_VERSIONS:
             return _unsupported(request_id, header_version)
-        return _legacy(request_id, method, principal)
+        return _legacy(request, request_id, method, params, principal)
     if not isinstance(body_version, str):
         return _error(400, request_id, INVALID_PARAMS, f"{META_VERSION} must be a string.")
     if header_version != body_version:
@@ -298,10 +306,33 @@ def _request(request_id: int | str | None, method: str, params: dict[str, Any], 
         return _unsupported(request_id, body_version)
     if not isinstance(meta.get(META_CAPABILITIES), dict):
         return _error(400, request_id, INVALID_PARAMS, f"params._meta must carry {META_CAPABILITIES}.")
-    return _modern(request_id, method, principal)
+    return _modern(request, request_id, method, params, principal)
 
 
-def _modern(request_id: int | str | None, method: str, principal: Principal) -> Answer:
+def _tool_call(request: HttpRequest, params: dict[str, Any], *, modern: bool) -> McpResult | str:
+    """A `tools/call`: the result, or why its params are not a call (-32602). A tool the
+    credential was not offered is still run, so the route's own gate refuses it, as over REST."""
+    from apps.integrations import mcp_tools
+
+    name, arguments = params.get("name"), params.get("arguments", {})
+    tool = next((spec.tool for spec in TOOLS if spec.tool.name == name), None)
+    if tool is None:
+        return f"Unknown tool: {name}" if isinstance(name, str) else "tools/call needs the name of a tool."
+    if not isinstance(arguments, dict):
+        return "arguments must be an object."
+    outcome = mcp_tools.call(request, tool, arguments)
+    structured = outcome.body
+    if not modern and not isinstance(structured, dict):
+        # Revision 2025-11-25 takes only an object as structured content.
+        structured = {"items": structured}
+    return McpResult(
+        content=[McpTextContent(type="text", text=json.dumps(structured, ensure_ascii=False))],
+        structured_content=structured,
+        is_error=outcome.is_error,
+    )
+
+
+def _modern(request: HttpRequest, request_id: int | str | None, method: str, params: dict[str, Any], principal: Principal) -> Answer:
     meta = McpResultMeta(server_info=_server_info())
     if method == "server/discover":
         result = McpResult(
@@ -315,17 +346,27 @@ def _modern(request_id: int | str | None, method: str, principal: Principal) -> 
         )
     elif method == "tools/list":
         result = McpResult(result_type="complete", tools=tools_for(principal), ttl_ms=0, cache_scope="private", meta=meta)
+    elif method == "tools/call":
+        called = _tool_call(request, params, modern=True)
+        if isinstance(called, str):
+            return _error(400, request_id, INVALID_PARAMS, called)
+        result = called.model_copy(update={"result_type": "complete", "meta": meta})
     else:
         return _error(404, request_id, METHOD_NOT_FOUND, "Method not found")
     return Answer(200, McpMessage(jsonrpc="2.0", id=request_id, result=result))
 
 
-def _legacy(request_id: int | str | None, method: str, principal: Principal) -> Answer:
+def _legacy(request: HttpRequest, request_id: int | str | None, method: str, params: dict[str, Any], principal: Principal) -> Answer:
     # An earlier revision reads a 404 as "your session is gone", so its errors travel in a 200.
     if method == "ping":
         result = McpResult()
     elif method == "tools/list":
         result = McpResult(tools=tools_for(principal))
+    elif method == "tools/call":
+        called = _tool_call(request, params, modern=False)
+        if isinstance(called, str):
+            return _error(200, request_id, INVALID_PARAMS, called)
+        result = called
     else:
         return _error(200, request_id, METHOD_NOT_FOUND, "Method not found")
     return Answer(200, McpMessage(jsonrpc="2.0", id=request_id, result=result))

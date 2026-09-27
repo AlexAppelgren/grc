@@ -83,8 +83,23 @@ def mcp_endpoint(request: HttpRequest) -> HttpResponse:
     The tool list follows the credential: search needs `search:read`; list_obligations,
     get_obligation and what_applies need `library:read`; list_upcoming_changes needs
     `upcoming:read`; list_register_entries needs `tenant:read` and an entry whose tenant
-    reach is on, so a credential without both is not offered it. Calling a tool
-    (`tools/call`) is not offered yet and answers -32601.
+    reach is on, so a credential without both is not offered it.
+
+    Calling a tool (`tools/call`, both eras) runs the REST route behind it as a request of
+    its own, with the same credential: search is `POST /search` (`query` is its `q`),
+    list_obligations `GET /obligations`, get_obligation `GET /obligations/{obligationId}`
+    by stable key, list_upcoming_changes `GET /upcoming`, list_register_entries
+    `GET /register-entries` and what_applies `POST /agent-access/what-applies`. The same
+    authentication, scope gate, entry scope and pagination apply (`limit` 20 unless given,
+    100 at most), and `structuredContent` is exactly the body that route answers, with the
+    same JSON in one text block; an earlier revision gets a list as `{"items": [...]}`. A
+    route's refusal comes back as a result with `isError` true and the route's problem
+    details, `code` included (`permission_denied`, `not_found`, `tenant_reach_off`,
+    `read_only_credential`, `validation_error`), as does an argument the tool does not
+    declare, a missing required one, or a query or path value that is not a string or a
+    whole number. A tool name this server does not have, or `arguments` that are not an
+    object, is -32602. A call is one request of the credential's rate, and the access log
+    records it under the tool's name with the route's status and record count.
 
     Errors: HTTP-level refusals come as RFC 9457 problem details (`unauthenticated`,
     `agent_access_only`, `rate_limited`); everything about the message itself comes as a
@@ -93,7 +108,7 @@ def mcp_endpoint(request: HttpRequest) -> HttpResponse:
     or malformed parameters or protocol metadata. A browser `Origin` other than the app's
     own answers 403 with -32600.
     """
-    answer = mcp.handle(request.body, request.headers, principal(request))
+    answer = mcp.handle(request, principal(request))
     if answer.message is None:
         return HttpResponse(status=answer.status)
     return JsonResponse(answer.message.model_dump(mode="json", by_alias=True, exclude_none=True), status=answer.status)
