@@ -127,15 +127,20 @@ class FilingTheBanksOwn(OwnFindingCase):
         self.assertFalse(self.visible(self.other, proposal), "another bank never reads it")
         self.assertFalse(self.visible(None, proposal), "the console never reads it")
 
+    def own_instrument(self) -> str:
+        """An instrument of the bank's own, which a bank's own obligation sits under."""
+        tenancy.activate(self.bank.id)
+        return library_build.instrument(key="own-parent-act", regime="regime:securities", owner_tenant=self.bank).stable_key
+
     def test_a_new_obligation_is_the_banks_own_too(self) -> None:
-        proposal = self.file(finding(obligation_body()))
+        proposal = self.file(finding(obligation_body(instrument=self.own_instrument())))
         self.assertEqual((proposal.kind, proposal.owner_tenant_id), ("new_obligation", self.bank.id))
 
     def test_the_same_event_twice_files_one_proposal_and_another_event_a_second(self) -> None:
         first = self.file(finding(instrument_body()))
         again = self.file(finding(instrument_body()))
         self.assertEqual(again.pk, first.pk)
-        other = self.file(finding(obligation_body(), event_id="event-2"))
+        other = self.file(finding(obligation_body(instrument=self.own_instrument()), event_id="event-2"))
         self.assertNotEqual(other.pk, first.pk)
         tenancy.activate(self.bank.id)
         self.assertEqual(Proposal.objects.filter(agent_run_id=self.research_run.id).count(), 2)
