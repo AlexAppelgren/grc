@@ -10,6 +10,7 @@ const ICONS: Record<string, readonly string[]> = {
   inventory: ['M5 4h11l3 3v13H5z', 'M8 10h8M8 14h8'],
   search: ['M11 11m-6 0a6 6 0 1 0 12 0a6 6 0 1 0-12 0', 'M20 20l-4-4'],
   roadmap: ['M4 6h16v14H4z', 'M4 10h16', 'M8 3v4M16 3v4'],
+  'my-work': ['M9 6h11M9 12h11M9 18h11', 'M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2'],
   admin: ['M4 7h9M17 7h3M4 17h3M11 17h9', 'M15 7m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0', 'M9 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0'],
   'console-queue': ['M4 13l2-8h12l2 8v6H4z', 'M4 13h5l1 2h4l1-2h5'],
   'console-vocabularies': ['M9 6h11M9 12h11M9 18h11', 'M5 6h.01M5 12h.01M5 18h.01'],

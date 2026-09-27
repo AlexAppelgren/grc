@@ -1,3 +1,26 @@
 {
-  "obligationLinks.heading": "Linked internal items"
+  "obligationLinks.heading": "Linked internal items",
+  "obligationLinks.empty": "Nothing linked yet. Link the policy, procedure, control, process or system that carries this obligation.",
+  "obligationLinks.errorTitle": "Linked internal items could not be loaded",
+  "obligationLinks.more": "Showing {shown} of {total}.",
+  "obligationLinks.add": "Link an item",
+  "obligationLinks.remove": "Remove",
+  "obligationLinks.pickTitle": "Link an internal item",
+  "obligationLinks.createTitle": "Create and link an item",
+  "obligationLinks.find": "Find an item",
+  "obligationLinks.noMatch": "No item of your organisation matches. Create it instead.",
+  "obligationLinks.createInstead": "Create a new item instead",
+  "obligationLinks.kind": "Kind",
+  "obligationLinks.name": "Name",
+  "obligationLinks.reference": "Your reference",
+  "obligationLinks.url": "Link to where it lives",
+  "obligationLinks.urlHint": "Optional. Opens in the bank's own system.",
+  "obligationLinks.link": "Link",
+  "obligationLinks.createAndLink": "Create and link",
+  "obligationLinks.alreadyLinked": "That item is already linked to this obligation.",
+  "obligationLinks.duplicate": "An item of this kind with this name already exists. Pick it instead.",
+  "obligationLinks.unknownKind": "That kind is no longer on your organisation's list. Pick another.",
+  "obligationLinks.removeTitle": "Remove the link to \"{name}\"?",
+  "obligationLinks.removeBody": "The item itself stays, with its other links.",
+  "obligationLinks.removeConfirm": "Remove link"
 }

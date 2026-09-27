@@ -17,6 +17,7 @@ from django.test import TestCase
 
 from apps.cases import testing as cases_build
 from apps.home import tasks
+from apps.home.tests_my_work_api import run_hom_s7, run_hom_s8, run_hom_s9, run_hom_s10, run_hom_s11, run_hom_s12
 from apps.shared import factories, permissions as perms
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.models import AuditEvent
@@ -303,47 +304,53 @@ class HomeScenarioTests(TestCase):
             gone = self.client.get("/api/v1/calendar/feed.ics", {"token": token})
             self.assertEqual((gone.status_code, gone.json()["code"]), (404, "not_found"))
 
-    @skip("pending: HOM-S7 (HOM-05, chunk 8)")
     def test_hom_s7(self) -> None:
         """HOM-S7
 
         My work lists what I'm responsible for or take part in, most urgent first (HOM-05, AC-HOM1).
+        Operations: `getMyWork`.
         """
+        run_hom_s7(self)
 
-    @skip("pending: HOM-S8 (HOM-05, chunk 8)")
     def test_hom_s8(self) -> None:
         """HOM-S8
 
         Compliant and per-entity reviews reach My work (HOM-05, AC-HOM1).
+        Operations: `getMyWork`.
         """
+        run_hom_s8(self)
 
-    @skip("pending: HOM-S9 (HOM-05, chunk 8)")
     def test_hom_s9(self) -> None:
         """HOM-S9
 
         A department head sees the department's work, naming who is responsible (HOM-05, TEN-02, TEN-03).
+        Operations: `getMyWork`.
         """
+        run_hom_s9(self)
 
-    @skip("pending: HOM-S10 (HOM-05, chunk 8)")
     def test_hom_s10(self) -> None:
         """HOM-S10
 
-        My work applies each record's read permission to rows and counts, and ignores the footprint (HOM-05).
+        My work applies each record's read permission to rows and counts, and ignores the footprint (HOM-05, AC-HOM1).
+        Operations: `getMyWork`.
         """
+        run_hom_s10(self)
 
-    @skip("pending: HOM-S11 (HOM-05, chunk 8)")
     def test_hom_s11(self) -> None:
         """HOM-S11
 
-        Changes on your items are confirmed links and new versions only (HOM-05).
+        Changes on your items are confirmed links, new versions and colleagues' comments only (HOM-05).
+        Operations: `getMyWork`.
         """
+        run_hom_s11(self)
 
-    @skip("pending: HOM-S12 (HOM-05, chunk 8)")
     def test_hom_s12(self) -> None:
         """HOM-S12
 
         My work answers within budget for a fifty-member department (HOM-05, NFR-02).
+        Operations: `getMyWork`.
         """
+        run_hom_s12(self)
 
     @skip("pending: HOM-S14 (HOM-05, chunk 9)")
     def test_hom_s14(self) -> None:

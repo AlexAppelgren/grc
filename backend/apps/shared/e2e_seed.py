@@ -42,7 +42,7 @@ from apps.collab import subjects as collab_subjects
 from apps.collab import tasks as collab_tasks
 from apps.collab.digest import TEMPLATE as DIGEST_TEMPLATE
 from apps.collab.digest import week_of
-from apps.collab.models import Comment, CommentMention, CommentRevision, EmailMessage, EmailStatus, Notification, NotificationKind
+from apps.collab.models import Comment, CommentMention, CommentRevision, EmailMessage, EmailStatus, Notification, NotificationKind, Participant
 from apps.home import tasks as home_tasks
 from apps.identity import invitation_logic, roles_logic, tokens
 from apps.identity.models import (
@@ -1884,6 +1884,8 @@ def seed_e2e() -> dict[str, int]:
         seed_org_register(tenants)
         # c10-digest-beat-and-journeys: after the logins and the case journeys it names.
         seed_collab_work(tenants)
+        # c8-ui-links-history-participants: after the register entries it names.
+        seed_participants(tenants)
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
@@ -3107,3 +3109,34 @@ def run_collab_jobs() -> None:
     for task in (collab_tasks.send_tenant_reminders, collab_tasks.send_tenant_escalations, collab_tasks.send_tenant_digests):
         task.apply(args=[tenant_id], throw=True)
 # --- end c10-digest-beat-and-journeys -----------------------------------------------------------
+
+
+# --- c8-ui-links-history-participants (COL-04, COL-S6, COL-S7) ------------------------------
+# COL-S7: the Reader takes part in one register entry, added by the compliance officer, and
+# leaves it on their own. COL-S6: the obligation the compliance officer adds people and a
+# team to, which has no register entry until the first add creates it.
+PARTICIPATION_OBLIGATION = "obl-costs-charges"
+PARTICIPANT = "reader@example-bank.test"
+PARTICIPANT_ADDED_BY = _SARA
+NO_ENTRY_OBLIGATION = "obl-idd-demands-needs"
+
+
+def seed_participants(tenants: list[Tenant]) -> None:
+    """One live participation of the Reader on tenant A's entry, recorded through record()
+    like every seeded row. A reseed finds it live and writes nothing; after COL-S7 has left
+    it, a reseed puts it back."""
+    tenant = next(t for t in tenants if t.slug == TENANT_A_SLUG)
+    tenancy.activate(tenant.id)
+    entry = TenantObligation.objects.get(obligation_id=_obligation_id(PARTICIPATION_OBLIGATION))
+    person = User.objects.get(email=PARTICIPANT)
+    if not Participant.objects.filter(tenant_obligation=entry, user=person, removed_at__isnull=True).exists():
+        row = Participant.objects.create(
+            tenant=tenant,
+            tenant_obligation=entry,
+            user=person,
+            added_by=User.objects.get(email=PARTICIPANT_ADDED_BY),
+            added_at=_at(datetime.datetime.now(ZoneInfo(tenant.timezone)).date(), -6, tenant.timezone),
+        )
+        _seeded(tenant, "participant", row, PARTICIPATION_OBLIGATION, {"tenantObligationId": str(entry.id), "userId": str(person.id)})
+    tenancy.clear_tenant()
+# --- end c8-ui-links-history-participants ----------------------------------------------------

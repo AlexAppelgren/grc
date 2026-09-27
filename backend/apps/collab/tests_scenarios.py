@@ -36,6 +36,7 @@ from apps.shared.logging import JsonFormatter
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.collab.tests_case_participants import run_col_s9
 from apps.collab.tests_participants import run_col_s6, run_col_s7, run_col_s8
+from apps.home.tests_my_work_api import run_col_s12
 from apps.shared.testing import AuditAssertingClient, ScenarioTestCase, sign_in
 from apps.library.reading import today_for
 from apps.shared.adapters.mailer import MockMailer
@@ -482,12 +483,13 @@ class CollabScenarioTests(ScenarioTestCase):
         self.assertEqual(Notification.objects.filter(kind="review_due").count(), 4)
         self.assertEqual(len(MockMailer.sent), 4)
 
-    @skip("pending: COL-S12 (COL-01, HOM-05, chunk 10)")
     def test_col_s12(self) -> None:
         """COL-S12
 
         My comments and mentions are found on My work, limited to what I can read, and never logged (COL-01, HOM-05).
+        Operations: `listMyComments`, `getMyWork`.
         """
+        run_col_s12(self)
 
     # COL-S13 (c10-notify-and-prefs)
     def test_col_s13(self) -> None:

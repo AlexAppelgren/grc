@@ -56,6 +56,9 @@ export const destinations: readonly Destination[] = [
   { id: 'today', href: '/', labelKey: 'nav.today', surface: 'tenant', anyOfPermissions: [], dockRank: 1, group: 'primary' },
   { id: 'watch', href: '/watch', labelKey: 'nav.watch', surface: 'tenant', anyOfPermissions: ['watch.read'], dockRank: 2, group: 'primary' },
   { id: 'inventory', href: '/inventory', labelKey: 'nav.inventory', surface: 'tenant', anyOfPermissions: ['library.read'], dockRank: 3, group: 'primary' },
+  // c8-ui-mywork (HOM-05): any member, in the secondary group with no dockRank, since the
+  // dock's four are taken; the rail lists it from 1024 px and the More sheet below that.
+  { id: 'my-work', href: '/work', labelKey: 'nav.myWork', surface: 'tenant', anyOfPermissions: [], group: 'secondary' },
   { id: 'roadmap', href: '/roadmap', labelKey: 'nav.roadmap', surface: 'tenant', anyOfPermissions: ['roadmap.read'], group: 'secondary' },
   // The briefing (HOM-02): reached from Today's lead card and the mailed
   // link, never the rail or the More sheet. `parent` names a destination

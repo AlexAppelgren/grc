@@ -79,6 +79,9 @@ import enCaseFile from '@/messages/case-file/en.json';
 import svCaseFile from '@/messages/case-file/sv.json';
 import enCaseParticipants from '@/messages/case-participants/en.json';
 import svCaseParticipants from '@/messages/case-participants/sv.json';
+// c8-ui-mywork: My work.
+import enWork from '@/messages/work/en.json';
+import svWork from '@/messages/work/sv.json';
 
 // One catalog per UI language (playbook 6.5), stored as one file pair per
 // feature namespace under src/messages/<namespace>/ so that packages owning
@@ -127,6 +130,8 @@ const en = {
   ...enCaseSignoff,
   ...enCaseFile,
   ...enCaseParticipants,
+  // c8-ui-mywork
+  ...enWork,
 };
 
 const sv = {
@@ -170,6 +175,8 @@ const sv = {
   ...svCaseSignoff,
   ...svCaseFile,
   ...svCaseParticipants,
+  // c8-ui-mywork
+  ...svWork,
 };
 
 export const locales = ['en', 'sv'] as const;
