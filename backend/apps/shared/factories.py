@@ -527,3 +527,38 @@ def closed_case(tenant: Tenant, *, actions: int = 2, evidence: int = 3, so_what_
         )
     row.refresh_from_db()
     return SimpleNamespace(case=row, change_id=row.change_id, owner=owner, approver=approver, step_up=step_up)
+
+
+# security-review-c10: the tenant-isolation guard's records for the two chunk 10 id routes.
+def comment(tenant: Tenant) -> SimpleNamespace:
+    """A comment of `tenant` on one of its cases, addressed by its own id."""
+    from apps.collab.models import Comment
+
+    row = case_change(tenant).case
+    author = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        written = Comment.objects.create(
+            tenant=tenant, subject_type="change_case", subject_id=row.id, author=author, body="Who owns the custody review?"
+        )
+    return SimpleNamespace(id=written.id)
+
+
+def notification(tenant: Tenant) -> SimpleNamespace:
+    """A notification of a member of `tenant` about one of its cases, through notify(), the
+    one writer, addressed by its own id."""
+    from apps.collab import logic
+    from apps.collab.models import NotificationKind
+
+    row = case_change(tenant).case
+    person = member_user(tenant, roles=("reader",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        (told,) = logic.notify(
+            tenant_id=tenant.id,
+            kind=NotificationKind.MENTION,
+            subject_type="change_case",
+            subject_id=row.id,
+            candidates=[(person.id, "mention")],
+        )
+    return SimpleNamespace(id=told.id)
