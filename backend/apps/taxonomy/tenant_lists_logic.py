@@ -498,7 +498,7 @@ def patch_row(
     [row] = row_for_write(list_name, [key], tenant.id)
     if expected_version is not None and expected_version != getattr(row, "version", 1):
         raise ValidationError("Someone changed this first. Reload and try again.", code="stale_write")
-    before = {"labels": Labels.for_rows(entry.label_model, [row]).texts(row.id), "usageNote": row.usage_note}
+    before = {"labels": Labels.for_rows(entry.label_model, [row]).texts(row.id), "usageNote": row.usage_note}  # compliance: record-content a list row's own label and usage note are the values its audit row records (AUD-01)
     cleaned = validated_labels(labels) if labels else {}
     if cleaned:
         _write_labels(entry, row, cleaned, tenant)
@@ -519,7 +519,7 @@ def patch_row(
         summary=f"Changed {key} on {list_name}.",
         tenant_id=tenant.id,
         before=before,
-        after={"labels": cleaned or before["labels"], "usageNote": row.usage_note},
+        after={"labels": cleaned or before["labels"], "usageNote": row.usage_note},  # compliance: record-content a list row's own label and usage note are the values its audit row records (AUD-01)
     )
     fresh = _queryset(entry, tenant.id).filter(pk=row.pk).first()  # ordering: pk lookup, at most one row
     return _row(entry, fresh or row, Labels.for_rows(entry.label_model, [row]), order)

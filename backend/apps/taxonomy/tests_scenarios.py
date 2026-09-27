@@ -841,6 +841,10 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(decision.after["preview"]["cases"], {"hidden": 1, "revealed": 0, "available": True})
         self.assertEqual(approved.json()["preview"], decision.after["preview"])
         self.assertEqual(FootprintChangeRequest.objects.get(pk=request["id"]).preview, decision.after["preview"])
+        # The decision note a person typed stays on the request row; the audit value carries
+        # no tenant text (CHUNK10_TASKS rule 13).
+        self.assertNotIn("note", decision.after)
+        self.assertEqual(FootprintChangeRequest.objects.get(pk=request["id"]).decision_note, "Advice was wound down in June.")
         # Nothing else can happen to a decided request.
         twice = self._post(f"/tenant/footprint/requests/{request['id']}/approve", {}, approver, HTTP_IF_MATCH="2")
         self.assertEqual(twice.status_code, 409)
