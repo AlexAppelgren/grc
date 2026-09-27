@@ -309,9 +309,12 @@ def publish_agent_version(
     request: HttpRequest, body: AgentVersionInput, agent_key: str = Path(..., description=_AGENT_KEY)
 ) -> Any:
     """Publishes the version folder this build ships for the definition, with a note of
-    what changed. Runs opened from now on run it; a run already open keeps the version it
-    opened with, and every earlier run still names the version it used. The prompt, tools
-    and model come from the shipped folder and never from this request.
+    what changed, and makes it the definition's current version. Runs opened from now on
+    run it; a run already open keeps the version it opened with, and every earlier run
+    still names the version it used. The prompt, tools and model come from the shipped
+    folder, read exactly as the deploy's seed reads it, and never from this request; the
+    folder must be the definition's own and keep its kind, its scope and the zone it writes
+    to. Publish the versions in order: the next number is one above the highest published.
 
     A person's session in the platform console holding `agent_definitions.manage`, with a
     fresh passkey step-up, because a new version changes what runs for every bank at once.
@@ -320,9 +323,12 @@ def publish_agent_version(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-    `not_found` (404) for a key no definition has; `validation_error` (422) for a version
-    number the build does not ship or a missing note. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a key no definition has; `version_exists` (409) for a number
+    already published; `version_not_next` (422) for a number that is not one above the
+    highest published; `definition_unreadable` (422) when this build ships no such folder,
+    its definition file cannot be read, its prompt is missing, or it names another agent,
+    number, kind, scope or zone, with the folder named and nothing created;
+    `validation_error` (422) for a missing or overlong note.
     """
     return definitions.publish_version(who=principal(request), agent_key=agent_key, body=body)
 
@@ -344,7 +350,9 @@ def retire_agent_version(
     version_no: int = Path(..., description="The number of the version to retire, counting from 1 within its definition."),
 ) -> Any:
     """Retires one published version: no new run starts on it, and every run that used it
-    keeps pointing at it, because a published version is never rewritten or deleted.
+    keeps pointing at it, because a published version is never rewritten or deleted. A new
+    run opens on the newest version still published. Retiring a version already retired
+    answers it as it is and records nothing.
 
     A person's session in the platform console holding `agent_definitions.manage`, with a
     fresh passkey step-up. Records one audit event naming the person, the version and the
@@ -352,8 +360,9 @@ def retire_agent_version(
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-    `not_found` (404) for a definition or version that does not exist. Published ahead of
-    the logic that will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for a definition or version that does not exist; `last_version`
+    (409) for the last version still published of an active agent, which would leave it
+    nothing to run.
     """
     return definitions.retire_version(who=principal(request), agent_key=agent_key, version_no=version_no)
 
@@ -399,7 +408,9 @@ def update_platform_agent_settings(
     request: HttpRequest, body: PlatformAgentSettingsInput, agent_key: str = Path(..., description=_AGENT_KEY)
 ) -> Any:
     """Replaces the cadence, jurisdictions and monthly budget of one of bleqq's own agents.
-    The change applies to every bank at once, which is why no bank can make it.
+    The change applies to every bank at once, which is why no bank can make it. The
+    jurisdictions are checked against the live jurisdiction list, where a retired one is
+    not valid, and a key sent twice is stored once. It reads no bank's data.
 
     A person's session in the platform console holding `agent_definitions.manage`, with a
     fresh passkey step-up. Records one audit event with the settings before and after, the
@@ -408,9 +419,9 @@ def update_platform_agent_settings(
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
     `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
-    jurisdiction the vocabulary does not hold, with the valid keys; `validation_error`
-    (422). Published ahead of the logic that will fill it, and answering 501 `not_built`
-    until that ships.
+    jurisdiction the vocabulary does not hold or has retired, with the valid keys in
+    `validKeys`; `validation_error` (422) for an empty or overlong list or a negative
+    budget.
     """
     return platform.update_settings(who=principal(request), agent_key=agent_key, body=body)
 
