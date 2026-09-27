@@ -1,0 +1,18 @@
+{
+  "nav.admin.security": "Säkerhet",
+  "admin.security.title": "Säkerhet",
+  "admin.security.lede": "Hur länge en session varar för medlemmarna i er organisation.",
+  "admin.security.errorTitle": "Kunde inte hämta säkerhetspolicyn",
+  "admin.security.sessions.title": "Sessioner",
+  "admin.security.sessions.idle": "Logga ut efter så här lång tid utan aktivitet, i minuter",
+  "admin.security.sessions.idleHint": "Högst {max} minuter. Lämna tomt för plattformens standard på {default}.",
+  "admin.security.sessions.idleAbove": "Högst {max} minuter. Välj {max} eller färre.",
+  "admin.security.sessions.absolute": "Logga ut efter så här lång tid totalt, i timmar",
+  "admin.security.sessions.absoluteHint": "Högst {max} timmar. Lämna tomt för plattformens standard på {default}.",
+  "admin.security.sessions.absoluteAbove": "Högst {max} timmar. Välj {max} eller färre.",
+  "admin.security.sessions.invalid": "Ange ett heltal på minst 1, eller lämna tomt.",
+  "admin.security.sessions.applies": "Nya gränser gäller sessioner från deras nästa förnyelse.",
+  "admin.security.saveHint": "När du sparar ber vi om din passkey.",
+  "admin.security.saved": "Sparat. Nya gränser gäller sessioner från deras nästa förnyelse.",
+  "admin.security.stepUpCancelled": "Inget sparades. Att spara kräver din passkey."
+}

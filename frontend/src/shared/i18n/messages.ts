@@ -66,6 +66,9 @@ import svWatch from '@/messages/watch/sv.json';
 // c10-fe-workflow-policy: the workflow policy page (COL-02, TEN-01).
 import enWorkflow from '@/messages/workflow/en.json';
 import svWorkflow from '@/messages/workflow/sv.json';
+// c11-fe-admin-security
+import enAdminSecurity from '@/messages/admin-security/en.json';
+import svAdminSecurity from '@/messages/admin-security/sv.json';
 
 // One catalog per UI language (playbook 6.5), stored as one file pair per
 // feature namespace under src/messages/<namespace>/ so that packages owning
@@ -108,6 +111,8 @@ const en = {
   ...enVocabularies,
   ...enWatch,
   ...enWorkflow,
+  // c11-fe-admin-security
+  ...enAdminSecurity,
 };
 
 const sv = {
@@ -145,6 +150,8 @@ const sv = {
   ...svVocabularies,
   ...svWatch,
   ...svWorkflow,
+  // c11-fe-admin-security
+  ...svAdminSecurity,
 };
 
 export const locales = ['en', 'sv'] as const;

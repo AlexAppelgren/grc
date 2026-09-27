@@ -82,6 +82,8 @@ export const destinations: readonly Destination[] = [
   // The bank's workflow policy (COL-02, TEN-01): its own section, gated by
   // workflow.manage rather than by the organisation profile's grants.
   { id: 'admin-workflow', href: '/admin/workflow', labelKey: 'nav.admin.workflow', surface: 'tenant', anyOfPermissions: ['workflow.manage'], group: 'admin', parent: 'admin' },
+  // c11-fe-admin-security
+  { id: 'admin-security', href: '/admin/security', labelKey: 'nav.admin.security', surface: 'tenant', anyOfPermissions: ['security.manage'], group: 'admin', parent: 'admin' },
   // Account: any signed-in person, from the who panel.
   // The person's own notification inbox (COL-02), first in the account group; its unread count
   // comes from GET /me (c10-fe-notifications).
