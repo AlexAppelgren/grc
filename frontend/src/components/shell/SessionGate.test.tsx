@@ -35,6 +35,7 @@ const me: Me = {
   counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0 },
   lastVisitAt: null,
   notificationPrefs: null,
+  headOf: [],
 };
 
 /** A screen with the account's sign out on it, as the rail's menu and the More sheet have. */
