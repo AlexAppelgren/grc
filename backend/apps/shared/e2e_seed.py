@@ -2029,6 +2029,8 @@ def seed_e2e() -> dict[str, int]:
         seed_chunk11_agents(tenants)
         # acc-e2e-seed: a reseed leaves no entry of tenant A reaching its register (ACC-08).
         switch_reach_off()
+        # d89-e2e-journey: after chunk 11's agents and cap, which a research run is opened under.
+        seed_own_records(tenants)
 
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
@@ -3144,3 +3146,228 @@ def switch_reach_off() -> int:
         tenancy.clear_tenant()
     return switched
 # --- end acc-e2e-seed ----------------------------------------------------------------------
+
+
+# --- d89-e2e-journey (OWN-01 to OWN-04, J-12, PRO-S15, INV-S15) -----------------------------
+# Tenant A runs its own scope researcher, and one regulation of its own is in its scope with
+# its research open on the mock runner. That research filed the bank's own instrument and its
+# two duties, and the approver approved them, so INV-S15 finds a record "Private to us" and
+# PRO-S15 finds a research to report more findings into.
+#
+# The mock runner files nothing by itself (apps/shared/adapters/agent_runner.py), and no
+# poller turns a runner's report into findings yet. So a journey plays the runner's report
+# with `manage.py e2e_scope_findings` (`report_scope_findings` below): what it reports is
+# built from the run's own input, `scope_research.run_input`, the D-98 fields a real runner
+# is given, and filed through `runner_events.apply_finding`, the one door a bank's run files
+# through. Each finding's event id is fixed, so a report made twice files nothing twice.
+@dataclass(frozen=True)
+class SeedOwnRecords:
+    tenant_slug: str
+    researcher: str
+    item_key: str
+    item_name: str
+    item_reference: str
+    item_url: str
+    item_jurisdiction: str
+    item_regime: str
+    approver_email: str
+
+
+EXPECTED_OWN_RECORDS = SeedOwnRecords(
+    tenant_slug=TENANT_A_SLUG,
+    researcher="scope-researcher",
+    item_key="lagen_om_vissa_kontanttjanster",
+    item_name="Lagen om vissa kontanttjänster",
+    item_reference="SFS 2020:272",
+    item_url="https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2020272-om-vissa-kontanttjanster_sfs-2020-272/",
+    item_jurisdiction="se",
+    item_regime="regime:banking",
+    approver_email="approver@example-bank.test",
+)
+# The seed's stand-in for the approver's passkey assertion on the seeded approvals, as
+# SEED_REVERIFICATION_STEP_UP is for the re-verification.
+SEED_OWN_RECORDS_STEP_UP = uuid.UUID("00000000-0000-4000-9000-000000000089")
+# What the mock runner reports for each duty of a part: its duty type, its reference, and its
+# title and summary in Swedish and English around the part's official reference.
+_OWN_DUTIES: tuple[tuple[str, str, dict[str, str], dict[str, str]], ...] = (
+    (
+        "reporting",
+        "1 §",
+        {"sv": "Rapportera till tillsynsmyndigheten enligt {ref}", "en": "Report to the supervisor under {ref}"},
+        {
+            "sv": "Institutet rapporterar till tillsynsmyndigheten det som {ref} kräver, i den form och vid de tidpunkter som myndigheten bestämmer.",
+            "en": "The institution reports to the supervisor what {ref} requires, in the form and by the dates the supervisor sets.",
+        },
+    ),
+    (
+        "record_keeping",
+        "2 §",
+        {"sv": "Dokumentera det som {ref} kräver", "en": "Keep records of what {ref} requires"},
+        {
+            "sv": "Institutet dokumenterar hur det uppfyller {ref} och sparar dokumentationen i fem år.",
+            "en": "The institution documents how it meets {ref} and keeps the records for five years.",
+        },
+    ),
+)
+
+
+def own_record_keys(item_key: str, part: int = 1) -> tuple[str, tuple[str, ...]]:
+    """The stable keys the mock runner gives part `part` of scope item `item_key`: the bank's
+    own instrument, then one key per duty under it."""
+    words = "".join(c if c.isascii() and c.isalnum() else " " for c in item_key.lower()).split()
+    base = "own-" + "-".join(words)[:80].rstrip("-")
+    instrument = base if part == 1 else f"{base}-part-{part}"
+    return instrument, tuple(f"{instrument}-{n}" for n in range(1, len(_OWN_DUTIES) + 1))
+
+
+def _own_finding(kind: str, event_id: str, title: str, payload: dict[str, Any], source_url: str) -> Any:
+    from apps.proposals.logic import parsed_payload, sourced_fields
+    from apps.proposals.tenant_agent import Finding
+
+    sources = {field: source_url for field in sourced_fields(parsed_payload(kind, payload))}
+    return Finding(event_id=event_id, kind=kind, title=title, payload=payload, field_sources=sources, source_url=source_url, source_label=title, model="mock")
+
+
+def _scope_findings(tenant_id: uuid.UUID, run_id: uuid.UUID, part: int) -> list[Any]:
+    """What the mock runner reports for part `part` of the run's scope item, from the run's own
+    input: the bank's own instrument while the bank does not hold it, and its duties once a
+    person has approved it (a duty is filed under an instrument the bank holds)."""
+    from apps.agents import scope_research
+    from apps.library import reading as library_reading
+
+    given = scope_research.run_input(run_id)
+    keys, text = given["keys"], given["text"]
+    source_url = text["sourceAddresses"][0]
+    reference = text["officialReference"] or text["name"]
+    if part > 1:
+        reference = f"{reference}, part {part}"
+    instrument_key, duty_keys = own_record_keys(keys["scopeItem"], part)
+    if not library_reading.held_as_own(tenant_id, instrument=True, key=instrument_key, reference=reference):
+        payload = {
+            "key": instrument_key,
+            "titles": {"sv": text["name"], "en": text["name"]},
+            "originalLanguage": "sv",
+            "isMachine": True,
+            "shortName": reference[:120],
+            "officialRef": reference[:200],
+            "level": "act",
+            "jurisdiction": keys["jurisdiction"],
+            "regime": f"regime:{keys['regime']}",
+        }
+        return [_own_finding("new_instrument", f"part-{part}-instrument", f"New instrument: {reference}"[:500], payload, source_url)]
+    findings = []
+    for n, (key, (duty_type, ref_label, titles, summaries)) in enumerate(zip(duty_keys, _OWN_DUTIES, strict=True), start=1):
+        payload = {
+            "key": key,
+            "instrument": instrument_key,
+            "titles": {language: title.format(ref=reference) for language, title in titles.items()},
+            "summaries": {language: summary.format(ref=reference) for language, summary in summaries.items()},
+            "originalLanguage": "sv",
+            "isMachine": True,
+            "refLabel": ref_label,
+            "dutyType": duty_type,
+        }
+        findings.append(_own_finding("new_obligation", f"part-{part}-duty-{n}", f"New obligation: {titles['en'].format(ref=reference)}"[:500], payload, source_url))
+    return findings
+
+
+def _running_research(item_key: str) -> Any:
+    """The running research run of tenant A's scope item `item_key`, or None."""
+    from apps.agents.models import ResearchRequestKind
+
+    return (
+        AgentRun.objects.filter(
+            research_request__kind=ResearchRequestKind.SCOPE_ITEM.value,
+            research_request__scope_item__key=item_key,
+            status=RunStatus.RUNNING.value,
+        )
+        .order_by("-started_at", "-id")
+        .first()  # ordering: the newest, though an item is researched once
+    )
+
+
+def report_scope_findings(item_key: str, part: int = 1) -> list[Proposal]:
+    """Play the mock runner's report for part `part` of tenant A's scope item `item_key`: file
+    what `_scope_findings` says through `runner_events.apply_finding`, and return the
+    proposals, the same ones on every call. Refused when deployed; ValueError while the item
+    has no running research, which is the worker's to open after the approval."""
+    from apps.agents import runner_events
+
+    refuse_when_deployed("e2e_scope_findings")
+    tenant = Tenant.objects.get(slug=EXPECTED_OWN_RECORDS.tenant_slug)
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        run = _running_research(item_key)
+        if run is None:
+            raise ValueError(f"No research of {item_key!r} is running in tenant A yet.")
+        filed = [runner_events.apply_finding(run.id, finding) for finding in _scope_findings(tenant.id, run.id, part)]
+        tenancy.clear_tenant()
+    return filed
+
+
+def seed_own_records(tenants: list[Tenant]) -> None:
+    """EXPECTED_OWN_RECORDS, written once: a reseed finds each row and writes nothing."""
+    from apps.agents import tasks as agent_tasks
+    from apps.agents.models import ResearchRequest, ResearchRequestKind, ResearchRequestStatus
+    from apps.agents.screen import screen_all
+    from apps.library.models import Jurisdiction
+    from apps.proposals import private_approval
+    from apps.taxonomy import terms_logic
+    from apps.taxonomy.models import ScopeItem, ScopeItemStatus
+
+    spec = EXPECTED_OWN_RECORDS
+    tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
+    approver = User.objects.get(email=spec.approver_email)
+    tenancy.activate(tenant.id)
+    researcher, created = TenantAgent.objects.get_or_create(
+        tenant=tenant,
+        agent=_agent(spec.researcher),
+        defaults={"enabled": True, "cadence": AgentCadence.MANUAL.value, "run_hour": 0, "scope": {}, "updated_by": approver},
+    )
+    if created:
+        record(
+            action="tenant_agent.seeded", actor=SEED_ACTOR, subject_type="tenant_agent", subject_id=researcher.pk,
+            subject_title=spec.researcher, summary="Seeded for E2E journeys.", tenant_id=tenant.id,
+            after={"agent": spec.researcher, "enabled": True, "cadence": AgentCadence.MANUAL.value},
+        )
+    item, created = ScopeItem.objects.get_or_create(
+        tenant=tenant,
+        key=spec.item_key,
+        defaults={
+            "name": spec.item_name,
+            "jurisdiction": Jurisdiction.objects.get(key=spec.item_jurisdiction),
+            "regime_term": terms_logic.term_by_ref(*spec.item_regime.split(":")),
+            "official_reference": spec.item_reference,
+            "source_url": spec.item_url,
+            "status": ScopeItemStatus.IN_SCOPE.value,
+        },
+    )
+    if created:
+        record(
+            action="scope_item.seeded", actor=SEED_ACTOR, subject_type="scope_item", subject_id=item.pk,
+            subject_title=item.key, summary="Seeded for E2E journeys.", tenant_id=tenant.id,
+            after={"scopeItem": item.key, "status": item.status},
+        )
+    # The research the approval would have opened (`scope_research.open_research`), once.
+    if not ResearchRequest.objects.filter(scope_item=item).exists():
+        request = ResearchRequest.objects.create(
+            tenant=tenant,
+            tenant_agent=researcher,
+            requested_by=approver,
+            kind=ResearchRequestKind.SCOPE_ITEM.value,
+            scope_item=item,
+            risk_flags=screen_all([item.name, item.official_reference, item.source_url]),
+        )
+        agent_tasks.open_request_run(request, requested_by=approver)
+        request.status = ResearchRequestStatus.RUNNING.value
+        request.save(update_fields=["status"])
+    # Part 1 as the approver decided it: the instrument first, then its duties under it. A
+    # reseed after a journey stopped the research finds the records filed and files nothing.
+    actor = Actor(kind=ActorType.USER, id=approver.id, label=approver.name)
+    for _ in range(2 if _running_research(spec.item_key) is not None else 0):
+        for proposal in report_scope_findings(spec.item_key):
+            tenancy.activate(tenant.id)
+            if proposal.status == ProposalStatus.OPEN.value:
+                private_approval.approve(proposal=proposal, reviewer=approver, actor=actor, note="", step_up_assertion_id=SEED_OWN_RECORDS_STEP_UP)
+    tenancy.clear_tenant()
+# --- end d89-e2e-journey --------------------------------------------------------------------
