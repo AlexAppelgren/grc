@@ -29,19 +29,23 @@ measured at their caps: applicability and a paste at REGISTER_BULK_MAX, a taggin
 at BULK_TAGGING_MAX_RECORDS, the Statement of Applicability at Annex A's 93 units and the
 inbox at 5,000 rows. An agent access credential is minted per row, so each stays inside
 AGENT_ACCESS_RATE_PER_MINUTE. The pass also raises PROBLEM_REPORTS_PER_USER_PER_HOUR to
-1000: a record and a check file 42 problem reports as one reader inside an hour, past 30. The slot is seeded and measured with E2E_MODE on, as the
-E2E stack seeds it, so Anna's invitation and the emailed code hold their fixed values. The
-client talks to the host `testserver`, which ALLOWED_HOSTS must name when the report runs
-under config.settings. `publishAgentVersion`
-is the one R2 operation left out: it publishes only the next version of a definition from
-a folder the build ships, and no seeded definition is one version behind such a folder.
+1000: a record and a check file 42 problem reports as one reader inside an hour, past 30.
+The slot is seeded and measured with E2E_MODE on, as the E2E stack seeds it, so Anna's
+invitation and the emailed code hold their fixed values. The client talks to the host
+`testserver`, which ALLOWED_HOSTS must name when the report runs under config.settings.
+`publishAgentVersion` is the one R2 operation left out: it publishes only the next version
+of a definition from a folder the build ships, and no seeded definition is one version
+behind such a folder.
 """
 
 from __future__ import annotations
 
 import secrets
+import uuid
 from collections.abc import Callable
 from datetime import timedelta
+from decimal import Decimal
+from types import SimpleNamespace
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
@@ -836,7 +840,7 @@ def _run_now() -> Call:
     """The seeded cap leaves less than one run's most (AGENT_RUN_BUDGET_LIMIT) this month, so
     the admin raises it first, as the budget route does."""
     call = _agent_call()
-    budget.put_budget(who=user_principal(subject_id=_user(ADMIN).id), tenant=_tenant(), body=AgentBudgetInput(monthly_cap="20.00"))
+    budget.put_budget(who=user_principal(subject_id=_user(ADMIN).id), tenant=_tenant(), body=AgentBudgetInput(monthly_cap=Decimal("20.00")))
     return call
 
 
@@ -949,12 +953,12 @@ def _entry(reach_on: bool = False) -> AgentAccess:
         owner_team="compliance",
         department_ids=[OrgUnit.objects.get(tenant=tenant, name=EXPECTED_J11.department).id],
         product_ids=[],
-        step_up_assertion_id=None,
+        step_up_assertion_id=uuid.uuid4(),
     )
     if reach_on:
         _switch_on()
         agent_access.set_tenant_reach(
-            tenant=tenant, entry_id=row.id, actor=session_logic.actor_of(admin_user), enabled=True, expected_version=None, step_up_assertion_id=None
+            tenant=tenant, entry_id=row.id, actor=session_logic.actor_of(admin_user), enabled=True, expected_version=None, step_up_assertion_id=uuid.uuid4()
         )
     return row
 
@@ -962,12 +966,12 @@ def _entry(reach_on: bool = False) -> AgentAccess:
 def _pending() -> TenantReachRequest:
     tenant, admin_user = _tenant(), _user(ADMIN)
     tenancy.activate(tenant.id)
-    return reach.request_reach(tenant=tenant, requester=admin_user, actor=session_logic.actor_of(admin_user), step_up_assertion_id=None)
+    return reach.request_reach(tenant=tenant, requester=admin_user, actor=session_logic.actor_of(admin_user), step_up_assertion_id=uuid.uuid4())
 
 
 def _switch_on() -> None:
     who = _user(SECURITY)
-    reach.approve(tenant=_tenant(), request=_pending(), decider=who, actor=session_logic.actor_of(who), step_up_assertion_id=None)
+    reach.approve(tenant=_tenant(), request=_pending(), decider=who, actor=session_logic.actor_of(who), step_up_assertion_id=uuid.uuid4())
 
 
 def _key(entry: AgentAccess) -> tuple[Any, str]:
@@ -980,12 +984,12 @@ def _key(entry: AgentAccess) -> tuple[Any, str]:
         name="Order routing CI",
         scopes=ENTRY_SCOPES,
         expires_at=None,
-        step_up_assertion_id=None,
+        step_up_assertion_id=uuid.uuid4(),
     )
 
 
 def _token(entry: AgentAccess) -> Any:
-    return factories.personal_token(_tenant(), _user(TOKENS), scopes=ENTRY_SCOPES, entry=entry)
+    return factories.personal_token(_tenant(), _user(TOKENS), scopes=ENTRY_SCOPES, entry=SimpleNamespace(id=entry.id))
 
 
 def entry_key(reach_on: bool = False, **headers: str) -> PrincipalFactory:
