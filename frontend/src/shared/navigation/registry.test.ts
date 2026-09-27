@@ -148,6 +148,7 @@ describe('navigation registry (playbook 6.2)', () => {
       'admin-api-keys',
       'admin-security-log',
       'admin-support-access',
+      'admin-security',
     ]);
     // Chunk 2: the vocabulary screen needs vocab.manage; the footprint screen
     // opens for either footprint grant and is read-only without the first.
