@@ -718,8 +718,7 @@ def list_teams(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
     Any member of the bank may call it. It changes nothing and writes no audit event.
 
     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
-    session that belongs to no bank; `unauthenticated` (401). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    session that belongs to no bank; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
@@ -744,8 +743,7 @@ def list_team_members(
     with nobody in it is a 200 with `total` 0.
 
     Errors: `not_found` (404) for a team key the bank does not have; `validation_error` (422)
-    for a page size above 100; `unauthenticated` (401). Published ahead of the logic that will
-    fill it, and answering 501 `not_built` until that ships.
+    for a page size above 100; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     return teams.list_team_members(tenant=caller_tenant(request), key=key, limit=page.limit, offset=page.offset)
@@ -783,9 +781,8 @@ def list_people(
 
     Errors: `unknown_key` (422) for a permission that is not one of a bank's;
     `validation_error` (422) for a permission longer than 64 characters; `not_found` (404) for
-    a session that belongs to no bank; `unauthenticated` (401) without a member session.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until that
-    ships.
+    a session that belongs to no bank; `unauthenticated` (401) without a member session;
+    `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: capability (a member session, never an enrolment session).
     return people.list_people(tenant=caller_tenant(request), permission=permission)

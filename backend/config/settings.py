@@ -381,6 +381,14 @@ PERF_SAMPLES = env_int("PERF_SAMPLES", 20)
 PERF_REGRESSION_PCT = env_int("PERF_REGRESSION_PCT", 20)
 
 # ---------------------------------------------------------------------------------------
+# ===== c10-inbox-and-my-comments: the comment edit window (COL-01) ======================
+# How long after writing a comment its author may still edit it; afterwards it can only be
+# deleted. My work's panel reads it for `canEdit`. The same setting as c10-comments-mentions
+# declares for the edit itself: on merge, keep one declaration.
+# ---------------------------------------------------------------------------------------
+COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
+
+# ---------------------------------------------------------------------------------------
 # ===== SRC-01..03 search and ask input caps (apps/search/schemas.py) =====================
 # What a caller may send to search, to the similarity read and to Ask. Each is a cap at a
 # trust boundary: the text reaches a text-search query, the embedder and, for Ask, a model
@@ -694,6 +702,17 @@ CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
 }
 
 # ---------------------------------------------------------------------------------------
+# Reminders before and after a due date (COL-02, c10-reminders-core). The hour is each
+# bank's own local hour, so the entry runs every hour and hands on the banks whose clock
+# has just struck it; a daylight saving change moves the UTC hour, not the local one.
+# ---------------------------------------------------------------------------------------
+REMINDER_SEND_HOUR = env_int("REMINDER_SEND_HOUR", 7)
+CELERY_BEAT_SCHEDULE["collab-reminders"] = {
+    "task": "apps.collab.tasks.send_reminders",
+    "schedule": crontab(minute="0"),
+}
+
+# ---------------------------------------------------------------------------------------
 # ===== COL-02, TEN-01 the workflow policy's platform defaults (c10-workflow-policy) =====
 # What a bank's workflow policy starts at: a new tenant takes these, and the migration that
 # added the columns wrote them into every tenant that already existed. The bank changes its
@@ -765,6 +784,52 @@ BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
 # for a new one. The job row stays. A bank's policy may be stricter, so it is a setting.
 # ---------------------------------------------------------------------------------------
 EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
+
+# ---------------------------------------------------------------------------------------
+# ===== COL-01 comments on a record (apps/collab/comments.py, c10-comments-mentions) =====
+# A comment is a note to colleagues, not a document: the cap bounds what one request can
+# store and what a thread of twenty costs to read. An edit is for a slip noticed at once;
+# after the window the author may delete but not rewrite what others have already read
+# (CHUNK10_TASKS ruling 10). Both are settings because neither number is a rule.
+# ---------------------------------------------------------------------------------------
+COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000)
+COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
+
+# ---------------------------------------------------------------------------------------
+# ===== HOM-05 My work's windows (apps/home/my_work.py, c8-mywork-service, D-23, D-25) ===
+# A row is "due soon" when its next date is today or within MY_WORK_DUE_SOON_DAYS; the
+# tenant's reminder lead replaces it once COL-02 lands. A new version of an obligation stays
+# under "Changes on your items" for MY_WORK_AWARE_DAYS after it was applied: a fixed window
+# needs no write on every page load. Each is at least 1, or the app refuses to boot.
+# ---------------------------------------------------------------------------------------
+MY_WORK_DUE_SOON_DAYS = env_int("MY_WORK_DUE_SOON_DAYS", 30)
+MY_WORK_AWARE_DAYS = env_int("MY_WORK_AWARE_DAYS", 14)
+if min(MY_WORK_DUE_SOON_DAYS, MY_WORK_AWARE_DAYS) < 1:
+    raise ImproperlyConfigured("Refusing to boot: MY_WORK_DUE_SOON_DAYS and MY_WORK_AWARE_DAYS are each at least 1.")
+
+# ---------------------------------------------------------------------------------------
+# ===== COL-02 the weekly digest's content (apps/collab/digest.py, c10-digest-content) ===
+# At most DIGEST_MAX_ITEMS of My work's rows in one digest, the most urgent, then "and N
+# more". My work's page size is at most 100, so the cap is 1 to 100, or the app refuses
+# to boot.
+# ---------------------------------------------------------------------------------------
+DIGEST_MAX_ITEMS = env_int("DIGEST_MAX_ITEMS", 20)
+if not 1 <= DIGEST_MAX_ITEMS <= 100:
+    raise ImproperlyConfigured("Refusing to boot: DIGEST_MAX_ITEMS is 1 to 100.")
+
+# ---------------------------------------------------------------------------------------
+# ===== COL-02 the weekly digest's beat (apps/collab/tasks.py, c10-digest-beat-and-journeys)
+# The digest goes out at DIGEST_SEND_HOUR on each bank's own `digest_weekday`, both read on
+# the bank's clock, so the entry runs every hour beside the reminders and hands on the banks
+# whose clock has just struck it. 0 to 23, or the app refuses to boot.
+# ---------------------------------------------------------------------------------------
+DIGEST_SEND_HOUR = env_int("DIGEST_SEND_HOUR", 7)
+if not 0 <= DIGEST_SEND_HOUR <= 23:
+    raise ImproperlyConfigured("Refusing to boot: DIGEST_SEND_HOUR is 0 to 23.")
+CELERY_BEAT_SCHEDULE["collab-digests"] = {
+    "task": "apps.collab.tasks.send_digests",
+    "schedule": crontab(minute="0"),
+}
 
 # ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================

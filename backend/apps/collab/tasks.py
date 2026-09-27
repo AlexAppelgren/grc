@@ -5,8 +5,21 @@ tenant id is its first argument and it runs activated inside its own transaction
 `email_message` row and the send commit together. The row is the idempotency key: its
 unique `(tenant, user, template, subject_type, subject_id, sent_on)`, with `sent_on` the
 bank's local date, makes a second send of the same mail the same day find the row and do
-nothing, however many workers retry it. A send the relay refused keeps its row as `failed`
-with the error's kind, and the next run tries that row again rather than adding another.
+nothing, however many workers retry it; the weekly digest's `sent_on` is the first day of
+the bank's week, so it goes once a week (`collab/digest.py`). A send the relay refused keeps
+its row as `failed` with the error's kind, and the next run tries that row again rather than
+adding another.
+
+`send_reminders` is the hourly beat entry: it hands on the banks whose local wall time has
+just reached `REMINDER_SEND_HOUR`, one `send_tenant_reminders` and one
+`send_tenant_escalations` each (fan out, never chain). Each is a `@tenant_task` that runs
+`reminders.py` or `escalation.py` for one bank inside its own transaction.
+
+`send_digests` is the weekly digest's entry on the same hourly beat and the same timezone
+rule: it hands on the banks whose local wall time has just reached `DIGEST_SEND_HOUR` on
+their own `digest_weekday`, one `send_tenant_digests` each, which runs `digest.send_all()`.
+A bank whose day has not come is not enqueued, and `deliver_mail`'s weekly key makes a
+second round in the same week send nothing.
 
 Nothing here logs a recipient's address, a subject or a body (playbook 4.7): the row's id,
 its template and its status are all that leave.
@@ -16,19 +29,22 @@ from __future__ import annotations
 
 import logging
 import smtplib
+import datetime
 import uuid
+from zoneinfo import ZoneInfo
 
 from celery import shared_task
+from django.conf import settings
 from django.utils import timezone
 
-from apps.collab import mail
+from apps.collab import digest, escalation, mail, reminders
 from apps.collab.models import EmailMessage, EmailStatus
 from apps.identity.models import Membership, UserStatus
 from apps.library.reading import today_for
 from apps.shared import tenancy
 from apps.shared.adapters.mailer import get_mailer
 from apps.shared.audit import Actor, record
-from apps.shared.models import Tenant
+from apps.shared.models import Tenant, TenantStatus, Weekday
 
 logger = logging.getLogger(__name__)
 
@@ -57,15 +73,24 @@ def deliver_mail(
         )
     except Membership.DoesNotExist:
         return
-    outgoing = mail.compose(membership, template, mail.MailContext.from_task(context))
     tenant = Tenant.objects.get(pk=tenant_id)
+    sent_on = today_for(tenant)
+    if template == digest.TEMPLATE:
+        # Composed here from My work as it stands, so no record title rides the queue, and
+        # once a week rather than once a day. Nothing open any more: no mail and no row.
+        composed = digest.compose(membership)
+        if composed is None:
+            return
+        outgoing, sent_on = composed, digest.week_of(sent_on)
+    else:
+        outgoing = mail.compose(membership, template, mail.MailContext.from_task(context))
     key = {
         "tenant": tenant,
         "user": membership.user,
         "template": template,
         "subject_type": subject_type,
         "subject_id": subject_id,
-        "sent_on": today_for(tenant),
+        "sent_on": sent_on,
     }
     # Insert the day's row unless it exists, then lock it: a second worker waits here for
     # the first to commit and then finds the mail already sent.
@@ -100,3 +125,54 @@ def deliver_mail(
             "sentOn": row.sent_on.isoformat(),
         },
     )
+
+
+@shared_task
+def send_reminders() -> None:
+    """The beat entry, run hourly: hand on each bank whose own clock reads the send hour."""
+    for tenant in reminders.tenants_at_send_hour(timezone.now()):
+        send_tenant_reminders.delay(str(tenant.id))
+        send_tenant_escalations.delay(str(tenant.id))
+
+
+@shared_task
+@tenancy.tenant_task
+def send_tenant_reminders(tenant_id: uuid.UUID) -> None:
+    """One bank's reminders for today, in one transaction with their notifications."""
+    reminders.send_reminders(Tenant.objects.get(pk=tenant_id))
+
+
+@shared_task
+@tenancy.tenant_task
+def send_tenant_escalations(tenant_id: uuid.UUID) -> None:
+    """One bank's escalations of overdue actions, in one transaction with their notifications
+    and audit rows."""
+    escalation.escalate(Tenant.objects.get(pk=tenant_id))
+
+
+def tenants_at_digest_hour(now: datetime.datetime) -> list[Tenant]:
+    """The active banks whose own clock reads `DIGEST_SEND_HOUR` on their `digest_weekday`."""
+    weekdays = list(Weekday)
+    banks = []
+    for tenant in Tenant.objects.filter(status=TenantStatus.ACTIVE.value).order_by("id"):
+        local = now.astimezone(ZoneInfo(tenant.timezone))
+        if local.hour == settings.DIGEST_SEND_HOUR and weekdays[local.weekday()] == tenant.digest_weekday:
+            banks.append(tenant)
+    return banks
+
+
+@shared_task
+def send_digests() -> None:
+    """The beat entry, run hourly: hand on each bank whose own clock reads its digest day and
+    hour. The count of banks is all it logs."""
+    banks = tenants_at_digest_hour(timezone.now())
+    for tenant in banks:
+        send_tenant_digests.delay(str(tenant.id))
+    logger.info("collab digests handed on for %d banks", len(banks))
+
+
+@shared_task
+@tenancy.tenant_task
+def send_tenant_digests(tenant_id: uuid.UUID) -> None:
+    """One bank's weekly digests, one per active member with something open."""
+    digest.send_all()

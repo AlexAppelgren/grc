@@ -15,6 +15,13 @@ STRINGS: dict[str, str] = {
     "escalation.body": (
         "{title}, owned by {name}, was due on {date} and is still not done.\nDays overdue: {count}\nOpen it: {link}"
     ),
-    "weekly_digest.subject": "Your open items this week: {count}",
+    "weekly_digest.subject": "Your open items, week of {date}: {count}",
     "weekly_digest.body": "Your open items as of {date}: {count}\nSee them all: {link}",
+    # The digest's sections, My work's four buckets in its order, each row a title and a link.
+    "weekly_digest.overdue": "Overdue: {count}",
+    "weekly_digest.due_soon": "Due soon: {count}",
+    "weekly_digest.aware": "Changes on your items: {count}",
+    "weekly_digest.open": "Everything you're responsible for: {count}",
+    "weekly_digest.item": "- {title}\n  {link}",
+    "weekly_digest.more": "...and {count} more.",
 }

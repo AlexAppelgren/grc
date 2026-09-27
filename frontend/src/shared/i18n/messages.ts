@@ -4,6 +4,8 @@ import enBriefing from '@/messages/briefing/en.json';
 import svBriefing from '@/messages/briefing/sv.json';
 import enCalendarFeeds from '@/messages/calendar-feeds/en.json';
 import svCalendarFeeds from '@/messages/calendar-feeds/sv.json';
+import enCollab from '@/messages/collab/en.json';
+import svCollab from '@/messages/collab/sv.json';
 import enCommon from '@/messages/common/en.json';
 import svCommon from '@/messages/common/sv.json';
 import enConsole from '@/messages/console/en.json';
@@ -60,6 +62,23 @@ import svWatch from '@/messages/watch/sv.json';
 // c10-fe-workflow-policy: the workflow policy page (COL-02, TEN-01).
 import enWorkflow from '@/messages/workflow/en.json';
 import svWorkflow from '@/messages/workflow/sv.json';
+// The case panels' catalogs (c9-fe-cases-shell).
+import enCases from '@/messages/cases/en.json';
+import svCases from '@/messages/cases/sv.json';
+import enCaseTriage from '@/messages/case-triage/en.json';
+import svCaseTriage from '@/messages/case-triage/sv.json';
+import enCaseAssessment from '@/messages/case-assessment/en.json';
+import svCaseAssessment from '@/messages/case-assessment/sv.json';
+import enCaseActions from '@/messages/case-actions/en.json';
+import svCaseActions from '@/messages/case-actions/sv.json';
+import enCaseEvidence from '@/messages/case-evidence/en.json';
+import svCaseEvidence from '@/messages/case-evidence/sv.json';
+import enCaseSignoff from '@/messages/case-signoff/en.json';
+import svCaseSignoff from '@/messages/case-signoff/sv.json';
+import enCaseFile from '@/messages/case-file/en.json';
+import svCaseFile from '@/messages/case-file/sv.json';
+import enCaseParticipants from '@/messages/case-participants/en.json';
+import svCaseParticipants from '@/messages/case-participants/sv.json';
 
 // One catalog per UI language (playbook 6.5), stored as one file pair per
 // feature namespace under src/messages/<namespace>/ so that packages owning
@@ -71,6 +90,7 @@ const en = {
   ...enAuth,
   ...enBriefing,
   ...enCalendarFeeds,
+  ...enCollab,
   ...enCommon,
   ...enConsole,
   ...enConsoleAgentKeys,
@@ -99,12 +119,21 @@ const en = {
   ...enVocabularies,
   ...enWatch,
   ...enWorkflow,
+  ...enCases,
+  ...enCaseTriage,
+  ...enCaseAssessment,
+  ...enCaseActions,
+  ...enCaseEvidence,
+  ...enCaseSignoff,
+  ...enCaseFile,
+  ...enCaseParticipants,
 };
 
 const sv = {
   ...svAuth,
   ...svBriefing,
   ...svCalendarFeeds,
+  ...svCollab,
   ...svCommon,
   ...svConsole,
   ...svConsoleAgentKeys,
@@ -133,6 +162,14 @@ const sv = {
   ...svVocabularies,
   ...svWatch,
   ...svWorkflow,
+  ...svCases,
+  ...svCaseTriage,
+  ...svCaseAssessment,
+  ...svCaseActions,
+  ...svCaseEvidence,
+  ...svCaseSignoff,
+  ...svCaseFile,
+  ...svCaseParticipants,
 };
 
 export const locales = ['en', 'sv'] as const;

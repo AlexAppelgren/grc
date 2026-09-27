@@ -1488,3 +1488,53 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+
+## c8-mywork-service: how long a linked change stays on My work (2026-09-25, HOM-05, D-25, D-97)
+
+- [ ] **A confirmed link keeps its change under "Changes on your items" while the
+      case is open.** D-25 puts the 14-day window (`MY_WORK_AWARE_DAYS`) on new
+      obligation versions; it says nothing about how long a linked change stays, so
+      the default taken is: for as long as the bank's case on it is open, unless its
+      key date brings it into "Due soon" first. Default if you say nothing: it stays
+      so. The alternative is the same 14 days from the day the link was confirmed,
+      after which the change drops off My work while the case is still open.
+
+## c10-reminders-core: triage reminders and the delegation hop, defaults taken (2026-09-25, COL-02, TEN-04)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **Who is reminded about a case awaiting triage.** Every active member whose
+      roles hold `cases.triage`, since a new case has no owner yet. Default: so.
+- [ ] **An overdue triage is reminded once.** The morning after its due time
+      passes, not every day after; escalation is what follows it. Default: so.
+- [ ] **The absent person's switch decides.** A reminder routed to a delegate
+      follows the absent person's own `reminders` switch, because it is their
+      notice; the delegate's switch is not read. Default: so.
+- [ ] **A delegate already told for themself gets one notice.** It carries no
+      "on behalf of", so they are not told twice about one record. Default: so.
+- [ ] **The mail does not yet say on whose behalf it came.** The notification
+      row names the absent person; the mail wording is the mail catalog's to add.
+- [ ] **A missed beat hour skips that day.** If the worker's beat is down for
+      the whole hour a bank's clock reads `REMINDER_SEND_HOUR`, that day's
+      reminders are not sent, and an overdue triage that fell in that window is
+      not reminded (escalation still follows). Also keep the hour off 02 to 03,
+      which a daylight saving change skips or repeats. Default: accepted for R2;
+      a "reminded through" stamp per bank would close it.
+- [ ] **A mail the relay refused is not retried by the next day's run.** Its
+      `email_message` row stays `failed`, and the notification is in the inbox.
+      Default: so.
+- [ ] **Several absent people sharing one delegate give the delegate one notice**
+      per record, naming the first of them. Default: so.
+- [ ] **The 403 proof uses a case write, not the sign-off route.** Chunk 9's
+      approve route does not exist on this base yet; `c10-out-of-office` or the
+      sign-off package should repeat the proof there.
+## c10-fe-notifications: a case notification cannot link to its case yet (2026-09-25, COL-02)
+
+The inbox links an obligation's notification to `/inventory/obligations/{id}` and a change's to
+`/watch/{id}`. A notification about a case (`change_case`) carries the case's own id, while every
+case screen is addressed by its change (CHUNK9 ruling 1, no `/cases/{caseId}` route), so the screen
+cannot build the link. Default taken: the case's title lists without a link, never a link that would
+always land on Not found. Needs a choice before COL-S1's journey ("Erik finds the notification with a
+link back to the case"): either `notify()` names a case by its change (`subject_type` `change`, the
+change id), or the notification gains the change id, or the frontend adds a `/cases/{caseId}` page that
+redirects to its change. The second keeps the case's own read check (`cases.read`) on the row.
