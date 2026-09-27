@@ -58,7 +58,7 @@ from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
 from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TenantProduct
-from apps.tenants.testing import licence_type_term
+from apps.tenants.testing import entity_term, licence_type_term
 
 _counter = itertools.count(1)
 
@@ -453,3 +453,27 @@ def internal_link(tenant: Tenant) -> SimpleNamespace:
             tenant=tenant, tenant_obligation=entry, internal_item=item, label=item.name, created_by=person
         )
     return SimpleNamespace(id=link.id, link=link)
+
+
+# ---------------------------------------------------------------------------------------
+# c8-ten-organisation (TEN-02): a seeded organisation tree. `legal_entity` reads the seeded
+# `legal_entity:bank` term, so it needs seed_term_dimensions() and seed_taxonomy_terms().
+# ---------------------------------------------------------------------------------------
+def org_legal_entity(tenant: Tenant, *, parent: OrgUnit | None = None, head: User | None = None) -> OrgUnit:
+    """A legal entity of `tenant` carrying the seeded `bank` term, in an organisation tree
+    (`legal_entity` above is c8-reg-applicability's, by name and term id)."""
+    term = entity_term()
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(
+            tenant=tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name=f"Entity {next(_counter)}", parent=parent, head_user=head, entity_term=term
+        )
+
+
+def department(tenant: Tenant, *, parent: OrgUnit | None = None, head: User | None = None) -> OrgUnit:
+    """A business unit of `tenant` with a head, under `parent`."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return OrgUnit.objects.create(
+            tenant=tenant, kind=OrgUnitKind.BUSINESS_UNIT.value, name=f"Unit {next(_counter)}", parent=parent, head_user=head
+        )
