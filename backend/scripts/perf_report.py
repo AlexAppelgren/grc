@@ -59,7 +59,7 @@ def report(routes: Sequence[PerfRoute], *, record: bool, baseline_path: Path) ->
             print(refusal)
             return 1
         except RouteFailed as failure:
-            print(f"{route.operation}: FAIL {failure}")
+            print(f"{route.key}: FAIL {failure}")
             failed = True
             continue
         measured[result.operation] = {
