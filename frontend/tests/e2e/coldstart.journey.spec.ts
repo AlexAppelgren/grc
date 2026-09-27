@@ -183,6 +183,31 @@ test.describe('cold start', () => {
     await expect(admin.getByRole('heading', { level: 1, name: 'Watch' })).toBeVisible();
     await expect(admin.locator('[data-empty-state]')).toBeVisible();
 
+    // ——— R2's screens, on a bank that has never held a register row, a case or an agent ———
+    // My work and the gaps have nothing to hold yet, so each says so rather than failing.
+    await admin.goto('/work');
+    await expect(admin.getByRole('heading', { level: 1, name: 'My work' })).toBeVisible();
+    await expect(admin.locator('[data-empty-state]').getByText('Nothing needs you right now', { exact: true })).toBeVisible();
+    await admin.goto('/gaps');
+    await expect(admin.getByRole('heading', { level: 1, name: 'Gaps' })).toBeVisible();
+    await expect(admin.locator('[data-empty-state]').getByText('No gaps recorded', { exact: true })).toBeVisible();
+    // The organisation's legal entities, which nothing has added yet.
+    await admin.goto('/admin/organisation');
+    await expect(admin.getByText('No legal entities yet', { exact: true })).toBeVisible();
+    // The inbox holds whatever the scope request told this person, or says there is nothing:
+    // either is honest, and the api guard has already failed the journey on a broken read.
+    await admin.goto('/notifications');
+    await expect(admin.getByRole('heading', { level: 1, name: 'Notifications' })).toBeVisible();
+    await expect(admin.locator('[data-empty-state]').or(admin.locator('[data-notification-id]')).first()).toBeVisible();
+    // The bank runs no agent of its own yet, and bleqq's watch has no run to show it.
+    await admin.goto('/admin/agents');
+    await expect(admin.getByRole('heading', { level: 1, name: 'Agents' })).toBeVisible();
+    await expect(admin.getByText('No agents of our own yet', { exact: true })).toBeVisible();
+    // The console's agent definitions are bleqq's own, which the deploy's reference seed files.
+    await page.goto('/console/agents');
+    await expect(page.getByRole('heading', { level: 1, name: 'Agent definitions' })).toBeVisible();
+    await expect(page.locator('[data-agent-definition]').first()).toBeVisible();
+
     await approver.context().close();
     await admin.context().close();
   });
