@@ -27,6 +27,8 @@ export const SCREEN_BUDGETS: Readonly<Record<string, ScreenBudget>> = {
   watch: { ready: '[data-change-rows] [data-change]' },
   inventory: { ready: '[data-obligation-rows] [data-obligation]' },
   roadmap: { ready: '[data-roadmap-card]' },
+  // c8-ui-gaps-risk: the bank's gaps, which another journey may close or accept.
+  gaps: { ready: `[data-gap-rows] [data-gap]${OR_EMPTY}` },
   briefing: { ready: `[data-lead-card], [data-brief-item]${OR_EMPTY}` },
   // At rest Ask asks nothing of the ask route (the question stays out of the
   // URL); it is ready when the permission gate has read the session and the
