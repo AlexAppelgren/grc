@@ -4,6 +4,7 @@ import { createT } from '@/shared/i18n';
 import { defaultFormatContext, formatDateTime } from '@/shared/utils/format';
 
 import {
+  approvedMessage,
   canApprove,
   canWithdraw,
   diffFootprint,
@@ -18,14 +19,17 @@ import {
   pendingRemovals,
   pendingTermPill,
   presentRequestStatus,
+  presentResearch,
   previewLines,
   previewSummary,
   reachLines,
   requestTitle,
   scopeGroups,
+  scopeItemConsequence,
+  scopeItemLines,
   toggleTerm,
 } from './footprint-presentation';
-import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, JurisdictionRef, Market, TaxonomyTerm } from './types';
+import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, JurisdictionRef, Market, ScopeItem, TaxonomyTerm } from './types';
 
 const t = createT('en');
 const sv = createT('sv');
@@ -57,6 +61,8 @@ function request(overrides: Partial<FootprintChangeRequest> = {}): FootprintChan
     requestedAt: '2026-09-18T12:00:00Z',
     adds: [],
     removes: [{ key: 'advice', kind: null, label: 'Advice', dimension: 'service_type' }],
+    scopeItemAdds: [],
+    scopeItemRemoves: [],
     preview,
     decidedBy: null,
     decidedAt: null,
@@ -323,5 +329,57 @@ describe('markets', () => {
     const alone = [...jurisdictions.slice(0, 2), { key: 'dk', kind: 'country', label: 'Denmark', parentKey: null }];
     expect(reachLines(markets.slice(0, 3), alone, t)).toEqual(['European Union rules reach Sweden, so they show wherever those markets do.']);
     expect(reachLines(markets, [], t)).toEqual([]);
+  });
+});
+
+describe('scope items', () => {
+  const item = (key: string, name: string, research: string | null = 'waiting_for_agent'): ScopeItem => ({
+    id: key,
+    key,
+    name,
+    description: '',
+    jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' },
+    regimeTerm: { key: 'payments', kind: null, label: 'Payments', dimension: 'regime' },
+    officialReference: '',
+    sourceUrl: 'https://example.se/',
+    status: 'in_scope',
+    research,
+  });
+
+  it('titles a request by its items, alone or after its terms', () => {
+    expect(requestTitle({ adds: [], removes: [], scopeItemAdds: [{ name: 'Betaltjänstlagen' }] }, t)).toBe('Add the regulation Betaltjänstlagen');
+    expect(requestTitle({ adds: [], removes: [], scopeItemRemoves: [{ name: 'A' }, { name: 'B' }] }, t)).toBe('Remove the regulation A and B');
+    expect(requestTitle({ adds: [retail], removes: [], scopeItemAdds: [{ name: 'X' }], scopeItemRemoves: [{ name: 'Y' }] }, t)).toBe('Add Retail; Add the regulation X; Remove the regulation Y');
+    expect(requestTitle({ adds: [], removes: [], scopeItemAdds: [{ name: 'X' }] }, sv)).toBe('Lägg till regelverket X');
+    expect(requestTitle(request(), t)).toBe('Remove Advice');
+  });
+
+  it('gives each research kind its tone and label, and no pill for none or a kind it does not know', () => {
+    expect(presentResearch('waiting_for_agent', t)).toMatchObject({ label: 'Waiting for your agent', tone: 'warning' });
+    expect(presentResearch('researching', t)).toMatchObject({ label: 'Our agent is researching', tone: 'notice' });
+    expect(presentResearch('researched', t)).toMatchObject({ label: 'Researched', tone: 'positive' });
+    expect(presentResearch('researched', sv)?.label).toBe('Undersökt');
+    expect(presentResearch(null, t)).toBeNull();
+    expect(presentResearch('something_new', t)).toBeNull();
+  });
+
+  it('lists the items in scope and those a waiting request adds by name, each marked with what it does', () => {
+    const lines = scopeItemLines([item('b', 'Beta'), item('d', 'Delta')], { scopeItemAdds: [item('a', 'Alpha', null)], scopeItemRemoves: [item('d', 'Delta')] });
+    expect(lines.map((line) => [line.item.key, line.mark])).toEqual([
+      ['a', 'add'],
+      ['b', null],
+      ['d', 'remove'],
+    ]);
+    expect(scopeItemLines([item('b', 'Beta')], null).map((line) => line.mark)).toEqual([null]);
+  });
+
+  it('says what approving does to the research, and names the regulations an approval only adds', () => {
+    const adds = request({ removes: [], scopeItemAdds: [item('a', 'Alpha'), item('b', 'Beta')] });
+    expect(scopeItemConsequence(adds, t)).toBe('Our agent starts researching it, and what it finds waits in our own records.');
+    expect(scopeItemConsequence(request({ scopeItemRemoves: [item('a', 'Alpha')] }), t)).toBe('Our agent stops researching it. What we already approved stays in our inventory.');
+    expect(scopeItemConsequence(request(), t)).toBe('');
+    expect(approvedMessage(adds, t)).toBe('Approved. Our agent will research Alpha and Beta.');
+    expect(approvedMessage(request({ scopeItemAdds: [item('a', 'Alpha')] }), t)).toBe('Approved. The regulatory scope has changed.');
+    expect(approvedMessage(request(), t)).toBe('Approved. The regulatory scope has changed.');
   });
 });

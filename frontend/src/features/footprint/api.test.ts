@@ -31,6 +31,8 @@ describe('footprint api', () => {
     requestedBy: { id: 'u1', name: 'Sara Lindqvist' },
     adds: [],
     removes: [{ dimension: 'service_type', key: 'advice', kind: null, label: 'Advice' }],
+    scopeItemAdds: [],
+    scopeItemRemoves: [],
     preview: {
       hidden: { obligations: { count: 4, available: true }, cases: { count: 0, available: false } },
       revealed: { obligations: { count: 0, available: true }, cases: { count: 0, available: false } },
@@ -58,6 +60,7 @@ describe('footprint api', () => {
         { jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' }, level: 'operating' },
         { jurisdiction: { key: 'no', kind: null, label: 'Norway' }, level: 'watching' },
       ],
+      scopeItems: [],
     });
     expect(await footprint.listFootprintRequests({ limit: 20, offset: 0 })).toEqual({ items: [screenRequest], total: 1 });
     expect(await footprint.listFootprintRequests()).toEqual({ items: [screenRequest], total: 1 });
@@ -73,6 +76,7 @@ describe('footprint api', () => {
       dimensions: [{ dimension: { key: 'channel', kind: null, label: 'Channels' }, restrictsFootprint: true, terms: [], allSelected: true }],
       pendingRequest: null,
       markets: [],
+      scopeItems: [],
     });
     expect(footprint.footprintOf({ dimensions: [] }).pendingRequest).toBeNull();
   });
@@ -186,5 +190,32 @@ describe('footprint api', () => {
     flat = true;
     expect(await footprint.suggestTerm({ dimension: 'channel', labels: { en: 'T+1' } })).toEqual({ id: 'p2', kind: 'term_create', status: 'open', title: 'T+1' });
     expect(sent[0]).toMatchObject({ method: 'post', path: '/api/v1/taxonomy/terms', body: { dimension: 'channel', labels: { en: 'Robo' } } });
+  });
+
+  it('reads a scope item and the item lists of a request, with a null id, kind or research as null', () => {
+    const row = {
+      id: null,
+      key: 'local_rules',
+      name: 'Local rules',
+      description: '',
+      officialReference: '',
+      jurisdiction: { key: 'se', label: 'Sweden' },
+      regimeTerm: { key: 'payments', label: 'Payments', dimension: 'regime' },
+      sourceUrl: 'https://www.fi.se/',
+      status: 'requested',
+    };
+    const item = { id: null, key: 'local_rules', name: 'Local rules', description: '', jurisdiction: { key: 'se', kind: null, label: 'Sweden' }, regimeTerm: { key: 'payments', kind: null, label: 'Payments', dimension: 'regime' }, officialReference: '', sourceUrl: 'https://www.fi.se/', status: 'requested', research: null };
+    expect(footprint.scopeItemOf(row)).toEqual(item);
+    const request = footprint.requestOf({ ...serverRequest, scopeItemAdds: [row], scopeItemRemoves: [{ ...row, id: 'i1', status: 'in_scope', research: 'waiting_for_agent' }] });
+    expect(request.scopeItemAdds).toEqual([item]);
+    expect(request.scopeItemRemoves).toEqual([{ ...item, id: 'i1', status: 'in_scope', research: 'waiting_for_agent' }]);
+    expect(footprint.footprintOf({ dimensions: [], scopeItems: [row] }).scopeItems).toEqual([item]);
+  });
+
+  it('sends scope items with the request, the removals by key', async () => {
+    const sent = installAdapter(() => ({ status: 201, data: serverRequest }));
+    const add = { name: 'Local rules', description: '', jurisdiction: 'se', regimeTerm: 'payments', officialReference: '', sourceUrl: 'https://www.fi.se/' };
+    await footprint.createFootprintRequest({ adds: [], removes: [], scopeItemAdds: [add], scopeItemRemoves: ['old_rules'] });
+    expect(sent[0]?.body).toEqual({ adds: [], removes: [], scopeItemAdds: [add], scopeItemRemoves: ['old_rules'] });
   });
 });
