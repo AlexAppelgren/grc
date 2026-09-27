@@ -1877,7 +1877,7 @@ def seed_chunk11_agents(tenants: list[Tenant], now: datetime.datetime | None = N
     first_version = _agent(spec.platform_agent).versions.get(version_number=spec.platform_versions[0])
     second_version = publish_e2e_version(
         key=spec.platform_agent,
-        version_number=spec.platform_versions[1],
+        version_no=spec.platform_versions[1],
         change_note="Version 1's prompt and tools, published again so the journeys find a version history.",
     )
     confirmer = _agent(spec.confirming_agent)
