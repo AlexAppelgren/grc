@@ -210,6 +210,8 @@ CONSOLE_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("updatePlatformAgentSettings", "put", f"{DEFINITIONS}/{AGENT_KEY}/settings", SETTINGS_BODY, perms.AGENT_DEFINITIONS_MANAGE, True),
     ("listPlatformRuns", "get", CONSOLE_RUNS, None, perms.AGENT_DEFINITIONS_MANAGE, False),
     ("createRetagRequest", "post", "/api/v1/console/research-requests", {"topic": "Re-tag custody records with Client money."}, perms.PROPOSALS_REVIEW, False),
+    # c11-fe-console-batch-retag: the console's re-tag form follows its request to the batch.
+    ("getRetagRequest", "get", f"/api/v1/console/research-requests/{KEY}", None, perms.PROPOSALS_REVIEW, False),
 ]
 # (name, method, url, body, permission). `{id}` is filled with a record of the caller's own
 # bank, of another bank, or with nothing, by the test that needs one.

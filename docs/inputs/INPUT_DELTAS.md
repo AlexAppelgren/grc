@@ -1505,6 +1505,7 @@ that already left `new` keeps a null, since reminders read the column only while
 two facts already on record, not a decision.
 
 ## 18. Chunk 11's agent tables (2026-09-25, c11-agent-models)
+## 19. Chunk 11's agent tables (2026-09-25, c11-agent-models)
 
 Agents migrations 0004 and 0005 build schema v0.3 PART 3's agent tables with three rulings
 of `docs/plans/briefs/CHUNK11_TASKS.md` and the fence of ADR 0053 in the database:
