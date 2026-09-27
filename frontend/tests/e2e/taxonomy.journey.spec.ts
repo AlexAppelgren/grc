@@ -1006,130 +1006,138 @@ test.describe('regulatory scope, markets and standards', () => {
     });
   });
 
-  // FP-S10 on tenant A, which watches Denmark as seeded. Norway is watched and unwatched
-  // here alone. The read-only view is the approver's: a reader holds no scope permission,
-  // so the screen is closed to them (FP-S7); the approver reads it without footprint.request.
-  test("FP-S10: Watching a market is one audited write that hides nothing", async ({ page, browser, apiGuard }, testInfo) => {
-    allowFreshContext(apiGuard);
-    await signInAs(page, LOGINS.admin);
-    await page.goto('/admin/footprint');
-    const norway = page.locator('[data-markets] [data-market="no"]');
-    const watching = norway.getByRole('button', { name: 'Watching Norway' });
-    await expect(watching).toHaveAttribute('aria-pressed', 'false');
-    // Only the jurisdictions are compared: FP-S5 changes tenant A's services in parallel.
-    const jurisdictions = page.locator('[data-footprint-dimensions] [data-dimension="jurisdiction"]');
-    const jurisdictionsBefore = (await jurisdictions.textContent()) ?? '';
+  test.describe('watched markets', () => {
+    // FP-S10 watches and unwatches Norway on tenant A, while FP-S13 and FP-S15 read
+    // what watching adds and would list Norway's duty or change if they ran beside it,
+    // so the three run in order in one worker.
+    test.describe.configure({ mode: 'default' });
 
-    try {
-      // One write, no second person and no step-up: the toggle saves at once.
-      await watching.click();
-      await expect(watching).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.getByRole('dialog')).toHaveCount(0);
-      await page.reload();
-      await expect(watching).toHaveAttribute('aria-pressed', 'true');
-      // Watching hides nothing: the jurisdictions read as before and nothing waits for approval.
-      await expect(jurisdictions).toHaveText(jurisdictionsBefore);
-      await expect(page.locator('[data-pending-request]').filter({ hasText: /Norway/ })).toHaveCount(0);
+    // FP-S10 on tenant A, which watches Denmark as seeded. Norway is watched and unwatched
+    // here alone. The read-only view is the approver's: a reader holds no scope permission,
+    // so the screen is closed to them (FP-S7); the approver reads it without footprint.request.
+    test("FP-S10: Watching a market is one audited write that hides nothing", async ({ page, browser, apiGuard }, testInfo) => {
+      allowFreshContext(apiGuard);
+      await signInAs(page, LOGINS.admin);
+      await page.goto('/admin/footprint');
+      const norway = page.locator('[data-markets] [data-market="no"]');
+      const watching = norway.getByRole('button', { name: 'Watching Norway' });
+      await expect(watching).toHaveAttribute('aria-pressed', 'false');
+      // Only the jurisdictions are compared: FP-S5 changes tenant A's services in parallel.
+      const jurisdictions = page.locator('[data-footprint-dimensions] [data-dimension="jurisdiction"]');
+      const jurisdictionsBefore = (await jurisdictions.textContent()) ?? '';
 
-      // One audit event holding the key only.
+      try {
+        // One write, no second person and no step-up: the toggle saves at once.
+        await watching.click();
+        await expect(watching).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.getByRole('dialog')).toHaveCount(0);
+        await page.reload();
+        await expect(watching).toHaveAttribute('aria-pressed', 'true');
+        // Watching hides nothing: the jurisdictions read as before and nothing waits for approval.
+        await expect(jurisdictions).toHaveText(jurisdictionsBefore);
+        await expect(page.locator('[data-pending-request]').filter({ hasText: /Norway/ })).toHaveCount(0);
+
+        // One audit event holding the key only.
+        await page.goto('/admin/audit-log');
+        await page.getByLabel('Record kind').selectOption('watched_market');
+        const added = page.locator('[data-audit-row][data-action="markets.watch_added"]').filter({ has: page.locator('[data-field="jurisdiction"] [data-after]', { hasText: /^no$/ }) });
+        await expect(added.first()).toBeVisible();
+        await expect(added.first().locator('[data-audit-diff] [data-field]')).toHaveCount(1);
+        await expect(added.first().getByText('Confirmed with a passkey')).toHaveCount(0);
+
+        // Someone without footprint.request sees which markets are operating and watched, and no toggle.
+        const readOnly = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
+        await readOnly.goto('/admin/footprint');
+        const markets = readOnly.locator('[data-markets]');
+        await expect(markets.locator('[data-market="no"]')).toHaveText(/^Norway\s*Watching$/);
+        await expect(markets.locator('[data-market="dk"]')).toHaveText(/^Denmark\s*Watching$/);
+        await expect(markets.getByRole('button')).toHaveCount(0);
+        await expect(markets.getByText(/^You can see the regulatory scope\. Changing it needs /)).toBeVisible();
+        await readOnly.context().close();
+      } finally {
+        // Switch it off whatever happened above, so Norway reads as seeded.
+        await page.goto('/admin/footprint');
+        await expect(watching).toBeVisible();
+        if ((await watching.getAttribute('aria-pressed')) === 'true') await watching.click();
+        await expect(watching).toHaveAttribute('aria-pressed', 'false');
+      }
+
+      // The removal is audited too, on the same watch row.
       await page.goto('/admin/audit-log');
       await page.getByLabel('Record kind').selectOption('watched_market');
-      const added = page.locator('[data-audit-row][data-action="markets.watch_added"]').filter({ has: page.locator('[data-field="jurisdiction"] [data-after]', { hasText: /^no$/ }) });
-      await expect(added.first()).toBeVisible();
-      await expect(added.first().locator('[data-audit-diff] [data-field]')).toHaveCount(1);
-      await expect(added.first().getByText('Confirmed with a passkey')).toHaveCount(0);
-
-      // Someone without footprint.request sees which markets are operating and watched, and no toggle.
-      const readOnly = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
-      await readOnly.goto('/admin/footprint');
-      const markets = readOnly.locator('[data-markets]');
-      await expect(markets.locator('[data-market="no"]')).toHaveText(/^Norway\s*Watching$/);
-      await expect(markets.locator('[data-market="dk"]')).toHaveText(/^Denmark\s*Watching$/);
-      await expect(markets.getByRole('button')).toHaveCount(0);
-      await expect(markets.getByText(/^You can see the regulatory scope\. Changing it needs /)).toBeVisible();
-      await readOnly.context().close();
-    } finally {
-      // Switch it off whatever happened above, so Norway reads as seeded.
-      await page.goto('/admin/footprint');
-      await expect(watching).toBeVisible();
-      if ((await watching.getAttribute('aria-pressed')) === 'true') await watching.click();
-      await expect(watching).toHaveAttribute('aria-pressed', 'false');
-    }
-
-    // The removal is audited too, on the same watch row.
-    await page.goto('/admin/audit-log');
-    await page.getByLabel('Record kind').selectOption('watched_market');
-    const removed = page.locator('[data-audit-row][data-action="markets.watch_removed"]').filter({ has: page.locator('[data-field="jurisdiction"] [data-before]', { hasText: /^no$/ }) });
-    await expect(removed.first()).toBeVisible();
-    const watchRow = await removed.first().getAttribute('data-subject-id');
-    await expect(page.locator(`[data-audit-row][data-action="markets.watch_added"][data-subject-id="${watchRow}"]`)).toHaveCount(1);
-  });
-  // --- end tax-market-journeys ----------------------------------------------------------
+      const removed = page.locator('[data-audit-row][data-action="markets.watch_removed"]').filter({ has: page.locator('[data-field="jurisdiction"] [data-before]', { hasText: /^no$/ }) });
+      await expect(removed.first()).toBeVisible();
+      const watchRow = await removed.first().getAttribute('data-subject-id');
+      await expect(page.locator(`[data-audit-row][data-action="markets.watch_added"][data-subject-id="${watchRow}"]`)).toHaveCount(1);
+    });
+    // --- end tax-market-journeys ----------------------------------------------------------
 
 
-  test("FP-S13: The watched-market view of the inventory shows only what watching adds", async ({ page, apiGuard }) => {
-    // Tenant A as seeded (backend/apps/shared/e2e_seed.py): operating in Sweden, providing
-    // Custody and watching Denmark (EXPECTED_FOOTPRINTS, EXPECTED_WATCHED_MARKETS), so the
-    // Danish custody duty is what watching adds. Read only: no journey changes the watch.
-    allowFreshContext(apiGuard);
-    await signInAs(page, LOGINS.reader);
-    const danish = page.locator(`[data-obligation="${WATCHED_MARKET_OBLIGATION}"]`);
+    test("FP-S13: The watched-market view of the inventory shows only what watching adds", async ({ page, apiGuard }) => {
+      // Tenant A as seeded (backend/apps/shared/e2e_seed.py): operating in Sweden, providing
+      // Custody and watching Denmark (EXPECTED_FOOTPRINTS, EXPECTED_WATCHED_MARKETS), so the
+      // Danish custody duty is what watching adds. Read only: FP-S10, before it in this
+      // worker, restores Norway as seeded.
+      allowFreshContext(apiGuard);
+      await signInAs(page, LOGINS.reader);
+      const danish = page.locator(`[data-obligation="${WATCHED_MARKET_OBLIGATION}"]`);
 
-    // In our scope, the default, the Danish duty is hidden while the rest reads.
-    await page.goto(`/inventory?regime=securities&asOf=${INVENTORY_AS_OF}`);
-    await expect(page.locator('[data-obligation]').first()).toBeVisible();
-    await expect(danish).toHaveCount(0);
+      // In our scope, the default, the Danish duty is hidden while the rest reads.
+      await page.goto(`/inventory?regime=securities&asOf=${INVENTORY_AS_OF}`);
+      await expect(page.locator('[data-obligation]').first()).toBeVisible();
+      await expect(danish).toHaveCount(0);
 
-    // "Markets we watch" is one value of the one Scope filter: choosing it presses it alone.
-    const scope = page.getByRole('group', { name: 'Scope' });
-    await scope.getByRole('button', { name: 'Markets we watch' }).click();
-    await expect(page).toHaveURL(/scope=watched/);
-    await expect(scope.getByRole('button', { name: 'Markets we watch' })).toHaveAttribute('aria-pressed', 'true');
-    await expect(scope.getByRole('button', { name: 'My scope' })).toHaveAttribute('aria-pressed', 'false');
-    await expect(scope.getByRole('button', { name: 'Show all items' })).toHaveAttribute('aria-pressed', 'false');
+      // "Markets we watch" is one value of the one Scope filter: choosing it presses it alone.
+      const scope = page.getByRole('group', { name: 'Scope' });
+      await scope.getByRole('button', { name: 'Markets we watch' }).click();
+      await expect(page).toHaveURL(/scope=watched/);
+      await expect(scope.getByRole('button', { name: 'Markets we watch' })).toHaveAttribute('aria-pressed', 'true');
+      await expect(scope.getByRole('button', { name: 'My scope' })).toHaveAttribute('aria-pressed', 'false');
+      await expect(scope.getByRole('button', { name: 'Show all items' })).toHaveAttribute('aria-pressed', 'false');
 
-    // The Danish "Custody" duty is listed with its market as meta text, neither dashed nor
-    // marked outside; no EU or Swedish duty is listed, because they are already in the
-    // scope, and every row names Denmark.
-    await expect(danish).toHaveAttribute('data-watched-market', 'dk');
-    await expect(danish.getByText('Market we watch: Denmark', { exact: true })).toBeVisible();
-    await expect(danish).not.toHaveAttribute('data-outside-footprint');
-    await expect(page.locator('[data-obligation-rows] [data-obligation]:not([data-watched-market="dk"])')).toHaveCount(0);
+      // The Danish "Custody" duty is listed with its market as meta text, neither dashed nor
+      // marked outside; no EU or Swedish duty is listed, because they are already in the
+      // scope, and every row names Denmark.
+      await expect(danish).toHaveAttribute('data-watched-market', 'dk');
+      await expect(danish.getByText('Market we watch: Denmark', { exact: true })).toBeVisible();
+      await expect(danish).not.toHaveAttribute('data-outside-footprint');
+      await expect(page.locator('[data-obligation-rows] [data-obligation]:not([data-watched-market="dk"])')).toHaveCount(0);
 
-    // The Instruments tab keeps the value and lists the Danish act alone.
-    await page.getByRole('tab', { name: 'Instruments' }).click();
-    await expect(page).toHaveURL(/tab=instruments.*scope=watched/);
-    await expect(page.locator(`[data-instrument-rows] [data-instrument="${WATCHED_MARKET_INSTRUMENT}"]`)).toBeVisible();
-    await expect(page.locator('[data-instrument="fffs-2017-2"]')).toHaveCount(0);
-  });
+      // The Instruments tab keeps the value and lists the Danish act alone.
+      await page.getByRole('tab', { name: 'Instruments' }).click();
+      await expect(page).toHaveURL(/tab=instruments.*scope=watched/);
+      await expect(page.locator(`[data-instrument-rows] [data-instrument="${WATCHED_MARKET_INSTRUMENT}"]`)).toBeVisible();
+      await expect(page.locator('[data-instrument="fffs-2017-2"]')).toHaveCount(0);
+    });
 
-  test("FP-S15: A change's jurisdiction comes from its authority, and the feed has the watched-market view", async ({ page, apiGuard }) => {
-    // Tenant A operates in Sweden and watches Denmark, as seeded (backend/apps/shared/e2e_seed.py,
-    // tax-watched-feed): the Danish authority's custody change is outside its scope by
-    // jurisdiction alone, while the Swedish lead change is inside it. The journey reads
-    // the scope and never changes it.
-    const danish = page.locator(`[data-change="${WATCHED_MARKET_CHANGE}"]`);
-    const swedish = page.locator(`[data-change="${IN_SCOPE_CHANGE}"]`);
-    const scope = page.getByRole('group', { name: 'Scope' });
-    allowFreshContext(apiGuard);
-    await signInAs(page, LOGINS.reader);
-    await page.goto('/watch');
-    await expect(swedish).toBeVisible();
-    await expect(danish).toHaveCount(0);
+    test("FP-S15: A change's jurisdiction comes from its authority, and the feed has the watched-market view", async ({ page, apiGuard }) => {
+      // Tenant A operates in Sweden and watches Denmark, as seeded (backend/apps/shared/e2e_seed.py,
+      // tax-watched-feed): the Danish authority's custody change is outside its scope by
+      // jurisdiction alone, while the Swedish lead change is inside it. The journey reads
+      // the scope and never changes it.
+      const danish = page.locator(`[data-change="${WATCHED_MARKET_CHANGE}"]`);
+      const swedish = page.locator(`[data-change="${IN_SCOPE_CHANGE}"]`);
+      const scope = page.getByRole('group', { name: 'Scope' });
+      allowFreshContext(apiGuard);
+      await signInAs(page, LOGINS.reader);
+      await page.goto('/watch');
+      await expect(swedish).toBeVisible();
+      await expect(danish).toHaveCount(0);
 
-    // Markets we watch lists only what watching adds, the market named as text.
-    await scope.getByRole('button', { name: 'Markets we watch' }).click();
-    await expect(page).toHaveURL(/scope=watched/);
-    await expect(danish).toBeVisible();
-    await expect(danish).toContainText('Market we watch: Denmark');
-    await expect(swedish).toHaveCount(0);
-    // Watching opened nothing: the case still waits for triage, as creation left it.
-    await expect(danish).toContainText('Needs triage');
+      // Markets we watch lists only what watching adds, the market named as text.
+      await scope.getByRole('button', { name: 'Markets we watch' }).click();
+      await expect(page).toHaveURL(/scope=watched/);
+      await expect(danish).toBeVisible();
+      await expect(danish).toContainText('Market we watch: Denmark');
+      await expect(swedish).toHaveCount(0);
+      // Watching opened nothing: the case still waits for triage, as creation left it.
+      await expect(danish).toContainText('Needs triage');
 
-    // Looking outside the scope shows it too, still naming the market it comes from.
-    await scope.getByRole('button', { name: 'Show outside our scope' }).click();
-    await expect(swedish).toBeVisible();
-    await expect(danish).toContainText('Market we watch: Denmark');
+      // Looking outside the scope shows it too, still naming the market it comes from.
+      await scope.getByRole('button', { name: 'Show outside our scope' }).click();
+      await expect(swedish).toBeVisible();
+      await expect(danish).toContainText('Market we watch: Denmark');
+    });
   });
 
 });
