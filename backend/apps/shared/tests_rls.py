@@ -221,6 +221,8 @@ TENANT_ONLY_TABLES = [
     "agent_access",
     "agent_access_department",
     "agent_access_product",
+    # c8-reg-units (register 0003; REG-08, D-41): the Statement of Applicability's units.
+    "soa_unit",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the

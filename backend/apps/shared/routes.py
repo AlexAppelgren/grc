@@ -94,4 +94,7 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/gaps/{gap_id}/reopen", "register.Gap", "gap"),
     # c8-reg-links-history (REG-05): a link is removed by id.
     ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
+    # c8-reg-units (REG-08): a Statement of Applicability unit, addressed by its id.
+    ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
+    ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
 ]
