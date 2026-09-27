@@ -108,8 +108,8 @@ class SessionPolicy(TestCase):
 
     def test_a_lowered_idle_limit_applies_at_the_next_refresh(self) -> None:
         bundle = self._session()
-        self._policy(idle=10)
-        self._assert_ends(bundle, timedelta(minutes=11), "idle")
+        self._policy(idle=15)  # the floor, SESSION_IDLE_MINUTES_MIN
+        self._assert_ends(bundle, timedelta(minutes=16), "idle")
 
     def test_a_raised_limit_never_extends_a_live_session(self) -> None:
         self._policy(absolute=2)
