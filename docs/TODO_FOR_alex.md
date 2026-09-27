@@ -1696,3 +1696,34 @@ Built on these defaults; each stays yours to overrule.
       owner chooses Request sign-off" and receives the 409: with this default the journey
       shows the disabled button and its reason instead, and proves the 409 in
       `tests_scenarios.py`. Say if the card should win.
+- [ ] **Should the approval re-check the evidence, or should evidence lock?** A sign-off
+      request needs no open action and one piece of evidence the scanner passed. While
+      the case waits, the actions lock (`c9-actions`, `actions_locked`), but nothing in
+      the plan locks the evidence: `removeEvidence` only sets `removed_at`, and a rescan
+      could mark a file infected. The approval then closes a case whose evidence is gone,
+      because the fixed guard on `signoff → closed` checks only the second person.
+      Default taken: no change, since the guards are fixed (CLAUDE.md section 5) and this
+      package does not own `state.py` or `evidence.py`. Two ways out: (a) `c9-evidence-b`
+      refuses `removeEvidence` with 409 `actions_locked`-style `evidence_locked` while
+      the case is in `signoff`, which mirrors the actions lock; or (b) the
+      `signoff → closed` edge also carries the `no_open_action` and `clean_evidence`
+      guards. The first keeps the state machine as designed; say which.
+
+## c10-out-of-office: a member's absence with a delegate, defaults taken (2026-09-25, TEN-04, COL-02)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **Which approve permission the delegate needs.** Every four-eyes approve permission
+      (`footprint.approve`, `cases.signoff`, `risk.accept.approve`) the absent person holds;
+      a person who holds none may name any active member. Default: so.
+- [ ] **One absence at a time, changed by ending it.** A new absence while one is open
+      answers 409 `already_delegated`, so moving the last day or the delegate means ending
+      the absence first (both fields null) and setting a new one. Default: so.
+- [ ] **A delegate's sign-off names whom it was for.** The approval's audit row gains
+      `onBehalfOf`, the absent approvers holding `cases.signoff` who name that delegate
+      through the bank's today, the requester left out. The delegate still approves under
+      their own `cases.signoff`; nothing is granted. Default: so.
+- [ ] **A delegate who holds `cases.signoff` is told once, unstamped.** Since the delegate
+      must hold the absent approver's approve permissions, a sign-off request already reaches
+      them on their own account, and `c10-reminders-core`'s rule gives them one row without
+      "on behalf of". Reminders for kinds the delegate is not a candidate for carry the stamp.

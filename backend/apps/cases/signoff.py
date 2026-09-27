@@ -31,6 +31,7 @@ from apps.shared.audit import Actor
 from apps.shared.kinds import CaseStatusCategory, CloseReason
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ClosureReason
+from apps.tenants import out_of_office
 
 C = CaseStatusCategory
 
@@ -104,7 +105,14 @@ def approve_signoff(
     case.close_reason = ClosureReason.objects.get(tenant=tenant, key=CloseReason.SIGNED_OFF.value)
     case.closed_note = body.note
     case.closed_at = timezone.now()
-    logic.transition(case, C.CLOSED, actor=actor, user=user, note=body.note, step_up_assertion_id=step_up_assertion_id)
+    # A delegate approves under their own `cases.signoff`; the audit row also names the
+    # absent approvers who named them (TEN-04), never the requester.
+    delegated = out_of_office.on_behalf_of(
+        tenant=tenant, delegate_id=user.id, permission=perms.CASES_SIGNOFF, exclude=case.signoff_requested_by_id
+    )
+    logic.transition(
+        case, C.CLOSED, actor=actor, user=user, note=body.note, step_up_assertion_id=step_up_assertion_id, on_behalf_of=delegated
+    )
     return case_response(case, reader=user.id, order=order)
 
 

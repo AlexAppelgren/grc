@@ -52,6 +52,9 @@ BUILT_BEFORE = {
     # c11-security-policy-routes (ID-08): built, proved in tests_security_policy.py.
     "getSecurityPolicy",
     "putSecurityPolicy",
+    # c10-out-of-office (TEN-04): built, the caller's own row, proved in tests_out_of_office.py.
+    "getMyOutOfOffice",
+    "putMyOutOfOffice",
 }
 
 ORG_UNIT_BODY = {"kind": "business_area", "name": "Retail Banking"}
