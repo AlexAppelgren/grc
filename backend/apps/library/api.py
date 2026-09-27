@@ -283,10 +283,12 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     A read: it changes nothing and writes no audit row. It takes a person's session holding
     `library.read` in their bank, or an agent's key carrying the `library:read` scope. The
     rows are shared library facts, the same for every bank and changed only through an
-    approved proposal. Whether a duty applies to this bank, and whether the bank complies
-    with it, are separate facts a person records elsewhere; a row appearing here decides
-    neither. Each row also carries the bank's own tags on it, which no other bank sees, and
-    whether the record is the bank's own rather than a shared fact.
+    approved proposal. A row appearing here decides nothing for the bank: each row also
+    carries the bank's own register overlay, which no other bank sees — whether the bank
+    decided the duty applies, how it judges its compliance where it applies, and who owns it
+    — beside the bank's own tags and whether the record is the bank's own rather than a
+    shared fact. The overlay filters (applicability, complianceStatus, owner, ownerTeam)
+    narrow on those.
 
     Paginated: 20 rows by default and 100 at most, with a larger limit refused rather than
     quietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing
@@ -297,10 +299,12 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
 
     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
     (403) without library.read or the library:read scope; `unknown_filter` (422) when a
-    caller that belongs to no bank, such as a platform key, sends tenantTag, since it has no
-    tags of its own; `not_found` (404) when such a caller reads the list at all; `validation_error` (422)
-    when a term filter is not written dimension:key, when instrument, dutyType or any term,
-    tag or tenantTag value is longer than 80 characters, when more than 20 terms, tags or
+    caller that belongs to no bank, such as a platform key, sends tenantTag or an overlay
+    filter, since it has no tags or register of its own; `not_found` (404) when such a caller
+    reads the list at all; `validation_error` (422) when a term filter is not written
+    dimension:key, when instrument, dutyType, complianceStatus, ownerTeam or any term, tag or
+    tenantTag value is longer than 80 characters, when applicability is not applies,
+    not_applicable or under_assessment, when owner is not a UUID, when more than 20 terms, tags or
     tenant tags are sent, when footprint is not in, all or watched, when the retired
     outsideFootprint is sent, when the phrase is longer than 200 characters or when the page
     size or offset is out of range; `unknown_key` (422) when a term filter names no active
@@ -339,8 +343,9 @@ def get_obligation(
 
     A read: it changes nothing and writes no audit row. It takes a person's session holding
     `library.read` in their bank, or an agent's key carrying the `library:read` scope.
-    Nothing in the answer is the bank's own judgement: the record says what the rule is, and
-    whether it applies here and whether the bank complies are separate facts held elsewhere.
+    The record says what the rule is. Beside it the answer carries the bank's own register
+    overlay, the same as the duty's row in the list: whether the bank decided it applies, how
+    it judges its compliance where it applies, and who owns it. No other bank sees it.
 
     A library record is never overwritten, so this read carries no `If-Match` and can answer
     no stale write: a correction arrives as a new version through an approved proposal, and
