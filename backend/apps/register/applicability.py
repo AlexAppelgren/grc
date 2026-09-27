@@ -46,7 +46,7 @@ from apps.register.schemas import (
     RegisterPersonRef,
     RegisterSpannedEntity,
 )
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ComplianceStatus
@@ -191,27 +191,28 @@ def _store(
     default_status: ComplianceStatus | None = None
     stored = []
     applied: list[tuple[TenantObligation, TenantObligationScope | None]] = []
-    for answer in answers:
-        entry = entries[answer.obligation_id]
-        row: TenantObligation | TenantObligationScope | SoaUnit = entry
-        scope = None
-        if answer.unit_id is not None:
-            row = units[answer.unit_id]
-        elif answer.org_unit_id is not None:
-            scope = scopes.get((entry.id, answer.org_unit_id))
-            if scope is None:
-                default_status = default_status or ComplianceStatus.objects.get(is_default=True, active=True)
-                scope = _new_scope(tenant, entry, answer.org_unit_id, default_status)
-            row = scope
-        stored.append(_write(tenant, person, actor, entry, row, answer, headings[answer.obligation_id], names, decided_at))
-        if answer.applicability == "applies" and answer.unit_id is None:
-            applied.append((entry, scope))
-    _write_units(units.values(), person, decided_at)
-    if applied:
-        # REG-07 (c8-duty-occurrences): an answer "applies" writes the first occurrence of
-        # each recurring duty that has none, in this transaction. A Statement of
-        # Applicability unit carries no duty of its own, so its answer schedules none.
-        duties.schedule_first(tenant=tenant, actor=actor, targets=applied, at=decided_at)
+    with batched():  # one audit INSERT and one outbox INSERT for every answer of the call
+        for answer in answers:
+            entry = entries[answer.obligation_id]
+            row: TenantObligation | TenantObligationScope | SoaUnit = entry
+            scope = None
+            if answer.unit_id is not None:
+                row = units[answer.unit_id]
+            elif answer.org_unit_id is not None:
+                scope = scopes.get((entry.id, answer.org_unit_id))
+                if scope is None:
+                    default_status = default_status or ComplianceStatus.objects.get(is_default=True, active=True)
+                    scope = _new_scope(tenant, entry, answer.org_unit_id, default_status)
+                row = scope
+            stored.append(_write(tenant, person, actor, entry, row, answer, headings[answer.obligation_id], names, decided_at))
+            if answer.applicability == "applies" and answer.unit_id is None:
+                applied.append((entry, scope))
+        _write_units(units.values(), person, decided_at)
+        if applied:
+            # REG-07 (c8-duty-occurrences): an answer "applies" writes the first occurrence of
+            # each recurring duty that has none, in this transaction. A Statement of
+            # Applicability unit carries no duty of its own, so its answer schedules none.
+            duties.schedule_first(tenant=tenant, actor=actor, targets=applied, at=decided_at)
     return stored
 
 

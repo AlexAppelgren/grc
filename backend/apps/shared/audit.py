@@ -7,13 +7,21 @@ row, and vice versa.
 `AppendOnlyModel` refuses update and delete in Python; the migration's trigger makes the
 docstring true in the database, with the escape hatch in apps/shared/migration_helpers.py
 so a conscious fix states its intent.
+
+`batched()` is the same door for a write of many subjects at once, such as a pasted
+Statement of Applicability: every `record()` inside the block is held and, when the block
+ends, its rows go in as one audit INSERT and one outbox INSERT, in the same transaction,
+under the same triggers, built by the same code as one call's rows.
 """
 
 from __future__ import annotations
 
 import enum
+import itertools
 import uuid
-from contextlib import nullcontext
+from collections.abc import Iterator
+from contextlib import contextmanager, nullcontext
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
@@ -93,6 +101,39 @@ class NotInTransaction(RuntimeError):
     """record() was called outside a transaction, so the audit row could commit alone."""
 
 
+@dataclass(frozen=True)
+class _Pending:
+    """One `record()` call's values, and the zone its rows belong to."""
+
+    crosses_zones: bool
+    fields: dict[str, Any]
+    topic: str
+    payload: dict[str, Any] | None
+
+
+# The block `batched()` holds open, or None when each record() writes at once.
+_batch: ContextVar[list[_Pending] | None] = ContextVar("audit_batch", default=None)
+
+
+@contextmanager
+def batched() -> Iterator[None]:
+    """Hold every `record()` of the block and write them all when it ends: one audit INSERT
+    and one outbox INSERT for the lot, in the caller's transaction, in the order recorded.
+    A block that raises writes nothing, and its transaction rolls back with the change. A
+    `record()` inside the block returns None, since its row does not exist yet. A block
+    inside another joins it."""
+    if _batch.get() is not None:
+        yield
+        return
+    pending: list[_Pending] = []
+    token = _batch.set(pending)
+    try:
+        yield
+    finally:
+        _batch.reset(token)
+    _write(pending)
+
+
 def record(
     *,
     action: str,
@@ -121,38 +162,68 @@ def record(
     worker needs to act; it never carries tenant content the audit `after` does not already
     hold.
     """
-    from apps.shared.models import AuditEvent, OutboxEvent
-
     if not connection.in_atomic_block:
         raise NotInTransaction(
             "record() must run inside the transaction of the write it records; "
             "requests run under ATOMIC_REQUESTS, tasks use @tenant_task or transaction.atomic()."
         )
     # The zone the row belongs to, as the policies read it: the GUC, not the context
-    # variable, since that is what a policy sees. The zone block comes before the atomic one,
-    # so a failed insert rolls back to its savepoint before the tenant goes back on and the
-    # caller sees the error the insert raised.
-    crosses_zones = tenant_id is None and tenancy.database_tenant_id() is not None
-    with tenancy.platform_zone() if crosses_zones else nullcontext(), transaction.atomic():
-        event = AuditEvent.objects.create(
-            tenant_id=tenant_id,
-            actor_type=actor.kind.value,
-            actor_id=actor.id,
-            actor_label=actor.label,
-            action=action,
-            subject_type=subject_type,
-            subject_id=subject_id,
-            subject_title=subject_title,
-            summary=summary,
-            before=before or {},
-            after=after or {},
-            step_up_assertion_id=step_up_assertion_id,
-            request_id=current_request_id() or "",
-        )
-        OutboxEvent.objects.create(
-            tenant_id=tenant_id,
-            audit_event=event,
-            topic=topic or action,
-            payload=payload or {"auditEventId": str(event.id), "subjectId": str(subject_id) if subject_id else None},
-        )
-    return event
+    # variable, since that is what a policy sees.
+    pending = _Pending(
+        crosses_zones=tenant_id is None and tenancy.database_tenant_id() is not None,
+        fields={
+            "tenant_id": tenant_id,
+            "actor_type": actor.kind.value,
+            "actor_id": actor.id,
+            "actor_label": actor.label,
+            "action": action,
+            "subject_type": subject_type,
+            "subject_id": subject_id,
+            "subject_title": subject_title,
+            "summary": summary,
+            "before": before or {},
+            "after": after or {},
+            "step_up_assertion_id": step_up_assertion_id,
+            "request_id": current_request_id() or "",
+        },
+        topic=topic or action,
+        payload=payload,
+    )
+    batch = _batch.get()
+    if batch is not None:
+        batch.append(pending)
+        return None
+    return _write([pending])[0]
+
+
+def _write(pending: list[_Pending]) -> list[Any]:
+    """The audit and outbox rows of `pending`, one INSERT each per zone. The zone block comes
+    before the atomic one, so a failed insert rolls back to its savepoint before the tenant
+    goes back on and the caller sees the error the insert raised. The ids are sorted so that
+    rows stamped in the same microsecond still read back in the order recorded, as the
+    tables order by (created, id)."""
+    from apps.shared.models import AuditEvent, OutboxEvent
+
+    if pending and not connection.in_atomic_block:
+        raise NotInTransaction("record() must write in the transaction of the change it records.")
+    events: list[Any] = []
+    for crosses_zones, group in itertools.groupby(pending, key=lambda row: row.crosses_zones):
+        rows = list(group)
+        ids = sorted(uuid.uuid4() for _ in rows)
+        written = [AuditEvent(id=event_id, **row.fields) for event_id, row in zip(ids, rows, strict=True)]
+        outbox = [
+            OutboxEvent(
+                id=outbox_id,
+                tenant_id=row.fields["tenant_id"],
+                audit_event=event,
+                topic=row.topic,
+                payload=row.payload
+                or {"auditEventId": str(event.id), "subjectId": str(row.fields["subject_id"]) if row.fields["subject_id"] else None},
+            )
+            for outbox_id, event, row in zip(sorted(uuid.uuid4() for _ in rows), written, rows, strict=True)
+        ]
+        with tenancy.platform_zone() if crosses_zones else nullcontext(), transaction.atomic():
+            AuditEvent.objects.bulk_create(written)
+            OutboxEvent.objects.bulk_create(outbox)
+        events.extend(written)
+    return events

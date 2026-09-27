@@ -91,7 +91,11 @@ exactly once, to enrol a passkey, and with a passkey from then on.
   owner in a migration and ignores for the application role).
 - **No write commits without its audit row.** `record()` writes `audit_event`
   and `outbox_event` in the same transaction with a user, agent or system
-  actor and before and after values.
+  actor and before and after values. A write of many subjects at once wraps
+  its `record()` calls in `audit.batched()`, which writes the same rows as
+  one audit INSERT and one outbox INSERT when the block ends (a 93-line
+  pasted Statement of Applicability spent most of its budget on 186
+  one-by-one audit and outbox rows).
 - **"Applies" and "we comply" are separate facts.**
 - **Stable keys never change.** Instruments, provisions, obligations, changes
   and every vocabulary row carry an immutable key; labels rename freely.
