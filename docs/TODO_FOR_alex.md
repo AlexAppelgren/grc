@@ -1599,3 +1599,31 @@ Nothing waits for these; each has the default the build took.
       tenant, which a console session can never reach. `GET /console/research-requests/{requestId}`
       behind `proposals.review` is declared instead, with `batchProposalId` on every
       research request; it answers 501 until `c11-research-requests` fills it.
+
+## c11-research-requests: research requests and the console's re-tag (2026-09-27, AGT-05, PRO-04, D-98)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **A request is refused at the cap, not before it.** A research request is refused when
+      the bank has set no cap or this month's spend has reached it (`budget.at_cap`, as the
+      brief says "a bank at its cap"), while the scheduler and run now also refuse a run
+      whose `AGENT_RUN_BUDGET_LIMIT` would not fit under what is left. The run still carries
+      that limit. Default: keep it; the alternative is the stricter rule for requests too.
+- [ ] **A web address is fetched while the request is made.** `check_url` fetches the page
+      in the request itself (at most `RESEARCH_URL_TIMEOUT_SECONDS` per connection and
+      `RESEARCH_URL_MAX_REDIRECTS` redirects), so an address that is private, redirects to a
+      private one or answers nothing is refused to the person at once, and the run opens
+      with the screened text already kept. Only port 443 is fetched, and the connection goes
+      to the address that was checked. Default: keep it; the alternative is a worker task.
+- [ ] **The topic reaches a model only through the bank's own run (D-98).** This package
+      makes no model call: the topic is kept on the bank's request, screened, and never in a
+      log, audit, outbox or run row. The runner that works the request (the Agent SDK leg,
+      AGT-06) must send it through `apps.shared.ai`, the logged wrapper the bank's switch
+      stops; that leg's package owns the proof.
+- [ ] **The re-tag is answered by `watch-sweeper`, and its batch is filed through
+      `requests.file_retag`.** No runner files a batch yet: the mock runner in E2E files
+      none, so the console's re-tag form shows the request working and never a batch there.
+      AGT-S7 proves the batch at the integration level. `RESEARCH_REQUESTS_PER_MONTH` is 30.
+- [ ] **A run stopped from outside reads as `failed`**, on a research request and in "What
+      bleqq watches" (whose read broke on the `interrupted` status two merged packages
+      brought together; fixed here).

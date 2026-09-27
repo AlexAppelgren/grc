@@ -131,7 +131,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | built |
 | AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | in_progress |
 | AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61); what it files for a scope item is OWN-02 | M | R2 | in_progress |
-| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61); an approved scope item opens a research request (OWN-02) | S | R2 | in_progress |
+| AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61); an approved scope item opens a research request (OWN-02) | S | R2 | built |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | in_progress |
 | AGT-07 | Fetched content screened for embedded instructions | M | R1 | built |
 | AGT-08 | Agents stay inside the sector scope: an out-of-scope document is a counted source check and nothing else; a standard's text is never fetched, quoted, summarised, translated or restated; a blocked page is a failed check; a law that cites a standard never carries its term | M | R1 | built |
@@ -140,6 +140,20 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ACC-07 | A narrowed entry never narrows silently: every answer states the scope it was answered in, and an answer touching the footprint outside that scope names the dimensions and terms it could not see, from labels and never from records | M | R2 | pending |
 | ACC-10 | An entry records that a named application or system touches a register entry and how, as a linked internal item under REG-05 | C | R3 | pending |
 | OWN-02 | The bank's own agent researches an approved scope item from public sources and files the bank's own instruments and obligations as proposals, a source per field, only as runner events applied in the worker; never the shared library, never the regulatory scope, never reading the bank's own records back; a duplicate by official reference answers 409 `already_in_our_library` (D-89, D-91) | M | R2 | pending |
+
+AGT-05 is `built` (c11-research-requests, 2026-09-27): a person holding `agents.manage`
+asks one of the bank's own agents to run now, check a registered source, check a web
+address or research a topic, and a library editor asks bleqq's agent for a re-tag in the
+console. Each request opens a run with the trigger `request` and the request on it, so the
+request is a job whose status is its run's. A bank with no agent of its own is 409
+`no_tenant_agent`; the plan's `RESEARCH_REQUESTS_PER_MONTH` is 429 `plan_limit_reached`; a
+bank at its cap is 422 `budget_cap_reached` and one with AI off 422 `feature_off`. A web
+address is fetched once over https from a public host, every redirect checked the same way
+and no standards publisher fetched; the text is screened and kept, never rendered. The
+topic is screened and kept in the bank's zone, and reaches no log, audit, outbox or run row
+(D-98). The re-tag's run files one batch through `batch.create_batch()`
+(`requests.file_retag`) and never edits the library. The clause "an approved scope item
+opens a research request" is OWN-02's row and AGT-S16, pending with it.
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -234,8 +248,9 @@ And bleqq's watch is unaffected: its agents keep their schedule, because they re
 
 ### AGT-S7 — Research requests ask an agent to check, research or re-tag `@integration` `@e2e` (AGT-05)
 ```gherkin
-Given a compliance officer
-When they request "check this source now", "research DORA subcontracting" and "re-tag custody records with Client money"
+Given a tenant admin holding agents.manage and a library editor in the platform console
+When the admin asks the bank's own agent to "check this source now" and "research DORA subcontracting"
+And the library editor asks bleqq's agent to "re-tag custody records with Client money"
 Then three research requests exist with their kinds
 And the re-tag request produces one batch proposal with a preview, never direct edits
 ```

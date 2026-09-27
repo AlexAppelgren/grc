@@ -458,15 +458,90 @@ class AgentsScenarioTests(TestCase):
         Built over getAgentBudget and putAgentBudget (declared by c11-agents-contract).
         """
 
-    @skip("pending: AGT-S7 (AGT-05, chunk 11)")
     def test_agt_s7(self) -> None:
         """AGT-S7
 
         Research requests ask an agent to check, research or re-tag (AGT-05).
 
-        Built over createResearchRequest, getResearchRequest and createRetagRequest (declared
-        by c11-agents-contract).
+        Reworded to the split (CHUNK11_TASKS item 5): a tenant admin holding `agents.manage`
+        asks the bank's own agent to check a source now and to research a topic, and a
+        library editor asks bleqq's agent for the re-tag in the console. What the re-tag's
+        run finds is filed through `requests.file_retag`, the door its runner files through.
+        Built over createResearchRequest, getResearchRequest, createRetagRequest and
+        getRetagRequest.
         """
+        from apps.agents import requests
+        from apps.agents.models import ResearchRequest
+        from apps.agents.tests_tasks import published
+        from apps.library import testing as library_build
+        from apps.library.models import ObligationTerm
+        from apps.proposals.models import ProposalBatchRow
+        from apps.proposals.schemas import ObligationScopePayload
+        from apps.shared.testing import sign_in
+        from apps.taxonomy.seeds import seed_term_dimensions
+
+        watch_build.seed_watch_reference()
+        seed_term_dimensions()
+        tenancy.clear_tenant()
+        definition = agent_build.tenant_definition("bank-source-watch")
+        published(definition)
+        published(agent_build.agent(key=requests.RETAG_AGENT))
+        source = watch_build.source(name="Finansinspektionen news")
+        law = library_build.instrument(key="fffs-2019-5", short_name="FFFS 2019:5", regime="regime:securities")
+        custody = [library_build.obligation(law, key=f"obl-safekeeping-{n}") for n in range(2)]
+        bank = factories.tenant(slug="agt-s7")
+        admin = factories.member_user(bank, roles=("admin",))
+        own = TenantAgent.objects.create(tenant=bank, agent=definition, enabled=True)
+        TenantAgentBudget.objects.create(tenant=bank, monthly_cap="50.00")
+        tenancy.clear_tenant()
+        editor = factories.platform_user(roles=("library_editor",), email="agt-s7-editor@bleqq.test")
+
+        asked = []
+        for body in (
+            {"kind": "check_source", "sourceId": str(source.id)},
+            {"kind": "research_topic", "topic": "DORA subcontracting"},
+        ):
+            answer = self.client.post(
+                "/api/v1/research-requests",
+                data={"tenantAgentId": str(own.id), **body},
+                content_type="application/json",
+                **sign_in(admin, tenant=bank),
+            )
+            tenancy.clear_tenant()
+            self.assertEqual(answer.status_code, 202, answer.content)
+            asked.append(answer.json()["id"])
+        answer = self.client.post(
+            "/api/v1/console/research-requests",
+            data={"topic": "Re-tag custody records with Client money."},
+            content_type="application/json",
+            **sign_in(editor),
+        )
+        self.assertEqual(answer.status_code, 202, answer.content)
+        retag = answer.json()["id"]
+
+        # Three research requests exist with their kinds, each with its run.
+        tenancy.activate(bank.id)
+        kinds = dict(ResearchRequest.objects.filter(pk__in=asked).values_list("id", "kind"))
+        self.assertEqual(sorted(kinds.values()), ["check_source", "research_topic"])
+        self.assertEqual(AgentRun.objects.filter(research_request_id__in=asked, trigger=RunTrigger.REQUEST.value).count(), 2)
+        tenancy.clear_tenant()
+        self.assertEqual(ResearchRequest.objects.get(pk=retag).kind, "retag")
+
+        # The re-tag produces one batch proposal with a preview, never a direct edit.
+        scope_before = list(ObligationTerm.objects.order_by("id").values_list("id", "obligation_id", "term_id"))
+        run = AgentRun.objects.get(research_request_id=retag)
+        payload = ObligationScopePayload.model_validate(
+            {"changes": [{"obligationId": str(row.id), "add": ["service_type:custody"], "remove": [], "source": "https://www.fi.se/"} for row in custody]}
+        )
+        filed = requests.file_retag(run_id=run.id, payload=payload, source_label="Finansinspektionen", source_url="https://www.fi.se/")
+        self.assertTrue(filed.is_batch)
+        rows = ProposalBatchRow.objects.filter(proposal=filed)
+        self.assertEqual({row.subject_id for row in rows}, {row.id for row in custody})
+        self.assertTrue(all(row.before != row.after for row in rows), "each row carries its preview")
+        self.assertEqual(Proposal.objects.filter(is_batch=True).count(), 1)
+        self.assertEqual(list(ObligationTerm.objects.order_by("id").values_list("id", "obligation_id", "term_id")), scope_before)
+        followed = self.client.get(f"/api/v1/console/research-requests/{retag}", **sign_in(editor))
+        self.assertEqual(followed.json()["batchProposalId"], str(filed.id))
 
     # --- c11-scheduler: AGT-S8, AGT-S11 and AGT-S13 -------------------------------------
     def _scheduler_world(self) -> SimpleNamespace:

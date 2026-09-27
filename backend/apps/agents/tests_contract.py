@@ -233,6 +233,8 @@ TENANT_ROUTES: list[tuple[str, str, str, Any, str]] = [
 # The operations served for real, which answer from their logic and no longer 501:
 # `c11-tenant-agents-budget-scope` (tests_tenant_agents.py, tests_budget.py).
 SERVED = {"listTenantAgents", "createTenantAgent", "updateTenantAgent", "getAgentBudget", "putAgentBudget"}
+# c11-research-requests (tests_requests.py).
+SERVED |= {"listResearchRequests", "createResearchRequest", "getResearchRequest"}
 # Which record each id route addresses: a bank's own agent, its run, or its request.
 ID_KIND = {
     "updateTenantAgent": "agent",
@@ -358,6 +360,9 @@ class ConsoleAgentRouteGates(TestCase):
             "getPlatformAgentSettings",
             "updatePlatformAgentSettings",
             "listPlatformRuns",
+            # c11-research-requests: tests_requests.py.
+            "createRetagRequest",
+            "getRetagRequest",
         }
         for name, method, url, body, permission, _ in CONSOLE_ROUTES:
             if name in built:
