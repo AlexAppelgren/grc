@@ -213,6 +213,7 @@ BUILT = {
     "reopenGap",
     # c8-units-paste-soa (REG-08): tests_soa.py
     "getStatementOfApplicability",
+    "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
 }
 
 
