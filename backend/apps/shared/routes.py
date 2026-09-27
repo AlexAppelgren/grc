@@ -53,6 +53,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/tenant/invitations/{invitation_id}", "identity.Invitation", "invitation"),
     ("PATCH", "/tenant/roles/{key}", "identity.TenantRole", "tenant_role_key"),
     ("DELETE", "/tenant/api-keys/{key_id}", "identity.ApiKey", "api_key"),
+    ("DELETE", "/tenant/api-keys/{key_id}", "identity.ApiKey", "member_personal_token"),
+    ("DELETE", "/me/tokens/{token_id}", "identity.ApiKey", "member_personal_token"),
     ("POST", "/tenant/footprint/requests/{request_id}/approve", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
