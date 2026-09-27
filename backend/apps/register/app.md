@@ -352,4 +352,4 @@ Then the request answers 404
 > `readRegisterEntry` (`GET /register-entries/{obligationId}`), key-only, in
 > `apps/register/agent_read.py`; `tests_agent_read.py` holds the rule branches. Beside the
 > private record, an obligation under a standard is left out too (REG-08, AC-REG2), and an
-> obligation in scope nobody decided on reads as `under_assessment` (D-1xx, acc-register-read).
+> obligation in scope nobody decided on reads as `under_assessment` (D-110, acc-register-read).

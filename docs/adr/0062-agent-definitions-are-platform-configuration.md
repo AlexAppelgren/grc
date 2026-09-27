@@ -1,4 +1,4 @@
-# ADR 0059 — Agent definitions are platform configuration, not library rows
+# ADR 0062 — Agent definitions are platform configuration, not library rows
 
 **Date:** 2026-09-25 · **Status:** accepted (owner decision, 2026-09-25: "Platform config"; D-102; PRD AGT-03, ADM-02; follows ADR 0053 and ADR 0058)
 

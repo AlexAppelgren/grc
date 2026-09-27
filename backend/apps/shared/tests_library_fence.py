@@ -97,7 +97,7 @@ Proven to fail 2026-09-24, then reverted: a `library_write("a repoint helper")` 
 door planted in apps/watch/write.py, which the database would have let reach every
 inventory table (red, naming `watch/write.py::_plant`).
 
-Platform configuration (D-102, ADR 0059) is `PlatformConfigurationGuard`: agent
+Platform configuration (D-102, ADR 0062) is `PlatformConfigurationGuard`: agent
 definitions, agent versions and the platform agent settings they carry are named once in
 `PLATFORM_CONFIGURATION`, reached by three console routes alone, each through one writer of
 `agents/seeds/console.py`, behind `agent_definitions.manage`, a step-up and a person's
@@ -511,7 +511,7 @@ WATCH_ROUTE_GATES: dict[str, perms.Gate | Node] = {
     "recordSourceCheck": perms.Gate("scope", perms.SCOPE_SOURCES_WRITE),
     "confirmChangeCuration": CURATION_CONFIRMER,
 }
-# Platform configuration (Alex, 2026-09-25, D-102, ADR 0059). An agent definition, the
+# Platform configuration (Alex, 2026-09-25, D-102, ADR 0062). An agent definition, the
 # versions it publishes and the settings bleqq runs it with are the platform's own
 # configuration, not sourced facts about the law: none of them enters the inventory, so no
 # proposal carries them and four eyes over the inventory does not reach them. They keep the
@@ -1071,7 +1071,7 @@ class RecurringDutyIsBehindTheFence(SimpleTestCase):
 
 
 # ---------------------------------------------------------------------------------------
-# Platform configuration: the three console routes and nothing else (D-102, ADR 0059)
+# Platform configuration: the three console routes and nothing else (D-102, ADR 0062)
 # ---------------------------------------------------------------------------------------
 def configuration_overreach(source: str, library_names: set[str]) -> list[str]:
     """The library models a console writer's module names beyond the platform configuration.

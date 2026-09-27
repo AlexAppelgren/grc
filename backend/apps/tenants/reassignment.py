@@ -143,7 +143,7 @@ def _new_owner(kind: str, row: Model, user_id: uuid.UUID, target: Target) -> dic
     """The columns that hand `row` to its new owner. A row owned by a person or a team, never
     both, passes to exactly one of them. On a register entry, the person columns the member
     held pass to the new person; to a team, the entry's owner becomes the team and those
-    person columns are cleared, because a compliance contact is always a person (D-1xx,
+    person columns are cleared, because a compliance contact is always a person (D-108,
     c8-ten-reassignment)."""
     person, team = target
     if kind == "register_entry":

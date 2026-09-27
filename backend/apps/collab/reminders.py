@@ -14,7 +14,7 @@ Three branches, each read straight off its rows:
   roles triage cases, since a new case has no owner yet.
 - **Actions.** An open action (not done, not removed) due on local today plus a lead day is
   `due_soon`; one whose due date was yesterday is `overdue`, once. Its owner is told, and
-  so is every member of the owner's teams (D-1xx, c10-reminders-escalation-reviews: an
+  so is every member of the owner's teams (D-109, c10-reminders-escalation-reviews: an
   action has no team of its own).
 - **Reviews.** A register entry, or one of its rows for a legal entity, whose
   `next_review_date` is local today plus one of `review_reminder_days_before` is

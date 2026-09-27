@@ -1562,7 +1562,7 @@ Built by default; nothing waits on you. Say if any should change.
 
 ## c11-definitions-platform: publishing bleqq's agent versions, their settings and runs (2026-09-25, AGT-03, ADM-02, AGT-06)
 
-**Answered by Alex on 2026-09-25 (D-102, ADR 0059): "Platform config".** The question was
+**Answered by Alex on 2026-09-25 (D-102, ADR 0062): "Platform config".** The question was
 how the console may write an agent definition, while `agent` and `agent_version` read as
 library rows that only a proposal's approval may reach.
 

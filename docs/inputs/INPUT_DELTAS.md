@@ -1016,7 +1016,7 @@ acc-register-read (ACC-04, ACC-08, D-76), 2026-09-25:
   take `ApiKeyAuth` only with `tenant:read`, and answer 403 `tenant_reach_off` unless the
   bank's tenant reach and the entry's own toggle are both on. The row shape,
   `RegisterDecision`, is one per obligation with its legal entities and live linked items
-  nested; the list pages 20 by default and 100 at most (D-1xx, acc-register-read).
+  nested; the list pages 20 by default and 100 at most (D-110, acc-register-read).
 
 ## 8. Chunk 5's tenant tables and screen contract (2026-09-20)
 
