@@ -128,6 +128,21 @@ describe('ObligationUnitsPanel', () => {
     expect(lists).toEqual(['e-bank', 'e-fonder']);
   });
 
+  it('shows the chosen entity Statement of Applicability on its own tab', async () => {
+    const statement = { obligationId: 'ob-std', conformance: entities[0], units: [{ ...decided, history: [] }], total: 1 };
+    const sent = serve(OFFICER, entities, () => page([decided]), (call) =>
+      call.path === '/api/v1/obligations/ob-std/statement-of-applicability' ? { status: 200, data: statement } : { status: 200, data: {} },
+    );
+    renderPanel(OFFICER);
+    await screen.findByText('1 unit');
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Statement of Applicability' }));
+    expect(await screen.findByRole('heading', { name: 'Conformance for Example Bank AB' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Paste units' })).not.toBeInTheDocument();
+    const reads = sent.filter((call) => call.path === '/api/v1/obligations/ob-std/statement-of-applicability');
+    expect(reads.map((call) => (call.params as { entity: string }).entity)).toEqual(['e-bank']);
+  });
+
   it('fixes the reference and title of a unit with history and offers rename and remove before then', async () => {
     serve(OFFICER, entities, () => page([decided, fresh]));
     renderPanel(OFFICER);

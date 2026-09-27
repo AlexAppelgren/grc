@@ -65,5 +65,19 @@
   "obligationUnits.confirmTitle": "{count, plural, one {Ange # beslut för {entity}?} other {Ange # beslut för {entity}?}}",
   "obligationUnits.confirmBody": "Enheterna skapas och varje beslut sparas i ditt namn med sin motivering. Vart och ett finns kvar i granskningsloggen.",
   "obligationUnits.confirm": "{count, plural, one {Ange # beslut} other {Ange # beslut}}",
-  "obligationUnits.decisionsFailed": "Enheterna skapades, men deras beslut sparades inte. Försök igen för att spara dem."
+  "obligationUnits.tabUnits": "Enheter",
+  "obligationUnits.tabStatement": "Tillämplighetsförklaring",
+  "obligationUnits.soaLede": "Varje enhet som {entity} listar under standarden, med beslut, motivering och status.",
+  "obligationUnits.soaConformance": "Överensstämmelse för {entity}",
+  "obligationUnits.soaConformanceNote": "Det här är statusen som bedömts på skyldigheten för enheten. Enheterna nedan ändrar den inte.",
+  "obligationUnits.soaEmptyBody": "Enheter läggs till och beslutas under fliken Enheter.",
+  "obligationUnits.soaLoadError": "Tillämplighetsförklaringen kunde inte läsas in",
+  "obligationUnits.columnApplicability": "Tillämplighet",
+  "obligationUnits.columnStatus": "Status",
+  "obligationUnits.columnSetBy": "Satt av",
+  "obligationUnits.columnDecided": "Beslutad",
+  "obligationUnits.columnHistory": "Historik",
+  "obligationUnits.noneYet": "Inget än",
+  "obligationUnits.historyCount": "{count, plural, one {# beslut} other {# beslut}}",
+  "obligationUnits.historyEntry": "Satt av {person}, {date}"
 }

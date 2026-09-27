@@ -3,12 +3,14 @@
 import { useState, type FormEvent } from 'react';
 
 import { PasteUnitsDialog } from '@/components/inventory/PasteUnitsDialog';
+import { SoaView } from '@/components/inventory/SoaView';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextInput } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { TabPanel, Tabs } from '@/components/ui/Tabs';
 import { useFormatContext } from '@/features/identity/hooks';
 import { isStaleWrite, useCreateUnit, useRegisterEntry, useReloadRegister, useRemoveUnit, useUnits, useUpdateUnit } from '@/features/register/hooks';
 import { presentApplicability, presentCompliance } from '@/features/register/register-presentation';
@@ -26,7 +28,8 @@ import { formatDate } from '@/shared/utils/format';
 // way to a fixed line once the unit has history, so a decision can never be
 // moved to another control. The form asks for the bank's own words and has no
 // field for the standard's text. A status is shown only beside "Applies": none
-// is asked of a unit that does not apply or is not decided.
+// is asked of a unit that does not apply or is not decided. The Statement of
+// Applicability tab shows the same entity's units read-only (SoaView).
 
 const REGISTER_EDIT = 'register.edit';
 const APPLICABILITY_APPROVE = 'applicability.approve';
@@ -101,6 +104,11 @@ function EntityUnits({ obligationId, entity }: { obligationId: string; entity: E
   const [renaming, setRenaming] = useState<RegisterUnit | null>(null);
   const [removing, setRemoving] = useState<RegisterUnit | null>(null);
   const [created, setCreated] = useState<number | null>(null);
+  const [tab, setTab] = useState('units-list');
+  const tabs = [
+    { id: 'units-list', label: t('obligationUnits.tabUnits') },
+    { id: 'units-soa', label: t('obligationUnits.tabStatement') },
+  ];
 
   const actions = canEdit ? (
     <ButtonBar className="mt-0 mb-3">
@@ -115,36 +123,45 @@ function EntityUnits({ obligationId, entity }: { obligationId: string; entity: E
 
   return (
     <div data-units-entity={entity.id}>
-      {actions}
-      {created !== null ? <StatusLine tone="positive">{t('obligationUnits.created', { count: created })}</StatusLine> : null}
-      {units.isPending ? (
-        <LoadingState />
-      ) : units.isError ? (
-        <ErrorState title={t('obligationUnits.loadError')} onRetry={() => void units.refetch()} />
-      ) : units.data.total === 0 ? (
-        <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-units-empty="">
-          <h3 className="text-fg">{t('obligationUnits.emptyTitle', { entity: entity.name })}</h3>
-          <p className="mx-auto mt-2 max-w-[60ch]">{t('obligationUnits.emptyBody')}</p>
-        </div>
+      <Tabs tabs={tabs} current={tab} onSelect={setTab} />
+      {tab === 'units-soa' ? (
+        <TabPanel id="units-soa">
+          <SoaView obligationId={obligationId} entity={entity} />
+        </TabPanel>
       ) : (
-        <>
-          <p className="mb-2 text-meta text-muted">{t('obligationUnits.count', { count: units.data.total })}</p>
-          <Rows>
-            {units.data.items.map((unit) => (
-              <UnitRow key={unit.id} unit={unit} canEdit={canEdit} onRename={() => setRenaming(unit)} onRemove={() => setRemoving(unit)} />
-            ))}
-          </Rows>
-          {units.data.total > PAGE_SIZE ? (
-            <ButtonBar>
-              <Button variant="outline" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>
-                {t('obligationUnits.previous')}
-              </Button>
-              <Button variant="outline" size="small" disabled={offset + PAGE_SIZE >= units.data.total} onClick={() => setOffset(offset + PAGE_SIZE)}>
-                {t('obligationUnits.next')}
-              </Button>
-            </ButtonBar>
-          ) : null}
-        </>
+        <TabPanel id="units-list">
+          {actions}
+          {created !== null ? <StatusLine tone="positive">{t('obligationUnits.created', { count: created })}</StatusLine> : null}
+          {units.isPending ? (
+            <LoadingState />
+          ) : units.isError ? (
+            <ErrorState title={t('obligationUnits.loadError')} onRetry={() => void units.refetch()} />
+          ) : units.data.total === 0 ? (
+            <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-units-empty="">
+              <h3 className="text-fg">{t('obligationUnits.emptyTitle', { entity: entity.name })}</h3>
+              <p className="mx-auto mt-2 max-w-[60ch]">{t('obligationUnits.emptyBody')}</p>
+            </div>
+          ) : (
+            <>
+              <p className="mb-2 text-meta text-muted">{t('obligationUnits.count', { count: units.data.total })}</p>
+              <Rows>
+                {units.data.items.map((unit) => (
+                  <UnitRow key={unit.id} unit={unit} canEdit={canEdit} onRename={() => setRenaming(unit)} onRemove={() => setRemoving(unit)} />
+                ))}
+              </Rows>
+              {units.data.total > PAGE_SIZE ? (
+                <ButtonBar>
+                  <Button variant="outline" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>
+                    {t('obligationUnits.previous')}
+                  </Button>
+                  <Button variant="outline" size="small" disabled={offset + PAGE_SIZE >= units.data.total} onClick={() => setOffset(offset + PAGE_SIZE)}>
+                    {t('obligationUnits.next')}
+                  </Button>
+                </ButtonBar>
+              ) : null}
+            </>
+          )}
+        </TabPanel>
       )}
 
       {canEdit ? (

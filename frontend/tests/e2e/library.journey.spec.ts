@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
+import { lockTenantAScope, unlockTenantAScope } from './support/tenant-scope';
 
 // library: the @e2e scenarios from backend/apps/library/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -167,8 +168,9 @@ test.describe('library journeys', () => {
     await expect(duty.getByText('Record retention')).toBeVisible();
     await expect(page.locator('[data-scope-panel] [data-pill]').first()).toHaveAttribute('data-pill', 'brand');
     // Being on this card is not the judgement that the duty reaches this bank:
-    // the header above carries no compliance status, and nothing reads "Applies".
-    await expect(page.getByText('Applies', { exact: true })).toHaveCount(0);
+    // the header above carries no compliance status, and neither the duty nor its
+    // scope reads "Applies". That answer is the bank's own, in its register panel.
+    await expect(page.locator('[data-duty-panel], [data-scope-panel]').getByText('Applies', { exact: true })).toHaveCount(0);
 
     // Every service selected reads "All services"; an empty list is no
     // restriction and says so in words, never as an empty row.
@@ -299,6 +301,8 @@ const STANDARD_INSTRUMENT = 'iso-iec-27001-2022';
 const STANDARD_OBLIGATION = 'iso-iec-27001-2022-conformance';
 
 test.describe('standards in the library', () => {
+  test.beforeEach(lockTenantAScope);
+  test.afterEach(unlockTenantAScope);
   test("INV-S11: An edition of a standard is an instrument with public facts and no text", async ({ page, apiGuard }) => {
     // INV-S11 (INV-01, INV-02, INV-08). The API's bindingLevel and the single obligation
     // with no provision are proved by the backend's INV-S11 test; here, the screens.

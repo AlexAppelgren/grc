@@ -180,15 +180,17 @@ describe('PasteUnitsDialog', () => {
 
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith(3));
     expect(onCreated).toHaveBeenCalledTimes(1);
-    expect(calls(sent, '/api/v1/obligations/ob-std/units/paste')[1]?.body).toMatchObject({ dryRun: false });
-    const decisions = calls(sent, '/api/v1/applicability');
-    expect(decisions).toHaveLength(1);
-    expect(decisions[0]?.body).toEqual({
-      rows: [
-        { obligationId: 'ob-std', unitId: 'u-SEC-001', applicability: 'applies', reason: 'Board owns it' },
-        { obligationId: 'ob-std', unitId: 'u-SEC-003', applicability: 'not_applicable', reason: 'We have no branches' },
+    // The units and their decisions go together in the paste's one commit, all or none.
+    expect(calls(sent, '/api/v1/obligations/ob-std/units/paste')[1]?.body).toEqual({
+      orgUnitId: 'e-bank',
+      dryRun: false,
+      lines: [
+        { reference: 'SEC-001', title: 'Policy is approved by the board', applicability: 'applies', reason: 'Board owns it' },
+        { reference: 'SEC-003', title: 'Clean desk rule in the branches', applicability: 'not_applicable', reason: 'We have no branches' },
+        { reference: 'SEC-005', title: 'Laptops are encrypted' },
       ],
     });
+    expect(calls(sent, '/api/v1/applicability')).toHaveLength(0);
   });
 
   it('leaves the decisions out for a person without applicability approve, and says so', async () => {
@@ -204,24 +206,27 @@ describe('PasteUnitsDialog', () => {
     expect(calls(sent, '/api/v1/applicability')).toHaveLength(0);
   });
 
-  it('retries only the decisions when the units were created and the decisions were not', async () => {
+  it('keeps the confirmation open when the commit is refused, having stored nothing', async () => {
     let failing = true;
-    const sent = serve(() => (failing ? { status: 422, data: { code: 'validation_error', detail: 'A reason is too long.' } } : { status: 200, data: { items: [] } }));
+    const sent = installAdapter((call) => {
+      const body = call.body as { dryRun: boolean };
+      if (call.path !== '/api/v1/obligations/ob-std/units/paste') return { status: 404, data: { code: 'not_found', detail: '' } };
+      if (!body.dryRun && failing) return { status: 422, data: { code: 'validation_error', detail: 'A reason is too long.' } };
+      return paste(call);
+    });
     const { onCreated } = renderDialog(true);
     await checkLines(pasted);
     fireEvent.click(screen.getByRole('button', { name: 'Create 3 units' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Set 2 decisions' }));
 
-    expect(await screen.findByText('The units were created, but their decisions were not stored. Try again to store them.')).toBeInTheDocument();
-    expect(screen.getByText('A reason is too long.')).toBeInTheDocument();
+    expect(await screen.findByText('A reason is too long.')).toBeInTheDocument();
     expect(onCreated).not.toHaveBeenCalled();
 
     failing = false;
     fireEvent.click(screen.getByRole('button', { name: 'Set 2 decisions' }));
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith(3));
-    expect(onCreated).toHaveBeenCalledTimes(1);
-    expect(calls(sent, '/api/v1/obligations/ob-std/units/paste')).toHaveLength(2);
-    expect(calls(sent, '/api/v1/applicability')).toHaveLength(2);
+    expect(calls(sent, '/api/v1/obligations/ob-std/units/paste')).toHaveLength(3);
+    expect(calls(sent, '/api/v1/applicability')).toHaveLength(0);
   });
 
   it('renders a refusal of the whole paste where it happened', async () => {
