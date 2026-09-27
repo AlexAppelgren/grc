@@ -50,13 +50,17 @@ test.describe('home journeys', () => {
     const comingUp = page.locator('[data-coming-up]');
     const items = comingUp.locator('[data-roadmap-item]');
     await expect(items.filter({ hasText: 'FI adopts amended rules on paying for investment research' })).toHaveCount(1);
-    await expect(items.filter({ hasText: 'Amended reporting of securities financing transactions' })).toHaveCount(1);
     // Ordered against each other, never against the top of the list: chunk 5's
     // seed dates one reform 2027-01-01, a literal, which reaches the top ahead
     // of the +20-day lead from 12 December 2026 and flipped a first-row check.
+    // The far change (+FAR_OFFSET days) is on Coming up only while the list has
+    // room: the register and case seeds of chunks 8 and 9 date items between the
+    // two and fill it (HOME_COMING_UP_ITEMS), so the far change is proved on the
+    // roadmap (HOM-S4) and here only never to come before the lead.
     const titles = await items.allInnerTexts();
     const leadAt = titles.findIndex((text) => text.includes('FI adopts amended rules on paying for investment research'));
-    expect(leadAt).toBeLessThan(titles.findIndex((text) => text.includes('Amended reporting of securities financing transactions')));
+    const farAt = titles.findIndex((text) => text.includes('Amended reporting of securities financing transactions'));
+    expect(farAt === -1 || farAt > leadAt, 'the far change never comes before the lead').toBe(true);
     await expect(comingUp.getByText('Insurance distribution guidance outside our scope')).toHaveCount(0);
     await expect(comingUp.getByText(/\d+ dated items ahead/)).toBeVisible();
 
