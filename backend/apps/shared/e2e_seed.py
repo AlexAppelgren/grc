@@ -2004,6 +2004,8 @@ def seed_e2e() -> dict[str, int]:
         seed_no_record_read_role(tenants)
         logins = seed_logins(tenants)
         footprint_terms = seed_footprints(tenants)
+        # d89-e2e-journey: before J-6's waiting request, since one request waits at a time.
+        seed_own_scope_item(tenants)
         seed_pending_footprint_request(tenants)
         seed_watched_markets(tenants)
         seed_tenant_only_rows(tenants)
@@ -3170,6 +3172,7 @@ class SeedOwnRecords:
     item_url: str
     item_jurisdiction: str
     item_regime: str
+    officer_email: str
     approver_email: str
 
 
@@ -3182,10 +3185,12 @@ EXPECTED_OWN_RECORDS = SeedOwnRecords(
     item_url="https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2020272-om-vissa-kontanttjanster_sfs-2020-272/",
     item_jurisdiction="se",
     item_regime="regime:banking",
+    officer_email="compliance_officer@example-bank.test",
     approver_email="approver@example-bank.test",
 )
 # The seed's stand-in for the approver's passkey assertion on the seeded approvals, as
-# SEED_REVERIFICATION_STEP_UP is for the re-verification.
+# SEED_REVERIFICATION_STEP_UP is for the re-verification: the seed signs nobody in, and it
+# refuses to run deployed.
 SEED_OWN_RECORDS_STEP_UP = uuid.UUID("00000000-0000-4000-9000-000000000089")
 # What the mock runner reports for each duty of a part: its duty type, its reference, and its
 # title and summary in Swedish and English around the part's official reference.
@@ -3305,15 +3310,51 @@ def report_scope_findings(item_key: str, part: int = 1) -> list[Proposal]:
     return filed
 
 
+def seed_own_scope_item(tenants: list[Tenant]) -> None:
+    """The seeded regulation, through the logic the regulatory scope screen calls: the
+    officer asks for it, the approver approves it (OWN-01). Before J-6's waiting request,
+    because one request waits at a time; a reseed finds the item and writes nothing."""
+    from apps.taxonomy.schemas import ScopeItemInput
+
+    spec = EXPECTED_OWN_RECORDS
+    tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
+    tenancy.activate(tenant.id)
+    if any(row.key == spec.item_key for row in footprint_logic.view(tenant.id, ["en"]).scope_items):
+        return
+    officer, approver = (User.objects.get(email=email) for email in (spec.officer_email, spec.approver_email))
+    drafts = footprint_logic.scope_item_drafts(
+        tenant.id,
+        [
+            ScopeItemInput.model_validate(
+                {
+                    "name": spec.item_name,
+                    "jurisdiction": spec.item_jurisdiction,
+                    "regimeTerm": spec.item_regime.split(":")[1],
+                    "officialReference": spec.item_reference,
+                    "sourceUrl": spec.item_url,
+                }
+            )
+        ],
+    )
+    request = footprint_logic.create_request(
+        tenant=tenant, requester=officer, actor=Actor(kind=ActorType.USER, id=officer.id, label=officer.name), adds=[], removes=[], item_adds=drafts
+    )
+    footprint_logic.approve(
+        tenant=tenant,
+        request=request,
+        decider=approver,
+        actor=Actor(kind=ActorType.USER, id=approver.id, label=approver.name),
+        note="",
+        step_up_assertion_id=SEED_OWN_RECORDS_STEP_UP,
+    )
+
+
 def seed_own_records(tenants: list[Tenant]) -> None:
-    """EXPECTED_OWN_RECORDS, written once: a reseed finds each row and writes nothing."""
-    from apps.agents import tasks as agent_tasks
-    from apps.agents.models import ResearchRequest, ResearchRequestKind, ResearchRequestStatus
-    from apps.agents.screen import screen_all
-    from apps.library.models import Jurisdiction
+    """Tenant A's scope researcher, the research its approval opens and what that research
+    filed, approved (EXPECTED_OWN_RECORDS). A reseed finds each row and writes nothing."""
+    from apps.agents import scope_research
     from apps.proposals import private_approval
-    from apps.taxonomy import terms_logic
-    from apps.taxonomy.models import ScopeItem, ScopeItemStatus
+    from apps.shared.models import OutboxEvent
 
     spec = EXPECTED_OWN_RECORDS
     tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
@@ -3330,37 +3371,13 @@ def seed_own_records(tenants: list[Tenant]) -> None:
             subject_title=spec.researcher, summary="Seeded for E2E journeys.", tenant_id=tenant.id,
             after={"agent": spec.researcher, "enabled": True, "cadence": AgentCadence.MANUAL.value},
         )
-    item, created = ScopeItem.objects.get_or_create(
-        tenant=tenant,
-        key=spec.item_key,
-        defaults={
-            "name": spec.item_name,
-            "jurisdiction": Jurisdiction.objects.get(key=spec.item_jurisdiction),
-            "regime_term": terms_logic.term_by_ref(*spec.item_regime.split(":")),
-            "official_reference": spec.item_reference,
-            "source_url": spec.item_url,
-            "status": ScopeItemStatus.IN_SCOPE.value,
-        },
-    )
-    if created:
-        record(
-            action="scope_item.seeded", actor=SEED_ACTOR, subject_type="scope_item", subject_id=item.pk,
-            subject_title=item.key, summary="Seeded for E2E journeys.", tenant_id=tenant.id,
-            after={"scopeItem": item.key, "status": item.status},
-        )
-    # The research the approval would have opened (`scope_research.open_research`), once.
-    if not ResearchRequest.objects.filter(scope_item=item).exists():
-        request = ResearchRequest.objects.create(
-            tenant=tenant,
-            tenant_agent=researcher,
-            requested_by=approver,
-            kind=ResearchRequestKind.SCOPE_ITEM.value,
-            scope_item=item,
-            risk_flags=screen_all([item.name, item.official_reference, item.source_url]),
-        )
-        agent_tasks.open_request_run(request, requested_by=approver)
-        request.status = ResearchRequestStatus.RUNNING.value
-        request.save(update_fields=["status"])
+    # The approval's own event, handed to its own handler now rather than on the worker's
+    # next pass, so the research is open when the journeys start. The worker's pass then
+    # finds it open and opens nothing twice.
+    item_id = str(footprint_logic.scope_items_in_scope(tenant.id, [spec.item_key])[0].id)
+    added = OutboxEvent.objects.filter(tenant=tenant, topic=scope_research.SCOPE_ITEM_ADDED, payload__scopeItemId=item_id).order_by("created", "id").first()  # ordering: the one approval of the item
+    if added is not None:
+        scope_research.open_research(added)
     # Part 1 as the approver decided it: the instrument first, then its duties under it. A
     # reseed after a journey stopped the research finds the records filed and files nothing.
     actor = Actor(kind=ActorType.USER, id=approver.id, label=approver.name)
