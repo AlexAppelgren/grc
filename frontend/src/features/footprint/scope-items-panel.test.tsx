@@ -30,6 +30,7 @@ function meOf(user: { id: string; name: string }, permissions: readonly string[]
     permissions: [...permissions],
     platformRoles: [],
     enrolmentPending: false,
+    notificationPrefs: null,
     passkeyCount: 1,
     stepUpValidUntil: null,
     counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 },

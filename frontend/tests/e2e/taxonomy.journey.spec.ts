@@ -3,6 +3,7 @@ import type { Browser, Locator, Page, TestInfo } from '@playwright/test';
 import { expect, test, type ApiGuard } from './support/api-guard';
 import { allowRegisterEntryPending } from './support/obligation-page';
 import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
+import { approveOwnProposal, reportDuties, reportInstrument } from './support/own-records';
 import { lockTenantAScope, unlockTenantAScope } from './support/tenant-scope';
 import { approveQueueProposal } from './support/watch';
 
@@ -949,6 +950,161 @@ test.describe('taxonomy journeys', () => {
         await approver.context().close();
       }
     });
+
+    // The bank's own regulations (PRD 0.7, D-89, D-91, ADR 0059): a scope item rides on tenant
+    // A's one waiting request, so FP-S18 and J-12 run here, in order with the journeys above.
+    // Each adds a regulation named for the attempt, so a retry never meets its own earlier
+    // item, and takes it out again through the same door, on failure too.
+    const REGULATION_SOURCE = 'https://www.riksdagen.se/sv/dokument-och-lagar/';
+
+    function scopeItemRow(page: Page, key: string) {
+      return page.locator(`[data-scope-item="${key}"]`);
+    }
+
+    /** The officer asks to add the regulation `name` (Sweden, Banking); its key, as the server gave it. */
+    async function officerAddsRegulation(page: Page, name: string, reference: string): Promise<string> {
+      await page.goto('/admin/footprint');
+      await page.locator('[data-scope-items]').getByRole('button', { name: 'Add a regulation' }).click();
+      const form = page.locator('[data-scope-item-form]');
+      await form.getByLabel('Name', { exact: true }).fill(name);
+      await form.getByLabel('Jurisdiction', { exact: true }).selectOption({ label: 'Sweden' });
+      await form.getByLabel('Regime', { exact: true }).selectOption({ label: 'Banking' });
+      await form.getByLabel('Official reference (optional)').fill(reference);
+      await form.getByLabel('Public address to research').fill(REGULATION_SOURCE);
+      const draft = page.locator('[data-draft-preview]');
+      await expect(draft.getByRole('heading', { name: `Your change: Add the regulation ${name}` })).toBeVisible();
+      await expect(draft.getByText('Our agent starts researching it once someone else approves.')).toBeVisible();
+      const filed = page.waitForResponse((r) => r.url().endsWith('/api/v1/tenant/footprint/requests') && r.request().method() === 'POST' && r.ok());
+      await draft.getByRole('button', { name: 'Request approval' }).click();
+      const request = (await (await filed).json()) as { scopeItemAdds: { key: string; name: string }[] };
+      await expect(page.getByText('Sent for approval.', { exact: true })).toBeFocused();
+      const key = request.scopeItemAdds.find((item) => item.name === name)?.key ?? '';
+      expect(key).not.toBe('');
+      return key;
+    }
+
+    /** The approver approves the waiting addition of `name` with a passkey. */
+    async function approveRegulation(approver: Page, name: string): Promise<void> {
+      await approver.goto('/admin/footprint');
+      const banner = approver.locator('[data-pending-request]');
+      await expect(banner.getByText(`Add the regulation ${name}`)).toBeVisible();
+      await banner.getByRole('button', { name: 'Approve' }).click();
+      const dialog = approver.getByRole('dialog', { name: `Approve "Add the regulation ${name}"?` });
+      await expect(dialog.getByText('Hides nothing and reveals nothing.', { exact: false })).toBeVisible();
+      await dialog.getByRole('button', { name: 'Approve with passkey' }).click();
+      const prompt = approver.getByRole('dialog', { name: 'Confirm with your passkey' });
+      const done = approver.getByText(`Approved. Our agent will research ${name}.`);
+      await expect(prompt.or(done).first()).toBeVisible();
+      if (await prompt.isVisible()) await prompt.getByRole('button', { name: 'Use passkey' }).click();
+      await expect(done).toBeVisible();
+      await expect(approver.locator('[data-pending-request]')).toHaveCount(0);
+    }
+
+    /** Tenant A's scope items as seeded: the officer's waiting request withdrawn, and the regulation `name` taken out again if it is in scope. */
+    async function removeRegulation(page: Page, approver: Page, key: string | null, name: string): Promise<void> {
+      await officerStartsClean(page);
+      if (key === null || (await page.locator('[data-pending-request]').count()) > 0 || (await scopeItemRow(page, key).count()) === 0) return;
+      await page.getByRole('button', { name: 'Propose a change' }).click();
+      await scopeItemRow(page, key).getByRole('button', { name: `Remove ${name}` }).click();
+      await expect(page.locator('[data-draft-preview]').getByRole('heading', { name: `Your change: Remove the regulation ${name}` })).toBeVisible();
+      await sendDraft(page);
+      await approveWithPasskey(approver);
+      await page.goto('/admin/footprint');
+      await expect(scopeItemRow(page, key)).toHaveCount(0);
+    }
+
+    test("FP-S18: A scope item the library does not cover is requested by one person and approved by another with a passkey", async ({ page, browser, apiGuard }, testInfo) => {
+      // FP-S18 (OWN-01, FP-02, AC-OWN2) on screen: the officer asks, the request waits and
+      // moves no term, the officer is offered Withdraw and never Approve, and a second person
+      // approves with a passkey. The 409 for the officer's own approval, the refused keys and
+      // tenant B's 404 on the item are the integration test's (test_fp_s18).
+      test.setTimeout(120_000);
+      allowFreshContext(apiGuard);
+      apiGuard.allow(/\/api\/v1\/tenant\/footprint\/requests\/[^/]+\/approve$/, 403, 'the first attempt answers step_up_required and opens the prompt');
+      const name = `Lagen om växlingsverksamhet ${Date.now()}`;
+      await signInAs(page, LOGINS.complianceOfficer);
+      await officerStartsClean(page);
+      const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
+      let key: string | null = null;
+      try {
+        key = await officerAddsRegulation(page, name, 'SFS 1996:1006');
+        const banner = page.locator('[data-pending-request]');
+        await expect(banner.getByText('Waiting for approval')).toBeVisible();
+        await expect(banner.getByText(`Add the regulation ${name}`)).toBeVisible();
+        await expect(banner.getByRole('button', { name: 'Approve' })).toHaveCount(0);
+        await expect(banner.getByRole('button', { name: 'Withdraw' })).toBeVisible();
+        await expect(scopeItemRow(page, key).getByText('Added when approved')).toBeVisible();
+        // No term of the scope changes while it waits.
+        await expect(page.locator('[data-footprint-dimensions]').getByText(/when approved/)).toHaveCount(0);
+
+        await approveRegulation(approver, name);
+        await page.goto('/admin/footprint');
+        const row = scopeItemRow(page, key);
+        await expect(row.getByRole('heading', { name })).toBeVisible();
+        await expect(row.getByText('Added when approved')).toHaveCount(0);
+        await expect(row.getByText('Waiting for your agent')).toBeVisible();
+      } finally {
+        await removeRegulation(page, approver, key, name);
+        await approver.context().close();
+      }
+    });
+
+    test("FP-S19 J-12 @smoke: the bank's own regulation, from scope item to Private to us", async ({ page, browser, apiGuard }, testInfo) => {
+      // J-12 (OWN-01 to OWN-04, AC-OWN1, AC-OWN2): the officer adds a regulation the library
+      // does not cover, the approver approves it with a passkey, tenant A's own agent researches
+      // it on the mock runner and files the bank's own instrument, then its duties, in the
+      // bank's own queue; the approver approves them with a passkey, the inventory reads the
+      // duty "Private to us", and tenant B's member finds nothing at its address.
+      test.setTimeout(240_000);
+      allowFreshContext(apiGuard);
+      apiGuard.allow(/\/api\/v1\/tenant\/footprint\/requests\/[^/]+\/approve$/, 403, 'the first attempt answers step_up_required and opens the prompt');
+      apiGuard.allow(/\/api\/v1\/private-proposals\/[^/]+\/approve$/, 403, 'the first approval answers step_up_required and opens the prompt');
+      const attempt = `${Date.now()}`;
+      const name = `Lagen om kreditupplysning ${attempt}`;
+      await signInAs(page, LOGINS.complianceOfficer);
+      await officerStartsClean(page);
+      const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.approver);
+      let key: string | null = null;
+      try {
+        key = await officerAddsRegulation(page, name, `SFS 1973:1173 (${attempt})`);
+        await approveRegulation(approver, name);
+
+        // The approval opened research by the bank's own agent; the mock runner reports the
+        // bank's own instrument, which waits in the bank's own queue as the agent's.
+        const instrument = await reportInstrument(testInfo, key);
+        await approver.goto('/private-records');
+        const queued = approver.locator(`[data-private-proposal-id="${instrument.id}"]`);
+        await expect(queued).toContainText('Proposed by our agent');
+        await expect(queued).toContainText(instrument.title);
+        await approveOwnProposal(approver, instrument.id);
+
+        // Its duties follow under the instrument the bank now holds; one is approved.
+        const duties = await reportDuties(testInfo, key);
+        await approveOwnProposal(approver, duties[0].id);
+
+        // The inventory lists the approved duty beside the shared library, "Private to us".
+        await page.goto(`/inventory?instrument=${instrument.key}`);
+        const own = page.locator(`[data-obligation="${duties[0].key}"]`);
+        await expect(own.getByText('Private to us', { exact: true })).toBeVisible();
+        await expect(page.locator(`[data-obligation="${duties[1].key}"]`)).toHaveCount(0);
+        // The row is the link to its page, whose header carries the same marker.
+        await own.click();
+        await expect(page).toHaveURL(/\/inventory\/obligations\/[^/]+$/);
+        await expect(page.locator(`[data-obligation="${duties[0].key}"] [data-header-pills]`).getByText('Private to us', { exact: true })).toBeVisible();
+        const address = new URL(page.url()).pathname;
+
+        // Tenant B's member opens the same address and finds nothing.
+        const obligationId = address.split('/').pop() ?? '';
+        apiGuard.allow(new RegExp(`/api/v1/[^?]*${obligationId}`), 404, "tenant A's own record is not found from tenant B");
+        const other = await secondPerson(browser, apiGuard, testInfo, LOGINS.secondBankAdmin);
+        await other.goto(address);
+        await expect(other.locator('[data-not-found]')).toBeVisible();
+        await other.context().close();
+      } finally {
+        await removeRegulation(page, approver, key, name);
+        await approver.context().close();
+      }
+    });
   });
 });
 
@@ -1236,17 +1392,4 @@ test.describe('regulatory scope, markets and standards', () => {
     });
   });
 
-});
-
-// The bank's own regulations (PRD 0.7, D-89, D-91, ADR 0059): a scope item the library does
-// not cover, and J-12 from that item to a record that reads "Private to us". Each stays
-// test.fixme until chunk 11 builds it.
-test.describe("the bank's own regulations", () => {
-  test.fixme("FP-S18: A scope item the library does not cover is requested by one person and approved by another with a passkey", async () => {
-    // pending: FP-S18 (OWN-01, FP-02, AC-OWN2, chunk 11)
-  });
-
-  test.fixme("FP-S19 J-12 @smoke: the bank's own regulation, from scope item to Private to us", async () => {
-    // pending: FP-S19 (OWN-01, OWN-02, OWN-03, OWN-04, AC-OWN1, AC-OWN2, J-12, chunk 11)
-  });
 });

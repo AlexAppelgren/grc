@@ -2243,3 +2243,26 @@ Built on these defaults; nothing waits on them.
 - [ ] **What a control holds.** A name and an optional reference, the fields REG-05's internal
       item has that a public source can give; owner, team, review dates and the bank's own
       links stay the bank's to set on the item afterwards.
+
+## d89-e2e-journey: J-12 and the bank's own records on screen (2026-09-27, OWN-01 to OWN-04, J-12)
+
+Defaults taken; nothing waits on them.
+
+- [ ] **The journeys play the mock runner's report with a management command.** The mock
+      runner files nothing and nothing polls a run for findings yet (the Agent SDK runner leg,
+      AGT-06, is a later package). So J-12 and PRO-S15 call `manage.py e2e_scope_findings`
+      (E2E only, refused deployed, like `seed_e2e`): it builds findings from the run's own
+      input (`scope_research.run_input`) and files them through
+      `runner_events.apply_finding`, the door a real runner's findings will use. Default:
+      keep it until the runner leg lands, then the journeys wait for the runner instead.
+- [ ] **A duty is filed only once the bank holds its instrument.** d89-agent-research files a
+      bank's own duty under an instrument that exists, and d89-private-records puts a bank's
+      own duty only under a bank's own instrument, so J-12 approves the instrument first and
+      the duties arrive after it. Say if an agent should file a whole instrument with its
+      duties in one go (a batch of the bank's own, a proposals change).
+- [ ] **Tenant A's seeded agents are two.** The seed switches tenant A's `scope-researcher`
+      on (manual cadence, never due) beside its source checker, so the research panel on
+      Agents now asks which agent; AGT-S7's helper picks the source checker by name.
+- [ ] **The scope screen still reads "Waiting for your agent" while research runs.** The
+      item's `research` state is computed as waiting until more states are built
+      (d89-scope-items-logic's default); the journey waits on the run, not on the screen.

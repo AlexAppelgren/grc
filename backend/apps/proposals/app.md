@@ -174,8 +174,11 @@ the zones), a provision under a bank's own instrument is 422
 decision's and the record's audit and outbox rows are written in the bank's zone with the
 passkey assertion and never the note. The console, another bank and every key are 404 or
 refused, and a support session is refused before the route runs. PRO-S12 and PRO-S15 prove
-it (apps/proposals/tests_apply_private.py, tests_private_approval.py); PRO-S15's journey is
-d89-e2e-journey's.
+it (apps/proposals/tests_apply_private.py, tests_private_approval.py). PRO-S15's journey
+(d89-e2e-journey) decides two instruments tenant A's own agent reports into the seeded
+research: a reader is refused the queue, the console neither lists nor opens them, the
+approver approves one with a passkey and rejects the other with a reason, and tenant B's
+approver finds nothing at the address.
 
 OWN-05 is `built` (d89-controls, 2026-09-27; D-99): `new_control` is a control of one of the
 bank's own obligations in force, named by its stable key, with a name and an optional

@@ -101,9 +101,8 @@ class ChunkElevenSeed(TestCase):
     def test_tenant_a_runs_its_own_weekly_agent_with_a_scope_just_under_its_cap(self) -> None:
         now = datetime.datetime.now(datetime.UTC)
         tenancy.activate(self.tenant_a.id)
-        # Tenant A also holds J-8's switched-off scope researcher (r2-j8-isolation).
+        # Tenant A's source checker; its scope researcher is d89-e2e-journey's (EXPECTED_OWN_RECORDS).
         agent = TenantAgent.objects.select_related("agent").get(agent__key=EXPECTED_CHUNK11.tenant_agent)
-        self.assertEqual(agent.agent.key, EXPECTED_CHUNK11.tenant_agent)
         self.assertEqual((agent.enabled, agent.cadence, agent.scope), (True, "weekly", EXPECTED_CHUNK11.scope))
         assert agent.next_run_at is not None
         self.assertGreater(agent.next_run_at, now)
@@ -115,7 +114,8 @@ class ChunkElevenSeed(TestCase):
         self.assertLess(spend, budget.monthly_cap)
         self.assertGreater(spend + min(EXPECTED_CHUNK11.month_costs), budget.monthly_cap, "one more run passes the cap")
 
-        runs = AgentRun.objects.filter(tenant=self.tenant_a)
+        # Tenant A's runs beside the research its scope researcher runs for the seeded regulation.
+        runs = AgentRun.objects.filter(tenant=self.tenant_a, research_request__isnull=True)
         self.assertEqual(set(runs.values_list("tenant_agent", flat=True)), {agent.id})
         for run in runs.select_related("agent_version"):
             with self.subTest(run=run.id):

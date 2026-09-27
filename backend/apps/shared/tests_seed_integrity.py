@@ -22,7 +22,9 @@ the test named the tenant and the property.
 from __future__ import annotations
 
 import datetime
+import json
 import re
+import uuid
 from collections import Counter
 from io import StringIO
 from pathlib import Path
@@ -30,7 +32,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.db.models import F
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -1094,7 +1096,8 @@ class ReseedTenantsAndScope(SeededOnce):
                 tenancy.activate(tenant.id)
                 terms = {f"{row.term.dimension.key}:{row.term.key}" for row in FootprintTerm.objects.filter(tenant=tenant).select_related("term__dimension")}
                 self.assertEqual(terms, set(EXPECTED_FOOTPRINTS[expected.slug]))
-                self.assertEqual(FootprintHistory.objects.filter(tenant=tenant, action="added").count(), len(terms))
+                # The terms' own history; the seeded regulation's is its own (EXPECTED_OWN_RECORDS).
+                self.assertEqual(FootprintHistory.objects.filter(tenant=tenant, action="added", term__isnull=False).count(), len(terms))
                 for name, entry in REGISTRY.items():
                     if entry.tier == 3:
                         self.assertTrue(entry.model._default_manager.filter(tenant=tenant, is_system=True, active=True).exists(), name)
@@ -1109,12 +1112,15 @@ class ReseedTenantsAndScope(SeededOnce):
         self.assertEqual({f"{t.dimension.key}:{t.key}" for t in request.adds.all()}, set(EXPECTED_PENDING_REQUEST.adds))
         # The seeded request removes Advice, which hides the one advice-only obligation.
         self.assertEqual(request.preview["obligations"], {"hidden": 1, "revealed": 0, "available": True})
-        # Idempotent: a second run keeps one request and the same footprint rows.
+        # Idempotent: a second run keeps the same requests and the same footprint rows. Beside
+        # J-6's, one request asked for the seeded regulation and was approved (d89-e2e-journey).
         seed_e2e()
         tenancy.activate(tenant_a.id)
-        self.assertEqual(FootprintChangeRequest.objects.filter(tenant=tenant_a).count(), 1)
+        self.assertEqual(FootprintChangeRequest.objects.filter(tenant=tenant_a, scope_item_links__isnull=True).count(), 1)
+        self.assertEqual(FootprintChangeRequest.objects.filter(tenant=tenant_a, scope_item_links__isnull=False, status="approved").distinct().count(), 1)
         self.assertEqual(FootprintTerm.objects.filter(tenant=tenant_a).count(), len(EXPECTED_FOOTPRINTS[TENANT_A_SLUG]))
-        self.assertEqual(FootprintHistory.objects.filter(tenant=tenant_a).count(), len(EXPECTED_FOOTPRINTS[TENANT_A_SLUG]))
+        self.assertEqual(FootprintHistory.objects.filter(tenant=tenant_a, term__isnull=False).count(), len(EXPECTED_FOOTPRINTS[TENANT_A_SLUG]))
+        self.assertEqual(FootprintHistory.objects.filter(tenant=tenant_a, scope_item__isnull=False).count(), 1)
 
     # --- std-journeys (FP-S16) ------------------------------------------------------------
     def test_e2e_switches_the_standard_on_and_logs_it_once(self) -> None:
@@ -2436,3 +2442,110 @@ class SeededJ8Isolation(SeededOnce):
             tenancy.activate(tenant.id)
             self.assertEqual(AuditEvent.objects.filter(tenant=tenant).count(), count)
 # --- end r2-j8-isolation ------------------------------------------------------------------------
+
+
+# --- d89-e2e-journey ------------------------------------------------------------------------------
+class SeededOwnRecords(SeededOnce):
+    """What J-12, PRO-S15 and INV-S15 find (OWN-01 to OWN-04): tenant A's own scope researcher,
+    a regulation of the bank's own in scope with its research open on the mock runner, and the
+    instrument and duties that research filed and a second person approved. Tenant B holds
+    none of it."""
+
+    def setUp(self) -> None:
+        from apps.shared.e2e_seed import EXPECTED_OWN_RECORDS
+
+        self.spec = EXPECTED_OWN_RECORDS
+        self.tenant = Tenant.objects.get(slug=self.spec.tenant_slug)
+        self.other = Tenant.objects.get(slug=TENANT_B_SLUG)
+        tenancy.activate(self.tenant.id)
+
+    def _run(self) -> AgentRun:
+        from apps.agents.models import ResearchRequest
+
+        [request] = ResearchRequest.objects.filter(scope_item__key=self.spec.item_key)
+        [run] = request.runs.all()
+        return run
+
+    def test_tenant_a_runs_its_own_scope_researcher_and_the_beat_never_starts_it(self) -> None:
+        from apps.agents.models import TenantAgent
+
+        agent = TenantAgent.objects.get(agent__key=self.spec.researcher)
+        self.assertEqual((agent.enabled, agent.paused_at, agent.cadence, agent.next_run_at), (True, None, "manual", None))
+        tenancy.activate(self.other.id)
+        self.assertFalse(TenantAgent.objects.filter(agent__key=self.spec.researcher).exists())
+
+    def test_the_regulation_is_in_scope_and_researched_on_the_mock_runner(self) -> None:
+        from apps.taxonomy.models import ScopeItem
+
+        item = ScopeItem.objects.select_related("jurisdiction", "regime_term").get(key=self.spec.item_key)
+        self.assertEqual((item.status, item.name, item.official_reference), ("in_scope", self.spec.item_name, self.spec.item_reference))
+        self.assertEqual((item.jurisdiction.key, f"regime:{item.regime_term.key}"), (self.spec.item_jurisdiction, self.spec.item_regime))
+        run = self._run()
+        assert run.research_request is not None and run.research_request.requested_by is not None
+        self.assertEqual(run.research_request.kind, "scope_item")
+        self.assertEqual(run.research_request.requested_by.email, self.spec.approver_email)
+        self.assertEqual((run.status, run.external_session_id, run.api_key_id), ("running", f"mock-{run.id}", None))
+        tenancy.activate(self.other.id)
+        self.assertFalse(ScopeItem.objects.filter(key=self.spec.item_key).exists())
+
+    def test_the_research_filed_an_instrument_and_duties_a_second_person_approved(self) -> None:
+        from apps.shared.e2e_seed import own_record_keys
+
+        instrument_key, obligation_keys = own_record_keys(self.spec.item_key)
+        instrument = Instrument.objects.get(stable_key=instrument_key)
+        self.assertEqual((instrument.owner_tenant_id, instrument.created_origin, instrument.verified_origin), (self.tenant.id, "agent", "user"))
+        obligations = Obligation.objects.filter(stable_key__in=obligation_keys)
+        self.assertEqual({(o.stable_key, o.owner_tenant_id, o.instrument_id) for o in obligations}, {(key, self.tenant.id, instrument.id) for key in obligation_keys})
+        filed = Proposal.objects.filter(agent_run_id=self._run().id).select_related("proposed_by_agent", "reviewed_by")
+        self.assertEqual(filed.count(), 1 + len(obligation_keys))
+        for proposal in filed:
+            assert proposal.proposed_by_agent is not None and proposal.reviewed_by is not None
+            self.assertEqual((proposal.owner_tenant_id, proposal.origin, proposal.status), (self.tenant.id, "agent", "approved"))
+            self.assertEqual((proposal.proposed_by_agent.key, proposal.reviewed_by.email), (self.spec.researcher, self.spec.approver_email))
+        tenancy.activate(self.other.id)
+        self.assertFalse(Instrument.objects.filter(stable_key=instrument_key).exists())
+        self.assertFalse(Obligation.objects.filter(stable_key__in=obligation_keys).exists())
+
+    def test_the_mock_runner_reports_the_instrument_then_its_duties_and_never_twice(self) -> None:
+        """`e2e_scope_findings`: a part not held yet is filed as the bank's own instrument, again
+        and again the same proposal; once a person approves it, its duties are filed under it."""
+        from apps.proposals import private_approval
+        from apps.shared.audit import Actor, ActorType
+        from apps.shared.e2e_seed import own_record_keys
+
+        def report() -> list[dict[str, str]]:
+            out = StringIO()
+            call_command("e2e_scope_findings", self.spec.item_key, "--part", "2", stdout=out)
+            tenancy.activate(self.tenant.id)
+            return json.loads(out.getvalue())
+
+        first = report()
+        self.assertEqual([row["kind"] for row in first], ["new_instrument"])
+        self.assertEqual(report(), first)
+        instrument_key, obligation_keys = own_record_keys(self.spec.item_key, part=2)
+        proposal = Proposal.objects.get(pk=first[0]["id"])
+        self.assertEqual((proposal.owner_tenant_id, proposal.payload["key"], first[0]["key"]), (self.tenant.id, instrument_key, instrument_key))
+        approver = User.objects.get(email=self.spec.approver_email)
+        private_approval.approve(
+            proposal=proposal, reviewer=approver, actor=Actor(kind=ActorType.USER, id=approver.id, label=approver.name), note="", step_up_assertion_id=uuid.uuid4()
+        )
+        tenancy.activate(self.tenant.id)
+        duties = report()
+        self.assertEqual([row["kind"] for row in duties], ["new_obligation"] * len(obligation_keys))
+        filed = Proposal.objects.filter(pk__in=[row["id"] for row in duties])
+        self.assertEqual({(p.payload["key"], p.payload["instrument"], p.owner_tenant_id, p.status) for p in filed}, {(key, instrument_key, self.tenant.id, "open") for key in obligation_keys})
+
+    def test_every_key_the_mock_runner_gives_is_a_stable_key(self) -> None:
+        from apps.proposals.schemas import STABLE_KEY_PATTERN
+        from apps.shared.e2e_seed import own_record_keys
+
+        for item_key, part in ((self.spec.item_key, 1), ("x" * 79 + "_y", 7), ("lagen_om_växling_2", 123456789)):
+            instrument, duties = own_record_keys(item_key, part)
+            for key in (instrument, *duties):
+                self.assertRegex(key, STABLE_KEY_PATTERN)
+                self.assertLessEqual(len(key), 120)
+
+    def test_the_mock_runner_needs_a_research_that_is_running(self) -> None:
+        with self.assertRaises(CommandError):
+            call_command("e2e_scope_findings", "no_such_regulation", stdout=StringIO())
+# --- end d89-e2e-journey --------------------------------------------------------------------------

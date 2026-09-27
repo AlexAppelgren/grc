@@ -75,7 +75,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it. R1 covers the feed, inventory, roadmap, briefing and search; reports apply it in chunk 12 | M | R1 | built |
 | FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
-| OWN-01 | A scope item (name, jurisdiction and regime terms, official reference, public source addresses) is added through the regulatory scope request: `footprint.request` asks, a different person with `footprint.approve` approves with a passkey; no API key reaches it, approving widens no term, and no agent ever writes one (D-89, D-91) | M | R2 | in_progress |
+| OWN-01 | A scope item (name, jurisdiction and regime terms, official reference, public source addresses) is added through the regulatory scope request: `footprint.request` asks, a different person with `footprint.approve` approves with a passkey; no API key reaches it, approving widens no term, and no agent ever writes one (D-89, D-91) | M | R2 | built |
 | ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | built |
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -595,7 +595,9 @@ And tenant B's fetch of the item answers 404
 > of the request is capped by `FOOTPRINT_CHANGE_MAX_TERMS` and the decision note at 2000
 > characters (H24). Every route takes a person's session; `tests_scope_items.NoOtherWriter`
 > fails when any module but the request logic writes a scope item. The `@e2e` half is
-> d89-e2e-journey's.
+> d89-e2e-journey's: the officer asks on the regulatory scope screen, the request waits with
+> Withdraw and never Approve for them, and the approver approves it with a passkey; the
+> journey takes the item out again through the same door. OWN-01 is `built`.
 
 ### FP-S19 — J-12: the bank's own regulation, from scope item to "Private to us" `@e2e` (OWN-01, OWN-02, OWN-03, OWN-04, AC-OWN1, AC-OWN2, J-12)
 ```gherkin
@@ -607,6 +609,17 @@ When the approver approves one of them with a passkey
 Then the inventory lists the obligation labelled "Private to us"
 And a member of tenant B who opens its address gets "not found"
 ```
+
+> **Note — how J-12's research runs on the mock runner (d89-e2e-journey, 2026-09-27).** The
+> mock runner files nothing by itself and no poller turns a runner's report into findings
+> yet, so the journey plays the runner's report with `manage.py e2e_scope_findings`
+> (E2E only, refused deployed): findings built from the run's own input
+> (`scope_research.run_input`, D-98's fields) and filed through
+> `runner_events.apply_finding`, the one door a bank's run files through. The bank's own
+> instrument comes first; its duties follow once a person approved it, because a duty sits
+> under an instrument the bank holds (d89-private-records). Tenant A's `scope-researcher` is
+> seeded on (manual cadence, never due), and so is one researched regulation for PRO-S15
+> and INV-S15 (`e2e_seed.EXPECTED_OWN_RECORDS`).
 
 ### I18N-S1 — Languages and jurisdictions are rows, never columns or branches `@integration` (I18N-01)
 ```gherkin

@@ -5,6 +5,7 @@ import { destinations } from '@/shared/navigation/registry';
 import { answered, completeStepUp, sessionApi, type SessionApi } from './support/agent-definitions';
 import { mintAgentKey, revokeAgentKey, type MintedAgentKey } from './support/agent-key';
 import { expect, test } from './support/api-guard';
+import { approveOwnProposal, reportInstrument, SEEDED_REGULATION } from './support/own-records';
 import { allowFreshContext, BACKEND_URL, LOGINS, restrictedScreen, signInAs, signOut } from './support/passkeys';
 
 // proposals: the @e2e scenarios from backend/apps/proposals/app.md (playbook Appendix B).
@@ -559,9 +560,67 @@ test.describe('proposals journeys', () => {
   });
 });
 
-// The bank's own queue (PRD 0.7, OWN-03): stays test.fixme until chunk 11 builds it.
+// The bank's own queue (PRD 0.7, OWN-03). What it decides is what tenant A's own agent
+// reports into the seeded research (e2e_seed.py, EXPECTED_OWN_RECORDS): two instruments of
+// its own, as parts numbered for the attempt, so a retry never meets a proposal an earlier
+// attempt decided and nothing here needs restoring.
 test.describe("the bank's own queue", () => {
-  test.fixme("PRO-S15: The bank's own queue decides what its own agent filed", async () => {
-    // pending: PRO-S15 (OWN-03, INV-07, PRO-03, AC-OWN1, chunk 11)
+  test("PRO-S15: The bank's own queue decides what its own agent filed", async ({ page, apiGuard }, testInfo) => {
+    // OWN-03, INV-07, PRO-03, AC-OWN1. The 403 on a reader's approval, the 422 on a rejection
+    // without a reason, the audit rows and the refused keys are the integration test's
+    // (test_pro_s15); here, what each person sees.
+    test.setTimeout(150_000);
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/api\/v1\/private-proposals$/, 403, 'a member without private_records.approve is refused the queue');
+    apiGuard.allow(/\/api\/v1\/private-proposals\/[^/]+\/approve$/, 403, 'the first approval answers step_up_required and opens the prompt');
+    apiGuard.allow(/\/api\/v1\/proposals\/[^/]+$/, 404, "the console never reads a bank's own proposal");
+    const part = 2 + 2 * (Date.now() % 100_000_000);
+    const kept = await reportInstrument(testInfo, SEEDED_REGULATION, part);
+    const refused = await reportInstrument(testInfo, SEEDED_REGULATION, part + 1);
+
+    // A member without private_records.approve is refused the queue.
+    await signInAs(page, LOGINS.reader);
+    await page.goto('/private-records');
+    await expect(restrictedScreen(page)).toBeVisible();
+    await signOut(page);
+
+    // The console never lists either, and its fetch of one is not found.
+    await signInAs(page, LOGINS.editor);
+    await page.goto('/console/queue');
+    await queueSettled(page);
+    await expect(page.getByRole('link', { name: kept.title })).toHaveCount(0);
+    await page.goto(`/console/queue/${kept.id}`);
+    await expect(page.locator('[data-not-found]')).toBeVisible();
+    await signOut(page);
+
+    // The approver finds both in tenant A's own queue as the agent's, and decides them.
+    await signInAs(page, LOGINS.approver);
+    await page.goto('/private-records');
+    for (const filed of [kept, refused]) {
+      const row = page.locator(`[data-private-proposal-id="${filed.id}"]`);
+      await expect(row).toContainText(filed.title);
+      await expect(row).toContainText('Proposed by our agent');
+    }
+    await approveOwnProposal(page, kept.id);
+
+    await page.goto(`/private-records/${refused.id}`);
+    await page.locator('[data-private-decision]').getByRole('button', { name: 'Reject', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Reject this proposal' });
+    await dialog.getByRole('button', { name: 'Reject', exact: true }).click();
+    await expect(dialog.getByText('Give a reason and say what is wrong.')).toBeVisible();
+    await dialog.getByLabel('Reason', { exact: true }).selectOption({ index: 1 });
+    await dialog.getByLabel('What is wrong').fill('The same rules as the instrument we approved, filed twice.');
+    await dialog.getByRole('button', { name: 'Reject', exact: true }).click();
+    await expect(page.locator('[data-private-decided="rejected"]')).toHaveText('Rejected.');
+    // Decided, both leave the queue.
+    await page.goto('/private-records');
+    await expect(page.locator('[data-private-records]')).toBeVisible();
+    await expect(page.locator(`[data-private-proposal-id="${kept.id}"], [data-private-proposal-id="${refused.id}"]`)).toHaveCount(0);
+    await signOut(page);
+
+    // Tenant B's approver finds nothing at the address of either.
+    await signInAs(page, LOGINS.secondBankApprover);
+    await page.goto(`/private-records/${refused.id}`);
+    await expect(page.locator('[data-not-found]')).toBeVisible();
   });
 });

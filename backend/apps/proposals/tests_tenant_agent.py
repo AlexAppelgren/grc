@@ -80,6 +80,9 @@ def scope_research_run(bank: Tenant) -> AgentRun:
     return tasks.open_request_run(request, requested_by=approver)
 
 
+OWN_PARENT_KEY = "own-kinds-parent"
+
+
 class OwnFindingCase(TestCase):
     def setUp(self) -> None:
         _seed_library()
@@ -89,6 +92,10 @@ class OwnFindingCase(TestCase):
         self.bank = factories.tenant(slug="own-findings-a")
         self.other = factories.tenant(slug="own-findings-b")
         self.research_run = scope_research_run(self.bank)
+        # The bank's own instrument its own duties are filed under: a bank's own duty never sits
+        # under a shared one (d89-private-records, INV-07).
+        tenancy.activate(self.bank.id)
+        library_build.instrument(key=OWN_PARENT_KEY, regime="regime:securities", owner_tenant=self.bank)
 
     def file(self, found: tenant_agent.Finding) -> Proposal:
         tenancy.activate(self.bank.id)
