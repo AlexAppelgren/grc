@@ -24,6 +24,7 @@ need one live in the app's own `testing.py`, which the fence exempts:
 
 from __future__ import annotations
 
+import datetime
 import itertools
 import uuid
 from datetime import timedelta
@@ -34,6 +35,7 @@ from typing import Any
 from django.db import transaction
 from django.utils import timezone
 
+from apps.cases.models import Action, ChangeCase
 from apps.taxonomy.models import ApprovalStatus, ComplianceStatus, FootprintChangeRequest, Team, TeamLabel, VocabularySuggestion
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.governance.models import TenantReachRequest
@@ -58,7 +60,7 @@ from apps.library.models import Language
 from apps.library import testing as library_testing
 from apps.library.seeds import LANGUAGES, seed_jurisdictions, seed_languages
 from apps.register.logic import ensure_register_entry
-from apps.register.models import Applicability, DutyOccurrence, SoaUnit, TenantObligationScope
+from apps.register.models import Applicability, DutyOccurrence, SoaUnit, TenantObligation, TenantObligationScope
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
@@ -699,3 +701,79 @@ def closed_case(tenant: Tenant, *, actions: int = 2, evidence: int = 3, so_what_
     row.refresh_from_db()
     return SimpleNamespace(case=row, change_id=row.change_id, owner=owner, approver=approver, step_up=step_up)
 
+
+# c10-reminders-escalation-reviews: the dated work reminders and escalation read.
+def action(case: ChangeCase, owner: User, *, due_date: datetime.date, title: str = "Update the policy") -> Action:
+    """One open action on a bank's case, owned by `owner` and due on `due_date`."""
+    with transaction.atomic():
+        tenancy.activate(case.tenant_id)
+        return Action.objects.create(
+            tenant_id=case.tenant_id, case=case, title=title, owner=owner, due_date=due_date, created_by=owner
+        )
+
+
+def register_entry(
+    tenant: Tenant,
+    obligation_id: uuid.UUID,
+    *,
+    status: str | None = None,
+    first_line_owner: User | None = None,
+    owner_team: Team | None = None,
+    next_review_date: datetime.date | None = None,
+) -> TenantObligation:
+    """A bank's register entry on an obligation, created through the one creator and then
+    given the status keyed `status`, owners and next review."""
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        entry = ensure_register_entry(tenant_id=tenant.id, obligation_id=obligation_id, actor=user_actor())
+        fields: dict[str, object] = {
+            "first_line_owner": first_line_owner,
+            "owner_team": owner_team,
+            "next_review_date": next_review_date,
+        }
+        if status:
+            fields["compliance_status"] = ComplianceStatus.objects.get(key=status)
+        TenantObligation.objects.filter(pk=entry.pk).update(**fields)
+        entry.refresh_from_db()
+        return entry
+
+
+def team_member(tenant: Tenant, team: Team, person: User) -> TeamMember:
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return TeamMember.objects.create(tenant=tenant, team=team, user=person)
+
+
+# security-review-c10: the tenant-isolation guard's records for the two chunk 10 id routes.
+def comment(tenant: Tenant) -> SimpleNamespace:
+    """A comment of `tenant` on one of its cases, addressed by its own id."""
+    from apps.collab.models import Comment
+
+    row = case_change(tenant).case
+    author = member_user(tenant, roles=("compliance_officer",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        written = Comment.objects.create(
+            tenant=tenant, subject_type="change_case", subject_id=row.id, author=author, body="Who owns the custody review?"
+        )
+    return SimpleNamespace(id=written.id)
+
+
+def notification(tenant: Tenant) -> SimpleNamespace:
+    """A notification of a member of `tenant` about one of its cases, through notify(), the
+    one writer, addressed by its own id."""
+    from apps.collab import logic
+    from apps.collab.models import NotificationKind
+
+    row = case_change(tenant).case
+    person = member_user(tenant, roles=("reader",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        (told,) = logic.notify(
+            tenant_id=tenant.id,
+            kind=NotificationKind.MENTION,
+            subject_type="change_case",
+            subject_id=row.id,
+            candidates=[(person.id, "mention")],
+        )
+    return SimpleNamespace(id=told.id)

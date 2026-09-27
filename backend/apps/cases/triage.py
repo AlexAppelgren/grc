@@ -195,6 +195,7 @@ def triage_change(
         subject_type=logic.SUBJECT_TYPE,
         subject_id=case.id,
         candidates=[(case.owner.id, "owner")],
+        actor_id=user.id,
     )
     return case_out(case, reader=user.id, order=order)
 

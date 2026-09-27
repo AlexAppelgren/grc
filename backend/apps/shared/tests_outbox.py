@@ -507,24 +507,27 @@ class TheBeatEntryRunsTheCursor(OutboxCursorCase):
 
 class TheRegistryHoldsOnlyItsConsumers(TestCase):
     """The cursor registers nothing of its own: a consumer registers its handler from its
-    app's `ready()`. Four consumers exist, in the order their apps are ready — chunk 5's
+    app's `ready()`. Five consumers exist, in the order their apps are ready — chunk 5's
     case creation (rulings 9 and 32), the "So what?" backfill (WAT-05, D-66), the
     footprint re-decision of open cases (FP-03), and chunk 7's search index, which fills
     the embeddings a library change left owing and rebuilds a registered change's chunks
-    from the watch events — so a second relay, or a handler registered anywhere but in an
-    app's `ready()`, shows up here. The registry is rebuilt from the app configs first, so
+    from the watch events, and chunk 10's notices to the people involved in an obligation
+    whose link is confirmed or whose new version applies — so a second relay, or a handler
+    registered anywhere but in an app's `ready()`, shows up here. The registry is rebuilt from the app configs first, so
     the proof holds whichever test ran before it in the process."""
 
     def test_only_its_consumers_are_registered_by_production_code(self) -> None:
         from django.apps import apps as installed
 
         from apps.cases import creation, matching, so_what
+        from apps.collab import producers
         from apps.search import tasks as search
 
         self.addCleanup(only_the_consumers_are_registered)
         outbox._HANDLERS.clear()
         installed.get_app_config("cases").ready()
         installed.get_app_config("search").ready()
+        installed.get_app_config("collab").ready()
 
         expected: dict[str, list[object]] = {}
         for topics, handler in (
@@ -534,6 +537,9 @@ class TheRegistryHoldsOnlyItsConsumers(TestCase):
             ((matching.CHANGE_FACTS_UPDATED,), matching.after_change_scope_change),
             (search.INDEX_TOPICS, search.embed_rebuilt_chunks),
             (search.CHANGE_TOPICS, search.index_change),
+            # c10-producers: a confirmed link and a new version tell the people involved (COL-02).
+            ((producers.CURATION_CONFIRMED,), producers.after_link_confirmed),
+            ((producers.VERSION_APPLIED,), producers.after_version_applied),
         ):
             for topic in topics:
                 expected.setdefault(topic, []).append(handler)
@@ -586,6 +592,7 @@ class RegistrationHappensWhenTheAppIsReady(TestCase):
         from django.apps import apps as installed
 
         from apps.cases import creation, matching, so_what
+        from apps.collab import producers
         from apps.search import tasks as search
 
         self.addCleanup(only_the_consumers_are_registered)
@@ -597,6 +604,8 @@ class RegistrationHappensWhenTheAppIsReady(TestCase):
             ("cases", (matching.CHANGE_FACTS_UPDATED,), matching.after_change_scope_change),
             ("search", search.INDEX_TOPICS, search.embed_rebuilt_chunks),
             ("search", search.CHANGE_TOPICS, search.index_change),
+            ("collab", (producers.CURATION_CONFIRMED,), producers.after_link_confirmed),
+            ("collab", (producers.VERSION_APPLIED,), producers.after_version_applied),
         ):
             installed.get_app_config(label).ready()
             for topic in topics:

@@ -1888,3 +1888,10 @@ worked-case CHECK still requires a person. `triageChange` takes it as `ownerTeam
 `TenantMemberOpenWork` and the removal now count and move `case`, `action` and
 `duty_occurrence`, the kinds its contract already named: a case and an action pass to a
 person only, and a case only to a member holding `cases.work`.
+
+## c10-digest-content. The weekly digest is keyed to its week (2026-09-25)
+
+- `email_message.sent_on` of a `weekly_digest` row is the first day (Monday) of the bank's
+  local week rather than the day of the send, so the same unique key that stops a second
+  reminder in a day stops a second digest in a week (COL-02: "one email per user per
+  week"). Every other template keeps the day of the send.

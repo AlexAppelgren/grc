@@ -110,6 +110,10 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # has no case for, so the case itself is invisible to tenant B.
     ("GET", "/changes/{change_id}/participants", "collab.Participant", "case_participant"),
     ("DELETE", "/changes/{change_id}/participants/{participant_id}", "collab.Participant", "case_participant"),
+    # security-review-c10: the two chunk 10 id routes that take no body, a comment of tenant A
+    # on its own case and a notification of one of its members.
+    ("DELETE", "/comments/{comment_id}", "collab.Comment", "comment"),
+    ("POST", "/notifications/{notification_id}/read", "collab.Notification", "notification"),
 ]
 
 

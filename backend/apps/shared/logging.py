@@ -35,6 +35,13 @@ class JsonFormatter(_JsonFormatter):
         request = getattr(record, "request", None)
         if record.name == "django.request" and isinstance(request, HttpRequest):
             log_record["message"] = f"{getattr(record, 'status_code', '')} {request.method} {loggable_route(request)}"
+        # Celery's failure and retry lines interpolate the exception's repr into the message
+        # and attach its formatted traceback and the task's arguments as `data`; a database
+        # error's message holds the failing row (security-review-c10, M2). The task, its id
+        # and what happened stay; the frames and types come from formatException below.
+        if record.name == "celery.app.trace" and isinstance(record.args, dict) and "exc" in record.args:
+            log_record["message"] = str(record.msg) % {**record.args, "exc": "[redacted]"}
+            log_record.pop("data", None)
 
     def formatException(
         self, ei: tuple[type[BaseException], BaseException, TracebackType | None] | tuple[None, None, None]

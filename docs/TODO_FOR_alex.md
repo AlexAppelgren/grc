@@ -1440,6 +1440,16 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       follows the app's existing terms (skyldighet, förslag, godkännande), but
       a native read of the headline and the questions is worth five minutes.
 
+## c10-fe-notifications: a case notification cannot link to its case yet (2026-09-25, COL-02)
+
+The inbox links an obligation's notification to `/inventory/obligations/{id}` and a change's to
+`/watch/{id}`. A notification about a case (`change_case`) carries the case's own id, while every
+case screen is addressed by its change (CHUNK9 ruling 1, no `/cases/{caseId}` route), so the screen
+cannot build the link. Default taken: the case's title lists without a link, never a link that would
+always land on Not found. Needs a choice before COL-S1's journey ("Erik finds the notification with a
+link back to the case"): either `notify()` names a case by its change (`subject_type` `change`, the
+change id), or the notification gains the change id, or the frontend adds a `/cases/{caseId}` page that
+redirects to its change. The second keeps the case's own read check (`cases.read`) on the row.
 ## r2-spec-d89: the bank's own regulations (PRD 0.7, 2026-09-25)
 
 - [x] **D-89: confirm PRD 0.7's OWN group.** Non-blocking: chunk 11 builds it on the
@@ -1506,6 +1516,53 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       its own: an entry in `.github/codeql-accepted.json` is yours to add or refuse. Until
       then the CodeQL python gate is red and `claude/r2-int-w2-done` is not pushed.
       (Default proposed: accept with that reason, acceptedBy you.) **Answered 2026-09-25: Alex accepted it; the entry is in `.github/codeql-accepted.json`.**
+
+## c10-reminders-core: triage reminders and the delegation hop, defaults taken (2026-09-25, COL-02, TEN-04)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **Who is reminded about a case awaiting triage.** Every active member whose
+      roles hold `cases.triage`, since a new case has no owner yet. Default: so.
+- [ ] **An overdue triage is reminded once.** The morning after its due time
+      passes, not every day after; escalation is what follows it. Default: so.
+- [ ] **The absent person's switch decides.** A reminder routed to a delegate
+      follows the absent person's own `reminders` switch, because it is their
+      notice; the delegate's switch is not read. Default: so.
+- [ ] **A delegate already told for themself gets one notice.** It carries no
+      "on behalf of", so they are not told twice about one record. Default: so.
+- [ ] **The mail does not yet say on whose behalf it came.** The notification
+      row names the absent person; the mail wording is the mail catalog's to add.
+- [ ] **A missed beat hour skips that day.** If the worker's beat is down for
+      the whole hour a bank's clock reads `REMINDER_SEND_HOUR`, that day's
+      reminders are not sent, and an overdue triage that fell in that window is
+      not reminded (escalation still follows). Also keep the hour off 02 to 03,
+      which a daylight saving change skips or repeats. Default: accepted for R2;
+      a "reminded through" stamp per bank would close it.
+- [ ] **A mail the relay refused is not retried by the next day's run.** Its
+      `email_message` row stays `failed`, and the notification is in the inbox.
+      Default: so.
+- [ ] **Several absent people sharing one delegate give the delegate one notice**
+      per record, naming the first of them. Default: so.
+- [ ] **The 403 proof uses a case write, not the sign-off route.** Chunk 9's
+      approve route does not exist on this base yet; `c10-out-of-office` or the
+      sign-off package should repeat the proof there.
+## c10-producers: participation and linked-change notices, defaults taken (2026-09-25, COL-02, COL-04, HOM-05, D-97)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **An agent-confirmed link notifies people (D-97).** A link confirmed by an agent of
+      another definition tells the people involved exactly as a person's confirmation does.
+      Default: so, pending your answer on D-97; if only person-confirmed links should count,
+      the handler reads the confirmation's `confirmedOrigin` and stops there.
+- [ ] **Who is "involved" in an obligation.** The people My work counts: the register
+      entry's first-line owner and owning team, the owners and owning teams of its rows per
+      legal entity, and its live participants, people and teams; a team reaches its members.
+      Case participants are not told about the obligation. Default: so.
+- [ ] **Both notices stay in the product.** `participant_added` and `involved_item_changed`
+      send no mail, like every kind but the reminders, the escalation and the digest.
+      Default: so.
+- [ ] **Adding yourself tells nobody, and a confirmation naming two of your obligations
+      tells you twice** (once per register entry). Default: so.
 
 ## c9-signoff: evidence can leave a case while it waits for sign-off (2026-09-25)
 
@@ -1668,3 +1725,56 @@ policy, each built on a default you may overrule.
       `cases.signoff` can approve their own work when a colleague presses Request sign-off.
       Default taken: no change, logged as H69. Say yes and the owner joins the guard and
       the CHECK.
+
+## c10-out-of-office: a member's absence with a delegate, defaults taken (2026-09-25, TEN-04, COL-02)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **Which approve permission the delegate needs.** Every four-eyes approve permission
+      (`footprint.approve`, `cases.signoff`, `risk.accept.approve`) the absent person holds;
+      a person who holds none may name any active member. Default: so.
+- [ ] **One absence at a time, changed by ending it.** A new absence while one is open
+      answers 409 `already_delegated`, so moving the last day or the delegate means ending
+      the absence first (both fields null) and setting a new one. Default: so.
+- [ ] **A delegate's sign-off names whom it was for.** The approval's audit row gains
+      `onBehalfOf`, the absent approvers holding `cases.signoff` who name that delegate
+      through the bank's today, the requester left out. The delegate still approves under
+      their own `cases.signoff`; nothing is granted. Default: so.
+- [ ] **A delegate who holds `cases.signoff` is told once, unstamped.** Since the delegate
+      must hold the absent approver's approve permissions, a sign-off request already reaches
+      them on their own account, and `c10-reminders-core`'s rule gives them one row without
+      "on behalf of". Reminders for kinds the delegate is not a candidate for carry the stamp.
+
+## c10-fe-prefs-and-ooo: the notification switches and the out-of-office screen, defaults taken (2026-09-25, COL-02, TEN-04)
+
+Built by default; nothing waits on you. Say if any should change.
+
+- [ ] **A switch saves the whole set.** Each change sends all five switches with the one
+      flipped (the package's acceptance), where the card says "that one key"; the server
+      takes either. Default: the whole set.
+- [ ] **The delegate's "You are standing in for" view (card block 7) is not built.** No
+      route names whom a member stands in for, and a notification does not yet carry
+      `onBehalfOf` in its API shape, so the inbox cannot say "For Anna Nilsson, who is
+      away" either. Both need a backend field first. Default: left out until then.
+- [ ] **The delegate picker lists names only.** `GET /reference/people` answers ids and
+      names by design, so the card's role and team line under each name is not shown.
+      The caller is left out of the list; the server refuses a delegate who cannot approve
+      and the screen says so under the field. Default: so.
+
+## security-review-c10: two questions from the chunk 10 review (2026-09-27, COL-02, D-54)
+
+The review is `docs/reviews/CHUNK10_REVIEW.md`. Both medium findings are fixed; nothing waits on you.
+
+- [ ] **D-54's mail-host guard ships in R3, after chunk 10 starts mailing every member.**
+      A deployed environment boots with whatever `MAIL_SMTP_HOST` it is given; the reviewed
+      list D-54 asks for is `c14-eu-data-location`'s (R3). Reminders, escalations and the
+      weekly digest (R2) carry names, addresses and record titles. Default: unchanged, the
+      guard stays in c14 and the relay is chosen by hand until then (HARDENING H78). The
+      alternative is to bring the mail-host half of c14 into R2.
+- [ ] **A bank's own record title in a mail.** `collab/mail.py` allows a bank's own record
+      title in a mail (CHUNK10_TASKS finding 4), and the digest mails an internal item's
+      typed name; reminders and escalations deliberately use the change's library title
+      instead of an action's typed one. Default: as built, a bank's own record title may
+      leave by mail to that bank's own members. The alternative is library titles only,
+      with an internal item named by its kind.
+
