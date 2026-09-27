@@ -1,13 +1,54 @@
+import { pillsOf } from '@/components/inventory/ObligationRow';
 import { Pill, pillToneNames } from '@/components/ui/Pill';
 import { PillRow } from '@/components/ui/PillRow';
-import { presentRoadmapItem } from '@/features/home/roadmap-presentation';
+import { presentCredential, presentEntry } from '@/features/agent-access/presentation';
+import { presentDefinition, presentResearchRequest, presentRunState, presentTenantAgentState } from '@/features/agents/agents-presentation';
+import { presentCaseStatus, presentOverdue, presentScanState } from '@/features/cases/case-presentation';
+import { presentNotification } from '@/features/collab/collab-presentation';
+import { presentResearch } from '@/features/footprint/footprint-presentation';
+import { presentRoadmapItem, roadmapWhat } from '@/features/home/roadmap-presentation';
 import { presentInstrument } from '@/features/library/instrument-presentation';
 import { presentObligation, presentScope } from '@/features/library/obligation-presentation';
-import { presentGap } from '@/features/register/register-presentation';
+import { presentWorkItem } from '@/features/my-work/my-work-presentation';
+import { presentContributorTeam, presentParticipant } from '@/features/participants/participants-presentation';
+import { presentPrivateProposal } from '@/features/private-records/private-record-presentation';
+import { presentApplicability, presentGap } from '@/features/register/register-presentation';
+import type { PresentedPill } from '@/features/shared/presentation-types';
+import { presentSupportGrant } from '@/features/support-access/support-access-presentation';
 import { presentChange } from '@/features/watch/change-presentation';
 import { createT, defaultLocale, type Locale } from '@/shared/i18n';
 
-import { changes, complianceStatuses, gapStatuses, gaps, instruments, obligations, roadmapItems, scopes, severities, urgencies } from './samples';
+import {
+  accessEntries,
+  actionsDue,
+  agentRuns,
+  applicabilities,
+  caseStatuses,
+  certificateDeadlines,
+  changes,
+  complianceStatuses,
+  credentials,
+  definitions,
+  gapStatuses,
+  gaps,
+  instruments,
+  notificationKinds,
+  obligations,
+  participants,
+  privateObligation,
+  privateProposals,
+  registerEntries,
+  researchRequests,
+  roadmapItems,
+  scanStates,
+  scopeItemResearch,
+  scopes,
+  severities,
+  supportGrants,
+  tenantAgents,
+  urgencies,
+  workItems,
+} from './samples';
 
 // /dev/pills: every tone, every slot, every record type, light and dark side
 // by side (playbook 6.7). A Playwright screenshot pins it in both themes.
@@ -152,8 +193,118 @@ function ThemeColumn({ theme, locale }: { theme: 'light' | 'dark'; locale: Local
           />
         </div>
       </Section>
+
+      <Section title={t('dev.pills.registerEntry')}>
+        {registerEntries.map((entry) => (
+          <Record key={entry.instrument.key}>
+            <PillRow pills={pillsOf(entry, t)} />
+          </Record>
+        ))}
+      </Section>
+
+      <Section title={t('dev.pills.applicability')}>
+        <PillRow pills={applicabilities.map((answer) => presentApplicability(answer, t))} />
+      </Section>
+
+      <Section title={t('dev.pills.caseStatus')}>
+        <PillRow pills={caseStatuses.map((status) => ({ ...presentCaseStatus(status, t), key: status.category }))} />
+      </Section>
+
+      <Section title={t('dev.pills.caseWork')}>
+        <PillRow pills={scanStates.map((state) => presentScanState(state, t))} />
+        <div className="mt-1.5">
+          <PillRow pills={present(actionsDue.actions.map((action) => presentOverdue(action, actionsDue.today, t)))} />
+        </div>
+      </Section>
+
+      <Section title={t('dev.pills.participants')}>
+        <Record>
+          {participants.rows.map((row) => (
+            <div key={row.id} className="flex items-center gap-2">
+              <span>{row.person?.name}</span>
+              <PillRow pills={presentParticipant(row, participants.meId, t)} />
+            </div>
+          ))}
+          <div className="mt-1.5">
+            <PillRow pills={[presentContributorTeam(participants.team)]} />
+          </div>
+        </Record>
+      </Section>
+
+      <Section title={t('dev.pills.notificationKinds')}>
+        <PillRow pills={notificationKinds.flatMap((kind) => presentNotification({ kind }, t).map((pill) => ({ ...pill, key: kind })))} />
+      </Section>
+
+      <Section title={t('dev.pills.myWork')}>
+        {workItems.map((item, i) => (
+          <Record key={i}>
+            <PillRow pills={presentWorkItem(item)} />
+          </Record>
+        ))}
+      </Section>
+
+      <Section title={t('dev.pills.certificate')}>
+        <Record>
+          {certificateDeadlines.map((item, i) => (
+            <div key={i} className={i > 0 ? 'mt-1.5' : undefined}>
+              <PillRow pills={presentRoadmapItem(item, t)}>
+                <Meta>{roadmapWhat(i === 0 ? 'certificate_expiry' : 'certificate_audit', t)}</Meta>
+              </PillRow>
+            </div>
+          ))}
+        </Record>
+      </Section>
+
+      <Section title={t('dev.pills.agents')}>
+        <PillRow pills={tenantAgents.map((agent) => presentTenantAgentState(agent, t))} />
+        <div className="mt-1.5">
+          <PillRow pills={agentRuns.map((run) => presentRunState(run, t))} />
+        </div>
+        <div className="mt-1.5">
+          <PillRow pills={researchRequests.map((request) => presentResearchRequest(request, t))} />
+        </div>
+        {definitions.map((definition) => (
+          <div key={definition.id} className="mt-1.5">
+            <PillRow pills={presentDefinition(definition, t)} />
+          </div>
+        ))}
+      </Section>
+
+      <Section title={t('dev.pills.agentAccess')}>
+        {accessEntries.map(({ entry, orgReach }, i) => (
+          <Record key={i}>
+            <PillRow pills={presentEntry(entry, orgReach, t)} />
+          </Record>
+        ))}
+        {credentials.keys.map((key) => (
+          <Record key={key.id}>
+            <PillRow pills={presentCredential(key, t, credentials.now)} />
+          </Record>
+        ))}
+      </Section>
+
+      <Section title={t('dev.pills.supportAccess')}>
+        <PillRow pills={supportGrants.flatMap((grant) => presentSupportGrant(grant, t))} />
+      </Section>
+
+      <Section title={t('dev.pills.ownRecords')}>
+        <Record>
+          <PillRow pills={presentObligation(privateObligation, 'header', t)} />
+        </Record>
+        {privateProposals.map((proposal) => (
+          <Record key={proposal.kind}>
+            <PillRow pills={presentPrivateProposal(proposal, t)} />
+          </Record>
+        ))}
+        <PillRow pills={present(scopeItemResearch.map((research) => presentResearch(research, t)))} />
+      </Section>
     </div>
   );
+}
+
+/** The pills a function drew, leaving out the facts that draw none. */
+function present(pills: readonly (PresentedPill | null)[]): PresentedPill[] {
+  return pills.filter((pill): pill is PresentedPill => pill !== null);
 }
 
 export default function PillsGalleryPage() {
