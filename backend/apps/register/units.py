@@ -6,34 +6,41 @@ are fixed once it has an applicability decision, a status or a gap (409 `unit_ha
 and a removal is a stamp, allowed only before then (R2_CROSS_CUTTING (l)). Every write is
 one audit event. Nothing here is indexed or sent to a model.
 
-The paste's commit, with its decisions through applicability's bulk path, is
-c8-units-paste-soa's, and answers 501 `not_built` until it lands.
+A paste's commit stores every unit, and every answer its lines carry through applicability's
+bulk path (`POST /applicability`, D-75, AC-REG1), in the request's one transaction: all of it
+or none. A line carrying an answer needs `applicability.approve` as that path does.
 """
 
 from __future__ import annotations
 
 import uuid
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Exists, OuterRef, QuerySet
 from django.utils import timezone
 
 from apps.library.reading import under_standard
+from apps.register import applicability
 from apps.register.models import Applicability, Gap, SoaUnit, TenantObligationScope
 from apps.register.schemas import (
     UNIT_REFERENCE_MAX,
     UNIT_TITLE_MAX,
+    RegisterApplicabilityManyBody,
+    RegisterApplicabilityRow,
     RegisterPersonRef,
     RegisterUnit,
     RegisterUnitBody,
     RegisterUnitPage,
     RegisterUnitPaste,
     RegisterUnitPasteBody,
+    RegisterUnitPasteLine,
     RegisterUnitPasteRow,
     RegisterUnitPatch,
     RegisterVocabRef,
 )
+from apps.shared import permissions as perms
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
@@ -41,7 +48,7 @@ from apps.shared.vocabulary import label_for
 from apps.taxonomy.models import ComplianceCategory, ComplianceStatus
 from apps.tenants.models import OrgUnit, OrgUnitKind
 
-SUBJECT_TYPE = "soa_unit"
+SUBJECT_TYPE = "soa_unit"  # applicability.UNIT_SUBJECT, spelled out for the audit guard
 UNIT_CREATED = "register.unit_created"
 UNIT_RENAMED = "register.unit_renamed"
 UNIT_REMOVED = "register.unit_removed"
@@ -57,7 +64,7 @@ WIRE_APPLICABILITY = {
 # ---------------------------------------------------------------------------------------
 # Where a unit may exist
 # ---------------------------------------------------------------------------------------
-def _conformance_scope(obligation_id: uuid.UUID, org_unit_id: uuid.UUID) -> TenantObligationScope:
+def conformance_scope(obligation_id: uuid.UUID, org_unit_id: uuid.UUID) -> TenantObligationScope:
     """The entity's conformance scope row a unit is listed under, checked in the order a
     caller can act on: an obligation the bank cannot see is 404, one outside a standard 422
     `units_only_under_standards`, an entity that is not the bank's legal entity 404, and an
@@ -160,7 +167,7 @@ def create_unit(
     """`POST /obligations/{obligationId}/units`: one undecided unit, not assessed, with its
     `register.unit_created` event. A live reference the entity already has is 409
     `duplicate_key`."""
-    scope = _conformance_scope(obligation_id, body.org_unit_id)
+    scope = conformance_scope(obligation_id, body.org_unit_id)
     reference, title = _cleaned(body.reference), _cleaned(body.title)
     unit = _insert(tenant=tenant, actor=actor, scope=scope, reference=reference, title=title)
     return _unit_out(_live_units().get(pk=unit.pk), order)
@@ -174,28 +181,34 @@ def _cleaned(value: str) -> str:
 
 
 def _insert(*, tenant: Tenant, actor: Actor, scope: TenantObligationScope, reference: str, title: str) -> SoaUnit:
+    return _insert_many(tenant=tenant, actor=actor, scope=scope, lines=[(reference, title)])[0]
+
+
+def _insert_many(*, tenant: Tenant, actor: Actor, scope: TenantObligationScope, lines: list[tuple[str, str]]) -> list[SoaUnit]:
+    """New undecided units in one INSERT, each with its own `register.unit_created` event. A
+    live reference the entity already has, or one another write took first, is 409
+    `duplicate_key` and stores none of them."""
+    status = ComplianceStatus.objects.get(is_default=True, active=True)
     try:
         with transaction.atomic():
-            unit = SoaUnit.objects.create(
-                tenant_id=tenant.id,
-                scope=scope,
-                reference=reference,
-                title=title,
-                compliance_status=ComplianceStatus.objects.get(is_default=True, active=True),
+            created = SoaUnit.objects.bulk_create(
+                [SoaUnit(tenant_id=tenant.id, scope=scope, reference=reference, title=title, compliance_status=status) for reference, title in lines]
             )
     except IntegrityError:
-        raise ValidationError(f"This entity already lists {reference}.", code="duplicate_key") from None
-    record(
-        action=UNIT_CREATED,
-        actor=actor,
-        subject_type=SUBJECT_TYPE,
-        subject_id=unit.id,
-        subject_title=reference,
-        summary="Unit added.",
-        tenant_id=tenant.id,
-        after={"scopeId": str(scope.id), "orgUnitId": str(scope.org_unit_id), "reference": reference, "title": title},
-    )
-    return unit
+        listed = lines[0][0] if len(lines) == 1 else "one of these references"
+        raise ValidationError(f"This entity already lists {listed}.", code="duplicate_key") from None
+    for unit in created:
+        record(
+            action=UNIT_CREATED,
+            actor=actor,
+            subject_type=SUBJECT_TYPE,
+            subject_id=unit.id,
+            subject_title=unit.reference,
+            summary="Unit added.",
+            tenant_id=tenant.id,
+            after={"scopeId": str(scope.id), "orgUnitId": str(scope.org_unit_id), "reference": unit.reference, "title": unit.title},
+        )
+    return created
 
 
 def _unit_for_write(unit_id: uuid.UUID, expected_version: int | None) -> SoaUnit:
@@ -276,20 +289,39 @@ def remove_unit(*, tenant: Tenant, actor: Actor, unit_id: uuid.UUID, expected_ve
 # ---------------------------------------------------------------------------------------
 # Paste
 # ---------------------------------------------------------------------------------------
-def paste_units(*, tenant: Tenant, actor: Actor, obligation_id: uuid.UUID, body: RegisterUnitPasteBody) -> RegisterUnitPaste:
+def paste_units(
+    *,
+    tenant: Tenant,
+    actor: Actor,
+    order: list[str],
+    obligation_id: uuid.UUID,
+    body: RegisterUnitPasteBody,
+    may_decide: bool,
+) -> RegisterUnitPaste:
     """`POST /obligations/{obligationId}/units/paste`. The dry run answers what each line
     would become and stores nothing: a line with no reference or title, one past the unit
-    limits, a reference the paste repeats and one the entity already lists are refused on
-    their own rows. A field the line does not name is refused whole by the schema (422)."""
-    scope = _conformance_scope(obligation_id, body.org_unit_id)
-    if not body.dry_run:
-        raise ProblemError(status=501, code="not_built", detail="Committing a paste is not built yet.")
+    limits, a reference the paste repeats, one the entity already lists and an answer
+    without a reason are refused on their own rows. A field the line does not name, or an
+    unknown answer, is refused whole by the schema (422), as is a paste over
+    `REGISTER_BULK_MAX`. The commit stores the units and their answers only when no line is
+    refused; otherwise it answers as a dry run does."""
+    scope = conformance_scope(obligation_id, body.org_unit_id)
+    cap = settings.REGISTER_BULK_MAX
+    if len(body.lines) > cap:
+        raise ValidationError(f"Paste at most {cap} lines in one call.", code="validation_error")
+    if not may_decide and any(line.applicability is not None for line in body.lines):
+        raise ProblemError(
+            status=403,
+            code="permission_denied",
+            detail="You do not have access to this.",
+            required_permission=perms.APPLICABILITY_APPROVE,
+        )
     existing = set(SoaUnit.objects.filter(scope=scope, removed_at__isnull=True).values_list("reference", flat=True))
     seen: set[str] = set()
     rows = []
     for line, pasted in enumerate(body.lines, start=1):
         reference, title = pasted.reference.strip(), pasted.title.strip()
-        problem = _problem(reference, title, seen, existing)
+        problem = _problem(reference, title, seen, existing) or _half_decided(pasted)
         seen.add(reference)
         rows.append(
             RegisterUnitPasteRow(
@@ -301,7 +333,30 @@ def paste_units(*, tenant: Tenant, actor: Actor, obligation_id: uuid.UUID, body:
                 unit_id=None,
             )
         )
-    return RegisterUnitPaste(dry_run=True, rows=rows, created=0)
+    if body.dry_run or any(row.problem for row in rows):
+        return RegisterUnitPaste(dry_run=True, rows=rows, created=0)
+
+    created = _insert_many(tenant=tenant, actor=actor, scope=scope, lines=[(row.reference, row.title) for row in rows])
+    answers = [
+        RegisterApplicabilityRow(
+            obligation_id=obligation_id, unit_id=unit.id, applicability=pasted.applicability, reason=(pasted.reason or "").strip()
+        )
+        for unit, pasted in zip(created, body.lines, strict=True)
+        if pasted.applicability is not None
+    ]
+    if answers:
+        applicability.set_applicability_many(
+            tenant=tenant, actor=actor, order=order, body=RegisterApplicabilityManyBody(rows=answers)
+        )
+    for row, unit in zip(rows, created, strict=True):
+        row.outcome, row.unit_id = "created", unit.id
+    return RegisterUnitPaste(dry_run=False, rows=rows, created=len(created))
+
+
+def _half_decided(pasted: RegisterUnitPasteLine) -> str | None:
+    """An answer is stored with its reason, so a line carries both or neither."""
+    has_reason = bool((pasted.reason or "").strip())
+    return "reason_missing" if (pasted.applicability is not None) != has_reason else None
 
 
 def _problem(reference: str, title: str, seen: set[str], existing: set[str]) -> str | None:

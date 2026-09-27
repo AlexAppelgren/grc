@@ -175,3 +175,6 @@ When the index is rebuilt and a user of tenant A asks a question
 Then no search chunk, embedding input or AI-generation input contains text from any of those rows
 And a user of tenant B searching those titles finds nothing and receives 404 for the rows
 ```
+`@integration` marks every text column of every such row with its own marker, read off the
+models, so a column added later is covered; the reranker's inputs and the model's output are
+checked beside the chunks, the embedding inputs and the prompt (`c8-units-paste-soa`).

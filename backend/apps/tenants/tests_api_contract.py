@@ -326,6 +326,18 @@ class TenantsRouteStubs(TenantsContractCase):
     BUILT = {"listTeams", "listTeamMembers", "listPeople"}
     # c8-ten-reassignment: built, and proven in tests_reassignment.py.
     BUILT |= {"getMemberOpenWork", "removeMember"}
+    # c8-ten-organisation: real logic, proved in tests_org_units.py and tests_products.py.
+    BUILT |= {
+        "listOrgUnits",
+        "createOrgUnit",
+        "updateOrgUnit",
+        "listLicences",
+        "createLicence",
+        "updateLicence",
+        "listProducts",
+        "createProduct",
+        "updateProduct",
+    }
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
         with stub_session(self.everything()):
@@ -344,6 +356,8 @@ class TenantsRouteStubs(TenantsContractCase):
         calls = [(route, self.everything()) for route in self.records.routes() if route[0] not in self.BUILT]
         calls += [(route, self.console()) for route in self.records.console_routes()]
         for (name, method, url, body, _permission, _step_up), who in calls:
+            if name in self.BUILT:
+                continue
             headers = {**AS_SESSION, "HTTP_IF_MATCH": '"1"'} if method == "patch" else AS_SESSION
             with self.subTest(operation=name), stub_session(who):
                 response = _call(self.client, method, url, body, headers)

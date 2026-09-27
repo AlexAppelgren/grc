@@ -16,6 +16,7 @@ from django.db import transaction
 from django.test import TestCase
 from django.utils import timezone
 
+from apps.library import testing as library_build
 from apps.library import testing as library_testing
 from apps.library import testing as library_build
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -226,9 +227,10 @@ class RegisterScenarioTests(TestCase):
         """REG-S5
 
         A gap has an owner, severity, target date and remediation (REG-03).
-        Operations: `createGap`, `updateGap`.
+        Operations: `createGap`, `updateGap`, `getRoadmap`.
 
-        Up to the roadmap line: "Our deadline" on the roadmap is c8-home-standing-roadmap's.
+        The roadmap line is c8-home-standing-roadmap's: the target date is an `internal`
+        item, which the screen marks "Our deadline", naming the gap's owner.
         """
         from apps.register.tests_gaps import GapWorld, gap_body, seed_library
         from apps.shared.testing import sign_in
@@ -245,6 +247,10 @@ class RegisterScenarioTests(TestCase):
         self.assertEqual((gap["severity"]["key"], gap["severity"]["label"]), ("high", "High"))
         self.assertEqual(gap["source"]["label"], "Assessment")
         self.assertEqual((gap["owner"]["id"], gap["targetDate"], gap["remediation"]), (str(world.owner.id), body["targetDate"], body["remediation"]))
+        # c8-home-standing-roadmap: the roadmap lists the target date as our own deadline.
+        on_roadmap = [item for item in self.client.get("/api/v1/roadmap", {"kind": "internal"}, **owner).json()["items"] if item["id"] == f"gap_target:{gap['id']}"]
+        self.assertEqual([(item["kind"], item["itemType"], item["date"]) for item in on_roadmap], [("internal", "gap_target", body["targetDate"])])
+        self.assertEqual((on_roadmap[0]["owner"]["person"]["id"], on_roadmap[0]["subject"]["gapId"]), (str(world.owner.id), gap["id"]))
         started = self.client.patch(
             f"/api/v1/gaps/{gap['id']}", data={"status": "remediating"}, content_type="application/json", HTTP_IF_MATCH=str(gap["version"]), **owner
         )
@@ -364,13 +370,14 @@ class RegisterScenarioTests(TestCase):
         """REG-S10
 
         Recurring duties appear on the roadmap from recurrence rules (REG-07).
-        Operations: `listDuties`, `completeDutyOccurrence`.
+        Operations: `listDuties`, `getRoadmap`, `completeDutyOccurrence`.
 
-        Green up to its roadmap line: the roadmap's duty branch is c8-home-register-feeds',
-        which asserts that step. Here the quarterly duty's occurrence due 2026-12-31 reads back
-        through the duties route, and completing it generates exactly 2027-03-31.
+        The quarterly duty's occurrence due 2026-12-31 reads back through the duties route and
+        on the roadmap for Q4 2026 as "Our deadline" with its owner; completing it generates
+        exactly 2027-03-31, which takes its place (x-roadmap-case-deadlines).
         """
         import datetime
+        from unittest import mock
 
         from apps.register import duties
         from apps.register.logic import ensure_register_entry
@@ -384,16 +391,28 @@ class RegisterScenarioTests(TestCase):
         actor = factories.user_actor(label="Sara Lind", user_id=a.officer.id)
         tenancy.activate(a.tenant.id)
         entry = ensure_register_entry(tenant_id=a.tenant.id, obligation_id=law.id, actor=actor)
+        TenantObligation.objects.filter(pk=entry.pk).update(first_line_owner=a.officer)
+        entry.refresh_from_db()
         # The obligation began to apply at 22:30 UTC on 30 September, 1 October in Stockholm.
         at = datetime.datetime(2026, 9, 30, 22, 30, tzinfo=datetime.UTC)
+
+        def roadmap(to: str) -> list[Any]:
+            """The bank's own deadlines read on 1 October, whatever day the suite runs."""
+            with mock.patch("django.utils.timezone.now", return_value=at):
+                response = self.client.get(f"/api/v1/roadmap?kind=internal&to={to}", **sign_in(a.officer, tenant=a.tenant))
+            self.assertEqual(response.status_code, 200, response.content)
+            return [(i["itemType"], i["date"], i["quarter"], i["title"], i["owner"]["person"]["id"], i["subject"]["obligationId"]) for i in response.json()["items"]]
+
         duties.schedule_first(tenant=a.tenant, actor=actor, targets=[(entry, None)], at=at)
 
         headers = sign_in(a.officer, tenant=a.tenant)
         [item] = self.client.get(f"/api/v1/obligations/{law.id}/duties", **headers).json()["items"]
         occurrence = item["nextOccurrence"]
         self.assertEqual((item["title"], occurrence["dueDate"], occurrence["status"]), ("Quarterly client asset report", "2026-12-31", "upcoming"))
-        # When the roadmap for Q4 2026 is read, the duty appears with "Our deadline":
-        # asserted by c8-home-register-feeds, which builds the roadmap's duty branch.
+        # When the roadmap for Q4 2026 is read, then the duty appears with "Our deadline"
+        # (an internal item, which the screen marks so) and its owner
+        officer, duty = str(a.officer.id), str(law.id)
+        self.assertEqual(roadmap("2026-12-31"), [("duty_due", "2026-12-31", "2026-Q4", "Quarterly client asset report", officer, duty)])
 
         response = self.client.post(
             f"/api/v1/duty-occurrences/{occurrence['id']}/complete", data={}, content_type="application/json", **headers
@@ -405,6 +424,8 @@ class RegisterScenarioTests(TestCase):
             sorted((row.due_date.isoformat(), row.status) for row in DutyOccurrence.objects.all()),
             [("2026-12-31", "done"), ("2027-03-31", "upcoming")],
         )
+        # The completed occurrence leaves the roadmap and the next one takes its place.
+        self.assertEqual(roadmap("2027-03-31"), [("duty_due", "2027-03-31", "2027-Q1", "Quarterly client asset report", officer, duty)])
 
     def test_reg_s11(self) -> None:
         """REG-S11
@@ -463,28 +484,136 @@ class RegisterScenarioTests(TestCase):
         entry = TenantObligation.objects.get(obligation=standard)
         self.assertEqual((entry.applicability, entry.version), ("not_assessed", 1), "the entity answers leave the entry's own answer alone")
 
-    @skip("pending: REG-S13 (REG-08, chunk 8)")
     def test_reg_s13(self) -> None:
         """REG-S13
 
         A tenant lists its clauses and controls as units in its own words (REG-08).
         Operations: `createUnit`, `updateUnit`, `removeUnit`, `pasteUnits`.
         """
+        # c8-units-paste-soa
+        from apps.register import units as unit_logic
+        from apps.register.models import SoaUnit
+        from apps.register.tests_units import SoaWorld
 
-    @skip("pending: REG-S14 (REG-08, chunk 8)")
+        w = SoaWorld(self, "reg-s13")
+        # Given Bank AB's conformance row applies, and the officer pastes 12 invented lines
+        lines = [{"reference": f"X.{n}", "title": f"Our own words for control {n}"} for n in range(1, 13)]
+        # Then a dry run lists the rows it will create and refuses duplicate references and over-long lines
+        dry = w.expect(w.paste([*lines, {"reference": "X.1", "title": "Again"}, {"reference": "X.99", "title": "T" * 301}], dry_run=True), 200)
+        self.assertEqual([row["outcome"] for row in dry["rows"]], ["will_create"] * 12 + ["refused", "refused"])
+        self.assertEqual([row["problem"] for row in dry["rows"][12:]], ["duplicate_reference", "title_too_long"])
+        self.assertEqual(w.units(), [])
+        # When they commit, then 12 units exist for Bank AB, each with one audit event
+        committed = w.expect(w.paste(lines, dry_run=False), 200)
+        self.assertEqual(committed["created"], 12)
+        created = w.units()
+        self.assertEqual({unit.scope.org_unit_id for unit in created}, {w.bank.bank_ab.id})
+        self.assertEqual(sorted(e.subject_id for e in w.events(unit_logic.UNIT_CREATED)), sorted(unit.id for unit in created))
+        # And the form offers no field for the standard's text and asks for their own words
+        path = f"/obligations/{w.standard.id}/units"
+        w.expect(w.call("POST", path, {"orgUnitId": str(w.bank.bank_ab.id), "reference": "X.20", "title": "Ours", "standardText": "Theirs"}), 422, "validation_error")
+        # When they add a unit for Liv, whose conformance row does not apply: 422
+        w.expect(w.call("POST", path, {"orgUnitId": str(w.bank.liv.id), "reference": "X.1", "title": "Ours"}), 422, "scope_not_applicable")
+        # When they add a unit under an obligation whose instrument is not a standard: 422
+        duty = banks_duty()
+        w.expect(
+            w.call("POST", f"/obligations/{duty.id}/units", {"orgUnitId": str(w.bank.bank_ab.id), "reference": "X.1", "title": "Ours"}),
+            422,
+            "units_only_under_standards",
+        )
+        # When they rename a unit that has an applicability decision: 409, and it is unchanged
+        decided, fresh = created[0], created[1]
+        w.expect(w.call("PUT", f"/obligations/{w.standard.id}/applicability", {"unitId": str(decided.id), "applicability": "applies", "reason": "Certified"}, version=1), 200)
+        w.expect(w.call("PATCH", f"/units/{decided.id}", {"title": "Moved"}, version=2), 409, "unit_has_history")
+        self.assertEqual(SoaUnit.objects.get(pk=decided.pk).title, decided.title)
+        # And a unit with no history can be renamed with If-Match or removed, each audited
+        w.expect(w.call("PATCH", f"/units/{fresh.id}", {"title": "Our better words"}, version=1), 200)
+        w.expect(w.call("DELETE", f"/units/{fresh.id}", version=2), 204)
+        self.assertEqual([e.subject_id for e in w.events(unit_logic.UNIT_RENAMED)], [fresh.id])
+        self.assertEqual([e.subject_id for e in w.events(unit_logic.UNIT_REMOVED)], [fresh.id])
+
     def test_reg_s14(self) -> None:
         """REG-S14
 
         Unit decisions are set from the paste in one confirmed call (REG-01, REG-08).
-        Operations: `setApplicabilityMany`.
+        Operations: `pasteUnits`, `setApplicabilityMany`.
         """
+        # c8-units-paste-soa
+        from django.test import override_settings
 
-    @skip("pending: REG-S15 (REG-08, chunk 8)")
+        from apps.register.tests_units import SoaWorld
+
+        w = SoaWorld(self, "reg-s14")
+        # Given the officer pastes 93 invented units for Bank AB, each with an answer and a reason
+        lines = [
+            {"reference": f"A.{n}", "title": f"Our control {n}", "applicability": "applies" if n % 3 else "not_applicable", "reason": f"Reason {n}"}
+            for n in range(1, 94)
+        ]
+        # Then the dry run behind the dialog shows the 93 decisions and stores nothing
+        dry = w.expect(w.paste(lines, dry_run=True), 200)
+        self.assertEqual((dry["dryRun"], [row["outcome"] for row in dry["rows"]]), (True, ["will_create"] * 93))
+        self.assertEqual((w.units(), w.events(APPLICABILITY_SET)), ([], []))
+        # When they confirm, then each unit carries its own decision, reason and time
+        w.expect(w.paste(lines, dry_run=False), 200)
+        stored = {unit.reference: unit for unit in w.units()}
+        for line in lines:
+            unit = stored[line["reference"]]
+            want = "applies" if line["applicability"] == "applies" else "does_not_apply"
+            self.assertEqual((unit.applicability, unit.applicability_reason, unit.applicability_decided_by_id), (want, line["reason"], w.officer.id))
+            self.assertIsNotNone(unit.applicability_decided_at)
+        # And 93 audit events name the officer, each with the value before and after and its reason
+        events = w.events(APPLICABILITY_SET)
+        self.assertEqual(sorted(e.subject_id for e in events), sorted(unit.id for unit in stored.values()))
+        self.assertEqual({e.actor_id for e in events}, {w.officer.id})
+        self.assertTrue(all(e.before["applicability"] == "under_assessment" and e.after["reason"] for e in events))
+        # And a call with more rows than the configured cap is refused and stores nothing
+        more = [{**line, "reference": f"B.{n}"} for n, line in enumerate(lines[:3])]
+        with override_settings(REGISTER_BULK_MAX=2):
+            w.expect(w.paste(more, dry_run=False), 422, "validation_error")
+            rows = [{"obligationId": str(w.standard.id), "unitId": str(unit.id), "applicability": "applies", "reason": "Again"} for unit in list(stored.values())[:3]]
+            w.expect(w.call("POST", "/applicability", {"rows": rows}), 422, "validation_error")
+        self.assertEqual(len(w.units()), 93)
+        self.assertEqual(len(w.events(APPLICABILITY_SET)), 93)
+
     def test_reg_s15(self) -> None:
         """REG-S15
 
         The register filtered by standard and entity is the Statement of Applicability (REG-08).
+        Operations: `getStatementOfApplicability`, `getHome`.
         """
+        # c8-units-paste-soa
+        from apps.register.tests_units import SoaWorld
+
+        w = SoaWorld(self, "reg-s15")
+        # Given Bank AB's decided units under the standard
+        lines = [
+            {"reference": "X.2", "title": "Our backups", "applicability": "not_applicable", "reason": "No own data centre"},
+            {"reference": "X.1", "title": "Our access rules", "applicability": "applies", "reason": "In the certificate"},
+        ]
+        w.expect(w.paste(lines, dry_run=False), 200)
+        # When the officer filters the register by that standard and by Bank AB
+        statement = w.expect(w.call("GET", f"/obligations/{w.standard.id}/statement-of-applicability?entity={w.bank.bank_ab.id}"), 200)
+        # Then each unit shows its reference, own title, answer, reason, status, who and when
+        self.assertEqual(
+            [(u["reference"], u["title"], u["applicability"], u["applicabilityReason"], u["complianceStatus"]["kind"], u["applicabilityDecidedBy"]["name"]) for u in statement["units"]],
+            [("X.1", "Our access rules", "applies", "In the certificate", "not_assessed", "Sara Lind"), ("X.2", "Our backups", "not_applicable", "No own data centre", "not_assessed", "Sara Lind")],
+        )
+        self.assertTrue(all(u["applicabilityDecidedAt"] for u in statement["units"]))
+        # And each unit's history lists its applicability decisions with who and when
+        self.assertEqual(
+            [[(h["applicability"], h["decidedBy"]["id"]) for h in u["history"]] for u in statement["units"]],
+            [[("applies", str(w.officer.id))], [("not_applicable", str(w.officer.id))]],
+        )
+        self.assertTrue(all(h["decidedAt"] for u in statement["units"] for h in u["history"]))
+        # And the conformance row shows its own assessed status, and none is computed from the units
+        conformance = statement["conformance"]
+        self.assertEqual((conformance["orgUnitId"], conformance["applicability"]), (str(w.bank.bank_ab.id), "applies"))
+        self.assertEqual(conformance["complianceStatus"]["key"], ComplianceStatus.objects.get(is_default=True).key)
+        # And Today's standing counts the standard as one obligation: its one conformance
+        # entry, in its own not-assessed category, however many units sit under it
+        standing = w.expect(w.call("GET", "/home"), 200)["standing"]
+        self.assertEqual((standing["applying"], standing["notAssessed"], standing["compliant"]), (1, 1, 0))
+        self.assertEqual(len(w.units()), 2)
 
     @skip("pending: ACC-S4 (ACC-04, chunk 11)")
     def test_acc_s4(self) -> None:

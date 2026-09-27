@@ -34,9 +34,9 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
-| HOM-01 | Timeline home: next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health. R1 builds every part but compliance standing, which needs the register and is cut to chunk 8 | M | R1 | built |
+| HOM-01 | Timeline home: next dates as a short list on every screen size, the lead item, what needs a decision, compliance standing, source health. R1 built every part but compliance standing, which `c8-home-standing-roadmap` added with the register | M | R1 | built |
 | HOM-02 | Weekly briefing, reachable from home with part of it shown there, snapshotted when emailed | M | R1 | built |
-| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed. R1 builds the regulatory branch; our own deadlines join with the register and the cases (chunks 8 and 9), and certificates with TEN-02 (chunk 8, HOM-S15) | M | R1 | in_progress |
+| HOM-03 | Roadmap page by quarter, regulatory dates and our own deadlines, a card expanding in place; from R2 a certificate's expiry and next audit are our deadlines and never reach the calendar feed. R1 built the regulatory branch; `c8-home-standing-roadmap` added next reviews, gap targets and certificates (HOM-S15); `x-roadmap-case-deadlines` added duty occurrences, an open case's internal deadline and its actions' due dates, and keeps a month, quarter or year date until its period ends (H22) | M | R1 | built |
 | HOM-04 | Upcoming changes as public facts for agents and newsletters, and a revocable calendar feed | S | R1 | built |
 | HOM-05 | My work: what a person or their teams are responsible for or take part in, as overdue, due soon, changes on those items and the rest, with next reviews and a department head's view; permission-filtered rows and counts; the footprint never hides a person's own items. The service reads every source: owned and taken-part cases, live actions and duty occurrences joined it with c9-mywork-cases (HOM-S14) | M | R2 | in_progress |
 
@@ -83,13 +83,13 @@ And the API answered from one fan-out of independent calls, none chained
 ```
 Where the bank stands is the note below.
 
-> **Note — where we stand on Today.** The standing panel counts obligations that apply, that
-> the bank complies with and that it has gaps against. All three are read from the obligation
-> register, and `tenant_obligation` does not exist in R1, so a panel built now could only show
-> zeros — and "0 gaps" before a register exists is a false statement about a bank's compliance,
-> shown on the first screen a compliance officer opens. `c8-home-register-feeds` adds the panel
-> with the register it reads (parallel plan ruling 20). What needs a decision does exist: it is
-> the `counts` object on `GET /me` (D-23), which `f03-T48` builds, so one number has one source.
+> **Note — where we stand on Today** (`c8-home-standing-roadmap`). `standing` on `GET /home`
+> counts the obligations inside the regulatory scope that apply, to the bank or to one of its
+> legal entities, each once in the worst category of the entities it applies to (the rule
+> behind the obligation's pill), and the gaps that are open or being remediated. It is null for
+> a reader without `register.read`, never a 403. A standard's one conformance obligation counts
+> once however many entities follow it. What needs a decision is the `counts` object on
+> `GET /me` (D-23), so one number has one source. The screen's panel is a UI package's.
 
 ### HOM-S2 — The same short list appears on a phone `@e2e` (HOM-01)
 ```gherkin
@@ -140,15 +140,23 @@ The "Our deadline" half is the note below; `roadmap-presentation.test.ts` alread
 that pill's tone, so the rule is proved before a branch produces a row for it.
 
 > **Note — our own deadlines on the roadmap.** A roadmap item is either a date the outside
-> world set or one this bank set for itself. Only the first has a producer in R1: the three
-> internal branches read an impact assessment, an action, a next review or a gap target, and
-> none of those tables exists yet, so a scenario asking for an "Our deadline" pill now could
-> only be met by inventing a row. Each branch is proved by the task that builds it:
-> `c8-home-register-feeds` for next reviews and gap targets, chunk 9 for assessment
-> deadlines and actions, and `f03-T74` for a certificate's expiry and next audit (D-43,
-> AC-TEN1, proved by HOM-S15). Until then `kind=internal` is a real filter that answers an
-> empty list, and HOM-03 stays `in_progress` for that reason (confirmed at the R1 close,
-> 2026-09-24).
+> world set or one this bank set for itself, which the screen marks "Our deadline" with its
+> owner. The internal branches, each with its owner and its record:
+> - next reviews of register entries and entity rows, compliant ones included, targets of
+>   open or remediating gaps, and the open occurrence of a recurring duty (REG-07), dropped
+>   when it is completed and replaced by the next; all inside the regulatory scope, left out
+>   where the answer is "does not apply", and only for a reader holding `register.read`
+>   (`c8-home-standing-roadmap`, `x-roadmap-case-deadlines`; `tests_roadmap.py`,
+>   `tests_roadmap_cases.py`);
+> - an open case's internal deadline (CAS-03) and the due date of each of its actions that
+>   is neither done nor removed (CAS-04), on cases inside the regulatory scope and only for a
+>   reader holding `cases.read`; they link to the case by `changeId`
+>   (`x-roadmap-case-deadlines`, `tests_roadmap_cases.py`);
+> - a certificate's expiry and next audit, left out once withdrawn (D-43, AC-TEN1, HOM-S15).
+>
+> None reaches the calendar feed, proved per branch on the document in `tests_feed.py`. A
+> regulatory date stated as a month, a quarter or a year stays on the roadmap and in "Coming
+> up" until that period has ended (H22).
 
 ### HOM-S7 — My work lists what I'm responsible for or take part in, most urgent first `@integration` `@e2e` (HOM-05, AC-HOM1)
 ```gherkin

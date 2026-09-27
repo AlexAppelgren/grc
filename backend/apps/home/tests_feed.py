@@ -796,3 +796,60 @@ class TheServerStopsASubscriptionItself(FeedFixture):
         self.own_rows().update(created_at=LONG_AGO, last_used_at=INSTANT - datetime.timedelta(days=1))
         self.assertEqual(self.fetch(token).status_code, 200)
         self.assertIsNone(self.own_rows().get().revoked_at)
+
+
+class OurOwnDeadlinesStayOffTheCalendar(FeedFixture):
+    """D-43, D-52, AC-TEN1: the case workflow's and the duties' dates are the bank's own, so
+    each is on the reader's roadmap and none is in the document, one test per branch. The
+    title each carries is asserted absent as well as its id, because a title is what would
+    reach a phone."""
+
+    items: dict[str, tuple[str, str]]
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+        from apps.home.tests_roadmap_cases import a_deadline, an_action
+        from apps.library import testing as library_build
+        from apps.register import logic as register_logic
+        from apps.register.models import DutyOccurrence, TenantObligation
+        from apps.taxonomy.models import CaseStatusCategory
+
+        owner = factories.member_user(cls.tenant, roles=("compliance_officer",))
+        # An undated change: the case's own dates are what is asserted, and its title is one.
+        case = cases_build.case(cls.tenant, watch_build.change(title="Rules on outsourcing", key_date=None), owner=owner)
+        cases_build.in_category(case, CaseStatusCategory.IMPLEMENTING)
+        deadline = a_deadline(case, SOON)
+        action = an_action(case, "Renegotiate the cloud contract", SOON, owner=owner)
+        law = library_build.instrument(key="feed-duty-law", regime="regime:securities")
+        duty = library_build.recurring_duty(library_build.obligation(law, key="feed-duty-law-report"), title="Quarterly client asset report")
+        tenancy.activate(cls.tenant.id)
+        entry = register_logic.ensure_register_entry(tenant_id=cls.tenant.id, obligation_id=duty.obligation_id, actor=factories.user_actor())
+        TenantObligation.objects.filter(pk=entry.pk).update(applicability="applies")
+        occurrence = DutyOccurrence.objects.create(tenant=cls.tenant, recurring_duty=duty, tenant_obligation=entry, due_date=SOON, owner=owner)
+        cls.items = {
+            "internal_deadline": (f"internal_deadline:{deadline.id}", "Rules on outsourcing"),
+            "action_due": (f"action_due:{action.id}", "Renegotiate the cloud contract"),
+            "duty_due": (f"duty_due:{occurrence.id}", "Quarterly client asset report"),
+        }
+
+    def assert_on_the_roadmap_and_off_the_calendar(self, branch: str) -> None:
+        item_id, text = self.items[branch]
+        on_the_roadmap = {item["id"] for item in self.client.get("/api/v1/roadmap", **self.headers()).json()["items"]}
+        self.assertIn(item_id, on_the_roadmap, "the reader sees it on the roadmap")
+        body = self.fetch(self.token_of(self.subscribe())).content.decode()
+        self.assertIn(f"SUMMARY:In force: {self.change.title}\r\n", body, "the regulatory date is still there")
+        self.assertEqual(body.count("BEGIN:VEVENT"), 1)
+        for leaked in (item_id.split(":", 1)[1], text):
+            self.assertNotIn(leaked, body)
+        on_the_calendar = {item.id for _key, item in roadmap.calendar_items(self.tenant, ["en"])}
+        self.assertNotIn(item_id, on_the_calendar)
+
+    def test_a_cases_internal_deadline_never_reaches_the_calendar(self) -> None:
+        self.assert_on_the_roadmap_and_off_the_calendar("internal_deadline")
+
+    def test_an_actions_due_date_never_reaches_the_calendar(self) -> None:
+        self.assert_on_the_roadmap_and_off_the_calendar("action_due")
+
+    def test_a_duty_occurrence_never_reaches_the_calendar(self) -> None:
+        self.assert_on_the_roadmap_and_off_the_calendar("duty_due")
