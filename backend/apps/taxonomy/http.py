@@ -39,6 +39,9 @@ CHUNK_STATUS_BY_CODE: dict[str, int] = {
     "in_use": 409,
     "system_row": 409,
     "category_empty": 409,
+    # A team still owns open work (TEN-03, c8-vocab-register-usage): a conflict with what
+    # the team holds, which a confirm cannot override.
+    "open_work": 409,
     "request_pending": 409,
     "invalid_transition": 409,
     "idempotency_conflict": 409,

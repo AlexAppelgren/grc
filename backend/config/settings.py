@@ -808,6 +808,18 @@ COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000)
 COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)
 
 # ---------------------------------------------------------------------------------------
+# ===== Tenant list cap (c8-vocab-register-usage, H32) ====================================
+# How many rows, retired ones included, one of a bank's own vocabulary lists may hold.
+# `GET /vocab/{list}` answers a whole list with its usage counts, so the list must stay a
+# size one read can serve inside the API budget. Adding past it answers 422 `list_full`.
+# `apps/taxonomy/tenant_lists_logic.py` reads it. There is no value that means "no limit",
+# so the process refuses to boot below 1.
+# ---------------------------------------------------------------------------------------
+TENANT_LIST_MAX_ROWS = env_int("TENANT_LIST_MAX_ROWS", 500)
+if TENANT_LIST_MAX_ROWS < 1:
+    raise ImproperlyConfigured("TENANT_LIST_MAX_ROWS must be at least 1.")
+
+# ---------------------------------------------------------------------------------------
 # ===== Health check (playbook 2.2, 5) ====================================================
 # The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
 # ---------------------------------------------------------------------------------------
