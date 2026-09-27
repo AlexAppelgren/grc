@@ -175,3 +175,16 @@ callout (foundations.md), not a pill, and it stays until a person decides.
 | Pill | Tone | Slot or kind, and why |
 |---|---|---|
 | Research request status: "Queued", "Running", "Done", "Failed", "Rejected", "Cancelled" | `information`, `notice`, `positive`, `negative`, `information`, `information` | Kind (`RequestState`). Queued is a neutral fact and running reads as a running agent; Done is good and Failed did not finish; Rejected and Cancelled are decisions made on purpose, never negative, like a rejected proposal (`frontend/src/features/agents/agents-presentation.ts`) |
+## The gallery covers R2 (r2-gallery-coldstart-demo)
+
+`/dev/pills` and `pills-and-labels.html` draw every R2 record type beside the R1 sections,
+each through its own presentation function and in the order above: a register entry as an
+inventory row (instrument, "Guidance", applicability, compliance status, "N open changes",
+and "Private to us" first on the bank's own), the three applicability answers, every case
+category with one sub-status label ("Waiting for legal" stays `information`), evidence scan
+states and "Overdue", a participant's "You" and a contributor team, every notification kind,
+My work's repeated pills, a certificate's "Our deadline", a bank's agent, run, research
+request and definition states, an agent access entry with its reach and its credentials, a
+support grant's states, and the bank's own records with "Proposed by our agent" and a scope
+item's research states. `frontend/tests/e2e/pills.gallery.spec.ts` pins each section's
+pills as text; a changed tone, label or slot order fails it.

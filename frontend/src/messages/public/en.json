@@ -65,7 +65,7 @@
   "public.zones.door.body": "The only way in, checked by a second reviewer",
   "public.zones.yours.title": "Your zone",
   "public.zones.yours.body": "Applicability, compliance status, gaps, evidence and sign-off belong to your bank and are never visible outside it.",
-  "public.zones.footnote": "Your bank's content is kept out of logs and error reports, and we send none of it to a model apart from the questions your people type into Ask, which your bank can switch off.",
+  "public.zones.footnote": "Your bank's content is kept out of logs and error reports. We send none of it to a model apart from the questions your people type into Ask and what your bank asks its own agents to research, and your bank can switch both off.",
   "public.coverage.title": "Nordic and EU sources, in the languages they are published in",
   "public.coverage.head.jurisdiction": "Jurisdiction",
   "public.coverage.head.sources": "Authorities and sources",

@@ -1102,7 +1102,7 @@ describe('the register overlay on the inventory', () => {
     expect(sent.filter((request) => request.path === '/api/v1/obligations').at(-1)?.params).toEqual({ asOf: '2026-09-16', limit: 20, offset: 0 });
   });
 
-  it('asks for the filtered view the URL names, and says nothing matches with the offer to look outside our scope', async () => {
+  it('asks for the filtered view the URL names, and says nothing matches with the offer to show all items', async () => {
     nav.search = 'applicability=applies&ownerTeam=cards';
     const sent = serve({ items: [], total: 0 });
     renderIn(<InventoryScreen />);

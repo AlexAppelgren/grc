@@ -111,7 +111,7 @@ const A_ONLY = {
   entryId: '00000000-0000-4000-a000-000000008c03',
   entryName: 'Card settlement checker',
   keyId: '00000000-0000-4000-a000-000000008c04',
-  tenantAgentId: '00000000-0000-4000-a000-000000008c05',
+  tenantAgentKey: 'tenant-source-watch',
   idleMinutes: '45',
 } as const;
 // Tenant B's own rows beside them, so every list below is not empty by accident.
@@ -625,6 +625,8 @@ test.describe('tenants journeys', () => {
     const library = (await readAs<{ items: { id: string; stableKey: string }[] }>(page, asA, '/obligations?footprint=all&limit=100')).items;
     const obligationPath = (stableKey: string): string => `/inventory/obligations/${library.find((row) => row.stableKey === stableKey)?.id ?? stableKey}`;
     const aInbox = (await readAs<{ items: { id: string; subjectId: string }[] }>(page, asA, '/notifications?limit=100')).items;
+    const aTenantAgentId = (await readAs<{ items: { id: string; agent: string }[] }>(page, asA, '/agents')).items.find((row) => row.agent === A_ONLY.tenantAgentKey)?.id ?? '';
+    expect(aTenantAgentId, "A's own agent").not.toBe('');
     const aNotificationId = aInbox.find((row) => row.subjectId === aCaseId)?.id;
     expect(aNotificationId, "the mention on A's case is in A's inbox").toBeDefined();
     await signOut(page);
@@ -684,8 +686,8 @@ test.describe('tenants journeys', () => {
     await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/tenant/products/${aProductId}`, {});
     await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/tenant/teams/${A_ONLY.team}/members`);
     await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/tenant/support-access/${aGrantId}/decline`);
-    await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/agents/${A_ONLY.tenantAgentId}`, {});
-    await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/agents/${A_ONLY.tenantAgentId}/pause`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/agents/${aTenantAgentId}`, {});
+    await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/agents/${aTenantAgentId}/pause`);
     await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/agent-access/${A_ONLY.entryId}/calls`);
     // Revoking a key needs a fresh passkey; with it, A's key is not there either.
     await stepUp(page, asBAdmin);
@@ -717,7 +719,7 @@ test.describe('tenants journeys', () => {
     await expect(page.locator(`[data-grant-id="${aGrantId}"]`)).toHaveCount(0);
     await page.goto('/admin/agents');
     await expect(page.locator('[data-our-agents]')).toBeVisible();
-    await expect(page.locator(`[data-tenant-agent="${A_ONLY.tenantAgentId}"]`)).toHaveCount(0);
+    await expect(page.locator(`[data-tenant-agent="${aTenantAgentId}"]`)).toHaveCount(0);
     await page.goto('/admin/agents/access');
     await expect(page.locator('[data-access-list]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
     await expect(page.locator(`[data-entry-id="${A_ONLY.entryId}"]`)).toHaveCount(0);

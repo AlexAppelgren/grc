@@ -102,6 +102,113 @@ Severity scales
   negative: High
   warning: Medium
   information: Low
+Register entry
+  brand: LVM
+  positive: Applies
+  warning: Partly compliant
+  notice: 2 open changes
+  brand: ESMAGL
+  information: Guidance
+  information: Does not apply
+  information outlined: Private to us
+  information outlined: Outsourcing policy
+  positive: Applies
+  positive: Compliant
+Applicability
+  positive: Applies
+  information: Does not apply
+  information: Not assessed
+Case status
+  information: Needs triage
+  information: Assigned
+  information: Waiting for legal
+  information: Being implemented
+  information: Waiting for sign-off
+  information: Closed
+  information: Dismissed
+Evidence and actions
+  notice: Being checked
+  positive: Checked
+  warning: Could not be checked
+  negative: Refused, malware found
+  negative: Overdue
+Participants
+  positive: You
+  information outlined: Legal
+Notification kinds
+  information: Mention
+  information: Assigned to you
+  information: Added to
+  warning: Sign-off requested
+  warning: Approval requested
+  warning: Due soon
+  warning: Review due
+  warning: Proposal waiting
+  negative: Overdue
+  negative: Escalated
+  notice: Change on your item
+  notice: New search match
+My work
+  negative: Gap
+  negative: Act now
+Certificate
+  brand: Our deadline
+  brand: Our deadline
+Our agents and their runs
+  positive: On
+  warning: Paused
+  information: Off
+  positive: Done
+  notice: Running
+  warning: Stopped
+  negative: Failed
+  information: Queued
+  notice: Running
+  positive: Done
+  negative: Failed
+  information: Rejected
+  information: Cancelled
+  information: Platform
+  brand: Version 3
+  positive: Active
+  information: For banks
+  information: Draft
+Agent access
+  positive: Active
+  notice: Reads our register
+  positive: Active
+  information: Library only
+  information: Revoked
+  information: Service
+  information: library read
+  information: tenant read
+  information: Personal
+  warning: Expired
+  information: library read
+  information: Service
+  information: Revoked
+  information: search read
+Support access
+  warning: Waiting for approval
+  notice: Active
+  information: Ended
+  information: Revoked
+  information: Declined
+  information: Lapsed
+Our own records
+  information outlined: Private to us
+  information outlined: Outsourcing policy
+  information: Banking
+  information: Binding
+  positive: Compliant
+  notice: New obligation
+  warning: Waiting
+  brand: Proposed by our agent
+  notice: New instrument
+  positive: Approved
+  warning: Waiting for your agent
+  notice: Our agent is researching
+  positive: Researched
 `.trim();
 
 async function settled(page: Page): Promise<void> {

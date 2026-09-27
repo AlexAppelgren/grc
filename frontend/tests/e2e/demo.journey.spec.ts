@@ -40,11 +40,12 @@ const SCREENS = destinations.filter((d) => d.surface === 'tenant' && d.group !==
 // person's /me is recorded without them, so the app's own rules hide Admin.
 const ADMIN_ONLY = new Set(destinations.filter((d) => d.group === 'admin').flatMap((d) => d.anyOfPermissions));
 const NON_ADMIN = new Set(destinations.filter((d) => d.group !== 'admin').flatMap((d) => d.anyOfPermissions));
-// The seed marks fixtures the journeys look for by name; a visitor sees the name alone.
-const FIXTURE_MARK = / \(E2E\)/g;
+// The seed marks fixtures the journeys look for by name, "(E2E)" or "(E2E, inactive)"; a
+// visitor sees the name alone, and whatever else the mark said.
+const FIXTURE_MARK = / \(E2E(?:, ([^)]+))?\)/g;
 
 function forVisitors(value: unknown): unknown {
-  if (typeof value === 'string') return value.replace(FIXTURE_MARK, '');
+  if (typeof value === 'string') return value.replace(FIXTURE_MARK, (_mark, rest?: string) => (rest === undefined ? '' : ` (${rest})`));
   if (Array.isArray(value)) return value.map(forVisitors);
   if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([field, inner]) => [field, forVisitors(inner)]));
   return value;
@@ -182,6 +183,8 @@ test.describe('public page demo', () => {
     const recordedAt = new Date().toISOString();
     const fresh: DemoRecordings = { recordedAt, entries: await walk(page) };
     expect(fresh.entries.length, 'the walk reached the screens').toBeGreaterThan(SCREENS.length);
+    // Every screen the reader walks, R2's included, reaches a visitor without a fixture mark.
+    expect(JSON.stringify(fresh.entries), 'a fixture mark would reach the demo').not.toMatch(/\(E2E/);
 
     if (RECORD) {
       writeFileSync(RECORDINGS, serialise(fresh));

@@ -29,8 +29,11 @@ import type { FormatContext } from '@/shared/utils/format';
 // slot stays empty rather than marking every row; no row waits for approval
 // (D-75).
 
+/** What a row's pills read of the row the API sent, and all the pill gallery gives them. */
+export type RowFacts = Pick<Obligation, 'instrument' | 'binding' | 'bindingLevel' | 'openChangeCount' | 'tags' | 'tenantTags' | 'privateToUs' | 'applicability' | 'complianceStatus'>;
+
 /** The facts the pill contract reads, from the row the API sent. */
-export function factsOf(obligation: Obligation): ObligationFacts {
+export function factsOf(obligation: RowFacts): ObligationFacts {
   return {
     instrument: { key: obligation.instrument.key, label: obligation.instrument.shortName },
     binding: obligation.binding,
@@ -43,7 +46,7 @@ export function factsOf(obligation: Obligation): ObligationFacts {
 }
 
 /** The row's pills: the library's slots, and the bank's applicability and compliance status in theirs. */
-export function pillsOf(obligation: Obligation, t: Translate): PresentedPill[] {
+export function pillsOf(obligation: RowFacts, t: Translate): PresentedPill[] {
   const pills = presentObligation(factsOf(obligation), 'row', t);
   if (obligation.applicability !== 'under_assessment') pills.push(presentApplicability(obligation.applicability, t));
   if (obligation.complianceStatus !== null) pills.push(presentCompliance(obligation.complianceStatus));

@@ -3775,7 +3775,7 @@ class SeedJ8Isolation:
     entry_team: str
     key_id: uuid.UUID
     key_name: str
-    tenant_agent_id: uuid.UUID
+    # The bank's own agent B must not reach is c11-e2e-seed's (one per bank and definition).
     tenant_agent_key: str
     idle_minutes: int
 
@@ -3797,8 +3797,7 @@ EXPECTED_J8_ISOLATION = SeedJ8Isolation(
     entry_team="cards",
     key_id=uuid.UUID("00000000-0000-4000-a000-000000008c04"),
     key_name="Settlement reconciliation",
-    tenant_agent_id=uuid.UUID("00000000-0000-4000-a000-000000008c05"),
-    tenant_agent_key="scope-researcher",
+    tenant_agent_key=EXPECTED_CHUNK11.tenant_agent,
     # Above the platform default, so no journey's session in tenant A ends sooner for it.
     idle_minutes=45,
 )
@@ -3840,9 +3839,6 @@ def seed_j8_isolation(tenants: list[Tenant]) -> None:
             scopes=["library:read"], created_by=admin, expires_at=_at(today, 60, tenant_a.timezone),
         )
         _seeded(tenant_a, "api_key", key, key.name, {"keyPrefix": prefix, "agentAccessId": str(spec.entry_id), "scopes": key.scopes})
-    if not TenantAgent.objects.filter(pk=spec.tenant_agent_id).exists():
-        agent = TenantAgent.objects.create(id=spec.tenant_agent_id, tenant=tenant_a, agent=_agent(spec.tenant_agent_key), updated_by=admin)
-        _seeded(tenant_a, "tenant_agent", agent, spec.tenant_agent_key, {"agentKey": spec.tenant_agent_key, "enabled": False})
     if not SecurityPolicy.objects.filter(tenant=tenant_a).exists():
         policy = SecurityPolicy.objects.create(tenant=tenant_a, session_idle_minutes=spec.idle_minutes, updated_by=admin)
         _seeded(tenant_a, "security_policy", policy, tenant_a.name, {"sessionIdleMinutes": spec.idle_minutes})

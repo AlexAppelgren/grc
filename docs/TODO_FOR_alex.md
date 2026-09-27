@@ -2201,9 +2201,10 @@ Nothing waits for these; each has the default the review took. The review is
 - [ ] **A bank's own agent does not read the source registry.** `GET /sources` and
       `/sources/coverage` answer an agent access credential 403 `permission_denied`; the
       platform's own agents keep them. Say if a bank's agent should read the registry.
-- [ ] **J-8's switched-off agent is tenant A's scope researcher.** J-8 and the chunk 11 seed both
-      made tenant A's source watch agent, so the merged seed let whichever ran first decide
-      whether it was on. J-8 keeps its fixed id on the scope researcher, which nothing else seeds.
+- [ ] **J-8 reaches for tenant A's own seeded agent.** J-8 and the chunk 11 seed both made
+      tenant A's source watch agent, so the merged seed let whichever ran first decide whether
+      it was on. J-8 now seeds no agent of its own and reaches for the chunk 11 seed's
+      (r2-gallery-coldstart-demo's resolution, kept at integration).
 
 ## r2-perf: the R2 performance pass, defaults taken (2026-09-27, NFR-02, HOM-03, HOM-05, REG-02)
 
