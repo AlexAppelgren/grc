@@ -129,7 +129,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | AGT-01 | Agent API: open a run, log source checks, find similar, register changes idempotently, submit proposals, close the run | M | R1 | built |
 | AGT-02 | Agents read vocabularies at run start and may use existing keys only | M | R1 | built |
-| AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | pending |
+| AGT-03 | Versioned agent definitions owned by the platform. bleqq's agents are part of the base package: a tenant cannot switch them off, pause them, re-scope them, change their cadence or budget, or edit their definitions (D-61) | M | R2 | in_progress |
 | AGT-04 | Tenant controls over the agents a bank adds for itself: on and off, cadence, scope (by default the operating markets first, then the watched ones), run now, pause, interrupt, history with findings and cost, monthly budget cap, AI off switch. Such an agent writes only in its own tenant's zone (D-61); what it files for a scope item is OWN-02 | M | R2 | in_progress |
 | AGT-05 | Research requests: check a source now, research a topic, re-tag existing records. A bank asks its own agents; re-tagging library records is asked in the platform console (D-61); an approved scope item opens a research request (OWN-02) | S | R2 | in_progress |
 | AGT-06 | Runner adapter with a mock, the app as scheduler of record | M | R2 | pending |
@@ -196,11 +196,16 @@ And a new term arrives only as a proposal, never as free text
 ### AGT-S4 — Agent definitions are versioned and owned by the platform `@integration` `@e2e` (AGT-03)
 ```gherkin
 Given a definition "nordic-watch" at version 3 in the console
-When a platform admin publishes version 4 with a changed prompt
+When a platform admin publishes version 4 with a changed prompt, from the folder the build ships, with a fresh passkey
 Then runs started after that reference version 4 and earlier runs still reference 3
-And a tenant admin's request to edit the prompt answers 403
-And "nordic-watch" is one of bleqq's agents, so a bank sees it read-only with its history
+And a tenant admin's request to reach the definition at all, to read, publish, retire or set it, answers 403 naming agent_definitions.manage
+And "nordic-watch" is one of bleqq's agents, so a bank's run log carries none of its runs, which the console lists
 ```
+
+A run pins the newest version still published when it opens, and a trigger keeps it there.
+Publishing and retiring wait on the owner's decision on how the console writes an agent
+definition, a library row the fence lets only a proposal's approval reach
+(`docs/TODO_FOR_alex.md`, c11-definitions-platform), so this scenario stays skipped.
 
 ### AGT-S5 — A tenant controls its agents without touching their instructions `@integration` `@e2e` (AGT-04)
 ```gherkin

@@ -1,8 +1,9 @@
 """The run log as a person reads it (AGT-01, AGT-04, ruling 9): `GET /agent-runs`, with the
 chunk 11 filters and fields.
 
-Row-level security decides what may be seen: a bank's session reads the library's runs and
-its own, a console session the library's, and no session another bank's. `tenantAgentId`
+Row-level security decides what may be seen, and a bank's session is narrowed further: it
+reads its own runs and no run of bleqq's agents (ADR 0053), a console session the library's,
+and no session another bank's. `tenantAgentId`
 narrows to one of the bank's agents and `mine` to the runs the caller asked for; neither
 can widen what security already allows.
 """
@@ -19,6 +20,9 @@ from apps.taxonomy.schemas import PersonRef
 def list_runs(*, who: Principal, query: TenantRunQuery) -> AgentRunListPage:
     """The runs this caller may see, oldest first, one page at a time."""
     queryset = AgentRun.objects.select_related("agent", "agent_version", "requested_by").order_by("started_at", "id")
+    if who.tenant_id is not None:
+        # A bank reads its own runs; bleqq's library runs are the console's (ADR 0053).
+        queryset = queryset.filter(tenant_id=who.tenant_id)
     if query.tenant_agent_id is not None:
         queryset = queryset.filter(tenant_agent_id=query.tenant_agent_id)
     if query.mine:

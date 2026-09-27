@@ -193,23 +193,19 @@ def finish_agent_run(
 def list_agent_runs(request: HttpRequest, query: Query[TenantRunQuery]) -> Any:
     """Returns the agent runs the caller may see, oldest first, one page at a time: when
     each ran, which agent, which version and which model, what started it and who asked,
-    how it ended, what it counted and what it cost. Call it to show a bank that its watch is
-    alive — that its sources were swept last night, and what came of it — to show the
-    history of one of the bank's own agents with `tenantAgentId`, the runs a person asked for
+    how it ended, what it counted and what it cost. Call it to show a bank what its own
+    agents did, the history of one of them with `tenantAgentId`, the runs a person asked for
     with `mine`, and to investigate a run whose findings are being questioned.
 
     A person's session only; an API key cannot read this, so an agent cannot read its own
     history. Inside a bank it needs `agents.manage`, in the platform console
-    `system.health`; a member with neither is refused. A bank sees the platform's own
-    library runs, because those are what feed the shared inventory it relies on, and its
-    own runs. It never sees another bank's runs, and no run of any bank is visible to
-    another; the two filters only narrow that, and naming another bank's agent matches no
-    run rather than answering an error.
+    `system.health`; a member with neither is refused. A bank sees its own runs only; the
+    console sees the runs of bleqq's own agents. No bank sees another bank's runs or the
+    runs of bleqq's agents, which are part of the base package and listed in the console;
+    what bleqq watches is `GET /agents/platform`. The two filters only narrow that, and
+    naming another bank's agent matches no run rather than answering an error.
 
-    bleqq's own agents are part of the base package: a bank reads their history here but
-    cannot switch one off, pause it, or change its cadence, scope or budget. A bank's own
-    agents, which it does control, appear in the same list. It changes nothing and writes
-    nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
+    It changes nothing and writes nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
     run yet, not that something is wrong.
 
     Errors: `validation_error` when `limit` is above 100, `offset` beyond the accepted
@@ -282,8 +278,6 @@ def get_agent_definition(request: HttpRequest, agent_key: str = Path(..., descri
 
     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
     `agent_definitions.manage`; `not_found` (404) for a key no definition has.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
     """
     return definitions.get_definition(agent_key=agent_key)
 
@@ -371,9 +365,9 @@ def get_platform_agent_settings(request: HttpRequest, agent_key: str = Path(...,
     reads and writes nothing to the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
-    `agent_definitions.manage`; `not_found` (404) for a key no platform agent has.
-    Published ahead of the logic that will fill it, and answering 501 `not_built` until
-    that ships.
+    `agent_definitions.manage`; `not_found` (404) for a key no platform agent has,
+    including a definition a bank adds for itself, which has no platform settings. An
+    empty `jurisdictions` list means none has been set.
     """
     return platform.get_settings(agent_key=agent_key)
 
@@ -420,17 +414,20 @@ def update_platform_agent_settings(
 @requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
 @answers_problems
 def list_platform_runs(request: HttpRequest, page: Query[PageQuery]) -> Any:
-    """Returns the runs of bleqq's own agents, oldest first, one page at a time, with the
-    version each ran, what it cost and how it ended, for the console's agent pages. A
-    platform run reads no bank's row, so no bank's name or figure is in it.
+    """Returns the runs of bleqq's own agents, newest first, one page at a time, with the
+    version each ran, what it cost, how it ended and what it filed: the sources it swept
+    and the records it re-checked, counted from the coverage log, and the changes and
+    proposals it filed, counted from those records rather than from the run's own report.
+    A platform run reads no bank's row, so no bank's run, name or figure is in it, and
+    `tenantAgentId` is always null here. Link a run's sources to the console's Sources
+    page.
 
     A person's session in the platform console holding `agent_definitions.manage`. It reads
     and writes nothing to the audit log. An empty list is a 200 with `total` 0.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without
     `agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or
-    `offset` beyond the accepted depth. Published ahead of the logic that will fill it, and
-    answering 501 `not_built` until that ships.
+    `offset` beyond the accepted depth.
     """
     return platform.list_runs(limit=page.limit, offset=page.offset)
 
