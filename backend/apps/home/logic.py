@@ -2,10 +2,10 @@
 write goes through record(); every threshold comes from settings (playbook 3).
 
 Today is the one screen that must not chain: `home_today()` fans out the reads it needs and
-answers them in one object (HOM-01, playbook 10). Four independent reads — the bank's own
-date, the roadmap's first items with its count, the week's lead change and the health of the
-sources — and none of them is the input to another, so the query count is fixed and a test
-pins it at two sizes.
+answers them in one object (HOM-01, playbook 10). Five independent reads — the bank's own
+date, the roadmap's first items with its count, the week's lead change, the health of the
+sources and where the bank stands — and none of them is the input to another, so the query
+count is fixed and a test pins it at two sizes.
 
 A read module: nothing here writes, so no `record()` call belongs in it. What it reads is
 two zones at once — the library's changes beside this bank's own cases — and the tenant half
@@ -23,14 +23,17 @@ never disagree about them, and the way to make that true is one function rather 
   never name two different changes.
 
 Each panel is filtered by the reader's own permissions rather than the page being refused. A
-reader without `watch.read` gets a 200 with `lead` and `sources` null and the screen hides
-those panels, because a 403 would take the whole of Today away from somebody who is allowed
-to see most of it.
+reader without `watch.read` gets a 200 with `lead` and `sources` null, and one without
+`register.read` with `standing` null and no register deadline in "Coming up", and the
+screen hides those panels, because a 403 would take the whole of Today away from somebody
+who is allowed to see most of it.
 """
 
 from __future__ import annotations
 
 import datetime
+import uuid
+from typing import cast
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -38,9 +41,12 @@ from django.db.models import F
 
 from apps.cases.models import ChangeCase
 from apps.home import roadmap
-from apps.home.schemas import Home, HomeSourceHealth
+from apps.home.schemas import Home, HomeSourceHealth, HomeStanding
 from apps.library.reading import today_for
+from apps.register.models import Applicability, Gap, TenantObligation, TenantObligationScope
+from apps.register.status_logic import worst_of
 from apps.shared.models import Tenant
+from apps.taxonomy.models import ComplianceCategory, ComplianceStatus
 from apps.watch import reading as watch_reads
 from apps.watch import sources as watch_sources
 from apps.watch.models import CheckStatus
@@ -124,20 +130,61 @@ def source_health(order: list[str]) -> HomeSourceHealth:
 
 
 # ---------------------------------------------------------------------------------------
+# Where the bank stands (HOM-01, REG-02, REG-03, FP-03)
+# ---------------------------------------------------------------------------------------
+def standing(tenant: Tenant) -> HomeStanding:
+    """How many obligations inside the regulatory scope apply, per compliance category, and
+    how many gaps on them are open. Three queries however large the register is.
+
+    One count per register entry, so an obligation spanning several legal entities, a
+    standard's conformance obligation included, is counted once. It applies when the entry
+    or any of its entity rows says so, and it is counted in the worst category of the entity
+    rows that apply, else in the entry's own: `worst_of()`, the rule behind the obligation's
+    pill, so the panel and the page can never disagree. A product's row sits under its
+    entity's and is left out, as on the page. Gaps are counted whatever the answer on their
+    obligation, because "applies" and "we comply" are separate facts.
+    """
+    in_scope = roadmap.in_scope_obligations(tenant)
+    entries = TenantObligation.objects.filter(obligation_id__in=in_scope)
+    applying_scopes: dict[uuid.UUID, list[ComplianceStatus]] = {}
+    for scope in TenantObligationScope.objects.filter(
+        tenant_obligation__in=entries, product__isnull=True, applicability=Applicability.APPLIES.value
+    ).select_related("compliance_status"):
+        applying_scopes.setdefault(scope.tenant_obligation_id, []).append(scope.compliance_status)
+    counts = dict.fromkeys(ComplianceCategory, 0)
+    for entry in entries.select_related("compliance_status"):
+        scopes = applying_scopes.get(entry.id, [])
+        if scopes or entry.applicability == Applicability.APPLIES.value:
+            shown = worst_of(scopes) or entry.compliance_status
+            counts[ComplianceCategory(cast(str, shown.kind))] += 1
+    return HomeStanding(
+        applying=sum(counts.values()),
+        compliant=counts[ComplianceCategory.COMPLIANT],
+        partly=counts[ComplianceCategory.PARTLY],
+        gap=counts[ComplianceCategory.GAP],
+        not_assessed=counts[ComplianceCategory.NOT_ASSESSED],
+        open_gaps=Gap.objects.filter(tenant_obligation__obligation_id__in=in_scope, status__kind__in=roadmap.OPEN_GAPS).count(),
+    )
+
+
+# ---------------------------------------------------------------------------------------
 # GET /home (HOM-01, NFR-02)
 # ---------------------------------------------------------------------------------------
-def home_today(tenant: Tenant, order: list[str], *, watch_reader: bool) -> Home:
+def home_today(tenant: Tenant, order: list[str], *, watch_reader: bool, register_reader: bool = False) -> Home:
     """Everything the timeline home shows, in one call (HOM-01).
 
-    Four independent reads, none of them chained behind another: a fixed number of queries
+    Five independent reads, none of them chained behind another: a fixed number of queries
     however many dates the bank has ahead of it, which `tests_home.py` pins at two sizes.
 
-    `lead` and `sources` are null for a reader without `watch.read`, and the two reads
-    behind them are not made at all — the permission decides before the query, so a reader
-    who may not see a panel never pays for it either.
+    `lead` and `sources` are null for a reader without `watch.read`, and `standing` for one
+    without `register.read`, and the reads behind them are not made at all — the permission
+    decides before the query, so a reader who may not see a panel never pays for it either.
+    The same `register.read` decides whether the register's deadlines are in "Coming up".
     """
     today = today_for(tenant)
-    coming_up, roadmap_count = roadmap.coming_up(tenant, order, settings.HOME_COMING_UP_ITEMS)
+    coming_up, roadmap_count = roadmap.coming_up(
+        tenant, order, settings.HOME_COMING_UP_ITEMS, register_reader=register_reader
+    )
     lead = _lead(tenant, order, week_start_of(today)) if watch_reader else None
     return Home(
         date=today,
@@ -145,6 +192,7 @@ def home_today(tenant: Tenant, order: list[str], *, watch_reader: bool) -> Home:
         roadmap_count=roadmap_count,
         lead=lead,
         sources=source_health(order) if watch_reader else None,
+        standing=standing(tenant) if register_reader else None,
     )
 
 
