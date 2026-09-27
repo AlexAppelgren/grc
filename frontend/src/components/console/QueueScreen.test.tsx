@@ -182,6 +182,24 @@ describe('the console queue', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Approved' }));
     expect(nav.replace).toHaveBeenLastCalledWith('/console/queue?tab=approved');
   });
+
+  it('lists a batch once, with its row count, opening its own review screen', async () => {
+    serve([proposal({ id: 'b-1', kind: 'obligation_scope', title: 'Add Client money to 12 obligations', isBatch: true, rowCount: 12, targetType: '', targetId: null })]);
+    renderScreen();
+    const row = await screen.findByRole('link', { name: /Add Client money to 12 obligations/ });
+    expect(row).toHaveAttribute('href', '/console/queue/batches/b-1');
+    expect(within(row).getByText('Re-tag')).toBeInTheDocument();
+    expect(within(row).getByText('12 records')).toBeInTheDocument();
+  });
+
+  it('opens the re-tag form from the head and closes it again', async () => {
+    serve([]);
+    renderScreen();
+    fireEvent.click(await screen.findByRole('button', { name: 'Ask for a re-tag' }));
+    expect(screen.getByRole('heading', { name: 'Ask for a re-tag' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('heading', { name: 'Ask for a re-tag' })).toBeNull();
+  });
 });
 
 describe('the queue address', () => {
