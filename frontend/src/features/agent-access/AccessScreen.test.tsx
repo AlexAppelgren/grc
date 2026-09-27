@@ -63,7 +63,7 @@ function server(world: Partial<World> = {}, extra: (sent: Sent) => Answer | unde
   });
 }
 
-function open(permissions: readonly string[], ui = <AccessScreen />) {
+function open(permissions: readonly string[] | null, ui = <AccessScreen />) {
   const { wrapper: Query } = queryWrapper();
   return render(
     <Query>
@@ -193,6 +193,90 @@ describe('agent access tab', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Register an agent' }));
     const dialog = await screen.findByRole('dialog', { name: 'Register an agent' });
     expect(await within(dialog).findByText('Could not load this list. You can still save without it.')).toBeInTheDocument();
+  });
+
+  it('names what a half-narrowed entry reads, and an entry with no key as never used', async () => {
+    server({
+      entries: [
+        accessEntry({ products: [], keys: [] }),
+        accessEntry({ id: 'e2', name: 'Payments reviewer', departments: [], products: [{ id: 'p-pay', name: 'Payments' }], keys: [] }),
+      ],
+    });
+    open(ADMIN);
+    await waitFor(() => expect(row()).not.toBeNull());
+    const departmentsOnly = row();
+    expect(within(departmentsOnly).getByText('Trading')).toHaveAttribute('data-pill', 'brand');
+    expect(within(departmentsOnly).getByText('None named')).toBeInTheDocument();
+    expect(within(departmentsOnly).getByText('No keys · never used')).toBeInTheDocument();
+    const productsOnly = document.querySelector('[data-entry-id="e2"]') as HTMLElement;
+    expect(within(productsOnly).getByText('None named')).toBeInTheDocument();
+    expect(within(productsOnly).getByText('Payments')).toHaveAttribute('data-pill', 'brand');
+  });
+
+  it('dates a revoked entry without its own date from when it was registered, naming who revoked it when known', async () => {
+    server({ entries: [accessEntry({ active: false, revokedAt: null, revokedBy: null }), accessEntry({ id: 'e2', active: false, revokedAt: null, revokedBy: { id: 'u-erik', name: 'Erik Holm' } })] });
+    open(ADMIN);
+    await waitFor(() => expect(row()).not.toBeNull());
+    const line = within(row()).getByText(/^Revoked /);
+    expect(line.textContent).not.toContain(' by ');
+    expect(line.textContent).toMatch(/2026/);
+    const named = document.querySelector('[data-entry-id="e2"]') as HTMLElement;
+    expect(within(named).getByText(/^Revoked .*2026.* by Erik Holm$/)).toBeInTheDocument();
+  });
+
+  it('reads no tenant reach before a session is known', async () => {
+    const sent = server();
+    open(null);
+    await waitFor(() => expect(row()).not.toBeNull());
+    expect(document.querySelector('[data-reach-line="unknown"]')).not.toBeNull();
+    expect(sent.some((s) => s.path === REACH)).toBe(false);
+  });
+
+  it('tries the list again when asked', async () => {
+    let failed = false;
+    const sent = server({}, (s) => {
+      if (s.path !== ACCESS || failed) return undefined;
+      failed = true;
+      return { status: 500 };
+    });
+    open(ADMIN);
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(row()).not.toBeNull());
+    expect(sent.filter((s) => s.method === 'get' && s.path === ACCESS)).toHaveLength(2);
+  });
+
+  it('closes Register on Cancel or Escape without sending, and lets a chosen department go again', async () => {
+    const sent = server();
+    open(ADMIN);
+    fireEvent.click(await screen.findByRole('button', { name: 'Register an agent' }));
+    let dialog = await screen.findByRole('dialog', { name: 'Register an agent' });
+    const trading = await within(dialog).findByLabelText(/^Trading/);
+    fireEvent.click(trading);
+    expect(trading).toBeChecked();
+    fireEvent.click(trading);
+    expect(trading).not.toBeChecked();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Register an agent' }));
+    dialog = await screen.findByRole('dialog', { name: 'Register an agent' });
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(sent.some((s) => s.method !== 'get' && s.path !== REFRESH_PATH)).toBe(false);
+  });
+
+  it('says a picker has nothing to choose when every department is closed and every product retired', async () => {
+    server({}, (s) => {
+      if (s.path === `${V1}/tenant/org-units`) return { status: 200, data: { items: [{ ...unit('d-old', 'Old desk'), active: false }], total: 1 } };
+      if (s.path === `${V1}/tenant/products`) return { status: 200, data: { items: [{ ...product('p-old', 'Old product', 'd-old', []), status: 'retired' }], total: 1 } };
+      return undefined;
+    });
+    open(ADMIN);
+    fireEvent.click(await screen.findByRole('button', { name: 'Register an agent' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Register an agent' });
+    await waitFor(() => expect(within(dialog).getAllByText('None yet.')).toHaveLength(2));
+    expect(within(dialog).queryByLabelText('Old desk')).toBeNull();
+    expect(within(dialog).queryByLabelText('Old product')).toBeNull();
   });
 
   it('offers the Access tab only to agent_access.manage', () => {
