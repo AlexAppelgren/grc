@@ -38,7 +38,7 @@ def platform_agent(key: str, *, versions: int) -> Agent:
     row = agent_build.agent(key=key, version=versions)
     with library_write("test"):
         for number in range(1, versions + 1):
-            AgentVersion.objects.create(agent=row, version_no=number, model="claude-opus-5", prompt_path="prompt.md")
+            AgentVersion.objects.create(agent=row, version_number=number, model="claude-opus-5", prompt_path="prompt.md")
     return row
 
 
@@ -54,7 +54,7 @@ class ReadingOneDefinition(TestCase):
 
     def test_it_lists_every_version_newest_first_retired_ones_included(self) -> None:
         with library_write("test"):
-            AgentVersion.objects.filter(agent=self.agent, version_no=1).update(retired_at=timezone.now())
+            AgentVersion.objects.filter(agent=self.agent, version_number=1).update(retired_at=timezone.now())
         response = self.call("get", f"{DEFINITIONS}/{self.agent.key}")
         self.assertEqual(response.status_code, 200, response.content)
         body = response.json()
@@ -88,12 +88,12 @@ class ARunPinsItsVersion(TestCase):
         return version
 
     def test_a_run_names_the_newest_published_version(self) -> None:
-        self.assertEqual(self.open().version_no, 2)
+        self.assertEqual(self.open().version_number, 2)
 
     def test_a_retired_version_starts_no_run(self) -> None:
         with library_write("test"):
-            AgentVersion.objects.filter(agent=self.agent, version_no=2).update(retired_at=timezone.now())
-        self.assertEqual(self.open().version_no, 1)
+            AgentVersion.objects.filter(agent=self.agent, version_number=2).update(retired_at=timezone.now())
+        self.assertEqual(self.open().version_number, 1)
 
     def test_an_agent_whose_every_version_is_retired_opens_no_run(self) -> None:
         with library_write("test"):
@@ -105,6 +105,6 @@ class ARunPinsItsVersion(TestCase):
 
     def test_the_version_is_written_once(self) -> None:
         run = AgentRun.objects.get(agent_version=self.open())
-        first = AgentVersion.objects.get(agent=self.agent, version_no=1)
+        first = AgentVersion.objects.get(agent=self.agent, version_number=1)
         with self.assertRaisesMessage(DatabaseError, "agent_version_id is written when the run opens"), transaction.atomic():
             AgentRun.objects.filter(pk=run.pk).update(agent_version=first)

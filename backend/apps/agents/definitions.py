@@ -31,7 +31,7 @@ from apps.taxonomy.schemas import PersonRef
 
 
 def _definitions() -> QuerySet[Agent]:
-    published = AgentVersion.objects.filter(agent=OuterRef("pk"), version_no=OuterRef("current_version"))
+    published = AgentVersion.objects.filter(agent=OuterRef("pk"), version_number=OuterRef("current_version"))
     return Agent.objects.annotate(published_at=Subquery(published.values("published_at")[:1])).order_by("key", "id")
 
 
@@ -49,7 +49,7 @@ def list_definitions(*, limit: int, offset: int) -> AgentDefinitionPage:
 def version_row(version: AgentVersion) -> AgentVersionOut:
     person = version.published_by
     return AgentVersionOut(
-        version_no=version.version_no,
+        version_no=version.version_number,
         model=version.model,
         change_note=version.change_note,
         published_at=version.published_at,
@@ -63,7 +63,7 @@ def get_definition(*, agent_key: str) -> AgentDefinitionDetail:
     agent = _definitions().filter(key=agent_key).first()  # ordering: key is unique, at most one row
     if agent is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
-    versions = agent.versions.select_related("published_by").order_by("-version_no")
+    versions = agent.versions.select_related("published_by").order_by("-version_number")
     return AgentDefinitionDetail.model_validate(
         {**AgentDefinitionOut.model_validate(agent).model_dump(), "versions": [version_row(row) for row in versions]}
     )
@@ -89,7 +89,7 @@ def version_to_run(agent_id: uuid.UUID) -> uuid.UUID | None:
     new run. None for a definition that has never had a version row, which only a build
     older than agents 0004 left behind."""
     versions = AgentVersion.objects.filter(agent_id=agent_id)
-    newest = versions.filter(retired_at__isnull=True).order_by("-version_no").values_list("id", flat=True).first()
+    newest = versions.filter(retired_at__isnull=True).order_by("-version_number").values_list("id", flat=True).first()
     if newest is None and versions.exists():
         raise ProblemError(
             status=409,
