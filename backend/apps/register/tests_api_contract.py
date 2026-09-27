@@ -230,6 +230,7 @@ BUILT: set[str] = {
     # c8-units-paste-soa (REG-08): tests_soa.py
     "getStatementOfApplicability",
     "listSpannedEntities",  # c8-ui-applicability-status, tests_applicability.py
+    "listDuties", "completeDutyOccurrence",  # c8-duty-occurrences, tests_duties.py
 }
 
 

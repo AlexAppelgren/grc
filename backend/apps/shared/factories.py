@@ -58,7 +58,7 @@ from apps.library.models import Language
 from apps.library import testing as library_testing
 from apps.library.seeds import LANGUAGES, seed_jurisdictions, seed_languages
 from apps.register.logic import ensure_register_entry
-from apps.register.models import Applicability, SoaUnit, TenantObligationScope
+from apps.register.models import Applicability, DutyOccurrence, SoaUnit, TenantObligationScope
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage

@@ -42,8 +42,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | CAS-01 | One case per tenant per change, created in "needs triage" with its footprint match | M | R1 | built |
 | CAS-02 | Triage needs urgency and owner; dismissal needs a reason and can be restored | M | R2 | pending |
-| CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, and contributor teams, recorded as the case's team participants | M | R2 | pending |
-| CAS-04 | Actions with owner and due date, locked while sign-off is pending, exportable as tickets | M | R2 | pending |
+| CAS-03 | Impact assessment: applies, why, what must change, internal deadline, effort, and contributor teams, recorded as the case's team participants | M | R2 | in_progress |
+| CAS-04 | Actions with owner and due date, locked while sign-off is pending, exportable as tickets. Chunk 9 builds the actions; the ticket export is `c13-tickets-export` (INT-S3) | M | R2 | in_progress |
 | CAS-05 | Evidence as file, link or reference, scanned, hashed, streamed through permission checks | M | R2 | pending |
 | CAS-06 | Sign-off only with no open action and at least one piece of evidence, only by a second person, with step-up | M | R2 | built |
 | CAS-07 | A case file that stands alone, as text and as an export | M | R2 | pending |
@@ -107,11 +107,16 @@ Then the case is back in "Needs triage" and the audit trail shows both moves
 ### CAS-S4 — The impact assessment records what applies and what must change `@integration` `@e2e` (CAS-03)
 ```gherkin
 Given an assigned case and its owner with cases.work
-When they choose "Start assessment" and save applies, why, what must change, an internal deadline and an effort size, and add two contributor teams
-Then the case moves to assessing and the assessment stores each field with a key for effort
-And the two contributor teams are the case's team participants
+When they choose "Start assessment"
+Then the case moves to assessing with an empty assessment at version 1
+When they save applies, why, what must change, an internal deadline and an effort size
+Then the assessment stores each field with a key for effort and the case stays in assessing
 When they save without a why
 Then the request answers 422
+When a contributor without cases.work saves applies "no"
+Then the request answers 403 naming cases.work
+When the owner saves applies "no"
+Then the case is closed with a reason of the not_applicable kind and can be restored to triage
 ```
 
 ### CAS-S5 — Two people saving the same assessment: the second receives stale_write `@integration` (CAS-03, CAS-08, AC-CAS2)
@@ -123,15 +128,18 @@ When the contributor saves with If-Match 2
 Then the request answers 409 with code "stale_write" and the screen offers to reload, never merges
 ```
 
-### CAS-S6 — Actions have an owner and due date, lock during sign-off and export as tickets `@integration` `@e2e` (CAS-04)
+### CAS-S6 — Actions have an owner and a due date, are locked in sign-off and are removed softly `@integration` `@e2e` (CAS-04, CAS-08)
 ```gherkin
-Given a case in assessing
-When the owner chooses "Add action" with a title, an owner and a due date
-Then the action is listed under "Actions" with its due date and the case may move to implementing
-When sign-off is requested
-Then editing an action answers 409 with code "actions_locked"
-When the owner chooses "Send as tickets"
-Then an export job is queued and its status endpoint reports it
+Given a case in assessing with its why saved
+When the owner chooses "Add action" with a title and a due date and no owner
+Then the action is listed under "Actions" with its due date, the case's owner owns it and the case is implementing
+When they add an action without a title, or for someone who is not a member of the bank
+Then the request answers 422, naming "unknown_member" for the owner
+When the case moves to waiting for sign-off, whatever its sub-status
+Then adding, editing or removing an action answers 409 with code "actions_locked" and the list still reads
+When the case is sent back and the owner removes an action
+Then it leaves the list and the open action count, and the row stays for the case file with who removed it
+# Sending actions as tickets is chunk 13's, c13-tickets-export and INT-S3.
 ```
 
 ### CAS-S7 — Evidence is scanned, hashed and streamed through permission checks `@integration` `@e2e` (CAS-05)

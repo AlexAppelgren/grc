@@ -216,6 +216,8 @@ WORKFLOW = [
 BUILT: set[str] = set()
 # c9-signoff (apps/cases/tests_signoff.py).
 BUILT |= {"requestSignoff", "approveSignoff", "sendBackSignoff"}
+# c9-assessment (apps/cases/tests_assessment.py) and c9-actions (apps/cases/tests_actions.py).
+BUILT |= {"startAssessment", "saveAssessment", "listActions", "addAction", "updateAction", "deleteAction"}
 
 
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:

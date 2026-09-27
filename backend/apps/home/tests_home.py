@@ -84,9 +84,10 @@ NEXT_QUARTER = D(2027, 1, 20)
 #   source health (2): every source with the last line of its log, and those sources' labels.
 HOME_QUERIES = 21
 # What a `register.read` holder adds on the register cost fixture below, measured 2026-09-25:
-# a page and a count for each of the three register branches (6), the reviewed obligations'
-# titles (2) and the owning teams' labels (1), and the standing panel's three counts (3).
-REGISTER_QUERIES = 12
+# a page and a count for each of the four register branches (8, the duties' joined with
+# x-roadmap-case-deadlines), the reviewed obligations' titles (2) and the owning teams'
+# labels (1), and the standing panel's three counts (3).
+REGISTER_QUERIES = 14
 
 
 def a_change(

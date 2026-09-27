@@ -64,9 +64,8 @@ __all__ = ["CamelSchema"]
 
 # What a roadmap item is about, and what produced its date. Both are tier-one kinds
 # (apps/shared/kinds.py): the screen picks its pill from the first and the ICS builder picks
-# its summary line from the second, so neither is a list an admin curates. Declared in full:
-# chunk 8 fills `review_due`, `gap_target`, `certificate_expiry` and `certificate_audit`, and
-# `internal_deadline` and `action_due` wait for the case workflow (chunk 9).
+# its summary line from the second, so neither is a list an admin curates. Every internal
+# type is produced: the register's, a certificate's, a duty's and the case workflow's.
 RoadmapItemKind = Literal["regulatory", "internal"]
 RoadmapItemType = Literal[
     "change_date",
@@ -76,6 +75,7 @@ RoadmapItemType = Literal[
     "gap_target",
     "certificate_expiry",
     "certificate_audit",
+    "duty_due",
 ]
 # Which kinds of dated item the roadmap read includes (`feed_filter`). A calendar
 # subscription used to share this choice; D-52 took it away, because a feed carries the
@@ -85,6 +85,9 @@ FeedFilter = Literal["all", "regulatory", "internal"]
 # Lengths, not thresholds: they bound a column or a request body, not a decision. The
 # "Coming up" length is a decision and lives in settings as `HOME_COMING_UP_ITEMS`.
 LABEL_MAX = 300
+# A roadmap item's title is a change's title or an action's, each stored and accepted up to
+# 500 characters (`regulatory_change.title`, `ACTION_TITLE_MAX`), so it takes the same.
+ITEM_TITLE_MAX = 500
 # A quarter key is `YYYY-Qn`: seven characters, and the longest a caller could send is the
 # same seven.
 QUARTER_MAX = 7
@@ -242,9 +245,10 @@ _ITEM_TYPE = (
     "`internal`, `review_due` (the next review of a register entry or of one legal entity's "
     "row, a compliant one included), `gap_target` (the target date of a gap that is open or "
     "being remediated), `certificate_expiry` (the last day a certificate is valid), "
-    "`certificate_audit` (a certificate's next audit), `internal_deadline` (a deadline the "
-    "bank set on a case) and `action_due` (an action's due date). The last two arrive with "
-    "the case workflow (chunk 9) and are not produced yet."
+    "`certificate_audit` (a certificate's next audit), `duty_due` (the open occurrence of a "
+    "duty the law repeats, such as a quarterly report, which leaves when it is completed), "
+    "`internal_deadline` (the deadline an open case's impact assessment set) and `action_due` "
+    "(the due date of a case's action that is neither done nor removed)."
 )
 
 
@@ -280,15 +284,17 @@ class HomeRoadmapEntity(CamelSchema):
 
 class HomeRoadmapSubject(CamelSchema):
     """The bank's own record behind an internal roadmap item: an obligation's register
-    entry, a gap or a certificate, and the legal entity the date belongs to where it is one
-    entity's own."""
+    entry, a gap, a duty's occurrence or a certificate, and the legal entity the date belongs
+    to where it is one entity's own. A case's deadline and its actions name their record by
+    the item's `changeId` instead."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [ROADMAP_SUBJECT_EXAMPLE]})
 
     obligation_id: uuid.UUID | None = Field(
         description=(
-            "On a `review_due` or `gap_target` item, the library obligation the register entry "
-            "is on, as a uuid, which the obligation page opens on; null on a certificate's date."
+            "On a `review_due`, `gap_target` or `duty_due` item, the library obligation the "
+            "register entry is on, as a uuid, which the obligation page opens on; null on a "
+            "certificate's date."
         ),
         examples=["7c1f0b3e-52a4-4f9e-8a21-6d4b2c0a9e17"],
     )
@@ -305,9 +311,9 @@ class HomeRoadmapSubject(CamelSchema):
     )
     entity: HomeRoadmapEntity | None = Field(
         description=(
-            "The legal entity the date belongs to: the entity a review row or a gap is for, or "
-            "the entity holding the certificate. Null when the date is the whole register "
-            "entry's own."
+            "The legal entity the date belongs to: the entity a review row, a gap or a duty's "
+            "occurrence is for, or the entity holding the certificate. Null when the date is "
+            "the whole register entry's own."
         )
     )
 
@@ -324,9 +330,11 @@ class HomeRoadmapItem(CamelSchema):
     (REG-01, REG-02).
 
     An `internal` row is a date the bank set for itself, entirely its own zone: a next
-    review, a gap's target date, or a certificate's expiry or next audit, each with its
-    owner and the record it belongs to. It carries no case, so `status`, `urgency`,
-    `changeId`, `label` and `sourceLabel` are null on it and `obligations` is empty.
+    review, a gap's target date, a certificate's expiry or next audit, a duty's open
+    occurrence, an open case's internal deadline or an action's due date, each with its
+    owner and the record it belongs to. `status`, `urgency`, `label` and `sourceLabel` are
+    null on it and `obligations` is empty; `changeId` is set only on a case's deadline and
+    its actions.
     """
 
     model_config = ConfigDict(json_schema_extra={"examples": [ROADMAP_ITEM_EXAMPLE]})
@@ -348,7 +356,7 @@ class HomeRoadmapItem(CamelSchema):
             "The day the item falls on, as a plain calendar date (`2026-10-01`) and never a "
             "timestamp, because a legal date is a date and not a moment, and only as exact as "
             "`datePrecision` says. The roadmap shows today and the future; a date that has passed leaves the roadmap and stays on the "
-            "change itself."
+            "change itself, and a date stated as a month, a quarter or a year stays until that period has ended."
         ),
         examples=["2026-10-01"],
     )
@@ -375,14 +383,16 @@ class HomeRoadmapItem(CamelSchema):
         examples=["In force"],
     )
     title: str = Field(
-        max_length=LABEL_MAX,
+        max_length=ITEM_TITLE_MAX,
         description=(
-            f"What the item is called, at most {LABEL_MAX} characters. On a regulatory item "
+            f"What the item is called, at most {ITEM_TITLE_MAX} characters. On a regulatory item "
             "it is the reform's title from the shared library, in the source's words, and holds "
             "no bank's judgement. On an internal item it names the bank's own record: the "
             "obligation's library title for a review, the gap's title as the bank wrote it for "
-            "a gap target, and the certificate's type, from the taxonomy in the reader's "
-            "language, for a certificate's expiry or audit."
+            "a gap target, the certificate's type, from the taxonomy in the reader's "
+            "language, for a certificate's expiry or audit, the duty's library title for a "
+            "duty due, the change's library title for a case's internal deadline, and the "
+            "action's title as the bank wrote it for an action due."
         ),
         examples=["FI adopts amended rules on paying for investment research"],
     )
@@ -420,8 +430,10 @@ class HomeRoadmapItem(CamelSchema):
     change_id: uuid.UUID | None = Field(
         description=(
             "The library change behind the item, as a uuid, so the card can link to the change "
-            "page. The same identifier for every bank. Null on an internal item, whose record "
-            "is the bank's own; null is not 'the change was deleted'."
+            "page. The same identifier for every bank. On an `internal_deadline` or `action_due` "
+            "item, the change whose case set the date, whose page is the bank's case. Null on "
+            "every other internal item, whose record is in `subject`; null is not 'the change "
+            "was deleted'."
         ),
         examples=["c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19"],
     )
@@ -429,15 +441,16 @@ class HomeRoadmapItem(CamelSchema):
         description=(
             "Who answers for an `internal` item's date, a person, a team or, on a register "
             "entry, both: the entry's first-line owner and owning team, the owner of one legal "
-            "entity's row, of a gap or of a certificate. Null on a regulatory item, and on an "
-            "internal one nobody owns yet. The bank's own zone."
+            "entity's row, of a gap, of a duty's occurrence or of a certificate, the case's owner "
+            "for its internal deadline and the action's owner for an action. Null on a "
+            "regulatory item, and on an internal one nobody owns yet. The bank's own zone."
         )
     )
     subject: HomeRoadmapSubject | None = Field(
         description=(
             "The bank's own record an `internal` item's date belongs to, so the card can say "
-            "what it is about and link to it. Null on a regulatory item, whose record is "
-            "`changeId`."
+            "what it is about and link to it. Null on a regulatory item and on a case's "
+            "`internal_deadline` and `action_due` items, whose record is `changeId`."
         )
     )
     obligations: list[WatchObligationLink] = Field(
