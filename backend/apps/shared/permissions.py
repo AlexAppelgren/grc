@@ -538,6 +538,10 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/me/comments"): Ungated(UngatedReason.SELF, _SELF_MY_COMMENTS),
     ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
     ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
+    # d89-scope-items-logic (OWN-01): one of the bank's own scope items, read as the scope is.
+    ("GET", "/tenant/footprint/scope-items/{scope_item_id}"): Ungated(
+        UngatedReason.CAPABILITY, "Every member reads the regulatory scope and the scope items in it (FP-03, OWN-01)."
+    ),
 }
 
 
