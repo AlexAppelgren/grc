@@ -1043,7 +1043,10 @@ class AgentsScenarioTests(TestCase):
         tenancy.activate(tenant.id)
         stored = ApiKey.objects.get(pk=issued.json()["id"])
         self.assertEqual((stored.key_prefix, stored.key_hash), tokens.parse_api_key(plain))
-        self.assertNotIn(plain.rsplit("_", 1)[-1], stored.key_hash)
+        # The secret is everything after the prefix, and may itself hold "_" (base64url).
+        secret = plain.split("_", 2)[2]
+        self.assertNotEqual(stored.key_hash, secret)
+        self.assertNotIn(secret, stored.key_hash)
         listed = admin("GET", f"/{entry['id']}", step_up=False).json()
         self.assertEqual([(key["id"], key["lastUsedAt"]) for key in listed["keys"]], [(issued.json()["id"], None)])
         self.assertNotIn("plainKey", listed["keys"][0])
