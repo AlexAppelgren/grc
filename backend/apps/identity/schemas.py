@@ -11,14 +11,7 @@ from datetime import datetime
 from typing import Annotated, Any, Literal
 
 from django.conf import settings
-from pydantic import (
-    ConfigDict,
-    Field,
-    JsonValue,
-    ModelWrapValidatorHandler,
-    ValidationInfo,
-    model_validator,
-)
+from pydantic import ConfigDict, Field, JsonValue, ModelWrapValidatorHandler, ValidationInfo, model_validator
 
 from apps.shared import permissions as perms
 from apps.shared.schemas import CamelSchema, WriteBody

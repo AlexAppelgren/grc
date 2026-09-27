@@ -13,18 +13,8 @@ from typing import Any
 from django.utils import timezone
 
 from apps.identity import api_keys_logic
-from apps.identity.models import (
-    LoginEvent,
-    LoginEventKind,
-    LoginMethod,
-    Membership,
-    MembershipRole,
-    TenantRole,
-    User,
-    UserStatus,
-)
-from apps.shared import factories, tenancy
-from apps.shared import permissions as perms
+from apps.identity.models import LoginEvent, LoginEventKind, LoginMethod, Membership, MembershipRole, TenantRole, User, UserStatus
+from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.audit import ActorType, key_actor
 from apps.shared.testing import ScenarioTestCase
 

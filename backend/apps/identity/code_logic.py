@@ -10,7 +10,9 @@ An enrolled address gets `code_refused_enrolled` in the security log and nothing
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
+
+from datetime import datetime
 
 from django.conf import settings
 from django.core.exceptions import ValidationError

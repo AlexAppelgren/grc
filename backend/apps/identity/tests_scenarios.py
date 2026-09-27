@@ -54,8 +54,7 @@ from apps.identity.models import (
 )
 from apps.identity.tests_webauthn_support import SoftwareAuthenticator
 from apps.library.seeds import seed_languages
-from apps.shared import factories, tenancy
-from apps.shared import permissions as perms
+from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.authentication import ApiKeyAuth
 from apps.shared.models import AuditEvent
@@ -1047,11 +1046,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         from apps.proposals.models import Proposal, ProposalStatus
         from apps.shared.audit import Actor
         from apps.taxonomy.models import Flag
-        from apps.taxonomy.seeds import (
-            seed_library_vocabularies,
-            seed_taxonomy_terms,
-            seed_term_dimensions,
-        )
+        from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
         from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 
         seed_jurisdictions()

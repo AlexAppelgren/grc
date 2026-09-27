@@ -16,14 +16,7 @@ from django.http import HttpRequest
 from django.utils import timezone
 
 from apps.identity import api_keys_logic, invitation_logic, roles_logic, session_logic
-from apps.identity.models import (
-    Invitation,
-    InvitationKind,
-    Membership,
-    MembershipRole,
-    User,
-    UserSession,
-)
+from apps.identity.models import Invitation, InvitationKind, Membership, MembershipRole, User, UserSession
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant

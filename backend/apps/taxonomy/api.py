@@ -24,14 +24,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy import (
-    footprint_logic,
-    library_lists_logic,
-    markets_logic,
-    reading,
-    tagging_logic,
-    terms_logic,
-)
+from apps.taxonomy import footprint_logic, library_lists_logic, markets_logic, reading, tagging_logic, terms_logic
 from apps.taxonomy import tenant_lists_logic as lists
 from apps.taxonomy.http import (
     actor_for,

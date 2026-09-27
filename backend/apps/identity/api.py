@@ -26,13 +26,7 @@ from apps.identity import (
 )
 from apps.identity.models import ApiKey, User
 from apps.identity.schemas import (
-    ENROLMENT_SESSION_EXAMPLE,
-    MEMBER_SESSIONS_EXAMPLE,
-    MY_PASSKEYS_EXAMPLE,
-    MY_SESSIONS_EXAMPLE,
-    PERMISSIONS_EXAMPLE,
-    ROLES_EXAMPLE,
-    STEP_UP_OPTIONS_EXAMPLE,
+    CredentialEntryRef,
     AgentKeyCreate,
     AgentKeyCreated,
     AgentKeyOut,
@@ -43,8 +37,8 @@ from apps.identity.schemas import (
     ApiKeysPage,
     CodeRequestBody,
     CodeVerifyBody,
-    CredentialEntryRef,
     Empty,
+    ENROLMENT_SESSION_EXAMPLE,
     InvitationCodeVerifyBody,
     InvitationOpenBody,
     InvitationOut,
@@ -53,28 +47,34 @@ from apps.identity.schemas import (
     MemberInvite,
     MemberOut,
     MemberPatch,
-    MembersPage,
     MemberTeamsBody,
+    MembersPage,
     MePatch,
+    MEMBER_SESSIONS_EXAMPLE,
+    MY_PASSKEYS_EXAMPLE,
+    MY_SESSIONS_EXAMPLE,
     PasskeyAssertBody,
     PasskeyOut,
     PasskeyPatch,
     PasskeyRegisterBody,
     PasskeyRegistered,
-    PermissionOut,
     PersonalTokenCreate,
     PersonalTokenCreated,
     PersonalTokenOut,
     PersonalTokensPage,
+    PERMISSIONS_EXAMPLE,
+    PermissionOut,
     RefreshResult,
     RoleCreate,
+    ROLES_EXAMPLE,
     RoleOut,
-    RolePatch,
     RoleRef,
+    RolePatch,
     SecurityEventOut,
     SecurityLogPage,
     SessionOut,
     SessionTokens,
+    STEP_UP_OPTIONS_EXAMPLE,
     StepUpResult,
     WebAuthnCreationOptions,
     WebAuthnRequestOptions,
@@ -82,12 +82,7 @@ from apps.identity.schemas import (
 from apps.shared import permissions as perms
 from apps.shared.authentication import EnrolmentAuth, Principal, PrincipalKind, SessionAuth
 from apps.shared.models import Tenant
-from apps.shared.permissions import (
-    enforce_recent_sign_in_or_step_up,
-    enforce_step_up,
-    requires_permission,
-    requires_step_up,
-)
+from apps.shared.permissions import enforce_recent_sign_in_or_step_up, enforce_step_up, requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.schemas import PersonRef
 

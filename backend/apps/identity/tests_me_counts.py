@@ -22,9 +22,9 @@ from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
 from apps.collab.logic import notify
 from apps.collab.models import Notification, NotificationKind
-from apps.governance.models import TenantReachRequest
 from apps.identity import me_logic
 from apps.identity.models import Membership, User
+from apps.governance.models import TenantReachRequest
 from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus, ProposalTenant
 from apps.register.models import Gap
 from apps.shared import factories, tenancy

@@ -31,15 +31,7 @@ from apps.agents import logic as agents_logic
 from apps.agents.models import AgentKind
 from apps.agents.seeds.definition import DEFINITIONS, read_definition
 from apps.identity import tokens
-from apps.identity.models import (
-    ApiKey,
-    CredentialKind,
-    LoginEventKind,
-    LoginMethod,
-    Membership,
-    User,
-    UserStatus,
-)
+from apps.identity.models import ApiKey, CredentialKind, LoginEventKind, LoginMethod, Membership, User, UserStatus
 from apps.identity.security_log import log_event
 from apps.shared import permissions as perms
 from apps.shared import tenancy

@@ -25,8 +25,7 @@ from apps.agents import testing as agent_testing
 from apps.agents.models import AgentAccess
 from apps.identity import tokens
 from apps.identity.models import ApiKey, CredentialKind, LoginEvent, LoginEventKind, LoginMethod
-from apps.shared import factories, tenancy
-from apps.shared import permissions as perms
+from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.models import Tenant
 from apps.taxonomy.models import Team
 
