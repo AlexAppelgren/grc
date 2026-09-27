@@ -4,7 +4,11 @@ One person holding `applicability.approve` sets the answer after a confirmation 
 request, no second approver, no step-up. The value and the reason are stored at once with the
 decision time and the person, and one `record()` per row names the value before and after and
 the reason. Its subject is the register entry; an entity's answer names the entity in its
-title and its `orgUnitId`. Many answers are one call, all stored or none, capped by `REGISTER_BULK_MAX`.
+title and its `orgUnitId`. A unit's answer is stored on the unit and its subject is the unit,
+so the unit's history is its own events (REG-08, D-41); the unit must be live under the
+obligation, 404 otherwise, and its entity must still follow the standard (422
+`scope_not_applicable`). Many answers are one call, all stored or none, capped by
+`REGISTER_BULK_MAX`.
 
 "Applies" and "we comply" are separate facts (CLAUDE.md section 5): nothing here reads or
 writes a compliance status or a gap. A read writes nothing: the register entry is created by
@@ -21,17 +25,18 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from collections.abc import Collection
+from collections.abc import Collection, Iterable
 from typing import NamedTuple
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import F
 from django.utils import timezone
 
 from apps.library.reading import RecordHeading, obligation_headings, obligation_scopes
 from apps.register.logic import ensure_register_entry
-from apps.register.models import Applicability, TenantObligation, TenantObligationScope
+from apps.register.models import Applicability, SoaUnit, TenantObligation, TenantObligationScope
 from apps.register.schemas import (
     RegisterApplicability,
     RegisterApplicabilityBody,
@@ -46,6 +51,7 @@ from apps.taxonomy.models import ComplianceStatus
 from apps.tenants.models import OrgUnit, OrgUnitKind
 
 APPLICABILITY_SET = "register.applicability_set"
+UNIT_SUBJECT = "soa_unit"
 
 # The published words (schemas.Applicability) and the stored kind (models.Applicability).
 KIND_OF: dict[str, str] = {
@@ -117,11 +123,29 @@ def _spans(carried: dict[str, set[uuid.UUID]], entity: OrgUnit) -> bool:
     return not ids or term.id in ids
 
 
-def _units(answers: list[_Answer]) -> None:
-    """A unit's answer resolves once the Statement of Applicability's units exist (register
-    0003, `c8-reg-units`); until then a unit row stores nothing."""
-    if any(answer.unit_id is not None for answer in answers):
-        raise ProblemError(status=501, code="not_built", detail="Setting a unit's applicability is not built yet.")
+def _locked_units(answers: list[_Answer]) -> dict[uuid.UUID, SoaUnit]:
+    """The live units the answers name, locked and read in one query: a unit the bank does
+    not have, a removed one or one under another obligation is 404, and one whose entity no
+    longer follows the standard 422 `scope_not_applicable`."""
+    wanted = {answer.unit_id: answer.obligation_id for answer in answers if answer.unit_id is not None}
+    if not wanted:
+        return {}
+    units = {
+        unit.id: unit
+        for unit in SoaUnit.objects.select_for_update(of=("self",))
+        .select_related("scope__tenant_obligation", "scope__org_unit")
+        .filter(pk__in=wanted, removed_at__isnull=True)
+    }
+    for unit_id, obligation_id in wanted.items():
+        unit = units.get(unit_id)
+        if unit is None or unit.scope.tenant_obligation.obligation_id != obligation_id:
+            raise ValidationError("That unit is not here.", code="not_found")
+        if unit.scope.applicability != Applicability.APPLIES.value:
+            raise ValidationError(
+                "This unit's legal entity does not follow the standard. Set its conformance to applies first.",
+                code="scope_not_applicable",
+            )
+    return units
 
 
 def _store(
@@ -131,7 +155,6 @@ def _store(
     person = actor.id
     if person is None:
         raise ProblemError(status=403, code="permission_denied", detail="A person must do this.")
-    _units(answers)
     obligation_ids = {answer.obligation_id for answer in answers}
     headings = obligation_headings(obligation_ids, order)
     if obligation_ids - headings.keys():
@@ -150,8 +173,9 @@ def _store(
 
     entries = _locked_entries(obligation_ids)
     scopes = _locked_scopes([entry.id for entry in entries.values()], entity_ids)
+    units = _locked_units(answers)
     if expected_version is not None:
-        _check_version(answers[0], entries, scopes, expected_version)
+        _check_version(answers[0], entries, scopes, units, expected_version)
 
     missing = obligation_ids - entries.keys()
     for obligation_id in sorted(missing):
@@ -164,28 +188,51 @@ def _store(
     stored = []
     for answer in answers:
         entry = entries[answer.obligation_id]
-        row: TenantObligation | TenantObligationScope = entry
-        if answer.org_unit_id is not None:
+        row: TenantObligation | TenantObligationScope | SoaUnit = entry
+        if answer.unit_id is not None:
+            row = units[answer.unit_id]
+        elif answer.org_unit_id is not None:
             scope = scopes.get((entry.id, answer.org_unit_id))
             if scope is None:
                 default_status = default_status or ComplianceStatus.objects.get(is_default=True, active=True)
                 scope = _new_scope(tenant, entry, answer.org_unit_id, default_status)
             row = scope
         stored.append(_write(tenant, person, actor, entry, row, answer, headings[answer.obligation_id], names, decided_at))
+    _write_units(units.values(), person, decided_at)
     return stored
+
+
+def _write_units(units: Iterable[SoaUnit], person: uuid.UUID, decided_at: datetime.datetime) -> None:
+    """One UPDATE per distinct answer and reason rather than one per unit: a pasted Statement
+    of Applicability answers up to `REGISTER_BULK_MAX` units in one call, inside the API
+    budget (AC-REG1). Each unit was read under its lock, so its version moves by one."""
+    same: dict[tuple[str, str], list[uuid.UUID]] = {}
+    for unit in units:
+        same.setdefault((unit.applicability, unit.applicability_reason), []).append(unit.id)
+    for (value, reason), ids in same.items():
+        SoaUnit.objects.filter(pk__in=ids).update(
+            applicability=value,
+            applicability_reason=reason,
+            applicability_decided_at=decided_at,
+            applicability_decided_by_id=person,
+            version=F("version") + 1,
+        )
 
 
 def _check_version(
     answer: _Answer,
     entries: dict[uuid.UUID, TenantObligation],
     scopes: dict[tuple[uuid.UUID | None, uuid.UUID], TenantObligationScope],
+    units: dict[uuid.UUID, SoaUnit],
     expected_version: int,
 ) -> None:
     """`If-Match` against the row the answer lands on, read under its lock; 0 for a row
     nobody has written yet."""
     entry = entries.get(answer.obligation_id)
-    row: TenantObligation | TenantObligationScope | None = entry
-    if answer.org_unit_id is not None:
+    row: TenantObligation | TenantObligationScope | SoaUnit | None = entry
+    if answer.unit_id is not None:
+        row = units[answer.unit_id]
+    elif answer.org_unit_id is not None:
         row = scopes.get((entry.id if entry else None, answer.org_unit_id))
     if expected_version != (row.version if row is not None else 0):
         raise ValidationError("Someone changed this first. Reload and try again.", code="stale_write")
@@ -226,7 +273,7 @@ def _write(
     person: uuid.UUID,
     actor: Actor,
     entry: TenantObligation,
-    row: TenantObligation | TenantObligationScope,
+    row: TenantObligation | TenantObligationScope | SoaUnit,
     answer: _Answer,
     heading: RecordHeading,
     names: dict[uuid.UUID, str],
@@ -238,39 +285,56 @@ def _write(
     row.applicability_decided_at = decided_at
     row.applicability_decided_by_id = person
     row.version += 1
-    row.save(
-        update_fields=[
-            "applicability",
-            "applicability_reason",
-            "applicability_decided_at",
-            "applicability_decided_by",
-            "version",
-            "updated_at",
-        ]
-    )
+    if not isinstance(row, SoaUnit):  # the units are written together by _write_units()
+        row.save(
+            update_fields=[
+                "applicability",
+                "applicability_reason",
+                "applicability_decided_at",
+                "applicability_decided_by",
+                "version",
+                "updated_at",
+            ]
+        )
     title = f"{heading.instrument_short_name}, {heading.reference_label}"
-    if answer.org_unit_id is not None:
-        title = f"{title}, {names[answer.org_unit_id]}"
-    record(
-        action=APPLICABILITY_SET,
-        actor=actor,
-        subject_type="tenant_obligation",
-        subject_id=entry.id,
-        subject_title=title,
-        summary=f"Applicability set to {answer.applicability}.",
-        tenant_id=tenant.id,
-        before=before,
-        after={
-            "obligationId": str(answer.obligation_id),
-            "orgUnitId": None if answer.org_unit_id is None else str(answer.org_unit_id),
-            "applicability": answer.applicability,
-            "reason": answer.reason,
-        },
-    )
+    summary = f"Applicability set to {answer.applicability}."
+    after = {
+        "obligationId": str(answer.obligation_id),
+        "orgUnitId": None if answer.org_unit_id is None else str(answer.org_unit_id),
+        "applicability": answer.applicability,
+        "reason": answer.reason,
+    }
+    if isinstance(row, SoaUnit):
+        # The unit is the subject, so its history is its own events (REG-S15).
+        record(
+            action=APPLICABILITY_SET,
+            actor=actor,
+            subject_type=UNIT_SUBJECT,
+            subject_id=row.id,
+            subject_title=f"{title}, {row.scope.org_unit.name}, {row.reference}",
+            summary=summary,
+            tenant_id=tenant.id,
+            before=before,
+            after=after | {"orgUnitId": str(row.scope.org_unit_id), "unitId": str(row.id)},
+        )
+    else:
+        if answer.org_unit_id is not None:
+            title = f"{title}, {names[answer.org_unit_id]}"
+        record(
+            action=APPLICABILITY_SET,
+            actor=actor,
+            subject_type="tenant_obligation",
+            subject_id=entry.id,
+            subject_title=title,
+            summary=summary,
+            tenant_id=tenant.id,
+            before=before,
+            after=after,
+        )
     return RegisterApplicability(
         obligation_id=answer.obligation_id,
         org_unit_id=answer.org_unit_id,
-        unit_id=None,
+        unit_id=answer.unit_id,
         applicability=answer.applicability,  # type: ignore[arg-type]
         reason=answer.reason,
         decided_at=decided_at,

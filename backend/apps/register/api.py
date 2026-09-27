@@ -60,7 +60,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, if_match
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, if_match, principal
 from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Register"])
@@ -238,7 +238,9 @@ def set_applicability(
     `applicability.approve`; `not_found` (404) for an obligation, entity or unit the bank
     cannot see, or a legal entity the obligation does not span; `stale_write` (409);
     `validation_error` (422) for an unknown value, an empty reason, or both `orgUnitId` and
-    `unitId`; `not_built` (501) for a `unitId` until the Statement of Applicability's units ship.
+    `unitId`; `scope_not_applicable` (422) for a unit whose legal entity no longer follows the
+    standard. A unit's answer is stored on the unit, never on its entity's conformance row, and
+    joins the unit's history in the Statement of Applicability.
     """
     tenant = caller_tenant(request)
     return applicability.set_applicability(
@@ -276,8 +278,8 @@ def set_applicability_many(request: HttpRequest, body: RegisterApplicabilityMany
     `applicability.approve`; `not_found` (404) when any row names an obligation, entity or unit
     the bank cannot see, or a legal entity its obligation does not span; `validation_error`
     (422) for an empty list, a list over the cap, the same target twice or a row the schema
-    refuses; `not_built` (501) for a row with a `unitId` until the Statement of
-    Applicability's units ship.
+    refuses; `scope_not_applicable` (422) for a unit whose legal entity no longer follows the
+    standard.
     """
     tenant = caller_tenant(request)
     return applicability.set_applicability_many(
@@ -351,8 +353,9 @@ def create_gap(
     `unknown_key` (422) for a severity, source or team key the bank's list does not hold;
     `unknown_member` (422) for an owner who is not an active member of the bank;
     `validation_error` (422) for a body the schema refuses or a person and a team as owner
-    together; `not_built` (501) for a gap on a Statement of Applicability unit, which is not
-    built yet.
+    together; `unknown_unit` (422) for a `unitId` that is not a live unit under this
+    obligation, or not of the legal entity the gap names. A gap on a unit is in the unit's
+    legal entity, and fixes the unit's reference and title from then on.
     """
     tenant = caller_tenant(request)
     return 201, gaps.create_gap(
@@ -871,20 +874,35 @@ def remove_unit(request: HttpRequest, unit_id: uuid.UUID = Path(..., description
 def paste_units(
     request: HttpRequest, body: RegisterUnitPasteBody, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
 ) -> Any:
-    """Lists many units for one legal entity from pasted lines of reference and title. With
-    `dryRun` true, the default, it answers what each line would become and stores nothing;
-    with `dryRun` false it creates every unit in one transaction, only when no line is
-    refused. Set their applicability afterwards with `POST /applicability`.
+    """Lists many units for one legal entity from pasted lines of reference and title, each
+    optionally with its applicability and reason. With `dryRun` true, the default, it answers
+    what each line would become and stores nothing; show that to the person and ask them to
+    confirm. With `dryRun` false it creates every unit and sets every answer the lines carry
+    in one transaction, only when no line is refused: all of it is stored or none. A commit
+    with a refused line answers like a dry run and stores nothing.
 
-    A person's session holding `register.edit`. At most `REGISTER_BULK_MAX` lines, 100 by
-    default. No step-up. A commit records one audit event per unit naming the person.
+    A person's session holding `register.edit`, and `applicability.approve` as well when any
+    line carries an answer (D-75). At most `REGISTER_BULK_MAX` lines, 100 by default. No
+    step-up. A commit records one audit event per unit naming the person, and one per answer
+    naming the person, the value before and after, and the reason.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-    `not_found` (404) for an obligation or entity the bank cannot see; `validation_error`
-    (422) for no lines, too many lines or a line longer than the paste allows. Published ahead
-    of the logic that will fill it, and answering 501 `not_built` until that ships.
+    Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`, or
+    without `applicability.approve` for a line with an answer; `not_found` (404) for an
+    obligation or entity the bank cannot see; `units_only_under_standards` (422) under an
+    obligation that is not a standard's; `scope_not_applicable` (422) for an entity that does
+    not follow the standard; `duplicate_key` (409) when another write listed a reference
+    first; `validation_error` (422) for no lines, too many lines, an unknown answer or a line
+    longer than the paste allows.
     """
-    return units.paste_units(tenant=caller_tenant(request), actor=actor_for(request), obligation_id=obligation_id, body=body)
+    tenant = caller_tenant(request)
+    return units.paste_units(
+        tenant=tenant,
+        actor=actor_for(request),
+        order=language_order(request, tenant=tenant),
+        obligation_id=obligation_id,
+        body=body,
+        may_decide=principal(request).has_permission(perms.APPLICABILITY_APPROVE),
+    )
 
 
 @router.get(
@@ -904,17 +922,19 @@ def get_statement_of_applicability(
     obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID),
 ) -> Any:
     """The register filtered by a standard and one legal entity: the entity's conformance row
-    with its own assessed status, and each unit with its reference, the bank's title, its
-    applicability and reason, its status, who set it and when. No status is computed from the
-    units.
+    with its own assessed status, and each live unit with its reference, the bank's title, its
+    applicability and reason, its status, who set it and when, and its history of answers.
+    No status is computed from the units.
 
     A person's session holding `register.read`. A read. `entity` is required. Units page with
-    `limit` and `offset`, 20 by default and 100 at most.
+    `limit` and `offset`, 20 by default and 100 at most, by reference.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-    `not_found` (404) for an obligation or entity the bank cannot see; `validation_error`
-    (422) without `entity` or with a page out of range. Published ahead of the logic that
-    will fill it, and answering 501 `not_built` until that ships.
+    `not_found` (404) for an obligation or entity the bank cannot see, or a standard outside
+    the bank's regulatory scope, which hides the statement and deletes nothing;
+    `units_only_under_standards` (422) for an obligation that is not a standard's;
+    `scope_not_applicable` (422) for an entity that does not follow the standard;
+    `validation_error` (422) without `entity` or with a page out of range.
     """
     tenant = caller_tenant(request)
     return soa.statement_of_applicability(

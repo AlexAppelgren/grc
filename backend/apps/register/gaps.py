@@ -13,8 +13,10 @@ four eyes: a second person holding `risk.accept.approve`, with a fresh passkey s
 not the person who asked (`gap_four_eyes` backs the check below). Every write locks the gap's
 row first, so two decisions at once land one.
 
-A gap on a Statement of Applicability unit is `c8-units-paste-soa`'s and answers 501 until
-it lands. Audit rows carry ids, keys and dates, never a title, note or plan a person typed
+A gap may name a live Statement of Applicability unit under its own register entry (D-41), 422
+`unknown_unit` otherwise: the gap is then in the unit's legal entity, the unit is locked while
+the gap is recorded so a rename cannot slip past it, and its reference and title are fixed
+from then on (`units.py`). Audit rows carry ids, keys and dates, never a title, note or plan a person typed
 (R2_CROSS_CUTTING (m)).
 """
 
@@ -31,7 +33,7 @@ from django.utils import timezone
 from apps.identity.models import Membership, UserStatus
 from apps.library.reading import obligation_headings
 from apps.register.logic import ensure_register_entry
-from apps.register.models import Applicability, Gap, TenantObligation, TenantObligationScope
+from apps.register.models import Applicability, Gap, SoaUnit, TenantObligation, TenantObligationScope
 from apps.register.schemas import RegisterGapBody, RegisterGapPatch, RegisterGapQuery, RegisterRiskAcceptanceBody
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
@@ -106,7 +108,7 @@ def _out(gap: Gap, order: list[str]) -> dict[str, Any]:
         "id": gap.id,
         "obligation_id": gap.tenant_obligation.obligation_id,
         "org_unit_id": gap.org_unit_id,
-        "unit_id": None,
+        "unit_id": gap.unit_id,
         "title": gap.title,
         "description": gap.description or None,
         "severity": _ref(gap.severity, order),
@@ -219,6 +221,22 @@ def _entity(entry: TenantObligation | None, org_unit_id: uuid.UUID) -> None:
             _refuse_does_not_apply(scope.applicability)
 
 
+def _unit(obligation_id: uuid.UUID, unit_id: uuid.UUID, org_unit_id: uuid.UUID | None) -> uuid.UUID:
+    """The live unit under this obligation, locked, and the legal entity it belongs to. Any
+    other unit, or one of another entity than the gap names, is 422 `unknown_unit`; a unit
+    that does not apply has no gap (409 `does_not_apply`)."""
+    unit = (
+        SoaUnit.objects.select_for_update(of=("self",))
+        .select_related("scope")
+        .filter(pk=unit_id, removed_at__isnull=True, scope__tenant_obligation__obligation_id=obligation_id)
+        .first()  # ordering: pk lookup, at most one row
+    )
+    if unit is None or org_unit_id not in (None, unit.scope.org_unit_id):
+        raise ValidationError("That unit is not one of this obligation's units for this legal entity.", code="unknown_unit")
+    _refuse_does_not_apply(unit.applicability)
+    return unit.scope.org_unit_id
+
+
 def _locked(gap_id: uuid.UUID) -> Gap:
     """The gap's row, locked until the request commits, so two writes at once serialize."""
     gap = Gap.objects.select_for_update().filter(pk=gap_id).first()  # ordering: pk lookup, at most one row
@@ -245,7 +263,7 @@ def _invalid(detail: str) -> ValidationError:
 def _facts(gap: Gap) -> dict[str, Any]:
     """What an audit row may say about a gap: ids, keys and dates."""
     values = Gap.objects.filter(pk=gap.pk).values(
-        "severity__key", "source__key", "status__key", "owner_id", "owner_team__key", "target_date", "org_unit_id"
+        "severity__key", "source__key", "status__key", "owner_id", "owner_team__key", "target_date", "org_unit_id", "unit_id"
     )[0]
     return {
         "severity": values["severity__key"],
@@ -255,6 +273,7 @@ def _facts(gap: Gap) -> dict[str, Any]:
         "ownerTeam": values["owner_team__key"],
         "targetDate": values["target_date"].isoformat() if values["target_date"] else None,
         "orgUnitId": str(values["org_unit_id"]) if values["org_unit_id"] else None,
+        "unitId": str(values["unit_id"]) if values["unit_id"] else None,
     }
 
 
@@ -266,13 +285,14 @@ def create_gap(
 ) -> dict[str, Any]:
     """`POST /obligations/{obligationId}/gaps`: record a gap in the open category, creating
     the register entry on the first write that needs it."""
-    if body.unit_id is not None:
-        raise ProblemError(status=501, code="not_built", detail="Recording a gap on a unit is not built yet.")
     existing = TenantObligation.objects.filter(obligation_id=obligation_id).first()  # ordering: unique per bank, at most one row
     if existing is not None:
         _refuse_does_not_apply(existing.applicability)
-    if body.org_unit_id is not None:
-        _entity(existing, body.org_unit_id)
+    org_unit_id = body.org_unit_id
+    if body.unit_id is not None:
+        org_unit_id = _unit(obligation_id, body.unit_id, body.org_unit_id)
+    if org_unit_id is not None:
+        _entity(existing, org_unit_id)
     fields = {
         "severity_id": _row(RiskRating, body.severity, "risk_rating").id,
         "source_id": _row(GapSource, body.source, "gap_source").id,
@@ -283,7 +303,8 @@ def create_gap(
         gap = Gap.objects.create(
             tenant_id=tenant.id,
             tenant_obligation=entry,
-            org_unit_id=body.org_unit_id,
+            org_unit_id=org_unit_id,
+            unit_id=body.unit_id,
             title=body.title,
             description=body.description or "",
             status=_category_row(GapCategory.OPEN),

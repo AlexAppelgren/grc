@@ -211,6 +211,8 @@ BUILT = {
     "requestRiskAcceptance",
     "approveRiskAcceptance",
     "reopenGap",
+    # c8-units-paste-soa (REG-08): tests_soa.py
+    "getStatementOfApplicability",
 }
 
 
@@ -221,7 +223,7 @@ BUILT_ROUTES = {
     "createUnit",  # c8-reg-units
     "updateUnit",  # c8-reg-units
     "removeUnit",  # c8-reg-units
-    "pasteUnits",  # c8-reg-units (the dry run; its commit is c8-units-paste-soa's)
+    "pasteUnits",  # c8-reg-units (the dry run) and c8-units-paste-soa (the commit)
 }
 
 
