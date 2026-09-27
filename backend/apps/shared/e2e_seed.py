@@ -2094,6 +2094,8 @@ def seed_e2e() -> dict[str, int]:
         case_evidence = seed_case_evidence(tenants)
         # c10-e2e-seed-comments: after the cases and the logins its comments name.
         comments = seed_comments(tenants)
+        # c9-e2e-signoff-j3: after the case journeys, whose CAS-S10 change it links.
+        seed_signoff_spot_check_link()
         seed_watched_market_change()
         seed_standard_change()
         # c8-seed-org-register: after the logins and chunk 5's links.
@@ -3546,3 +3548,29 @@ def restore_leaver() -> None:
                 Gap.objects.filter(pk=gap_row.pk).update(owner=leaver, owner_team=None, version=gap_row.version + 1)
                 _seeded(tenant, "gap", gap_row, gap.obligation, {"ownerId": str(leaver.id)})
 # --- end c8-ui-departments-teams-removal ------------------------------------------------------
+
+
+# --- c9-e2e-signoff-j3 (CAS-S10) -----------------------------------------------------------------
+# CAS-S10 proves a sign-off changes no library or register row by reading one obligation before
+# and after it: the one its change links to. The ISK control statements duty is read by SRC-S3
+# and changed by no journey or seed, so what the journey reads twice can only move if the
+# sign-off moved it.
+SIGNOFF_SPOT_CHECK_OBLIGATION = "obl-isk-control-statements"
+
+
+def seed_signoff_spot_check_link() -> None:
+    """The CAS-S10 change's link to `SIGNOFF_SPOT_CHECK_OBLIGATION`, the sweeper's suggestion
+    confirmed by the library confirmer's own key, as every confirmation here is (D-74). A link
+    is library-zone, so no tenant is active; a second run upserts the same row."""
+    tenancy.clear_tenant()
+    sweeper, _agent_row = _sweeper_key()
+    change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key="chg-e2e-case-signoff")
+    watch_e2e_seed.seed_obligation_link(
+        change,
+        _obligation(SIGNOFF_SPOT_CHECK_OBLIGATION),
+        confidence=0.87,
+        suggester=sweeper,
+        confirmer=_confirmer_key(),
+        confirmed_at=change.first_seen_at + datetime.timedelta(days=1),
+    )
+# --- end c9-e2e-signoff-j3 -----------------------------------------------------------------------
