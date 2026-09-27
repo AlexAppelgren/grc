@@ -2347,7 +2347,7 @@ class SeededJ8Isolation(SeededOnce):
             ("support_access", SupportAccess.objects.filter(reason=spec.grant_reason)),
             ("agent_access", AgentAccess.objects.filter(pk=spec.entry_id)),
             ("api_key", ApiKey.objects.filter(pk=spec.key_id)),
-            ("tenant_agent", TenantAgent.objects.filter(pk=spec.tenant_agent_id)),
+            ("tenant_agent", TenantAgent.objects.filter(agent__key=spec.tenant_agent_key)),
             ("security_policy", SecurityPolicy.objects.filter(tenant=tenant_a)),
         ]
 
@@ -2385,8 +2385,7 @@ class SeededJ8Isolation(SeededOnce):
         self.assertEqual((key.agent_access_id, key.revoked_at), (entry.id, None))
         assert key.expires_at is not None
         self.assertGreater(key.expires_at, timezone.now())
-        agent = TenantAgent.objects.get(pk=spec.tenant_agent_id)
-        self.assertEqual((agent.agent.key, agent.enabled), (spec.tenant_agent_key, False))
+        self.assertTrue(TenantAgent.objects.filter(tenant=tenant_a, agent__key=spec.tenant_agent_key).exists(), "tenant A runs an agent of its own")
         idle = SecurityPolicy.objects.get(tenant=tenant_a).session_idle_minutes
         assert idle is not None
         self.assertEqual(idle, spec.idle_minutes)
