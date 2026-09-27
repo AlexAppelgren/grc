@@ -292,7 +292,7 @@ test.describe('identity journeys', () => {
       await page.locator('[data-member-id]', { hasText: LOGINS.contributor }).click();
       await expect(auditor).not.toBeChecked();
       await auditor.check();
-      await page.getByRole('button', { name: 'Save' }).click();
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
       await expect(prompt).toBeVisible();
       await prompt.getByRole('button', { name: 'Use passkey' }).click();
       await expect(page.getByText('Saved.')).toBeVisible();
@@ -307,7 +307,7 @@ test.describe('identity journeys', () => {
       if (await auditor.isChecked()) {
         await auditor.uncheck();
         const first = page.waitForResponse((r) => /\/tenant\/members\/[^/]+$/.test(r.url()) && r.request().method() === 'PATCH');
-        await page.getByRole('button', { name: 'Save' }).click();
+        await page.getByRole('button', { name: 'Save', exact: true }).click();
         restoreStatus = (await first).status();
         // Only on a failure path can the assertion have gone stale: then confirm again.
         if (restoreStatus === 403) await prompt.getByRole('button', { name: 'Use passkey' }).click();

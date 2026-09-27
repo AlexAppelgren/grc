@@ -43,12 +43,22 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 |----|----|----|----|----|
 | TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 | built |
 | TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped | M | R2 | in_progress |
-| TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | pending |
+| TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | in_progress |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | pending |
-| TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | pending |
+| TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | in_progress |
 | TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | pending |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
+
+**TEN-05 is built for the register, which is why it is `in_progress`.** `GET
+/tenant/members/{userId}/open-work`, the refusal of a plain removal (422
+`reassignment_required`) and `POST /tenant/members/{userId}/remove` move register entries,
+legal entities' rows, gaps and internal items, end the member's participations and team
+memberships, and deactivate them in one step-up transaction (`c8-ten-reassignment`, TEN-S5,
+TEN-S9, and TEN-S3's register half). The case halves of TEN-S3, TEN-S5 and TEN-S9 — cases,
+actions and case participations — are `c9-owner-team-and-reassign`'s; dated duties join when
+`duty_occurrence` exists (`c8-reg-duty-occurrences`). The removal dialog on the member
+screen and TEN-S5's journey came with `c8-ui-departments-teams-removal`.
 
 **ADM-01 is built in part, which is why it stays `in_progress`.** The R1 slice on `main`:
 the organisation profile with its onboarding checklist (TEN-S1); members and invitations,
@@ -56,7 +66,9 @@ roles, and each admin screen gated by its own permission (ADM-S1 to ADM-S3); an 
 passkey re-enrolment of a member and the sessions a person sees and revokes (ID-S12,
 ID-S11); the bank's own API keys; the security log; the audit log; the regulatory scope with
 its change requests and its markets panel (FP-S10); and the vocabularies. What remains, each
-with the Build_Plan.md chunk that delivers it: teams and team membership on the member row (TEN-03, chunk 8; departments with a head and the rest of the organisation came with c8-ten-organisation); the
+with the Build_Plan.md chunk that delivers it: putting a team in a department, which no
+route writes yet (TEN-02, chunk 8; departments with their heads, teams and team membership on
+the member row came with c8-ten-organisation and c8-ui-departments-teams-removal); the
 workflow policy's reminders and escalation (COL-02, chunk 10); the agents a bank adds for
 itself (AGT-04, chunk 11); data, meaning exports, import, retention and tenant exit (REP-02
 to REP-04, AUD-04, chunk 12); and integrations beyond the API keys, with the security

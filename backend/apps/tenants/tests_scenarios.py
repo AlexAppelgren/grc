@@ -1,7 +1,8 @@
 """Scenario tests for the tenants app (playbook 4.1, Appendix B): one method per
 `@integration` scenario in app.md, each carrying its ID. Chunk 1 un-skips TEN-S1, ADM-S1
-and ADM-S3; TEN-S3 to S6 stay skipped (R2, chunk 8), and c8-ten-organisation un-skips TEN-S2
-and TEN-S10. Never delete a scenario without
+and ADM-S3; TEN-S3 to S6 stay skipped (R2, chunk 8). c8-ten-organisation un-skips TEN-S2
+and TEN-S10; `c8-ten-reassignment` un-skips TEN-S5 and TEN-S9 and TEN-S3's register half;
+their case halves are `c9-owner-team-and-reassign`'s. Never delete a scenario without
 updating app.md.
 
 Operations exercised (the audit-on-write guard reads these names): updateTenant,
@@ -17,10 +18,12 @@ from datetime import timedelta
 from typing import Any
 from unittest import skip
 
-from apps.identity.models import TenantRole
+from apps.collab.models import Participant
+from apps.identity.models import Membership, TenantRole
 from apps.library.models import Obligation
 from apps.library.reading import today_for
 from apps.library.seeds import seed_jurisdictions, seed_languages
+from apps.register.models import TenantObligation
 from apps.shared import factories, permissions as perms
 from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
@@ -28,6 +31,9 @@ from apps.taxonomy import tenant_lists_logic
 from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, TermDimensionKind
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
+from apps.tenants import reassignment
+from apps.tenants.models import TeamMember
+from apps.tenants.tests_reassignment import owned_work
 
 
 class TenantsScenarioTests(ScenarioTestCase):
@@ -160,12 +166,37 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertEqual((retired.status_code, retired.json()["status"]), (200, "retired"))
         self.assertEqual([row["id"] for row in self.client.get("/api/v1/tenant/products", **headers).json()["items"]], [product.json()["id"]])
 
-    @skip("pending: TEN-S3 (TEN-03, chunk 8)")
+    def _erik(self) -> tuple[Any, Any, Any, Any]:
+        """TEN-S9's Erik and the work he holds (tests_reassignment.owned_work), Anna who takes
+        it over, and the admin's step-up headers."""
+        officer = factories.member_user(self.tenant, roles=("compliance_officer",))
+        erik = factories.member(self.tenant, roles=("compliance_officer",), user_row=factories.user(name="Erik Dahl")).user
+        anna = factories.member_user(self.tenant, roles=("compliance_officer",))
+        return erik, anna, owned_work(self.tenant, erik, officer), sign_in(self.admin, tenant=self.tenant, step_up=True)
+
+    def _remove(self, erik: Any, owners: list[dict[str, Any]], headers: dict[str, Any]) -> Any:
+        return self.client.post(
+            f"/api/v1/tenant/members/{erik.id}/remove", data={"owners": owners}, content_type="application/json", **headers
+        )
+
     def test_ten_s3(self) -> None:
         """TEN-S3
 
-        A team can own work and the ownership survives a member leaving (TEN-03).
+        A team can own work and the ownership survives a member leaving (TEN-03). The
+        register half: the team "Cards" owns an entry and takes part in another, and neither
+        moves when Erik, one of its members, is removed. The case half is
+        `c9-owner-team-and-reassign`'s.
         """
+        erik, anna, work, headers = self._erik()
+        preview = self.client.get(f"/api/v1/tenant/members/{erik.id}/open-work", **headers).json()
+        self.assertNotIn(str(work.team_owned.id), str(preview))
+        owners = [{"kind": kind, "userId": str(anna.id)} for kind in ("register_entry", "register_entity", "gap", "internal_item")]
+        self.assertEqual(self._remove(erik, owners, headers).status_code, 204)
+        self.activate(self.tenant)
+        entry = TenantObligation.objects.get(pk=work.team_owned.pk)
+        self.assertEqual((entry.owner_team_id, entry.first_line_owner_id, entry.version), (work.cards.id, None, 1))
+        self.assertIsNone(Participant.objects.get(pk=work.team_part.pk).removed_at)
+        self.assertFalse(AuditEvent.objects.filter(subject_id=work.team_owned.id, action="register_entry.reassigned").exists())
 
     @skip("pending: TEN-S4 (TEN-04, chunk 8)")
     def test_ten_s4(self) -> None:
@@ -174,13 +205,34 @@ class TenantsScenarioTests(ScenarioTestCase):
         An out-of-office delegate receives approvals and reminders (TEN-04).
         """
 
-    @skip("pending: TEN-S5 (TEN-05, chunk 8)")
     def test_ten_s5(self) -> None:
         """TEN-S5
 
-        Removing a member with open work offers bulk reassignment (TEN-05).
-        Operations: `removeMember`.
+        Removing a member with open work offers bulk reassignment (TEN-05). The register
+        half: Erik owns register entries, an entity's row, a gap and an internal item; the
+        two open cases are `c9-owner-team-and-reassign`'s.
+        Operations: `getMemberOpenWork`, `removeMember`, `deactivateMember`.
         """
+        erik, anna, work, headers = self._erik()
+        preview = self.client.get(f"/api/v1/tenant/members/{erik.id}/open-work", **headers)
+        self.assertEqual(preview.status_code, 200)
+        owned = {row["kind"]: row["count"] for row in preview.json()["items"]}
+        self.assertEqual({k: owned[k] for k in ("register_entry", "register_entity", "gap", "internal_item")}, {"register_entry": 3, "register_entity": 1, "gap": 1, "internal_item": 1})
+        # Nothing changes until the admin confirms: the plain removal is refused with the counts.
+        refused = self.client.delete(f"/api/v1/tenant/members/{erik.id}", **headers)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (422, "reassignment_required"))
+        self.activate(self.tenant)
+        self.assertEqual(TenantObligation.objects.filter(first_line_owner=erik).count(), 2)
+        self.assertIsNone(Membership.objects.get(user=erik).deactivated_at)
+
+        owners = [{"kind": kind, "userId": str(anna.id)} for kind in ("register_entry", "register_entity", "gap", "internal_item")]
+        self.assertEqual(self._remove(erik, owners, headers).status_code, 204)
+        self.activate(self.tenant)
+        self.assertEqual(reassignment.open_work_counts(self.tenant.id, erik.id), [])
+        self.assertEqual(TenantObligation.objects.filter(first_line_owner=anna).count(), 2)
+        self.assertIsNotNone(Membership.objects.get(user=erik).deactivated_at)
+        for action, count in (("register_entry.reassigned", 3), ("register_entity.reassigned", 1), ("gap.reassigned", 1), ("internal_item.reassigned", 1), ("member.deactivated", 1)):
+            self.assertEqual(AuditEvent.objects.filter(action=action, tenant_id=self.tenant.id).count(), count, action)
 
     @skip("pending: TEN-S6 (TEN-06, chunk 8)")
     def test_ten_s6(self) -> None:
@@ -250,20 +302,76 @@ class TenantsScenarioTests(ScenarioTestCase):
         allowed = self.client.patch("/api/v1/tenant/workflow", data={"escalateAfterDays": 7}, content_type="application/json", **config_admin)
         self.assertEqual((allowed.status_code, allowed.json()["workflow"]["escalateAfterDays"]), (200, 7))
 
-    @skip("pending: TEN-S8 (TEN-02, TEN-03, chunk 8)")
     def test_ten_s8(self) -> None:
         """TEN-S8
 
         A department has a head and teams, and team membership is set on the member row (TEN-02, TEN-03).
-        Operations: `createOrgUnit`, `updateOrgUnit`.
-        """
+        Operations: `createOrgUnit`, `updateOrgUnit`, `setMemberTeams`.
 
-    @skip("pending: TEN-S9 (TEN-05, COL-04, chunk 8)")
+        c8-ten-teams-people: the department and its team are rows here, because adding them
+        through `createOrgUnit` and `/vocab/team` is TEN-S2's and VOC-02's to prove; the
+        database's refusal of another bank's member, department or head is proven as `cw_app`
+        in tests_team_models.py and tests_models.py.
+        """
+        karin = factories.member(self.tenant, user_row=factories.user(name="Karin Holm")).user
+        anna = factories.member(self.tenant, user_row=factories.user(name="Anna Berg")).user
+        johan = factories.member(self.tenant, user_row=factories.user(name="Johan Ek")).user
+        retail = factories.department(self.tenant, name="Retail Banking", head=karin)
+        factories.team(self.tenant, key="retail-compliance", label="Retail compliance", org_unit=retail)
+
+        me = self.client.get("/api/v1/me", **sign_in(karin, tenant=self.tenant)).json()
+        self.assertIn({"id": str(retail.id), "name": "Retail Banking"}, me["headOf"])
+
+        admin = sign_in(self.admin, tenant=self.tenant)
+        for person in (anna, johan):
+            url = f"/api/v1/tenant/members/{person.id}/teams"
+            response = self.client.put(url, data={"teams": ["retail-compliance"]}, content_type="application/json", **admin)
+            self.assertEqual(response.status_code, 200, response.content)
+            self.assertEqual(response.json()["teams"], ["retail-compliance"])
+            self.activate(self.tenant)
+            membership = Membership.objects.get(tenant=self.tenant, user=person)
+            event = AuditEvent.objects.get(action="member.teams_changed", subject_id=membership.id)
+            self.assertEqual((event.before, event.after), ({"teams": []}, {"teams": ["retail-compliance"]}))
+        members = self.client.get("/api/v1/tenant/teams/retail-compliance/members", **admin).json()
+        self.assertEqual([row["name"] for row in members["items"]], ["Anna Berg", "Johan Ek"])
+
+        other = factories.tenant(slug="elsewhere")
+        stranger = factories.member_user(other)
+        refused = self.client.put(
+            f"/api/v1/tenant/members/{stranger.id}/teams", data={"teams": ["retail-compliance"]}, content_type="application/json", **admin
+        )
+        self.assertEqual((refused.status_code, refused.json()["code"]), (422, "unknown_member"))
+
+        without = self._member_with(perms.CASES_READ)
+        denied = self.client.put(
+            f"/api/v1/tenant/members/{anna.id}/teams", data={"teams": []}, content_type="application/json", **without
+        )
+        self.assertEqual(denied.status_code, 403)
+
     def test_ten_s9(self) -> None:
         """TEN-S9
 
         Removing a member ends their participations and team memberships (TEN-05, COL-04).
+        Erik takes part in three entries and is in "Legal" and "Cards"; the case
+        participations are `c9-owner-team-and-reassign`'s.
         """
+        erik, anna, work, headers = self._erik()
+        preview = self.client.get(f"/api/v1/tenant/members/{erik.id}/open-work", **headers).json()
+        held = {row["kind"]: row["count"] for row in preview["items"]}
+        self.assertEqual((held["participation"], held["team_membership"]), (3, 2))
+        self.assertEqual(sorted(preview["teams"]), ["cards", "legal"])
+        self.activate(self.tenant)
+        self.assertEqual(Participant.objects.filter(user=erik, removed_at__isnull=True).count(), 3)
+
+        owners = [{"kind": kind, "userId": str(anna.id)} for kind in ("register_entry", "register_entity", "gap", "internal_item")]
+        self.assertEqual(self._remove(erik, owners, headers).status_code, 204)
+        self.activate(self.tenant)
+        self.assertFalse(Participant.objects.filter(user=erik, removed_at__isnull=True).exists())
+        self.assertEqual(Participant.objects.filter(user=erik).count(), 3)
+        self.assertFalse(TeamMember.objects.filter(user=erik).exists())
+        self.assertIsNone(Participant.objects.get(pk=work.team_part.pk).removed_at)
+        self.assertEqual(AuditEvent.objects.filter(action="participant.removed", tenant_id=self.tenant.id).count(), 3)
+        self.assertEqual(AuditEvent.objects.filter(action="team_member.removed", tenant_id=self.tenant.id).count(), 2)
 
     def test_ten_s10(self) -> None:
         """TEN-S10

@@ -25,7 +25,9 @@ from apps.shared.testing import ScenarioTestCase, sign_in
 # user and tenant for the label order (2), the count and the page (2), the roles and labels
 # prefetches (2), the test's own activation (1). One fewer than measured at chunk 1's close:
 # a bank session no longer reads the platform role assignments at all (hardening H13).
-MEMBERS_LIST_QUERIES = 15
+# One more from 2026-09-25 (c8-ten-teams-people, TEN-03): the page's team keys, one query
+# for the whole page, never one per member.
+MEMBERS_LIST_QUERIES = 16
 
 
 class MembersAndInvitations(ScenarioTestCase):

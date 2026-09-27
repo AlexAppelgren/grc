@@ -318,6 +318,12 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
     "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=proposer.actor title=existing.title": (
         "The retry of the same platform-only batch filing: the same platform proposer and the title it filed."
     ),
+    # c8-ten-reassignment (TEN-05): the subject type is one of four tenant tables, picked per kind.
+    "apps/tenants/reassignment.py record(_SUBJECT_TYPE[kind]) tenant_id=tenant.id actor=actor title=_title(kind, row, headings)": (
+        "A member's removal moving a register entry, an entity's row, a gap or an internal item: "
+        "the subject is one of those four tenant tables, never a library one, and the row is "
+        "written in the removing bank's zone under its own tenant id, by the bank's administrator."
+    ),
     # c8-seed-org-register
     "apps/shared/e2e_seed.py record(subject_type) tenant_id=tenant.id actor=Actor.system('seed_e2e') title=title": (
         "The E2E seed's one audit row per seeded organisation and register row: the tenant id is "

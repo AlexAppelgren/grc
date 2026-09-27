@@ -721,8 +721,7 @@ def list_teams(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
     Any member of the bank may call it. It changes nothing and writes no audit event.
 
     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
-    session that belongs to no bank; `unauthenticated` (401). Published ahead of the logic
-    that will fill it, and answering 501 `not_built` until that ships.
+    session that belongs to no bank; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
@@ -747,8 +746,7 @@ def list_team_members(
     with nobody in it is a 200 with `total` 0.
 
     Errors: `not_found` (404) for a team key the bank does not have; `validation_error` (422)
-    for a page size above 100; `unauthenticated` (401). Published ahead of the logic that will
-    fill it, and answering 501 `not_built` until that ships.
+    for a page size above 100; `unauthenticated` (401).
     """
     # Ungated by design: capability (any member of the tenant).
     return teams.list_team_members(tenant=caller_tenant(request), key=key, limit=page.limit, offset=page.offset)
@@ -810,11 +808,12 @@ def get_member_open_work(request: HttpRequest, user_id: uuid.UUID = Path(..., de
     kind before anything changes.
 
     Needs `members.manage`. It changes nothing and writes no audit event. A member who holds
-    nothing is a 200 with an empty `items`.
+    nothing is a 200 with empty `items` and `teams`. A register entry counts once whether the
+    member is its first-line owner, its compliance contact or both; a closed gap and a retired
+    internal item are history and are not counted. `teams` names the teams the member is in.
 
     Errors: `not_found` (404) for somebody who is not an active member of the bank;
-    `permission_denied` (403) without `members.manage`; `unauthenticated` (401). Published
-    ahead of the logic that will fill it, and answering 501 `not_built` until that ships.
+    `permission_denied` (403) without `members.manage`; `unauthenticated` (401).
     """
     return reassignment.open_work(tenant=caller_tenant(request), user_id=user_id)
 
@@ -841,13 +840,21 @@ def remove_member(
     per item moved or ended and `member.deactivated`, each carrying the step-up assertion, in
     the same transaction. If any of it is refused, nothing changes.
 
-    Errors: `validation_error` (422) for a kind the member owns with no new owner, an owner
-    named twice or as both a person and a team, or a field the body does not name;
-    `not_found` (404) for a member, new owner or team that is not the bank's own;
-    `last_admin` (409) when the member is the bank's last administrator; `step_up_required`
-    (403) without a fresh passkey assertion; `permission_denied` (403) without
-    `members.manage`; `unauthenticated` (401). Published ahead of the logic that will fill it,
-    and answering 501 `not_built` until that ships.
+    A register entry the member is the first-line owner or compliance contact of passes those
+    places to a new person; handed to a team, the team becomes the entry's owner and the
+    places the member held are left empty, because a compliance contact is always a person.
+    Every other kind passes to exactly the person or team named. A kind named here that the
+    member holds none of is checked and then ignored.
+
+    Errors: `reassignment_required` (422) for a kind the member owns with no new owner,
+    listing in `errors` each such kind as `field` with its `count`; `validation_error` (422)
+    for a kind named twice, an owner named as both a person and a team or as neither, or a
+    field the body does not name; `unknown_member` (422) for a new owner who is not another
+    current member of the bank, the member being removed included; `unknown_key` (422) for a
+    team that is not one of the bank's active teams; `not_found` (404) for somebody who is
+    not an active member of the bank; `last_admin` (409) when the member is the bank's last
+    administrator; `step_up_required` (403) without a fresh passkey assertion;
+    `permission_denied` (403) without `members.manage`; `unauthenticated` (401).
     """
     tenant = caller_tenant(request)
     return reassignment.remove_member(
@@ -856,6 +863,7 @@ def remove_member(
         user_id=user_id,
         body=body,
         step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        request=request,
     )
 
 

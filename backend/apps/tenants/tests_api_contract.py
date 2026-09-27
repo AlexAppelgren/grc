@@ -337,6 +337,10 @@ class TenantsRouteStubs(TenantsContractCase):
         # proved in tests_reference_people.py.
         "listPeople",
     }
+    # c8-ten-teams-people: built, and proven in tests_teams.py and tests_reference_people.py.
+    BUILT |= {"listTeams", "listTeamMembers", "listPeople"}
+    # c8-ten-reassignment: built, and proven in tests_reassignment.py.
+    BUILT |= {"getMemberOpenWork", "removeMember"}
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
         with stub_session(self.everything()):
@@ -352,7 +356,7 @@ class TenantsRouteStubs(TenantsContractCase):
         """Past every gate, in a real bank as a real member, or in the console: 501 `not_built`,
         in the one problem shape, with nothing of the server in it. Replaced row by row as
         each logic lands."""
-        calls = [(route, self.everything()) for route in self.records.routes()]
+        calls = [(route, self.everything()) for route in self.records.routes() if route[0] not in self.BUILT]
         calls += [(route, self.console()) for route in self.records.console_routes()]
         for (name, method, url, body, _permission, _step_up), who in calls:
             if name in self.BUILT:
@@ -373,7 +377,8 @@ class TenantsRouteStubs(TenantsContractCase):
                 if permission is not None:
                     continue
                 with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, 200 if name in self.BUILT else 501)
+                    expected = 200 if name in self.BUILT else 501
+                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, expected)
 
     def test_a_known_permission_on_the_people_picker_is_answered(self) -> None:
         with stub_session(self.everything(permissions=frozenset())):
