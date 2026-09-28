@@ -36,9 +36,10 @@ from apps.tenants import logic
 V1 = "/api/v1"
 WAIT_SECONDS = 10
 # Everything createConsoleTenant does besides the bank's lists: the session, the tenant, its
-# roles, the invitation and the audit and outbox rows, one statement since ADR 0063 (29 when
-# pinned, 37 before it).
-FIXED_QUERIES = 32
+# roles, the invitation and the audit and outbox rows, one statement since ADR 0063 (26 when
+# pinned after ADR 0064 took three from a console session's resolve; 29 before it, 37 before
+# ADR 0063).
+FIXED_QUERIES = 29
 
 
 def body(**overrides: Any) -> dict[str, Any]:
