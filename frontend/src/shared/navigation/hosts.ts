@@ -5,7 +5,7 @@ import { PUBLIC_HOME } from './registry';
 // sees without JavaScript, and a front door that is an empty page loading a
 // sign-in is the phishing profile. So the public page gets hosts of its own
 // (PUBLIC_SITE_HOST, a list: bleqq.com, www.bleqq.com) and the app one of its
-// own (APP_HOST: compliance-test.bleqq.com). Both are read at run time by
+// own (APP_HOST: app.bleqq.com). Both are read at run time by
 // src/proxy.ts; until both are set nothing changes on any host.
 //
 // On a public host a page load of / is the public page, rendered on the server;

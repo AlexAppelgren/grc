@@ -13,7 +13,7 @@ runs on separate hosts under that one domain:
 | Host | What it serves |
 |---|---|
 | `bleqq.com` (and `www.bleqq.com`, which redirects to it) | The public page: what the service is, how to get access, the security contact (`/.well-known/security.txt`) |
-| `compliance-test.bleqq.com` today, `compliance.bleqq.com` in production | The application: sign-in with a passkey, and every screen |
+| `app.bleqq.com` | The application: sign-in with a passkey, and every screen |
 | The API host under `bleqq.com` | The application's API, called by the browser from the application host |
 
 A filter that allows only one of them breaks the service: the public page's
