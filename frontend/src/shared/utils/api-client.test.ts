@@ -184,6 +184,13 @@ describe('api-client', () => {
     expect(sent).toHaveLength(1);
   });
 
+  it('a refresh hands on the person it answered with, and a held token none', async () => {
+    const person = { user: { id: 'u1' } };
+    install(() => ({ status: 200, data: { accessToken: 'x', expiresIn: 600, me: person } }));
+    expect(await ensureColdLoadRefresh()).toEqual({ token: 'x', outcome: 'refreshed', error: null, me: person });
+    expect((await ensureColdLoadRefresh()).me).toBeUndefined();
+  });
+
   it('ensureColdLoadRefresh refreshes once and reports the token, or null for a visitor', async () => {
     const sent = install(() => ({ status: 401 }));
     expect((await ensureColdLoadRefresh()).token).toBeNull();
