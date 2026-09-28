@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { DemoFrame } from '@/components/public/DemoFrame';
@@ -34,6 +33,9 @@ const ANCHOR = 'scroll-mt-[76px]';
 // Request access is the outline beside it, on its left. On a phone both drop to
 // the meta size so the row fits at 320 px. buttonVariants hovers on `enabled:`,
 // which a link never matches, so the hover is added here.
+// Sign in is a plain link, never next/link: a page load reaches the server,
+// which moves it to the app's own host when there is one (src/proxy.ts),
+// where a client navigation would draw the sign-in on the public host.
 const BAR_BUTTON = 'max-sm:px-2.5 max-sm:text-meta';
 const BAR_PRIMARY = cn(buttonVariants({ variant: 'primary', size: 'small' }), BAR_BUTTON, 'hover:bg-[color-mix(in_srgb,var(--color-button)_88%,var(--color-page))]');
 const BAR_SECONDARY = cn(buttonVariants({ variant: 'outline', size: 'small' }), BAR_BUTTON, 'hover:hover-fill');
@@ -164,9 +166,9 @@ export function PublicPage() {
             <a href="#request" className={BAR_SECONDARY}>
               {t('public.action.requestAccess')}
             </a>
-            <Link href={SIGN_IN} className={BAR_PRIMARY}>
+            <a href={SIGN_IN} className={BAR_PRIMARY}>
               {t('public.action.signIn')}
-            </Link>
+            </a>
           </div>
         </div>
       </header>
@@ -315,9 +317,9 @@ export function PublicPage() {
                   {t('public.request.write')}
                 </a>
               )}
-              <Link href={SIGN_IN} className={cn(ON_BRAND_SECONDARY, 'h-9 px-4 text-body')}>
+              <a href={SIGN_IN} className={cn(ON_BRAND_SECONDARY, 'h-9 px-4 text-body')}>
                 {t('public.action.signIn')}
-              </Link>
+              </a>
             </div>
           </div>
         </section>
@@ -348,9 +350,9 @@ export function PublicPage() {
               <p className="microlabel mb-3 text-muted">{t('public.footer.account')}</p>
               <ul className="grid gap-2">
                 <li>
-                  <Link href={SIGN_IN} className={FOOT_LINK}>
+                  <a href={SIGN_IN} className={FOOT_LINK}>
                     {t('public.action.signIn')}
-                  </Link>
+                  </a>
                 </li>
                 <li>
                   <a href="#request" className={FOOT_LINK}>

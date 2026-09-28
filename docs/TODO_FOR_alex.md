@@ -2413,3 +2413,70 @@ visitor on to `/welcome`; robots.txt allows `/` so a crawler that starts there f
 keeps `noindex` like every app page. The canonical host in robots.txt, the sitemap and
 security.txt is `https://bleqq.com`, the host that serves the public page today; a test
 deployment serves the same files.
+
+## r2f-host-split: the public page on bleqq.com, the app on compliance-test.bleqq.com (2026-09-28)
+
+Built and off until you set two variables: on `bleqq.com` the front door becomes the public
+page itself, rendered on the server, and sign-in and the app move to `compliance-test.bleqq.com`,
+where every page says noindex. The sign-in and enrolment pages now carry, in their first byte,
+what the service is, the company name linking to the public page, and the privacy and security
+contacts. `docs/runbooks/DNS_DOMAINS.md` ("The public site and the app on their own hosts") has
+the rules and why. Do the steps in this order; each check tells you the step worked.
+
+- [ ] **1. The domain on Railway.** Web service › Settings › Public Networking › `+ Custom Domain`
+      › `compliance-test.bleqq.com`. Railway shows a `CNAME` target and a `TXT` record.
+- [ ] **2. DNS in Cloudflare.** Add the `CNAME` `compliance-test` → the target Railway showed,
+      and the `TXT` exactly as shown (both are required; without the TXT Railway answers 404).
+      If you leave the CNAME proxied (orange cloud), SSL/TLS must be **Full**, not Full (Strict).
+      Wait until Railway shows the domain as ready (certificate usually within an hour).
+      *Check:* `https://compliance-test.bleqq.com/sign-in` shows the sign-in page. Nothing has
+      changed on `bleqq.com` yet.
+- [ ] **3. The api service's variables**, then redeploy api:
+      `CORS_ALLOWED_ORIGINS=https://compliance-test.bleqq.com`,
+      `WEBAUTHN_ORIGINS=https://compliance-test.bleqq.com`,
+      `WEBAUTHN_RP_ID=compliance-test.bleqq.com`,
+      `APP_BASE_URL=https://compliance-test.bleqq.com` (or delete it: it then follows the first
+      CORS origin). `ALLOWED_HOSTS` and the api host stay as they are; the api host must stay
+      under `bleqq.com`. **From this moment every existing passkey stops working** (step 5).
+- [ ] **4. The web service's variables**, then redeploy web (no rebuild is needed; both are read
+      at run time): `PUBLIC_SITE_HOST=bleqq.com,www.bleqq.com`,
+      `APP_HOST=compliance-test.bleqq.com`. `NEXT_PUBLIC_API_URL` stays as it is.
+- [ ] **5. Re-enrol.** The RP ID changed, so everyone re-enrols (default taken: the runbook's
+      rule, the exact app host; keeping `bleqq.com` as the RP ID would spare the re-enrolment but
+      let every bleqq.com site ask for the passkeys, and production moves host anyway). Yourself:
+      `python manage.py bootstrap_platform --admin-email <a new address of yours>` on the api
+      shell (it refuses your old address, which still holds its dead passkey), then enrol from
+      the email. A test bank's first admin: the platform re-issues it with
+      `POST /api/v1/console/tenants/{tenantId}/members/{userId}/reissue-enrolment`, for which the
+      console has no screen yet, or create the test bank again; everyone else is re-issued by
+      their admin from Admin › Members. Say if you want the console screen or a shell
+      re-enrolment for platform staff, and an agent builds it.
+- [ ] **6. Check from outside** (or ask an agent to):
+      `curl -sI https://bleqq.com/` → 200 and no `x-robots-tag`;
+      `curl -s https://bleqq.com/ | grep -c "A register of record"` → at least 1 (the whole page
+      without JavaScript); `curl -sI https://bleqq.com/sign-in` → 301 to
+      `https://compliance-test.bleqq.com/sign-in`; `curl -sI https://bleqq.com/welcome` → 301 to
+      `https://bleqq.com/`; `curl -sI https://compliance-test.bleqq.com/sign-in` → 200 with
+      `x-robots-tag: noindex`; `curl -s https://compliance-test.bleqq.com/sign-in | grep -c "About this service"`
+      → at least 1; then sign in with your new passkey, and press the demo on `bleqq.com`. If
+      `bleqq.com/sign-in` answers 200 instead of 301, the host name the web service sees is not
+      the one set in step 4: tell an agent.
+- [ ] **7. SEB IT.** Ask SEB IT to allowlist `*.bleqq.com` (and `bleqq.com`) in the web filter
+      and proxy, for HTTPS, not only `bleqq.com`: the public page, the app and the API are
+      separate hosts. `docs/assurance/network-access.md` says what each host serves; send it with
+      the request. Then do the filter-vendor step of `r2f-site-trust` above, so the reviewers see
+      the split site.
+- [ ] **The privacy address.** The sign-in and enrolment pages name `privacy@bleqq.com` (default
+      taken; nothing in the repo named one). Create that mailbox or alias, or give an agent the
+      address to use (`frontend/src/shared/brand.ts`).
+- [ ] **Onboarding a bank.** `FIRST_RUN_SETUP.md` now asks every bank, before its first person
+      enrols, to allow `*.bleqq.com` in its filter and proxy. Nothing to do now; it is there for
+      the first bank.
+
+Defaults taken: only a page load moves on the public host (`Sec-Fetch-Dest` is `document`, or
+absent as from a crawler), so the demo frame and the app inside it still load there; a browser
+that sends no `Sec-Fetch-Dest` at all (Safari before 16.4) sees the public page in the demo frame.
+Unknown paths on the public host go to the app host, which answers them 404 as today. Any host
+not named in either variable, such as the service's own `*.up.railway.app` address, behaves as
+before. `docs/assurance/` held nothing yet, so this package added `network-access.md` there
+alone; chunk 14's `README.md` lists it.

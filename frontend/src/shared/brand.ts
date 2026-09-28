@@ -10,6 +10,12 @@ export const productName: string = process.env.NEXT_PUBLIC_PRODUCT_NAME ?? 'Comp
 // link is hidden rather than showing a placeholder address.
 export const supportContact: string = process.env.NEXT_PUBLIC_SUPPORT_CONTACT ?? '';
 
+// Where a visitor writes about their data and about a vulnerability. The
+// security address is the one /.well-known/security.txt names (RFC 9116); the
+// privacy address is a default the owner confirms (docs/TODO_FOR_alex.md).
+export const privacyContact = 'privacy@bleqq.com';
+export const securityContact = 'security@bleqq.com';
+
 // The accessible name of the phonetic wordmark, in the user's language.
 export const logoNameKey: MessageKey = 'brand.logoName';
 
