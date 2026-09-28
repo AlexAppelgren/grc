@@ -30,8 +30,9 @@ from typing import Any
 from unittest import mock
 
 from django.conf import settings
-from django.db import transaction
+from django.db import connection, transaction
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from apps.cases import testing as cases_build
@@ -68,26 +69,28 @@ LAST_WEEK = datetime.datetime(2026, 9, 22, 9, 0, tzinfo=datetime.UTC)
 THIS_QUARTER = D(2026, 10, 15)
 NEXT_QUARTER = D(2027, 1, 20)
 
-# Twenty-one queries on this file's fixture, measured 2026-09-25 and pinned so an N+1 shows
-# up as a number (playbook 10). What the test below demands is not the number itself but that
-# it does not move between one case and thirty, which is why it asks at both sizes:
-#   the roadmap's first items and its count (9): the page of cases with their change and
-#     urgency, the urgency rows and their labels, the confirmed obligation links, and the
-#     count over the whole roadmap; then a page and a count for each of the two certificate
-#     branches, which every member reads. A tenth — those obligations' titles — is not sent,
-#     because this bank has no confirmed link and a query whose `IN` clause is empty never
-#     executes.
+# Nineteen queries on this file's fixture, pinned so an N+1 shows up as a number (playbook
+# 10). What the test below demands is not the number itself but that it does not move between
+# one case and thirty, which is why it asks at both sizes:
+#   the roadmap's first items and its count (7): the page of cases with their change and
+#     urgency, the urgency rows and their labels, the confirmed obligation links, a page for
+#     each of the two certificate branches, which every member reads, and one count over every
+#     branch at once (H115: a count per branch was eight more queries on every load of Today).
+#     An eighth — those obligations' titles — is not sent, because this bank has no confirmed
+#     link and a query whose `IN` clause is empty never executes.
 #   the lead (10): the week's cases ordered by urgency (1), then the feed's own row for the one
 #     change it chose (9) — the change with this bank's case joined, its classification in
 #     three, the urgency rows and their labels, the change type's labels, this bank's
 #     obligation-link decisions and the jurisdiction terms its authority reaches (FP-04).
 #   source health (2): every source with the last line of its log, and those sources' labels.
-HOME_QUERIES = 21
-# What a `register.read` holder adds on the register cost fixture below, measured 2026-09-25:
-# a page and a count for each of the four register branches (8, the duties' joined with
-# x-roadmap-case-deadlines), the reviewed obligations' titles (2) and the owning teams'
-# labels (1), and the standing panel's three counts (3).
-REGISTER_QUERIES = 14
+HOME_QUERIES = 19
+# What a `register.read` holder adds on the register cost fixture below: the bank's register
+# entries inside its regulatory scope (1, the scope rule asked once for the register's four
+# branches and the standing panel), a page for each of the four register branches (4, the
+# duties' joined with x-roadmap-case-deadlines), the reviewed obligations' titles (2) and the
+# owning teams' labels (1), and the standing panel's three reads (3). The four branches are
+# counted in the one count above.
+REGISTER_QUERIES = 11
 
 
 def a_change(
@@ -307,13 +310,13 @@ class HomeIsFilteredByPermission(TestCase):
         the reader without `watch.read` and `register.read` pays for neither the lead, the
         coverage log, the standing nor the register's deadlines.
 
-        Nine queries, which is the roadmap read and its count and the two certificate
-        branches' pages and counts, and nothing else: twelve fewer than the twenty-one
-        above, and every one of the twelve belongs to a panel this reader may not see.
+        Seven queries, which is the roadmap read, the two certificate branches' pages and the
+        one count over all three, and nothing else: twelve fewer than the nineteen above, and
+        every one of the twelve belongs to a panel this reader may not see.
         """
         with mock.patch("django.utils.timezone.now", return_value=INSTANT):
             tenancy.activate(self.tenant.id)
-            with self.assertNumQueries(9):
+            with self.assertNumQueries(7):
                 logic.home_today(self.tenant, ["en"], watch_reader=False)
 
     def test_the_answer_carries_no_decide_now(self) -> None:
@@ -481,21 +484,28 @@ class HomeStandingPanel(TestCase):
     def test_each_obligation_that_applies_is_counted_once_in_its_worst_category(self) -> None:
         self.bank.activate()
         self.assertEqual(
-            logic.standing(self.bank.tenant).model_dump(),
+            logic.standing(roadmap.in_scope_entries(self.bank.tenant)).model_dump(),
             {"applying": 4, "compliant": 1, "partly": 1, "gap": 1, "not_assessed": 1, "open_gaps": 3},
         )
 
     def test_the_count_is_three_queries_however_large_the_register(self) -> None:
         self.bank.activate()
+        in_scope = roadmap.in_scope_entries(self.bank.tenant)
         with self.assertNumQueries(3):
-            logic.standing(self.bank.tenant)
+            logic.standing(in_scope)
 
     def test_another_bank_sees_none_of_it(self) -> None:
-        """Row-level security, not a filter in Python: a bank with an empty register reads
-        zeros from the same query."""
+        """Row-level security, not a filter in Python: a bank with an empty register has no
+        entry in scope, and even handed the first bank's entries it reads zeros from the same
+        queries."""
+        self.bank.activate()
+        theirs = roadmap.in_scope_entries(self.bank.tenant)
+        self.assertTrue(theirs)
         other = factories.tenant(slug="home-standing-other")
         tenancy.activate(other.id)
-        self.assertEqual(logic.standing(other).applying + logic.standing(other).open_gaps, 0)
+        self.assertEqual(roadmap.in_scope_entries(other), [])
+        answer = logic.standing(theirs)
+        self.assertEqual(answer.applying + answer.open_gaps, 0)
 
 
 class HomeRegisterCost(TestCase):
@@ -520,6 +530,16 @@ class HomeRegisterCost(TestCase):
             )
             bank.scope(entry, bank.fund_ab, owner=bank.erik, next_review_date=STOCKHOLM_TODAY + datetime.timedelta(days=20 + number))
             bank.gap(entry, owner_team=bank.cards, target_date=STOCKHOLM_TODAY + datetime.timedelta(days=30 + number))
+
+    def test_the_regulatory_scope_is_asked_once_and_not_once_per_register_read(self) -> None:
+        """H115: the scope rule is the costliest condition Today asks. The roadmap's four
+        register branches and the standing panel's three reads share one answer of it, where
+        every one of them used to ask it again: eleven times on each load."""
+        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            self.bank.activate()
+            with CaptureQueriesContext(connection) as queries:
+                logic.home_today(self.bank.tenant, ["en"], watch_reader=True, register_reader=True, cases_reader=True)
+        self.assertEqual(sum("taxonomy_scope_admits" in query["sql"] for query in queries.captured_queries), 1)
 
     def test_the_query_count_does_not_grow_with_the_register(self) -> None:
         """Asked at two sizes: ten of each register deadline, then one."""

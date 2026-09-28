@@ -77,11 +77,12 @@ GONE = D(2026, 9, 29)  # yesterday in both zones
 # next audit fall in the window (2), which every member reads. None of them grows with the
 # number of items, which is what the test below demands.
 ROADMAP_QUERIES = 7
-# The bank's own deadlines for a `register.read` holder, measured 2026-09-25: the two
+# The bank's own deadlines for a `register.read` holder: the bank's register entries inside
+# its regulatory scope (1, asked once for the four register branches, H115), the two
 # certificate branches, the entries', entity rows', gaps' and duty occurrences' dates (6), the
 # reviewed obligations' titles (2), the owning teams' labels (1) and the certificates' type
 # labels (1). The duties' branch joined with x-roadmap-case-deadlines.
-INTERNAL_QUERIES = 10
+INTERNAL_QUERIES = 11
 
 
 def a_change(*, key_date: datetime.date | None, title: str = "A reform", urgency: str = "act_now") -> RegulatoryChange:
@@ -566,7 +567,7 @@ class RoadmapOwnDeadlines(TestCase):
     def test_coming_up_answers_the_roadmaps_own_first_items_and_its_whole_count(self) -> None:
         """Today's panel and the roadmap page share every branch."""
         self.bank.activate()
-        items, count = roadmap.coming_up(self.bank.tenant, ["en"], 3, register_reader=True)
+        items, count = roadmap.coming_up(self.bank.tenant, ["en"], 3, in_scope=roadmap.in_scope_entries(self.bank.tenant))
         whole = self.read()
         self.assertEqual([item.id for item in items], [item.id for item in whole[:3]])
         self.assertEqual(count, len(whole))

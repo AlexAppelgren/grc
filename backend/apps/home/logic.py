@@ -5,7 +5,10 @@ Today is the one screen that must not chain: `home_today()` fans out the reads i
 answers them in one object (HOM-01, playbook 10). Five independent reads — the bank's own
 date, the roadmap's first items with its count, the week's lead change, the health of the
 sources and where the bank stands — and none of them is the input to another, so the query
-count is fixed and a test pins it at two sizes.
+count is fixed and a test pins it at two sizes. The one thing two of them share is asked
+first: the bank's register entries inside its regulatory scope, which the roadmap's register
+deadlines and the standing panel both filter by, because the scope rule is the costliest
+condition Today asks and asking it once per read made Today its slowest screen (H115).
 
 A read module: nothing here writes, so no `record()` call belongs in it. What it reads is
 two zones at once — the library's changes beside this bank's own cases — and the tenant half
@@ -132,7 +135,7 @@ def source_health(order: list[str]) -> HomeSourceHealth:
 # ---------------------------------------------------------------------------------------
 # Where the bank stands (HOM-01, REG-02, REG-03, FP-03)
 # ---------------------------------------------------------------------------------------
-def standing(tenant: Tenant) -> HomeStanding:
+def standing(in_scope: list[uuid.UUID]) -> HomeStanding:
     """How many obligations inside the regulatory scope apply, per compliance category, and
     how many gaps on them are open. Three queries however large the register is.
 
@@ -143,12 +146,15 @@ def standing(tenant: Tenant) -> HomeStanding:
     pill, so the panel and the page can never disagree. A product's row sits under its
     entity's and is left out, as on the page. Gaps are counted whatever the answer on their
     obligation, because "applies" and "we comply" are separate facts.
+
+    `in_scope` is the bank's register entries inside its regulatory scope
+    (`roadmap.in_scope_entries()`), the answer "Coming up" filters by too: the scope rule is
+    the costliest condition either asks, so Today asks it once for both (H115).
     """
-    in_scope = roadmap.in_scope_obligations(tenant)
-    entries = TenantObligation.objects.filter(obligation_id__in=in_scope)
+    entries = TenantObligation.objects.filter(id__in=in_scope)
     applying_scopes: dict[uuid.UUID, list[ComplianceStatus]] = {}
     for scope in TenantObligationScope.objects.filter(
-        tenant_obligation__in=entries, product__isnull=True, applicability=Applicability.APPLIES.value
+        tenant_obligation_id__in=in_scope, product__isnull=True, applicability=Applicability.APPLIES.value
     ).select_related("compliance_status"):
         applying_scopes.setdefault(scope.tenant_obligation_id, []).append(scope.compliance_status)
     counts = dict.fromkeys(ComplianceCategory, 0)
@@ -163,7 +169,7 @@ def standing(tenant: Tenant) -> HomeStanding:
         partly=counts[ComplianceCategory.PARTLY],
         gap=counts[ComplianceCategory.GAP],
         not_assessed=counts[ComplianceCategory.NOT_ASSESSED],
-        open_gaps=Gap.objects.filter(tenant_obligation__obligation_id__in=in_scope, status__kind__in=roadmap.OPEN_GAPS).count(),
+        open_gaps=Gap.objects.filter(tenant_obligation_id__in=in_scope, status__kind__in=roadmap.OPEN_GAPS).count(),
     )
 
 
@@ -176,7 +182,9 @@ def home_today(
     """Everything the timeline home shows, in one call (HOM-01).
 
     Five independent reads, none of them chained behind another: a fixed number of queries
-    however many dates the bank has ahead of it, which `tests_home.py` pins at two sizes.
+    however many dates the bank has ahead of it, which `tests_home.py` pins at two sizes. The
+    bank's in-scope register entries are resolved once, before them, for the two that need
+    them.
 
     `lead` and `sources` are null for a reader without `watch.read`, and `standing` for one
     without `register.read`, and the reads behind them are not made at all — the permission
@@ -185,8 +193,9 @@ def home_today(
     `cases.read` whether the case workflow's are.
     """
     today = today_for(tenant)
+    in_scope = roadmap.in_scope_entries(tenant) if register_reader else None
     coming_up, roadmap_count = roadmap.coming_up(
-        tenant, order, settings.HOME_COMING_UP_ITEMS, register_reader=register_reader, cases_reader=cases_reader
+        tenant, order, settings.HOME_COMING_UP_ITEMS, in_scope=in_scope, cases_reader=cases_reader
     )
     lead = _lead(tenant, order, week_start_of(today)) if watch_reader else None
     return Home(
@@ -195,7 +204,7 @@ def home_today(
         roadmap_count=roadmap_count,
         lead=lead,
         sources=source_health(order) if watch_reader else None,
-        standing=standing(tenant) if register_reader else None,
+        standing=None if in_scope is None else standing(in_scope),
     )
 
 
