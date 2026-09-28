@@ -17394,7 +17394,7 @@
         "description": "A passkey was stored. When it was the first one, the enrolment session has ended and\na full session begins with this response.",
         "examples": [
           {
-            "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.1790150400.ExampleSignatureThatNoServerWillAccept00000",
+            "accessToken": "v2.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.8f14e45fceea467a9575b1d2c3e4f5a6.1790150400.ExampleSignatureThatNoServerWillAccept00000",
             "expiresIn": 600,
             "passkey": {
               "backedUp": true,
@@ -21741,7 +21741,7 @@
         "description": "The next access token for a live session. The rotated refresh token arrives as a\ncookie in the same response, never in the body.",
         "examples": [
           {
-            "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.1790150400.ExampleSignatureThatNoServerWillAccept00000",
+            "accessToken": "v2.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.8f14e45fceea467a9575b1d2c3e4f5a6.1790150400.ExampleSignatureThatNoServerWillAccept00000",
             "expiresIn": 600,
             "me": {
               "counts": {
@@ -23837,6 +23837,349 @@
         "title": "RegisterEntry",
         "type": "object"
       },
+      "RegisterEntryWithPanels": {
+        "description": "The bank's register entry for one obligation and what the obligation page's panels show\non load, in one read.",
+        "examples": [
+          {
+            "applicability": "applies",
+            "applicabilityDecidedAt": "2026-09-14T08:30:00Z",
+            "applicabilityDecidedBy": {
+              "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+              "name": "Sara Lind"
+            },
+            "applicabilityReason": "Holds client assets under the securities licence",
+            "complianceContact": {
+              "id": "2b9e4c71-5a3d-4f08-9c6e-7d1a0b3f5e82",
+              "name": "Johan Berg"
+            },
+            "complianceStatus": {
+              "key": "partly_compliant",
+              "kind": "partly",
+              "label": "Partly compliant"
+            },
+            "entities": [
+              {
+                "applicability": "applies",
+                "applicabilityDecidedAt": "2026-09-14T08:30:00Z",
+                "applicabilityDecidedBy": {
+                  "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+                  "name": "Sara Lind"
+                },
+                "applicabilityReason": "Holds client assets under the securities licence",
+                "complianceStatus": {
+                  "key": "partly_compliant",
+                  "kind": "partly",
+                  "label": "Partly compliant"
+                },
+                "evidenceLocation": "Compliance share / Client assets / 2026",
+                "nextReviewDate": "2027-03-31",
+                "orgUnitId": "55555555-5555-4555-8555-555555555555",
+                "orgUnitName": "Example Bank AB",
+                "owner": {
+                  "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+                  "name": "Sara Lind"
+                },
+                "ownerTeam": null,
+                "process": "Client asset reconciliation",
+                "riskRating": {
+                  "key": "medium",
+                  "kind": null,
+                  "label": "Medium"
+                },
+                "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
+                "system": "Custody ledger",
+                "version": 4
+              }
+            ],
+            "evidenceLocation": "Compliance share / Client assets / 2026",
+            "firstLineOwner": {
+              "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
+              "name": "Sara Lind"
+            },
+            "interpretation": {
+              "current": null,
+              "earlier": [],
+              "obligationId": "44444444-4444-4444-8444-444444444444"
+            },
+            "nextReviewDate": "2027-03-31",
+            "obligationId": "44444444-4444-4444-8444-444444444444",
+            "ownerTeam": {
+              "key": "compliance",
+              "kind": null,
+              "label": "Compliance"
+            },
+            "panels": {
+              "assessments": {
+                "items": [],
+                "total": 0
+              },
+              "changes": {
+                "items": [],
+                "openCount": 0,
+                "total": 0
+              },
+              "comments": {
+                "items": [],
+                "total": 0
+              },
+              "gaps": {
+                "items": [],
+                "total": 0
+              },
+              "internalLinks": {
+                "items": [],
+                "total": 0
+              },
+              "participants": {
+                "items": [],
+                "total": 0
+              },
+              "problemReports": {
+                "items": [],
+                "total": 0
+              },
+              "spannedEntities": [
+                {
+                  "orgUnitId": "55555555-5555-4555-8555-555555555555",
+                  "orgUnitName": "Example Bank AB"
+                }
+              ],
+              "units": null
+            },
+            "process": "Client asset reconciliation",
+            "riskRating": {
+              "key": "medium",
+              "kind": null,
+              "label": "Medium"
+            },
+            "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
+            "system": "Custody ledger",
+            "updatedAt": "2026-09-18T13:05:00Z",
+            "version": 7
+          }
+        ],
+        "properties": {
+          "applicability": {
+            "description": "Whether the obligation applies to the bank here: `applies` when it binds this bank, legal entity or unit; `not_applicable` when a compliance person decided it does not, with the reason beside it; `under_assessment` until anyone has decided. A fixed kind, not a list the bank edits. It says nothing about whether the bank complies, which is the separate compliance status.",
+            "enum": [
+              "applies",
+              "not_applicable",
+              "under_assessment"
+            ],
+            "title": "Applicability",
+            "type": "string"
+          },
+          "applicabilityDecidedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The UTC timestamp at which the applicability answer was last set, null while it is `under_assessment` and nobody has answered. Set by the server.",
+            "title": "Applicabilitydecidedat"
+          },
+          "applicabilityDecidedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterPersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The person who last set the applicability answer, named in the audit event with the value before and after. Null while nobody has answered."
+          },
+          "applicabilityReason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Why the answer is what it is, in the bank's own words, such as `Certified` or `No client money held`. Tenant content that never leaves the bank. Null while nobody has answered.",
+            "title": "Applicabilityreason"
+          },
+          "complianceContact": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterPersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The compliance member who follows the obligation; null when nobody does yet."
+          },
+          "complianceStatus": {
+            "$ref": "#/components/schemas/RegisterVocabRef",
+            "description": "How the bank complies, as a row of its own `compliance_status` vocabulary, which its admin may extend under fixed categories; read `GET /vocab/compliance_status` for the live set. Where legal entities the obligation applies to have rows, it is the worst of their statuses by category, computed by the server: `gap`, then `partly`, then `not_assessed`, then `compliant`; the label and the bank's ordinal never decide. The `gap` category means a gap exists, which applicability never hides."
+          },
+          "entities": {
+            "description": "One row per legal entity the bank has answered for, in the order of its organisation. Empty for an obligation the bank treats as a whole. Reading never creates a row; a row appears with the first write that needs it.",
+            "items": {
+              "$ref": "#/components/schemas/RegisterEntityStatus"
+            },
+            "title": "Entities",
+            "type": "array"
+          },
+          "evidenceLocation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the bank keeps the evidence, such as a folder or a document system path; null when not recorded.",
+            "title": "Evidencelocation"
+          },
+          "firstLineOwner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterPersonRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first-line member who owns meeting the obligation; null when nobody does yet."
+          },
+          "interpretation": {
+            "$ref": "#/components/schemas/RegisterInterpretation",
+            "description": "\"How we read this rule\": the bank's current reading and every earlier one, exactly as `GET /obligations/{obligationId}/interpretation` answers it, carried here so the obligation page reads both in one call. `current` is null when the bank has written none. Internal legal judgement that never leaves the bank."
+          },
+          "nextReviewDate": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The plain date the bank next reviews the obligation, shown on the roadmap as our own deadline; null when not set.",
+            "title": "Nextreviewdate"
+          },
+          "obligationId": {
+            "description": "The library obligation this register row is about, as a UUID. The obligation is a shared library fact; the register row is this bank's alone.",
+            "format": "uuid",
+            "title": "Obligationid",
+            "type": "string"
+          },
+          "ownerTeam": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterVocabRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The team that owns the obligation here, as a row of the bank's own `team` vocabulary, which its admin may extend; read `GET /vocab/team` for the live set. The key is stable and the label is for showing. Null when no team owns it."
+          },
+          "panels": {
+            "$ref": "#/components/schemas/RegisterPanels",
+            "description": "What the obligation page's panels show on load, each part gated by the permission its own route takes."
+          },
+          "process": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The bank's own business process the obligation is met in, by its name; null when not recorded.",
+            "title": "Process"
+          },
+          "riskRating": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterVocabRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The bank's risk rating for the obligation, as a row of its own `risk_rating` vocabulary, which its admin may extend; read `GET /vocab/risk_rating` for the live set. Null until rated."
+          },
+          "statusNote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The bank's note on the status, in its own words; null when none was written.",
+            "title": "Statusnote"
+          },
+          "system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The bank's own system the obligation is met in, by its name; null when not recorded.",
+            "title": "System"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The UTC timestamp of the last write to the entry, null for an entry nobody has written yet.",
+            "title": "Updatedat"
+          },
+          "version": {
+            "description": "The row's version, 0 for a row nobody has written yet and one higher after every write. Send it back as `If-Match` on the next write; a row changed in between is refused rather than overwritten.",
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "obligationId",
+          "applicability",
+          "applicabilityReason",
+          "applicabilityDecidedAt",
+          "applicabilityDecidedBy",
+          "complianceStatus",
+          "statusNote",
+          "riskRating",
+          "firstLineOwner",
+          "complianceContact",
+          "ownerTeam",
+          "process",
+          "system",
+          "evidenceLocation",
+          "nextReviewDate",
+          "entities",
+          "version",
+          "updatedAt",
+          "interpretation",
+          "panels"
+        ],
+        "title": "RegisterEntryWithPanels",
+        "type": "object"
+      },
       "RegisterGap": {
         "description": "A gap: how the bank falls short of an obligation, with an owner, a severity, a target\ndate and a plan (REG-03). A fact about how the bank complies, never about whether the rule\napplies.",
         "examples": [
@@ -25015,6 +25358,113 @@
           "writtenAt"
         ],
         "title": "RegisterInterpretationVersion",
+        "type": "object"
+      },
+      "RegisterPanelUnits": {
+        "description": "The units of the legal entity the units panel opens on: the first, by name, that the\nstandard applies to.",
+        "properties": {
+          "orgUnitId": {
+            "description": "The legal entity these units belong to, as a UUID from the bank's organisation.",
+            "format": "uuid",
+            "title": "Orgunitid",
+            "type": "string"
+          },
+          "units": {
+            "$ref": "#/components/schemas/RegisterUnitPage",
+            "description": "Its first page of units by reference, up to 100, as `GET /obligations/{obligationId}/units?entity=\u2026&limit=100` reads it."
+          }
+        },
+        "required": [
+          "orgUnitId",
+          "units"
+        ],
+        "title": "RegisterPanelUnits",
+        "type": "object"
+      },
+      "RegisterPanels": {
+        "description": "What the obligation page's panels show when it opens, each part the first page its own\nroute reads, so the page asks once instead of once per panel. A part the caller's roles may\nnot read is null, never an empty page, and the rest still arrive. Every later page, and\nevery read after a write, goes to the part's own route.",
+        "properties": {
+          "assessments": {
+            "$ref": "#/components/schemas/RegisterAssessmentPage",
+            "description": "The newest 20 assessments of the obligation, as `GET /obligations/{obligationId}/assessments` reads its first page."
+          },
+          "changes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WatchObligationChangePage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The first 20 regulatory changes linked to the obligation, with the open count, as `GET /obligations/{obligationId}/changes` reads them. Null without `watch.read`."
+          },
+          "comments": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollabCommentPage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The oldest 20 comments on the obligation, as `GET /comments?subjectType=obligation&subjectId=\u2026` reads them for the caller. Null without `library.read`."
+          },
+          "gaps": {
+            "$ref": "#/components/schemas/RegisterGapPage",
+            "description": "The bank's gaps on the obligation, open and closed, up to 100, as `GET /obligations/{obligationId}/gaps?limit=100` reads them."
+          },
+          "internalLinks": {
+            "$ref": "#/components/schemas/RegisterInternalLinkPage",
+            "description": "The first 20 of the bank's own items linked to the obligation, as `GET /obligations/{obligationId}/internal-links` reads them."
+          },
+          "participants": {
+            "$ref": "#/components/schemas/CollabParticipantPage",
+            "description": "Up to 100 of the people and teams taking part in the obligation, as `GET /obligations/{obligationId}/participants?limit=100` reads them."
+          },
+          "problemReports": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProblemReportPage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The newest 20 of the bank's problem reports on the obligation, as `GET /problem-reports?subjectType=obligation&subjectId=\u2026` reads them for the caller. Null without `problems.report`."
+          },
+          "spannedEntities": {
+            "description": "The legal entities the obligation spans, by name, as `GET /obligations/{obligationId}/register/entities` reads them; empty when the bank records none.",
+            "items": {
+              "$ref": "#/components/schemas/RegisterSpannedEntity"
+            },
+            "title": "Spannedentities",
+            "type": "array"
+          },
+          "units": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterPanelUnits"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The units of the first legal entity, by name, that a standard's conformance obligation applies to. Null for any other obligation, and while the standard applies to none of the bank's legal entities."
+          }
+        },
+        "required": [
+          "spannedEntities",
+          "gaps",
+          "assessments",
+          "internalLinks",
+          "units",
+          "participants",
+          "problemReports",
+          "changes",
+          "comments"
+        ],
+        "title": "RegisterPanels",
         "type": "object"
       },
       "RegisterPatch": {
@@ -27467,12 +27917,12 @@
             "type": "string"
           },
           "event": {
-            "description": "What happened, one of these values. `code_sent`: an enrolment code was emailed. `code_refused_enrolled`: a code was asked for an address that already holds a passkey, and none was sent. `code_failed`: a code did not verify. `code_locked`: too many wrong codes, so the code stopped working. `enrolled`: a person registered their first passkey. `signin` and `signin_failed`: a passkey sign-in succeeded or failed. `step_up` and `step_up_failed`: a passkey confirmation of a protected action succeeded or failed. `refresh_replay`: a used refresh token was presented again, so the session was ended as possibly stolen. `session_revoked`: a session ended before its time. `reenrolment_issued`: an administrator re-issued a member's enrolment. `key_used`: an API key authenticated a call, logged at most once every 60 seconds per key by default (a setting). `key_revoked`: an API key was revoked. `key_created`: a platform agent key was created, which never appears in a bank's log. `key_scopes_withheld`: a key created before the platform-only scopes rule presented one and worked without it. `feed_used`: a calendar client fetched a person's subscribed feed. A new release may add events, so treat an unfamiliar value as new data and not an error.",
+            "description": "What happened, one of these values. `code_sent`: an enrolment code was emailed. `code_refused_enrolled`: a code was asked for an address that already holds a passkey, and none was sent. `code_failed`: a code did not verify. `code_locked`: too many wrong codes, so the code stopped working. `enrolled`: a person registered their first passkey. `signin` and `signin_failed`: a passkey sign-in succeeded or failed. `step_up` and `step_up_failed`: a passkey confirmation of a protected action succeeded or failed. `refresh_replay`: a used refresh token was presented again, so the session was ended as possibly stolen. `session_revoked`: a session ended before its time. `reenrolment_issued`: an administrator re-issued a member's enrolment. `key_used`: an API key authenticated a call, logged at most once every 60 seconds per key by default (a setting). `key_revoked`: an API key was revoked. `key_created`: a platform agent key was created, which never appears in a bank's log. `key_scopes_withheld`: a key created before the platform-only scopes rule presented one and worked without it. `feed_used`: a calendar client fetched a person's subscribed feed. `access_token_refused`: a correctly signed access token named another bank than its session's, so it was refused and the session ended. A new release may add events, so treat an unfamiliar value as new data and not an error.",
             "title": "Event",
             "type": "string"
           },
           "failureReason": {
-            "description": "A short snake_case reason, empty when there is none. On a failure it says why, such as `wrong_code`, `too_many_attempts`, `no_open_code`, `already_consumed`, `no_open_invitation`, `unknown_credential` or `passkey_enrolled`. On `session_revoked` it says why the session ended: `sign_out`, `idle`, `revoked_by_user`, `revoked_by_admin`, `member_deactivated`, `reenrolment`, `enrolment_completed` or `refresh_replay`. On `key_scopes_withheld` it lists the scopes that were withheld, comma-separated.",
+            "description": "A short snake_case reason, empty when there is none. On a failure it says why, such as `wrong_code`, `too_many_attempts`, `no_open_code`, `already_consumed`, `no_open_invitation`, `unknown_credential` or `passkey_enrolled`. On `session_revoked` it says why the session ended: `sign_out`, `idle`, `revoked_by_user`, `revoked_by_admin`, `member_deactivated`, `reenrolment`, `enrolment_completed`, `refresh_replay` or `tenant_claim_mismatch`. On `access_token_refused` it is `tenant_claim_mismatch`. On `key_scopes_withheld` it lists the scopes that were withheld, comma-separated.",
             "title": "Failurereason",
             "type": "string"
           },
@@ -27811,7 +28261,7 @@
         "description": "A session has just started. The access token is in the body; the refresh token is\nset as an `HttpOnly` cookie by the same response and never appears in a body.",
         "examples": [
           {
-            "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.1790150400.ExampleSignatureThatNoServerWillAccept00000",
+            "accessToken": "v2.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.8f14e45fceea467a9575b1d2c3e4f5a6.1790150400.ExampleSignatureThatNoServerWillAccept00000",
             "expiresIn": 600,
             "sessionKind": "full"
           }
@@ -41980,7 +42430,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.enrolment.1790150400.ExampleSignatureThatNoServerWillAccept00000",
+                  "accessToken": "v2.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.enrolment.8f14e45fceea467a9575b1d2c3e4f5a6.1790150400.ExampleSignatureThatNoServerWillAccept00000",
                   "expiresIn": 600,
                   "sessionKind": "enrolment"
                 },
@@ -42051,7 +42501,7 @@
             "content": {
               "application/json": {
                 "example": {
-                  "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.enrolment.1790150400.ExampleSignatureThatNoServerWillAccept00000",
+                  "accessToken": "v2.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.enrolment.8f14e45fceea467a9575b1d2c3e4f5a6.1790150400.ExampleSignatureThatNoServerWillAccept00000",
                   "expiresIn": 600,
                   "sessionKind": "enrolment"
                 },
@@ -49565,7 +50015,7 @@
     },
     "/api/v1/obligations/{obligation_id}/register": {
       "get": {
-        "description": "The bank's register entry for one obligation: its applicability with the reason, the\ncompliance status, note, risk, owners, process, system, evidence location and next review,\nand a row per legal entity where the obligation spans several. Applicability and status\nare separate facts and neither is derived from the other.\n\nA person's session holding `register.read`, which every role of a bank carries. A read: it\nwrites nothing, not even an empty entry, so an obligation nobody has answered for reads as\n\"under assessment\" with version 0.\n\nWhere legal entities the obligation applies to have rows, `complianceStatus` is the worst\nof theirs by category: gap, then partly, then not assessed, then compliant.\n\nErrors: `unauthenticated` (401) without a session; `permission_denied` (403) without\n`register.read`; `not_found` (404) for an obligation the bank cannot see.",
+        "description": "The bank's register entry for one obligation: its applicability with the reason, the\ncompliance status, note, risk, owners, process, system, evidence location and next review,\nand a row per legal entity where the obligation spans several. Applicability and status\nare separate facts and neither is derived from the other.\n\n`panels` carries what the obligation page shows beside the entry when it opens, so the page\nasks once: the legal entities the obligation spans, the gaps, the newest assessments, the\nlinked internal items, a standard's units, the participants, the problem reports, the\nrelated changes and the comments. Each part is the first page its own route reads, and\nlater pages come from that route. A part behind a permission this route does not demand is\nnull for a caller without it: `problemReports` without `problems.report`, `changes`\nwithout `watch.read`, `comments` without `library.read`.\n\nA person's session holding `register.read`, which every role of a bank carries. A read: it\nwrites nothing, not even an empty entry, so an obligation nobody has answered for reads as\n\"under assessment\" with version 0. It costs a fixed number of queries however many rows\neach part holds.\n\nWhere legal entities the obligation applies to have rows, `complianceStatus` is the worst\nof theirs by category: gap, then partly, then not assessed, then compliant.\n\nErrors: `unauthenticated` (401) without a session; `permission_denied` (403) without\n`register.read`; `not_found` (404) for an obligation the bank cannot see.",
         "operationId": "getRegisterEntry",
         "parameters": [
           {
@@ -49586,7 +50036,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RegisterEntry"
+                  "$ref": "#/components/schemas/RegisterEntryWithPanels"
                 }
               }
             },
