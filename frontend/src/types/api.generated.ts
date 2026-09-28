@@ -9324,18 +9324,20 @@ export interface paths {
          *     An organisation's list needs `vocab.manage` in it; a library list needs
          *     `proposals.create` in the caller's organisation or `library_vocab.manage` in the
          *     console. A person's session is needed and an API key is refused. Records
-         *     `vocabulary.created` in the organisation's audit, or the proposal's `proposal.created`
-         *     for a library list.
+         *     `vocabulary.created` in the organisation's audit with the value's own columns, a team's
+         *     department among them, or the proposal's `proposal.created` for a library list.
          *
          *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
          *     (403) without the permission above, which `requiredPermission` names; `not_found` (404)
-         *     for a name that is not a vocabulary list; `duplicate_key` (409) when the key exists,
+         *     for a name that is not a vocabulary list, or a team's `orgUnitId` naming a unit the
+         *     organisation does not have; `duplicate_key` (409) when the key exists,
          *     with the value in `candidates`; `near_duplicate` (422) when the label is close to an
          *     existing value's, with the close matches in `candidates`; `unknown_key` (422) for an
          *     unknown language, a kind the list does not take or a missing required kind, or a
          *     reference in `extra` to a value that does not exist; `validation_error` (422) for no
-         *     label, a key that normalises to nothing, a bad `extra` value, a library list that is
-         *     reference data, or a field the body does not name; `list_full` (422) when one of the
+         *     label, a key that normalises to nothing, a bad `extra` value (a team's `orgUnitId`
+         *     naming a group, a legal entity or a deactivated department among them), a library list
+         *     that is reference data, or a field the body does not name; `list_full` (422) when one of the
          *     organisation's own lists already holds `TENANT_LIST_MAX_ROWS` values, retired ones
          *     included (500 unless the operator set another number), and nothing is added.
          */
@@ -9546,15 +9548,18 @@ export interface paths {
          *     An organisation's list needs `vocab.manage` in it; a library list needs
          *     `proposals.create` in the caller's organisation or `library_vocab.manage` in the
          *     console. A person's session is needed and an API key is refused. Records
-         *     `vocabulary.updated` with the labels and usage note before and after, or the proposal's
+         *     `vocabulary.updated` with the labels, usage note and the list's own columns before and
+         *     after (a team moved to another department names both), or the proposal's
          *     `proposal.created` for a library list.
          *
          *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without the permission above; `not_found` (404) for an unknown list or key;
+         *     (403) without the permission above; `not_found` (404) for an unknown list or key, or a
+         *     team's `orgUnitId` naming a unit the organisation does not have;
          *     `stale_write` (409) when `If-Match` is not the current version; `unknown_key` (422) for
          *     an unknown language or a reference in `extra` to a value that does not exist;
          *     `validation_error` (422) for an `If-Match` that is not a version, labels whose every
-         *     text is empty, a bad `extra` value, a library list that is reference data, or a field
+         *     text is empty, a bad `extra` value (a team's `orgUnitId` naming a group, a legal entity
+         *     or a deactivated department among them), a library list that is reference data, or a field
          *     the body does not name.
          */
         patch: operations["updateVocabularyRow"];
@@ -29863,7 +29868,7 @@ export interface components {
             memberCount: number;
             /**
              * Orgunitid
-             * @description The identifier of the department the team sits in, a UUID of the same bank, or null.
+             * @description The identifier of the department the team sits in, a UUID of the same bank, or null; set with `extra.orgUnitId` on `POST /vocab/team` and `PATCH /vocab/team/{key}`.
              */
             orgUnitId: string | null;
         };
@@ -30223,7 +30228,7 @@ export interface components {
         VocabularyCreateBody: {
             /**
              * Extra
-             * @description The list's own columns for the new value, where the list has any: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale. Every other list has none. Keyed as a row's `extra` reads them (`slaDays`) or by column name (`sla_days`); a key the list does not have is ignored, never stored. Each value is checked like the column it fills, so a wrong one answers 422 `validation_error`, and a reference to a row that does not exist answers 422 `unknown_key` with the valid keys. `tone`, `colour` and `color` are refused with 422 `validation_error`: a value's tone follows its kind and is never chosen.
+             * @description The list's own columns for the new value, where the list has any: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale; and `team` `email`, the team's shared address or an empty string, and `orgUnitId`, the id of the department the team sits in (a business area, business unit or function of the same organisation) or null for none. Every other list has none. Keyed as a row's `extra` reads them (`slaDays`) or by column name (`sla_days`); a key the list does not have is ignored, never stored. Each value is checked like the column it fills, so a wrong one answers 422 `validation_error`, and a reference to a row that does not exist answers 422 `unknown_key` with the valid keys. A team's `orgUnitId` must name an active department of the caller's organisation: a unit it does not have answers 404 `not_found`, and a group, a legal entity or a deactivated department 422 `validation_error`; null takes the team out of its department. `tone`, `colour` and `color` are refused with 422 `validation_error`: a value's tone follows its kind and is never chosen.
              * @example {
              *       "ordinal": 2,
              *       "slaDays": 30
@@ -30477,7 +30482,7 @@ export interface components {
         VocabularyPatchBody: {
             /**
              * Extra
-             * @description The list's own columns to change, where the list has any: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale. Every other list has none. A column not named keeps its value, and null or absent changes none; a taxonomy term has no such columns and ignores it. Keyed as a row's `extra` reads them (`slaDays`) or by column name (`sla_days`); a key the list does not have is ignored, never stored. Each value is checked like the column it fills, so a wrong one answers 422 `validation_error`, and a reference to a row that does not exist answers 422 `unknown_key` with the valid keys. `tone`, `colour` and `color` are refused with 422 `validation_error`: a value's tone follows its kind and is never chosen.
+             * @description The list's own columns to change, where the list has any: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale; and `team` `email`, the team's shared address or an empty string, and `orgUnitId`, the id of the department the team sits in (a business area, business unit or function of the same organisation) or null for none. Every other list has none. A column not named keeps its value, and null or absent changes none; a taxonomy term has no such columns and ignores it. Keyed as a row's `extra` reads them (`slaDays`) or by column name (`sla_days`); a key the list does not have is ignored, never stored. Each value is checked like the column it fills, so a wrong one answers 422 `validation_error`, and a reference to a row that does not exist answers 422 `unknown_key` with the valid keys. A team's `orgUnitId` must name an active department of the caller's organisation: a unit it does not have answers 404 `not_found`, and a group, a legal entity or a deactivated department 422 `validation_error`; null takes the team out of its department. `tone`, `colour` and `color` are refused with 422 `validation_error`: a value's tone follows its kind and is never chosen.
              * @example {
              *       "slaDays": 21
              *     }
@@ -30654,7 +30659,7 @@ export interface components {
             confirmedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Extra
-             * @description The list's own columns, camelCased, which only some lists have: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale. Every other list has none. An empty object for those. Never a tone or a colour: a value's pill tone follows its kind.
+             * @description The list's own columns, camelCased, which only some lists have: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale; and `team` `email`, the team's shared address or an empty string, and `orgUnitId`, the id of the department the team sits in (a business area, business unit or function of the same organisation) or null for none. Every other list has none. An empty object for those. Never a tone or a colour: a value's pill tone follows its kind.
              * @example {
              *       "ordinal": 1,
              *       "slaDays": 14
@@ -30784,7 +30789,7 @@ export interface components {
             confirmedByAgent?: components["schemas"]["AgentRef"] | null;
             /**
              * Extra
-             * @description The list's own columns, camelCased, which only some lists have: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale. Every other list has none. An empty object for those. Never a tone or a colour: a value's pill tone follows its kind.
+             * @description The list's own columns, camelCased, which only some lists have: `urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and `rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and `compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale; and `team` `email`, the team's shared address or an empty string, and `orgUnitId`, the id of the department the team sits in (a business area, business unit or function of the same organisation) or null for none. Every other list has none. An empty object for those. Never a tone or a colour: a value's pill tone follows its kind.
              * @example {
              *       "ordinal": 1,
              *       "slaDays": 14
