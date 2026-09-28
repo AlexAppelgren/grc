@@ -90,8 +90,10 @@ table, anywhere but `apps/shared/audit.py`, migrations and tests, fails the lint
 Measured the same way after the change, over the same 283 rows: 4,599 queries (-568, 11 %),
 of which `record()` issued 195. Savepoint statements fell from 360 to 2, the one write in
 the harness that crosses the zones, and zone reads from 43 to 29. The median write fell from
-19 to 16 queries. No row's count rose. The twelve writes each lost 5 to 19 queries, for
-example removeMember 72 to 53, createRetagRequest 35 to 22, createConsoleTenant 74 to 63.
+19 to 16 queries. No row's count rose. The eleven harness routes behind the twelve writes each lost 5 to 19
+queries, for example removeMember 72 to 53, createRetagRequest 35 to 22 and
+createConsoleTenant 74 to 63. Scope research, escalation and applying a control have no
+harness row.
 
 Easier: every audited write is three statements cheaper, with a tighter guarantee than
 before.

@@ -79,7 +79,8 @@ The door now sends raw SQL, so a grep for `bulk_create` no longer finds every wr
 
 - building an `AuditEvent` or `OutboxEvent`;
 - calling `.objects.create`, `bulk_create`, `get_or_create` or `update_or_create` on either;
-- SQL that inserts into either table, in any letter case and through quotes.
+- SQL that inserts into either table, in any letter case, through quotes and with the
+  schema named.
 
 `TheLintStillRefusesAWriteOutsideRecord` plants each form. The full tree has no finding.
 The AuditAssertingClient guard, which fails a mutating route that writes no audit row,

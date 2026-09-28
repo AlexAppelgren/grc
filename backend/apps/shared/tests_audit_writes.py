@@ -334,6 +334,7 @@ class TheLintStillRefusesAWriteOutsideRecord(SimpleTestCase):
         "apps/collab/logic.py": "SQL = 'insert into \"outbox_event\" (id) values (1)'\n",
         "apps/proposals/logic.py": "SQL = 'INSERT INTO audit_event (id) VALUES (1)'  # compliance: audit-door because\n",
         "apps/reports/logic.py": "AuditEvent.objects.update_or_create(action='x')\n",
+        "apps/search/logic.py": "SQL = 'INSERT INTO \"public\".\"audit_event\" (id) VALUES (1)'\n",
     }
 
     def _lint(self) -> ModuleType:
@@ -359,6 +360,6 @@ class TheLintStillRefusesAWriteOutsideRecord(SimpleTestCase):
             flagged = sorted({finding.path.relative_to(base).as_posix() for finding in findings})
         self.assertEqual(
             flagged,
-            ["apps/cases/logic.py", "apps/collab/logic.py", "apps/home/logic.py", "apps/proposals/logic.py", "apps/register/logic.py", "apps/reports/logic.py", "apps/watch/logic.py"],
+            ["apps/cases/logic.py", "apps/collab/logic.py", "apps/home/logic.py", "apps/proposals/logic.py", "apps/register/logic.py", "apps/reports/logic.py", "apps/search/logic.py", "apps/watch/logic.py"],
         )
 

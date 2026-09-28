@@ -50,7 +50,8 @@ Rules (each has a suppression id for the inline form `# compliance: <id> <reason
                   `update_or_create` on either, or SQL that inserts into either table, is
                   refused. Migrations and tests are exempt. Since ADR 0063 the door itself
                   sends raw SQL, so the rule reads SQL text as well as the ORM, in any letter
-                  case and through quotes. This rule takes no suppression.
+                  case, through quotes and with the schema named. This rule takes no
+                  suppression.
 
 Suppression: append `# compliance: <id> <reason>` to the offending line, or the line that
 opens the offending statement; the reason must be non-empty. A suppression with no reason
@@ -118,7 +119,7 @@ LIBRARY_DOOR_HOMES = frozenset(
 AUDIT_DOOR = "apps/shared/audit.py"
 AUDIT_MODELS = {"AuditEvent", "OutboxEvent"}
 AUDIT_WRITES = {"create", "bulk_create", "get_or_create", "update_or_create"}
-AUDIT_SQL = re.compile(r'insert\s+into\s+"?(audit_event|outbox_event)\b', re.IGNORECASE)
+AUDIT_SQL = re.compile(r'insert\s+into\s+(?:"?public"?\s*\.\s*)?"?(audit_event|outbox_event)\b', re.IGNORECASE)
 
 
 @dataclass(frozen=True)
