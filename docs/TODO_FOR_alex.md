@@ -63,7 +63,11 @@ holds the gate results.
 - **Also found at the close, no decision needed:** an E2E run that seeds before the bank's
   midnight and walks its journeys after it fails every date-anchored journey (H114, a test
   harness fix); and Today sat at 504 to 578 ms against its 500 ms screen budget in one full
-  run on this session's machine, green in the next (H115).
+  run on this session's machine, green in the next (H115). **H115 fixed 2026-09-28
+  (`r2f-h115-today-budget`):** `GET /home` asks the regulatory scope once instead of eleven
+  times and counts the roadmap in one query instead of nine; under the full two-worker suite
+  Today's median fell from 263 to 215 ms and `GET /home`'s from 264 to 210 ms. The budgets
+  are unchanged.
 
 **Defaults this package took:**
 - An R2 row whose every scenario is un-skipped and green reads `built`, and what it does not
