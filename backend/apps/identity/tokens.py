@@ -1,8 +1,9 @@
 """Tokens, codes and keys (playbook 4.2, chunk 1 brief): every secret is minted from
 `secrets`, stored hashed (SHA-256 for random tokens, a per-row salted HMAC-SHA-256 keyed
 from SECRET_KEY for the six-digit code), and compared in constant time. The access token is the one exception to
-"hashed in a table": it is an HMAC over its own claims (session id, kind, expiry) signed
-with SECRET_KEY, so resolving it costs one signature check and one row read.
+"hashed in a table": it is an HMAC over its own claims (session id, kind, the session's
+bank, expiry) signed with SECRET_KEY, so resolving it costs one signature check, the bank
+activated, and one row read under it (ADR 0064).
 
 Nothing here logs a value (playbook 4.7)."""
 
@@ -19,7 +20,9 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
-ACCESS_TOKEN_VERSION = "v1"  # noqa: S105 a format version, not a credential
+# v2 signs the session's bank (ADR 0064). A v1 token names none and is refused: the client
+# refreshes on a 401 and the refresh issues a v2 token from the stored session.
+ACCESS_TOKEN_VERSION = "v2"  # noqa: S105 a format version, not a credential
 API_KEY_PREFIX = "cw"
 API_KEY_PREFIX_LENGTH = 8
 
@@ -87,12 +90,17 @@ def hash_code(code: str, salt: str) -> str:
 
 
 # ---------------------------------------------------------------------------------------
-# Access tokens (D-06): `v1.<session id hex>.<kind>.<expiry epoch>.<hmac>`
+# Access tokens (D-06, ADR 0064): `v2.<session id hex>.<kind>.<tenant id hex>.<expiry epoch>.<hmac>`
+# The tenant part is empty for a session in no bank (a platform or bank-less enrolment
+# session). It is the stored session's bank, copied when the token is issued, and never
+# trusted alone: the resolver activates it, reads the session under it and refuses a row
+# whose bank is not the claim.
 # ---------------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class AccessClaims:
     session_id: uuid.UUID
     kind: str
+    tenant_id: uuid.UUID | None
     expires_at: int
 
 
@@ -101,29 +109,31 @@ def _sign(payload: str) -> str:
     return b64url(digest)
 
 
-def issue_access_token(session_id: uuid.UUID, kind: str, now: datetime) -> tuple[str, int]:
+def issue_access_token(session_id: uuid.UUID, kind: str, tenant_id: uuid.UUID | None, now: datetime) -> tuple[str, int]:
     ttl = timedelta(minutes=settings.ACCESS_TOKEN_TTL_MINUTES)
     expires_at = int((now + ttl).timestamp())
-    payload = f"{ACCESS_TOKEN_VERSION}.{session_id.hex}.{kind}.{expires_at}"
+    tenant = tenant_id.hex if tenant_id is not None else ""
+    payload = f"{ACCESS_TOKEN_VERSION}.{session_id.hex}.{kind}.{tenant}.{expires_at}"
     return f"{payload}.{_sign(payload)}", int(ttl.total_seconds())
 
 
 def parse_access_token(token: str, now: datetime) -> AccessClaims | None:
     parts = token.split(".")
-    if len(parts) != 5 or parts[0] != ACCESS_TOKEN_VERSION:
+    if len(parts) != 6 or parts[0] != ACCESS_TOKEN_VERSION:
         return None
-    version, sid, kind, expiry, signature = parts
-    payload = f"{version}.{sid}.{kind}.{expiry}"
+    version, sid, kind, tenant, expiry, signature = parts
+    payload = f"{version}.{sid}.{kind}.{tenant}.{expiry}"
     if not constant_equal(_sign(payload), signature):
         return None
     try:
         expires_at = int(expiry)
         session_id = uuid.UUID(hex=sid)
+        tenant_id = uuid.UUID(hex=tenant) if tenant else None
     except ValueError:
         return None
     if expires_at <= int(now.timestamp()):
         return None
-    return AccessClaims(session_id=session_id, kind=kind, expires_at=expires_at)
+    return AccessClaims(session_id=session_id, kind=kind, tenant_id=tenant_id, expires_at=expires_at)
 
 
 # ---------------------------------------------------------------------------------------

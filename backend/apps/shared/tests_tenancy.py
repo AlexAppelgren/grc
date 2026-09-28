@@ -173,7 +173,13 @@ class IdentityLookupMode(TestCase):
     def test_only_the_auth_layer_calls_identity_lookup(self) -> None:
         allowed = {
             "apps/shared/tenancy.py",
-            "apps/identity/session_logic.py",
+            # Three functions of the session module and not the module (ADR 0064): picking a
+            # bank at sign-in, reading a session by its refresh cookie, and looking up the
+            # row behind a signed token whose claimed bank did not show it. A request's own
+            # access token is resolved under the bank it signs and never opens the lookup.
+            "apps/identity/session_logic.py::choose_tenant",
+            "apps/identity/session_logic.py::_load_by_refresh",
+            "apps/identity/session_logic.py::_refuse_claim",
             "apps/identity/invitation_logic.py",
             "apps/identity/api_keys_logic.py",
             # The fifth table of the clause and the fifth caller (HOM-04, D-52, ADR 0045):
@@ -229,6 +235,10 @@ class IdentityLookupMode(TestCase):
             # tenant-scoped one, so its own zone is asserted rather than inherited from
             # whatever the last request left active.
             "apps/identity/api_keys_logic.py::resolve_api_key",
+            # Resolving a console session's access token (ADR 0064): its signed claim names
+            # no bank, and the one read of the session runs in the zone the claim names, so
+            # that zone is asserted rather than inherited, exactly as for a platform key.
+            "apps/identity/session_logic.py::resolve_access_token",
             # Minting and revoking a platform agent key (ID-10, AGT-01, D-78): the row belongs
             # to no tenant, and both are reached only by a platform session holding
             # `agent_definitions.manage`, so the zone asserted is the one the caller is in.

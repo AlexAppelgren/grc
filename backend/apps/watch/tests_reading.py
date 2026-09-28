@@ -58,26 +58,26 @@ ANCHOR_WEEK = D(2026, 9, 14)
 OTHER_WEEK = D(2026, 9, 7)
 
 # Queries per feed read with a real session, measured 2026-09-21 and pinned so an N+1 shows
-# up as a number (playbook 10). The request's savepoint pair (2); the session (identity flag
-# on, the session row with the caller's tenant and locale, flag off with the tenant
-# activated, the tenant role permissions with the latest step-up: 4 since perf-request-once,
-# 2026-09-28; hardening H13); the footprint and
+# up as a number (playbook 10). The request's savepoint pair (2); the session (the signed
+# tenant activated, then the session row with the caller's tenant and locale, the tenant role
+# permissions and the latest step-up in one read: 2 since perf-tenant-in-token, 2026-09-28,
+# ADR 0064; hardening H13); the footprint and
 # its restricting dimensions (2); the count and the page, the page carrying the reader's own
 # case in the same left join (2); the page's classification links (1); the urgency rows the
 # page and the cases name (1); one label query each for change types, urgencies, flags and
 # terms (4); the banks' own decisions about the suggested links (1); the jurisdiction terms
 # the page's authorities reach (1, FP-04).
-FEED_QUERIES = 2 + 4 + 2 + 2 + 1 + 1 + 4 + 1 + 1
+FEED_QUERIES = 2 + 2 + 2 + 2 + 1 + 1 + 4 + 1 + 1
 
 # Queries per console read, measured the same way. The savepoint pair (2); the session of a
-# platform person (the identity flag on, the session row with the caller's locale, the flag
-# off, the platform roles, the latest step-up: 5; perf-request-once, 2026-09-28, took the
-# locale into the session row); the count and the page (2); the page's classification links and
+# platform person (no bank asserted, then the session row with the caller's locale, the
+# platform roles and the latest step-up in one read: 2 since perf-tenant-in-token,
+# 2026-09-28, ADR 0064); the count and the page (2); the page's classification links and
 # one label query each for flags and terms (3); the suggested obligation links with their
 # obligations, and those obligations' titles (2); the change types' labels (1); which of
 # the page's changes has a flagged page (1, H40). No footprint and no case: a console
 # session belongs to no bank and has neither.
-CONSOLE_QUERIES = 2 + 5 + 2 + 3 + 2 + 1 + 1
+CONSOLE_QUERIES = 2 + 2 + 2 + 3 + 2 + 1 + 1
 
 
 # A fact nobody has confirmed, filed by a builder that names no run, so no agent (D-74).

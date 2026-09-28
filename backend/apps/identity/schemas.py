@@ -75,8 +75,8 @@ class RoleRef(CamelSchema):
 # attestation object is CBOR — and were made with a throwaway key for these docs alone, so
 # none of them opens anything; the tokens carry a placeholder signature no server accepts.
 # ---------------------------------------------------------------------------------------
-_EXAMPLE_ACCESS_TOKEN = "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.1790150400.ExampleSignatureThatNoServerWillAccept00000"  # noqa: S105 a documentation example no server accepts
-_EXAMPLE_ENROLMENT_TOKEN = "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.enrolment.1790150400.ExampleSignatureThatNoServerWillAccept00000"  # noqa: S105 a documentation example no server accepts
+_EXAMPLE_ACCESS_TOKEN = "v2.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.8f14e45fceea467a9575b1d2c3e4f5a6.1790150400.ExampleSignatureThatNoServerWillAccept00000"  # noqa: S105 a documentation example no server accepts
+_EXAMPLE_ENROLMENT_TOKEN = "v2.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.enrolment.8f14e45fceea467a9575b1d2c3e4f5a6.1790150400.ExampleSignatureThatNoServerWillAccept00000"  # noqa: S105 a documentation example no server accepts
 _EXAMPLE_CREDENTIAL_ID = "cGAj7tm8-pSeo4if4t4UZw"
 _EXAMPLE_USER_HANDLE = "AAAAAAAAQACAAAAAAAABAg"  # Sara Lindqvist's account id, 16 bytes
 _EXAMPLE_RP: dict[str, JsonValue] = {"name": "Compliance Watch", "id": "app.bleqq.com"}
@@ -2595,7 +2595,9 @@ class SecurityEventOut(CamelSchema):
             "`key_revoked`: an API key was revoked. `key_created`: a platform agent key was "
             "created, which never appears in a bank's log. `key_scopes_withheld`: a key created "
             "before the platform-only scopes rule presented one and worked without it. "
-            "`feed_used`: a calendar client fetched a person's subscribed feed. A new release may "
+            "`feed_used`: a calendar client fetched a person's subscribed feed. "
+            "`access_token_refused`: a correctly signed access token named another bank than its "
+            "session's, so it was refused and the session ended. A new release may "
             "add events, so treat an unfamiliar value as new data and not an error."
         )
     )
@@ -2612,7 +2614,8 @@ class SecurityEventOut(CamelSchema):
             "`no_open_invitation`, `unknown_credential` or `passkey_enrolled`. On "
             "`session_revoked` it says why the session ended: `sign_out`, `idle`, "
             "`revoked_by_user`, `revoked_by_admin`, `member_deactivated`, `reenrolment`, "
-            "`enrolment_completed` or `refresh_replay`. On `key_scopes_withheld` it lists the "
+            "`enrolment_completed`, `refresh_replay` or `tenant_claim_mismatch`. On "
+            "`access_token_refused` it is `tenant_claim_mismatch`. On `key_scopes_withheld` it lists the "
             "scopes that were withheld, comma-separated."
         )
     )

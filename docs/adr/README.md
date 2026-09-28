@@ -70,6 +70,7 @@ if behaviour changes. Numbering never reuses a number.
 | [0061](0061-a-banks-research-text-reaches-its-own-agent.md) | A bank's capped research text may reach its own agent, the second exception beside Ask | D-98 (amends D-07, D-32) | accepted |
 | [0062](0062-agent-definitions-are-platform-configuration.md) | Agent definitions are platform configuration, not library rows | D-102 | accepted (owner decision) |
 | [0063](0063-one-statement-per-audit-write.md) | One statement per audit write, and a savepoint only across the zones | perf audit finding 3 | accepted (owner approval, 2026-09-28) |
+| [0064](0064-the-access-token-signs-the-sessions-bank.md) | The access token signs the session's bank, and a request resolves in it | amends D-06 | accepted (owner approval, perf-tenant-in-token) |
 
 Still to write, when the playbook's Appendix C says so:
 the switch from one branch to `staging` and `main` (supersedes 0015), the

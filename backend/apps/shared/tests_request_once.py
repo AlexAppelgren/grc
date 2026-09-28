@@ -1,8 +1,8 @@
 """Resolve once per request (perf-request-once, 2026-09-28, PERF_AUDIT findings 1, 2, 5, 6).
 
-What a request pays before its route runs is pinned: the identity flag on, the session with
-its person and bank, the flag off with the bank activated in the same statement, and the
-membership's grants with the latest step-up (4). What the credential's read loaded is what
+What a request pays before its route runs is pinned: the bank the token signs activated, then
+the session with its person, its bank, the membership's grants and the latest step-up in one
+read (2, perf-tenant-in-token, ADR 0064). What the credential's read loaded is what
 `caller_user`, `caller_tenant` and `language_order` answer with, at no query. A key is
 resolved once per request, through MCP included; vocabulary labels are read once per read
 request. And every saving still leaves each decision made on every request: a revoked
@@ -36,10 +36,10 @@ from apps.shared.tests_support_session import grant
 
 V1 = "/api/v1"
 # A session request's cost before its route (the savepoint pair of the test's transaction
-# aside): identity flag on, the session with its person and bank, flag off with the bank
-# activated, the grants with the latest step-up. Eight in all on 2026-09-28, six of them the
-# auth layer's; now four.
-AUTH_QUERIES = 4
+# aside): the signed bank activated, then the session with its person, its bank, the grants
+# and the latest step-up in one read. Eight in all on 2026-09-28, six of them the auth
+# layer's; four after wave A; now two (ADR 0064).
+AUTH_QUERIES = 2
 # GET /reference/languages: the savepoint pair, the auth layer and the route's one read.
 LANGUAGES_QUERIES = 2 + AUTH_QUERIES + 1
 
@@ -56,7 +56,7 @@ class FixedCost(TestCase):
         self.tenant = factories.tenant(slug="once-a")
         self.user = factories.member_user(self.tenant, roles=("admin",))
 
-    def test_a_session_request_pays_four_queries_before_its_route(self) -> None:
+    def test_a_session_request_pays_two_queries_before_its_route(self) -> None:
         headers = sign_in(self.user, tenant=self.tenant)
         with self.assertNumQueries(LANGUAGES_QUERIES):
             response = self.client.get(f"{V1}/reference/languages", **headers)

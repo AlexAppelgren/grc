@@ -115,6 +115,8 @@ export const loginEventTone: Record<string, PillTone> = {
   token_used: 'information',
   token_revoked: 'information',
   credential_rate_limited: 'warning',
+  // ADR 0064: a signed token named another bank than its session's.
+  access_token_refused: 'negative',
 };
 
 const loginEventLabel: Record<string, MessageKey> = {
@@ -138,6 +140,7 @@ const loginEventLabel: Record<string, MessageKey> = {
   token_used: 'admin.securityLog.event.token_used',
   token_revoked: 'admin.securityLog.event.token_revoked',
   credential_rate_limited: 'admin.securityLog.event.credential_rate_limited',
+  access_token_refused: 'admin.securityLog.event.access_token_refused',
 };
 
 const loginMethodLabel: Record<string, MessageKey> = {

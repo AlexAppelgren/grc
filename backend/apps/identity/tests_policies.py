@@ -106,14 +106,23 @@ class TokenHashing(TestCase):
     def test_access_tokens_round_trip_and_reject_tampering_and_expiry(self) -> None:
         now = timezone.now()
         session_id = uuid.uuid4()
-        token, expires_in = tokens.issue_access_token(session_id, "full", now)
+        tenant_id, other_tenant = uuid.uuid4(), uuid.uuid4()
+        token, expires_in = tokens.issue_access_token(session_id, "full", tenant_id, now)
         self.assertEqual(expires_in, 600)
         claims = tokens.parse_access_token(token, now)
         assert claims is not None
-        self.assertEqual((claims.session_id, claims.kind), (session_id, "full"))
+        self.assertEqual((claims.session_id, claims.kind, claims.tenant_id), (session_id, "full", tenant_id))
+        platform, _ = tokens.issue_access_token(session_id, "full", None, now)
+        platform_claims = tokens.parse_access_token(platform, now)
+        self.assertEqual(platform_claims.tenant_id if platform_claims else "unparsed", None, "no bank is an empty claim")
         head, _, signature = token.rpartition(".")
         self.assertIsNone(tokens.parse_access_token(f"{head}.{signature[:-2]}xx", now), "tampered signature")
         self.assertIsNone(tokens.parse_access_token(token.replace(".full.", ".enrolment."), now), "tampered claims")
+        self.assertIsNone(tokens.parse_access_token(token.replace(tenant_id.hex, other_tenant.hex), now), "tampered bank")
+        self.assertIsNone(tokens.parse_access_token(token.replace(f".{tenant_id.hex}.", ".."), now), "bank struck out")
+        # A token of the format before the bank was signed (ADR 0064), correctly signed, is refused.
+        v1_payload = f"v1.{session_id.hex}.full.{int(now.timestamp()) + 600}"
+        self.assertIsNone(tokens.parse_access_token(f"{v1_payload}.{tokens._sign(v1_payload)}", now), "v1 token")
         self.assertIsNone(tokens.parse_access_token(token, now + timedelta(seconds=601)), "expired")
         self.assertIsNone(tokens.parse_access_token("v0.x.y.z.w", now))
         self.assertIsNone(tokens.parse_access_token("nonsense", now))

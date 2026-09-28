@@ -177,11 +177,11 @@ class ReadingARecordsComments(CommentsTestCase):
             self.written(self.add(self.erik if n % 2 else self.anna, f"Note {n}.", mentions=[self.anna, self.erik]))
         twenty = cost()
         self.assertEqual(twenty, one)
-        # The request savepoint and the session with its roles, bank and person (5 since
-        # perf-request-once, 2026-09-28, which reads the person and the bank with the session
-        # and the step-up with the roles), then the record, the page, its mentions, the count
+        # The request savepoint and the session with its roles, bank and person (3 since
+        # perf-tenant-in-token, 2026-09-28, ADR 0064: the signed bank activated, then one read
+        # of the session with its person, bank, roles and step-up), then the record, the page, its mentions, the count
         # and the savepoint's release.
-        self.assertEqual(twenty, 10)
+        self.assertEqual(twenty, 8)
 
 
 class WritingAComment(CommentsTestCase):

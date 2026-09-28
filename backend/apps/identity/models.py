@@ -117,6 +117,9 @@ class LoginEventKind(enum.StrEnum):
     TOKEN_USED = "token_used"  # noqa: S105 an enum value, not a credential
     TOKEN_REVOKED = "token_revoked"  # noqa: S105 an enum value, not a credential
     CREDENTIAL_RATE_LIMITED = "credential_rate_limited"
+    # A correctly signed access token named a bank that is not its session's (ADR 0064).
+    # Only the signing key can make one, so the token is refused and the session ended.
+    ACCESS_TOKEN_REFUSED = "access_token_refused"  # noqa: S105 an enum value, not a credential
 
 
 # ---------------------------------------------------------------------------------------

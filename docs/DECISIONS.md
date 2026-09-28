@@ -156,9 +156,10 @@ from `c11-agent-config-platform` under its reserved number, and numbered `c8-ten
 row D-108, `c10-reminders-escalation-reviews`' D-109 and `acc-register-read`'s D-110. The R2
 waves 5 to 7 integration numbered `c9-owner-team-and-reassign`' row D-111, `acc-scoped-reads`'
 D-112, `acc-what-applies`' D-113, `acc-summary-j11`'s D-114, `d89-private-records`' D-115 and
-`r2-perf`'s D-116, in plan order. The next new decision is D-117. The next new ADR is 0063: 0059 is D-91's, 0060 D-92's (`c9-triage`),
+`r2-perf`'s D-116, in plan order. The next new decision is D-117. The next new ADR is 0065: 0059 is D-91's, 0060 D-92's (`c9-triage`),
 0061 D-98's (`d89-researcher-definition`) and 0062 D-102's (`c11-agent-config-platform`, which
-wrote it as 0059).
+wrote it as 0059). The perf wave B integration kept `perf-audit-writes`' ADR as 0063 and numbered
+`perf-tenant-in-token`'s 0064 (both packages wrote 0063).
 
 D-18 to D-34 are PRD 0.3's My work, participants and markets decisions
 (`docs/plans/briefs/MY_WORK_AND_MARKETS.md`); D-35 to D-47 are its standards

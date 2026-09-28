@@ -5,9 +5,13 @@ they are the bank's security policy (ID-08), the platform defaults where it sets
 never above the SESSION_*_MAX settings. A replay inside the grace window answers like the
 original, a replay after it revokes the whole session (ID-S9).
 
-`resolve_access_token` is what the three auth classes call. It reads the session row
-in identity-lookup mode (the tenant is not known yet), then activates the session's
-tenant so every later query in the request is scoped (playbook 14).
+`resolve_access_token` is what the three auth classes call. The signed token names the
+session's bank (ADR 0064), so the resolver activates that bank first and reads the session,
+its person, its bank, the grants and the latest step-up in one statement under it: every
+query of the request is scoped from the first (playbook 14), and the identity-lookup flag is
+never switched on for a request's credential. A claim that is not the stored session's bank
+finds no row, or a row the resolver refuses; either way the token answers 401, and a
+mismatch is logged to the security log and ends the session (`_refuse_claim`).
 
 A support session (TEN-06, ADR 0042) is minted here and nowhere else: a platform person
 enters one bank under a grant it approved, and the session activates that bank exactly as a
@@ -17,16 +21,19 @@ and nowhere else (`own_grants`); `apps/shared/tests_support_session.py` pins bot
 
 from __future__ import annotations
 
+import functools
 import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import connection
-from django.db.models import Subquery
+from django.contrib.postgres.aggregates import JSONBAgg
+from django.db.models import Case, OuterRef, QuerySet, Subquery, When
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 
@@ -157,7 +164,7 @@ def create_session(
     refresh_value, refresh_hash = tokens.new_refresh_token(session.id)
     session.refresh_token_hash = refresh_hash
     session.save()
-    access_token, expires_in = tokens.issue_access_token(session.id, kind.value, now)
+    access_token, expires_in = tokens.issue_access_token(session.id, kind.value, tenant_id, now)
     record(
         action="session.created",
         actor=actor_of(user),
@@ -178,13 +185,50 @@ def _live(session: UserSession, now: datetime) -> bool:
     return session.revoked_at is None and session.expires_at > now
 
 
-def latest_step_up(session_id: uuid.UUID) -> StepUpAssertion | None:
-    return StepUpAssertion.objects.filter(session_id=session_id).order_by("-created_at", "-id").first()
+@functools.cache
+def _session_reads() -> QuerySet[UserSession]:
+    """What `_read_session` reads, built and resolved once per process: a queryset holds no
+    rows and no zone until it runs, and each call filters a clone of it."""
+    latest = StepUpAssertion.objects.filter(session_id=OuterRef("pk")).order_by("-created_at", "-id")
+    tenant_grants = (
+        Membership.objects.filter(tenant_id=OuterRef("tenant_id"), user_id=OuterRef("user_id"), deactivated_at__isnull=True)
+        .values("id")
+        .annotate(grants=JSONBAgg("roles__permissions"))
+        .values("grants")
+    )
+    platform_grants = (
+        PlatformRoleAssignment.objects.filter(user_id=OuterRef("user_id"), role__active=True)
+        .values("user_id")
+        .annotate(grants=JSONBAgg("role__permissions"))
+        .values("grants")
+    )
+    return (
+        UserSession.objects.select_related("user__locale", "tenant__default_language")
+        .annotate(
+            step_up_at=Subquery(latest.values("created_at")[:1]),
+            step_up_id=Subquery(latest.values("id")[:1]),
+            tenant_grants=Subquery(tenant_grants),
+            platform_grants=Case(When(tenant_id__isnull=True, then=Subquery(platform_grants)), default=None),
+        )
+        .order_by()
+    )
+
+
+def _read_session(session_id: uuid.UUID) -> UserSession | None:
+    """The session with everything a request needs from it, in one statement under whatever
+    zone is active: its person with their locale, its bank with its default language, the
+    latest step-up (`step_up_at`, `step_up_id`), the membership's grants in the session's
+    bank (`tenant_grants`: null with no active membership there, one entry per role, a
+    null entry for a membership with no role) and, for a session in no bank only, the
+    platform grants (`platform_grants`: null with no assignment)."""
+    rows = list(_session_reads().filter(pk=session_id)[:1])
+    return rows[0] if rows else None
 
 
 def build_principal(session: UserSession) -> Principal | None:
     """Flatten the person's grants in the session's tenant (plus platform grants) into a
-    Principal. Called after the tenant is activated so the role rows are readable.
+    Principal, from the session as `_read_session` loads it (a session loaded any other
+    way is read again that way, under the zone that is active).
 
     None when a full session in a tenant stands on no active membership there
     (deactivated, or never created): the token then resolves to nothing, so no route that
@@ -198,6 +242,12 @@ def build_principal(session: UserSession) -> Principal | None:
     assignments and keeps what `PLATFORM_PERMISSIONS` names. Platform staff are separate
     accounts (bootstrap_platform and every bank invitation refuse an address the other
     zone knows), so a platform grant is never read in a bank session at all."""
+    if not hasattr(session, "tenant_grants"):
+        loaded = _read_session(session.id)
+        if loaded is None:
+            return None
+        session = loaded
+    annotated: Any = session  # the four values `_read_session` annotates, which the model does not declare
     user = session.user
     if session.kind == SessionKind.ENROLMENT.value:
         return Principal(
@@ -219,44 +269,25 @@ def build_principal(session: UserSession) -> Principal | None:
         )
     granted: set[str] = set()
     is_platform_staff = False
-    step_up_at: datetime | None = None
-    step_up_assertion_id: uuid.UUID | None = None
     if session.tenant_id is not None:
-        # One row per role of the active membership; one row with NULL for an active
-        # membership with no role; no row at all when there is no active membership. The
-        # session's latest step-up rides on every row, so the grants and the step-up that
-        # `@requires_step_up` weighs are one read.
-        latest = StepUpAssertion.objects.filter(session_id=session.id).order_by("-created_at", "-id")
-        role_rows = list(
-            Membership.objects.filter(tenant_id=session.tenant_id, user=user, deactivated_at__isnull=True)
-            .annotate(step_up_at=Subquery(latest.values("created_at")[:1]), step_up_id=Subquery(latest.values("id")[:1]))
-            .values_list("roles__permissions", "step_up_at", "step_up_id")
-        )
-        if not role_rows:
+        if annotated.tenant_grants is None:
             return None
-        for permissions, _, _ in role_rows:
+        for permissions in annotated.tenant_grants:
             granted.update(permissions or [])
         granted &= perms.TENANT_PERMISSIONS
-        _, step_up_at, step_up_assertion_id = role_rows[0]
     else:
-        platform_rows = PlatformRoleAssignment.objects.filter(user=user, role__active=True).values_list(
-            "role__permissions", flat=True
-        )
-        for permissions in platform_rows:
+        for permissions in annotated.platform_grants or []:
             is_platform_staff = True
             granted.update(permissions or [])
         granted &= perms.PLATFORM_PERMISSIONS
-        assertion = latest_step_up(session.id)
-        if assertion is not None:
-            step_up_at, step_up_assertion_id = assertion.created_at, assertion.id
     return Principal(
         kind=PrincipalKind.USER,
         subject_id=user.id,
         tenant_id=session.tenant_id,
         permissions=frozenset(granted),
         is_platform_staff=is_platform_staff,
-        step_up_at=step_up_at,
-        step_up_assertion_id=step_up_assertion_id,
+        step_up_at=annotated.step_up_at,
+        step_up_assertion_id=annotated.step_up_id,
         session_id=session.id,
         session_created_at=session.created_at,
         user=user,
@@ -286,29 +317,57 @@ def resolve_access_token(token: str, *, want: PrincipalKind) -> Principal | None
     if claims.kind not in wanted_kinds:
         return None
     support = claims.kind == SessionKind.SUPPORT.value
-    # One read for the session, its person with their locale and its bank with its default
-    # language (neither table sits under row-level security); the checks below are on that
-    # row, and the bank is activated in the statement that ends the lookup.
-    with tenancy.identity_lookup() as lookup:
-        session = (
-            UserSession.objects.select_related("user__locale", "tenant__default_language").filter(pk=claims.session_id).first()  # ordering: pk lookup, at most one row
-        )
-        usable = (
-            session is not None
-            and session.kind == claims.kind
-            and session.revoked_at is None
-            and (support or _live(session, now))
-            and session.user.status != UserStatus.DEACTIVATED.value
-        )
-        if usable and session is not None and session.tenant_id is not None:
-            lookup.then_activate(session.tenant_id)
-    if not usable or session is None:
+    # The signed bank first (ADR 0064), then the one read under it. Row-level security shows
+    # the session only in its own zone, and a platform session's row to a bank as well (the
+    # mixed read), so the comparison below is what refuses a claim the row does not match.
+    if claims.tenant_id is not None:
+        tenancy.activate(claims.tenant_id)
+    else:
+        tenancy.clear_tenant()
+    session = _read_session(claims.session_id)
+    if session is None or session.tenant_id != claims.tenant_id:
+        _refuse_claim(claims)
+        return None
+    usable = (
+        session.kind == claims.kind
+        and session.revoked_at is None
+        and (support or _live(session, now))
+        and session.user.status != UserStatus.DEACTIVATED.value
+    )
+    if not usable:
         return None
     # A support session ends with its grant: past the window, or revoked by the bank, every
     # request answers 401 `support_access_ended` and nothing else runs (ADR 0042).
     if support and (session.expires_at <= now or not _grant_live(session)):
         raise ProblemError(status=401, code="support_access_ended", detail="The bank's support access has ended.")
     return build_principal(session)
+
+
+TENANT_CLAIM_MISMATCH = "tenant_claim_mismatch"
+
+
+def _refuse_claim(claims: tokens.AccessClaims) -> None:
+    """A signed token whose session the claimed zone did not show. Look the row up by id
+    across the zones, leave the claimed bank for the row's own zone (or no bank when there
+    is no row), and when the row stands in another zone than the claim, log the refusal to
+    the security log and end the session: only a party holding the signing key can make
+    such a token, since the claim is copied from the row when a token is issued and a
+    session never changes bank (ADR 0064)."""
+    with tenancy.identity_lookup() as lookup:
+        stored = UserSession.objects.select_related("user").filter(pk=claims.session_id).first()  # ordering: pk lookup, at most one row
+        lookup.then_activate(stored.tenant_id if stored is not None else None)
+    if stored is None or stored.tenant_id == claims.tenant_id:
+        return
+    log_event(
+        event=LoginEventKind.ACCESS_TOKEN_REFUSED,
+        method=LoginMethod.EMAIL_CODE if stored.kind == SessionKind.ENROLMENT.value else LoginMethod.PASSKEY,
+        success=False,
+        request=None,
+        user=stored.user,
+        tenant_id=stored.tenant_id,
+        failure_reason=TENANT_CLAIM_MISMATCH,
+    )
+    revoke_session(stored, reason=TENANT_CLAIM_MISMATCH, actor=Actor.system("access-token"))
 
 
 def resolve_refreshed(access_token: str) -> Principal | None:
@@ -384,7 +443,7 @@ def create_support_session(
     refresh_value, refresh_hash = tokens.new_refresh_token(session.id)
     session.refresh_token_hash = refresh_hash
     session.save()
-    access_token, expires_in = tokens.issue_access_token(session.id, session.kind, now)
+    access_token, expires_in = tokens.issue_access_token(session.id, session.kind, session.tenant_id, now)
     record(
         action="session.created",
         actor=actor_of(user),
@@ -426,7 +485,7 @@ def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, s
     if previous and session.rotated_at is not None:
         within_grace = now - session.rotated_at <= timedelta(seconds=settings.REFRESH_REPLAY_GRACE_SECONDS)
         if within_grace:
-            access_token, expires_in = tokens.issue_access_token(session.id, session.kind, now)
+            access_token, expires_in = tokens.issue_access_token(session.id, session.kind, session.tenant_id, now)
             record(
                 action="session.refreshed",
                 actor=actor_of(session.user),
@@ -468,7 +527,7 @@ def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, s
     session.rotated_at = now
     session.last_seen_at = now
     session.save(update_fields=["previous_refresh_hash", "refresh_token_hash", "rotated_at", "last_seen_at", "expires_at"])
-    access_token, expires_in = tokens.issue_access_token(session.id, session.kind, now)
+    access_token, expires_in = tokens.issue_access_token(session.id, session.kind, session.tenant_id, now)
     record(
         action="session.refreshed",
         actor=actor_of(session.user),

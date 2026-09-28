@@ -79,22 +79,23 @@ FP_S4_SIGHTED = datetime.datetime(2026, 9, 29, 9, 0, tzinfo=datetime.UTC)
 FP_S4_KEY_DATE = datetime.date(2026, 10, 15)
 
 # Queries per read, measured 2026-09-19 and pinned so an N+1 shows up as a number (playbook
-# 10). Every scenario request starts with the same seven: the scenario client's audit count
-# (1), the request's savepoint pair (2) and the auth layer (identity flag on, the session
-# row with the caller's user and tenant for the label order, flag off with the tenant
-# activated in the same statement, membership permissions with the latest step-up: 4). One
+# 10). Every scenario request starts with the same five: the scenario client's audit count
+# (1), the request's savepoint pair (2) and the auth layer (the signed tenant activated,
+# then the session row with the caller's user and tenant for the label order, membership
+# permissions and the latest step-up in one read: 2, perf-tenant-in-token, ADR 0064). One
 # fewer than measured at chunk 2's close: a bank session no longer reads the platform role
-# assignments at all (hardening H13); four fewer since perf-request-once (2026-09-28). Then
+# assignments at all (hardening H13); four fewer since perf-request-once (2026-09-28) and
+# two more since perf-tenant-in-token (2026-09-28). Then
 # the read's own queries, which do not grow with the number of rows:
 # - a vocabulary list: the rows with their usage count (1) and their labels (1);
-URGENCY_READ_QUERIES = 7 + 2
+URGENCY_READ_QUERIES = 5 + 2
 # - the footprint: the selected terms (1) and their labels (1), the dimensions with their
 #   term counts (1) and their labels (1), the pending request (1); the markets (FP-04),
 #   four more however many countries there are: the jurisdictions whose mirrored term is in
 #   the footprint, read through the term's link (1), the watch rows (1), the countries (1)
 #   and their labels (1). And the scope items in scope (1, d89-scope-items-logic), whose
 #   labels are read only when there is one.
-FOOTPRINT_READ_QUERIES = 7 + 5 + 4 + 1
+FOOTPRINT_READ_QUERIES = 5 + 5 + 4 + 1
 
 
 def _seed_library() -> None:
