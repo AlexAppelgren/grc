@@ -363,4 +363,9 @@ def list_spanned(*, obligation_id: uuid.UUID) -> list[RegisterSpannedEntity]:
     obligation the bank can see, so the screen offers exactly the entities the write accepts."""
     if obligation_id not in obligation_headings([obligation_id], []):
         raise ValidationError("That obligation is not here.", code="not_found")
+    return spanned_of(obligation_id)
+
+
+def spanned_of(obligation_id: uuid.UUID) -> list[RegisterSpannedEntity]:
+    """The entities one obligation spans, for a caller that already checked it can see it."""
     return [RegisterSpannedEntity(org_unit_id=entity.id, org_unit_name=entity.name) for entity in entities_spanned([obligation_id])[obligation_id]]

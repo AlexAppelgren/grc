@@ -149,6 +149,11 @@ def list_units(
     reference, optionally of one entity. A read writes nothing; no units is an empty page."""
     if under_standard(obligation_id) is None:
         raise ValidationError("That obligation is not here.", code="not_found")
+    return units_page(order=order, obligation_id=obligation_id, entity=entity, limit=limit, offset=offset)
+
+
+def units_page(*, order: list[str], obligation_id: uuid.UUID, entity: uuid.UUID | None, limit: int, offset: int) -> RegisterUnitPage:
+    """One page of the live units under an obligation the caller already knows it can see."""
     units = _live_units().filter(scope__tenant_obligation__obligation_id=obligation_id)
     if entity is not None:
         units = units.filter(scope__org_unit_id=entity)

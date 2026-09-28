@@ -164,10 +164,15 @@ class ReadingCreatesNothing(RegisterStatusCase):
         for entity in self.entities[1:]:
             self.scope(entity)
         self.assertEqual(queries(3), one)
-        # 13: the fixed handful plus the bank's readings of the rule (one query), which the
-        # read carries so the obligation page no longer sends `GET .../interpretation`, a
-        # request of eleven queries of its own (perf-frontend-requests, PERF_AUDIT finding 7).
-        self.assertLessEqual(one[0], 13, "the register read is a fixed handful of queries")
+        # 8: the entry's own fixed handful, its labels, and the bank's readings of the rule
+        # (one query), which the read carries so the obligation page no longer sends
+        # `GET .../interpretation` (perf-frontend-requests, PERF_AUDIT finding 7). It was at most 13
+        # with the five every request costs here; the route now also carries the panels'
+        # first pages, whose whole count tests_panels.PANEL_QUERIES pins (perf-obligation-page).
+        tenancy.activate(self.tenant.id)
+        with CaptureQueriesContext(connection) as entry:
+            status_logic.read_register(tenant=self.tenant, order=["en"], obligation_id=self.obligation.id)
+        self.assertLessEqual(len(entry), 8, "the register entry is a fixed handful of queries")
 
 
 class WritingTheEntry(RegisterStatusCase):
@@ -210,7 +215,8 @@ class WritingTheEntry(RegisterStatusCase):
         self.assertEqual(read["evidenceLocation"], "Compliance share / Client assets / 2026")
         self.assertEqual(read["nextReviewDate"], "2027-03-31")
         self.assertEqual(read["version"], 2)
-        self.assertEqual(read, response.json())
+        # The read also carries the obligation page's panels, which a write does not answer.
+        self.assertEqual({key: value for key, value in read.items() if key != "panels"}, response.json())
 
     def test_only_the_fields_sent_change(self) -> None:
         self.entry()

@@ -40,6 +40,11 @@ def list_assessments(
     """The bank's assessments of one obligation, newest first, in a constant number of
     queries. An obligation the bank cannot see is 404; one never assessed is an empty page."""
     _visible(obligation_id)
+    return assessments_page(order=order, obligation_id=obligation_id, limit=limit, offset=offset)
+
+
+def assessments_page(*, order: list[str], obligation_id: uuid.UUID, limit: int, offset: int) -> RegisterAssessmentPage:
+    """One page of the assessments of an obligation the caller already checked it can see."""
     assessments = ComplianceAssessment.objects.filter(tenant_obligation__obligation_id=obligation_id)
     rows = (
         assessments.select_related("status", "risk_rating", "assessed_by", "scope__org_unit")
