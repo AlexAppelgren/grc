@@ -1525,8 +1525,10 @@ export interface paths {
          * @description Call this shortly before the access token expires. It takes no body and no
          *     `Authorization` header: the credential is the `HttpOnly` refresh cookie that sign-in set,
          *     scoped to `/api/v1/auth`, so a browser client calls it with credentials included. The
-         *     answer carries a new access token, and the refresh token is rotated: the response sets a
-         *     new cookie and the old one stops working.
+         *     answer carries a new access token and, beside it, what `GET /me` would answer for the
+         *     session, so a screen opening from a cold start needs no second call (`me` is null for a
+         *     support session). The refresh token is rotated: the response sets a new cookie and
+         *     the old one stops working.
          *
          *     Two tabs refreshing at once are safe: the previous refresh token presented within
          *     30 seconds of its rotation gets a fresh access token without rotating
@@ -15949,6 +15951,7 @@ export interface components {
          *     whole page away (chunk 6 defaults). What needs a decision is deliberately absent: it is
          *     the `counts` object on `GET /me` (D-23).
          * @example {
+         *       "briefingCount": 3,
          *       "comingUp": [
          *         {
          *           "changeId": "c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19",
@@ -16141,6 +16144,12 @@ export interface components {
          *     }
          */
         Home: {
+            /**
+             * Briefingcount
+             * @description How many items the running week's briefing holds, 0 or more and at most the `BRIEFING_MAX_ITEMS` setting: the same rows, from the same selector, as `GET /briefings/current`, whose first is `lead`. The screen says 'N more items this week' from it without a second request. Null for a reader without `watch.read`.
+             * @example 3
+             */
+            briefingCount: number | null;
             /**
              * Comingup
              * @description The next dates, earliest first: the same rows, in the same order, that `GET /roadmap` answers, cut to the length the `HOME_COMING_UP_ITEMS` setting names. The short list is the same on a phone and on a desktop. An empty list means nothing is dated ahead inside the bank's regulatory scope.
@@ -23967,7 +23976,82 @@ export interface components {
          *     cookie in the same response, never in the body.
          * @example {
          *       "accessToken": "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.1790150400.ExampleSignatureThatNoServerWillAccept00000",
-         *       "expiresIn": 600
+         *       "expiresIn": 600,
+         *       "me": {
+         *         "counts": {
+         *           "assignedToMe": 1,
+         *           "proposals": 2,
+         *           "riskAcceptances": 2,
+         *           "signoffs": 1,
+         *           "supportAccessRequests": 1,
+         *           "tenantReachRequests": 0,
+         *           "triage": 3,
+         *           "unreadNotifications": 4
+         *         },
+         *         "enrolmentPending": false,
+         *         "headOf": [
+         *           {
+         *             "id": "5b1d7c2e-8f3a-4d6b-9c0e-2a4f6b8d0c1e",
+         *             "name": "Retail Banking"
+         *           }
+         *         ],
+         *         "lastVisitAt": "2026-09-18T07:00:00Z",
+         *         "notificationPrefs": {
+         *           "assignments": true,
+         *           "mentions": false,
+         *           "reminders": true,
+         *           "weeklyBriefing": true,
+         *           "weeklyDigest": true
+         *         },
+         *         "passkeyCount": 2,
+         *         "permissions": [
+         *           "ai_log.read",
+         *           "applicability.approve",
+         *           "audit.read",
+         *           "cases.contribute",
+         *           "cases.read",
+         *           "cases.triage",
+         *           "cases.work",
+         *           "comments.write",
+         *           "exports.create",
+         *           "footprint.approve",
+         *           "footprint.request",
+         *           "gaps.edit",
+         *           "library.read",
+         *           "problems.report",
+         *           "proposals.create",
+         *           "register.edit",
+         *           "register.read",
+         *           "reports.read",
+         *           "risk.accept.approve",
+         *           "roadmap.read",
+         *           "search.use",
+         *           "vocab.manage",
+         *           "watch.read",
+         *           "workflow.manage"
+         *         ],
+         *         "platformRoles": [],
+         *         "roles": [
+         *           {
+         *             "key": "compliance_officer",
+         *             "kind": null,
+         *             "label": "Compliance officer"
+         *           }
+         *         ],
+         *         "stepUpValidUntil": null,
+         *         "tenant": {
+         *           "id": "00000000-0000-4000-8000-00000000000a",
+         *           "name": "Example Bank AB",
+         *           "slug": "example-bank",
+         *           "timezone": "Europe/Stockholm"
+         *         },
+         *         "user": {
+         *           "email": "compliance_officer@example-bank.test",
+         *           "id": "00000000-0000-4000-8000-000000000102",
+         *           "locale": "en",
+         *           "name": "Sara Lindqvist"
+         *         }
+         *       }
          *     }
          */
         RefreshResult: {
@@ -23981,6 +24065,8 @@ export interface components {
              * @description How many seconds the new access token is good for: 600 by default (a setting). It never outlives the session, which still ends after 30 idle minutes or 12 hours after sign-in by default, or at the limits of the bank's security policy, which apply at the next refresh.
              */
             expiresIn: number;
+            /** @description What `GET /me` answers for this session at this moment, so a screen opening from a cold start needs no second round trip before it can render. Null for a support session, whose refresh reads nothing of the bank. */
+            me: components["schemas"]["Me"] | null;
         };
         /**
          * RegisterApplicability
@@ -25021,6 +25107,11 @@ export interface components {
          *         "id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30",
          *         "name": "Sara Lind"
          *       },
+         *       "interpretation": {
+         *         "current": null,
+         *         "earlier": [],
+         *         "obligationId": "44444444-4444-4444-8444-444444444444"
+         *       },
          *       "nextReviewDate": "2027-03-31",
          *       "obligationId": "44444444-4444-4444-8444-444444444444",
          *       "ownerTeam": {
@@ -25075,6 +25166,8 @@ export interface components {
             evidenceLocation: string | null;
             /** @description The first-line member who owns meeting the obligation; null when nobody does yet. */
             firstLineOwner: components["schemas"]["RegisterPersonRef"] | null;
+            /** @description "How we read this rule": the bank's current reading and every earlier one, exactly as `GET /obligations/{obligationId}/interpretation` answers it, carried here so the obligation page reads both in one call. `current` is null when the bank has written none. Internal legal judgement that never leaves the bank. */
+            interpretation: components["schemas"]["RegisterInterpretation"];
             /**
              * Nextreviewdate
              * @description The plain date the bank next reviews the obligation, shown on the roadmap as our own deadline; null when not set.
@@ -28454,6 +28547,38 @@ export interface components {
          *           "nextRunAt": "2026-09-28T04:00:00Z",
          *           "pausedAt": null,
          *           "pausedBy": null,
+         *           "recentRuns": [
+         *             {
+         *               "agent": "bank-source-watch",
+         *               "agentVersion": 1,
+         *               "cost": "1.84",
+         *               "error": null,
+         *               "finishedAt": "2026-09-20T02:18:41Z",
+         *               "id": "5f1c2a80-3b6e-4a1e-9d21-0a2b8c7d4e10",
+         *               "interruptedAt": null,
+         *               "model": "regwatch-2026-08",
+         *               "outputRef": "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl",
+         *               "pipelineVersion": "watch-1.4.2",
+         *               "requestedBy": {
+         *                 "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *                 "name": "Sara Lindqvist"
+         *               },
+         *               "startedAt": "2026-09-20T02:00:03Z",
+         *               "stats": {
+         *                 "changesRegistered": 2,
+         *                 "correctionsProposed": 1,
+         *                 "fetches": 118,
+         *                 "modelCalls": 42,
+         *                 "outOfScope": 3,
+         *                 "proposalsSubmitted": 5,
+         *                 "recordsRechecked": 12,
+         *                 "sourcesChecked": 31
+         *               },
+         *               "status": "succeeded",
+         *               "tenantAgentId": "0b7d2f64-1c3e-4a58-9d2b-6e4f8a1c3b57",
+         *               "trigger": "manual"
+         *             }
+         *           ],
          *           "runHour": 6,
          *           "runWeekday": 1,
          *           "scope": {
@@ -28476,12 +28601,129 @@ export interface components {
              * Items
              * @description The bank's own agents on this page, by definition key. bleqq's agents are never listed here.
              */
-            items: components["schemas"]["TenantAgentOut"][];
+            items: components["schemas"]["TenantAgentRow"][];
             /**
              * Total
              * @description How many agents the bank has added in total, not how many are on this page.
              */
             total: number;
+        };
+        /**
+         * TenantAgentRow
+         * @description One of the bank's own agents as `GET /agents` lists it: the agent, and its latest runs
+         *     beside it so the page reads them with the list and never once per agent.
+         * @example {
+         *       "agent": "bank-source-watch",
+         *       "cadence": "weekly",
+         *       "enabled": true,
+         *       "id": "0b7d2f64-1c3e-4a58-9d2b-6e4f8a1c3b57",
+         *       "nextRunAt": "2026-09-28T04:00:00Z",
+         *       "pausedAt": null,
+         *       "pausedBy": null,
+         *       "recentRuns": [
+         *         {
+         *           "agent": "bank-source-watch",
+         *           "agentVersion": 1,
+         *           "cost": "1.84",
+         *           "error": null,
+         *           "finishedAt": "2026-09-20T02:18:41Z",
+         *           "id": "5f1c2a80-3b6e-4a1e-9d21-0a2b8c7d4e10",
+         *           "interruptedAt": null,
+         *           "model": "regwatch-2026-08",
+         *           "outputRef": "runs/2026-09-20/watch-sweeper/5f1c2a80.jsonl",
+         *           "pipelineVersion": "watch-1.4.2",
+         *           "requestedBy": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Sara Lindqvist"
+         *           },
+         *           "startedAt": "2026-09-20T02:00:03Z",
+         *           "stats": {
+         *             "changesRegistered": 2,
+         *             "correctionsProposed": 1,
+         *             "fetches": 118,
+         *             "modelCalls": 42,
+         *             "outOfScope": 3,
+         *             "proposalsSubmitted": 5,
+         *             "recordsRechecked": 12,
+         *             "sourcesChecked": 31
+         *           },
+         *           "status": "succeeded",
+         *           "tenantAgentId": "0b7d2f64-1c3e-4a58-9d2b-6e4f8a1c3b57",
+         *           "trigger": "manual"
+         *         }
+         *       ],
+         *       "runHour": 6,
+         *       "runWeekday": 1,
+         *       "scope": {
+         *         "jurisdictions": [
+         *           "se",
+         *           "fi"
+         *         ],
+         *         "terms": [
+         *           "payments"
+         *         ]
+         *       },
+         *       "updatedAt": "2026-09-24T09:12:00Z"
+         *     }
+         */
+        TenantAgentRow: {
+            /**
+             * Agent
+             * @description The stable key of the tenant-scoped definition the bank added, such as `bank-source-watch`.
+             */
+            agent: string;
+            /**
+             * Cadence
+             * @description How often the agent runs. `daily`, `weekly` and `monthly` start a run on that rhythm; `manual` starts none on a schedule, so the agent runs only when someone asks for a run.
+             * @enum {string}
+             */
+            cadence: "daily" | "weekly" | "monthly" | "manual";
+            /**
+             * Enabled
+             * @description Whether the agent is switched on. Off, it starts no run on its cadence.
+             */
+            enabled: boolean;
+            /**
+             * Id
+             * Format: uuid
+             * @description The bank's agent's identifier, a UUID. Another bank's agent answers 404.
+             */
+            id: string;
+            /**
+             * Nextrunat
+             * @description When the next scheduled run starts, as a UTC timestamp in ISO 8601. Null when none is scheduled.
+             */
+            nextRunAt: string | null;
+            /**
+             * Pausedat
+             * @description When the agent was paused, as a UTC timestamp in ISO 8601, or null when it is not. A paused agent starts no run until someone resumes it.
+             */
+            pausedAt: string | null;
+            /** @description The person who paused the agent. Null when it is not paused, or when the budget cap paused it rather than a person. */
+            pausedBy: components["schemas"]["PersonRef"] | null;
+            /**
+             * Recentruns
+             * @description The agent's latest runs, newest first, at most the `AGENT_RECENT_RUNS` setting (5 by default, 100 at most): the first rows `GET /agent-runs?tenantAgentId=` answers for this agent, where the rest of its history is paged. An empty list means it has not run yet.
+             */
+            recentRuns: components["schemas"]["AgentRunListItem"][];
+            /**
+             * Runhour
+             * @description The hour a scheduled run starts, a whole number with a minimum of 0 and a maximum of 23, in the bank's own time zone. Null for manual.
+             */
+            runHour: number | null;
+            /**
+             * Runweekday
+             * @description The day a weekly or monthly run starts, a whole number with a minimum of 1 (Monday) and a maximum of 7 (Sunday), in the bank's own time zone. Null for daily and manual.
+             */
+            runWeekday: number | null;
+            /** @description What the agent looks at, by keys. Empty lists mean the default markets. */
+            scope: components["schemas"]["TenantAgentScope"];
+            /**
+             * Updatedat
+             * Format: date-time
+             * @description When the agent's settings last changed, as a UTC timestamp in ISO 8601.
+             */
+            updatedAt: string;
         };
         /**
          * TenantAgentScope
@@ -29106,6 +29348,33 @@ export interface components {
          *           "id": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
          *           "kind": "legal_entity",
          *           "lei": "5493000EXAMPLE000000",
+         *           "licences": [
+         *             {
+         *               "grantedOn": "2014-03-01",
+         *               "id": "5b7d9e1f-3a2c-4e6b-8d0f-2a4c6e8b0d13",
+         *               "issuedOn": null,
+         *               "issuer": "",
+         *               "licenceType": {
+         *                 "key": "bank",
+         *                 "kind": null,
+         *                 "label": "Bank"
+         *               },
+         *               "nextAuditOn": null,
+         *               "number": "",
+         *               "orgUnitId": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
+         *               "owner": {
+         *                 "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *                 "name": "Karin Holm"
+         *               },
+         *               "reference": "FI 12-3456",
+         *               "scopeNote": "",
+         *               "scopeStatement": "",
+         *               "serviceTerms": [],
+         *               "validUntil": null,
+         *               "version": 1,
+         *               "withdrawnOn": null
+         *             }
+         *           ],
          *           "name": "Example Bank AB",
          *           "orgNumber": "556000-0000",
          *           "parentId": null,
@@ -29120,7 +29389,7 @@ export interface components {
              * Items
              * @description The units on this page, by name; an empty list is a 200 and means the bank has recorded none.
              */
-            items: components["schemas"]["TenantOrgUnit"][];
+            items: components["schemas"]["TenantOrgUnitRow"][];
             /**
              * Total
              * @description How many units the bank has in total, active and deactivated, not how many are on this page.
@@ -29176,6 +29445,117 @@ export interface components {
              * @description A new parent unit, a UUID of the same bank; null by default, which leaves it alone.
              */
             parentId?: string | null;
+        };
+        /**
+         * TenantOrgUnitRow
+         * @description One unit as `GET /tenant/org-units` lists it: the unit, and on a legal entity the
+         *     licences and certificates it holds, so the organisation screen reads them with the list
+         *     and never once per entity.
+         * @example {
+         *       "active": true,
+         *       "countryCode": "SE",
+         *       "entityTerm": {
+         *         "key": "bank",
+         *         "kind": null,
+         *         "label": "Bank"
+         *       },
+         *       "head": {
+         *         "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *         "name": "Karin Holm"
+         *       },
+         *       "id": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
+         *       "kind": "legal_entity",
+         *       "lei": "5493000EXAMPLE000000",
+         *       "licences": [
+         *         {
+         *           "grantedOn": "2014-03-01",
+         *           "id": "5b7d9e1f-3a2c-4e6b-8d0f-2a4c6e8b0d13",
+         *           "issuedOn": null,
+         *           "issuer": "",
+         *           "licenceType": {
+         *             "key": "bank",
+         *             "kind": null,
+         *             "label": "Bank"
+         *           },
+         *           "nextAuditOn": null,
+         *           "number": "",
+         *           "orgUnitId": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
+         *           "owner": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Karin Holm"
+         *           },
+         *           "reference": "FI 12-3456",
+         *           "scopeNote": "",
+         *           "scopeStatement": "",
+         *           "serviceTerms": [],
+         *           "validUntil": null,
+         *           "version": 1,
+         *           "withdrawnOn": null
+         *         }
+         *       ],
+         *       "name": "Example Bank AB",
+         *       "orgNumber": "556000-0000",
+         *       "parentId": null,
+         *       "version": 3
+         *     }
+         */
+        TenantOrgUnitRow: {
+            /**
+             * Active
+             * @description False once the unit is deactivated; a unit is deactivated and never deleted, so its history stays readable.
+             */
+            active: boolean;
+            /**
+             * Countrycode
+             * @description The two-letter ISO 3166 country a legal entity is registered in, such as `SE`; empty for any other unit.
+             */
+            countryCode: string;
+            /** @description The term of the shared library's `legal_entity` dimension a legal entity is scoped with, the same term obligations are scoped with, so an obligation can be assessed per entity. The terms are a vocabulary of the shared library, which an administrator may extend only through an approved proposal; read `GET /taxonomy/terms` for the live set. Null for every unit that is not a legal entity. */
+            entityTerm: components["schemas"]["TermRef"] | null;
+            /** @description The member who heads the unit, an active member of the same bank, or null when nobody does; a department's head is told about its work. */
+            head: components["schemas"]["PersonRef"] | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The unit's identifier, a UUID that never changes; licences and register rows point at it.
+             */
+            id: string;
+            /**
+             * Kind
+             * @description What the unit is: `group` (the banking group at the top of the tree), `legal_entity` (a company that holds licences and carries the legal-entity scope term, so an obligation can be assessed per entity), `business_area`, `business_unit` and `function` (the last three, with a head, are what screens call a department). A kind is fixed in code and never added by an administrator.
+             * @enum {string}
+             */
+            kind: "group" | "legal_entity" | "business_area" | "business_unit" | "function";
+            /**
+             * Lei
+             * @description The legal entity identifier (ISO 17442, 20 characters) a legal entity carries; empty when it has none or for any other unit.
+             */
+            lei: string;
+            /**
+             * Licences
+             * @description Every licence and certificate the legal entity holds, withdrawn ones included and marked, by grant date: the same rows `GET /tenant/org-units/{orgUnitId}/licences` pages. Always empty for a group or a department, which hold none.
+             */
+            licences: components["schemas"]["TenantLicence"][];
+            /**
+             * Name
+             * @description The unit's name as the bank wrote it, for display; a person may rename it, so match on the id.
+             */
+            name: string;
+            /**
+             * Orgnumber
+             * @description The company registration number a legal entity carries, such as `556000-0000`; empty for any other unit.
+             */
+            orgNumber: string;
+            /**
+             * Parentid
+             * @description The identifier of the unit this one sits under, a UUID of the same bank, or null at the top of the tree.
+             */
+            parentId: string | null;
+            /**
+             * Version
+             * @description The unit's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.
+             */
+            version: number;
         };
         /**
          * TenantOut
