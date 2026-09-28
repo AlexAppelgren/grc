@@ -8,7 +8,7 @@ import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { DialogForm, PersonSelect } from '@/features/tenant-admin/organisation/fields';
 import { useCanEditOrganisation, useCreateOrgUnit, useOrgUnits, useUpdateOrgUnit } from '@/features/tenant-admin/organisation/hooks';
-import { changedFields, fieldErrorsOf, orNull } from '@/features/tenant-admin/organisation/organisation-presentation';
+import { changedFields, DEPARTMENT_KINDS, fieldErrorsOf, isDepartment, orNull, type DepartmentKind } from '@/features/tenant-admin/organisation/organisation-presentation';
 import type { OrgUnit } from '@/features/tenant-admin/organisation/types';
 import { useTeams } from '@/features/tenant-admin/teams/hooks';
 import type { Translate } from '@/shared/i18n';
@@ -20,11 +20,6 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 // and Edit show for vocab.manage, which the server checks again. No step-up and
 // no second person: a department grants no access. A department is deactivated,
 // never deleted, and its kind is plain meta text because this card adds no pill slot.
-
-const DEPARTMENT_KINDS = ['business_area', 'business_unit', 'function'] as const;
-type DepartmentKind = (typeof DEPARTMENT_KINDS)[number];
-
-const isDepartment = (unit: Pick<OrgUnit, 'kind'>): boolean => (DEPARTMENT_KINDS as readonly string[]).includes(unit.kind);
 
 function kindLabel(kind: DepartmentKind, t: Translate): string {
   switch (kind) {

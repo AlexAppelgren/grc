@@ -44,17 +44,17 @@ describe('teams api', () => {
   it('reads the teams in one page and adds one to the team list', async () => {
     const calls = server({ items: [team], total: 1 });
     expect(await teams.listTeams()).toEqual([team]);
-    await teams.createTeam(teams.teamLabels(' Cards ', ''));
+    await teams.createTeam({ labels: teams.teamLabels(' Cards ', ''), orgUnitId: 'unit-1' });
     expect(calls.map(({ method, path, body }) => [method, path, body])).toEqual([
       ['get', '/api/v1/tenant/teams', null],
-      ['post', '/api/v1/vocab/team', { labels: { en: 'Cards' } }],
+      ['post', '/api/v1/vocab/team', { labels: { en: 'Cards' }, extra: { orgUnitId: 'unit-1' } }],
     ]);
   });
 
-  it('renames a team with its version as If-Match', async () => {
+  it('renames a team and sets its department with its version as If-Match', async () => {
     const calls = server({});
-    await teams.renameTeam('cards', teams.teamLabels('Cards', 'Kort'), 4);
-    expect(calls[0]).toEqual({ method: 'patch', path: '/api/v1/vocab/team/cards', body: { labels: { en: 'Cards', sv: 'Kort' } }, ifMatch: '"4"' });
+    await teams.updateTeam('cards', { labels: teams.teamLabels('Cards', 'Kort'), orgUnitId: null }, 4);
+    expect(calls[0]).toEqual({ method: 'patch', path: '/api/v1/vocab/team/cards', body: { labels: { en: 'Cards', sv: 'Kort' }, extra: { orgUnitId: null } }, ifMatch: '"4"' });
   });
 
   it("sets a member's whole set of teams", async () => {

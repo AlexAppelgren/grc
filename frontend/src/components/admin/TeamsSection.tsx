@@ -3,22 +3,24 @@
 import { useState } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
-import { Field, TextInput } from '@/components/ui/Field';
+import { Field, Select, TextInput } from '@/components/ui/Field';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { DialogForm } from '@/features/tenant-admin/organisation/fields';
 import { useCanEditOrganisation, useOrgUnits } from '@/features/tenant-admin/organisation/hooks';
-import { fieldErrorsOf } from '@/features/tenant-admin/organisation/organisation-presentation';
+import { fieldErrorsOf, teamDepartments } from '@/features/tenant-admin/organisation/organisation-presentation';
 import { teamLabels, type Team } from '@/features/tenant-admin/teams/api';
-import { useCreateTeam, useRenameTeam, useTeams } from '@/features/tenant-admin/teams/hooks';
+import { useCreateTeam, useTeams, useUpdateTeam } from '@/features/tenant-admin/teams/hooks';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
-// Teams (design/screens/admin-organisation.html, TEN-03, TEN-S8): each team with
-// its department and how many active members it has. A team is a row of the
-// bank's own `team` list, so Add and Rename write that list under vocab.manage,
-// which the server checks again; retiring and merging one is the list's own
-// screen. Who is in a team is set on the member, under members.manage.
+// Teams (design/screens/admin-organisation.html, TEN-02, TEN-03, TEN-S8): each
+// team with its department and how many active members it has. A team is a row
+// of the bank's own `team` list, so Add and Edit write that list under
+// vocab.manage, which the server checks again: the names, and the department
+// the team sits in, picked from the bank's departments. Retiring and merging
+// one is the list's own screen. Who is in a team is set on the member, under
+// members.manage.
 
 export function TeamsSection() {
   const t = useT();
@@ -51,8 +53,8 @@ export function TeamsSection() {
                     </Meta>
                   </div>
                   {canEdit ? (
-                    <Button variant="ghost" size="small" onClick={() => setEditing(team)} aria-label={t('admin.org.teams.renameNamed', { name: team.label })}>
-                      {t('admin.org.teams.rename')}
+                    <Button variant="ghost" size="small" onClick={() => setEditing(team)} aria-label={t('admin.org.editNamed', { name: team.label })}>
+                      {t('admin.org.edit')}
                     </Button>
                   ) : null}
                 </div>
@@ -76,13 +78,15 @@ export function TeamsSection() {
 function TeamForm({ team, onClose }: { team: Team | null; onClose: () => void }) {
   const t = useT();
   const create = useCreateTeam();
-  const rename = useRenameTeam();
-  const write = team === null ? create : rename;
+  const update = useUpdateTeam();
+  const write = team === null ? create : update;
+  const units = useOrgUnits();
   // The list's own row carries every label and the version a rename sends as If-Match.
   const row = useVocabularyValues('team', true, team !== null).data?.find((value) => value.key === team?.key);
   // A field nobody has typed in shows the row's own label once it has loaded.
   const [nameEn, setNameEn] = useState<string | null>(null);
   const [nameSv, setNameSv] = useState<string | null>(null);
+  const [department, setDepartment] = useState(team?.orgUnitId ?? '');
   const [blank, setBlank] = useState(false);
   const name = nameEn ?? row?.labels.en ?? team?.label ?? '';
   const sv = nameSv ?? row?.labels.sv ?? '';
@@ -94,18 +98,28 @@ function TeamForm({ team, onClose }: { team: Team | null; onClose: () => void })
       return;
     }
     setBlank(false);
-    const labels = teamLabels(name, sv);
-    if (team === null) create.mutate(labels, { onSuccess: onClose });
-    else rename.mutate({ key: team.key, labels, version: row?.version }, { onSuccess: onClose });
+    const draft = { labels: teamLabels(name, sv), orgUnitId: department === '' ? null : department };
+    if (team === null) create.mutate(draft, { onSuccess: onClose });
+    else update.mutate({ key: team.key, draft, version: row?.version }, { onSuccess: onClose });
   };
 
   return (
-    <DialogForm title={team === null ? t('admin.org.teams.addTitle') : t('admin.org.teams.renameNamed', { name: team.label })} error={write.error} formLevel={errors.formLevel} pending={write.isPending} onSubmit={submit} onClose={onClose}>
+    <DialogForm title={team === null ? t('admin.org.teams.addTitle') : t('admin.org.editNamed', { name: team.label })} error={write.error} formLevel={errors.formLevel} pending={write.isPending} onSubmit={submit} onClose={onClose}>
       <Field id="team-name" label={t('admin.org.teams.name')} error={blank ? t('admin.org.teams.nameRequired') : undefined}>
         <TextInput id="team-name" value={name} onChange={(e) => setNameEn(e.target.value)} aria-invalid={blank} />
       </Field>
       <Field id="team-name-sv" label={t('admin.org.teams.nameSv')} hint={t('admin.org.teams.nameSvHint')}>
         <TextInput id="team-name-sv" value={sv} onChange={(e) => setNameSv(e.target.value)} />
+      </Field>
+      <Field id="team-department" label={t('admin.org.teams.department')} hint={t('admin.org.teams.departmentHint')}>
+        <Select id="team-department" value={department} onChange={(e) => setDepartment(e.target.value)} aria-busy={units.isPending}>
+          <option value="">{t('admin.org.teams.noDepartment')}</option>
+          {teamDepartments(units.data ?? [], team?.orgUnitId ?? null).map((unit) => (
+            <option key={unit.id} value={unit.id}>
+              {unit.name}
+            </option>
+          ))}
+        </Select>
       </Field>
     </DialogForm>
   );

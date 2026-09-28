@@ -49,12 +49,17 @@ holds the gate results.
 - WAT-06 and private sources: chunk 13 (R3).
 - The real agent runner: waits for the D-07 EU model path (H80 before it is switched on).
 - ID-07 with ID-S16 and ID-S29: out of R2 by your D-100.
-- **Found at the close:** no route or screen puts a team in a department. A team is added
+- [x] **Found at the close:** no route or screen puts a team in a department. A team is added
   without one (TEN-S8 adds a team and puts people in it), and only the seed's teams carry
   a department. TEN-02 therefore stays `in_progress` with this named in its row. Default
   taken: a small follow-on package (`orgUnitId` on the team's create and edit, with its
   audit row and a journey step); nothing reads a team's department for a permission, so no
-  one sees more or less than they should meanwhile.
+  one sees more or less than they should meanwhile. **Done 2026-09-28
+  (`ten02-team-department`):** `POST /vocab/team` and `PATCH /vocab/team/{key}` (with
+  `If-Match`) take `extra.orgUnitId`, an active department of the same bank (another bank's
+  unit 404, a group, legal entity or deactivated department 422, null takes the team out);
+  the audit rows carry it before and after; the admin's team form picks it; TEN-S8 walks it
+  and TEN-02 reads `built`.
 - **Also found at the close, no decision needed:** an E2E run that seeds before the bank's
   midnight and walks its journeys after it fails every date-anchored journey (H114, a test
   harness fix); and Today sat at 504 to 578 ms against its 500 ms screen budget in one full

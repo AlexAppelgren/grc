@@ -24,13 +24,19 @@ export async function listTeams(): Promise<Team[]> {
   return (await api.get<Page<Team>>(`${TENANT}/teams`, { params: { limit: 100 } })).data.items;
 }
 
-export async function createTeam(labels: Record<string, string>): Promise<void> {
-  await api.post(TEAM_LIST, { labels });
+/** What the team form writes: its names, and the department it sits in (`orgUnitId`, null for none), one of the list's own columns. */
+export interface TeamDraft {
+  labels: Record<string, string>;
+  orgUnitId: string | null;
 }
 
-/** A new name, sent with the version the row was read at, so a rename made in between is refused with stale_write. */
-export async function renameTeam(key: string, labels: Record<string, string>, version: number | undefined): Promise<void> {
-  await api.patch(`${TEAM_LIST}/${id(key)}`, { labels }, version === undefined ? {} : { version });
+export async function createTeam({ labels, orgUnitId }: TeamDraft): Promise<void> {
+  await api.post(TEAM_LIST, { labels, extra: { orgUnitId } });
+}
+
+/** New names and department, sent with the version the row was read at, so a change made in between is refused with stale_write. */
+export async function updateTeam(key: string, { labels, orgUnitId }: TeamDraft, version: number | undefined): Promise<void> {
+  await api.patch(`${TEAM_LIST}/${id(key)}`, { labels, extra: { orgUnitId } }, version === undefined ? {} : { version });
 }
 
 /** The whole set of teams a member is in; the answer is the member as they now stand. */

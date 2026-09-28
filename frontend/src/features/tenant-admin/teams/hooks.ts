@@ -4,12 +4,12 @@ import { useMutation, useQuery, useQueryClient, type UseMutationResult, type Use
 
 import { adminKeys } from '@/features/tenant-admin/hooks';
 import * as teams from '@/features/tenant-admin/teams/api';
-import type { Team } from '@/features/tenant-admin/teams/api';
+import type { Team, TeamDraft } from '@/features/tenant-admin/teams/api';
 import type { Member } from '@/features/tenant-admin/types';
 import { vocabularyKeys } from '@/features/vocabularies/hooks';
 
-// Query keys and invalidation for the teams (playbook 6.1). A team added or
-// renamed here is a row of the `team` list, so the list's own query and every
+// Query keys and invalidation for the teams (playbook 6.1). A team added,
+// renamed or moved here is a row of the `team` list, so the list's own query and every
 // picker reading it refetch too; a member's teams refetch the member list.
 
 export const teamKeys = {
@@ -28,15 +28,15 @@ function useInvalidateTeams(): () => Promise<void> {
   };
 }
 
-export function useCreateTeam(): UseMutationResult<void, unknown, Record<string, string>> {
+export function useCreateTeam(): UseMutationResult<void, unknown, TeamDraft> {
   const invalidate = useInvalidateTeams();
-  return useMutation({ mutationFn: (labels) => teams.createTeam(labels), onSuccess: () => invalidate() });
+  return useMutation({ mutationFn: (draft) => teams.createTeam(draft), onSuccess: () => invalidate() });
 }
 
-export function useRenameTeam(): UseMutationResult<void, unknown, { key: string; labels: Record<string, string>; version: number | undefined }> {
+export function useUpdateTeam(): UseMutationResult<void, unknown, { key: string; draft: TeamDraft; version: number | undefined }> {
   const invalidate = useInvalidateTeams();
-  // A refused rename refetches too, so a stale_write leaves the row as it now stands.
-  return useMutation({ mutationFn: ({ key, labels, version }) => teams.renameTeam(key, labels, version), onSettled: () => invalidate() });
+  // A refused change refetches too, so a stale_write leaves the row as it now stands.
+  return useMutation({ mutationFn: ({ key, draft, version }) => teams.updateTeam(key, draft, version), onSettled: () => invalidate() });
 }
 
 export function useSetMemberTeams(): UseMutationResult<Member, unknown, { userId: string; teams: readonly string[] }> {

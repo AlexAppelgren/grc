@@ -907,12 +907,12 @@ test.describe('tenants journeys', () => {
 // certificates on a legal entity (TEN-02, AC-TEN1). Each stays test.fixme
 // until the task in docs/plans/briefs/FEATURES_0_3_TASKS.md that builds it lands.
 test.describe('departments, teams and certificates', () => {
-  // c8-ui-departments-teams-removal (TEN-02, TEN-03). Karin heads the new department; a
-  // team is added to the bank's team list and the reserved member is put in it on the member
-  // row, then taken out again, on failure too. GET /me's departments, one audit event per
-  // call, the refusal of another bank's member and the database's composite keys are proven
-  // on the server (apps/tenants/tests_scenarios.py). No route yet puts a team in a
-  // department, so the seeded Retail compliance shows it.
+  // c8-ui-departments-teams-removal and ten02-team-department (TEN-02, TEN-03). Karin heads
+  // the new department; a team is added to the bank's team list in it, moved to the seeded
+  // Retail Banking, and the reserved member is put in it on the member row, then taken out
+  // again, on failure too. GET /me's departments, the audit events before and after, the
+  // refusal of another bank's department and member and the database's composite keys are
+  // proven on the server (apps/tenants/tests_scenarios.py).
   test("TEN-S8: A department has a head and teams, and team membership is set on the member row", async ({ page, apiGuard }, testInfo) => {
     allowFreshContext(apiGuard);
     const run = `${Date.now()}-${testInfo.retry}`;
@@ -923,7 +923,8 @@ test.describe('departments, teams and certificates', () => {
       await page.goto('/admin/members');
       await page.locator('[data-member-id]', { hasText: LOGINS.teamMember }).click();
       await expect(page.getByRole('heading', { level: 1, name: 'Linnea Forsberg' })).toBeVisible();
-      await memberTeams.getByRole('checkbox', { name: team, exact: true }).setChecked(checked);
+      // The member's team row names the department the team now sits in.
+      await memberTeams.getByRole('checkbox', { name: `${team} Retail Banking`, exact: true }).setChecked(checked);
       await page.getByRole('button', { name: 'Save teams' }).click();
       await expect(page.getByText('Teams saved.', { exact: true })).toBeVisible();
     };
@@ -950,9 +951,24 @@ test.describe('departments, teams and certificates', () => {
     await teams.getByRole('button', { name: 'Add a team' }).click();
     const addTeam = page.getByRole('dialog', { name: 'Add a team' });
     await addTeam.getByLabel('Name', { exact: true }).fill(team);
+    await addTeam.getByLabel('Department').selectOption({ label: department });
     await addTeam.getByRole('button', { name: 'Save' }).click();
     await expect(addTeam).toBeHidden();
-    await expect(teams.locator('[data-team]', { hasText: team })).toContainText('0 members');
+    const addedTeam = teams.locator('[data-team]', { hasText: team });
+    await expect(addedTeam).toContainText('0 members');
+    await expect(addedTeam).toContainText(department);
+    await expect(added).toContainText('1 team');
+
+    // The team moves to another department with the version it was read at.
+    await addedTeam.getByRole('button', { name: `Edit ${team}` }).click();
+    const editTeam = page.getByRole('dialog', { name: `Edit ${team}` });
+    await expect(editTeam.getByLabel('Department')).toHaveValue(/.+/);
+    await editTeam.getByLabel('Department').selectOption({ label: 'Retail Banking' });
+    await editTeam.getByRole('button', { name: 'Save' }).click();
+    await expect(editTeam).toBeHidden();
+    await expect(addedTeam).toContainText('Retail Banking');
+    await expect(addedTeam).not.toContainText(department);
+    await expect(added).toContainText('0 teams');
 
     try {
       await saveTeams(true);

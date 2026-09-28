@@ -7,12 +7,16 @@ import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { REFRESH_PATH } from '@/shared/utils/api-client';
 
 // Teams (TEN-03, TEN-S8): each team with its department and member count, a
-// retired one dimmed; Add and Rename write the bank's `team` list, a rename
-// with the version the row was read at.
+// retired one dimmed; Add and Edit write the bank's `team` list with the
+// department picked from the bank's departments (TEN-02), an edit with the
+// version the row was read at.
 
 const TEAM_LIST = '/api/v1/vocab/team';
 
 const retail = { id: 'retail', kind: 'business_area', name: 'Retail Banking', parentId: null, orgNumber: '', lei: '', countryCode: '', entityTerm: null, head: null, active: true, version: 1 };
+const cards = { ...retail, id: 'cards', kind: 'function', name: 'Cards' };
+const closed = { ...retail, id: 'closed', name: 'Closed department', active: false };
+const entity = { ...retail, id: 'bank-ab', kind: 'legal_entity', name: 'Example Bank AB' };
 const team = { key: 'retail_compliance', label: 'Retail compliance', email: '', active: true, memberCount: 4, orgUnitId: 'retail' };
 const old = { key: 'old_desk', label: 'Old desk', email: '', active: false, memberCount: 0, orgUnitId: null };
 const row = { key: 'retail_compliance', kind: null, label: 'Retail compliance', labels: { en: 'Retail compliance', sv: 'Compliance privatmarknad' }, usageNote: '', sortOrder: 1, active: true, isSystem: false, isDefault: false, usageCount: 0, extra: {}, version: 7 };
@@ -21,7 +25,7 @@ function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sen
   return installAdapter((sent) => {
     if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === '/api/v1/tenant/teams') return { status: 200, data: { items: [team, old], total: 2 } };
-    if (sent.path === '/api/v1/tenant/org-units') return { status: 200, data: { items: [retail], total: 1 } };
+    if (sent.path === '/api/v1/tenant/org-units') return { status: 200, data: { items: [retail, cards, closed, entity], total: 4 } };
     if (sent.method === 'get' && sent.path === TEAM_LIST) return { status: 200, data: { items: [row], total: 1 } };
     if (sent.method !== 'get' && write !== undefined) return write(sent);
     return { status: 404, data: { code: 'not_found', detail: 'Not for this test.' } };
@@ -56,14 +60,14 @@ describe('teams', () => {
     expect(within(retired).getByText('Retired')).toBeInTheDocument();
   });
 
-  it('shows no Rename or Add without vocab.manage', async () => {
+  it('shows no Edit or Add without vocab.manage', async () => {
     server();
     await renderSection([]);
-    expect(screen.queryByRole('button', { name: /^Rename/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Edit/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add a team' })).not.toBeInTheDocument();
   });
 
-  it('adds a team to the bank team list, and asks for a name first', async () => {
+  it('adds a team to the bank team list in a department, and asks for a name first', async () => {
     const sent = server(() => ({ status: 201, data: row }));
     await renderSection(['vocab.manage']);
     fireEvent.click(screen.getByRole('button', { name: 'Add a team' }));
@@ -72,22 +76,54 @@ describe('teams', () => {
     expect(await within(dialog).findByText('Give the team a name.')).toBeInTheDocument();
     expect(sent.some((s) => s.method === 'post' && s.path === TEAM_LIST)).toBe(false);
     fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: ' Savings compliance ' } });
+    const picker = within(dialog).getByLabelText('Department');
+    await within(picker).findByRole('option', { name: 'Cards' });
+    // Only the bank's active departments: never a legal entity or a deactivated department.
+    expect(within(picker).getAllByRole('option').map((o) => o.textContent)).toEqual(['No department', 'Retail Banking', 'Cards']);
+    fireEvent.change(picker, { target: { value: 'cards' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
-    await waitFor(() => expect(sent.find((s) => s.method === 'post' && s.path === TEAM_LIST)).toMatchObject({ path: TEAM_LIST, body: { labels: { en: 'Savings compliance' } } }));
+    await waitFor(() =>
+      expect(sent.find((s) => s.method === 'post' && s.path === TEAM_LIST)).toMatchObject({ path: TEAM_LIST, body: { labels: { en: 'Savings compliance' }, extra: { orgUnitId: 'cards' } } }),
+    );
   });
 
-  it('renames a team with both its labels and the version it was read at', async () => {
+  it('renames a team with both its labels, keeps its department, and sends the version it was read at', async () => {
     const sent = server(() => ({ status: 200, data: row }));
     await renderSection(['vocab.manage']);
-    fireEvent.click(screen.getByRole('button', { name: 'Rename Retail compliance' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Rename Retail compliance' });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Retail compliance' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Retail compliance' });
     await waitFor(() => expect(within(dialog).getByLabelText('Name in Swedish')).toHaveValue('Compliance privatmarknad'));
     fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Retail and savings compliance' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(sent.some((s) => s.method === 'patch')).toBe(true));
     expect(sent.find((s) => s.method === 'patch')).toMatchObject({
       path: `${TEAM_LIST}/retail_compliance`,
-      body: { labels: { en: 'Retail and savings compliance', sv: 'Compliance privatmarknad' } },
+      body: { labels: { en: 'Retail and savings compliance', sv: 'Compliance privatmarknad' }, extra: { orgUnitId: 'retail' } },
     });
+  });
+
+  it('moves a team to another department, or out of any', async () => {
+    const sent = server(() => ({ status: 200, data: row }));
+    await renderSection(['vocab.manage']);
+    for (const [value, orgUnitId] of [['cards', 'cards'], ['', null]] as const) {
+      fireEvent.click(screen.getByRole('button', { name: 'Edit Retail compliance' }));
+      const dialog = await screen.findByRole('dialog', { name: 'Edit Retail compliance' });
+      const picker = within(dialog).getByLabelText('Department');
+      await waitFor(() => expect(picker).toHaveValue('retail'));
+      fireEvent.change(picker, { target: { value } });
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(sent.filter((s) => s.method === 'patch').at(-1)).toMatchObject({ body: { extra: { orgUnitId } } });
+    }
+  });
+
+  it('shows a refusal of the department in the form', async () => {
+    server(() => ({ status: 404, data: { code: 'not_found', detail: 'Not found.' } }));
+    await renderSection(['vocab.manage']);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Retail compliance' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Retail compliance' });
+    fireEvent.change(within(dialog).getByLabelText('Department'), { target: { value: 'cards' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await within(dialog).findByRole('alert')).toBeInTheDocument();
   });
 });

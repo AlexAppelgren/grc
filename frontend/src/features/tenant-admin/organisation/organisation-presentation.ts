@@ -12,6 +12,16 @@ import { problemFrom } from '@/shared/utils/problem';
 /** The units the legal-entities tree draws; departments have their own section. */
 const ENTITY_KINDS: ReadonlySet<OrgUnit['kind']> = new Set(['group', 'legal_entity']);
 
+/** A department is a business area, business unit or function (D-21). */
+export const DEPARTMENT_KINDS = ['business_area', 'business_unit', 'function'] as const;
+export type DepartmentKind = (typeof DEPARTMENT_KINDS)[number];
+
+export const isDepartment = (unit: Pick<OrgUnit, 'kind'>): boolean => (DEPARTMENT_KINDS as readonly string[]).includes(unit.kind);
+
+/** The departments a team can be put in: the active ones, and the one it sits in already. */
+export const teamDepartments = (units: readonly OrgUnit[], current: string | null): OrgUnit[] =>
+  units.filter((unit) => isDepartment(unit) && (unit.active || unit.id === current));
+
 export interface TreeRow {
   unit: OrgUnit;
   depth: number;
