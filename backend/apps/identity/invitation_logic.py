@@ -36,7 +36,7 @@ from apps.identity.models import (
 from apps.identity.security_log import client_ip, log_event
 from apps.shared import permissions as perms
 from apps.shared import tenancy
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.models import Tenant
 
 
@@ -339,6 +339,7 @@ def other_admin_emails(tenant: Tenant, *, excluding: User) -> list[str]:
     return emails
 
 
+@batched()
 def reissue_enrolment(
     *,
     tenant: Tenant,

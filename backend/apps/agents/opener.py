@@ -27,7 +27,7 @@ from apps.agents import scope as run_scope
 from apps.agents.models import AgentRun, ResearchRequest, RunStatus, RunTrigger, TenantAgent
 from apps.identity.models import User
 from apps.shared.adapters.agent_runner import get_agent_runner
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +56,7 @@ def schedule_of(tenant_agent: TenantAgent | None) -> dict[str, Any]:
     return {"tenantAgent": str(tenant_agent.id), "nextRunAt": upcoming.isoformat() if upcoming else None}
 
 
+@batched()
 def open_run(
     *,
     pinned: Pinned,

@@ -42,7 +42,7 @@ from django.utils.text import slugify
 from apps.cases import reading as case_reading
 from apps.library import reading
 from apps.library.models import Jurisdiction, JurisdictionLabel
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.models import Tenant
 from apps.taxonomy import markets_logic, matching, terms_logic
 from apps.taxonomy.models import (
@@ -676,6 +676,7 @@ def _decidable(request: FootprintChangeRequest, expected_version: int | None) ->
         raise ValidationError("Someone changed this first. Reload and try again.", code="stale_write")
 
 
+@batched()
 def approve(
     *,
     tenant: Tenant,

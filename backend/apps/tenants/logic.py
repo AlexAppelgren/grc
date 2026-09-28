@@ -28,7 +28,7 @@ from apps.identity.models import (
 from apps.library.models import Language
 from apps.shared import permissions as perms
 from apps.shared import tenancy
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import (
     Tenant,
@@ -312,6 +312,7 @@ def update_workflow(
 # ---------------------------------------------------------------------------------------
 # Console: the last admin recovers through platform support (ID-05, ID-S13)
 # ---------------------------------------------------------------------------------------
+@batched()
 def console_reissue_enrolment(
     *,
     tenant_id: uuid.UUID,
@@ -434,6 +435,7 @@ def _create_with_derived_slug(name: str) -> Tenant:
                 raise
 
 
+@batched()
 def create_tenant(
     *,
     actor: Actor,

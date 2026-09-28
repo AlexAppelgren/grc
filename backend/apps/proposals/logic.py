@@ -93,7 +93,7 @@ from apps.proposals.schemas import (
     ProposalVocabularyRetirePayload,
 )
 from apps.shared import tenancy
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.schemas import AgentDecision
 
 SUBJECT_TYPE = "proposal"
@@ -1341,7 +1341,8 @@ def approve(
             "A record of an organisation's own is approved by a person there, never by an agent.",
             code="person_review_required",
         )
-    with transaction.atomic():
+    # The block's rows are written as it ends, inside the transaction (ADR 0063).
+    with transaction.atomic(), batched():
         run = _decision_run(reviewer, decision, agent_run_id)
         _decidable(proposal, reviewer)
         if reviewer.user is None and proposal.kind not in AGENT_CONFIRMABLE_KINDS:

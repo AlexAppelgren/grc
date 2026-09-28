@@ -37,7 +37,7 @@ from apps.library.reading import obligation_headings
 from apps.register.duties import OPEN as OPEN_DUTY
 from apps.register.models import DutyOccurrence, Gap, TenantObligation, TenantObligationScope
 from apps.shared import permissions as perms
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.errors import ProblemError
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import Tenant
@@ -230,7 +230,7 @@ def remove_member(
     obligation_ids = list(owned["register_entry"].values_list("obligation_id", flat=True))
     obligation_ids += owned["register_entity"].values_list("tenant_obligation__obligation_id", flat=True)
     headings = obligation_headings(obligation_ids, [])
-    with transaction.atomic():
+    with transaction.atomic(), batched():
         for kind, rows in owned.items():
             if kind not in targets:
                 continue

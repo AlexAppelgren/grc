@@ -38,13 +38,14 @@ from apps.collab.models import Notification, NotificationKind
 from apps.collab.reminders import Send, link, owner_teams, send_mails
 from apps.identity.models import Membership, UserStatus
 from apps.library.reading import today_for
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.models import AuditEvent, Tenant
 from apps.taxonomy.models import Team
 
 ESCALATED = "action.escalated"
 
 
+@batched()
 def escalate(tenant: Tenant) -> list[Notification]:
     """Escalate each open action overdue by the bank's threshold that has never escalated,
     and return the rows written. Runs inside the tenant task's transaction."""

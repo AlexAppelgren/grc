@@ -64,7 +64,7 @@ from apps.proposals.logic import Proposer
 from apps.proposals.models import Proposal, ProposalKind
 from apps.proposals.schemas import ObligationScopePayload
 from apps.shared import ai
-from apps.shared.audit import Actor, ActorType, record
+from apps.shared.audit import Actor, ActorType, batched, record
 from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
@@ -227,6 +227,7 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
     return get_request(tenant=tenant, request_id=request.id)
 
 
+@batched()
 def _opened(request: ResearchRequest, user: User, actor: Actor, *, tenant_id: uuid.UUID | None, subject_title: str, agent_key: str = "") -> None:
     """Open the request's run and record the request: its kind, agent and flags, and never
     its text."""
