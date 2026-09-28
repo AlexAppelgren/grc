@@ -239,8 +239,11 @@ export function EnrolScreen({ invitationToken = null }: { invitationToken?: stri
   const reloadedInvitation = useSyncExternalStore(subscribeNever, cameFromInvitation, () => false) && invitationToken === null;
 
   // Until the person moves, the step follows the session: a visitor starts
-  // at the code, an enrolment session at the passkey.
-  const step: Step | null = chosen ?? (session.status === 'anonymous' ? 'code' : session.status === 'enrolment' ? 'passkey' : null);
+  // at the code, an enrolment session at the passkey. While the session is
+  // still unknown, which includes the server's render, the page shows the code
+  // step a visitor gets, so the first byte carries the real form and never an
+  // empty wait (docs/runbooks/DNS_DOMAINS.md).
+  const step: Step | null = chosen ?? (session.status === 'enrolment' ? 'passkey' : session.status === 'signed-in' ? null : 'code');
 
   useEffect(() => {
     if (chosen === null && session.status === 'signed-in') router.replace('/');

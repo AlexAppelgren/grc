@@ -50,5 +50,11 @@
   "auth.enrol.skip": "Skip for now",
   "auth.enrol.addAnother": "Add another passkey",
   "auth.enrol.expired": "Your enrolment session has ended. Enter your code again to continue.",
-  "auth.enrol.backToCode": "Back to the code"
+  "auth.enrol.backToCode": "Back to the code",
+  "auth.about.title": "About this service",
+  "auth.about.body": "{product} keeps a bank's regulatory obligations in one inventory and records every change, from the day it is published to the day it is signed off. Access is by invitation.",
+  "auth.about.company": "Company",
+  "auth.about.companyName": "bleqq",
+  "auth.about.privacy": "Privacy",
+  "auth.about.security": "Security"
 }

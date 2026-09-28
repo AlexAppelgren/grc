@@ -1,3 +1,7 @@
+import type { APIRequestContext, APIResponse } from '@playwright/test';
+
+import { DEMO_FRAME_NAME } from '@/features/demo/frame';
+
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, LOGINS, signInAs, signOut } from './support/passkeys';
 
@@ -191,5 +195,121 @@ test.describe('site trust', () => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+  });
+});
+
+// The public site and the app on hosts of their own (src/proxy.ts,
+// docs/runbooks/DNS_DOMAINS.md): a second server of the same build runs with
+// PUBLIC_SITE_HOST and APP_HOST set (support/split-hosts.mjs). The app host is
+// localhost, so it shares a site with the API and the passkeys' RP ID as the
+// deployed app and API hosts do; the public host is public.localhost.
+test.describe('the public site and the app on hosts of their own', () => {
+  const APP = process.env.E2E_SPLIT_APP_URL ?? 'http://localhost:3001';
+  const PUBLIC = process.env.E2E_SPLIT_PUBLIC_URL ?? 'http://public.localhost:3001';
+  test.use({ baseURL: APP });
+
+  // What a crawler or a web filter sends: no JavaScript and no Sec-Fetch headers.
+  // Node does not resolve public.localhost, so the request names its host in the
+  // Host header, which is all a request to the real host carries.
+  function crawl(request: APIRequestContext, url: string): Promise<APIResponse> {
+    const { host, pathname, search } = new URL(url);
+    return request.get(`${APP}${pathname}${search}`, { headers: { Host: host }, maxRedirects: 0 });
+  }
+
+  test('a crawler reads the whole public page at / on the public host, and everything else moves to the app host', async ({ request }) => {
+    const home = await crawl(request, `${PUBLIC}/`);
+    expect(home.status()).toBe(200);
+    const html = await home.text();
+    expect(html).toContain(PLATE);
+    expect(html).toMatch(/<meta name="robots" content="index, follow"/);
+    expect(home.headers()['x-robots-tag']).toBeUndefined();
+
+    const welcome = await crawl(request, `${PUBLIC}/welcome?from=a`);
+    expect(welcome.status()).toBe(301);
+    expect(welcome.headers().location).toBe(`${PUBLIC}/?from=a`);
+
+    for (const path of ['/sign-in', '/enrol', '/invite', '/inventory', '/admin/audit-log', '/console/queue', '/api/v1/auth/session', '/not-a-page']) {
+      const moved = await crawl(request, `${PUBLIC}${path}`);
+      expect(moved.status(), path).toBe(301);
+      expect(moved.headers().location, path).toBe(`${APP}${path}`);
+    }
+
+    // The public files stay; the sitemap lists the public host's front door.
+    for (const path of ['/robots.txt', '/.well-known/security.txt']) expect((await crawl(request, `${PUBLIC}${path}`)).status(), path).toBe(200);
+    const sitemap = await (await crawl(request, `${PUBLIC}/sitemap.xml`)).text();
+    expect([...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])).toEqual([`https://${new URL(PUBLIC).host}/`]);
+  });
+
+  test('the app host keeps the app, marks every page noindex, and sends the public page to the public host', async ({ request }) => {
+    for (const path of ['/', '/sign-in', '/enrol', '/inventory']) {
+      const response = await request.get(path, { maxRedirects: 0 });
+      expect(response.status(), path).toBe(200);
+      expect(response.headers()['x-robots-tag'], path).toBe('noindex');
+    }
+    const welcome = await request.get('/welcome', { maxRedirects: 0 });
+    expect(welcome.status()).toBe(301);
+    expect(welcome.headers().location).toBe(`${PUBLIC}/`);
+  });
+
+  test('the sign-in and enrolment pages say what the service is and who runs it before any script runs', async ({ browser }) => {
+    const context = await browser.newContext({ baseURL: APP, javaScriptEnabled: false });
+    const page = await context.newPage();
+    for (const path of ['/sign-in', '/enrol']) {
+      await page.goto(path);
+      const about = page.getByRole('contentinfo', { name: 'About this service' });
+      await expect(about.getByText(/keeps a bank's regulatory obligations in one inventory/)).toBeVisible();
+      await expect(about.getByRole('link', { name: 'bleqq', exact: true })).toHaveAttribute('href', '/welcome');
+      await expect(about.getByRole('link', { name: 'privacy@bleqq.com' })).toBeVisible();
+      await expect(about.getByRole('link', { name: 'security@bleqq.com' })).toBeVisible();
+    }
+    await expect(page.getByRole('heading', { level: 1, name: 'Enter your code' })).toBeVisible();
+    await page.goto('/sign-in');
+    await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+
+    // Without JavaScript the public host still shows the whole public page at /.
+    await page.goto(`${PUBLIC}/`);
+    await expect(page).toHaveURL(`${PUBLIC}/`);
+    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+    await context.close();
+  });
+
+  test('a visitor goes from the public host to sign in on the app host, and back', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await page.goto(`${PUBLIC}/`);
+    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+    await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(`${APP}/sign-in`);
+    await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
+
+    // The company name and the back link both lead to the public host.
+    await page.getByRole('contentinfo', { name: 'About this service' }).getByRole('link', { name: 'bleqq', exact: true }).click();
+    await expect(page).toHaveURL(`${PUBLIC}/`);
+    await page.goto('/sign-in');
+    await page.getByRole('link', { name: '← Back' }).click();
+    await expect(page).toHaveURL(`${PUBLIC}/`);
+    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+
+    // Without a session the app host's front door goes on to the public host, as it goes to /welcome today.
+    await page.goto('/');
+    await expect(page).toHaveURL(`${PUBLIC}/`);
+    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+  });
+
+  test('a passkey signs in on the app host', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.reader);
+    expect(new URL(page.url()).origin).toBe(APP);
+    await page.reload();
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+  });
+
+  test('the demo runs the app in its frame on the public host', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await page.goto(`${PUBLIC}/`);
+    await page.getByRole('button', { name: 'Try out our demo' }).click();
+    const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
+    await app.getByRole('link', { name: 'Watch', exact: true }).first().click();
+    await expect(app.getByRole('tab', { selected: true })).toBeVisible();
+    expect(new URL(page.frame({ name: DEMO_FRAME_NAME })?.url() ?? 'http://x/none').origin).toBe(PUBLIC);
   });
 });

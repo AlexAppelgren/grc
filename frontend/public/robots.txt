@@ -1,7 +1,9 @@
 # The public page is open to crawlers, so a web filter can read and categorise
 # the site; everything else (the app, the console, sign-in and enrolment) is
-# closed by the last line, including any route added later. / is allowed so a
-# crawler that starts there can follow on to /welcome.
+# closed by the last line, including any route added later. / is allowed: on
+# the public host it is the public page itself, and on a single host a crawler
+# that starts there follows on to /welcome. On the app host every page also
+# says noindex (src/proxy.ts).
 User-agent: *
 Allow: /$
 Allow: /welcome

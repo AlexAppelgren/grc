@@ -37,6 +37,12 @@ const BACKEND_PORT = Number(process.env.E2E_BACKEND_PORT ?? 8000) + COLD_PORT_OF
 const DATABASE_NAME = coldStart && !configuredDatabase.endsWith(COLD_SUFFIX) ? `${configuredDatabase}${COLD_SUFFIX}` : configuredDatabase;
 const API_URL = coldStart ? `http://localhost:${BACKEND_PORT}` : (process.env.NEXT_PUBLIC_API_URL ?? `http://localhost:${BACKEND_PORT}`);
 const WEB_URL = `http://localhost:${FRONTEND_PORT}`;
+// The same build once more with the public site and the app on hosts of their
+// own (src/proxy.ts, support/split-hosts.mjs); every other journey runs on
+// WEB_URL, where neither host setting is set.
+const SPLIT_PORT = FRONTEND_PORT + 1;
+const SPLIT_APP_URL = `http://localhost:${SPLIT_PORT}`;
+const SPLIT_PUBLIC_URL = `http://public.localhost:${SPLIT_PORT}`;
 
 // A worker that never saw the command line still resolves the same ports, the
 // same database and the same base URL. The port variables are deliberately left
@@ -46,6 +52,9 @@ if (coldStart) process.env.E2E_COLD_START = '1';
 // cold-start journey runs its management command against E2E_DATABASE_NAME.
 process.env.E2E_BACKEND_URL = API_URL;
 process.env.E2E_DATABASE_NAME = DATABASE_NAME;
+// The host-split journey in public.journey.spec.ts reads both.
+process.env.E2E_SPLIT_APP_URL = SPLIT_APP_URL;
+process.env.E2E_SPLIT_PUBLIC_URL = SPLIT_PUBLIC_URL;
 
 const skipBackend = process.env.E2E_SKIP_BACKEND === '1';
 const isCI = process.env.CI !== undefined;
@@ -96,7 +105,11 @@ export default defineConfig({
                     APP_BASE_URL: WEB_URL,
                     E2E_WORKER_LOG: fileURLToPath(new URL('./test-results/e2e-worker-coldstart.log', import.meta.url)),
                   }
-                : {}),
+                : {
+                    // The split server's app host is an origin of its own.
+                    CORS_ALLOWED_ORIGINS: `${WEB_URL},${SPLIT_APP_URL}`,
+                    WEBAUTHN_ORIGINS: `${WEB_URL},${SPLIT_APP_URL}`,
+                  }),
             },
           },
         ]),
@@ -114,5 +127,23 @@ export default defineConfig({
         NEXT_TELEMETRY_DISABLED: '1',
       },
     },
+    // Started after the entry above has built the app, since web servers start in order.
+    ...(coldStart
+      ? []
+      : [
+          {
+            command: 'node tests/e2e/support/split-hosts.mjs',
+            url: `${SPLIT_APP_URL}/robots.txt`,
+            timeout: 60_000,
+            reuseExistingServer: !isCI,
+            env: {
+              E2E_SPLIT_PORT: String(SPLIT_PORT),
+              PUBLIC_SITE_HOST: new URL(SPLIT_PUBLIC_URL).host,
+              APP_HOST: new URL(SPLIT_APP_URL).host,
+              NEXT_PUBLIC_API_URL: API_URL,
+              NEXT_TELEMETRY_DISABLED: '1',
+            },
+          },
+        ]),
   ],
 });
