@@ -90,6 +90,14 @@ function routeOf(path: string): string {
 async function capture(response: Response, entries: Map<string, DemoRecording>): Promise<void> {
   const request = response.request();
   const url = new URL(response.url());
+  // A cold load takes the person from the refresh answer instead of asking GET /me, but the
+  // demo grants itself a session without one and asks: its /me is the refresh's person,
+  // recorded without the token.
+  if (url.pathname === '/api/v1/auth/refresh' && response.status() === 200) {
+    const me = ((await response.json().catch(() => null)) as { me?: unknown } | null)?.me;
+    if (me !== undefined && me !== null) entries.set('GET /api/v1/me', { key: 'GET /api/v1/me', status: 200, contentType: 'application/json', body: recordedBody('GET /api/v1/me', me) });
+    return;
+  }
   if (!url.pathname.startsWith('/api/') || url.pathname.startsWith('/api/v1/auth/') || request.method() === 'OPTIONS') return;
   const contentType = (response.headers()['content-type'] ?? '').split(';')[0] ?? '';
   let body: unknown = null;
