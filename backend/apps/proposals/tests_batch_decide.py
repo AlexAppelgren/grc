@@ -13,12 +13,14 @@ from __future__ import annotations
 import ast
 import inspect
 import uuid
+from collections.abc import Collection
 from typing import Any
 from unittest import mock
 
 from django.core.exceptions import ValidationError
-from django.db import DEFAULT_DB_ALIAS, transaction
+from django.db import DEFAULT_DB_ALIAS, connection, transaction
 from django.test import TransactionTestCase
+from django.test.utils import CaptureQueriesContext
 
 from apps.agents import testing as agents_testing
 from apps.library import testing as library_build
@@ -30,7 +32,7 @@ from apps.proposals.logic import Proposer, Reviewer
 from apps.proposals.models import Proposal, ProposalBatchRow, ProposalKind, ProposalStatus
 from apps.proposals.schemas import ObligationScopePayload, ProposalBatchDecision
 from apps.proposals.tests_batch import CUSTODY, RETAIL, V1, BatchTestCase, body, change
-from apps.search.logic import reindex
+from apps.search.logic import reindex_obligations
 from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor, ActorType
@@ -72,7 +74,7 @@ class DecidingABatch(BatchTestCase):
 class ApprovingAndRejectingRows(DecidingABatch):
     def test_two_rejected_and_the_rest_approved_change_ten_records_in_one_call(self) -> None:
         rejected = [self._row(0), self._row(1)]
-        with mock.patch("apps.proposals.apply.reindex", wraps=reindex) as reindexed:
+        with mock.patch("apps.proposals.apply.reindex_obligations", wraps=reindex_obligations) as reindexed:
             response = self._decide(
                 {
                     "rows": [{"rowId": str(row.id), "decision": "rejected", "rejectionCode": "wrong_scope"} for row in rejected],
@@ -90,7 +92,8 @@ class ApprovingAndRejectingRows(DecidingABatch):
         )
         self.assertEqual({row["decidedBy"]["id"] for row in answer["rows"]}, {str(self.reviewer.id)})
         self.assertEqual(self._custody(), approved_ids)
-        self.assertEqual({call.args[0] for call in reindexed.call_args_list}, approved_ids)
+        # One index rebuild for every approved record, not one per record.
+        self.assertEqual([set(call.args[0]) for call in reindexed.call_args_list], [approved_ids])
         # A rejected record keeps the scope it had; an approved one keeps its other terms.
         for obligation in self.obligations:
             terms = set(ObligationTerm.objects.filter(obligation=obligation).values_list("term__key", flat=True))
@@ -153,19 +156,54 @@ class ApprovingAndRejectingRows(DecidingABatch):
         self.assertEqual(AuditEvent.objects.filter(action="proposal.batch_row_rejected").count(), 12)
 
     def test_a_failure_part_way_leaves_no_record_changed(self) -> None:
-        calls = {"n": 0}
+        """The index rebuild runs after every link was written, so its failure proves the
+        links, the row decisions and the audit rows roll back with it."""
 
-        def failing(obligation_id: uuid.UUID) -> None:
-            calls["n"] += 1
-            if calls["n"] == 5:
-                raise RuntimeError("the index is down")
-            reindex(obligation_id)
+        def failing(obligation_ids: Collection[uuid.UUID]) -> None:
+            reindex_obligations(obligation_ids)
+            raise RuntimeError("the index is down")
 
         tenancy.clear_tenant()
         reviewer = Reviewer(actor=Actor(kind=ActorType.USER, id=self.reviewer.id, label=self.reviewer.name), user=self.reviewer)
-        with mock.patch("apps.proposals.apply.reindex", side_effect=failing), self.assertRaises(RuntimeError):
+        with mock.patch("apps.proposals.apply.reindex_obligations", side_effect=failing), self.assertRaises(RuntimeError):
             batch.decide(proposal=self.batch, decision=ProposalBatchDecision(rest="approved"), reviewer=reviewer, step_up_assertion_id=uuid.uuid4())
         self._nothing_moved()
+
+
+# Each row: the zone `record()` reads for its audit row (apps/shared/audit.py), and nothing
+# else. It was about 28 before the decision was set-based.
+ROW_QUERIES = 1
+
+
+class TheCostOfADecision(BatchTestCase):
+    def test_a_decision_costs_the_same_however_many_rows_it_decides(self) -> None:
+        """Every lookup, every write and the index rebuild are one statement for the whole
+        decision: one door, one rebuild, one UPDATE per outcome and one audit INSERT for all
+        the rows (perf audit 2026-09-28, finding 4). Only `record()`'s own read of the zone
+        is left per row."""
+        reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")
+
+        def decide(obligations: list[Any], title: str) -> int:
+            filed = self._file(body(*(change(obligation, remove=(RETAIL,)) for obligation in obligations), title=title))
+            self.assertEqual(filed.status_code, 201, filed.content)
+            first = ProposalBatchRow.objects.get(proposal_id=filed.json()["id"], subject_id=obligations[0].id)
+            headers = sign_in(reviewer, step_up=True)
+            data = {"rows": [{"rowId": str(first.id), "decision": "rejected", "rejectionCode": "wrong_scope"}], "rest": "approved"}
+            with CaptureQueriesContext(connection) as queries:
+                response = self._post(f"/proposal-batches/{filed.json()['id']}/decide", data, headers)
+            self.assertEqual(response.status_code, 200, response.content)
+            return len(queries)
+
+        three, nine = decide(self.obligations[:3], "Three rows"), decide(self.obligations[3:], "Nine rows")
+        self.assertEqual(nine - three, 6 * ROW_QUERIES)
+        approved = [obligation.id for obligation in (*self.obligations[1:3], *self.obligations[4:])]
+        self.assertEqual(self._scopes(approved), {CUSTODY})
+        self.assertEqual(self._scopes([self.obligations[0].id, self.obligations[3].id]), {RETAIL})
+        self.assertEqual(AuditEvent.objects.filter(action="obligation.scope_changed").count(), len(approved))
+
+    def _scopes(self, obligation_ids: list[uuid.UUID]) -> set[str]:
+        links = ObligationTerm.objects.filter(obligation_id__in=obligation_ids).select_related("term__dimension")
+        return {f"{link.term.dimension.key}:{link.term.key}" for link in links}
 
 
 class WhoDecides(DecidingABatch):

@@ -193,6 +193,24 @@ class TheBatchRowInPython(TestCase):
         with self.assertRaisesMessage(BatchRowRefused, "already decided"):
             self._decide(stored)
 
+    def test_many_rows_are_decided_once_in_one_update(self) -> None:
+        """`decide()` writes the decision fields of every row named, and refuses the whole
+        write when one of them is already decided, as `save()` refuses one row."""
+        other = row(self.batch)
+        now = timezone.now()
+        with self.assertNumQueries(1):
+            ProposalBatchRow.objects.decide(
+                [self.row.id, other.id], decision=BatchRowDecision.APPROVED.value, rejection_reason=None, decided_by=self.reviewer, decided_at=now
+            )
+        stored = ProposalBatchRow.objects.filter(id__in=[self.row.id, other.id])
+        self.assertEqual({(entry.decision, entry.decided_by_id, entry.decided_at) for entry in stored}, {(BatchRowDecision.APPROVED.value, self.reviewer.id, now)})
+        third = row(self.batch)
+        with self.assertRaisesMessage(BatchRowRefused, "already decided"), transaction.atomic():
+            ProposalBatchRow.objects.decide(
+                [self.row.id, third.id], decision=BatchRowDecision.APPROVED.value, rejection_reason=None, decided_by=self.reviewer, decided_at=now
+            )
+        self.assertEqual(ProposalBatchRow.objects.get(id=third.id).decision, BatchRowDecision.PENDING.value)
+
     def test_saving_anything_else_is_refused(self) -> None:
         self.row.after = {"terms": []}
         with self.assertRaisesMessage(BatchRowRefused, "only its decision may change"):

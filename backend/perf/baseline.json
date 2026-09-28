@@ -235,9 +235,9 @@
     "queries": 29
   },
   "decideProposalBatch": {
-    "medianMs": 350.1,
-    "p95Ms": 377.5,
-    "queries": 350
+    "medianMs": 164.8,
+    "p95Ms": 209.1,
+    "queries": 68
   },
   "declineSupportAccess": {
     "medianMs": 15.5,
@@ -1225,9 +1225,9 @@
     "queries": 30
   },
   "setApplicabilityMany": {
-    "medianMs": 221.2,
-    "p95Ms": 243.5,
-    "queries": 416
+    "medianMs": 73.6,
+    "p95Ms": 197.6,
+    "queries": 20
   },
   "setMemberTeams": {
     "medianMs": 25.9,

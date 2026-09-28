@@ -24,13 +24,15 @@ retired row cannot be relabelled into life, and a system row is never retired.
 from __future__ import annotations
 
 import contextlib
+import functools
+import operator
 import uuid
 from collections.abc import Iterator, Sequence
 from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from django.utils import timezone
 from pydantic.alias_generators import to_camel
 
@@ -82,7 +84,7 @@ from apps.proposals.schemas import (
     ProposalVocabularyRelabelPayload,
     ProposalVocabularyRetirePayload,
 )
-from apps.search.logic import reindex, reindex_provision
+from apps.search.logic import reindex, reindex_obligations, reindex_provision
 from apps.shared.audit import Actor, record
 from apps.shared.tenancy import library_write
 from apps.taxonomy import repoint
@@ -104,8 +106,9 @@ def apply(
 ) -> None:
     """Write what the approved `proposal` asks for, as the reviewer corrected it.
 
-    A batch (PRO-04) is applied row by row: `rows` are the rows of `proposal` being approved
-    now, each checked and written on its own, and a batch's other rows are left as they are.
+    A batch (PRO-04) is applied by its approved rows: `rows` are the rows of `proposal` being
+    approved now, every one checked before any is written, and then written together; a
+    batch's other rows are left as they are.
     A single proposal takes none.
 
     `corrected_payload` is what the reviewer approved and what the library gets; the
@@ -609,7 +612,11 @@ def _obligation_scope(
     the whole decision fails with it rather than writing a scope nobody previewed. A term
     added is live and mirrors no jurisdiction, and a standard's obligation keeps exactly one
     standard term with a link as its source (D-35), as when the batch was filed. Only the
-    links that change are written: a term the obligation keeps stays linked as it was."""
+    links that change are written: a term the obligation keeps stays linked as it was.
+
+    Set-based, whatever the number of rows: every check before any write, one DELETE and one
+    INSERT for the links, one index rebuild for all the obligations, and one audit row per
+    obligation, which the caller's `batched()` block writes together."""
     ids = [row.subject_id for row in rows]
     list(Obligation.objects.select_for_update().filter(pk__in=ids).order_by("id").values_list("id", flat=True))
     in_force = active_shared_obligations(ids)
@@ -618,24 +625,33 @@ def _obligation_scope(
     added = {f"{term.dimension.key}:{term.key}": term for term in (terms_of(wanted) if wanted else [])}
     refuse_mirrored(term.dimension_id for term in added.values())
     sources = {change.obligation_id: change.source for change in payload.changes}
+    scopes: dict[uuid.UUID, list[uuid.UUID]] = {}
     for row in rows:
         obligation = in_force.get(row.subject_id)
         if obligation is None:
             raise ValidationError("A record in this batch was retired after it was filed: reject its row.", code="stale_write")
         before = live.get(obligation.id, {})
-        after: list[str] = row.after["terms"]
         if sorted(before) != row.before["terms"]:
             raise ValidationError(
                 f"The scope of {obligation.stable_key} changed after the batch was filed: reject its row and file it again.",
                 code="stale_write",
             )
-        scope = [before[ref] if ref in before else added[ref].id for ref in after]
-        standards.check(proposal.kind, obligation.instrument, scope, {"terms": sources[obligation.id]}, source_label=proposal.source_label)
-        ObligationTerm.objects.filter(obligation=obligation, term_id__in=[term_id for ref, term_id in before.items() if ref not in after]).delete()
-        for ref in after:
-            if ref not in before:
-                ObligationTerm.objects.create(obligation=obligation, term=added[ref])
-        reindex(obligation.id)
+        scopes[obligation.id] = [before[ref] if ref in before else added[ref].id for ref in row.after["terms"]]
+    opt_in = standards.opt_in_terms({term_id for scope in scopes.values() for term_id in scope})
+    # One DELETE of every link the approved rows drop, one INSERT of every link they add.
+    dropped: list[Q] = []
+    links: list[ObligationTerm] = []
+    for row in rows:
+        obligation = in_force[row.subject_id]
+        standards.check(
+            proposal.kind, obligation.instrument, scopes[obligation.id], {"terms": sources[obligation.id]}, source_label=proposal.source_label, opt_in=opt_in
+        )
+        before = live.get(obligation.id, {})
+        after: list[str] = row.after["terms"]
+        gone = [term_id for ref, term_id in before.items() if ref not in after]
+        if gone:
+            dropped.append(Q(obligation=obligation, term_id__in=gone))
+        links += [ObligationTerm(obligation=obligation, term=added[ref]) for ref in after if ref not in before]
         record(
             action="obligation.scope_changed",
             actor=actor,
@@ -648,6 +664,11 @@ def _obligation_scope(
             after={"terms": after, "proposal": str(proposal.id), "batchRow": str(row.id), "decision": "approved"},
             step_up_assertion_id=step_up,
         )
+    if dropped:
+        ObligationTerm.objects.filter(functools.reduce(operator.or_, dropped)).delete()
+    if links:
+        ObligationTerm.objects.bulk_create(links)
+    reindex_obligations(ids)
 
 
 # ---------------------------------------------------------------------------------------

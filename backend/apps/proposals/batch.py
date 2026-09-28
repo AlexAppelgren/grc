@@ -42,7 +42,7 @@ from apps.agents.screen import screen_all
 from apps.library.reading import active_shared_obligations, obligation_headings, obligation_scope_terms, terms_of, unknown_provision_keys
 from apps.proposals import logic, standards
 from apps.proposals.logic import Proposer, Reviewer
-from apps.proposals.models import DECISION_FIELDS, BatchRowDecision, Proposal, ProposalBatchRow, ProposalKind, ProposalStatus
+from apps.proposals.models import BatchRowDecision, Proposal, ProposalBatchRow, ProposalKind, ProposalStatus
 from apps.proposals.schemas import (
     ObligationScopePayload,
     ProposalActorRef,
@@ -53,7 +53,7 @@ from apps.proposals.schemas import (
     ProposalTarget,
 )
 from apps.shared import tenancy
-from apps.shared.audit import record
+from apps.shared.audit import batched, record
 from apps.shared.errors import ProblemError
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.terms_logic import refuse_mirrored
@@ -407,49 +407,55 @@ def decide(*, proposal: Proposal, decision: ProposalBatchDecision, reviewer: Rev
         if not chosen:
             raise ValidationError("Every row left to approve changed after the batch was filed: reject them.", code="stale_write")
         approved = [row for row, outcome, _ in chosen if outcome == BatchRowDecision.APPROVED.value]
-        if approved:
-            apply.apply(proposal, actor=reviewer.actor, reviewer=reviewer, step_up=step_up_assertion_id, rows=approved)
         now = timezone.now()
-        for row, outcome, reason in chosen:
-            row.decision, row.rejection_reason, row.decided_by, row.decided_at = outcome, reason, reviewer.user, now
-            row.save(update_fields=list(DECISION_FIELDS))
-            if reason is not None:
-                record(
-                    action="proposal.batch_row_rejected",
-                    actor=reviewer.actor,
-                    subject_type=OBLIGATION,
-                    subject_id=row.subject_id,
-                    subject_title=proposal.title,
-                    summary=f"Kept the scope as it is: a row of {proposal.title} was rejected.",
-                    tenant_id=None,
-                    before={"terms": row.before.get("terms", [])},
-                    after={"decision": outcome, "rejectionCode": reason.key, "proposal": str(proposal.id), "batchRow": str(row.id)},
-                    step_up_assertion_id=step_up_assertion_id,
-                )
-        _close(proposal, rows, reviewer, now, decision.note.strip())
-        record(
-            action="proposal.batch_decided",
-            actor=reviewer.actor,
-            subject_type=logic.SUBJECT_TYPE,
-            subject_id=proposal.id,
-            subject_title=proposal.title,
-            summary=f"Decided {len(chosen)} of {len(rows)} rows: {proposal.title}",
-            tenant_id=None,
-            before={"status": ProposalStatus.OPEN.value},
-            after={
-                "status": proposal.status,
-                "rows": [
-                    {
-                        "rowId": str(row.id),
-                        "subjectId": str(row.subject_id),
-                        "decision": row.decision,
-                        "rejectionCode": "" if row.rejection_reason is None else row.rejection_reason.key,
-                    }
-                    for row in rows
-                ],
-            },
-            step_up_assertion_id=step_up_assertion_id,
-        )
+        # Every audit row of the decision, the library's included, is written together when
+        # the block ends, in this transaction.
+        with batched():
+            if approved:
+                apply.apply(proposal, actor=reviewer.actor, reviewer=reviewer, step_up=step_up_assertion_id, rows=approved)
+            same: dict[tuple[str, Any], list[uuid.UUID]] = {}
+            for row, outcome, reason in chosen:
+                row.decision, row.rejection_reason, row.decided_by, row.decided_at = outcome, reason, reviewer.user, now
+                same.setdefault((outcome, reason), []).append(row.id)
+                if reason is not None:
+                    record(
+                        action="proposal.batch_row_rejected",
+                        actor=reviewer.actor,
+                        subject_type=OBLIGATION,
+                        subject_id=row.subject_id,
+                        subject_title=proposal.title,
+                        summary=f"Kept the scope as it is: a row of {proposal.title} was rejected.",
+                        tenant_id=None,
+                        before={"terms": row.before.get("terms", [])},
+                        after={"decision": outcome, "rejectionCode": reason.key, "proposal": str(proposal.id), "batchRow": str(row.id)},
+                        step_up_assertion_id=step_up_assertion_id,
+                    )
+            for (outcome, reason), ids in same.items():  # one UPDATE per outcome and reason
+                ProposalBatchRow.objects.decide(ids, decision=outcome, rejection_reason=reason, decided_by=reviewer.user, decided_at=now)
+            _close(proposal, rows, reviewer, now, decision.note.strip())
+            record(
+                action="proposal.batch_decided",
+                actor=reviewer.actor,
+                subject_type=logic.SUBJECT_TYPE,
+                subject_id=proposal.id,
+                subject_title=proposal.title,
+                summary=f"Decided {len(chosen)} of {len(rows)} rows: {proposal.title}",
+                tenant_id=None,
+                before={"status": ProposalStatus.OPEN.value},
+                after={
+                    "status": proposal.status,
+                    "rows": [
+                        {
+                            "rowId": str(row.id),
+                            "subjectId": str(row.subject_id),
+                            "decision": row.decision,
+                            "rejectionCode": "" if row.rejection_reason is None else row.rejection_reason.key,
+                        }
+                        for row in rows
+                    ],
+                },
+                step_up_assertion_id=step_up_assertion_id,
+            )
     return proposal
 
 

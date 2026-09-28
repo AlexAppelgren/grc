@@ -4,6 +4,7 @@ write goes through record(); every threshold comes from settings (playbook 3).""
 from __future__ import annotations
 
 import uuid
+from collections.abc import Collection
 
 from apps.search import indexing
 
@@ -20,6 +21,12 @@ def reindex(obligation_id: uuid.UUID) -> None:
     may write a chunk, and it returns counts this hook has no use for.
     """
     indexing.reindex(obligation_id)
+
+
+def reindex_obligations(obligation_ids: Collection[uuid.UUID]) -> None:
+    """The same hook for many obligations at once: the approval of a batch that re-tags
+    them (PRO-04) rebuilds their chunks in one pass rather than one per obligation."""
+    indexing.reindex_obligations(obligation_ids)
 
 
 def reindex_provision(provision_id: uuid.UUID) -> None:
