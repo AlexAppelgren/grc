@@ -62,7 +62,8 @@ holds the gate results.
   and TEN-02 reads `built`.
 - **Also found at the close, no decision needed:** an E2E run that seeds before the bank's
   midnight and walks its journeys after it fails every date-anchored journey (H114, a test
-  harness fix); and Today sat at 504 to 578 ms against its 500 ms screen budget in one full
+  harness fix, **done 2026-09-28** (`r2f-h114-seeded-day`): the E2E backend now refuses to
+  seed a run that would cross a bank's midnight within `E2E_RUN_MINUTES`, default 30); and Today sat at 504 to 578 ms against its 500 ms screen budget in one full
   run on this session's machine, green in the next (H115).
 
 **Defaults this package took:**
