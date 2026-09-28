@@ -78,6 +78,17 @@ step 15 (agents) and the watch feed's empty state wait for their chunks.
 - The mail sender has SPF and DKIM on its domain, or codes land in spam.
 - Every step above left an audit event (Tenant admin, Audit log).
 
+## Before a bank's first person enrols: its web filter
+
+Step 6 emails a bank's first administrator a link to the application host. A
+bank's web filter or proxy that does not know `bleqq.com` may block that host,
+or class the domain as suspicious (SEB's did, 2026-09-28). Before step 6, ask
+the bank's IT to allow **`*.bleqq.com`** (and `bleqq.com`) in its web filter,
+secure web gateway and proxy, for HTTPS: the public page, the application and
+the API are separate hosts under it, and allowing only one breaks sign-in. Send
+them `docs/assurance/network-access.md`, which says what each host serves and
+what the browser needs (JavaScript, the API's cookie, WebAuthn).
+
 ## Extended as consoles land
 
 | Chunk | Steps to add |
