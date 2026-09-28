@@ -630,6 +630,9 @@ jobs:
       - name: Run journeys
         env:
           E2E_PREBUILT: "1"
+          # One part of the sharded suite runs in about 3 minutes, so the seed's midnight
+          # guard (H114) looks 10 minutes ahead here instead of a full local run's 30.
+          E2E_RUN_MINUTES: "10"
           FULL_SUITE: ${{ needs.changes.outputs.full }}
           PART: ${{ matrix.part }}
           SCREENS: "NFR-S7: Every screen reaches real data within its budget"
