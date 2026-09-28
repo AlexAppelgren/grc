@@ -12,8 +12,8 @@ obligation, 404 otherwise, and its entity must still follow the standard (422
 
 "Applies" and "we comply" are separate facts (CLAUDE.md section 5): nothing here reads or
 writes a compliance status or a gap. A read writes nothing: the register entry is created by
-`ensure_register_entry()` and an entity's scope row here, both only in the transaction of the
-write that needs them.
+`ensure_register_entries()` and an entity's scope row here, both only in the transaction of
+the write that needs them, and each in one statement however many the call needs.
 
 An obligation spans the bank's active legal entities whose entity term it carries, or all of
 them when it carries no term in that entity's dimension, as a standard's conformance
@@ -30,13 +30,13 @@ from typing import NamedTuple
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import models
 from django.db.models import F
 from django.utils import timezone
 
 from apps.library.reading import RecordHeading, obligation_headings, obligation_scopes
 from apps.register import duties
-from apps.register.logic import ensure_register_entry
+from apps.register.logic import ensure_register_entries
 from apps.register.models import Applicability, SoaUnit, TenantObligation, TenantObligationScope
 from apps.register.schemas import (
     RegisterApplicability,
@@ -181,17 +181,22 @@ def _store(
     if expected_version is not None:
         _check_version(answers[0], entries, scopes, units, expected_version)
 
-    missing = obligation_ids - entries.keys()
-    for obligation_id in sorted(missing):
-        ensure_register_entry(tenant_id=tenant.id, obligation_id=obligation_id, actor=actor)
-    if missing:
-        entries |= _locked_entries(missing)
-
     decided_at = timezone.now()
-    default_status: ComplianceStatus | None = None
     stored = []
+    written: list[TenantObligation | TenantObligationScope | SoaUnit] = []
     applied: list[tuple[TenantObligation, TenantObligationScope | None]] = []
     with batched():  # one audit INSERT and one outbox INSERT for every answer of the call
+        missing = obligation_ids - entries.keys()
+        wanted = {(answer.obligation_id, answer.org_unit_id) for answer in answers if answer.unit_id is None and answer.org_unit_id is not None}
+        status = None  # the bank's default compliance status, read once if anything is created
+        if missing:
+            status = _default_status()
+            entries |= ensure_register_entries(
+                tenant_id=tenant.id, headings={obligation_id: headings[obligation_id] for obligation_id in missing}, actor=actor, status=status
+            )
+        new = {(entries[obligation_id].id, org_unit_id) for obligation_id, org_unit_id in wanted} - scopes.keys()
+        if new:
+            scopes |= _new_scopes(tenant, new, status or _default_status())
         for answer in answers:
             entry = entries[answer.obligation_id]
             row: TenantObligation | TenantObligationScope | SoaUnit = entry
@@ -199,15 +204,12 @@ def _store(
             if answer.unit_id is not None:
                 row = units[answer.unit_id]
             elif answer.org_unit_id is not None:
-                scope = scopes.get((entry.id, answer.org_unit_id))
-                if scope is None:
-                    default_status = default_status or ComplianceStatus.objects.get(is_default=True, active=True)
-                    scope = _new_scope(tenant, entry, answer.org_unit_id, default_status)
-                row = scope
+                scope = row = scopes[(entry.id, answer.org_unit_id)]
             stored.append(_write(tenant, person, actor, entry, row, answer, headings[answer.obligation_id], names, decided_at))
+            written.append(row)
             if answer.applicability == "applies" and answer.unit_id is None:
                 applied.append((entry, scope))
-        _write_units(units.values(), person, decided_at)
+        _update(written, person, decided_at)
         if applied:
             # REG-07 (c8-duty-occurrences): an answer "applies" writes the first occurrence of
             # each recurring duty that has none, in this transaction. A Statement of
@@ -216,20 +218,27 @@ def _store(
     return stored
 
 
-def _write_units(units: Iterable[SoaUnit], person: uuid.UUID, decided_at: datetime.datetime) -> None:
-    """One UPDATE per distinct answer and reason rather than one per unit: a pasted Statement
-    of Applicability answers up to `REGISTER_BULK_MAX` units in one call, inside the API
-    budget (AC-REG1). Each unit was read under its lock, so its version moves by one."""
-    same: dict[tuple[str, str], list[uuid.UUID]] = {}
-    for unit in units:
-        same.setdefault((unit.applicability, unit.applicability_reason), []).append(unit.id)
-    for (value, reason), ids in same.items():
-        SoaUnit.objects.filter(pk__in=ids).update(
+def _default_status() -> ComplianceStatus:
+    return ComplianceStatus.objects.get(is_default=True, active=True)
+
+
+def _update(rows: Iterable[TenantObligation | TenantObligationScope | SoaUnit], person: uuid.UUID, decided_at: datetime.datetime) -> None:
+    """One UPDATE per kind of row, answer and reason rather than one per row: a pasted
+    Statement of Applicability, or a bank's answers to a whole regime, answers up to
+    `REGISTER_BULK_MAX` rows in one call, inside the API budget (AC-REG1). Each row was read
+    under its lock, so its version moves by one, as `_write()` already counted it."""
+    same: dict[tuple[type[models.Model], str, str], list[uuid.UUID]] = {}
+    for row in rows:
+        same.setdefault((type(row), row.applicability, row.applicability_reason), []).append(row.id)
+    for (model, value, reason), ids in same.items():
+        stamped = {} if model is SoaUnit else {"updated_at": decided_at}
+        model._default_manager.filter(pk__in=ids).update(
             applicability=value,
             applicability_reason=reason,
             applicability_decided_at=decided_at,
             applicability_decided_by_id=person,
             version=F("version") + 1,
+            **stamped,
         )
 
 
@@ -268,18 +277,20 @@ def _locked_scopes(
     return {(row.tenant_obligation_id, row.org_unit_id): row for row in rows}
 
 
-def _new_scope(tenant: Tenant, entry: TenantObligation, org_unit_id: uuid.UUID, status: ComplianceStatus) -> TenantObligationScope:
-    """The entity's scope row, created in this write's transaction and audited by it. Two
-    first answers at once meet on the unique key, and the second answers over the first."""
-    try:
-        with transaction.atomic():
-            return TenantObligationScope.objects.create(
-                tenant_id=tenant.id, tenant_obligation=entry, org_unit_id=org_unit_id, compliance_status=status, version=0
-            )
-    except IntegrityError:
-        return TenantObligationScope.objects.select_for_update().get(
-            tenant_obligation=entry, org_unit_id=org_unit_id, product__isnull=True
-        )
+def _new_scopes(
+    tenant: Tenant, pairs: Collection[tuple[uuid.UUID, uuid.UUID]], status: ComplianceStatus
+) -> dict[tuple[uuid.UUID | None, uuid.UUID], TenantObligationScope]:
+    """The entities' scope rows of `pairs` (entry, legal entity), created in this write's
+    transaction and audited by it: one INSERT that skips a row another write created first,
+    then one locking read of them all."""
+    TenantObligationScope.objects.bulk_create(
+        [
+            TenantObligationScope(tenant_id=tenant.id, tenant_obligation_id=entry_id, org_unit_id=org_unit_id, compliance_status=status, version=0)
+            for entry_id, org_unit_id in sorted(pairs)
+        ],
+        ignore_conflicts=True,
+    )
+    return _locked_scopes([entry_id for entry_id, _ in pairs], {org_unit_id for _, org_unit_id in pairs})
 
 
 def _write(
@@ -298,18 +309,7 @@ def _write(
     row.applicability_reason = answer.reason
     row.applicability_decided_at = decided_at
     row.applicability_decided_by_id = person
-    row.version += 1
-    if not isinstance(row, SoaUnit):  # the units are written together by _write_units()
-        row.save(
-            update_fields=[
-                "applicability",
-                "applicability_reason",
-                "applicability_decided_at",
-                "applicability_decided_by",
-                "version",
-                "updated_at",
-            ]
-        )
+    row.version += 1  # every row is written together by _update()
     title = f"{heading.instrument_short_name}, {heading.reference_label}"
     summary = f"Applicability set to {answer.applicability}."
     after = {

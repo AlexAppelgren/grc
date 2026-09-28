@@ -16,13 +16,18 @@ from typing import Any
 
 from django.db import connection, transaction
 from django.test.utils import CaptureQueriesContext, override_settings
+from django.utils import timezone
 
+from apps.identity.models import Membership
+from apps.identity.session_logic import revoke_all
 from apps.library import testing as library_build
 from apps.library.models import Obligation
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.register.applicability import APPLICABILITY_SET, entities_spanned
+from apps.register.logic import ENTRY_CREATED
 from apps.register.models import Gap, TenantObligation, TenantObligationScope
 from apps.shared import factories, tenancy
+from apps.shared.audit import Actor
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import ComplianceStatus, GapSource, GapStatus, RiskRating
@@ -333,13 +338,104 @@ class SettingManyAnswers(ApplicabilityTestCase):
         self.assertEqual(two - gate, BATCH_QUERIES + 2 * ROW_QUERIES)
 
 
-# Each row: its UPDATE. Its audit event joins the call's batch below.
-ROW_QUERIES = 1
+    def test_the_set_based_write_still_refuses_a_revoked_session_a_removed_member_and_another_bank(self) -> None:
+        """Saving queries took no decision away: a revoked session is 401, a member removed
+        from the bank is refused, another bank's legal entity is 404, and none stores anything."""
+        before = self.counts()
+        headers = sign_in(self.a.officer, tenant=self.a.tenant)
+        with transaction.atomic():
+            tenancy.activate(self.a.tenant.id)
+            revoke_all(self.a.officer, tenant_id=self.a.tenant.id, reason="test", actor=Actor.system())
+        response = self.client.post(f"{V1}/applicability", data={"rows": self.rows()}, content_type="application/json", **headers)
+        self.assertEqual(response.status_code, 401)
+
+        rows = [{"obligationId": str(self.duty.id), "orgUnitId": str(self.b.bank_ab.id), "applicability": "applies", "reason": "x"}]
+        self.assertEqual(self.post_many(rows).status_code, 404)
+
+        headers = sign_in(self.a.officer, tenant=self.a.tenant)
+        self.activate(self.a.tenant)
+        Membership.objects.filter(tenant=self.a.tenant, user=self.a.officer).update(deactivated_at=timezone.now())
+        response = self.client.post(f"{V1}/applicability", data={"rows": self.rows()}, content_type="application/json", **headers)
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(self.counts(), before)
+
+    def test_rows_created_by_a_call_cost_the_same_however_many_obligations_it_names(self) -> None:
+        """A first answer creates the register entry and, for an entity, its scope row: one
+        INSERT each for the whole call, then one locking re-read, so four fresh obligations
+        cost what two do. Each new entry still gets its own `register.entry_created` event
+        and each answer its own `register.applicability_set` event."""
+        law = library_build.instrument(key="appl-bulk", short_name="BULK", regime="regime:securities")
+        fresh = [library_build.obligation(law, key=f"appl-bulk-{n}", ref_label=f"{n} §") for n in range(6)]
+
+        def call(obligations: list[Obligation]) -> int:
+            rows = [
+                row
+                for obligation in obligations
+                for row in (
+                    {"obligationId": str(obligation.id), "applicability": "applies", "reason": "In scope"},
+                    {"obligationId": str(obligation.id), "orgUnitId": str(self.a.bank_ab.id), "applicability": "applies", "reason": "In scope"},
+                )
+            ]
+            headers = sign_in(self.a.officer, tenant=self.a.tenant)
+            with CaptureQueriesContext(connection) as queries:
+                response = self.client.post(f"{V1}/applicability", data={"rows": rows}, content_type="application/json", **headers)
+            self.assertEqual(response.status_code, 200, response.content)
+            answered.extend(response.json()["items"])
+            return len(queries)
+
+        answered: list[dict[str, Any]] = []
+        self.assertEqual(call(fresh[:2]), call(fresh[2:]))
+        self.activate(self.a.tenant)
+        entries = TenantObligation.objects.filter(obligation__in=fresh)
+        scopes = TenantObligationScope.objects.filter(tenant_obligation__obligation__in=fresh, org_unit=self.a.bank_ab)
+        self.assertEqual(scopes.count(), len(fresh))
+        stored = {(str(entry.obligation_id), ""): entry for entry in entries} | {
+            (str(scope.tenant_obligation.obligation_id), str(scope.org_unit_id)): scope for scope in scopes
+        }
+        # The version each answer reports is the one the shared UPDATE left on its row.
+        self.assertEqual(
+            sorted((key, row.applicability, row.version) for key, row in stored.items()),
+            sorted(((item["obligationId"], item["orgUnitId"] or ""), "applies", item["version"]) for item in answered),
+        )
+        created = AuditEvent.objects.filter(action=ENTRY_CREATED, subject_id__in=[entry.id for entry in entries])
+        self.assertEqual(sorted(created.values_list("subject_id", flat=True)), sorted(entry.id for entry in entries))
+        self.assertEqual(len([event for event in self.answers() if event.after["obligationId"] in {str(o.id) for o in fresh}]), 2 * len(fresh))
+
+    def test_creating_rows_adds_a_fixed_number_of_queries(self) -> None:
+        """The same call costs CREATION_QUERIES more when it creates the entries and scope rows
+        than when they exist, measured net of the other rows' identical work."""
+        law = library_build.instrument(key="appl-fixed", short_name="FIX", regime="regime:securities")
+        fresh = [library_build.obligation(law, key=f"appl-fixed-{n}", ref_label=f"{n} §") for n in range(3)]
+
+        def call(applicability: str) -> int:
+            rows = [
+                {"obligationId": str(obligation.id), "orgUnitId": str(self.a.bank_ab.id), "applicability": applicability, "reason": "In scope"}
+                for obligation in fresh
+            ]
+            headers = sign_in(self.a.officer, tenant=self.a.tenant)
+            with CaptureQueriesContext(connection) as queries:
+                response = self.client.post(f"{V1}/applicability", data={"rows": rows}, content_type="application/json", **headers)
+            self.assertEqual(response.status_code, 200, response.content)
+            return len(queries)
+
+        first = call("not_applicable")
+        self.assertEqual(first - call("not_applicable"), CREATION_QUERIES)
+
+
+# Each row: nothing of its own. Its UPDATE is shared with every row of the same kind, answer
+# and reason, and its audit event joins the call's batch below.
+ROW_QUERIES = 0
 # Once per call, whatever its length: the obligations and their titles (2), the legal
 # entities (1) and the scope rule (5), the locking reads of the entries and the scope rows
-# (2), and every audit event of the call (`audit.batched()`: savepoint, one audit INSERT,
-# one outbox INSERT, release). Pinned so a lookup that turns per-row shows up here.
-BATCH_QUERIES = 14
+# (2), one UPDATE per kind of row, answer and reason (1 here), and every audit event of the
+# call (`audit.batched()`: savepoint, one audit INSERT, one outbox INSERT, release). Pinned
+# so a lookup or a write that turns per-row shows up here.
+BATCH_QUERIES = 15
+# What a call adds when it creates rows, however many: the default compliance status (1), one
+# INSERT of the missing entries and its locking re-read (2), and one INSERT of the missing
+# scope rows and its locking re-read (2), less the locking read of existing scope rows, which
+# a call that found no entry has no reason to make (1).
+CREATION_QUERIES = 4
 
 
 # c8-ui-applicability-status: the legal entities an answer can be given for, read before any
