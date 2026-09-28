@@ -109,3 +109,87 @@ test.describe('public page', () => {
     await expect.poll(() => page.frame({ name: 'elsewhere' })?.url()).toMatch(/^chrome-error:/);
   });
 });
+
+// What a bank's web filter checks before it trusts the site (docs/runbooks/DNS_DOMAINS.md
+// "Site trust"): an address that is not there says so with its status, crawlers may read the
+// public page and nothing else, security.txt names a contact, and every page sends the
+// security headers.
+test.describe('site trust', () => {
+  const HEADERS = {
+    'content-security-policy': "frame-ancestors 'self'",
+    'x-frame-options': 'SAMEORIGIN',
+    'strict-transport-security': 'max-age=31536000',
+    'x-content-type-options': 'nosniff',
+    'referrer-policy': 'strict-origin-when-cross-origin',
+    'permissions-policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+  };
+
+  test('an address no route serves answers 404, and the pages that exist answer 200', async ({ request }) => {
+    for (const path of ['/this-page-does-not-exist-9x', '/inventory/not-a-screen/deeper', '/console/not-a-screen']) {
+      expect((await request.get(path)).status(), path).toBe(404);
+    }
+    for (const path of ['/', '/welcome', '/sign-in', '/admin/audit-log', '/me/passkeys']) {
+      expect((await request.get(path)).status(), path).toBe(200);
+    }
+  });
+
+  test('a signed-in person at an unknown address keeps the shell and is told it is not there', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.reader);
+    const response = await page.goto('/this-page-does-not-exist-9x');
+    expect(response?.status()).toBe(404);
+    await expect(page.locator('[data-not-found]')).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+  });
+
+  test('an anonymous visitor at an unknown address gets a 404 and goes on to the public page', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    const response = await page.goto('/inventory/not-a-screen/deeper');
+    expect(response?.status()).toBe(404);
+    await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+  });
+
+  test('security.txt names a contact, an expiry still ahead and its own address (RFC 9116)', async ({ request }) => {
+    const response = await request.get('/.well-known/security.txt');
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toMatch(/^text\/plain; charset=utf-8$/i);
+    const fields = Object.fromEntries(
+      (await response.text()).trim().split('\n').map((line) => [line.slice(0, line.indexOf(':')), line.slice(line.indexOf(':') + 1).trim()]),
+    );
+    expect(fields.Contact).toMatch(/^mailto:[^@\s]+@bleqq\.com$/);
+    expect(Date.parse(fields.Expires ?? '')).toBeGreaterThan(Date.now());
+    expect(fields['Preferred-Languages']).toBe('en, sv');
+    expect(fields.Canonical).toBe('https://bleqq.com/.well-known/security.txt');
+  });
+
+  test('crawlers may read the public page and its sitemap, and nothing of the app', async ({ page, apiGuard, request }) => {
+    allowFreshContext(apiGuard);
+    const robots = await (await request.get('/robots.txt')).text();
+    expect(robots).toMatch(/^Allow: \/\$$/m);
+    expect(robots).toMatch(/^Allow: \/welcome$/m);
+    expect(robots).toMatch(/^Disallow: \/$/m);
+    expect(robots).toMatch(/^Sitemap: https:\/\/bleqq\.com\/sitemap\.xml$/m);
+
+    const sitemap = await request.get('/sitemap.xml');
+    expect(sitemap.status()).toBe(200);
+    expect([...(await sitemap.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1])).toEqual(['https://bleqq.com/welcome']);
+
+    // The public page may be indexed; the app's pages may not.
+    await page.goto('/welcome');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'index, follow');
+    await page.goto('/sign-in');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
+  });
+
+  test('every page sends the security headers, and a passkey still signs in', async ({ page, apiGuard, request }) => {
+    for (const path of ['/welcome', '/admin/audit-log', '/this-page-does-not-exist-9x', '/.well-known/security.txt']) {
+      const headers = (await request.get(path)).headers();
+      for (const [name, value] of Object.entries(HEADERS)) expect(headers[name], `${name} on ${path}`).toBe(value);
+    }
+    // The policy leaves WebAuthn at its default, our own origin, so the ceremony runs.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.reader);
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+  });
+});

@@ -508,7 +508,7 @@ Source: `design/screens/console-shell.html` ("the dock is the first four plus Mo
 | `frontend/src/components/shell/AppShell.tsx` | - Render `TabBar` after `AppSidebar` and before `SidebarInset`.<br>- Add the safe-area gutter at both steps and the bottom clearance.<br>- Make the skip link safe-area aware |
 | `frontend/src/components/shell/NavIcon.tsx` | - Add the `more` (three dots) and `close` icons.<br>- Add the `size` prop (`'row'` 16 px, `'tab'` 20 px) |
 | `frontend/src/shared/navigation/registry.ts` | Add `shortLabelKey?`, `moreDestinations` and `isInMore(surface, permissions, pathname)`. No new dock helper and no exported cap |
-| `frontend/src/app/(tenant)/[...missing]/page.tsx` | New. It calls `notFound()` |
+| `frontend/src/app/(missing)/[...missing]/page.tsx` | New. It calls `notFound()`. Moved out of `(tenant)` into a group of its own (site trust, 2026-09-28): behind the session gate it never rendered on the server, so an unknown URL answered 200. Its group's `not-found.tsx` draws the same screen inside the gate and the shell, and the response is a real 404 |
 | `frontend/src/app/(tenant)/not-found.tsx` | New. It renders `NotFoundScreen` inside the shell.<br>- Unmatched tenant URLs, which today include `/watch`, `/inventory`, `/search` and `/roadmap`, keep the bar and the rail instead of dropping to the bare root 404.<br>- An anonymous visitor on an unknown URL now reaches sign-in instead of a bare 404.<br>- Explicit routes (auth, dev, the future console) still win |
 | `frontend/src/styles/theme.css` | Add `--shadow-float` |
 | `frontend/src/styles/globals.css` | Add `--tabbar-height`, `--tabbar-bottom`, `--tabbar-top`, `scroll-padding-bottom`, the keyboard rule and the two height rules (section 4a) |
