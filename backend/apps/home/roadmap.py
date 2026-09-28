@@ -267,12 +267,20 @@ def in_scope_obligations(tenant: Tenant) -> QuerySet[Obligation, Any]:
     return in_view(Obligation.objects.all(), tenant, "in").values("id")
 
 
+def in_scope_entries(tenant: Tenant) -> list[uuid.UUID]:
+    """The ids of the bank's register entries whose obligation is inside its regulatory scope.
+    The scope rule is the costliest condition the roadmap asks, so it is asked once here and
+    the four register branches, and on Today the standing panel, filter by the answer rather
+    than each asking it again (H115)."""
+    return list(TenantObligation.objects.filter(obligation_id__in=in_scope_obligations(tenant)).values_list("id", flat=True))
+
+
 # A branch: its rows, and how one row becomes a deadline.
 _Branch = tuple[QuerySet[Any], Callable[[Any], _Deadline]]
 
 
 def _internal_branches(
-    tenant: Tenant, query: HomeRoadmapQuery, *, register_reader: bool, cases_reader: bool
+    tenant: Tenant, query: HomeRoadmapQuery, *, in_scope: list[uuid.UUID] | None, cases_reader: bool
 ) -> list[_Branch]:
     today = today_for(tenant)
     live = Licence.objects.filter(withdrawn_on__isnull=True).select_related("licence_type", "owner_user", "owner_team", "org_unit")
@@ -282,22 +290,21 @@ def _internal_branches(
     ]
     if cases_reader:
         branches += _case_branches(query, today)
-    if not register_reader:
+    if in_scope is None:
         return branches
-    in_scope = in_scope_obligations(tenant)
     does_not_apply = Applicability.DOES_NOT_APPLY.value
     entries = (
-        TenantObligation.objects.filter(obligation_id__in=in_scope)
+        TenantObligation.objects.filter(id__in=in_scope)
         .exclude(applicability=does_not_apply)
         .select_related("first_line_owner", "owner_team")
     )
     scopes = (
-        TenantObligationScope.objects.filter(tenant_obligation__obligation_id__in=in_scope)
+        TenantObligationScope.objects.filter(tenant_obligation_id__in=in_scope)
         .exclude(applicability=does_not_apply)
         .exclude(tenant_obligation__applicability=does_not_apply)
         .select_related("tenant_obligation", "owner", "owner_team", "org_unit")
     )
-    gaps = Gap.objects.filter(tenant_obligation__obligation_id__in=in_scope, status__kind__in=OPEN_GAPS).select_related(
+    gaps = Gap.objects.filter(tenant_obligation_id__in=in_scope, status__kind__in=OPEN_GAPS).select_related(
         "tenant_obligation", "owner", "owner_team", "org_unit"
     )
     # An occurrence on one entity is left out where that entity's answer is "does not apply",
@@ -306,7 +313,7 @@ def _internal_branches(
         tenant_obligation_id=OuterRef("tenant_obligation_id"), org_unit_id=OuterRef("org_unit_id"), applicability=does_not_apply
     )
     occurrences = (
-        DutyOccurrence.objects.filter(tenant_obligation__obligation_id__in=in_scope, status__in=OPEN_DUTIES)
+        DutyOccurrence.objects.filter(tenant_obligation_id__in=in_scope, status__in=OPEN_DUTIES)
         .exclude(tenant_obligation__applicability=does_not_apply)
         .exclude(Exists(entity_does_not_apply))
         .select_related("recurring_duty", "tenant_obligation", "owner", "owner_team", "org_unit")
@@ -455,36 +462,44 @@ def _read(
     order: list[str],
     query: HomeRoadmapQuery,
     *,
-    register_reader: bool,
+    in_scope: list[uuid.UUID] | None,
     cases_reader: bool,
     limit: int | None = None,
 ) -> tuple[list[HomeRoadmapItem], int]:
     """Every branch the filter names, merged in date order, and how many items they hold.
+    The register's four branches only with `in_scope`, the bank's register entries inside
+    its regulatory scope (`in_scope_entries()`), which a caller without `register.read` never
+    passes.
 
-    With `limit`, each branch reads at most that many rows and counts the rest, so the first
-    `limit` of the merge are the first `limit` of the whole roadmap without reading all of it:
-    one page query and one count per branch, however many rows there are.
+    With `limit`, each branch reads at most that many rows, so the first `limit` of the merge
+    are the first `limit` of the whole roadmap without reading all of it, and one count over
+    every branch at once says how many there are: a page query per branch and a single count,
+    however many rows there are. A count per branch was eight more queries on every load of
+    Today (H115).
     """
     items: list[HomeRoadmapItem] = []
-    count = 0
+    branches: list[QuerySet[Any]] = []
 
     def page(rows: QuerySet[Any]) -> list[Any]:
-        nonlocal count
-        taken = list(rows if limit is None else rows[:limit])
-        count += len(taken) if limit is None else rows.count()
-        return taken
+        branches.append(rows)
+        return list(rows if limit is None else rows[:limit])
 
     if query.kind != "internal":
         items += _items(page(_cases(tenant, query)), order)
     if query.kind != "regulatory":
         deadlines = [
             deadline(row)
-            for rows, deadline in _internal_branches(tenant, query, register_reader=register_reader, cases_reader=cases_reader)
+            for rows, deadline in _internal_branches(tenant, query, in_scope=in_scope, cases_reader=cases_reader)
             for row in page(rows)
         ]
         items += _deadline_items(deadlines, order)
     items.sort(key=lambda item: (item.date, item.id))
-    return (items if limit is None else items[:limit]), count
+    if limit is None:
+        return items, len(items)
+    # Every branch's rows are one record each, keyed by a uuid, so their ids stack into one
+    # count; a branch with nothing to ask (an empty `IN`) is left out of the union by Django.
+    first, *rest = [rows.order_by().values_list("pk") for rows in branches]
+    return items[:limit], first.union(*rest, all=True).count()
 
 
 def _quarters(items: Iterable[HomeRoadmapItem]) -> list[str]:
@@ -506,21 +521,23 @@ def roadmap_items(
     member may see. An empty answer means nothing is dated
     ahead, not that something failed.
     """
-    items, _count = _read(tenant, order, query, register_reader=register_reader, cases_reader=cases_reader)
+    in_scope = in_scope_entries(tenant) if register_reader else None
+    items, _count = _read(tenant, order, query, in_scope=in_scope, cases_reader=cases_reader)
     return HomeRoadmap(items=items, quarters=_quarters(items))
 
 
 def coming_up(
-    tenant: Tenant, order: list[str], limit: int, *, register_reader: bool = False, cases_reader: bool = False
+    tenant: Tenant, order: list[str], limit: int, *, in_scope: list[uuid.UUID] | None = None, cases_reader: bool = False
 ) -> tuple[list[HomeRoadmapItem], int]:
     """The first `limit` roadmap items and how many there are in all, for Today's "Coming
     up" panel and the count beside it (HOM-01).
 
     The same branches as `GET /roadmap` with no filter, so the panel and the page can never
     disagree about what is next. `limit` is the caller's, because the length of Today's list
-    is Today's decision (`HOME_COMING_UP_ITEMS`).
+    is Today's decision (`HOME_COMING_UP_ITEMS`). The register's deadlines only with
+    `in_scope`, which Today resolves once for this panel and its standing panel both (H115).
     """
-    return _read(tenant, order, HomeRoadmapQuery(), register_reader=register_reader, cases_reader=cases_reader, limit=limit)
+    return _read(tenant, order, HomeRoadmapQuery(), in_scope=in_scope, cases_reader=cases_reader, limit=limit)
 
 
 def calendar_items(tenant: Tenant, order: list[str]) -> list[tuple[str, HomeRoadmapItem]]:

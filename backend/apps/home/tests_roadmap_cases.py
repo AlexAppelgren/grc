@@ -50,13 +50,14 @@ from apps.watch.write import watch_write
 URL = "/api/v1/roadmap"
 D = datetime.date
 
-# Twelve queries for a reader holding both `register.read` and `cases.read`, measured
-# 2026-09-25 on the cost fixture below and pinned so an N+1 shows up as a number: one per
-# branch (the two certificate branches, the entries', entity rows', gaps' and duties' dates,
-# the case deadlines and the actions: 8), the reviewed obligations' titles (2), the owning
-# teams' labels (1) and the regulatory branch's page of cases (1), whose confirmed links and
+# Thirteen queries for a reader holding both `register.read` and `cases.read`, on the cost
+# fixture below and pinned so an N+1 shows up as a number: the bank's register entries inside
+# its regulatory scope (1, asked once for the four register branches, H115), one per branch
+# (the two certificate branches, the entries', entity rows', gaps' and duties' dates, the case
+# deadlines and the actions: 8), the reviewed obligations' titles (2), the owning teams'
+# labels (1) and the regulatory branch's page of cases (1), whose confirmed links and
 # urgencies are not read on a page with no case on it.
-CASES_QUERIES = 12
+CASES_QUERIES = 13
 
 
 def a_case(bank: Bank, title: str, *, owner: User, footprint_match: bool = True, category: CaseStatusCategory = CaseStatusCategory.IMPLEMENTING) -> ChangeCase:
@@ -213,7 +214,9 @@ class CaseDeadlinesOnTheRoadmap(TestCase):
 
     def test_coming_up_holds_them_too(self) -> None:
         self.bank.activate()
-        items, count = roadmap.coming_up(self.bank.tenant, ["en"], 1, register_reader=True, cases_reader=True)
+        items, count = roadmap.coming_up(
+            self.bank.tenant, ["en"], 1, in_scope=roadmap.in_scope_entries(self.bank.tenant), cases_reader=True
+        )
         self.assertEqual(([item.id for item in items], count), ([f"action_due:{self.action.id}"], 2))
 
     def test_another_banks_case_never_reaches_this_banks_roadmap(self) -> None:
