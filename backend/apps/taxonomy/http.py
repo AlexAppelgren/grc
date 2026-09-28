@@ -110,11 +110,14 @@ def principal(request: HttpRequest) -> Principal:
 
 
 def caller_user(request: HttpRequest) -> Any:
+    """The signed-in person, as the session's own read loaded them (no second read)."""
     from apps.identity.models import User
 
     who = principal(request)
     if who.kind is not PrincipalKind.USER:
         raise ProblemError(status=403, code="permission_denied", detail="A person must do this.")
+    if who.user is not None:
+        return who.user
     user = User.objects.filter(pk=who.subject_id).first()  # ordering: pk lookup, at most one row
     if user is None:  # pragma: no cover - a live session always names a user
         raise ProblemError(status=401, code="unauthenticated", detail="Sign in to continue.")
@@ -122,11 +125,15 @@ def caller_user(request: HttpRequest) -> Any:
 
 
 def caller_tenant(request: HttpRequest) -> Any:
+    """The caller's bank with its default language, as the credential's own read loaded it
+    (no second read)."""
     from apps.shared.models import Tenant
 
     who = principal(request)
     if who.tenant_id is None:
         raise ProblemError(status=404, code="not_found", detail="Sign in to a company to see this.")
+    if who.tenant is not None:
+        return who.tenant
     tenant = Tenant.objects.select_related("default_language").filter(pk=who.tenant_id).first()  # ordering: pk lookup, at most one row
     if tenant is None:  # pragma: no cover - the session's tenant always exists
         raise ProblemError(status=404, code="not_found", detail="Not found.")

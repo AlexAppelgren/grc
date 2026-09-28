@@ -9,10 +9,10 @@ import { Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
-import { useCurrentBriefing, useHome } from '@/features/home/hooks';
+import { useHome } from '@/features/home/hooks';
 import { presentStanding, type Standing } from '@/features/home/standing-presentation';
 import { decideNowLines, presentLead } from '@/features/home/today-presentation';
-import type { Briefing, Home } from '@/features/home/types';
+import type { Home } from '@/features/home/types';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import type { VocabularyRow } from '@/features/vocabularies/types';
 import { authorityAndDate } from '@/features/watch/change-presentation';
@@ -30,12 +30,13 @@ import { formatLongDate, type FormatContext } from '@/shared/utils/format';
 // `standing` on GET /home, each line leading to the list it counts; the foot
 // names how the source watching is going.
 
-function LeadCard({ home, briefing, t, ctx }: { home: Home; briefing: Briefing | undefined; t: Translate; ctx: FormatContext }) {
+function LeadCard({ home, t, ctx }: { home: Home; t: Translate; ctx: FormatContext }) {
   if (home.lead === null) return null;
   const lead = home.lead;
   // The briefing's own lead is the same selector Today's is (HOM-01, HOM-02):
-  // "more items this week" counts the rest of the running week's briefing.
-  const moreThisWeek = briefing === undefined ? 0 : Math.max(0, briefing.items.length - 1);
+  // "more items this week" counts the rest of the running week's briefing,
+  // which GET /home counts beside its lead so nothing is chained behind it.
+  const moreThisWeek = Math.max(0, (home.briefingCount ?? 0) - 1);
   return (
     <div className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4" data-lead-card={lead.stableKey}>
       <div className="flex flex-wrap items-center gap-2">
@@ -119,10 +120,6 @@ export function TodayScreen() {
   const permissions = usePermissions() ?? [];
   const query = useHome();
   const forbidden = forbiddenFrom(query.error);
-  // Independent of GET /home's own fan-out (never chained behind it): the
-  // lead card's "Read the briefing" and "N more items this week" read the
-  // running week, which a reader without watch.read cannot see either.
-  const briefingQuery = useCurrentBriefing(query.data?.lead !== null && query.data?.lead !== undefined);
   // The statuses the standing lines filter the inventory by, fetched beside GET /home and
   // never after it: the reader's own permission says whether the panel can show.
   const statuses = useVocabularyValues('compliance_status', false, permissions.includes('register.read'));
@@ -150,7 +147,7 @@ export function TodayScreen() {
         <>
           <div className="mb-4 grid gap-4 lg:grid-cols-[1fr_1.6fr] lg:items-stretch">
             <ComingUpPanel items={home.comingUp} roadmapCount={home.roadmapCount} ctx={ctx} />
-            <LeadCard home={home} briefing={briefingQuery.data} t={t} ctx={ctx} />
+            <LeadCard home={home} t={t} ctx={ctx} />
           </div>
 
           <div className="grid gap-x-4 md:grid-cols-2">

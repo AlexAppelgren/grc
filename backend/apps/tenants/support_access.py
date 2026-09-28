@@ -23,6 +23,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
 from django.db import transaction
+from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.identity import roles_logic
@@ -63,19 +64,15 @@ def state_of(grant: SupportAccess, now: datetime.datetime) -> SupportAccessState
     return "declined" if grant.status == SupportAccessStatus.DECLINED.value else "revoked"
 
 
-def pending_count(*, excluding_user_id: uuid.UUID | None) -> int:
-    """How many requests the activated bank still has to decide, as `state_of` reads a
-    pending one: read-level, requested and not yet expired, never counting one the caller
-    asked for (x-decide-now-counts, Today's "Decide now"). Counts only; loads no grant."""
-    return (
-        SupportAccess.objects.filter(
-            status=SupportAccessStatus.REQUESTED.value,
-            access_level=SupportAccessLevel.READ.value,
-            request_expires_at__gt=timezone.now(),
-        )
-        .exclude(platform_user_id=excluding_user_id)
-        .count()
-    )
+def pending_requests(*, excluding_user_id: uuid.UUID | None) -> QuerySet[SupportAccess]:
+    """The requests the activated bank still has to decide, as `state_of` reads a pending
+    one: read-level, requested and not yet expired, never one the caller asked for
+    (x-decide-now-counts, Today's "Decide now"). `/me` counts them inside its one read."""
+    return SupportAccess.objects.filter(
+        status=SupportAccessStatus.REQUESTED.value,
+        access_level=SupportAccessLevel.READ.value,
+        request_expires_at__gt=timezone.now(),
+    ).exclude(platform_user_id=excluding_user_id)
 
 
 def _person(user: User | None) -> PersonRef | None:

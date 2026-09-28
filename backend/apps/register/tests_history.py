@@ -166,6 +166,18 @@ class History(RegisterWorld):
         theirs = self.put(self.w.other_officer, self.w.other_bank, "Their own reading.", 0)
         self.assertEqual(theirs.json()["current"]["versionNo"], 1)
 
+    def test_the_register_entry_carries_the_reading_so_the_page_asks_once(self) -> None:
+        """The obligation page reads the reading off `GET .../register` rather than a second
+        request (perf-frontend-requests): the same answer, and never another bank's."""
+        self.put(self.w.officer, self.w.bank, "First reading.", 0)
+        self.put(self.w.officer, self.w.bank, READING, 1)
+        headers = sign_in(self.w.reader, tenant=self.w.bank)
+        entry = self.client.get(self.url("register"), **headers).json()
+        self.assertEqual(entry["interpretation"], self.client.get(self.url("interpretation"), **headers).json())
+        self.assertEqual(entry["interpretation"]["current"]["text"], READING)
+        theirs = self.client.get(self.url("register"), **sign_in(self.w.other_officer, tenant=self.w.other_bank)).json()
+        self.assertEqual(theirs["interpretation"], {"obligationId": str(self.w.obligation.id), "current": None, "earlier": []})
+
     def test_both_reads_cost_the_same_queries_however_long_the_history(self) -> None:
         for n in range(2):
             self.assess(self.w.bank, self.w.officer, "gap", days_ago=n + 1, rationale=f"Assessment {n}.")

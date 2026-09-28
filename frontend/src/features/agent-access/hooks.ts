@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
 import * as access from '@/features/agent-access/api';
+import * as org from '@/features/tenant-admin/organisation/api';
+import { orgKeys } from '@/features/tenant-admin/organisation/hooks';
 import type {
   AccessCallPage,
   AccessEntry,
@@ -21,8 +23,6 @@ export const accessKeys = {
   list: ['tenant', 'agent-access', 'list'] as const,
   entry: (entryId: string) => ['tenant', 'agent-access', 'entry', entryId] as const,
   calls: (entryId: string, offset: number) => ['tenant', 'agent-access', 'calls', entryId, offset] as const,
-  orgUnits: ['tenant', 'org-units', 'picker'] as const,
-  products: ['tenant', 'products', 'picker'] as const,
   reach: ['tenant', 'reach'] as const,
 };
 
@@ -38,12 +38,14 @@ export function useAccessCalls(entryId: string, offset: number): UseQueryResult<
   return useQuery({ queryKey: accessKeys.calls(entryId, offset), queryFn: () => access.listCalls(entryId, offset) });
 }
 
+// The pickers read the organisation screen's own lists under its own keys, so
+// one list is cached once and a write on either screen refreshes both.
 export function useOrgUnits(enabled: boolean): UseQueryResult<OrgUnit[]> {
-  return useQuery({ queryKey: accessKeys.orgUnits, queryFn: access.listOrgUnits, enabled });
+  return useQuery({ queryKey: orgKeys.units, queryFn: org.listOrgUnits, enabled });
 }
 
 export function useProducts(enabled: boolean): UseQueryResult<Product[]> {
-  return useQuery({ queryKey: accessKeys.products, queryFn: access.listProducts, enabled });
+  return useQuery({ queryKey: orgKeys.products, queryFn: org.listProducts, enabled });
 }
 
 /** Tenant reach is read under security.manage; without it the state is unknown, never guessed. */

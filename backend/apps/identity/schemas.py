@@ -317,32 +317,6 @@ class SessionTokens(CamelSchema):
     )
 
 
-class RefreshResult(CamelSchema):
-    """The next access token for a live session. The rotated refresh token arrives as a
-    cookie in the same response, never in the body."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"accessToken": _EXAMPLE_ACCESS_TOKEN, "expiresIn": _EXAMPLE_EXPIRES_IN}]})
-
-    access_token: str = Field(
-        description=(
-            "A fresh bearer token for the same session, replacing the one the caller held: "
-            "send it as `Authorization: Bearer <token>` and keep it in memory only. It carries "
-            "the same session kind as before; refreshing never upgrades an enrolment session "
-            "into a full one."
-        )
-    )
-    expires_in: int = Field(
-        description=(
-            "How many seconds the new access token is good for: "
-            f"{settings.ACCESS_TOKEN_TTL_MINUTES * 60} by default (a setting). It never "
-            "outlives the session, which still ends after "
-            f"{settings.SESSION_IDLE_MINUTES_DEFAULT} idle minutes or "
-            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in by default, or "
-            "at the limits of the bank's security policy, which apply at the next refresh."
-        )
-    )
-
-
 class WebAuthnRpEntity(CamelSchema):
     """The service the passkey belongs to (WebAuthn `PublicKeyCredentialRpEntity`)."""
 
@@ -1385,6 +1359,45 @@ class Me(CamelSchema):
             "organisation screen. A legal entity or a group is never a department. My work offers "
             "a department view for each. Empty for someone who heads none, for a platform session "
             "and for an enrolment session."
+        )
+    )
+
+
+class RefreshResult(CamelSchema):
+    """The next access token for a live session. The rotated refresh token arrives as a
+    cookie in the same response, never in the body."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"accessToken": _EXAMPLE_ACCESS_TOKEN, "expiresIn": _EXAMPLE_EXPIRES_IN, "me": Me.model_config["json_schema_extra"]["examples"][0]}  # type: ignore[index]
+            ]
+        }
+    )
+
+    access_token: str = Field(
+        description=(
+            "A fresh bearer token for the same session, replacing the one the caller held: "
+            "send it as `Authorization: Bearer <token>` and keep it in memory only. It carries "
+            "the same session kind as before; refreshing never upgrades an enrolment session "
+            "into a full one."
+        )
+    )
+    expires_in: int = Field(
+        description=(
+            "How many seconds the new access token is good for: "
+            f"{settings.ACCESS_TOKEN_TTL_MINUTES * 60} by default (a setting). It never "
+            "outlives the session, which still ends after "
+            f"{settings.SESSION_IDLE_MINUTES_DEFAULT} idle minutes or "
+            f"{settings.SESSION_ABSOLUTE_HOURS_DEFAULT} hours after sign-in by default, or "
+            "at the limits of the bank's security policy, which apply at the next refresh."
+        )
+    )
+    me: Me | None = Field(
+        description=(
+            "What `GET /me` answers for this session at this moment, so a screen opening "
+            "from a cold start needs no second round trip before it can render. Null for a "
+            "support session, whose refresh reads nothing of the bank."
         )
     )
 

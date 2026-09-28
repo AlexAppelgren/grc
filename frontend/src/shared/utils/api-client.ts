@@ -1,5 +1,7 @@
 import axios, { type AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 
+import type { components } from '@/types/api.generated';
+
 // The single axios instance (playbook 2.3, 6.1). Never a second one, never
 // raw fetch for API calls. Sessions per DECISIONS D-06: the access token lives
 // in memory only, the rotating refresh token in an HttpOnly cookie that the
@@ -88,9 +90,7 @@ export const api = axios.create({
   headers: { Accept: 'application/json' },
 });
 
-interface RefreshResponse {
-  accessToken: string;
-}
+type RefreshResponse = components['schemas']['RefreshResult'];
 
 /**
  * What a refresh attempt established. Only `signed-out` is a verdict about the
@@ -105,6 +105,8 @@ export interface RefreshResult {
   outcome: RefreshOutcome;
   /** The failure behind an `unavailable` outcome, so the screen can render it. */
   error: unknown;
+  /** What `GET /me` answers, carried by the refresh that just ran; absent otherwise. */
+  me?: RefreshResponse['me'];
 }
 
 let refreshInFlight: Promise<RefreshResult> | null = null;
@@ -129,7 +131,7 @@ export function refreshSession(): Promise<RefreshResult> {
       .post<RefreshResponse>(REFRESH_PATH, null, { skipAuthRefresh: true, withCredentials: true })
       .then((response): RefreshResult => {
         tokenStore.set(response.data.accessToken);
-        return { token: response.data.accessToken, outcome: 'refreshed', error: null };
+        return { token: response.data.accessToken, outcome: 'refreshed', error: null, me: response.data.me };
       })
       .catch(refreshFailure)
       .finally(() => {
@@ -141,7 +143,8 @@ export function refreshSession(): Promise<RefreshResult> {
 
 // Cold load: a fresh tab holds no token but may hold a refresh cookie, so the
 // first real request waits for one refresh attempt. `useSession` calls this
-// too, so an anonymous visitor costs one refresh and no `GET /me`. An
+// too, so an anonymous visitor costs one refresh and no `GET /me`, and a
+// signed-in one takes `me` from that refresh instead of asking again. An
 // unreachable server is not an answer, so the attempt is not counted and the
 // next call tries again.
 export async function ensureColdLoadRefresh(): Promise<RefreshResult> {

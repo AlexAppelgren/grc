@@ -136,8 +136,23 @@ def _set_tenant_setting(value: str, *, using: str) -> None:
         cursor.execute("SELECT set_config(%s, %s, true)", [TENANT_SETTING, value])
 
 
+class IdentityLookup:
+    """What `identity_lookup()` hands its block: the zone the session enters as the flag goes
+    off. `then_activate` is how the auth layer, having found and checked the credential's row,
+    activates its tenant (or, with None, no tenant) in the same statement that switches the
+    lookup off, so a request pays one round trip for both. The zone is entered only when the
+    block ends without an error; a block that raises leaves the tenant as it was."""
+
+    def __init__(self) -> None:
+        self.zone: uuid.UUID | None = None
+        self.entering = False
+
+    def then_activate(self, tenant_id: uuid.UUID | None) -> None:
+        self.zone, self.entering = tenant_id, True
+
+
 @contextmanager
-def identity_lookup(*, using: str = DEFAULT_DB_ALIAS) -> Iterator[None]:
+def identity_lookup(*, using: str = DEFAULT_DB_ALIAS) -> Iterator[IdentityLookup]:
     """Read identity rows of any tenant for the duration of the block, inside the open
     transaction, then switch the flag off again. Only the auth layer may use it."""
     connection = connections[using]
@@ -145,11 +160,21 @@ def identity_lookup(*, using: str = DEFAULT_DB_ALIAS) -> Iterator[None]:
         raise NotInTransaction("tenancy.identity_lookup() needs an open transaction: SET LOCAL is a no-op outside one.")
     with connection.cursor() as cursor:
         cursor.execute("SELECT set_config(%s, %s, true)", [IDENTITY_LOOKUP_SETTING, "on"])
+    lookup = IdentityLookup()
+    entering = False
     try:
-        yield
+        yield lookup
+        entering = lookup.entering
     finally:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT set_config(%s, %s, true)", [IDENTITY_LOOKUP_SETTING, ""])
+            if entering:
+                cursor.execute(
+                    "SELECT set_config(%s, %s, true), set_config(%s, %s, true)",
+                    [IDENTITY_LOOKUP_SETTING, "", TENANT_SETTING, str(lookup.zone) if lookup.zone else ""],
+                )
+                _active_tenant.set(lookup.zone)
+            else:
+                cursor.execute("SELECT set_config(%s, %s, true)", [IDENTITY_LOOKUP_SETTING, ""])
 
 
 def identity_lookup_active(*, using: str = DEFAULT_DB_ALIAS) -> bool:

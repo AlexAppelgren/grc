@@ -30,6 +30,7 @@ from django.utils import timezone
 
 from apps.library import testing as library_testing
 from apps.library.models import Obligation
+from apps.library.reading import obligation_headings
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.register import logic
 from apps.register.models import (
@@ -381,6 +382,24 @@ class EnsureRegisterEntry(TransactionTestCase):
             tenancy.activate(self.tenant.id)
             self.assertFalse(TenantObligation.objects.exists())
 
+    def test_many_entries_are_created_at_once_and_an_existing_one_is_kept_without_an_event(self) -> None:
+        """`ensure_register_entries()` skips the entry that exists, creates the rest in one
+        INSERT, and writes `register.entry_created` for the ones it created and no other."""
+        act = library_testing.instrument(key="entry-act-many", regime="regime:securities")
+        more = [library_testing.obligation(act, key=f"entry-duty-{n}") for n in range(2)]
+        with transaction.atomic():
+            kept = self._ensure(self.obligation.id)
+            ids = [self.obligation.id, *(obligation.id for obligation in more)]
+            entries = logic.ensure_register_entries(
+                tenant_id=self.tenant.id,
+                headings=obligation_headings(ids, []),
+                actor=self.officer,
+                status=ComplianceStatus.objects.get(is_default=True, active=True),
+            )
+        self.assertEqual(set(entries), set(ids))
+        self.assertEqual(entries[self.obligation.id].id, kept.id)
+        self.assertEqual(sorted(event.subject_id for event in self._created_events()), sorted(entry.id for entry in entries.values()))
+
     def test_another_banks_private_obligation_is_not_found(self) -> None:
         with self.assertRaises(ValidationError) as refused, transaction.atomic():
             self._ensure(self.private.id)
@@ -464,4 +483,5 @@ class TheEntryHasOneCreator(SimpleTestCase):
     def test_the_guard_sees_the_one_creator(self) -> None:
         visitor = _EntryCreation()
         visitor.visit(ast.parse((APPS_DIR / "register" / "logic.py").read_text(encoding="utf-8")))
-        self.assertEqual(len(visitor.lines), 1)
+        # `ensure_register_entries()`: the entries it builds and the one INSERT that writes them.
+        self.assertEqual(len(visitor.lines), 2)

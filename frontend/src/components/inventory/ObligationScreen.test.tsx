@@ -451,6 +451,15 @@ describe('ObligationScreen', () => {
     expect(document.querySelector('[data-loading-state]')).toBeInTheDocument();
   });
 
+  it('mounts the panels from the address at once, beside the card and never after it', () => {
+    serve(research);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    expect(document.querySelector('[data-loading-state]')).toBeInTheDocument();
+    const mounts = [...document.querySelectorAll<HTMLElement>('[data-panel-mount]')];
+    expect(mounts.map((mount) => mount.dataset.panelMount)).toEqual(['Tags', 'Links', 'History', 'Applicability', 'Status', 'Gaps', 'Participants', 'Comments']);
+    expect(mounts.every((mount) => mount.dataset.for === 'ob-1')).toBe(true);
+  });
+
   it('reads the record as of a typed date and offers the way back to today', async () => {
     serve(research);
     renderIn(<ObligationScreen obligationId="ob-1" />);

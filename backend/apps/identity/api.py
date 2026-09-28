@@ -102,18 +102,19 @@ def _tenant_id(request: HttpRequest) -> uuid.UUID:
 
 
 def _tenant(request: HttpRequest) -> Tenant:
-    return Tenant.objects.select_related("default_language").get(pk=_tenant_id(request))
+    """The session's bank, as its own read loaded it."""
+    tenant_id = _tenant_id(request)
+    return _principal(request).tenant or Tenant.objects.select_related("default_language").get(pk=tenant_id)
 
 
 def _actor_user(request: HttpRequest) -> User:
-    return User.objects.select_related("locale").get(pk=_principal(request).subject_id)
+    """The signed-in person, as the session's own read loaded them."""
+    principal = _principal(request)
+    return principal.user or User.objects.select_related("locale").get(pk=principal.subject_id)
 
 
 def _order(request: HttpRequest) -> list[str]:
-    principal = _principal(request)
-    user = User.objects.select_related("locale").get(pk=principal.subject_id)
-    tenant = Tenant.objects.select_related("default_language").filter(pk=principal.tenant_id).first() if principal.tenant_id else None  # ordering: pk lookup, at most one row
-    return roles_logic.language_order(user, tenant)
+    return roles_logic.language_order(_actor_user(request), _tenant(request) if _principal(request).tenant_id else None)
 
 
 def _session_response(bundle: session_logic.SessionBundle, response: HttpResponse) -> SessionTokens:
@@ -530,7 +531,7 @@ def step_up_verify(request: HttpRequest, body: PasskeyAssertBody) -> StepUpResul
     """
     # Ungated by design: self.
     assertion = passkey_logic.verify_step_up(_principal(request), body.credential.model_dump(by_alias=True, exclude_none=True), request)
-    return StepUpResult(assertion_id=assertion.id, expires_at=passkey_logic.step_up_valid_until(assertion))
+    return StepUpResult(assertion_id=assertion.id, expires_at=passkey_logic.step_up_valid_until(assertion.created_at))
 
 
 # ---------------------------------------------------------------------------------------
@@ -549,8 +550,10 @@ def refresh_session(request: HttpRequest, response: HttpResponse) -> RefreshResu
     """Call this shortly before the access token expires. It takes no body and no
     `Authorization` header: the credential is the `HttpOnly` refresh cookie that sign-in set,
     scoped to `/api/v1/auth`, so a browser client calls it with credentials included. The
-    answer carries a new access token, and the refresh token is rotated: the response sets a
-    new cookie and the old one stops working.
+    answer carries a new access token and, beside it, what `GET /me` would answer for the
+    session, so a screen opening from a cold start needs no second call (`me` is null for a
+    support session). The refresh token is rotated: the response sets a new cookie and
+    the old one stops working.
 
     Two tabs refreshing at once are safe: the previous refresh token presented within
     $replay_grace_seconds seconds of its rotation gets a fresh access token without rotating
@@ -570,7 +573,8 @@ def refresh_session(request: HttpRequest, response: HttpResponse) -> RefreshResu
     access_token, expires_in, new_refresh = session_logic.refresh(request.COOKIES.get(settings.REFRESH_COOKIE_NAME), request)
     if new_refresh is not None:
         session_logic.set_refresh_cookie(response, new_refresh)
-    return RefreshResult(access_token=access_token, expires_in=expires_in)
+    me = me_logic.me_after_refresh(access_token)
+    return RefreshResult(access_token=access_token, expires_in=expires_in, me=None if me is None else Me.model_validate(me))
 
 
 @router.post(

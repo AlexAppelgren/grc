@@ -32,7 +32,6 @@ describe('register api', () => {
     await register.listObligationGaps('ob1', { limit: 50 });
     await register.listGaps({ status: 'open', entity: 'e1' }, { offset: 20 });
     await register.listAssessments('ob1');
-    await register.getInterpretation('ob1');
     await register.listInternalLinks('ob1');
     await register.listInternalItems('reconc');
     await register.listUnits('ob1');
@@ -44,7 +43,6 @@ describe('register api', () => {
       ['get', '/api/v1/obligations/ob1/gaps', { limit: 50 }],
       ['get', '/api/v1/gaps', { status: 'open', entity: 'e1', offset: 20 }],
       ['get', '/api/v1/obligations/ob1/assessments', {}],
-      ['get', '/api/v1/obligations/ob1/interpretation', null],
       ['get', '/api/v1/obligations/ob1/internal-links', {}],
       ['get', '/api/v1/internal-items', { q: 'reconc' }],
       ['get', '/api/v1/obligations/ob1/units', {}],

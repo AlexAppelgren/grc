@@ -130,6 +130,8 @@ MIDDLEWARE = [
     # acc-what-applies (ACC-07): the scope statement on every answer to an agent access
     # credential.
     "apps.shared.agent_access_guard.ScopeStatementMiddleware",
+    # perf-request-once: a read request reads each vocabulary's labels once.
+    "apps.shared.middleware.RequestMemoMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",
@@ -329,6 +331,11 @@ AGENT_RUNS_PER_BEAT = env_int("AGENT_RUNS_PER_BEAT", 5)
 AGENT_RUN_BUDGET_LIMIT = env_str("AGENT_RUN_BUDGET_LIMIT", "5.00")
 if AGENT_BEAT_INTERVAL_MINUTES < 1 or AGENT_RUNS_PER_BEAT < 1:
     raise ImproperlyConfigured("AGENT_BEAT_INTERVAL_MINUTES and AGENT_RUNS_PER_BEAT must each be at least 1")
+# perf-frontend-requests: how many of each agent's latest runs `GET /agents` carries, so the
+# admin page reads them with the list rather than once per agent. A page is at most 100.
+AGENT_RECENT_RUNS = env_int("AGENT_RECENT_RUNS", 5)
+if not 1 <= AGENT_RECENT_RUNS <= 100:
+    raise ImproperlyConfigured("AGENT_RECENT_RUNS must be between 1 and 100")
 try:
     _run_budget_limit = Decimal(AGENT_RUN_BUDGET_LIMIT)
 except InvalidOperation:

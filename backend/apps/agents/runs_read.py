@@ -12,6 +12,11 @@ to the runs the caller asked for; neither can widen what the zone allows.
 
 from __future__ import annotations
 
+import uuid
+
+from django.db.models import F, Window
+from django.db.models.functions import RowNumber
+
 from apps.agents import runs
 from apps.agents.models import AgentRun
 from apps.agents.schemas import AgentRunListItem, AgentRunListPage, TenantRunQuery
@@ -34,6 +39,26 @@ def list_runs(*, who: Principal, query: TenantRunQuery) -> AgentRunListPage:
     return AgentRunListPage(
         items=[_item(run) for run in queryset[query.offset : query.offset + query.limit]], total=queryset.count()
     )
+
+
+def recent_runs(tenant_agent_ids: list[uuid.UUID], *, per_agent: int) -> dict[uuid.UUID, list[AgentRunListItem]]:
+    """The latest `per_agent` runs of each of the bank's own agents, in the order and shape
+    `list_runs` answers for one of them, read in one query however many agents. Row-level
+    security keeps them the caller's bank's, as it does every run row."""
+    if not tenant_agent_ids:
+        return {}
+    ranked = (
+        AgentRun.objects.filter(tenant_agent_id__in=tenant_agent_ids)
+        .annotate(rank=Window(RowNumber(), partition_by=[F("tenant_agent_id")], order_by=[F("started_at").desc(), F("id").desc()]))
+        .filter(rank__lte=per_agent)
+        .select_related("agent", "agent_version", "requested_by")
+        .order_by("tenant_agent_id", "-started_at", "-id")
+    )
+    out: dict[uuid.UUID, list[AgentRunListItem]] = {}
+    for run in ranked:
+        assert run.tenant_agent_id is not None  # the filter above names one
+        out.setdefault(run.tenant_agent_id, []).append(_item(run))
+    return out
 
 
 def _item(run: AgentRun) -> AgentRunListItem:

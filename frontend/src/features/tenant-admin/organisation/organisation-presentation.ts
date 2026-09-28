@@ -47,7 +47,7 @@ export function entityTree(units: readonly OrgUnit[]): TreeRow[] {
   return rows;
 }
 
-export const legalEntities = (units: readonly OrgUnit[]): OrgUnit[] => units.filter((unit) => unit.kind === 'legal_entity');
+export const legalEntities = <U extends OrgUnit>(units: readonly U[]): U[] => units.filter((unit) => unit.kind === 'legal_entity');
 
 /** A certificate is a licence row that carries any of a certificate's own fields. */
 export function isCertificate(licence: Licence): boolean {

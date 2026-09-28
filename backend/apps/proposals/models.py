@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import enum
 import uuid
+from collections.abc import Collection
 from typing import Any
 
 from django.contrib.postgres.fields import ArrayField
@@ -202,6 +203,20 @@ class ProposalBatchRowQuerySet(models.QuerySet["ProposalBatchRow"]):
 
     def delete(self) -> tuple[int, dict[str, int]]:
         raise BatchRowRefused("A batch row is never deleted")
+
+    def decide(self, row_ids: Collection[uuid.UUID], *, decision: str, rejection_reason: Any, decided_by: Any, decided_at: Any) -> None:
+        """The one bulk write a batch row takes: the rows `row_ids` given the same decision in
+        one UPDATE of the decision fields alone, so a reviewer's call on many rows costs one
+        statement per outcome. A row among them already decided refuses the whole write, as
+        `save()` refuses one row; the trigger `proposal_batch_row_decision_guard` stays the
+        database's word on every row it touches."""
+        ids = set(row_ids)
+        pending = self.filter(pk__in=ids, decision=BatchRowDecision.PENDING.value)
+        written = models.QuerySet.update(
+            pending, decision=decision, rejection_reason=rejection_reason, decided_by=decided_by, decided_at=decided_at
+        )
+        if written != len(ids):
+            raise BatchRowRefused("This batch row is already decided; a decision is made once")
 
 
 class ProposalBatchRow(models.Model):

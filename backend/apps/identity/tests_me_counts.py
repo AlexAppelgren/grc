@@ -37,9 +37,10 @@ from apps.tenants.models import SupportAccess, SupportAccessLevel, SupportAccess
 from apps.watch import testing as watch_build
 
 V1 = "/api/v1"
-# `_counts()`'s own eight independent reads, one query each: pinned so a future one that
-# chains a ninth behind another has to look at this number rather than drift past it.
-COUNTS_QUERIES = 8
+# `_figures()`: the eight counts and the passkeys are subqueries of one read
+# (perf-request-once, 2026-09-28; eight separate reads before): pinned so a future count
+# that reads on its own has to look at this number rather than drift past it.
+COUNTS_QUERIES = 1
 ZEROS = {
     "triage": 0,
     "proposals": 0,
@@ -182,10 +183,10 @@ class MeCounts(TestCase):
         tenancy.activate(self.tenant.id)
         self.assertIsNone(Membership.objects.get(tenant=self.tenant, user=self.officer).last_visit_at, "one person's visit moves only their own bookmark")
 
-    def test_the_four_reads_fan_out_at_a_fixed_query_count(self) -> None:
-        """None chained behind another: the same four queries whether the caller has open
-        work or not, called the way `me()` calls it rather than through the whole route, so
-        this pin only moves when `_counts()` itself changes shape."""
+    def test_the_counts_are_one_read_at_a_fixed_query_count(self) -> None:
+        """One read whether the caller has open work or not, called the way `me()` calls it
+        rather than through the whole route, so this pin only moves when `_figures()` itself
+        changes shape."""
         change = watch_build.change(stable_key="chg-me-counts-cost")
         case = cases_build.case(self.tenant, change, owner=self.officer)
         _open_proposal(tenant=self.tenant, proposer=self.officer)
@@ -201,7 +202,7 @@ class MeCounts(TestCase):
 
         tenancy.activate(self.tenant.id)
         with self.assertNumQueries(COUNTS_QUERIES):
-            counts = me_logic._counts(principal)  # noqa: SLF001 the module's own test
+            counts, _ = me_logic._figures(principal, self.officer.id)  # noqa: SLF001 the module's own test
         self.assertEqual(counts, {**ZEROS, "triage": 1, "proposals": 1, "assignedToMe": 1, "unreadNotifications": 1})
 
 

@@ -41,7 +41,6 @@ describe('register hooks', () => {
         '/api/v1/obligations/ob1/gaps',
         '/api/v1/gaps',
         '/api/v1/obligations/ob1/assessments',
-        '/api/v1/obligations/ob1/interpretation',
         '/api/v1/obligations/ob1/internal-links',
         '/api/v1/obligations/ob1/units',
         '/api/v1/obligations/ob1/statement-of-applicability',

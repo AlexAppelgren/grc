@@ -9,6 +9,8 @@
   none, relaxing it only for the DEBUG docs page.
 - `SupportReadOnlyMiddleware` answers 403 `support_read_only` to a support session's
   request for any route off `SUPPORT_READ_ROUTES`, before any view runs (TEN-06, ADR 0042).
+- `RequestMemoMiddleware` opens the memo a read request keeps what it already read in
+  (vocabulary labels, `apps/taxonomy/reading.py`), and drops it when the request ends.
 """
 
 from __future__ import annotations
@@ -31,6 +33,16 @@ REQUEST_ID_HEADER = "X-Request-ID"
 REQUEST_ID_MAX_LENGTH = 128
 
 _request_id: ContextVar[str | None] = ContextVar("request_id", default=None)
+# What one read request already read, keyed by its reader with the tenant in the key. It
+# exists only inside `RequestMemoMiddleware`, so it never outlives a request, is never
+# shared between two, and is absent in a worker or a test that calls logic directly.
+_request_memo: ContextVar[dict[Any, Any] | None] = ContextVar("request_memo", default=None)
+# Only a read may reuse what it read: a write could change a row between two reads of it.
+MEMO_METHODS = frozenset({"GET", "HEAD"})
+
+
+def request_memo() -> dict[Any, Any] | None:
+    return _request_memo.get()
 
 
 def current_request_id() -> str | None:
@@ -87,6 +99,20 @@ def loggable_route(request: HttpRequest) -> str:
     if route:
         return route
     return "/".join(request.path.split("/")[:3])
+
+
+class RequestMemoMiddleware:
+    def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        if request.method not in MEMO_METHODS:
+            return self.get_response(request)
+        token = _request_memo.set({})
+        try:
+            return self.get_response(request)
+        finally:
+            _request_memo.reset(token)
 
 
 class ServerTimingMiddleware:

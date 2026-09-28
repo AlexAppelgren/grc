@@ -500,6 +500,9 @@ test.describe("the bank's own records", () => {
 
     const obligationId = address.split('/').pop() ?? '';
     apiGuard.allow(new RegExp(`/api/v1/[^?]*${obligationId}`), 404, "tenant A's own record is not found from tenant B");
+    // The card's panels ask beside it, from the id in the address; the comments list names
+    // its subject in the query, which the guard does not read, and is refused the same way.
+    apiGuard.allow(/^\/api\/v1\/comments$/, 404, "tenant A's own record's comments are not found from tenant B");
     await signInAs(page, LOGINS.secondBankAdmin);
     await page.goto(address);
     await expect(page.locator('[data-not-found]')).toBeVisible();

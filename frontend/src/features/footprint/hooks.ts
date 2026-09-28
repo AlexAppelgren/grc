@@ -3,6 +3,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type UseInfiniteQueryResult, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
 import type { ProposalRef } from '@/features/vocabularies/types';
+import type { components } from '@/types/api.generated';
 
 import * as footprint from './api';
 import type {
@@ -52,8 +53,19 @@ export function useFootprintRequests(): UseInfiniteQueryResult<{ pages: Page<Foo
   });
 }
 
+/**
+ * A dimension's terms, read once under one key whoever reads them: the
+ * footprint maps them to keys, the watch feed and the console keep their ids.
+ * Terms change rarely, so they stay fresh for five minutes.
+ */
+export function termRowsQuery(dimension?: string) {
+  return { queryKey: footprintKeys.terms(dimension), queryFn: () => footprint.listTermRows(dimension), staleTime: 5 * 60_000 };
+}
+
+const toTaxonomyTerms = (rows: components['schemas']['TaxonomyTermRow'][]): TaxonomyTerm[] => rows.map(footprint.taxonomyTermOf);
+
 export function useTerms(dimension?: string, enabled = true): UseQueryResult<TaxonomyTerm[]> {
-  return useQuery({ queryKey: footprintKeys.terms(dimension), queryFn: () => footprint.listTerms(dimension), staleTime: 5 * 60_000, enabled });
+  return useQuery({ ...termRowsQuery(dimension), select: toTaxonomyTerms, enabled });
 }
 
 export function useDimensions(): UseQueryResult<TaxonomyDimension[]> {

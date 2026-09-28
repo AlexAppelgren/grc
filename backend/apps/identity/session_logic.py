@@ -26,6 +26,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import connection
+from django.db.models import Subquery
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 
@@ -199,7 +200,9 @@ def build_principal(session: UserSession) -> Principal | None:
     zone knows), so a platform grant is never read in a bank session at all."""
     user = session.user
     if session.kind == SessionKind.ENROLMENT.value:
-        return Principal(kind=PrincipalKind.ENROLMENT, subject_id=user.id, tenant_id=session.tenant_id, session_id=session.id)
+        return Principal(
+            kind=PrincipalKind.ENROLMENT, subject_id=user.id, tenant_id=session.tenant_id, session_id=session.id, user=user, tenant=session.tenant
+        )
     if session.kind == SessionKind.SUPPORT.value:
         # The seven reads in the granted bank, never a role row of it and never a platform
         # grant; a support session never steps up, so no step-up route answers it either.
@@ -211,21 +214,30 @@ def build_principal(session: UserSession) -> Principal | None:
             session_id=session.id,
             session_created_at=session.created_at,
             support_access_id=session.support_access_id,
+            user=user,
+            tenant=session.tenant,
         )
     granted: set[str] = set()
     is_platform_staff = False
+    step_up_at: datetime | None = None
+    step_up_assertion_id: uuid.UUID | None = None
     if session.tenant_id is not None:
         # One row per role of the active membership; one row with NULL for an active
-        # membership with no role; no row at all when there is no active membership.
+        # membership with no role; no row at all when there is no active membership. The
+        # session's latest step-up rides on every row, so the grants and the step-up that
+        # `@requires_step_up` weighs are one read.
+        latest = StepUpAssertion.objects.filter(session_id=session.id).order_by("-created_at", "-id")
         role_rows = list(
             Membership.objects.filter(tenant_id=session.tenant_id, user=user, deactivated_at__isnull=True)
-            .values_list("roles__permissions", flat=True)
+            .annotate(step_up_at=Subquery(latest.values("created_at")[:1]), step_up_id=Subquery(latest.values("id")[:1]))
+            .values_list("roles__permissions", "step_up_at", "step_up_id")
         )
         if not role_rows:
             return None
-        for permissions in role_rows:
+        for permissions, _, _ in role_rows:
             granted.update(permissions or [])
         granted &= perms.TENANT_PERMISSIONS
+        _, step_up_at, step_up_assertion_id = role_rows[0]
     else:
         platform_rows = PlatformRoleAssignment.objects.filter(user=user, role__active=True).values_list(
             "role__permissions", flat=True
@@ -234,17 +246,21 @@ def build_principal(session: UserSession) -> Principal | None:
             is_platform_staff = True
             granted.update(permissions or [])
         granted &= perms.PLATFORM_PERMISSIONS
-    assertion = latest_step_up(session.id)
+        assertion = latest_step_up(session.id)
+        if assertion is not None:
+            step_up_at, step_up_assertion_id = assertion.created_at, assertion.id
     return Principal(
         kind=PrincipalKind.USER,
         subject_id=user.id,
         tenant_id=session.tenant_id,
         permissions=frozenset(granted),
         is_platform_staff=is_platform_staff,
-        step_up_at=assertion.created_at if assertion else None,
-        step_up_assertion_id=assertion.id if assertion else None,
+        step_up_at=step_up_at,
+        step_up_assertion_id=step_up_assertion_id,
         session_id=session.id,
         session_created_at=session.created_at,
+        user=user,
+        tenant=session.tenant,
     )
 
 
@@ -269,20 +285,40 @@ def resolve_access_token(token: str, *, want: PrincipalKind) -> Principal | None
     )
     if claims.kind not in wanted_kinds:
         return None
-    with tenancy.identity_lookup():
-        session = UserSession.objects.select_related("user").filter(pk=claims.session_id).first()  # ordering: pk lookup, at most one row
-    if session is None or session.kind != claims.kind or session.revoked_at is not None:
+    support = claims.kind == SessionKind.SUPPORT.value
+    # One read for the session, its person with their locale and its bank with its default
+    # language (neither table sits under row-level security); the checks below are on that
+    # row, and the bank is activated in the statement that ends the lookup.
+    with tenancy.identity_lookup() as lookup:
+        session = (
+            UserSession.objects.select_related("user__locale", "tenant__default_language").filter(pk=claims.session_id).first()  # ordering: pk lookup, at most one row
+        )
+        usable = (
+            session is not None
+            and session.kind == claims.kind
+            and session.revoked_at is None
+            and (support or _live(session, now))
+            and session.user.status != UserStatus.DEACTIVATED.value
+        )
+        if usable and session is not None and session.tenant_id is not None:
+            lookup.then_activate(session.tenant_id)
+    if not usable or session is None:
         return None
-    support = session.kind == SessionKind.SUPPORT.value
-    if (not support and not _live(session, now)) or session.user.status == UserStatus.DEACTIVATED.value:
-        return None
-    if session.tenant_id is not None:
-        tenancy.activate(session.tenant_id)
     # A support session ends with its grant: past the window, or revoked by the bank, every
     # request answers 401 `support_access_ended` and nothing else runs (ADR 0042).
     if support and (session.expires_at <= now or not _grant_live(session)):
         raise ProblemError(status=401, code="support_access_ended", detail="The bank's support access has ended.")
     return build_principal(session)
+
+
+def resolve_refreshed(access_token: str) -> Principal | None:
+    """The principal behind the access token a refresh just issued, resolved as the next
+    request would resolve it, for `/auth/refresh` to answer `/me` with. None for a support
+    session, whose refresh reads nothing of the bank (ADR 0042)."""
+    claims = tokens.parse_access_token(access_token, timezone.now())
+    if claims is None or claims.kind == SessionKind.SUPPORT.value:
+        return None
+    return resolve_access_token(access_token, want=PrincipalKind.ENROLMENT if claims.kind == SessionKind.ENROLMENT.value else PrincipalKind.USER)
 
 
 # ---------------------------------------------------------------------------------------

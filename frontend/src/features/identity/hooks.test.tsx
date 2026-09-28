@@ -94,6 +94,20 @@ describe('identity hooks', () => {
     result.current.refetch();
   });
 
+  it('useSession: a cold load takes the person from the refresh, and asks GET /me only after', async () => {
+    const sent = installAdapter((s) =>
+      s.path === REFRESH_PATH ? { status: 200, data: { accessToken: 'tok', expiresIn: 600, me } } : { status: 200, data: { ...me, passkeyCount: 2 } },
+    );
+    const { wrapper, queryClient } = queryWrapper();
+    const { result } = renderHook(() => useSession(), { wrapper });
+    await waitFor(() => expect(result.current.status).toBe('signed-in'));
+    expect(sent.map((s) => s.path)).toEqual([REFRESH_PATH]);
+    expect(result.current.me?.passkeyCount).toBe(1);
+    await queryClient.invalidateQueries({ queryKey: ['me'] });
+    await waitFor(() => expect(result.current.me?.passkeyCount).toBe(2));
+    expect(sent.map((s) => s.path)).toEqual([REFRESH_PATH, '/api/v1/me']);
+  });
+
   it('useSession: a 401 from /me is anonymous and other failures are errors', async () => {
     tokenStore.set('stale');
     installAdapter((s) => ({ status: s.path === REFRESH_PATH ? 401 : 401 }));

@@ -67,12 +67,8 @@ describe('watch api', () => {
     ]);
   });
 
-  it('reads the scope terms of one dimension with the ids the feed filters on', async () => {
-    const sent = installAdapter(() => ({
-      status: 200,
-      data: { items: [{ id: 'term-1', key: 'securities', label: 'Securities', kind: null, dimension: 'regime' }], total: 1 },
-    }));
-    expect(await watch.listScopeTerms('regime')).toEqual([{ id: 'term-1', key: 'securities', label: 'Securities' }]);
-    expect([sent[0]?.path, sent[0]?.params]).toEqual(['/api/v1/taxonomy/terms', { dimension: 'regime' }]);
+  it('keeps the ids the feed filters on from the terms read', () => {
+    const row = { id: 'term-1', key: 'securities', label: 'Securities', kind: null, dimension: { key: 'regime', label: 'Regime' } } as unknown as Parameters<typeof watch.scopeTermsOf>[0][number];
+    expect(watch.scopeTermsOf([row])).toEqual([{ id: 'term-1', key: 'securities', label: 'Securities' }]);
   });
 });

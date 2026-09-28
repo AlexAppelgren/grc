@@ -23,6 +23,7 @@ from django.db import IntegrityError, transaction
 
 from apps.identity.models import Membership
 from apps.library.reading import obligation_headings
+from apps.register.history import interpretation_out
 from apps.register.logic import ensure_register_entry
 from apps.register.models import Applicability, ComplianceAssessment, TenantObligation, TenantObligationScope
 from apps.register.overlay import RANK
@@ -31,6 +32,7 @@ from apps.register.schemas import (
     RegisterEntityPatch,
     RegisterEntityStatus,
     RegisterEntry,
+    RegisterInterpretation,
     RegisterPatch,
     RegisterPersonRef,
     RegisterStatusFields,
@@ -85,11 +87,13 @@ def worst_of(statuses: Iterable[ComplianceStatus]) -> ComplianceStatus | None:
 # ---------------------------------------------------------------------------------------
 def read_register(*, tenant: Tenant, order: list[str], obligation_id: uuid.UUID) -> RegisterEntry:
     """`GET /obligations/{obligationId}/register`: a fixed handful of queries however many
-    entities the obligation has, and not one write."""
+    entities the obligation has, and not one write. It carries the bank's reading of the rule
+    too, one query more, so the obligation page does not ask for it separately."""
     _heading(obligation_id)
     entry = TenantObligation.objects.select_related(*_ENTRY_RELATED).filter(obligation_id=obligation_id).first()  # ordering: unique per bank, at most one row
     if entry is None:
         return _defaults(obligation_id, order)
+    reading = interpretation_out(obligation_id)
     scopes = list(
         TenantObligationScope.objects.select_related(*_SCOPE_RELATED)
         .filter(tenant_obligation=entry, product__isnull=True)
@@ -114,6 +118,7 @@ def read_register(*, tenant: Tenant, order: list[str], obligation_id: uuid.UUID)
         entities=[_entity(scope, refs) for scope in scopes],
         version=entry.version,
         updated_at=entry.updated_at,
+        interpretation=reading,
     )
 
 
@@ -138,6 +143,7 @@ def _defaults(obligation_id: uuid.UUID, order: list[str]) -> RegisterEntry:
         entities=[],
         version=0,
         updated_at=None,
+        interpretation=RegisterInterpretation(obligation_id=obligation_id, current=None, earlier=[]),
     )
 
 

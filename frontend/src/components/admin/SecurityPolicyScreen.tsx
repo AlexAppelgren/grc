@@ -24,11 +24,10 @@ export function SecurityPolicyScreen() {
       ) : policy.isError ? (
         <ErrorState title={t('admin.security.errorTitle')} onRetry={() => void policy.refetch()} />
       ) : (
-        <>
-          <SessionPolicyPanel policy={policy.data} />
-          <TenantReachPanel />
-        </>
+        <SessionPolicyPanel policy={policy.data} />
       )}
+      {/* Tenant reach reads its own route, so it mounts beside the policy read, never after it. */}
+      <TenantReachPanel />
     </>
   );
 }

@@ -23,6 +23,8 @@ export type AgentRunStats = Schemas['AgentRunStats'];
 
 // A bank's own agents, its cap and its research requests (`agents.manage`).
 export type TenantAgent = Schemas['TenantAgentOut'];
+/** A row of `GET /agents`: the agent with its latest runs beside it. */
+export type TenantAgentRow = Schemas['TenantAgentRow'];
 export type TenantAgentPage = Schemas['TenantAgentPage'];
 export type TenantAgentInput = Schemas['TenantAgentInput'];
 export type TenantAgentUpdate = Schemas['TenantAgentUpdate'];

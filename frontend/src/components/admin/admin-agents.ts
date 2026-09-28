@@ -14,11 +14,9 @@ import { localeTags, type Locale, type MessageKey, type Translate } from '@/shar
 export const bankAgentKeys = {
   all: ['tenant', 'agents'] as const,
   list: ['tenant', 'agents', 'list'] as const,
-  runs: (tenantAgentId: string) => ['tenant', 'agents', 'runs', tenantAgentId] as const,
   platform: ['tenant', 'agents', 'platform'] as const,
   budget: ['tenant', 'agents', 'budget'] as const,
   requests: ['tenant', 'agents', 'requests'] as const,
-  request: (requestId: string) => ['tenant', 'agents', 'requests', requestId] as const,
 };
 
 /** The bank's own agents: a plan allows a handful, so one page at the route's maximum holds them. */
@@ -30,8 +28,6 @@ export function useBankBudget(enabled: boolean): UseQueryResult<AgentBudget> {
   return useQuery({ queryKey: bankAgentKeys.budget, queryFn: getAgentBudget, enabled });
 }
 
-/** How many runs each agent's "Recent runs" shows; older ones stay in the route's history. */
-export const RECENT_RUNS = 5;
 
 // Every refusal the agent routes answer, read from its code, never its detail.
 const REFUSAL_KEY = {

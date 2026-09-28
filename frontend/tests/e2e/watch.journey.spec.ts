@@ -420,8 +420,10 @@ test.describe('the watch feed', () => {
     await expect(filters.getByRole('combobox', { name: 'Change type' })).toBeVisible();
     await expect(filters.getByRole('combobox', { name: 'Urgency' })).toBeVisible();
     await expect(filters.getByRole('searchbox', { name: 'Search these changes' })).toBeVisible();
-    // The regime filter's options are the taxonomy's own rows, so the read
-    // behind it really answered.
+    // The regime filter's options are the taxonomy's own rows, read when the
+    // reader reaches the filter rather than with the page, so the read behind
+    // it really answered.
+    await filters.getByRole('combobox', { name: 'Regime' }).focus();
     await expect(filters.getByRole('combobox', { name: 'Regime' }).getByRole('option')).not.toHaveCount(1);
   });
 

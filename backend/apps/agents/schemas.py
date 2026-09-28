@@ -779,17 +779,6 @@ class TenantAgentOut(CamelSchema):
     updated_at: datetime = Field(description="When the agent's settings last changed, as a UTC timestamp in ISO 8601.")
 
 
-class TenantAgentPage(CamelSchema):
-    """`{items, total}` with `limit` and `offset` (playbook 10)."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_TENANT_AGENT], "total": 1}]})
-
-    items: list[TenantAgentOut] = Field(
-        description="The bank's own agents on this page, by definition key. bleqq's agents are never listed here."
-    )
-    total: int = Field(description="How many agents the bank has added in total, not how many are on this page.")
-
-
 class TenantAgentInput(WriteBody):
     """`POST /agents`: the bank adds an agent of its own from a tenant-scoped definition."""
 
@@ -860,6 +849,9 @@ class TenantRunQuery(PageQuery):
     )
 
 
+_EXAMPLE_TENANT_AGENT_ROW: dict[str, JsonValue] = {**_EXAMPLE_TENANT_AGENT, "recentRuns": [_EXAMPLE_LIST_RUN]}
+
+
 class AgentRunListItem(AgentRunOut):
     """One run in the run log, with what chunk 11 adds: which of the bank's agents ran, which
     version, what started it, who asked, what it cost, and whether it was stopped."""
@@ -901,6 +893,33 @@ class AgentRunListPage(CamelSchema):
         )
     )
     total: int = Field(description="How many runs this caller may see in total, not how many are on this page.")
+
+
+class TenantAgentRow(TenantAgentOut):
+    """One of the bank's own agents as `GET /agents` lists it: the agent, and its latest runs
+    beside it so the page reads them with the list and never once per agent."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_TENANT_AGENT_ROW]})
+
+    recent_runs: list[AgentRunListItem] = Field(
+        description=(
+            "The agent's latest runs, newest first, at most the `AGENT_RECENT_RUNS` setting "
+            "(5 by default, 100 at most): the first rows `GET /agent-runs?tenantAgentId=` "
+            "answers for this agent, where the rest of its history is paged. An empty list "
+            "means it has not run yet."
+        )
+    )
+
+
+class TenantAgentPage(CamelSchema):
+    """`{items, total}` with `limit` and `offset` (playbook 10)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_TENANT_AGENT_ROW], "total": 1}]})
+
+    items: list[TenantAgentRow] = Field(
+        description="The bank's own agents on this page, by definition key. bleqq's agents are never listed here."
+    )
+    total: int = Field(description="How many agents the bank has added in total, not how many are on this page.")
 
 
 class AgentBudget(CamelSchema):

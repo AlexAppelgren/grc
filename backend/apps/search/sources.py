@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from collections.abc import Collection
 from dataclasses import dataclass
 from typing import Any
 
@@ -92,54 +93,65 @@ class RecordChunks:
 def obligation_chunks(obligation_id: uuid.UUID) -> RecordChunks:
     """The chunks obligation `obligation_id` should have: one per version per summary
     language. An unknown obligation contributes nothing at all."""
-    obligation = (
-        Obligation.objects.select_related("instrument", "instrument__jurisdiction", "instrument__regime", "duty_type")
-        .filter(id=obligation_id)
-        .first()  # ordering: one row, looked up by its id
+    return obligations_chunks([obligation_id])
+
+
+def obligations_chunks(obligation_ids: Collection[uuid.UUID]) -> RecordChunks:
+    """The chunks of every obligation of `obligation_ids`, read in five queries however many
+    they are, so an approval that re-tags a batch of obligations rebuilds their chunks at once
+    (PRO-04). Each obligation reads exactly as `obligation_chunks()` reads it alone."""
+    obligations = list(
+        Obligation.objects.select_related("instrument", "instrument__jurisdiction", "instrument__regime", "duty_type").filter(
+            id__in=obligation_ids
+        )
     )
-    if obligation is None:
-        return RecordChunks(SearchSource.OBLIGATION_VERSION.value, [], [])
-    versions = list(ObligationVersion.objects.filter(obligation=obligation))
-    source_ids = [version.id for version in versions]
-    if _owned(obligation.owner_tenant_id, obligation.instrument.owner_tenant_id):
+    versions: dict[uuid.UUID, list[ObligationVersion]] = {obligation.id: [] for obligation in obligations}
+    for version in ObligationVersion.objects.filter(obligation__in=obligations):
+        versions[version.obligation_id].append(version)
+    source_ids = [version.id for rows in versions.values() for version in rows]
+    shared = [obligation for obligation in obligations if not _owned(obligation.owner_tenant_id, obligation.instrument.owner_tenant_id)]
+    if not shared:
         return RecordChunks(SearchSource.OBLIGATION_VERSION.value, source_ids, [])
 
-    titles = {row.language_id: row.text for row in ObligationTitle.objects.filter(obligation=obligation)}
-    original_title = next(
-        (row.text for row in ObligationTitle.objects.filter(obligation=obligation) if row.is_original), ""
-    )
-    metadata = _metadata(
-        obligation.instrument,
-        obligation_id=obligation.id,
-        duty_type=obligation.duty_type.key,
-        term_ids=list(ObligationTerm.objects.filter(obligation=obligation).values_list("term_id", flat=True)),
-    )
-    path = _path(obligation.instrument.official_ref, obligation.ref_label)
-    summaries = ObligationSummary.objects.filter(version__in=versions)
-    by_version: dict[uuid.UUID, list[ObligationSummary]] = {version.id: [] for version in versions}
-    for summary in summaries:
+    titles: dict[uuid.UUID, dict[str, str]] = {obligation.id: {} for obligation in shared}
+    original_titles: dict[uuid.UUID, str] = {}
+    for row in ObligationTitle.objects.filter(obligation__in=shared):
+        titles[row.obligation_id][row.language_id] = row.text
+        if row.is_original:
+            original_titles.setdefault(row.obligation_id, row.text)
+    term_ids: dict[uuid.UUID, list[uuid.UUID]] = {obligation.id: [] for obligation in shared}
+    for obligation_id, term_id in ObligationTerm.objects.filter(obligation__in=shared).values_list("obligation_id", "term_id"):
+        term_ids[obligation_id].append(term_id)
+    by_version: dict[uuid.UUID, list[ObligationSummary]] = {version.id: [] for obligation in shared for version in versions[obligation.id]}
+    for summary in ObligationSummary.objects.filter(version_id__in=by_version):
         by_version[summary.version_id].append(summary)
 
     chunks: list[ChunkSource] = []
-    for index, version in enumerate(versions):
-        following = versions[index + 1] if index + 1 < len(versions) else None
-        if _superseded_at_birth(version.effective_from, following):
-            continue
-        valid_to = _in_force_until(version.effective_from, following.effective_from if following else None)
-        for summary in by_version[version.id]:
-            language = summary.language_id
-            chunks.append(
-                ChunkSource(
-                    source_id=version.id,
-                    language=language,
-                    title=_title(obligation.instrument.official_ref, obligation.ref_label, titles.get(language) or original_title),
-                    body=summary.text,
-                    hierarchy_path=path,
-                    valid_from=version.effective_from,
-                    valid_to=valid_to,
-                    metadata=metadata,
+    for obligation in shared:
+        instrument = obligation.instrument
+        metadata = _metadata(instrument, obligation_id=obligation.id, duty_type=obligation.duty_type.key, term_ids=term_ids[obligation.id])
+        path = _path(instrument.official_ref, obligation.ref_label)
+        rows = versions[obligation.id]
+        for index, version in enumerate(rows):
+            following = rows[index + 1] if index + 1 < len(rows) else None
+            if _superseded_at_birth(version.effective_from, following):
+                continue
+            valid_to = _in_force_until(version.effective_from, following.effective_from if following else None)
+            for summary in by_version[version.id]:
+                language = summary.language_id
+                title = titles[obligation.id].get(language) or original_titles.get(obligation.id, "")
+                chunks.append(
+                    ChunkSource(
+                        source_id=version.id,
+                        language=language,
+                        title=_title(instrument.official_ref, obligation.ref_label, title),
+                        body=summary.text,
+                        hierarchy_path=path,
+                        valid_from=version.effective_from,
+                        valid_to=valid_to,
+                        metadata=metadata,
+                    )
                 )
-            )
     return RecordChunks(SearchSource.OBLIGATION_VERSION.value, source_ids, chunks)
 
 

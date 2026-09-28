@@ -86,19 +86,21 @@ def check(
     field_sources: Mapping[str, str],
     ref_label: str | None = None,
     source_label: str = "",
+    opt_in: Collection[uuid.UUID] | None = None,
 ) -> None:
     """Refuse what `kind` may not say about `instrument` (see the module docstring for the
     four codes, all 422). `term_ids` is the obligation's scope as the proposal sets it,
     resolved, or None when it leaves the scope alone; `field_sources` and `source_label` are
     the proposal's; `ref_label` is a new obligation's. Under a standard both labels are its
-    official reference, and the source label may be left empty."""
+    official reference, and the source label may be left empty. `opt_in` is what
+    `opt_in_terms()` read for many checks at once, a batch's; without it the check reads it."""
     from apps.proposals.logic import is_link
 
-    opt_in = 0
+    opt_in_count = 0
     if term_ids:
-        opt_in = TaxonomyTerm.objects.filter(pk__in=list(term_ids), dimension__kind=TermDimensionKind.OPT_IN.value).count()
+        opt_in_count = len(set(term_ids) & set(opt_in_terms(term_ids) if opt_in is None else opt_in))
     if instrument.level.kind != InstrumentLevelKind.STANDARD.value:
-        if opt_in:
+        if opt_in_count:
             raise ValidationError(STANDARD_TERM_REFUSAL, code="standard_term_only_on_standards")
         return
     if kind in PROVISION_KINDS:
@@ -112,10 +114,17 @@ def check(
         instrument=instrument, status=RecordStatus.ACTIVE.value
     ).exists():
         raise ValidationError(ONE_CONFORMANCE_REFUSAL, code="one_conformance_obligation")
-    if kind in OBLIGATION_KINDS and term_ids is not None and opt_in != 1:
-        raise ValidationError(STANDARD_TERM_REQUIRED.format(count=opt_in), code="standard_term_required")
+    if kind in OBLIGATION_KINDS and term_ids is not None and opt_in_count != 1:
+        raise ValidationError(STANDARD_TERM_REQUIRED.format(count=opt_in_count), code="standard_term_required")
     if source_label.strip() not in ("", instrument.official_ref):
         raise ValidationError(OFFICIAL_SOURCE_LABEL_ONLY.format(ref=instrument.official_ref), code="licensed_text")
+
+
+def opt_in_terms(term_ids: Collection[uuid.UUID]) -> set[uuid.UUID]:
+    """Those of `term_ids` whose dimension is opt-in, such as a standard's, in one query."""
+    if not term_ids:
+        return set()
+    return set(TaxonomyTerm.objects.filter(pk__in=list(term_ids), dimension__kind=TermDimensionKind.OPT_IN.value).values_list("id", flat=True))
 
 
 def check_payload(

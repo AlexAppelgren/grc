@@ -12,7 +12,6 @@ import {
   HOURS,
   NEXT_RUN_KEY,
   nextRunOf,
-  RECENT_RUNS,
   refusals,
   scopeMarkets,
   spendOf,
@@ -32,7 +31,6 @@ import { CADENCE_KEY, presentTenantAgentState } from '@/features/agents/agents-p
 import {
   createTenantAgent,
   interruptAgentRun,
-  listAgentRuns,
   listPlatformWatch,
   MAX_PAGE,
   pauseTenantAgent,
@@ -40,7 +38,7 @@ import {
   runTenantAgentNow,
   updateTenantAgent,
 } from '@/features/agents/api';
-import type { AgentCadence, TenantAgent, TenantAgentPage, TenantAgentUpdate } from '@/features/agents/types';
+import type { AgentCadence, TenantAgent, TenantAgentPage, TenantAgentRow, TenantAgentUpdate } from '@/features/agents/types';
 import { useFootprint } from '@/features/footprint/hooks';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
@@ -143,24 +141,18 @@ function ScheduleFields({ id, schedule, onChange }: { id: string; schedule: Sche
   );
 }
 
-function useInvalidateAgent(tenantAgentId: string): () => Promise<void> {
+/** The list carries each agent's recent runs, so one read brings back both. */
+function useInvalidateAgents(): () => Promise<void> {
   const queryClient = useQueryClient();
-  return async () => {
-    await queryClient.invalidateQueries({ queryKey: bankAgentKeys.list });
-    await queryClient.invalidateQueries({ queryKey: bankAgentKeys.runs(tenantAgentId) });
-  };
+  return () => queryClient.invalidateQueries({ queryKey: bankAgentKeys.list });
 }
 
-function AgentCard({ agent, aiEnabled, capReached, platform }: { agent: TenantAgent; aiEnabled: boolean; capReached: boolean; platform: boolean }) {
+function AgentCard({ agent, aiEnabled, capReached, platform }: { agent: TenantAgentRow; aiEnabled: boolean; capReached: boolean; platform: boolean }) {
   const t = useT();
   const ctx = useFormatContext();
   const locale = useLocale();
   const footprint = useFootprint();
-  const invalidate = useInvalidateAgent(agent.id);
-  const runs = useQuery({
-    queryKey: bankAgentKeys.runs(agent.id),
-    queryFn: () => listAgentRuns({ tenantAgentId: agent.id, limit: RECENT_RUNS, offset: 0 }),
-  });
+  const invalidate = useInvalidateAgents();
   const [editing, setEditing] = useState(false);
   const [schedule, setSchedule] = useState<Schedule>(() => scheduleOf(agent));
   const [confirmingStop, setConfirmingStop] = useState(false);
@@ -188,7 +180,7 @@ function AgentCard({ agent, aiEnabled, capReached, platform }: { agent: TenantAg
   const name = bankAgentName(agent.agent, t);
   const what = bankAgentWhat(agent.agent, t);
   const next = nextRunOf(agent, { aiEnabled, capReached });
-  const running = (runs.data?.items ?? []).find((run) => run.status === 'running' && run.interruptedAt === null);
+  const running = agent.recentRuns.find((run) => run.status === 'running' && run.interruptedAt === null);
   const marketLabel = (key: string) => footprint.data?.markets.find((m) => m.jurisdiction.key === key)?.jurisdiction.label ?? key.toUpperCase();
   const chosen = agent.scope.jurisdictions ?? [];
   const covers = chosen.length === 0 ? t('adminAgents.coversDefault') : chosen.map(marketLabel).join(', ');
@@ -311,13 +303,7 @@ function AgentCard({ agent, aiEnabled, capReached, platform }: { agent: TenantAg
       )}
 
       <h4 className="mt-4 microlabel text-muted">{t('adminAgents.recentRuns')}</h4>
-      {runs.isPending ? (
-        <LoadingState rows={1} />
-      ) : runs.isError ? (
-        <ErrorState title={t('adminAgents.runsErrorTitle')} onRetry={() => void runs.refetch()} />
-      ) : (
-        <AgentRunsList runs={runs.data.items} />
-      )}
+      <AgentRunsList runs={agent.recentRuns} />
     </Row>
   );
 }

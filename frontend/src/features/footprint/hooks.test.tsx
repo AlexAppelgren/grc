@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { useScopeTerms } from '@/features/watch/hooks';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
@@ -55,6 +56,16 @@ describe('footprint hooks', () => {
       ['/api/v1/reference/jurisdictions', null],
     ]);
     expect(footprintKeys.terms()).toEqual(['taxonomy', 'terms', 'all']);
+  });
+
+  it('reads a dimension\'s terms once for the footprint and the watch feed, each in its own shape', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { items: [{ id: 'term-1', key: 'securities', label: 'Securities', kind: null, dimension: { key: 'regime', label: 'Regime' }, usageNote: '', sortOrder: 1, active: true, mirrored: false }], total: 1 } }));
+    const { wrapper } = queryWrapper();
+    const both = renderHook(() => [useTerms('regime'), useScopeTerms('regime')] as const, { wrapper });
+    await waitFor(() => expect(both.result.current.every((query) => query.isSuccess)).toBe(true));
+    expect(both.result.current[0].data?.[0]).toMatchObject({ dimension: 'regime', key: 'securities', label: 'Securities' });
+    expect(both.result.current[1].data).toEqual([{ id: 'term-1', key: 'securities', label: 'Securities' }]);
+    expect(sent.filter((s) => s.path === '/api/v1/taxonomy/terms')).toHaveLength(1);
   });
 
   it('pages the request history: the next page starts where the pages read so far end, and stops at the total', async () => {

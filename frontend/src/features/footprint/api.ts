@@ -171,9 +171,14 @@ export async function listJurisdictions(): Promise<JurisdictionRef[]> {
   return rows.map((row) => ({ key: row.key, kind: row.kind ?? null, label: row.label, parentKey: row.parentKey ?? null }));
 }
 
-export async function listTerms(dimension?: string): Promise<TaxonomyTerm[]> {
+/** The terms as the route answers them, ids included: one read that every screen maps its own way. */
+export async function listTermRows(dimension?: string): Promise<Schemas['TaxonomyTermRow'][]> {
   const params = dimension === undefined ? {} : { dimension };
-  return (await api.get<Schemas['TaxonomyTermPage']>(`${TAXONOMY}/terms`, { params })).data.items.map(taxonomyTermOf);
+  return (await api.get<Schemas['TaxonomyTermPage']>(`${TAXONOMY}/terms`, { params })).data.items;
+}
+
+export async function listTerms(dimension?: string): Promise<TaxonomyTerm[]> {
+  return (await listTermRows(dimension)).map(taxonomyTermOf);
 }
 
 /** Dimensions are vocabulary rows; `restrictsFootprint` rides in their list-specific facts. */
