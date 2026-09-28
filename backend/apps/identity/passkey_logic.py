@@ -473,8 +473,8 @@ def verify_step_up(principal: Principal, credential: dict[str, Any], request: Ht
     return assertion
 
 
-def step_up_valid_until(assertion: StepUpAssertion) -> Any:
-    return assertion.created_at + timedelta(minutes=settings.STEP_UP_FRESHNESS_MINUTES)
+def step_up_valid_until(asserted_at: datetime) -> datetime:
+    return asserted_at + timedelta(minutes=settings.STEP_UP_FRESHNESS_MINUTES)
 
 
 # ---------------------------------------------------------------------------------------

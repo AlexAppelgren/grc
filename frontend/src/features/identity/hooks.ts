@@ -32,14 +32,18 @@ export interface SessionState {
 }
 
 // One refresh attempt on a cold load; a visitor without a cookie costs no
-// GET /me. A 401 from /me (session ended elsewhere) is "anonymous", not an error.
+// GET /me, and a signed-in one takes the person from the refresh that just ran,
+// so the first screen waits on one call, not two. Every later read (a refetch,
+// an invalidation after a change) asks GET /me. A 401 from /me (session ended
+// elsewhere) is "anonymous", not an error.
 async function fetchSession(): Promise<Me | null> {
-  const { token, outcome, error: refreshError } = await ensureColdLoadRefresh();
+  const { token, outcome, error: refreshError, me } = await ensureColdLoadRefresh();
   // A server that did not answer is a connection state, not a sign-out: the
   // gate offers "Try again" instead of sending the person to /sign-in and
   // losing what they were doing (chunk 1 review, security item 2).
   if (outcome === 'unavailable') throw refreshError instanceof Error ? refreshError : new Error('The session could not be refreshed.');
   if (token === null) return null;
+  if (me) return me;
   try {
     return await identity.getMe();
   } catch (error) {

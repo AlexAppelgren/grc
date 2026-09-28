@@ -32,10 +32,10 @@ from apps.tenants.models import Licence, OrgUnit
 
 V1 = "/api/v1"
 UNITS = f"{V1}/tenant/org-units"
-# However many units a page holds: the test's own audit count, the session and its
-# savepoint, the tenant and the language order, then the page with its terms and heads, the
-# term labels and the count.
-LIST_QUERIES = 14
+# However many units a page holds: the test's own audit count, the session (which since
+# perf-request-once, 2026-09-28, also loads the tenant and the language order) and its
+# savepoint, then the page with its terms and heads, the term labels and the count.
+LIST_QUERIES = 10
 
 
 class OrganisationCase(ScenarioTestCase):

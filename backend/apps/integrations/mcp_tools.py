@@ -34,7 +34,7 @@ from django.urls import Resolver404, resolve
 from apps.governance import access_log
 from apps.integrations.schemas import McpTool
 from apps.shared import agent_access_guard
-from apps.shared.authentication import presented_api_key
+from apps.shared.authentication import RESOLVED_CREDENTIAL, presented_api_key
 from apps.shared.errors import ProblemError
 
 
@@ -106,7 +106,12 @@ def _request(outer: HttpRequest, route: Route, path: str, query: dict[str, str],
         "CONTENT_LENGTH": str(len(data)),
         "wsgi.input": io.BytesIO(data),
     }
-    return WSGIRequest(environ)
+    inner = WSGIRequest(environ)
+    # The MCP request resolved this same key, revocation included: the route reuses it.
+    resolved = getattr(outer, RESOLVED_CREDENTIAL, None)
+    if resolved is not None:
+        setattr(inner, RESOLVED_CREDENTIAL, resolved)
+    return inner
 
 
 def call(outer: HttpRequest, tool: McpTool, arguments: dict[str, Any]) -> Outcome:

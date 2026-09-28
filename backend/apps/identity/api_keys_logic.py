@@ -112,21 +112,24 @@ def resolve_api_key(plain: str) -> Principal | None:
         return None
     prefix, presented_hash = parsed
     now = timezone.now()
-    with tenancy.identity_lookup():
-        key = ApiKey.objects.select_related("agent").filter(key_prefix=prefix).first()  # ordering: key_prefix is unique, at most one row
-    if key is None or not tokens.constant_equal(presented_hash, key.key_hash):
+    # The key with its agent and its bank (neither sits under row-level security) in one
+    # read; the bank is entered in the statement that ends the lookup. A platform key's own
+    # zone is "no tenant", not "whatever the last request left active": a prior
+    # tenant-scoped request in the same connection must never leak its context into this
+    # one (H15).
+    with tenancy.identity_lookup() as lookup:
+        key = ApiKey.objects.select_related("agent", "tenant__default_language").filter(key_prefix=prefix).first()  # ordering: key_prefix is unique, at most one row
+        usable = (
+            key is not None
+            and tokens.constant_equal(presented_hash, key.key_hash)
+            and key.revoked_at is None
+            and (key.expires_at is None or key.expires_at > now)
+            and (key.agent is None or _carries_keys(active=key.agent.active, key=key.agent.key, version=key.agent.current_version))
+        )
+        if usable and key is not None:
+            lookup.then_activate(key.tenant_id)
+    if not usable or key is None:
         return None
-    if key.revoked_at is not None or (key.expires_at is not None and key.expires_at <= now):
-        return None
-    if key.agent is not None and not _carries_keys(active=key.agent.active, key=key.agent.key, version=key.agent.current_version):
-        return None
-    if key.tenant_id is not None:
-        tenancy.activate(key.tenant_id)
-    else:
-        # A platform key's own zone is "no tenant", not "whatever the last request left
-        # active": a prior tenant-scoped request in the same connection must never leak its
-        # context into this one (H15).
-        tenancy.clear_tenant()
     # The entry and the person are the bank's rows, read in its zone (forced RLS).
     entry = key.agent_access
     if entry is not None and not entry.active:
@@ -178,6 +181,7 @@ def resolve_api_key(plain: str) -> Principal | None:
         agent_access_label=entry.name if entry is not None else "",
         acting_user_id=key.acts_as_user_id,
         acting_user_label=key.acts_as_user.name if key.acts_as_user is not None else "",
+        tenant=key.tenant,
     )
 
 
