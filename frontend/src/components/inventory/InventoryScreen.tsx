@@ -44,6 +44,7 @@ import { findDestination, unlocks } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate } from '@/shared/utils/format';
 import { problemFrom } from '@/shared/utils/problem';
+import { useWhenOpened } from '@/shared/utils/when-opened';
 
 // /inventory (design/screens/tenant-inventory.html; INV-01, INV-03, INV-04,
 // FP-03, SRC-01, SRC-02, J-6, D-104). The filters live in the URL as keys and a
@@ -197,7 +198,8 @@ export function selectedInView(selected: ReadonlySet<string>, items: readonly Ob
 /** "Our tags": the bank's own tags as a filter every role reads; it sends the key, never the label. */
 function TenantTagSelect({ value, onChange }: { value: string; onChange: (next: string) => void }) {
   const t = useT();
-  const tags = useVocabularyValues(TENANT_TAG);
+  const [wanted, opening] = useWhenOpened(value);
+  const tags = useVocabularyValues(TENANT_TAG, false, wanted);
   const rows = tags.data ?? [];
   if (tags.isSuccess && rows.length === 0 && value === '') {
     return (
@@ -207,7 +209,7 @@ function TenantTagSelect({ value, onChange }: { value: string; onChange: (next: 
     );
   }
   return (
-    <Select className="w-auto" aria-label={t('inventory.filter.tenantTag')} value={value} onChange={(event) => onChange(event.target.value)}>
+    <Select className="w-auto" aria-label={t('inventory.filter.tenantTag')} value={value} onChange={(event) => onChange(event.target.value)} {...opening}>
       <option value="">{t('inventory.filter.anyTenantTag')}</option>
       {value !== '' && !rows.some((row) => row.key === value) ? <option value={value}>{value}</option> : null}
       {rows.map((row) => (

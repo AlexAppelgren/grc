@@ -145,7 +145,7 @@ describe('the suggestions waiting on a tenant list', () => {
     });
   }
 
-  async function renderTags(permissions: string[] = ['vocab.manage']): Promise<void> {
+  async function renderTags(permissions: string[] = ['vocab.manage'], settle = true): Promise<void> {
     const { wrapper: Query } = queryWrapper();
     render(
       <Query>
@@ -154,7 +154,7 @@ describe('the suggestions waiting on a tenant list', () => {
         </PermissionsProvider>
       </Query>,
     );
-    await screen.findAllByText('Derivatives');
+    if (settle) await screen.findAllByText('Derivatives');
   }
 
   const suggestionReads = (sent: Sent[]) => sent.filter((s) => s.path === SUGGESTIONS_PATH);
@@ -218,17 +218,32 @@ describe('the suggestions waiting on a tenant list', () => {
     await waitFor(() => expect(suggestionReads(sent)).toHaveLength(2));
   });
 
-  it('is neither shown nor read without vocab.manage, nor on a library list', async () => {
+  it('is neither shown nor read without vocab.manage, and never shown on a library list', async () => {
     const sent = tenantServer({ status: 200, data: { items: [pension], total: 1 } });
     await renderTags([]);
     expect(screen.queryByRole('button', { name: /^Suggested/ })).toBeNull();
     expect(suggestionReads(sent)).toHaveLength(0);
 
+    // The inbox is read beside the lists rather than after them, so the page does not
+    // wait to learn the tier first; a library list's inbox is empty and never shown.
     cleanup();
-    const library = server({ status: 200, data: { items: [], total: 0 } });
+    server({ status: 200, data: { items: [], total: 0 } });
     await renderScreen();
     expect(screen.queryByRole('button', { name: /^Suggested/ })).toBeNull();
-    expect(library.filter((s) => s.path.endsWith('/suggestions'))).toHaveLength(0);
+  });
+
+  it('reads the inbox beside the lists, never after them', async () => {
+    let listsAnswered = false;
+    const before: boolean[] = [];
+    installAdapter((sent) => {
+      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
+      if (sent.path === SUGGESTIONS_PATH) before.push(!listsAnswered);
+      if (sent.path === '/api/v1/vocab') listsAnswered = true;
+      return { status: 404, data: { code: 'not_found', detail: '' } };
+    });
+    await renderTags(['vocab.manage'], false);
+    await waitFor(() => expect(before.length).toBeGreaterThan(0));
+    expect(before[0]).toBe(true);
   });
 });
 

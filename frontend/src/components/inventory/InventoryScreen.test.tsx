@@ -808,6 +808,7 @@ describe('bulk tagging on the inventory', () => {
     const pill = within(document.querySelector('[data-obligation="obl-research-payments"]') as HTMLElement).getByText('Custody').closest('[data-pill]');
     expect(pill).toHaveAttribute('data-pill', 'information');
     expect(pill).toHaveAttribute('data-outlined');
+    fireEvent.focus(screen.getByRole('combobox', { name: 'Our tags' }));
     expect(await screen.findByRole('option', { name: 'Custody' })).toBeTruthy();
     expect(screen.getByRole('combobox', { name: 'Our tags' })).toBeTruthy();
   });
@@ -972,6 +973,7 @@ describe('bulk tagging on the inventory', () => {
     serveBulk([research]);
     const rerender = renderScreen(['library.read']);
     await screen.findByText('1 obligation');
+    fireEvent.focus(screen.getByRole('combobox', { name: 'Our tags' }));
     await screen.findByRole('option', { name: 'Custody' });
     fireEvent.change(screen.getByRole('combobox', { name: 'Our tags' }), { target: { value: 'custody' } });
     expect(nav.replace).toHaveBeenCalledWith('/inventory?tenantTag=custody');
@@ -989,6 +991,7 @@ describe('bulk tagging on the inventory', () => {
     serveBulk([research], undefined, []);
     renderScreen(['library.read']);
     await screen.findByText('1 obligation');
+    fireEvent.pointerEnter(screen.getByRole('combobox', { name: 'Our tags' }));
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Our tags' })).toBeDisabled());
     expect(screen.getByRole('option', { name: 'No tags of our own yet' })).toBeTruthy();
   });
@@ -1080,14 +1083,20 @@ describe('the register overlay on the inventory', () => {
     });
     renderIn(<InventoryScreen />);
     const status = await screen.findByLabelText('Compliance status');
+    await screen.findByText('1 obligation');
+    // The filter lists are read when a select is first reached, never with the page.
+    expect(sent.filter((request) => ['/api/v1/vocab/compliance_status', '/api/v1/vocab/team', '/api/v1/reference/people', '/api/v1/vocab/tenant_tag'].includes(request.path))).toEqual([]);
+    fireEvent.focus(status);
     await waitFor(() => expect(within(status).getByRole('option', { name: 'Gap' })).toBeDefined());
     fireEvent.change(status, { target: { value: 'gap' } });
     expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&complianceStatus=gap');
     const owner = screen.getByLabelText('Owner');
+    fireEvent.focus(owner);
     await waitFor(() => expect(within(owner).getByRole('option', { name: 'Johan Berg' })).toBeDefined());
     fireEvent.change(owner, { target: { value: 'u-7' } });
     expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&owner=u-7');
     const team = screen.getByLabelText('Owning team');
+    fireEvent.pointerEnter(team);
     await waitFor(() => expect(within(team).getByRole('option', { name: 'Retail compliance' })).toBeDefined());
     fireEvent.change(team, { target: { value: 'retail_compliance' } });
     expect(nav.replace).toHaveBeenLastCalledWith('/inventory?asOf=2026-09-16&ownerTeam=retail_compliance');

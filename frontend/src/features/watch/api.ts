@@ -94,9 +94,9 @@ export interface ScopeTerm {
 /**
  * The terms of one dimension, with their ids. The feed filters on `termId`,
  * so the id has to survive the read; the footprint feature's own term model
- * drops it, because a footprint is stored by key.
+ * drops it, because a footprint is stored by key. The rows are the footprint's
+ * own cached read (`termRowsQuery`), mapped here.
  */
-export async function listScopeTerms(dimension: string): Promise<ScopeTerm[]> {
-  const rows = (await api.get<Schemas['TaxonomyTermPage']>('/api/v1/taxonomy/terms', { params: { dimension } })).data.items;
+export function scopeTermsOf(rows: readonly Schemas['TaxonomyTermRow'][]): ScopeTerm[] {
   return rows.map((row) => ({ id: row.id, key: row.key, label: row.label }));
 }

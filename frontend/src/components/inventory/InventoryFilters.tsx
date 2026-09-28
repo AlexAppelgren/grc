@@ -15,6 +15,7 @@ import { usePeople } from '@/features/register/hooks';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';
+import { useWhenOpened, type OpenHandlers } from '@/shared/utils/when-opened';
 
 // The inventory's filters (design/screens/tenant-inventory.html, D-104): a Filters
 // sheet, the set filters as removable chips beside its button, and the scope as a
@@ -331,9 +332,16 @@ const APPLICABILITY_LABEL = {
 } as const;
 
 /** One option per row, and the key in the URL kept as an option of its own when no row names it. */
-function KeySelect({ label, any, value, rows, onChange }: { label: string; any: string; value: string; rows: readonly { key: string; label: string }[]; onChange: (next: string) => void }) {
+function KeySelect({
+  label,
+  any,
+  value,
+  rows,
+  onChange,
+  ...opening
+}: { label: string; any: string; value: string; rows: readonly { key: string; label: string }[]; onChange: (next: string) => void } & Partial<OpenHandlers>) {
   return (
-    <Select className="w-auto" aria-label={label} value={value} onChange={(event) => onChange(event.target.value)}>
+    <Select className="w-auto" aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} {...opening}>
       <option value="">{any}</option>
       {value !== '' && !rows.some((row) => row.key === value) ? <option value={value}>{value}</option> : null}
       {rows.map((row) => (
@@ -347,9 +355,12 @@ function KeySelect({ label, any, value, rows, onChange }: { label: string; any: 
 
 export function OverlayFilterBar({ filters, onChange }: { filters: OverlayFilters; onChange: (next: Partial<OverlayFilters>) => void }) {
   const t = useT();
-  const statuses = useVocabularyValues(COMPLIANCE_STATUS);
-  const teams = useVocabularyValues(TEAM);
-  const people = usePeople();
+  const [statusesWanted, openStatuses] = useWhenOpened(filters.complianceStatus);
+  const [teamsWanted, openTeams] = useWhenOpened(filters.ownerTeam);
+  const [peopleWanted, openPeople] = useWhenOpened(filters.owner);
+  const statuses = useVocabularyValues(COMPLIANCE_STATUS, false, statusesWanted);
+  const teams = useVocabularyValues(TEAM, false, teamsWanted);
+  const people = usePeople(peopleWanted);
   const applicability = APPLICABILITY_VALUES.map((key) => ({ key, label: t(APPLICABILITY_LABEL[key]) }));
   const owners = (people.data ?? []).map((person) => ({ key: person.id, label: person.name }));
 
@@ -362,9 +373,9 @@ export function OverlayFilterBar({ filters, onChange }: { filters: OverlayFilter
         rows={applicability}
         onChange={(next) => onChange({ applicability: APPLICABILITY_VALUES.find((key) => key === next) ?? '' })}
       />
-      <KeySelect label={t('inventory.filter.complianceStatus')} any={t('inventory.filter.anyComplianceStatus')} value={filters.complianceStatus} rows={statuses.data ?? []} onChange={(complianceStatus) => onChange({ complianceStatus })} />
-      <KeySelect label={t('inventory.filter.owner')} any={t('inventory.filter.anyOwner')} value={filters.owner} rows={owners} onChange={(owner) => onChange({ owner })} />
-      <KeySelect label={t('inventory.filter.ownerTeam')} any={t('inventory.filter.anyOwnerTeam')} value={filters.ownerTeam} rows={teams.data ?? []} onChange={(ownerTeam) => onChange({ ownerTeam })} />
+      <KeySelect label={t('inventory.filter.complianceStatus')} any={t('inventory.filter.anyComplianceStatus')} value={filters.complianceStatus} rows={statuses.data ?? []} onChange={(complianceStatus) => onChange({ complianceStatus })} {...openStatuses} />
+      <KeySelect label={t('inventory.filter.owner')} any={t('inventory.filter.anyOwner')} value={filters.owner} rows={owners} onChange={(owner) => onChange({ owner })} {...openPeople} />
+      <KeySelect label={t('inventory.filter.ownerTeam')} any={t('inventory.filter.anyOwnerTeam')} value={filters.ownerTeam} rows={teams.data ?? []} onChange={(ownerTeam) => onChange({ ownerTeam })} {...openTeams} />
     </>
   );
 }

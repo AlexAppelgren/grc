@@ -3,7 +3,8 @@
 import { skipToken, useMutation, useQueries, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
-import { listScopeTerms } from '@/features/watch/api';
+import { termRowsQuery } from '@/features/footprint/hooks';
+import { scopeTermsOf } from '@/features/watch/api';
 
 import * as proposals from './api';
 import type {
@@ -70,13 +71,13 @@ export function useRejectProposal(proposalId: string): UseMutationResult<Proposa
  * Labels for a proposal's scope terms (`dimension:key` refs): GET /proposals answers the
  * refs only, so the console resolves each dimension the proposal touches against
  * GET /taxonomy/terms the same way the watch feed's own filter does (features/watch/api.ts
- * `listScopeTerms`), rather than showing the raw key. Usually one or two dimensions, held
+ * `scopeTermsOf`), rather than showing the raw key. Usually one or two dimensions, held
  * for five minutes like the feed's own read, since scope terms change rarely.
  */
 export function useScopeTermLabels(refs: readonly string[]): { labelOf: (ref: string) => string; isPending: boolean } {
   const dimensions = useMemo(() => [...new Set(refs.map((ref) => ref.split(':')[0]).filter((d): d is string => d !== undefined && d !== ''))], [refs]);
   const results = useQueries({
-    queries: dimensions.map((dimension) => ({ queryKey: ['watch', 'terms', dimension], queryFn: () => listScopeTerms(dimension), staleTime: 5 * 60_000 })),
+    queries: dimensions.map((dimension) => ({ ...termRowsQuery(dimension), select: scopeTermsOf })),
   });
   const labels = new Map<string, string>();
   dimensions.forEach((dimension, index) => {

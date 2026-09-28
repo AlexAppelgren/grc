@@ -221,6 +221,16 @@ describe('the watch feed screen', () => {
     expect(feedReads[0]?.params).toMatchObject({ tab: 'new', limit: 20 });
   });
 
+  it('reads a filter list only once its select is reached', async () => {
+    const sent = serve([research], 1);
+    renderScreen();
+    await waitFor(() => expect(screen.getByRole('tab', { name: 'Needs triage (1)' })).toBeInTheDocument());
+    const lists = () => sent.filter((s) => s.path.startsWith('/api/v1/vocab/') || s.path === '/api/v1/taxonomy/terms').map((s) => s.path);
+    expect(lists()).toEqual([]);
+    fireEvent.focus(screen.getByRole('combobox', { name: 'Urgency' }));
+    await waitFor(() => expect(lists()).toEqual(['/api/v1/vocab/urgency']));
+  });
+
   it('on another tab the triage count is one small read of the same route', async () => {
     nav.search = 'tab=closed';
     const sent = serve([], 0, 4);

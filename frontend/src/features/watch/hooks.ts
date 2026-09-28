@@ -10,6 +10,7 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 
+import { termRowsQuery } from '@/features/footprint/hooks';
 import { homeKeys } from '@/features/home/hooks';
 import { usePermissions } from '@/shared/navigation/require-permission';
 
@@ -101,8 +102,8 @@ export function useSourceCoverage(enabled: boolean): UseQueryResult<SourceCovera
 }
 
 /** The scope terms of one dimension, for the feed's filter. They change rarely, so they are held longer. */
-export function useScopeTerms(dimension: string): UseQueryResult<ScopeTerm[]> {
-  return useQuery({ queryKey: ['watch', 'terms', dimension], queryFn: () => watch.listScopeTerms(dimension), staleTime: 5 * 60_000 });
+export function useScopeTerms(dimension: string, enabled = true): UseQueryResult<ScopeTerm[]> {
+  return useQuery({ ...termRowsQuery(dimension), select: watch.scopeTermsOf, enabled });
 }
 
 /** The grant behind every write on a bank's own case in R1 (design/screens/tenant-change.html). */
