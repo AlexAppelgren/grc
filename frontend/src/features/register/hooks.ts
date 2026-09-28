@@ -1,7 +1,11 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
+import { collabKeys } from '@/features/collab/hooks';
+import { participantKeys } from '@/features/participants/hooks';
+import { problemReportKeys } from '@/features/problem-reports/hooks';
+import { CHANGE_PAGE, watchKeys } from '@/features/watch/hooks';
 import { hasProblemCode } from '@/shared/utils/problem';
 
 import * as register from './api';
@@ -17,6 +21,7 @@ import type {
   RegisterEntityPatch,
   RegisterEntityStatus,
   RegisterEntry,
+  RegisterEntryWithPanels,
   RegisterGap,
   RegisterGapBody,
   RegisterGapPage,
@@ -29,6 +34,7 @@ import type {
   RegisterInterpretation,
   RegisterInterpretationBody,
   RegisterPageQuery,
+  RegisterPanels,
   RegisterPatch,
   RegisterPerson,
   RegisterRiskAcceptanceBody,
@@ -69,6 +75,8 @@ export const registerKeys = {
   items: (q: string) => ['register', 'items', q] as const,
 };
 
+const spanKey = (obligationId: string) => ['register-span', obligationId] as const;
+
 /** Refetches every register read, which is what a stale write's Reload does. */
 export function useReloadRegister(): () => Promise<void> {
   const queryClient = useQueryClient();
@@ -82,8 +90,49 @@ function useRegisterWrite<T, V>(write: (variables: V) => Promise<T>): UseMutatio
 
 // Reads.
 
-export function useRegisterEntry(obligationId: string, enabled = true): UseQueryResult<RegisterEntry> {
-  return useQuery({ queryKey: registerKeys.entry(obligationId), queryFn: () => register.getRegisterEntry(obligationId), enabled });
+// The obligation page asks once (perf-obligation-page): the register entry carries the first
+// page of every panel beside it, and each lands under the key its panel reads, so a panel
+// mounted after the entry answered finds its data fresh and sends nothing. A later page, and
+// every read after a write, still goes to the panel's own route. The pages here are the ones
+// the server fills (backend/apps/register/panels.py).
+export const PANEL_PAGE = 20;
+export const PANEL_WHOLE_LIST = 100;
+export const OBLIGATION_GAPS_PAGE: RegisterPageQuery = { limit: PANEL_WHOLE_LIST };
+export const FIRST_ASSESSMENTS_PAGE: RegisterPageQuery = { limit: PANEL_PAGE, offset: 0 };
+export const FIRST_UNITS_PAGE: RegisterPageQuery = { limit: PANEL_WHOLE_LIST, offset: 0 };
+
+function seedPanels(queryClient: QueryClient, obligationId: string, panels: RegisterPanels): void {
+  // Only where the cache holds nothing yet: data a panel read itself, or re-read after a
+  // write, is at least as new and is never replaced.
+  const seed = (key: readonly unknown[], data: unknown) => {
+    if (queryClient.getQueryData(key) === undefined) queryClient.setQueryData(key, data);
+  };
+  seed(spanKey(obligationId), panels.spannedEntities);
+  seed(registerKeys.gaps(obligationId, OBLIGATION_GAPS_PAGE), panels.gaps);
+  seed(registerKeys.assessments(obligationId, FIRST_ASSESSMENTS_PAGE), panels.assessments);
+  seed(registerKeys.links(obligationId, {}), panels.internalLinks);
+  if (panels.units !== null) seed(registerKeys.units(obligationId, panels.units.orgUnitId, FIRST_UNITS_PAGE), panels.units.units);
+  seed(participantKeys.obligation(obligationId), panels.participants);
+  // A part the reader's roles may not read comes back null and is left to its own route.
+  if (panels.problemReports !== null) seed(problemReportKeys.record('obligation', obligationId), panels.problemReports);
+  if (panels.changes !== null) seed(watchKeys.obligationChanges(obligationId, CHANGE_PAGE), panels.changes);
+  if (panels.comments !== null) seed(collabKeys.record({ subjectType: 'obligation', subjectId: obligationId }), { pages: [panels.comments], pageParams: [0] });
+}
+
+function entryQuery(queryClient: QueryClient, obligationId: string) {
+  return {
+    queryKey: registerKeys.entry(obligationId),
+    queryFn: async () => {
+      const entry = await register.getRegisterEntry(obligationId);
+      seedPanels(queryClient, obligationId, entry.panels);
+      return entry;
+    },
+  };
+}
+
+export function useRegisterEntry(obligationId: string, enabled = true): UseQueryResult<RegisterEntryWithPanels> {
+  const queryClient = useQueryClient();
+  return useQuery({ ...entryQuery(queryClient, obligationId), enabled });
 }
 
 export function useObligationGaps(obligationId: string, page: RegisterPageQuery = {}): UseQueryResult<RegisterGapPage> {
@@ -100,7 +149,8 @@ export function useAssessments(obligationId: string, page: RegisterPageQuery = {
 
 export function useInterpretation(obligationId: string): UseQueryResult<RegisterInterpretation> {
   // Read off the register entry, which carries it, so the page asks once for both.
-  return useQuery({ queryKey: registerKeys.entry(obligationId), queryFn: () => register.getRegisterEntry(obligationId), select: (entry) => entry.interpretation });
+  const queryClient = useQueryClient();
+  return useQuery({ ...entryQuery(queryClient, obligationId), select: (entry) => entry.interpretation });
 }
 
 export function useInternalLinks(obligationId: string, page: RegisterPageQuery = {}): UseQueryResult<RegisterInternalLinkPage> {
@@ -203,7 +253,7 @@ export function useCompleteDutyOccurrence(): UseMutationResult<RegisterDutyCompl
 // owner or contact picker offers. Neither changes with a register write.
 
 export function useSpannedEntities(obligationId: string): UseQueryResult<RegisterSpannedEntity[]> {
-  return useQuery({ queryKey: ['register-span', obligationId], queryFn: () => register.listSpannedEntities(obligationId) });
+  return useQuery({ queryKey: spanKey(obligationId), queryFn: () => register.listSpannedEntities(obligationId) });
 }
 
 export function usePeople(enabled = true): UseQueryResult<RegisterPerson[]> {

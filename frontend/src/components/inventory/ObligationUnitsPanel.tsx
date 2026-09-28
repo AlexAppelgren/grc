@@ -12,7 +12,7 @@ import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
 import { TabPanel, Tabs } from '@/components/ui/Tabs';
 import { useFormatContext } from '@/features/identity/hooks';
-import { isStaleWrite, useCreateUnit, useRegisterEntry, useReloadRegister, useRemoveUnit, useUnits, useUpdateUnit } from '@/features/register/hooks';
+import { isStaleWrite, PANEL_WHOLE_LIST, useCreateUnit, useRegisterEntry, useReloadRegister, useRemoveUnit, useUnits, useUpdateUnit } from '@/features/register/hooks';
 import { presentApplicability, presentCompliance } from '@/features/register/register-presentation';
 import type { RegisterUnit } from '@/features/register/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -33,7 +33,7 @@ import { formatDate } from '@/shared/utils/format';
 
 const REGISTER_EDIT = 'register.edit';
 const APPLICABILITY_APPROVE = 'applicability.approve';
-const PAGE_SIZE = 100;
+const PAGE_SIZE = PANEL_WHOLE_LIST;
 
 interface Entity {
   id: string;

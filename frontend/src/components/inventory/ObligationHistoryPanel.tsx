@@ -9,7 +9,7 @@ import { Meta, Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
-import { isStaleWrite, useAssessments, useInterpretation, useReloadRegister, useSaveInterpretation } from '@/features/register/hooks';
+import { isStaleWrite, PANEL_PAGE, useAssessments, useInterpretation, useReloadRegister, useSaveInterpretation } from '@/features/register/hooks';
 import { presentCompliance } from '@/features/register/register-presentation';
 import type { RegisterAssessmentPage, RegisterInterpretation } from '@/features/register/types';
 import type { MessageKey } from '@/shared/i18n';
@@ -25,7 +25,7 @@ import { formatDate } from '@/shared/utils/format';
 // nothing on it is ever edited.
 
 const EDIT_PERMISSION = 'register.edit';
-export const HISTORY_PAGE = 20;
+export const HISTORY_PAGE = PANEL_PAGE;
 
 type Assessment = RegisterAssessmentPage['items'][number];
 type ReadingVersion = NonNullable<RegisterInterpretation['current']>;

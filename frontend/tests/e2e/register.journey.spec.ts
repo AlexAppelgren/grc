@@ -594,11 +594,14 @@ test.describe('register journeys', () => {
       await expect(dialog).toBeHidden();
       await expect(panel.locator(`[data-link-id="${link.id}"] [data-link-ref]`)).toHaveText('CTL-777');
 
-      // The API exposes the links, with the item each points at, so an outside GRC system can read them.
+      // The API exposes the links, with the item each points at, so an outside GRC system can
+      // read them: the page reads their first page with the register entry, as
+      // `GET /internal-links` would answer it.
       const reader = await signInElsewhere(browser, testInfo.project.use.baseURL, apiGuard, LOGINS.reader);
-      const readerLinks = reader.waitForResponse((r) => r.url().includes('/internal-links') && r.request().method() === 'GET');
+      const readerEntry = reader.waitForResponse((r) => new URL(r.url()).pathname.endsWith('/register') && r.request().method() === 'GET');
       await openPanelObligation(reader, 'obl-client-assets');
-      const listed = (await (await readerLinks).json()) as { items: { id: string; externalRef: string | null; kind: { key: string }; internalItemId: string }[] };
+      type Listed = { items: { id: string; externalRef: string | null; kind: { key: string }; internalItemId: string }[] };
+      const listed = ((await (await readerEntry).json()) as { panels: { internalLinks: Listed } }).panels.internalLinks;
       expect(listed.items.find((row) => row.id === linked[0])).toMatchObject({ externalRef: 'POL-014', kind: { key: 'policy' } });
       expect(listed.items.find((row) => row.id === linked[1])).toMatchObject({ externalRef: 'CTL-203', kind: { key: 'control' } });
       expect(listed.items.find((row) => row.id === link.id)).toMatchObject({ internalItemId: link.internalItemId });

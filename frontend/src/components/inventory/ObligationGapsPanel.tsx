@@ -9,7 +9,7 @@ import { Panel, Row, Rows } from '@/components/ui/Panel';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { GAPS_EDIT, REGISTER_READ } from '@/features/gaps/gap-view';
 import { useObligation } from '@/features/library/hooks';
-import { useObligationGaps } from '@/features/register/hooks';
+import { OBLIGATION_GAPS_PAGE, useObligationGaps } from '@/features/register/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 
@@ -19,12 +19,10 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 // this obligation fixed. A member whose roles do not read the register sees
 // no panel, so the page asks nothing it would be refused.
 
-const ALL = { limit: 100 } as const;
-
 function GapsPanelBody({ obligationId }: { obligationId: string }) {
   const t = useT();
   const permissions = usePermissions() ?? [];
-  const gaps = useObligationGaps(obligationId, ALL);
+  const gaps = useObligationGaps(obligationId, OBLIGATION_GAPS_PAGE);
   const obligation = useObligation(obligationId);
   const [open, setOpen] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
