@@ -28,6 +28,7 @@ from typing import Any
 from django.conf import settings
 from django.test import TestCase
 
+from apps.agents import tenant_agents
 from apps.agents import testing as agent_build
 from apps.agents.models import Agent, AgentKind, AgentRun, AgentScopeKind, AgentWritesTo, RunTrigger, TenantAgent
 from apps.shared import factories, permissions as perms, tenancy
@@ -175,6 +176,41 @@ class ABanksOwnRunHistory(TestCase):
         with stub_session(principal):
             body = self.client.get(RUNS, **AS_SESSION).json()
         self.assertEqual([row["id"] for row in body["items"]], [str(self.library.id)])
+
+    # `GET /agents` carries each agent's latest runs, so the admin page asks once instead of
+    # once per agent (the 2026-09-28 request audit): the same rows `GET /agent-runs?tenantAgentId=`
+    # answers, newest first, at most `AGENT_RECENT_RUNS` of them, and never another bank's.
+    def agents(self, *, tenant: Tenant | None = None) -> dict[str, list[str]]:
+        principal = user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=(tenant or self.bank).id, subject_id=self.asker.id)
+        with stub_session(principal):
+            response = self.client.get("/api/v1/agents", **AS_SESSION)
+        self.assertEqual(response.status_code, 200, response.content)
+        return {row["id"]: [run["id"] for run in row["recentRuns"]] for row in response.json()["items"]}
+
+    def test_each_agent_carries_its_own_runs_newest_first(self) -> None:
+        self.assertEqual(
+            self.agents(),
+            {
+                str(self.watch.id): self.ids(f"?tenantAgentId={self.watch.id}"),
+                str(self.second.id): [str(self.tied.id)],
+            },
+        )
+        self.assertEqual(self.agents()[str(self.watch.id)], [str(self.asked.id), str(self.scheduled.id)])
+
+    def test_the_runs_stop_at_the_setting(self) -> None:
+        with self.settings(AGENT_RECENT_RUNS=1):
+            self.assertEqual(self.agents()[str(self.watch.id)], [str(self.asked.id)])
+
+    def test_another_banks_runs_never_ride_along(self) -> None:
+        self.assertEqual(self.agents(tenant=self.other), {str(self.theirs.id): [str(self.other_run.id)]})
+
+    def test_the_runs_cost_one_query_however_many_agents(self) -> None:
+        tenancy.activate(self.bank.id)
+        try:
+            with self.assertNumQueries(3):
+                tenant_agents.list_tenant_agents(tenant=self.bank, limit=100, offset=0)
+        finally:
+            tenancy.clear_tenant()
 
 
 class RunHistoryPaging(TestCase):

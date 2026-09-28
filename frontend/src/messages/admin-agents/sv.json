@@ -75,7 +75,6 @@
   "adminAgents.schedule.operating": "Verksamhetsmarknad",
   "adminAgents.schedule.watched": "Bevakad marknad",
   "adminAgents.recentRuns": "Senaste körningar",
-  "adminAgents.runsErrorTitle": "Det gick inte att läsa in körningarna",
   "adminAgents.run.by": "{trigger} av {name}",
   "adminAgents.run.minutes": "{count, plural, one {# min} other {# min}}",
   "adminAgents.run.findings": "{count, plural, =0 {inga fynd} one {# fynd} other {# fynd}}",

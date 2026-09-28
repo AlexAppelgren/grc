@@ -23,6 +23,7 @@ class OutOfRangeCapsRefuseToBoot(SimpleTestCase):
             "SCOPE_ITEM_DESCRIPTION_MAX_CHARS": ["0"],
             "AGENT_BEAT_INTERVAL_MINUTES": ["0"],
             "AGENT_RUNS_PER_BEAT": ["0"],
+            "AGENT_RECENT_RUNS": ["0", "101"],
             "AGENT_RUN_BUDGET_LIMIT": ["0", "NaN", "five"],
         }
         for name, values in cases.items():
