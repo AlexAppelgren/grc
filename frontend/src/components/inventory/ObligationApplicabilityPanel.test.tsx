@@ -44,6 +44,7 @@ function entity(id: string, name: string, patch: Partial<RegisterEntityStatus> =
 function entry(patch: Partial<RegisterEntry> = {}): RegisterEntry {
   return {
     obligationId: 'ob-1',
+    interpretation: { obligationId: 'ob-1', current: null, earlier: [] },
     applicability: 'under_assessment',
     applicabilityReason: null,
     applicabilityDecidedAt: null,
