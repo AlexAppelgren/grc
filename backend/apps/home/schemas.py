@@ -175,6 +175,7 @@ HOME_EXAMPLE: JsonDict = {
     "comingUp": [ROADMAP_ITEM_EXAMPLE, INTERNAL_ROADMAP_ITEM_EXAMPLE],
     "roadmapCount": 7,
     "lead": CHANGE_ROW_EXAMPLE,
+    "briefingCount": 3,
     "sources": SOURCE_HEALTH_EXAMPLE,
     "standing": STANDING_EXAMPLE,
 }
@@ -687,6 +688,17 @@ class Home(CamelSchema):
             "'Lead'. Null when the week has no such change, and null for a reader without "
             "`watch.read`; a reader must not read null as 'nothing happened this week'."
         )
+    )
+    briefing_count: int | None = Field(
+        ge=0,
+        description=(
+            "How many items the running week's briefing holds, 0 or more and at most the "
+            "`BRIEFING_MAX_ITEMS` setting: the same rows, from the same selector, as "
+            "`GET /briefings/current`, whose first is `lead`. The screen says 'N more items "
+            "this week' from it without a second request. Null for a reader without "
+            "`watch.read`."
+        ),
+        examples=[3],
     )
     sources: HomeSourceHealth | None = Field(
         description=(

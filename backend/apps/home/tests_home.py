@@ -37,6 +37,7 @@ from django.utils import timezone
 
 from apps.cases import testing as cases_build
 from apps.cases.models import ChangeCase
+from apps.home import briefing as briefing_reads
 from apps.home import logic, roadmap
 from apps.home.schemas import HomeRoadmapQuery
 from apps.identity.models import TenantRole, User
@@ -187,6 +188,20 @@ class HomeContents(TestCase):
         self.assertEqual(lead.case.category, "new")
         self.assertEqual(lead.case.urgency.key, "act_now")
 
+    def test_the_briefing_count_is_the_running_weeks_briefing_items(self) -> None:
+        """Today's "N more items this week" reads the count off `GET /home` rather than
+        chaining `GET /briefings/current` behind it: the same selector, so the two agree."""
+        answer = self.read()
+        with mock.patch("django.utils.timezone.now", return_value=INSTANT):
+            tenancy.activate(self.tenant.id)
+            current = briefing_reads.current_briefing(self.tenant, ["en"])
+        self.assertEqual(answer.briefing_count, len(current.items))
+        self.assertEqual(answer.briefing_count, 2)
+
+    def test_the_briefing_count_stops_where_the_briefing_does(self) -> None:
+        with mock.patch.object(settings, "BRIEFING_MAX_ITEMS", 1):
+            self.assertEqual(self.read().briefing_count, 1)
+
     def test_what_cannot_lead_the_week_and_why(self) -> None:
         """Three rows that must not lead, each refused by its own rule: a change sighted
         last week, one the bank has closed, and one outside its regulatory scope (FP-03)."""
@@ -295,6 +310,7 @@ class HomeIsFilteredByPermission(TestCase):
         body = response.json()
         self.assertIsNone(body["lead"])
         self.assertIsNone(body["sources"])
+        self.assertIsNone(body["briefingCount"])
         self.assertEqual([item["title"] for item in body["comingUp"]], ["Research payments"])
 
     def test_a_reader_without_register_read_gets_the_page_with_standing_null(self) -> None:
@@ -322,7 +338,7 @@ class HomeIsFilteredByPermission(TestCase):
     def test_the_answer_carries_no_decide_now(self) -> None:
         """Ruling 1: what needs a decision has one source, the `counts` object on `GET /me`."""
         self.assertEqual(
-            sorted(self.get(self.reader).json()), ["comingUp", "date", "lead", "roadmapCount", "sources", "standing"]
+            sorted(self.get(self.reader).json()), ["briefingCount", "comingUp", "date", "lead", "roadmapCount", "sources", "standing"]
         )
 
 
