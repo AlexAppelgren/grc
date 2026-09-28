@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
+import { withPanels } from '@/features/register/testing';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
@@ -31,7 +32,7 @@ interface Server {
 function serve({ meId, items = [erik, legal], entry, write = () => ({ status: 204 }) }: Server) {
   return installAdapter((s) => {
     if (s.path === '/api/v1/me') return { status: 200, data: { user: { id: meId, name: 'Me', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: [], enrolmentPending: false } };
-    if (s.path.endsWith('/register')) return entry ?? { status: 200, data: { firstLineOwner: ANNA, complianceContact: { id: 'u-sara', name: 'Sara Lindqvist' } } };
+    if (s.path.endsWith('/register')) return entry ?? { status: 200, data: withPanels({ firstLineOwner: ANNA, complianceContact: { id: 'u-sara', name: 'Sara Lindqvist' } }) };
     if (s.path === '/api/v1/reference/people') return { status: 200, data: [ERIK, ANNA] };
     if (s.path === '/api/v1/tenant/teams') return { status: 200, data: { items: [{ key: 'legal', label: 'Legal', active: true, email: '', memberCount: 2, orgUnitId: null }], total: 1 } };
     if (s.method === 'get') return { status: 200, data: { items, total: items.length } };

@@ -34,6 +34,7 @@ import type { LocalizedText, ObligationDetail, VersionDiff } from '@/features/li
 import type { PartialDate } from '@/features/shared/presentation-types';
 import { languageName } from '@/features/library/version-presentation';
 import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
+import { useRegisterEntry } from '@/features/register/hooks';
 import type { Locale, Translate } from '@/shared/i18n';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
@@ -230,6 +231,11 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
 
   const obligation = useObligation(obligationId, asOf);
   const record = obligation.data;
+  // The register read carries the first page of every panel below and leaves each where its
+  // panel reads it, so the panels mount once it has answered and send nothing of their own.
+  // Should it fail, they mount anyway and each asks its own route.
+  const entry = useRegisterEntry(obligationId);
+  const panelsRead = !entry.isPending;
   const selected = chosen ?? record?.summary?.language ?? locale;
   const diff = useObligationDiff(obligationId, selected, showDiff);
   const report = useReportObligationProblem(obligationId);
@@ -245,9 +251,9 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
     return <ErrorState title={t('inventory.obligation.errorTitle')} onRetry={() => void obligation.refetch()} />;
   }
 
-  // The panels need only the id in the address, so they mount beside the
-  // card's own read rather than after it: one round of requests, not two.
-  // Those drawn from the card itself wait for it.
+  // The card and the register read both start from the id in the address, in
+  // one round. The panels drawn from the card wait for it; the rest wait for
+  // the register read, which already holds what they show.
   return (
     <div data-obligation={record?.stableKey}>
       <BackLink href="/inventory" label={t('inventory.obligation.back')} />
@@ -277,14 +283,24 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
               <RelatedPanel related={record.related} />
             </>
           )}
-          <ObligationLinksPanel obligationId={obligationId} />
-          {record?.bindingLevel.kind === STANDARD_LEVEL_KIND ? <ObligationUnitsPanel obligationId={obligationId} /> : null}
-          <ObligationHistoryPanel obligationId={obligationId} />
+          {panelsRead ? (
+            <>
+              <ObligationLinksPanel obligationId={obligationId} />
+              {record?.bindingLevel.kind === STANDARD_LEVEL_KIND ? <ObligationUnitsPanel obligationId={obligationId} /> : null}
+              <ObligationHistoryPanel obligationId={obligationId} />
+            </>
+          ) : null}
         </div>
         <div>
-          <ObligationApplicabilityPanel obligationId={obligationId} />
-          <ObligationStatusPanel obligationId={obligationId} />
-          <ObligationGapsPanel obligationId={obligationId} />
+          {panelsRead ? (
+            <>
+              <ObligationApplicabilityPanel obligationId={obligationId} />
+              <ObligationStatusPanel obligationId={obligationId} />
+              <ObligationGapsPanel obligationId={obligationId} />
+            </>
+          ) : (
+            <LoadingState rows={3} />
+          )}
           {record === undefined ? null : (
             <ProvenancePanel
               obligation={record}
@@ -297,10 +313,14 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
               }
             />
           )}
-          <RecordProblemReports subjectType="obligation" subjectId={obligationId} />
-          <ObligationRelatedChanges obligationId={obligationId} />
-          <ObligationParticipantsPanel obligationId={obligationId} />
-          <ObligationCommentsPanel obligationId={obligationId} />
+          {panelsRead ? (
+            <>
+              <RecordProblemReports subjectType="obligation" subjectId={obligationId} />
+              <ObligationRelatedChanges obligationId={obligationId} />
+              <ObligationParticipantsPanel obligationId={obligationId} />
+              <ObligationCommentsPanel obligationId={obligationId} />
+            </>
+          ) : null}
         </div>
       </div>
 

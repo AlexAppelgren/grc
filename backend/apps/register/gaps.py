@@ -143,6 +143,11 @@ def list_obligation_gaps(
     obligation nobody has worked on has no entry and so no gaps: an empty page."""
     if not obligation_headings([obligation_id], []):
         raise ValidationError("That obligation is not here.", code="not_found")
+    return obligation_gaps_page(order=order, obligation_id=obligation_id, limit=limit, offset=offset)
+
+
+def obligation_gaps_page(*, order: list[str], obligation_id: uuid.UUID, limit: int, offset: int) -> dict[str, Any]:
+    """One page of the gaps on an obligation the caller already checked it can see."""
     return _page(_gaps().filter(tenant_obligation__obligation_id=obligation_id), order, limit, offset)
 
 

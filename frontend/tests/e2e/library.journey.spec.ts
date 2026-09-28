@@ -58,6 +58,39 @@ async function openInstrument(page: Page, stableKey: string): Promise<void> {
   await expect(page.locator(`[data-instrument="${stableKey}"] [data-header-pills]`)).toBeVisible();
 }
 
+/** The session's own calls on a full load: sign-in is renewed, and answers with the person. */
+const SESSION_CALLS = new Set(['/api/v1/auth/refresh', '/api/v1/me']);
+
+/**
+ * Loads a card from its address, as a bookmark or a reload does, and returns the API calls it
+ * sent once the session was back, with whether any of them was sent only after another had
+ * answered: a second round.
+ */
+async function loadCardCounting(page: Page, stableKey: string): Promise<{ calls: string[]; chained: string[] }> {
+  await openInventory(page);
+  const href = await page.locator(`[data-obligation="${stableKey}"]`).first().getAttribute('href');
+  expect(href).not.toBeNull();
+  const calls: string[] = [];
+  const chained: string[] = [];
+  let answered = false;
+  page.on('request', (request) => {
+    const path = new URL(request.url()).pathname;
+    if (!path.startsWith('/api/') || SESSION_CALLS.has(path)) return;
+    calls.push(path);
+    if (answered) chained.push(path);
+  });
+  page.on('requestfinished', (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path.startsWith('/api/') && !SESSION_CALLS.has(path)) answered = true;
+  });
+  await page.goto(href ?? '');
+  await expect(page.locator(`[data-obligation="${stableKey}"] [data-header-pills]`)).toBeVisible();
+  await expect(page.locator('[data-applicability-panel]')).toBeVisible();
+  await expect(page.locator('[data-related-changes]')).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  return { calls, chained };
+}
+
 function headerPills(page: Page) {
   return page.locator('[data-header-pills] [data-pill]');
 }
@@ -162,6 +195,14 @@ test.describe('library journeys', () => {
 
     // The header slots in their order: instrument brand, regime information,
     // binding level information. A tone is chosen by the slot, never by a person.
+    // A full load of the card asks for at most four things once the session is back, all at
+    // once: the card and the register read, which carries what every panel shows, beside
+    // what the page's frame and the tag picker read. No panel asks on its own.
+    const load = await loadCardCounting(page, RESEARCH);
+    expect(load.calls.length, load.calls.join(', ')).toBeLessThanOrEqual(4);
+    expect(load.calls).toEqual(expect.arrayContaining([expect.stringMatching(/^\/api\/v1\/obligations\/[^/]+$/), expect.stringMatching(/^\/api\/v1\/obligations\/[^/]+\/register$/)]));
+    expect(load.chained, 'sent only after another call had answered').toEqual([]);
+
     await openObligation(page, RESEARCH);
     await expect(headerPills(page)).toHaveText(['FFFS 2017:2', 'Securities', 'Binding']);
     await expect(headerPills(page).nth(0)).toHaveAttribute('data-pill', 'brand');

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { RegisterEntityStatus, RegisterEntry } from '@/features/register/types';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
+import { withPanels } from '@/features/register/testing';
 import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
@@ -89,7 +90,7 @@ function serve(read: RegisterEntry | number, write: (sent: Sent) => { status: nu
     if (sent.path === '/api/v1/vocab/team') return { status: 200, data: { items: [RETAIL], total: 1 } };
     if (sent.method === 'patch') return write(sent);
     if (typeof read === 'number') return { status: read, data: { detail: 'no', code: 'server_error' } };
-    return { status: 200, data: read };
+    return { status: 200, data: withPanels(read) };
   });
 }
 

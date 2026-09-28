@@ -430,9 +430,9 @@
     "queries": 9
   },
   "getRegisterEntry": {
-    "medianMs": 28.4,
-    "p95Ms": 32.6,
-    "queries": 13
+    "medianMs": 167.9,
+    "p95Ms": 196.9,
+    "queries": 43
   },
   "getResearchRequest": {
     "medianMs": 9.9,

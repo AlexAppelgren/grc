@@ -22,7 +22,7 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.register import agent_read, applicability, duties, gaps, history, links, soa, status_logic, units
+from apps.register import agent_read, applicability, duties, gaps, history, links, panels, soa, status_logic, units
 from apps.register.schemas import (
     RegisterInternalItemPage,
     RegisterInternalItemQuery,
@@ -39,6 +39,7 @@ from apps.register.schemas import (
     RegisterEntityPatch,
     RegisterEntityStatus,
     RegisterEntry,
+    RegisterEntryWithPanels,
     RegisterGap,
     RegisterGapBody,
     RegisterGapPage,
@@ -66,7 +67,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, if_match, principal
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, principal
 from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Register"])
@@ -91,7 +92,7 @@ _OCCURRENCE_ID = "The dated duty occurrence, as a UUID. Another bank's occurrenc
 # ---------------------------------------------------------------------------------------
 @router.get(
     "/obligations/{obligation_id}/register",
-    response=RegisterEntry,
+    response=RegisterEntryWithPanels,
     auth=SESSION,
     operation_id="getRegisterEntry",
     by_alias=True,
@@ -105,9 +106,18 @@ def get_register_entry(request: HttpRequest, obligation_id: uuid.UUID = Path(...
     and a row per legal entity where the obligation spans several. Applicability and status
     are separate facts and neither is derived from the other.
 
+    `panels` carries what the obligation page shows beside the entry when it opens, so the page
+    asks once: the legal entities the obligation spans, the gaps, the newest assessments, the
+    linked internal items, a standard's units, the participants, the problem reports, the
+    related changes and the comments. Each part is the first page its own route reads, and
+    later pages come from that route. A part behind a permission this route does not demand is
+    null for a caller without it: `problemReports` without `problems.report`, `changes`
+    without `watch.read`, `comments` without `library.read`.
+
     A person's session holding `register.read`, which every role of a bank carries. A read: it
     writes nothing, not even an empty entry, so an obligation nobody has answered for reads as
-    "under assessment" with version 0.
+    "under assessment" with version 0. It costs a fixed number of queries however many rows
+    each part holds.
 
     Where legal entities the obligation applies to have rows, `complianceStatus` is the worst
     of theirs by category: gap, then partly, then not assessed, then compliant.
@@ -116,7 +126,13 @@ def get_register_entry(request: HttpRequest, obligation_id: uuid.UUID = Path(...
     `register.read`; `not_found` (404) for an obligation the bank cannot see.
     """
     tenant = caller_tenant(request)
-    return status_logic.read_register(tenant=tenant, order=language_order(request, tenant=tenant), obligation_id=obligation_id)
+    return panels.read_with_panels(
+        who=principal(request),
+        user=caller_user(request),
+        tenant=tenant,
+        order=language_order(request, tenant=tenant),
+        obligation_id=obligation_id,
+    )
 
 
 @router.patch(

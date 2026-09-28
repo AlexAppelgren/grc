@@ -55,6 +55,11 @@ def list_links(
     anything to is an empty page."""
     if not obligation_headings([obligation_id], []):
         raise ValidationError("That obligation is not here.", code="not_found")
+    return links_page(order=order, obligation_id=obligation_id, limit=limit, offset=offset)
+
+
+def links_page(*, order: list[str], obligation_id: uuid.UUID, limit: int, offset: int) -> RegisterInternalLinkPage:
+    """One page of the live links on an obligation the caller already checked it can see."""
     live = InternalLink.objects.filter(tenant_obligation__obligation_id=obligation_id, removed_at__isnull=True)
     rows = (
         live.select_related("internal_item__kind", "created_by")

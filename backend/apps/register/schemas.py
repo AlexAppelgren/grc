@@ -20,12 +20,19 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from ninja import Field
 from pydantic import ConfigDict, model_validator
 
+from apps.collab.schemas import CollabCommentPage, CollabParticipantPage
+from apps.governance.schemas import ProblemReportPage
 from apps.shared.schemas import CamelSchema, WriteBody
+
+if TYPE_CHECKING:
+    # The watch schemas import the library's, which import these: `RegisterPanels` names the
+    # change page and `RegisterConfig.ready()` resolves it once every app has loaded.
+    from apps.watch.schemas import WatchObligationChangePage
 
 __all__ = ["CamelSchema"]
 
@@ -241,6 +248,29 @@ class RegisterEntityStatus(CamelSchema):
     version: int = Field(description=_VERSION)
 
 
+_REGISTER_ENTRY_EXAMPLE: dict[str, Any] = {
+    "obligationId": "44444444-4444-4444-8444-444444444444",
+    "applicability": "applies",
+    "applicabilityReason": "Holds client assets under the securities licence",
+    "applicabilityDecidedAt": "2026-09-14T08:30:00Z",
+    "applicabilityDecidedBy": _PERSON_EXAMPLE,
+    "complianceStatus": _STATUS_EXAMPLE,
+    "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
+    "riskRating": _RISK_EXAMPLE,
+    "firstLineOwner": _PERSON_EXAMPLE,
+    "complianceContact": {"id": "2b9e4c71-5a3d-4f08-9c6e-7d1a0b3f5e82", "name": "Johan Berg"},
+    "ownerTeam": _TEAM_EXAMPLE,
+    "process": "Client asset reconciliation",
+    "system": "Custody ledger",
+    "evidenceLocation": "Compliance share / Client assets / 2026",
+    "nextReviewDate": "2027-03-31",
+    "entities": [_ENTITY_EXAMPLE],
+    "version": 7,
+    "updatedAt": "2026-09-18T13:05:00Z",
+    "interpretation": {"obligationId": "44444444-4444-4444-8444-444444444444", "current": None, "earlier": []},
+}
+
+
 class RegisterEntry(CamelSchema):
     """The bank's register entry for one obligation: its applicability and its compliance
     status, kept as separate facts, and a row per legal entity where it spans several."""
@@ -248,27 +278,7 @@ class RegisterEntry(CamelSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
-                {
-                    "obligationId": "44444444-4444-4444-8444-444444444444",
-                    "applicability": "applies",
-                    "applicabilityReason": "Holds client assets under the securities licence",
-                    "applicabilityDecidedAt": "2026-09-14T08:30:00Z",
-                    "applicabilityDecidedBy": _PERSON_EXAMPLE,
-                    "complianceStatus": _STATUS_EXAMPLE,
-                    "statusNote": "Reconciliation runs daily; the evidence log is still manual.",
-                    "riskRating": _RISK_EXAMPLE,
-                    "firstLineOwner": _PERSON_EXAMPLE,
-                    "complianceContact": {"id": "2b9e4c71-5a3d-4f08-9c6e-7d1a0b3f5e82", "name": "Johan Berg"},
-                    "ownerTeam": _TEAM_EXAMPLE,
-                    "process": "Client asset reconciliation",
-                    "system": "Custody ledger",
-                    "evidenceLocation": "Compliance share / Client assets / 2026",
-                    "nextReviewDate": "2027-03-31",
-                    "entities": [_ENTITY_EXAMPLE],
-                    "version": 7,
-                    "updatedAt": "2026-09-18T13:05:00Z",
-                    "interpretation": {"obligationId": "44444444-4444-4444-8444-444444444444", "current": None, "earlier": []},
-                }
+                _REGISTER_ENTRY_EXAMPLE,
             ]
         }
     )
@@ -1561,3 +1571,97 @@ class RegisterDecisionPage(CamelSchema):
 
     items: list[RegisterDecision] = Field(description="The decisions on this page, by the obligation's stable key.")
     total: int = Field(description="How many decisions the agent may read in total, not how many are on this page; use it to size a pager.")
+
+
+# ---------------------------------------------------------------------------------------
+# The obligation page's read: the register entry with what its panels show on load
+# ---------------------------------------------------------------------------------------
+class RegisterPanelUnits(CamelSchema):
+    """The units of the legal entity the units panel opens on: the first, by name, that the
+    standard applies to."""
+
+    org_unit_id: uuid.UUID = Field(description="The legal entity these units belong to, as a UUID from the bank's organisation.")
+    units: RegisterUnitPage = Field(
+        description="Its first page of units by reference, up to 100, as `GET /obligations/{obligationId}/units?entity=…&limit=100` reads it."
+    )
+
+
+class RegisterPanels(CamelSchema):
+    """What the obligation page's panels show when it opens, each part the first page its own
+    route reads, so the page asks once instead of once per panel. A part the caller's roles may
+    not read is null, never an empty page, and the rest still arrive. Every later page, and
+    every read after a write, goes to the part's own route."""
+
+    spanned_entities: list[RegisterSpannedEntity] = Field(
+        description="The legal entities the obligation spans, by name, as `GET /obligations/{obligationId}/register/entities` reads them; empty when the bank records none."
+    )
+    gaps: RegisterGapPage = Field(
+        description="The bank's gaps on the obligation, open and closed, up to 100, as `GET /obligations/{obligationId}/gaps?limit=100` reads them."
+    )
+    assessments: RegisterAssessmentPage = Field(
+        description="The newest 20 assessments of the obligation, as `GET /obligations/{obligationId}/assessments` reads its first page."
+    )
+    internal_links: RegisterInternalLinkPage = Field(
+        description="The first 20 of the bank's own items linked to the obligation, as `GET /obligations/{obligationId}/internal-links` reads them."
+    )
+    units: RegisterPanelUnits | None = Field(
+        description=(
+            "The units of the first legal entity, by name, that a standard's conformance "
+            "obligation applies to. Null for any other obligation, and while the standard "
+            "applies to none of the bank's legal entities."
+        )
+    )
+    participants: CollabParticipantPage = Field(
+        description="Up to 100 of the people and teams taking part in the obligation, as `GET /obligations/{obligationId}/participants?limit=100` reads them."
+    )
+    problem_reports: ProblemReportPage | None = Field(
+        description=(
+            "The newest 20 of the bank's problem reports on the obligation, as "
+            "`GET /problem-reports?subjectType=obligation&subjectId=…` reads them for the caller. "
+            "Null without `problems.report`."
+        )
+    )
+    changes: WatchObligationChangePage | None = Field(
+        description=(
+            "The first 20 regulatory changes linked to the obligation, with the open count, as "
+            "`GET /obligations/{obligationId}/changes` reads them. Null without `watch.read`."
+        )
+    )
+    comments: CollabCommentPage | None = Field(
+        description=(
+            "The oldest 20 comments on the obligation, as "
+            "`GET /comments?subjectType=obligation&subjectId=…` reads them for the caller. Null "
+            "without `library.read`."
+        )
+    )
+
+
+_EMPTY_PAGE: dict[str, Any] = {"items": [], "total": 0}
+
+
+class RegisterEntryWithPanels(RegisterEntry):
+    """The bank's register entry for one obligation and what the obligation page's panels show
+    on load, in one read."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    **_REGISTER_ENTRY_EXAMPLE,
+                    "panels": {
+                        "spannedEntities": [{"orgUnitId": "55555555-5555-4555-8555-555555555555", "orgUnitName": "Example Bank AB"}],
+                        "gaps": _EMPTY_PAGE,
+                        "assessments": _EMPTY_PAGE,
+                        "internalLinks": _EMPTY_PAGE,
+                        "units": None,
+                        "participants": _EMPTY_PAGE,
+                        "problemReports": _EMPTY_PAGE,
+                        "changes": {**_EMPTY_PAGE, "openCount": 0},
+                        "comments": _EMPTY_PAGE,
+                    },
+                }
+            ]
+        }
+    )
+
+    panels: RegisterPanels = Field(description="What the obligation page's panels show on load, each part gated by the permission its own route takes.")

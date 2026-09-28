@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
+import { withPanels } from '@/features/register/testing';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { api, tokenStore } from '@/shared/utils/api-client';
 
@@ -44,7 +45,7 @@ function assessment(n: number) {
 function serve(interpretation: unknown, total: number, write: (sent: Sent) => Answer = () => ({ status: 200, data: reading })) {
   const sent = installAdapter((s) => {
     if (s.path === '/api/v1/me') return { status: 200, data: { user: { id: 'u-sara', name: 'Sara', locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, permissions: EDITOR, enrolmentPending: false } };
-    if (s.path.endsWith('/register') && s.method === 'get') return { status: 200, data: { interpretation } };
+    if (s.path.endsWith('/register') && s.method === 'get') return { status: 200, data: withPanels({ interpretation }) };
     if (s.path.endsWith('/assessments')) {
       const { offset = 0 } = (s.params ?? {}) as { offset?: number };
       const count = Math.max(0, Math.min(HISTORY_PAGE, total - offset));

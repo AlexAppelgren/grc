@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -5,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createT } from '@/shared/i18n';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
+import { withPanels } from '@/features/register/testing';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
@@ -130,9 +132,9 @@ const ME = {
   enrolmentPending: false,
 };
 
-function renderIn(node: ReactNode, permissions: string[] = ['library.read', 'problems.report']) {
+function renderIn(node: ReactNode, permissions: string[] = ['library.read', 'problems.report'], client?: QueryClient) {
   const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
+  const Wrapper = client === undefined ? (wrapper as (props: { children: ReactNode }) => ReactNode) : ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>;
   return render(
     <Wrapper>
       {
@@ -157,10 +159,15 @@ const versionDiff: VersionDiff = {
   ],
 };
 
-/** The server: /me for the format context and the permissions, then the card, the diff and the report. */
-function serve(answer: ObligationDetail | number) {
+/** The server: /me for the format context and the permissions, then the card, the register read, the diff and the report. */
+function serve(answer: ObligationDetail | number, register: number = 200) {
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/me') return { status: 200, data: ME };
+    // The bank has answered nothing on this duty; the panels are markers here.
+    if (sent.path === '/api/v1/obligations/ob-1/register') {
+      const nothingYet = { problemReports: { items: [], total: 0 }, changes: { items: [], total: 0, openCount: 0 } };
+      return register === 200 ? { status: 200, data: withPanels({ version: 0 }, nothingYet) } : { status: register, data: { detail: 'no', code: 'server_error' } };
+    }
     if (sent.path.endsWith('/diff')) return { status: 200, data: versionDiff };
     // The record's "Reported problems" (AUD-03): the bank has filed none on it.
     if (sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
@@ -451,13 +458,27 @@ describe('ObligationScreen', () => {
     expect(document.querySelector('[data-loading-state]')).toBeInTheDocument();
   });
 
-  it('mounts the panels from the address at once, beside the card and never after it', () => {
-    serve(research);
-    renderIn(<ObligationScreen obligationId="ob-1" />);
+  it('asks for the card and the register read together from the address, and mounts the register\'s panels once that read answers', async () => {
+    const sent = serve(research);
+    // Data stays fresh for 30 seconds, as in the app's own client (app/providers.tsx).
+    const client = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: false } } });
+    renderIn(<ObligationScreen obligationId="ob-1" />, undefined, client);
+    // Before either answers, only the tags (read off the card) are mounted: no register
+    // panel is there yet to ask for what the register read is already bringing.
     expect(document.querySelector('[data-loading-state]')).toBeInTheDocument();
+    expect([...document.querySelectorAll<HTMLElement>('[data-panel-mount]')].map((mount) => mount.dataset.panelMount)).toEqual(['Tags']);
+    await waitFor(() => expect(document.querySelectorAll('[data-panel-mount]')).toHaveLength(8));
+    // The reports and related changes on the page came with the register read and asked nothing.
+    await screen.findByRole('heading', { level: 2, name: 'Related changes' });
+    expect(new Set(sent.map((call) => call.path))).toEqual(new Set(['/api/v1/me', '/api/v1/obligations/ob-1', '/api/v1/obligations/ob-1/register']));
+  });
+
+  it('mounts the panels anyway when the register read fails, and each asks its own route', async () => {
+    serve(research, 500);
+    renderIn(<ObligationScreen obligationId="ob-1" />);
+    await waitFor(() => expect(document.querySelectorAll('[data-panel-mount]')).toHaveLength(8));
     const mounts = [...document.querySelectorAll<HTMLElement>('[data-panel-mount]')];
     expect(mounts.map((mount) => mount.dataset.panelMount)).toEqual(['Tags', 'Links', 'History', 'Applicability', 'Status', 'Gaps', 'Participants', 'Comments']);
-    expect(mounts.every((mount) => mount.dataset.for === 'ob-1')).toBe(true);
   });
 
   it('reads the record as of a typed date and offers the way back to today', async () => {

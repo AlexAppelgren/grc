@@ -1,10 +1,19 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { createElement, type ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
+import { COLLAB_PAGE, useComments } from '@/features/collab/hooks';
+import { PARTICIPANTS_PAGE } from '@/features/participants/api';
+import { useObligationParticipants } from '@/features/participants/hooks';
+import { RECORD_REPORTS_PAGE, useRecordProblemReports } from '@/features/problem-reports/hooks';
+import { CHANGE_PAGE, useObligationChanges } from '@/features/watch/hooks';
+
 import * as hooks from './hooks';
+import { withPanels } from './testing';
 
 // Every register read and write goes through these hooks. A write refreshes
 // the register reads; a stale write is neither retried nor merged, and Reload
@@ -17,7 +26,7 @@ describe('register hooks', () => {
   });
 
   it('reads every register list and record, and the entry can wait', async () => {
-    const sent = installAdapter((s) => ({ status: 200, data: { path: s.path } }));
+    const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/register') ? withPanels({ path: s.path }) : { path: s.path } }));
     const { wrapper } = queryWrapper();
     const reads = renderHook(
       () => [
@@ -55,7 +64,7 @@ describe('register hooks', () => {
   });
 
   it('writes through every mutation and refreshes the register reads afterwards', async () => {
-    const sent = installAdapter((s) => ({ status: s.method === 'delete' ? 204 : 200, data: { version: 1 } }));
+    const sent = installAdapter((s) => ({ status: s.method === 'delete' ? 204 : 200, data: withPanels({ version: 1 }) }));
     const { wrapper } = queryWrapper();
     const entry = renderHook(() => hooks.useRegisterEntry('ob1'), { wrapper });
     await waitFor(() => expect(entry.result.current.isSuccess).toBe(true));
@@ -110,11 +119,11 @@ describe('register hooks', () => {
   it('keeps a stale write unsent a second time and reloads the saved version on request', async () => {
     let saved = 4;
     const sent = installAdapter((s) =>
-      s.method === 'patch' ? { status: 409, data: { status: 409, code: 'stale_write', title: 'Changed', detail: '' } } : { status: 200, data: { version: saved } },
+      s.method === 'patch' ? { status: 409, data: { status: 409, code: 'stale_write', title: 'Changed', detail: '' } } : { status: 200, data: withPanels({ version: saved }) },
     );
     const { wrapper } = queryWrapper();
     const view = renderHook(() => ({ entry: hooks.useRegisterEntry('ob1'), update: hooks.useUpdateRegister('ob1'), reload: hooks.useReloadRegister() }), { wrapper });
-    await waitFor(() => expect(view.result.current.entry.data).toEqual({ version: 4 }));
+    await waitFor(() => expect(view.result.current.entry.data?.version).toBe(4));
 
     saved = 5;
     await act(async () => {
@@ -123,12 +132,94 @@ describe('register hooks', () => {
     await waitFor(() => expect(hooks.isStaleWrite(view.result.current.update.error)).toBe(true));
     expect(sent.filter((s) => s.method === 'patch')).toHaveLength(1);
     // Nothing merged: the read still holds what was loaded until Reload.
-    expect(view.result.current.entry.data).toEqual({ version: 4 });
+    expect(view.result.current.entry.data?.version).toBe(4);
 
     await act(async () => {
       await view.result.current.reload();
     });
-    await waitFor(() => expect(view.result.current.entry.data).toEqual({ version: 5 }));
+    await waitFor(() => expect(view.result.current.entry.data?.version).toBe(5));
     expect(hooks.isStaleWrite(new Error('offline'))).toBe(false);
+  });
+
+  describe('the obligation page\'s one read', () => {
+    const page = <T,>(items: T[]) => ({ items, total: items.length });
+    const PARTS = {
+      spannedEntities: [{ orgUnitId: 'e1', orgUnitName: 'Example Bank AB' }],
+      gaps: page([{ id: 'g1' }]),
+      assessments: page([{ id: 'a1' }]),
+      internalLinks: page([{ id: 'l1' }]),
+      units: { orgUnitId: 'e1', units: page([{ id: 'u1' }]) },
+      participants: page([{ id: 'p1' }]),
+      problemReports: page([{ id: 'r1' }]),
+      changes: { ...page([{ id: 'c1' }]), openCount: 1 },
+      comments: page([{ id: 'm1' }]),
+    };
+
+    /** A client that keeps data fresh for 30 seconds, as the app's own does (app/providers.tsx). */
+    function freshWrapper() {
+      const client = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: false } } });
+      return ({ children }: { children: ReactNode }) => createElement(QueryClientProvider, { client }, children);
+    }
+
+    function usePanelReads(obligationId: string) {
+      return [
+        hooks.useSpannedEntities(obligationId),
+        hooks.useObligationGaps(obligationId, hooks.OBLIGATION_GAPS_PAGE),
+        hooks.useAssessments(obligationId, hooks.FIRST_ASSESSMENTS_PAGE),
+        hooks.useInternalLinks(obligationId),
+        hooks.useUnits(obligationId, 'e1', hooks.FIRST_UNITS_PAGE),
+        useObligationParticipants(obligationId),
+        useRecordProblemReports('obligation', obligationId, true),
+        useObligationChanges(obligationId),
+        useComments({ subjectType: 'obligation', subjectId: obligationId }),
+      ] as const;
+    }
+
+    it('leaves every panel\'s first page where the panel reads it, so a panel mounted after it asks nothing', async () => {
+      const sent = installAdapter(() => ({ status: 200, data: withPanels({ version: 3 }, PARTS as never) }));
+      const wrapper = freshWrapper();
+      const entry = renderHook(() => hooks.useRegisterEntry('ob1'), { wrapper });
+      await waitFor(() => expect(entry.result.current.isSuccess).toBe(true));
+
+      const panels = renderHook(() => usePanelReads('ob1'), { wrapper });
+      const [span, gaps, assessments, links, units, participants, reports, changes, comments] = panels.result.current;
+      expect(span.data).toEqual(PARTS.spannedEntities);
+      expect(gaps.data).toEqual(PARTS.gaps);
+      expect(assessments.data).toEqual(PARTS.assessments);
+      expect(links.data).toEqual(PARTS.internalLinks);
+      expect(units.data).toEqual(PARTS.units.units);
+      expect(participants.data).toEqual(PARTS.participants);
+      expect(reports.data).toEqual(PARTS.problemReports);
+      expect(changes.data).toEqual(PARTS.changes);
+      expect(comments.data?.pages).toEqual([PARTS.comments]);
+      expect(sent.map((call) => call.path)).toEqual(['/api/v1/obligations/ob1/register']);
+    });
+
+    it('leaves a part the reader may not read to its own route, and never replaces what a panel read itself', async () => {
+      const sent = installAdapter((call) =>
+        call.path.endsWith('/register')
+          ? { status: 200, data: withPanels({ version: 3 }, { ...PARTS, problemReports: null, changes: null, comments: null } as never) }
+          : { status: 200, data: page([{ id: 'own' }]) },
+      );
+      const wrapper = freshWrapper();
+      // The links panel read its own page before the entry answered.
+      const links = renderHook(() => hooks.useInternalLinks('ob1'), { wrapper });
+      await waitFor(() => expect(links.result.current.isSuccess).toBe(true));
+      const entry = renderHook(() => hooks.useRegisterEntry('ob1'), { wrapper });
+      await waitFor(() => expect(entry.result.current.isSuccess).toBe(true));
+      expect(links.result.current.data).toEqual(page([{ id: 'own' }]));
+
+      renderHook(() => [useRecordProblemReports('obligation', 'ob1', true), useObligationChanges('ob1'), useComments({ subjectType: 'obligation', subjectId: 'ob1' })], { wrapper });
+      await waitFor(() => expect(sent.map((call) => call.path)).toEqual(expect.arrayContaining(['/api/v1/problem-reports', '/api/v1/obligations/ob1/changes', '/api/v1/comments'])));
+    });
+
+    it('carries the pages the panels ask their own routes for, as the server fills them', () => {
+      // backend/apps/register/panels.py: FIRST_PAGE 20 and WHOLE_LIST 100.
+      expect([hooks.PANEL_PAGE, CHANGE_PAGE, COLLAB_PAGE, RECORD_REPORTS_PAGE]).toEqual([20, 20, 20, 20]);
+      expect([hooks.PANEL_WHOLE_LIST, PARTICIPANTS_PAGE]).toEqual([100, 100]);
+      expect(hooks.OBLIGATION_GAPS_PAGE).toEqual({ limit: 100 });
+      expect(hooks.FIRST_ASSESSMENTS_PAGE).toEqual({ limit: 20, offset: 0 });
+      expect(hooks.FIRST_UNITS_PAGE).toEqual({ limit: 100, offset: 0 });
+    });
   });
 });

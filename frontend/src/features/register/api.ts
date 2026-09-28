@@ -12,6 +12,7 @@ import type {
   RegisterEntityPatch,
   RegisterEntityStatus,
   RegisterEntry,
+  RegisterEntryWithPanels,
   RegisterGap,
   RegisterGapBody,
   RegisterGapPage,
@@ -51,8 +52,9 @@ const obligation = (obligationId: string) => `${V1}/obligations/${id(obligationI
 
 // The register entry and its legal entities (REG-02).
 
-export async function getRegisterEntry(obligationId: string): Promise<RegisterEntry> {
-  return (await api.get<RegisterEntry>(`${obligation(obligationId)}/register`)).data;
+/** The entry, with the first page of every panel the obligation page shows beside it. */
+export async function getRegisterEntry(obligationId: string): Promise<RegisterEntryWithPanels> {
+  return (await api.get<RegisterEntryWithPanels>(`${obligation(obligationId)}/register`)).data;
 }
 
 export async function updateRegister(obligationId: string, body: RegisterPatch, version: number): Promise<RegisterEntry> {
