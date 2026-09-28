@@ -165,7 +165,7 @@ def credential_principal(request: HttpRequest, key: str) -> Principal | None:
     from apps.shared import agent_access_guard
 
     resolved: tuple[str, Principal | None] | None = getattr(request, RESOLVED_CREDENTIAL, None)
-    if resolved is not None and secrets.compare_digest(resolved[0], key):
+    if resolved is not None and secrets.compare_digest(resolved[0].encode(), key.encode()):
         principal = resolved[1]
     else:
         principal = resolve_api_key(key)

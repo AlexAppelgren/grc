@@ -16,7 +16,7 @@ from typing import Any
 
 from django.core.cache import cache
 from django.db import connection
-from django.test import Client
+from django.test import TestCase
 from django.test.client import RequestFactory
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
@@ -48,9 +48,8 @@ def _token(headers: dict[str, Any]) -> str:
     return str(headers["HTTP_AUTHORIZATION"]).removeprefix("Bearer ")
 
 
-class FixedCost(ScenarioTestCase):
-    # The plain client: the audit-asserting one adds its own count to every request.
-    client_class = Client
+class FixedCost(TestCase):
+    """The plain client: the scenario client's audit count would add to every request's."""
 
     def setUp(self) -> None:
         seed_languages()
@@ -145,9 +144,9 @@ class StillRefused(ScenarioTestCase):
         self.assertEqual(self.client.get(f"{V1}/obligations", HTTP_X_API_KEY=key.plain_key).status_code, 401)
 
 
-class KeyResolvedOnce(ScenarioTestCase):
-    # The plain client: a search through MCP is a read that takes a body, and writes no audit row.
-    client_class = Client
+class KeyResolvedOnce(TestCase):
+    """The plain client: a search through MCP is a read that takes a body and writes no
+    audit row, which the scenario client would refuse."""
 
     def setUp(self) -> None:
         cache.clear()
@@ -169,7 +168,7 @@ class KeyResolvedOnce(ScenarioTestCase):
         self.assertNotIn("error", response.json())
         key_reads = [query for query in queries.captured_queries if query["sql"].startswith('SELECT "api_key".')]
         self.assertEqual(len(key_reads), 1, [query["sql"][:80] for query in key_reads])
-        self.activate(self.tenant)
+        tenancy.activate(self.tenant.id)
         ApiKey.objects.filter(pk=self.key.id).update(revoked_at=timezone.now())
         self.assertEqual(self.call().status_code, 401)
 

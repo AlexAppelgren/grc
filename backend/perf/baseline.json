@@ -365,9 +365,9 @@
     "queries": 12
   },
   "getMe": {
-    "medianMs": 17.3,
-    "p95Ms": 22.2,
-    "queries": 19
+    "medianMs": 17.4,
+    "p95Ms": 21.0,
+    "queries": 11
   },
   "getMemberOpenWork": {
     "medianMs": 22.1,
@@ -965,9 +965,9 @@
     "queries": 26
   },
   "refreshSession": {
-    "medianMs": 8.1,
-    "p95Ms": 11.0,
-    "queries": 15
+    "medianMs": 28.0,
+    "p95Ms": 33.8,
+    "queries": 24
   },
   "registerAgentAccess": {
     "medianMs": 23.2,

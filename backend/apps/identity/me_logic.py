@@ -72,9 +72,10 @@ def _count(queryset: QuerySet[Any]) -> Subquery:
 
 
 def _count_subqueries(principal: Principal) -> dict[str, Any]:
-    """`MeCounts`, as the subqueries of `_figures()`'s one read. A count behind a permission the caller lacks is 0
-    without its subquery ever running, exactly as `home.logic.home_today()` skips a panel a
-    reader may not see rather than reading it and hiding the answer."""
+    """`MeCounts`, as the subqueries of `_figures()`'s one read. A count behind a permission
+    the caller lacks is 0 without its subquery ever running, exactly as
+    `home.logic.home_today()` skips a panel a reader may not see rather than reading it and
+    hiding the answer."""
     me = principal.subject_id
     counts: dict[str, Any] = {}
     if principal.has_permission(perms.CASES_TRIAGE):
