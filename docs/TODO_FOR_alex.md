@@ -2370,3 +2370,46 @@ Defaults taken; nothing waits on them.
       demo reads the demo's "not recorded" message. If you want it in the demo, the change
       is to name `/me/work` and `/me/comments` as allowed in that guard and drop the
       exclusion in `frontend/tests/e2e/demo.journey.spec.ts`.
+
+## r2f-site-trust: SEB's web filter blocks www.bleqq.com as Suspicious (2026-09-28)
+
+The code half is built: unknown addresses answer 404, `robots.txt` opens the public page and a
+sitemap lists it, `/.well-known/security.txt` exists, and every page sends HSTS, nosniff,
+Referrer-Policy and Permissions-Policy. The rest is DNS, Cloudflare and the filter vendors, in
+this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and why.
+
+- [ ] **www.** Cloudflare, Rules › Create rule › Redirect Rule: request URL `https://www.bleqq.com/*`
+      to `https://bleqq.com/${1}`, 301, query string preserved (or attach `www.bleqq.com` to the
+      frontend service in Railway; the redirect is better, one host per page). Today www answers
+      Railway's fallback 404 JSON.
+- [ ] **Always Use HTTPS** on in Cloudflare (SSL/TLS › Edge Certificates).
+- [ ] **SPF**: `v=spf1 include:secureserver.net include:spf.brevo.com -all` on `bleqq.com`.
+- [ ] **DKIM**: add Brevo's DKIM record(s) for `bleqq.com`, exactly as Brevo shows them, DNS only.
+- [ ] **DMARC**: once the reports are clean, `_dmarc` to
+      `v=DMARC1; p=quarantine; rua=mailto:rua@dmarc.brevo.com`.
+- [ ] **The security mailbox.** The repo documented no security contact, so `security.txt` names
+      `mailto:security@bleqq.com` (default taken). Create that mailbox or alias, or tell an agent
+      the address to use. Renew the file's `Expires` (2027-09-27) each year; the public journey
+      fails once it has passed.
+- [ ] **HSTS subdomains.** The header is `max-age=31536000` only. When every `bleqq.com`
+      subdomain is known to serve HTTPS, say so and an agent adds `includeSubDomains` (and
+      `preload`, if you want the preload list; it is slow to undo).
+- [ ] **Who runs the site.** The public page names no company, organisation number or postal
+      address, and a reviewer at a filter vendor or a bank looks for them. Give the legal name,
+      organisation number and address you want shown, and an agent adds them to the footer in
+      en and sv. Also check `NEXT_PUBLIC_SUPPORT_CONTACT` is set on the production web service,
+      or the page's Request access has no address.
+- [ ] **The filters, after the steps above are live and this package is deployed.** Ask SEB IT to
+      recategorise or allow `bleqq.com`. Submit `bleqq.com` as Business / Software (Financial
+      Services where offered) to: Zscaler `https://sitereview.zscaler.com/`, Palo Alto Networks
+      `https://urlfiltering.paloaltonetworks.com/`, Broadcom (Symantec)
+      `https://sitereview.bluecoat.com/`, Cisco Talos
+      `https://talosintelligence.com/reputation_center/web_categorization`, Fortinet
+      `https://www.fortiguard.com/webfilter`, Forcepoint `https://support.forcepoint.com/s/site-lookup`
+      (checked 2026-09-28, `Verification_Log.md`).
+
+Defaults taken: the sitemap lists `/welcome` only, since `/` is the signed-in home that sends a
+visitor on to `/welcome`; robots.txt allows `/` so a crawler that starts there follows on, and `/`
+keeps `noindex` like every app page. The canonical host in robots.txt, the sitemap and
+security.txt is `https://bleqq.com`, the host that serves the public page today; a test
+deployment serves the same files.

@@ -7,8 +7,11 @@ import { defaultLocale } from '@/shared/i18n';
 
 import '@/styles/globals.css';
 
+// No page is for a search engine unless it says so: the public route group
+// opts back in, and robots.txt keeps crawlers to that group.
 export const metadata: Metadata = {
   title: { default: productName, template: `%s · ${productName}` },
+  robots: { index: false, follow: false },
 };
 
 // viewport-fit=cover makes env(safe-area-inset-*) real on iPhone, so the tab
