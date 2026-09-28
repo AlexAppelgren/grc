@@ -3,8 +3,8 @@ sees `enrolmentPending` true; it may change nothing else.
 
 `counts` and `lastVisitAt` (f03-T48, D-23) are Today's "Decide now" source: `docs/inputs/
 openapi.yaml` put a `decideNow` field on `Home` and D-23 moved it here instead, so a queue
-count has one source. `_counts()` runs three independent reads, none chained behind
-another, and each is filtered by the caller's own permission rather than refused: a member
+count has one source. `_figures()` reads every count as a subquery of one statement, and
+each is filtered by the caller's own permission rather than refused: a member
 without `cases.triage` or `proposals.create` reads a true 0, never a 403 that would take
 the panel away (chunk 6 default). The session's tenant is already activated by the time
 this runs (`session_logic.resolve_access_token`), so every read below is under row-level
@@ -17,17 +17,19 @@ refuse them. D-75 removed applicability requests, so there is no applicability c
 from __future__ import annotations
 
 import datetime
+import uuid
 from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db.models import F, Func, QuerySet, Subquery
 from django.utils import timezone
 
 from apps.cases.models import ChangeCase
 from apps.collab.models import Notification
 from apps.governance.models import TenantReachRequest
 from apps.identity import passkey_logic, roles_logic, session_logic
-from apps.identity.models import Membership, PlatformRoleAssignment, User, UserStatus
+from apps.identity.models import Membership, PlatformRoleAssignment, User, UserStatus, WebAuthnCredential
 from apps.identity.schemas import MembershipNotificationPrefs, MembershipNotificationPrefsPatch
 from apps.library.models import Language
 from apps.proposals.models import ProposalStatus, ProposalTenant
@@ -51,62 +53,77 @@ def _tenant_out(tenant: Tenant | None) -> dict[str, Any] | None:
     return {"id": tenant.id, "name": tenant.name, "slug": tenant.slug, "timezone": tenant.timezone}
 
 
-def _counts(principal: Principal) -> dict[str, int]:
-    """`MeCounts`: eight independent reads, none chained behind another (a pinned query
-    count proves it in `tests_me_counts.py`). A count behind a permission the caller lacks
-    is 0 without the query ever running, exactly as `home.logic.home_today()` skips a panel
-    a reader may not see rather than reading it and hiding the answer."""
+# `MeCounts`, in the order the schema names them.
+COUNT_NAMES = (
+    "triage",
+    "proposals",
+    "assignedToMe",
+    "unreadNotifications",
+    "signoffs",
+    "riskAcceptances",
+    "supportAccessRequests",
+    "tenantReachRequests",
+)
+
+
+def _count(queryset: QuerySet[Any]) -> Subquery:
+    """`queryset`'s row count as a scalar subquery, so every count of `/me` is one read."""
+    return Subquery(queryset.order_by().annotate(n=Func(F("pk"), function="COUNT")).values("n"))
+
+
+def _count_subqueries(principal: Principal) -> dict[str, Any]:
+    """`MeCounts`, as the subqueries of `_figures()`'s one read. A count behind a permission the caller lacks is 0
+    without its subquery ever running, exactly as `home.logic.home_today()` skips a panel a
+    reader may not see rather than reading it and hiding the answer."""
     me = principal.subject_id
-    triage = 0
+    counts: dict[str, Any] = {}
     if principal.has_permission(perms.CASES_TRIAGE):
-        triage = ChangeCase.objects.filter(status=CaseStatusCategory.NEW.value).count()
-    proposals = 0
+        counts["triage"] = _count(ChangeCase.objects.filter(status=CaseStatusCategory.NEW.value))
     if principal.has_permission(perms.PROPOSALS_CREATE):
         # A proposal itself carries no tenant_id (PRO-01: the library is shared). Which
         # bank made it is `ProposalTenant`, a tenant table of its own under row-level
         # security (PRO-03) filed at the same time as the proposal; reading through it
         # rather than the proposer's current membership means a proposal counts here even
         # after its author has since left the bank.
-        proposals = ProposalTenant.objects.filter(proposal__status=ProposalStatus.OPEN.value).count()
-    assigned_to_me = ChangeCase.objects.filter(owner_id=me).exclude(status__in=_FINISHED_CASES).count()
+        counts["proposals"] = _count(ProposalTenant.objects.filter(proposal__status=ProposalStatus.OPEN.value))
+    counts["assignedToMe"] = _count(ChangeCase.objects.filter(owner_id=me).exclude(status__in=_FINISHED_CASES))
     # Row-level security keeps this to the session's bank; every member reads their own.
-    unread = Notification.objects.filter(user_id=me, read_at__isnull=True).count()
-    signoffs = 0
+    counts["unreadNotifications"] = _count(Notification.objects.filter(user_id=me, read_at__isnull=True))
     if principal.has_permission(perms.CASES_SIGNOFF):
-        signoffs = ChangeCase.objects.filter(status=CaseStatusCategory.SIGNOFF.value).exclude(signoff_requested_by_id=me).count()
-    risk_acceptances = 0
+        counts["signoffs"] = _count(ChangeCase.objects.filter(status=CaseStatusCategory.SIGNOFF.value).exclude(signoff_requested_by_id=me))
     if principal.has_permission(perms.RISK_ACCEPT_APPROVE):
         # What `register.gaps.approve_risk_acceptance` would take: asked, not yet accepted,
         # and in a category the approval moves from.
-        risk_acceptances = (
+        counts["riskAcceptances"] = _count(
             Gap.objects.filter(
                 acceptance_requested_by__isnull=False,
                 accepted_by__isnull=True,
                 status__kind__in=(GapCategory.OPEN.value, GapCategory.REMEDIATING.value),
-            )
-            .exclude(acceptance_requested_by_id=me)
-            .count()
+            ).exclude(acceptance_requested_by_id=me)
         )
-    support_requests = 0
-    tenant_reach_requests = 0
     if principal.has_permission(perms.SECURITY_MANAGE):
         # Pending as `tenants.support_access.state_of` reads it, counted where grants are read.
         from apps.tenants import support_access
 
-        support_requests = support_access.pending_count(excluding_user_id=me)
-        tenant_reach_requests = (
-            TenantReachRequest.objects.filter(status=ApprovalStatus.PENDING.value).exclude(requested_by_id=me).count()
+        counts["supportAccessRequests"] = _count(support_access.pending_requests(excluding_user_id=me))
+        counts["tenantReachRequests"] = _count(
+            TenantReachRequest.objects.filter(status=ApprovalStatus.PENDING.value).exclude(requested_by_id=me)
         )
-    return {
-        "triage": triage,
-        "proposals": proposals,
-        "assignedToMe": assigned_to_me,
-        "unreadNotifications": unread,
-        "signoffs": signoffs,
-        "riskAcceptances": risk_acceptances,
-        "supportAccessRequests": support_requests,
-        "tenantReachRequests": tenant_reach_requests,
-    }
+    return counts
+
+
+def _figures(principal: Principal, user_id: uuid.UUID) -> tuple[dict[str, int] | None, int]:
+    """The "Decide now" counts (None outside a bank) and the person's live passkeys, in one
+    read however many there are (a pinned query count proves it in `tests_me_counts.py`)."""
+    counts = _count_subqueries(principal) if principal.tenant_id is not None else {}
+    row = (
+        User.objects.filter(pk=user_id)
+        .annotate(passkeys=_count(WebAuthnCredential.objects.filter(user_id=user_id, retired_at__isnull=True)), **counts)
+        .values("passkeys", *counts)
+        .get()
+    )
+    figures = {name: row.get(name) or 0 for name in COUNT_NAMES} if principal.tenant_id is not None else None
+    return figures, row["passkeys"] or 0
 
 
 def _head_of(tenant: Tenant, user: User) -> list[dict[str, Any]]:
@@ -123,8 +140,13 @@ def notification_prefs(membership: Membership) -> dict[str, bool]:
 
 
 def me(principal: Principal) -> dict[str, Any]:
-    user = User.objects.select_related("locale").get(pk=principal.subject_id)
-    tenant = Tenant.objects.select_related("default_language").filter(pk=principal.tenant_id).first() if principal.tenant_id else None  # ordering: pk lookup, at most one row
+    """The session's own read already loaded the person and the bank, and the step-up; the
+    passkeys and the "Decide now" counts are one read of figures. A bank's session never
+    reads platform roles: platform staff are separate accounts (hardening H13)."""
+    user = principal.user or User.objects.select_related("locale").get(pk=principal.subject_id)
+    tenant = principal.tenant
+    if tenant is None and principal.tenant_id is not None:
+        tenant = Tenant.objects.select_related("default_language").filter(pk=principal.tenant_id).first()  # ordering: pk lookup, at most one row
     order = roles_logic.language_order(user, tenant)
     roles: list[dict[str, Any]] = []
     last_visit_at = None
@@ -141,18 +163,22 @@ def me(principal: Principal) -> dict[str, Any]:
             last_visit_at = membership.last_visit_at
             prefs = notification_prefs(membership)
             head_of = _head_of(tenant, user)
-    platform_roles = [
-        roles_logic.role_ref(assignment.role, order)
-        for assignment in PlatformRoleAssignment.objects.filter(user=user, role__active=True).select_related("role").prefetch_related("role__labels")
-    ]
-    assertion = session_logic.latest_step_up(principal.session_id) if principal.session_id else None
-    fresh_until = passkey_logic.step_up_valid_until(assertion) if assertion else None
+    platform_roles = (
+        []
+        if principal.tenant_id is not None
+        else [
+            roles_logic.role_ref(assignment.role, order)
+            for assignment in PlatformRoleAssignment.objects.filter(user=user, role__active=True).select_related("role").prefetch_related("role__labels")
+        ]
+    )
+    counts, passkeys = _figures(principal, user.id)
+    fresh_until = passkey_logic.step_up_valid_until(principal.step_up_at) if principal.step_up_at else None
     if fresh_until is not None and fresh_until <= timezone.now():
         fresh_until = None
     return {
         "user": {"id": user.id, "email": user.email, "name": user.name, "locale": user.locale.key if user.locale else None},
         "tenant": _tenant_out(tenant),
-        "counts": _counts(principal) if principal.tenant_id is not None else None,
+        "counts": counts,
         "last_visit_at": last_visit_at,
         "notification_prefs": prefs,
         "head_of": head_of,
@@ -160,9 +186,16 @@ def me(principal: Principal) -> dict[str, Any]:
         "permissions": sorted(principal.permissions),
         "platform_roles": platform_roles,
         "enrolment_pending": principal.kind is PrincipalKind.ENROLMENT or user.status != UserStatus.ACTIVE.value,
-        "passkey_count": len(passkey_logic.list_passkeys(user.id)),
+        "passkey_count": passkeys,
         "step_up_valid_until": fresh_until,
     }
+
+
+def me_after_refresh(access_token: str) -> dict[str, Any] | None:
+    """`/me` for the session a refresh just renewed, so a screen opening from a cold start
+    makes one call, not two. None where `session_logic.resolve_refreshed` resolves nothing."""
+    principal = session_logic.resolve_refreshed(access_token)
+    return None if principal is None else me(principal)
 
 
 def update_me(
@@ -174,8 +207,9 @@ def update_me(
 ) -> dict[str, Any]:
     """The caller's own name, language and notification switches, in one audit event with
     before and after: these are the person's own settings, not tenant content. A switch
-    key the schema does not name is refused before anything is written."""
-    user = User.objects.select_related("locale").get(pk=principal.subject_id)
+    key the schema does not name is refused before anything is written. The person is the
+    one the session loaded, so `me()` answers with what was just saved."""
+    user = principal.user or User.objects.select_related("locale").get(pk=principal.subject_id)
     before: dict[str, Any] = {"name": user.name, "locale": user.locale.key if user.locale else None}
     after: dict[str, Any] = {}
     membership = None

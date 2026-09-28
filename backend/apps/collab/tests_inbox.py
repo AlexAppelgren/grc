@@ -135,8 +135,9 @@ class ListNotifications(InboxTestCase):
         self.assertEqual([(item["id"], item["title"]) for item in items], [(str(row.id), TITLE)])
 
     def test_a_page_of_twenty_costs_a_pinned_number_of_queries(self) -> None:
-        """The session and its roles, the tenant, the user, the page and its count, inside
-        the request's savepoint: twelve statements, and nothing per row."""
+        """The session with its person and bank, its roles and step-up, the page and its
+        count, inside the request's savepoint: eight statements (twelve before
+        perf-request-once, 2026-09-28), and nothing per row."""
         _rows(self.tenant, self.anna, 25)
         headers = self.as_person(self.anna)
         self.client.get(URL, **headers)  # warm the session cache the first call fills
@@ -148,7 +149,7 @@ class ListNotifications(InboxTestCase):
         with CaptureQueriesContext(connection) as unread:
             self.client.get(f"{URL}?unread=true", **headers)
         self.assertEqual(len(unread), len(page))
-        self.assertEqual(len(page), 12, [q["sql"][:90] for q in page])
+        self.assertEqual(len(page), 8, [q["sql"][:90] for q in page])
 
     def test_reading_writes_no_audit_row(self) -> None:
         _rows(self.tenant, self.anna, 2)

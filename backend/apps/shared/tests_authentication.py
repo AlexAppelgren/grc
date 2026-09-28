@@ -77,8 +77,9 @@ class AuthClasses(TestCase):
         with stub_api_key(agent):
             self.assertIs(ApiKeyAuth()(request), agent)
             self.assertIsNone(ApiKeyAuth()(self.factory.get("/")))
+        # A request resolves its key once (perf-request-once): the second stub is a second request.
         with stub_api_key(user_principal()):
-            self.assertIsNone(ApiKeyAuth()(request))
+            self.assertIsNone(ApiKeyAuth()(self.factory.get("/", HTTP_X_API_KEY=API_KEY_FOR_TESTS)))
 
     def test_api_key_auth_also_reads_a_cw_bearer_token(self) -> None:
         """Chunk 1 brief: `Authorization: Bearer cw_<prefix>_<secret>`; a session bearer is

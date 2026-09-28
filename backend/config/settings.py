@@ -130,6 +130,8 @@ MIDDLEWARE = [
     # acc-what-applies (ACC-07): the scope statement on every answer to an agent access
     # credential.
     "apps.shared.agent_access_guard.ScopeStatementMiddleware",
+    # perf-request-once: a read request reads each vocabulary's labels once.
+    "apps.shared.middleware.RequestMemoMiddleware",
     # Timing last so the measurement is the application's own time (playbook 10), not
     # the middleware stack above it.
     "apps.shared.middleware.ServerTimingMiddleware",

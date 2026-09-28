@@ -26,10 +26,12 @@ from __future__ import annotations
 
 import enum
 import logging
+import secrets
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from django.http import HttpRequest
 from ninja.security import APIKeyHeader, HttpBearer
@@ -63,6 +65,11 @@ class Principal:
     reads and nothing else and can never step up (`is_agent_access`).
     `support_access_id` names the grant a support session stands on (TEN-06, ADR 0042):
     platform support reading one bank, with the seven reads and nothing else.
+    `user` and `tenant` are the rows the credential's own lookup already joined (the person
+    with their locale, the bank with its default language), so a route that needs them
+    reads them here rather than again (`caller_user`, `caller_tenant`, `language_order`).
+    They live as long as the request and are None where a test stubs the principal; they
+    never take part in comparing two principals.
     """
 
     kind: PrincipalKind
@@ -82,6 +89,8 @@ class Principal:
     acting_user_id: uuid.UUID | None = None
     acting_user_label: str = ""
     support_access_id: uuid.UUID | None = None
+    user: Any = field(default=None, compare=False, repr=False)
+    tenant: Any = field(default=None, compare=False, repr=False)
 
     @property
     def is_agent_access(self) -> bool:
@@ -143,12 +152,24 @@ def presented_api_key(request: HttpRequest) -> str | None:
     return bearer if bearer and bearer.startswith(API_KEY_PREFIX) else None
 
 
+# Where a request keeps the credential it resolved, with the key it resolved it from: an
+# attribute, never a header, so no caller can set it. The MCP server copies it onto the
+# request it makes to the route behind a tool (apps/integrations/mcp_tools.py), so one HTTP
+# request resolves its key once, revocation included, however many routes it runs.
+RESOLVED_CREDENTIAL = "resolved_credential"
+
+
 def credential_principal(request: HttpRequest, key: str) -> Principal | None:
-    """Resolve the presented key, then let the agent access guard refuse a rate, a step-up
-    or a write before any route sees it (ACC-03, ACC-09)."""
+    """Resolve the presented key, once per request, then let the agent access guard refuse a
+    rate, a step-up or a write before any route sees it (ACC-03, ACC-09)."""
     from apps.shared import agent_access_guard
 
-    principal = resolve_api_key(key)
+    resolved: tuple[str, Principal | None] | None = getattr(request, RESOLVED_CREDENTIAL, None)
+    if resolved is not None and secrets.compare_digest(resolved[0], key):
+        principal = resolved[1]
+    else:
+        principal = resolve_api_key(key)
+        setattr(request, RESOLVED_CREDENTIAL, (key, principal))
     if principal is None or principal.kind is not PrincipalKind.AGENT:
         return None
     agent_access_guard.check(request, principal)

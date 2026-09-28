@@ -71,15 +71,15 @@ V1 = "/api/v1"
 # Queries per queue read, re-measured 2026-09-22 after chunk4-T25 (D-62, ADR 0054): the
 # scenario client's audit count (1), the request's savepoint pair (2), the auth layer for a
 # platform session with no tenant (identity flag on, the session row, flag off, platform
-# roles, latest step-up: 5), `require_reviewer`'s own fetch of the caller's `User` row for
-# the audit actor's label (1, new: the dual-principal gate needs the real row, not just the
-# session's already-joined columns), the reader's own locale for the language the rows are
-# titled in (1), how many proposals match (1, since listProposals pages like every list)
+# roles, latest step-up: 5; the session row carries the caller's `User` row with their
+# locale since perf-request-once, 2026-09-28, which `require_reviewer` takes for the audit
+# actor's label and the reading language comes from, two reads fewer), how many proposals
+# match (1, since listProposals pages like every list)
 # and the page with the people and agents who filed, corrected and decided it (1). The
 # library records the rows name cost two more, for the whole page at once rather than per
 # row, and this queue holds a vocabulary proposal, which names none
 # (apps/proposals/tests_reading.py pins that the cost does not grow with the row count).
-PROPOSAL_QUEUE_QUERIES = 1 + 2 + 5 + 1 + 1 + 1 + 1
+PROPOSAL_QUEUE_QUERIES = 1 + 2 + 5 + 1 + 1
 # The change an agent's watch run linked the proposal to (chunk 5 makes these rows; the
 # column is a plain id until then), and the summary version 1 carries, so a scenario can
 # prove that applying version 2 leaves version 1 exactly as it was written.

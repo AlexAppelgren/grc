@@ -40,6 +40,7 @@ from typing import TYPE_CHECKING
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
+from django.db.models import Prefetch
 from django.http import HttpRequest, HttpResponse
 
 from apps.shared.authentication import ApiKeyAuth, Principal
@@ -125,14 +126,19 @@ def check(request: HttpRequest, principal: Principal) -> None:
 def scope_statement(principal: Principal, tenant: Tenant) -> AgentAccessScopeStatement:
     """The scope an agent access credential is answered in (ACC-07), read under the bank's
     row-level security: the tenant must be activated."""
-    from apps.agents.models import AgentAccess
+    from apps.agents.models import AgentAccess, AgentAccessDepartment, AgentAccessProduct
     from apps.agents.schemas import AgentAccessScopeStatement, AgentAccessUnitRef
     from apps.library.reading import today_for
 
     entry = (
         None
         if principal.agent_access_id is None
-        else AgentAccess.objects.filter(pk=principal.agent_access_id).prefetch_related("departments__department", "products__product").first()  # ordering: pk lookup, at most one row
+        else AgentAccess.objects.filter(pk=principal.agent_access_id)
+        .prefetch_related(
+            Prefetch("departments", queryset=AgentAccessDepartment.objects.select_related("department")),
+            Prefetch("products", queryset=AgentAccessProduct.objects.select_related("product")),
+        )
+        .first()  # ordering: pk lookup, at most one row
     )
     departments = [] if entry is None else sorted((row.department for row in entry.departments.all()), key=lambda unit: (unit.name, unit.id))
     products = [] if entry is None else sorted((row.product for row in entry.products.all()), key=lambda product: (product.name, product.id))
@@ -151,7 +157,8 @@ def _header(tenant_id: uuid.UUID, principal: Principal) -> str | None:
 
     with transaction.atomic():
         tenancy.activate(tenant_id)
-        tenant = Tenant.objects.filter(pk=tenant_id).first()  # ordering: pk lookup, at most one row
+        # The bank the credential's own lookup loaded, unless a test stubbed the principal.
+        tenant = principal.tenant or Tenant.objects.filter(pk=tenant_id).first()  # ordering: pk lookup, at most one row
         if tenant is None:  # pragma: no cover - a live credential's bank exists
             return None
         statement = scope_statement(principal, tenant)

@@ -18,7 +18,9 @@ from typing import Any
 from django.http import HttpRequest
 from pydantic.alias_generators import to_camel
 
+from apps.shared import tenancy
 from apps.shared.authentication import Principal, PrincipalKind
+from apps.shared.middleware import request_memo
 from apps.taxonomy.schemas import AgentRef
 
 FALLBACK_LANGUAGE = "en"
@@ -28,21 +30,26 @@ CONFIRMATION_JOINS = ("verified_by_agent", "applied_by_proposal__proposed_by_age
 
 
 def language_order(request: HttpRequest, *, tenant: Any = None) -> list[str]:
-    """The caller's content language order. Two queries at most: the person's locale and,
-    when they are in one, the tenant's default language, unless the route already loaded
-    the tenant (pass it; `caller_tenant` selects the default language with it). A platform
-    session has no tenant and reads in its own locale, then `en`."""
+    """The caller's content language order: the person's locale and, when they are in one,
+    the tenant's default language. Both come with the session's own read, so this costs no
+    query; a principal a test stubbed without them reads them, two queries at most, unless
+    the route passes the tenant it loaded. A platform session has no tenant and reads in its
+    own locale, then `en`."""
     from apps.identity.models import User
     from apps.shared.models import Tenant
 
     principal = getattr(request, "auth", None)
     order: list[str] = []
     if isinstance(principal, Principal) and principal.kind is PrincipalKind.USER:
-        row = User.objects.select_related("locale").filter(pk=principal.subject_id).first()  # ordering: pk lookup, at most one row
+        row = principal.user
+        if row is None:
+            row = User.objects.select_related("locale").filter(pk=principal.subject_id).first()  # ordering: pk lookup, at most one row
         if row is not None and row.locale is not None:
             order.append(row.locale.key)
         if principal.tenant_id is not None:
             if tenant is None or tenant.pk != principal.tenant_id:
+                tenant = principal.tenant
+            if tenant is None:
                 tenant = Tenant.objects.select_related("default_language").filter(pk=principal.tenant_id).first()  # ordering: pk lookup, at most one row
             if tenant is not None and tenant.default_language is not None:
                 order.append(tenant.default_language.key)
@@ -73,13 +80,19 @@ class Labels:
 
     @classmethod
     def for_rows(cls, label_model: type[Any], rows: list[Any], *, field: str = "vocabulary") -> Labels:
+        """Inside a read request, a row's labels are read once however many times the request
+        asks for them (the request memo, apps/shared/middleware.py, keyed by the active tenant
+        as well, so one bank's labels never answer another's). Anywhere else, every call reads."""
         by_row: dict[uuid.UUID, list[Any]] = {row.id: [] for row in rows}
-        if not by_row:
-            return cls(by_row)
-        queryset = label_model._default_manager.filter(**{f"{field}_id__in": list(by_row)}).order_by("language")
-        for label in queryset:
-            by_row.setdefault(getattr(label, f"{field}_id"), []).append(label)
-        return cls(by_row)
+        memo = request_memo()
+        known: dict[uuid.UUID, list[Any]] = {} if memo is None else memo.setdefault(("labels", label_model, field, tenancy.active_tenant_id()), {})
+        missing = [row_id for row_id in by_row if row_id not in known]
+        if missing:
+            queryset = label_model._default_manager.filter(**{f"{field}_id__in": missing}).order_by("language")
+            for label in queryset:
+                by_row[getattr(label, f"{field}_id")].append(label)
+            known.update({row_id: by_row[row_id] for row_id in missing})
+        return cls({row_id: known.get(row_id, by_row[row_id]) for row_id in by_row})
 
     def texts(self, row_id: uuid.UUID) -> dict[str, str]:
         return {label.language: label.text for label in self._by_row.get(row_id, ())}

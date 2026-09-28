@@ -52,8 +52,8 @@ LATER = D(2026, 10, 1)
 EARLIER = D(2026, 8, 1)
 
 # Queries per change read with a real session, measured 2026-09-21 and pinned so an N+1
-# shows up as a number (playbook 10). The request's savepoint pair (2); the session (6,
-# hardening H13); the caller's tenant and locale (2); the footprint and its restricting
+# shows up as a number (playbook 10). The request's savepoint pair (2); the session with the
+# caller's tenant and locale (4 since perf-request-once, 2026-09-28; hardening H13); the footprint and its restricting
 # dimensions (2); the change with its type and the reader's own case in one left join (1);
 # its classification links and one label query each for flags and terms (3); its suggested
 # obligation links with their obligations, and those obligations' titles (2); the urgency
@@ -61,15 +61,15 @@ EARLIER = D(2026, 8, 1)
 # its timeline (1); its pages (1); the bank's own decisions about the links (1); the
 # jurisdiction terms its authority reaches (1, FP-04); the case's workflow block, the case
 # with its people and reasons joined and the guards' facts (2, c9-case-contract).
-CHANGE_QUERIES = 2 + 6 + 2 + 2 + 1 + 3 + 2 + 2 + 1 + 1 + 1 + 1 + 1 + 2
+CHANGE_QUERIES = 2 + 4 + 2 + 1 + 3 + 2 + 2 + 1 + 1 + 1 + 1 + 1 + 2
 
 # Queries per related-changes read, measured the same way: the savepoint pair (2); the
-# session (6); the caller's tenant and locale (2); the footprint and its restricting
+# session with the caller's tenant and locale (4); the footprint and its restricting
 # dimensions (2); the obligation itself (1); the count and the page (2); the open-change
 # count (1); the classification links and two label queries (3); the urgency rows and
 # their labels (2); the change type's labels (1); the bank's own link decisions (1); the
 # jurisdiction terms the page's authorities reach (1, FP-04).
-RELATED_QUERIES = 2 + 6 + 2 + 2 + 1 + 2 + 1 + 3 + 2 + 1 + 1 + 1
+RELATED_QUERIES = 2 + 4 + 2 + 1 + 2 + 1 + 3 + 2 + 1 + 1 + 1
 
 
 def confirm_link(change: RegulatoryChange, obligation: Obligation, editor: User) -> None:

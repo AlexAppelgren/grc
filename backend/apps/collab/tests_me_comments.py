@@ -185,8 +185,9 @@ class Mentioned(MyCommentsTestCase):
 class Cost(MyCommentsTestCase):
     def test_a_page_of_twenty_costs_the_same_as_a_page_of_two(self) -> None:
         """The limited kinds, the page, its mentions, the reader's language and its count, plus
-        one title lookup per distinct record on the page: eighteen statements with the session,
-        and nothing per comment."""
+        one title lookup per distinct record on the page: thirteen statements with the session
+        (eighteen before perf-request-once, 2026-09-28, took the person, the bank and the
+        step-up into the session's own reads), and nothing per comment."""
         for n in range(22):
             subject = ("obligation", self.first.id) if n % 2 else ("change_case", self.case.id)
             self.comment(self.erik, *subject, minutes_ago=n + 1, mentions=(self.anna,))
@@ -197,7 +198,7 @@ class Cost(MyCommentsTestCase):
         with CaptureQueriesContext(connection) as page:
             self.assertEqual(len(self.client.get(f"{URL}?about=mentioned", **headers).json()["items"]), 20)
         self.assertEqual(len(page), len(small))
-        self.assertEqual(len(page), 18, [q["sql"][:90] for q in page])
+        self.assertEqual(len(page), 13, [q["sql"][:90] for q in page])
 
     def test_reading_writes_no_audit_row_and_logs_no_text(self) -> None:
         self.comment(self.erik, "obligation", self.first.id, minutes_ago=5, mentions=(self.anna,))

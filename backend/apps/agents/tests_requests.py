@@ -365,7 +365,9 @@ class TheConsolesRetag(RetagCase):
         self.ask({"kind": "research_topic", "topic": TOPIC})
         with CaptureQueriesContext(connection) as queries:
             self.retag()
-        read = " ".join(query["sql"] for query in queries.captured_queries)
+        # The session's own lookup joins its bank, which a console session has none of
+        # (perf-request-once): every other statement is the retag's.
+        read = " ".join(query["sql"] for query in queries.captured_queries if not query["sql"].startswith('SELECT "user_session".'))
         for table in ('"tenant_agent"', '"tenant_agent_budget"', '"tenant"', '"research_request"."tenant_id" ='):
             self.assertNotIn(table, read)
         run = AgentRun.objects.get(research_request__kind="retag")
