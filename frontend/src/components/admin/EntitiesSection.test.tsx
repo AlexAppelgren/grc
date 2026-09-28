@@ -51,8 +51,7 @@ const people = [{ id: 'u-sara', name: 'Sara Lindqvist' }];
 function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sent[] {
   return installAdapter((sent) => {
     if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
-    if (sent.method === 'get' && sent.path === UNITS) return { status: 200, data: { items: [bank, group, retail], total: 3 } };
-    if (sent.method === 'get' && sent.path === bankLicences) return { status: 200, data: { items: [banking, withdrawn], total: 2 } };
+    if (sent.method === 'get' && sent.path === UNITS) return { status: 200, data: { items: [{ ...bank, licences: [banking, withdrawn] }, { ...group, licences: [] }, { ...retail, licences: [] }], total: 3 } };
     if (sent.path === '/api/v1/taxonomy/dimensions') return { status: 200, data: dimensions };
     if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: terms };
     if (sent.path === '/api/v1/reference/people') return { status: 200, data: people };
@@ -105,6 +104,13 @@ describe('legal entities', () => {
     expect(row).toHaveAttribute('data-withdrawn');
     expect(within(row).getByText(/^Withdrawn /)).toBeInTheDocument();
     expect(within(row).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('reads the licences off the units list and never once per entity', async () => {
+    const sent = server();
+    await renderSection(['vocab.manage']);
+    expect(await screen.findByText('FI 12-3456', { exact: false })).toBeInTheDocument();
+    expect(sent.some((s) => s.method === 'get' && s.path === bankLicences)).toBe(false);
   });
 });
 

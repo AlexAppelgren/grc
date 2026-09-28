@@ -25,7 +25,7 @@ from apps.identity.models import Membership, User
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
-from apps.taxonomy.schemas import PersonRef
+from apps.taxonomy.schemas import PersonRef, TermRef
 from apps.taxonomy.terms_logic import term_by_ref
 from apps.tenants.models import Licence, LicenceServiceTerm, OrgUnit, OrgUnitKind
 from apps.tenants.schemas import (
@@ -38,6 +38,7 @@ from apps.tenants.schemas import (
     TenantOrgUnitBody,
     TenantOrgUnitPage,
     TenantOrgUnitPatch,
+    TenantOrgUnitRow,
 )
 from apps.tenants.terms import Term, scope_terms, term_refs
 
@@ -121,8 +122,8 @@ def _unit_snapshot(unit: OrgUnit) -> dict[str, Any]:
     }
 
 
-def _units_out(units: list[OrgUnit], order: list[str]) -> list[TenantOrgUnit]:
-    refs = term_refs([unit.entity_term for unit in units if unit.entity_term is not None], order)
+def _units_out(units: list[OrgUnit], order: list[str], refs: dict[uuid.UUID, TermRef] | None = None) -> list[TenantOrgUnit]:
+    refs = refs if refs is not None else term_refs(_unit_terms(units), order)
     return [
         TenantOrgUnit(
             id=unit.id,
@@ -139,6 +140,10 @@ def _units_out(units: list[OrgUnit], order: list[str]) -> list[TenantOrgUnit]:
         )
         for unit in units
     ]
+
+
+def _unit_terms(units: list[OrgUnit]) -> list[Term]:
+    return [unit.entity_term for unit in units if unit.entity_term is not None]
 
 
 def _unit_out(tenant: Tenant, unit_id: uuid.UUID, order: list[str]) -> TenantOrgUnit:
@@ -187,10 +192,23 @@ def _apply_unit_fields(tenant: Tenant, unit: OrgUnit, fields: dict[str, Any]) ->
 
 
 def list_org_units(*, tenant: Tenant, order: list[str], limit: int, offset: int) -> TenantOrgUnitPage:
-    """`GET /tenant/org-units`: a page of the bank's units by name, deactivated ones included."""
+    """`GET /tenant/org-units`: a page of the bank's units by name, deactivated ones included,
+    each legal entity with its licences, so the organisation screen never asks once per
+    entity. The licences and their services are read for the whole page at once, and every
+    term on the page is labelled in one query."""
     queryset = OrgUnit.objects.filter(tenant=tenant)
     units = list(queryset.select_related("entity_term", "head_user").order_by("name", "id")[offset : offset + limit])
-    return TenantOrgUnitPage(items=_units_out(units, order), total=queryset.count())
+    entities = [unit.id for unit in units if unit.kind == OrgUnitKind.LEGAL_ENTITY.value]
+    licences = list(_licences(tenant).filter(org_unit_id__in=entities).order_by("granted_on", "id")) if entities else []
+    refs = term_refs([*_unit_terms(units), *_licence_terms(licences)], order)
+    held: dict[uuid.UUID, list[TenantLicence]] = {}
+    for licence in _licences_out(licences, order, refs):
+        held.setdefault(licence.org_unit_id, []).append(licence)
+    rows = [
+        TenantOrgUnitRow(**unit.model_dump(), licences=held.get(unit.id, []))
+        for unit in _units_out(units, order, refs)
+    ]
+    return TenantOrgUnitPage(items=rows, total=queryset.count())
 
 
 def create_org_unit(*, tenant: Tenant, actor: Actor, order: list[str], body: TenantOrgUnitBody) -> TenantOrgUnit:
@@ -275,11 +293,15 @@ def _licence_snapshot(licence: Licence, services: list[Term]) -> dict[str, Any]:
     }
 
 
-def _licences_out(licences: list[Licence], order: list[str]) -> list[TenantLicence]:
+def _licence_terms(licences: list[Licence]) -> list[Term]:
     terms = {licence.licence_type_id: licence.licence_type for licence in licences}
     for licence in licences:
         terms.update({row.term_id: row.term for row in licence.service_terms.all()})
-    refs = term_refs(list(terms.values()), order)
+    return list(terms.values())
+
+
+def _licences_out(licences: list[Licence], order: list[str], refs: dict[uuid.UUID, TermRef] | None = None) -> list[TenantLicence]:
+    refs = refs if refs is not None else term_refs(_licence_terms(licences), order)
     return [
         TenantLicence(
             id=licence.id,

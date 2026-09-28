@@ -39,14 +39,12 @@ describe('organisation api', () => {
     tokenStore.set('tok');
   });
 
-  it('reads the units, one entity licences and the products as lists', async () => {
+  it('reads the units, each entity with its licences, and the products as lists', async () => {
     const calls = server({ items: [{ id: 'x' }], total: 1 });
     expect(await org.listOrgUnits()).toEqual([{ id: 'x' }]);
-    expect(await org.listLicences('u 1')).toEqual([{ id: 'x' }]);
     expect(await org.listProducts()).toEqual([{ id: 'x' }]);
     expect(calls.map((c) => [c.method, c.path, c.params])).toEqual([
       ['get', '/api/v1/tenant/org-units', { limit: 100 }],
-      ['get', '/api/v1/tenant/org-units/u%201/licences', { limit: 100 }],
       ['get', '/api/v1/tenant/products', { limit: 100 }],
     ]);
   });

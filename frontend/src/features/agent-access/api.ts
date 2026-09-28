@@ -7,8 +7,6 @@ import type {
   AccessKey,
   AccessKeyCreated,
   AccessKeyInput,
-  OrgUnit,
-  Product,
   TenantReach,
   TenantReachRequest,
 } from '@/features/agent-access/types';
@@ -21,9 +19,8 @@ import { api } from '@/shared/utils/api-client';
 
 const ACCESS = '/api/v1/agent-access';
 const REACH = '/api/v1/tenant/reach';
-const TENANT = '/api/v1/tenant';
 
-/** The route maximum: an organisation's units, products and entries fit one page. */
+/** The route maximum: an organisation's entries fit one page. */
 export const MAX_PAGE = 100;
 /** The access log's page (design/screens/admin-agent-access.html, "1 to 20 of 146"). */
 export const CALLS_PAGE = 20;
@@ -65,14 +62,6 @@ export async function revokeKey(entryId: string, keyId: string): Promise<AccessK
 
 export async function listCalls(entryId: string, offset: number): Promise<AccessCallPage> {
   return (await api.get<AccessCallPage>(`${ACCESS}/${id(entryId)}/calls`, { params: { limit: CALLS_PAGE, offset } })).data;
-}
-
-export async function listOrgUnits(): Promise<OrgUnit[]> {
-  return (await api.get<{ items: OrgUnit[] }>(`${TENANT}/org-units`, { params: { limit: MAX_PAGE, offset: 0 } })).data.items;
-}
-
-export async function listProducts(): Promise<Product[]> {
-  return (await api.get<{ items: Product[] }>(`${TENANT}/products`, { params: { limit: MAX_PAGE, offset: 0 } })).data.items;
 }
 
 export async function getReach(): Promise<TenantReach> {

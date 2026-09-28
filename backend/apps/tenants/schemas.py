@@ -837,15 +837,6 @@ class TenantOrgUnit(CamelSchema):
     version: int = Field(description="The unit's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.")
 
 
-class TenantOrgUnitPage(CamelSchema):
-    """One page of the bank's organisation, ordered by name."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_ORG_UNIT], "total": 1}]})
-
-    items: list[TenantOrgUnit] = Field(description="The units on this page, by name; an empty list is a 200 and means the bank has recorded none.")
-    total: int = Field(description="How many units the bank has in total, active and deactivated, not how many are on this page.")
-
-
 class TenantOrgUnitBody(WriteBody):
     """A new unit of the bank's organisation. A field the schema does not name is refused."""
 
@@ -944,6 +935,34 @@ class TenantLicence(CamelSchema):
         )
     )
     version: int = Field(description="The licence's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.")
+
+
+_EXAMPLE_ORG_UNIT_ROW: dict[str, JsonValue] = {**_EXAMPLE_ORG_UNIT, "licences": [_EXAMPLE_LICENCE]}
+
+
+class TenantOrgUnitRow(TenantOrgUnit):
+    """One unit as `GET /tenant/org-units` lists it: the unit, and on a legal entity the
+    licences and certificates it holds, so the organisation screen reads them with the list
+    and never once per entity."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_ORG_UNIT_ROW]})
+
+    licences: list[TenantLicence] = Field(
+        description=(
+            "Every licence and certificate the legal entity holds, withdrawn ones included and "
+            "marked, by grant date: the same rows `GET /tenant/org-units/{orgUnitId}/licences` "
+            "pages. Always empty for a group or a department, which hold none."
+        )
+    )
+
+
+class TenantOrgUnitPage(CamelSchema):
+    """One page of the bank's organisation, ordered by name."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_ORG_UNIT_ROW], "total": 1}]})
+
+    items: list[TenantOrgUnitRow] = Field(description="The units on this page, by name; an empty list is a 200 and means the bank has recorded none.")
+    total: int = Field(description="How many units the bank has in total, active and deactivated, not how many are on this page.")
 
 
 class TenantLicencePage(CamelSchema):

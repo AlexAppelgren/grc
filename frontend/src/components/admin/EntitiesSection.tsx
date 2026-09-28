@@ -9,7 +9,7 @@ import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { DialogForm, PersonSelect, TermPicker, TermSelect } from '@/features/tenant-admin/organisation/fields';
-import { useCanEditOrganisation, useCreateLicence, useCreateOrgUnit, useLicences, useOrgUnits, useScopeTermGroups, useUpdateLicence, useUpdateOrgUnit } from '@/features/tenant-admin/organisation/hooks';
+import { useCanEditOrganisation, useCreateLicence, useCreateOrgUnit, useOrgUnits, useScopeTermGroups, useUpdateLicence, useUpdateOrgUnit } from '@/features/tenant-admin/organisation/hooks';
 import {
   changedFields,
   entityTree,
@@ -21,7 +21,7 @@ import {
   presentEntity,
   presentServices,
 } from '@/features/tenant-admin/organisation/organisation-presentation';
-import type { Licence, OrgUnit } from '@/features/tenant-admin/organisation/types';
+import type { Licence, OrgUnit, OrgUnitRow } from '@/features/tenant-admin/organisation/types';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { formatDate, type FormatContext } from '@/shared/utils/format';
@@ -208,7 +208,7 @@ function EntityForm({ unit, units, onClose }: { unit: OrgUnit | null; units: rea
   );
 }
 
-function LicencesPanel({ entities, canEdit }: { entities: readonly OrgUnit[]; canEdit: boolean }) {
+function LicencesPanel({ entities, canEdit }: { entities: readonly OrgUnitRow[]; canEdit: boolean }) {
   const t = useT();
   if (entities.length === 0) return null;
   return (
@@ -221,23 +221,18 @@ function LicencesPanel({ entities, canEdit }: { entities: readonly OrgUnit[]; ca
   );
 }
 
-function EntityLicences({ entity, canEdit }: { entity: OrgUnit; canEdit: boolean }) {
+function EntityLicences({ entity, canEdit }: { entity: OrgUnitRow; canEdit: boolean }) {
   const t = useT();
-  const licences = useLicences(entity.id);
   const [showWithdrawn, setShowWithdrawn] = useState(false);
   const [editing, setEditing] = useState<Licence | 'new' | null>(null);
-  const all = licences.data ?? [];
+  const all = entity.licences;
   const withdrawn = all.filter(isWithdrawn);
   const shown = showWithdrawn ? all : all.filter((licence) => !isWithdrawn(licence));
 
   return (
     <section className="mb-4" aria-label={entity.name} data-licences-of={entity.name}>
       <h3 className="mb-2 text-muted">{entity.name}</h3>
-      {licences.isPending ? (
-        <LoadingState rows={1} />
-      ) : licences.isError ? (
-        <ErrorState title={t('admin.org.licences.errorTitle')} onRetry={() => void licences.refetch()} />
-      ) : shown.length === 0 ? (
+      {shown.length === 0 ? (
         <p className="text-meta text-muted">{t('admin.org.licences.none')}</p>
       ) : (
         <Rows>
@@ -321,7 +316,7 @@ const CERTIFICATE_ONLY = ['issuer', 'number', 'scopeStatement', 'issuedOn', 'val
 function LicenceForm({ entity, licence, onClose }: { entity: OrgUnit; licence: Licence | null; onClose: () => void }) {
   const t = useT();
   const create = useCreateLicence(entity.id);
-  const update = useUpdateLicence(entity.id);
+  const update = useUpdateLicence();
   const write = licence === null ? create : update;
   const groups = useScopeTermGroups();
   const [certificate, setCertificate] = useState(licence !== null && isCertificate(licence));
