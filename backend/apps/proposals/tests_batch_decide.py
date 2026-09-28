@@ -170,17 +170,16 @@ class ApprovingAndRejectingRows(DecidingABatch):
         self._nothing_moved()
 
 
-# Each row: the zone `record()` reads for its audit row (apps/shared/audit.py), and nothing
-# else. It was about 28 before the decision was set-based.
-ROW_QUERIES = 1
+# Each row: nothing. It was about 28 before the decision was set-based, and 1, the zone
+# `record()` read for each audit row, until a batch read it once (ADR 0063).
+ROW_QUERIES = 0
 
 
 class TheCostOfADecision(BatchTestCase):
     def test_a_decision_costs_the_same_however_many_rows_it_decides(self) -> None:
         """Every lookup, every write and the index rebuild are one statement for the whole
-        decision: one door, one rebuild, one UPDATE per outcome and one audit INSERT for all
-        the rows (perf audit 2026-09-28, finding 4). Only `record()`'s own read of the zone
-        is left per row."""
+        decision: one door, one rebuild, one UPDATE per outcome and one audit statement for all
+        the rows (perf audit 2026-09-28, findings 3 and 4)."""
         reviewer = factories.platform_user(roles=("library_editor",), email="reviewer@bleqq.test")
 
         def decide(obligations: list[Any], title: str) -> int:

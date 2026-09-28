@@ -11,7 +11,7 @@ Three things are enumerated and demanded:
    refuses to run outside one, and the append-only rule holds in Python and in the
    database (trigger), with the `cw.maintenance` escape hatch working as documented.
 4. `batched()` writes, for many `record()` calls, the very rows those calls write one by
-   one, in two INSERTs, in the order recorded, under the same triggers, and nothing when
+   one, in one statement (ADR 0063), in the order recorded, under the same triggers, and nothing when
    its block fails.
 
 Proven to fail 2026-09-19 by making the throwaway "audited" view skip record(): the
@@ -20,6 +20,7 @@ client raised naming the route and AC-AUD1.
 
 from __future__ import annotations
 
+import re
 import uuid
 from pathlib import Path
 
@@ -282,8 +283,10 @@ class BatchedRecordWritesTheSameRows(TestCase):
                 for subject in subjects:
                     self.assertIsNone(record(actor=self.actor, subject_id=subject, subject_title="", summary="", action="probe.many", subject_type="probe", tenant_id=self.tenant.id))
                 self.assertEqual(captured.captured_queries, [])
-        inserts = [query["sql"].split('"')[1] for query in captured.captured_queries if query["sql"].startswith("INSERT")]
-        self.assertEqual(inserts, ["audit_event", "outbox_event"])
+        # One statement since ADR 0063: the audit INSERT as a WITH, the outbox INSERT after it.
+        statements = [query["sql"] for query in captured.captured_queries]
+        self.assertEqual(len(statements), 1)
+        self.assertEqual(re.findall(r'INSERT INTO "(\w+)"', statements[0]), ["audit_event", "outbox_event"])
         self.assertEqual([event.subject_id for event in AuditEvent.objects.filter(action="probe.many").order_by("created", "id")], subjects)
         self.assertEqual(
             [outbox.audit_event.subject_id for outbox in OutboxEvent.objects.filter(topic="probe.many").select_related("audit_event").order_by("created", "id")],

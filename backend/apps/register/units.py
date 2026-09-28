@@ -335,7 +335,7 @@ def paste_units(
     if body.dry_run or any(row.problem for row in rows):
         return RegisterUnitPaste(dry_run=True, rows=rows, created=0)
 
-    with batched():  # one audit INSERT and one outbox INSERT for every event of the paste
+    with batched():  # one statement of audit and outbox rows for every event of the paste
         created = _insert_many(tenant=tenant, actor=actor, scope=scope, lines=[(row.reference, row.title) for row in rows])
         # Plain dicts, not schema instances: ninja re-reads a nested schema through its
         # attribute getter, whose missed camelCase lookups fall back to Django's template
