@@ -473,39 +473,79 @@ class TenantsScenarioTests(ScenarioTestCase):
         """TEN-S8
 
         A department has a head and teams, and team membership is set on the member row (TEN-02, TEN-03).
-        Operations: `createOrgUnit`, `updateOrgUnit`, `setMemberTeams`.
+        Operations: `createOrgUnit`, `updateOrgUnit`, `createVocabularyRow`, `updateVocabularyRow`, `setMemberTeams`.
 
-        c8-ten-teams-people: the department and its team are rows here, because adding them
-        through `createOrgUnit` and `/vocab/team` is TEN-S2's and VOC-02's to prove; the
-        database's refusal of another bank's member, department or head is proven as `cw_app`
-        in tests_team_models.py and tests_models.py.
+        The department is added through `createOrgUnit` and the team put in it, moved and taken
+        out through the team list's own routes with `extra.orgUnitId` (`ten02-team-department`);
+        the database's refusal of another bank's member, department or head is proven as
+        `cw_app` in tests_team_models.py and tests_models.py.
         """
         karin = factories.member(self.tenant, user_row=factories.user(name="Karin Holm")).user
         anna = factories.member(self.tenant, user_row=factories.user(name="Anna Berg")).user
         johan = factories.member(self.tenant, user_row=factories.user(name="Johan Ek")).user
-        retail = factories.headed_unit(self.tenant, name="Retail Banking", head=karin)
-        factories.team(self.tenant, key="retail-compliance", label="Retail compliance", org_unit=retail)
+        admin = sign_in(self.admin, tenant=self.tenant)
+
+        def write(method: str, url: str, body: dict[str, Any], **headers: str) -> Any:
+            call = getattr(self.client, method)
+            return call(f"/api/v1{url}", data=body, content_type="application/json", **admin, **headers)
+
+        def department(key: str) -> Any:
+            teams = self.client.get("/api/v1/tenant/teams", **admin).json()["items"]
+            return next(row["orgUnitId"] for row in teams if row["key"] == key)
+
+        added = write("post", "/tenant/org-units", {"kind": "business_area", "name": "Retail Banking", "headUserId": str(karin.id)})
+        self.assertEqual(added.status_code, 201, added.content)
+        retail = added.json()["id"]
+        cards = write("post", "/tenant/org-units", {"kind": "function", "name": "Cards"}).json()["id"]
+        team = write("post", "/vocab/team", {"labels": {"en": "Retail compliance"}, "key": "retail_compliance", "extra": {"orgUnitId": retail}})
+        self.assertEqual(team.status_code, 201, team.content)
 
         me = self.client.get("/api/v1/me", **sign_in(karin, tenant=self.tenant)).json()
-        self.assertIn({"id": str(retail.id), "name": "Retail Banking"}, me["headOf"])
+        self.assertIn({"id": retail, "name": "Retail Banking"}, me["headOf"])
+        self.assertEqual(department("retail_compliance"), retail)
+        self.activate(self.tenant)
+        created = AuditEvent.objects.get(action="vocabulary.created", subject_title="team:retail_compliance")
+        self.assertEqual(created.after["extra"]["orgUnitId"], retail)
 
-        admin = sign_in(self.admin, tenant=self.tenant)
+        moved = write("patch", "/vocab/team/retail_compliance", {"extra": {"orgUnitId": cards}}, HTTP_IF_MATCH=f'"{team.json()["version"]}"')
+        self.assertEqual(moved.status_code, 200, moved.content)
+        self.assertEqual(department("retail_compliance"), cards)
+        self.activate(self.tenant)
+        [event] = AuditEvent.objects.filter(action="vocabulary.updated", subject_title="team:retail_compliance")
+        self.assertEqual((event.before["extra"]["orgUnitId"], event.after["extra"]["orgUnitId"]), (retail, cards))
+
+        stale = write("patch", "/vocab/team/retail_compliance", {"extra": {"orgUnitId": retail}}, HTTP_IF_MATCH=f'"{team.json()["version"]}"')
+        self.assertEqual((stale.status_code, stale.json()["code"]), (409, "stale_write"))
+        other = factories.tenant(slug="elsewhere")
+        theirs = factories.headed_unit(other, name="Their department", head=None)
+        foreign = write("patch", "/vocab/team/retail_compliance", {"extra": {"orgUnitId": str(theirs.id)}})
+        self.assertEqual((foreign.status_code, foreign.json()["code"]), (404, "not_found"))
+        self.assertEqual(department("retail_compliance"), cards)
+        entity = write("post", "/tenant/org-units", {"kind": "legal_entity", "name": "Example Bank AB"}).json()["id"]
+        closed = write("patch", f"/tenant/org-units/{retail}", {"active": False}, HTTP_IF_MATCH=f'"{added.json()["version"]}"')
+        self.assertEqual(closed.status_code, 200, closed.content)
+        for unit in (entity, retail):
+            refused = write("patch", "/vocab/team/retail_compliance", {"extra": {"orgUnitId": unit}})
+            self.assertEqual((refused.status_code, refused.json()["code"]), (422, "validation_error"))
+        cleared = write("patch", "/vocab/team/retail_compliance", {"extra": {"orgUnitId": None}})
+        self.assertEqual(cleared.status_code, 200, cleared.content)
+        self.assertIsNone(department("retail_compliance"))
+
         for person in (anna, johan):
             url = f"/api/v1/tenant/members/{person.id}/teams"
-            response = self.client.put(url, data={"teams": ["retail-compliance"]}, content_type="application/json", **admin)
+            response = self.client.put(url, data={"teams": ["retail_compliance"]}, content_type="application/json", **admin)
             self.assertEqual(response.status_code, 200, response.content)
-            self.assertEqual(response.json()["teams"], ["retail-compliance"])
+            self.assertEqual(response.json()["teams"], ["retail_compliance"])
             self.activate(self.tenant)
             membership = Membership.objects.get(tenant=self.tenant, user=person)
             event = AuditEvent.objects.get(action="member.teams_changed", subject_id=membership.id)
-            self.assertEqual((event.before, event.after), ({"teams": []}, {"teams": ["retail-compliance"]}))
-        members = self.client.get("/api/v1/tenant/teams/retail-compliance/members", **admin).json()
+            self.assertEqual((event.before, event.after), ({"teams": []}, {"teams": ["retail_compliance"]}))
+        members = self.client.get("/api/v1/tenant/teams/retail_compliance/members", **admin).json()
         self.assertEqual([row["name"] for row in members["items"]], ["Anna Berg", "Johan Ek"])
 
-        other = factories.tenant(slug="elsewhere")
         stranger = factories.member_user(other)
         refused = self.client.put(
-            f"/api/v1/tenant/members/{stranger.id}/teams", data={"teams": ["retail-compliance"]}, content_type="application/json", **admin
+            f"/api/v1/tenant/members/{stranger.id}/teams", data={"teams": ["retail_compliance"]}, content_type="application/json", **admin
         )
         self.assertEqual((refused.status_code, refused.json()["code"]), (422, "unknown_member"))
 

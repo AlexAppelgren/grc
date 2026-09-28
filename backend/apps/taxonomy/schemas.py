@@ -290,14 +290,19 @@ _EXTRA_COLUMNS = (
     "`urgency` has `ordinal` (its place on the urgency scale, 1 the most urgent) and `slaDays` (the days "
     "a bank has to act); `term_dimension` `restrictsFootprint`; `instrument_level` `bindingDefault` and "
     "`rank`; `provision_kind` `jurisdiction`, the key of a row of the `jurisdiction` list; and "
-    "`compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale. Every other "
-    "list has none."
+    "`compliance_status` and `risk_rating` `ordinal`, their place on the bank's own scale; and `team` "
+    "`email`, the team's shared address or an empty string, and `orgUnitId`, the id of the department "
+    "the team sits in (a business area, business unit or function of the same organisation) or null for "
+    "none. Every other list has none."
 )
 _EXTRA_WRITE = (
     "Keyed as a row's `extra` reads them (`slaDays`) or by column name (`sla_days`); a key the list does "
     "not have is ignored, never stored. Each value is checked like the column it fills, so a wrong one "
     "answers 422 `validation_error`, and a reference to a row that does not exist answers 422 "
-    "`unknown_key` with the valid keys. `tone`, `colour` and `color` are refused with 422 "
+    "`unknown_key` with the valid keys. A team's `orgUnitId` must name an active department of the "
+    "caller's organisation: a unit it does not have answers 404 `not_found`, and a group, a legal entity "
+    "or a deactivated department 422 `validation_error`; null takes the team out of its department. "
+    "`tone`, `colour` and `color` are refused with 422 "
     "`validation_error`: a value's tone follows its kind and is never chosen."
 )
 

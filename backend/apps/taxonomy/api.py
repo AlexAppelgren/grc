@@ -406,18 +406,20 @@ def create_vocabulary_row(request: HttpRequest, list_name: ListName, body: Vocab
     An organisation's list needs `vocab.manage` in it; a library list needs
     `proposals.create` in the caller's organisation or `library_vocab.manage` in the
     console. A person's session is needed and an API key is refused. Records
-    `vocabulary.created` in the organisation's audit, or the proposal's `proposal.created`
-    for a library list.
+    `vocabulary.created` in the organisation's audit with the value's own columns, a team's
+    department among them, or the proposal's `proposal.created` for a library list.
 
     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
     (403) without the permission above, which `requiredPermission` names; `not_found` (404)
-    for a name that is not a vocabulary list; `duplicate_key` (409) when the key exists,
+    for a name that is not a vocabulary list, or a team's `orgUnitId` naming a unit the
+    organisation does not have; `duplicate_key` (409) when the key exists,
     with the value in `candidates`; `near_duplicate` (422) when the label is close to an
     existing value's, with the close matches in `candidates`; `unknown_key` (422) for an
     unknown language, a kind the list does not take or a missing required kind, or a
     reference in `extra` to a value that does not exist; `validation_error` (422) for no
-    label, a key that normalises to nothing, a bad `extra` value, a library list that is
-    reference data, or a field the body does not name; `list_full` (422) when one of the
+    label, a key that normalises to nothing, a bad `extra` value (a team's `orgUnitId`
+    naming a group, a legal entity or a deactivated department among them), a library list
+    that is reference data, or a field the body does not name; `list_full` (422) when one of the
     organisation's own lists already holds `TENANT_LIST_MAX_ROWS` values, retired ones
     included (500 unless the operator set another number), and nothing is added.
     """
@@ -512,15 +514,18 @@ def update_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKey
     An organisation's list needs `vocab.manage` in it; a library list needs
     `proposals.create` in the caller's organisation or `library_vocab.manage` in the
     console. A person's session is needed and an API key is refused. Records
-    `vocabulary.updated` with the labels and usage note before and after, or the proposal's
+    `vocabulary.updated` with the labels, usage note and the list's own columns before and
+    after (a team moved to another department names both), or the proposal's
     `proposal.created` for a library list.
 
     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without the permission above; `not_found` (404) for an unknown list or key;
+    (403) without the permission above; `not_found` (404) for an unknown list or key, or a
+    team's `orgUnitId` naming a unit the organisation does not have;
     `stale_write` (409) when `If-Match` is not the current version; `unknown_key` (422) for
     an unknown language or a reference in `extra` to a value that does not exist;
     `validation_error` (422) for an `If-Match` that is not a version, labels whose every
-    text is empty, a bad `extra` value, a library list that is reference data, or a field
+    text is empty, a bad `extra` value (a team's `orgUnitId` naming a group, a legal entity
+    or a deactivated department among them), a library list that is reference data, or a field
     the body does not name.
     """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).

@@ -123,6 +123,10 @@ class OrgUnitKind(enum.StrEnum):
     FUNCTION = "function"
 
 
+# A department is a business area, business unit or function; a group or a legal entity is not (D-21).
+DEPARTMENT_KINDS = (OrgUnitKind.BUSINESS_AREA.value, OrgUnitKind.BUSINESS_UNIT.value, OrgUnitKind.FUNCTION.value)
+
+
 class ProductStatusKind(enum.StrEnum):
     """Tier-one kind (apps/shared/kinds.py): retired is how a product is withdrawn, never
     deleted, and what leaves it out of scope."""

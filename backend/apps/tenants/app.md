@@ -42,7 +42,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | ID | Requirement (condensed; full text in PRD) | Priority | Release | Status |
 |----|----|----|----|----|
 | TEN-01 | Tenant profile, timezone, default languages, onboarding checklist | M | R1 | built |
-| TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped. Left at the R2 close: no route or screen puts a team in a department yet (a team is added without one; the seed's teams carry theirs) | M | R2 | in_progress |
+| TEN-02 | Legal entities with licences and certificates (issuer, reference, scope, validity, next audit, owner), departments with a head and the teams in them, and products described the way obligations are scoped. A team is put in a department, moved or taken out on the team list's own create and edit (`extra.orgUnitId`) and in the admin's team form (`ten02-team-department`, TEN-S8) | M | R2 | built |
 | TEN-03 | Teams as owners and participants, so ownership survives a person leaving | M | R2 | built |
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | built |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | built |
@@ -72,8 +72,8 @@ teams and team membership on the member row (TEN-02, TEN-03); support access (TE
 workflow policy's reminders and escalation (COL-02); the agents a bank adds for itself and
 its agent access (AGT-04, ACC-01 to ACC-09); and the security policy's session limits
 (ID-08). What remains at the R2 close (2026-09-27, `r2-close-and-readiness`), each with the
-Build_Plan.md chunk that delivers it: putting a team in a department, which no route writes
-yet (TEN-02, named in its row); data, meaning exports, import, retention and tenant exit
+Build_Plan.md chunk that delivers it (putting a team in a department, found at the close, was
+built by `ten02-team-department`): data, meaning exports, import, retention and tenant exit
 (REP-02 to REP-04, AUD-04, chunk 12); integrations beyond the API keys, with the security
 policy's SSO and IP allow-list (INT-01 to INT-03, ID-12, ID-13, chunk 13); and the
 device-bound passkey policy (ID-07), out of R2 by D-100.
@@ -270,6 +270,17 @@ And neither can call the other's endpoints
 Given an admin with vocab.manage
 When they add the department "Retail Banking" with Karin as head and the team "Retail compliance" in it
 Then GET /me for Karin lists "Retail Banking" among the departments she heads
+And the team lists "Retail Banking" as its department, and the audit event of the team's creation names it
+When they move "Retail compliance" to the department "Cards" with the version they read
+Then the team lists "Cards" and one audit event holds the department before and after
+When they move it with a version someone has since changed
+Then the answer is 409 with code "stale_write"
+When they put it in another tenant's department
+Then the answer is 404 and the team stays in "Cards"
+When they put it in a legal entity, or in "Retail Banking" once they have deactivated it
+Then the answer is 422 with code "validation_error"
+When they take it out of its department
+Then the team lists no department
 Given an admin with members.manage
 When they put Anna and Johan in "Retail compliance"
 Then one audit event is written per call, holding the team keys before and after
@@ -303,6 +314,16 @@ And no obligation, scope row or applicability changes
 When they set a withdrawal date
 Then the row reads as withdrawn and stays in the history
 ```
+
+> **ten02-team-department (TEN-02).** A team is a row of the bank's `team` list, so its
+> department rides the list's own routes: `POST /vocab/team` and `PATCH /vocab/team/{key}`
+> (with `If-Match`) take `extra.orgUnitId`, an active business area, business unit or
+> function of the same bank. Another bank's unit, or one that does not exist, answers 404
+> `not_found`; a group, a legal entity or a deactivated department 422 `validation_error`;
+> null takes the team out, since the model allows a team without a department. The
+> `vocabulary.created` and `vocabulary.updated` audit rows carry the list's own columns, the
+> department among them, before and after. The admin's team form picks the department from
+> the bank's active departments, and the departments section lists each one's teams.
 
 > **c8-ui-organisation (TEN-02, ADM-01).** `/admin/organisation` draws the legal entities as a
 > tree under the group, each entity's licences and certificates, and the products, with Add

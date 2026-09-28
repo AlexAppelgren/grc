@@ -37,16 +37,13 @@ from apps.shared.audit import record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ApprovalStatus, CaseStatusCategory, GapCategory
-from apps.tenants.models import OrgUnit, OrgUnitKind
+from apps.tenants.models import DEPARTMENT_KINDS, OrgUnit
 
 # The two categories a case has finished in (D-13): excluded from "assigned to me" so a
 # closed or dismissed case a person once owned does not sit in their queue forever. The
 # same pair `apps/home/roadmap.py` excludes from the roadmap; identity does not import
 # from home; two lines is not worth a cross-app dependency for.
 _FINISHED_CASES = (CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value)
-
-DEPARTMENT_KINDS = (OrgUnitKind.BUSINESS_AREA.value, OrgUnitKind.BUSINESS_UNIT.value, OrgUnitKind.FUNCTION.value)
-
 
 def _tenant_out(tenant: Tenant | None) -> dict[str, Any] | None:
     if tenant is None:

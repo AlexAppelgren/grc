@@ -261,13 +261,14 @@ def validated_kind(entry: VocabularyList, kind: str | None) -> str | None:
     return kind
 
 
-def extra_columns(entry: VocabularyList, extra: dict[str, Any] | None) -> dict[str, Any]:
+def extra_columns(entry: VocabularyList, extra: dict[str, Any] | None, tenant_id: uuid.UUID | None = None) -> dict[str, Any]:
     """The list's own columns from a write's `extra`, keyed by column name. Reads render
     them camelCased (`slaDays`), so writes accept that spelling as well as the column name
     (`sla_days`); a key that is not one of the list's columns is dropped, never stored.
     Each value is cleaned by its model field and a reference (a related row's key) becomes
     that row, so a wrong value is a 422 when the write or the proposal is made, never a
-    500 when it is saved or approved."""
+    500 when it is saved or approved. A tenant list's resolver checks its value in the
+    caller's bank, `tenant_id`."""
     from pydantic.alias_generators import to_camel
 
     names = {to_camel(name): name for name in entry.extra_fields} | {name: name for name in entry.extra_fields}
@@ -275,6 +276,10 @@ def extra_columns(entry: VocabularyList, extra: dict[str, Any] | None) -> dict[s
     for key, value in (extra or {}).items():
         name = names.get(key)
         if name is None:
+            continue
+        resolver = entry.resolvers.get(name)
+        if resolver is not None and tenant_id is not None:
+            columns[name] = resolver(tenant_id, value)
             continue
         related = entry.references.get(name)
         if related is not None:
@@ -473,7 +478,7 @@ def create_row(
         "is_system": False,
         "is_default": False,
     }
-    fields.update(extra_columns(entry, extra))
+    fields.update(extra_columns(entry, extra, tenant.id))
     row = entry.model._default_manager.create(**fields)
     _write_labels(entry, row, cleaned, tenant)
     record(
@@ -484,7 +489,7 @@ def create_row(
         subject_title=f"{list_name}:{row_key}",
         summary=f"Added {row_key} to {list_name}.",
         tenant_id=tenant.id,
-        after={"list": list_name, "key": row_key, "labels": cleaned, "kind": fields["kind"]},
+        after={"list": list_name, "key": row_key, "labels": cleaned, "kind": fields["kind"], "extra": extra_of(row, entry.extra_fields)},
     )
     _resolve_suggestions(list_name, tenant, row_key)
     labels_read = Labels.for_rows(entry.label_model, [row])
@@ -511,15 +516,16 @@ def patch_row(
     [row] = row_for_write(list_name, [key], tenant.id)
     if expected_version is not None and expected_version != getattr(row, "version", 1):
         raise ValidationError("Someone changed this first. Reload and try again.", code="stale_write")
-    before = {"labels": Labels.for_rows(entry.label_model, [row]).texts(row.id), "usageNote": row.usage_note}  # compliance: record-content a list row's own label and usage note are the values its audit row records (AUD-01)
+    before = {"labels": Labels.for_rows(entry.label_model, [row]).texts(row.id), "usageNote": row.usage_note, "extra": extra_of(row, entry.extra_fields)}  # compliance: record-content a list row's own label and usage note are the values its audit row records (AUD-01)
     cleaned = validated_labels(labels) if labels else {}
+    columns = extra_columns(entry, extra, tenant.id)  # checked before anything is written
     if cleaned:
         _write_labels(entry, row, cleaned, tenant)
     if usage_note is not None:
         row.usage_note = usage_note.strip()
     if sort_order is not None:
         row.sort_order = sort_order
-    for name, value in extra_columns(entry, extra).items():
+    for name, value in columns.items():
         setattr(row, name, value)
     row.version = getattr(row, "version", 1) + 1
     row.save()
@@ -532,7 +538,7 @@ def patch_row(
         summary=f"Changed {key} on {list_name}.",
         tenant_id=tenant.id,
         before=before,
-        after={"labels": cleaned or before["labels"], "usageNote": row.usage_note},  # compliance: record-content a list row's own label and usage note are the values its audit row records (AUD-01)
+        after={"labels": cleaned or before["labels"], "usageNote": row.usage_note, "extra": extra_of(row, entry.extra_fields)},  # compliance: record-content a list row's own label and usage note are the values its audit row records (AUD-01)
     )
     fresh = _queryset(entry, tenant.id).filter(pk=row.pk).first()  # ordering: pk lookup, at most one row
     return _row(entry, fresh or row, Labels.for_rows(entry.label_model, [row]), order)

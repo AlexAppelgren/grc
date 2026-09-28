@@ -1091,7 +1091,7 @@ class TenantTeam(CamelSchema):
         )
     )
     label: str = Field(description="The team's name in the reader's language, for display only; it may be reworded at any time.")
-    org_unit_id: uuid.UUID | None = Field(description="The identifier of the department the team sits in, a UUID of the same bank, or null.")
+    org_unit_id: uuid.UUID | None = Field(description="The identifier of the department the team sits in, a UUID of the same bank, or null; set with `extra.orgUnitId` on `POST /vocab/team` and `PATCH /vocab/team/{key}`.")
     email: str = Field(description="The team's shared mailbox, where the bank gave one; empty otherwise.")
     member_count: int = Field(description="How many active members are in the team at the moment of the call.")
     active: bool = Field(description="False once the team is retired; a retired team keeps what it owns until someone moves it.")

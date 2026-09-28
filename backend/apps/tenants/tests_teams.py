@@ -218,3 +218,121 @@ class HeadOf(Bank):
 
     def test_someone_who_heads_nothing_reads_an_empty_list(self) -> None:
         self.assertEqual(self.get("/me").json()["headOf"], [])
+
+
+class TeamDepartment(Bank):
+    """TEN-02 (`ten02-team-department`): a team is put in a department, moved to another or
+    taken out of one on the team list's own create and edit routes, `extra.orgUnitId`.
+    Written before the logic: the department was dropped as a column the list did not have."""
+
+    retail_unit: OrgUnit
+    cards_unit: OrgUnit
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        super().setUpTestData()
+        cls.retail_unit = factories.headed_unit(cls.tenant, name="Retail department", head=None)
+        cls.cards_unit = factories.headed_unit(cls.tenant, name="Cards department", head=None, kind=OrgUnitKind.FUNCTION)
+
+    def create(self, extra: dict[str, Any], user: User | None = None) -> Any:
+        return self.client.post(
+            f"{V1}/vocab/team",
+            data={"labels": {"en": "Payments compliance"}, "key": "payments_compliance", "extra": extra},
+            content_type="application/json",
+            **sign_in(user or self.admin, tenant=self.tenant),
+        )
+
+    def patch(self, key: str, extra: dict[str, Any], version: int | None = None, user: User | None = None) -> Any:
+        headers = sign_in(user or self.admin, tenant=self.tenant)
+        if version is not None:
+            headers["HTTP_IF_MATCH"] = f'"{version}"'
+        return self.client.patch(f"{V1}/vocab/team/{key}", data={"extra": extra}, content_type="application/json", **headers)
+
+    def department_of(self, key: str) -> uuid.UUID | None:
+        tenancy.activate(self.tenant.id)
+        return Team.objects.get(tenant=self.tenant, key=key).org_unit_id
+
+    def events(self, action: str, key: str) -> list[AuditEvent]:
+        tenancy.activate(self.tenant.id)
+        return list(AuditEvent.objects.filter(action=action, subject_title=f"team:{key}").order_by("created", "id"))
+
+    def test_a_team_is_created_in_a_department_with_one_audit_row_naming_it(self) -> None:
+        response = self.create({"orgUnitId": str(self.retail_unit.id)})
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertEqual(response.json()["extra"]["orgUnitId"], str(self.retail_unit.id))
+        self.assertEqual(self.department_of("payments_compliance"), self.retail_unit.id)
+        [event] = self.events("vocabulary.created", "payments_compliance")
+        self.assertEqual(event.after["extra"], {"email": "", "orgUnitId": str(self.retail_unit.id)})
+        listed = {row["key"]: row for row in self.get("/tenant/teams").json()["items"]}
+        self.assertEqual(listed["payments_compliance"]["orgUnitId"], str(self.retail_unit.id))
+
+    def test_a_team_is_still_created_without_a_department(self) -> None:
+        response = self.create({})
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertIsNone(response.json()["extra"]["orgUnitId"])
+        self.assertIsNone(self.department_of("payments_compliance"))
+
+    def test_an_edit_moves_the_team_under_if_match_with_the_department_before_and_after(self) -> None:
+        response = self.patch("retail-compliance", {"orgUnitId": str(self.cards_unit.id)}, version=1)
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual((response.json()["extra"]["orgUnitId"], response.json()["version"]), (str(self.cards_unit.id), 2))
+        self.assertEqual(self.department_of("retail-compliance"), self.cards_unit.id)
+        [event] = self.events("vocabulary.updated", "retail-compliance")
+        self.assertEqual(event.before["extra"]["orgUnitId"], str(self.retail.org_unit_id))
+        self.assertEqual(event.after["extra"]["orgUnitId"], str(self.cards_unit.id))
+
+    def test_a_stale_if_match_is_409_and_the_team_stays_where_it_was(self) -> None:
+        response = self.patch("retail-compliance", {"orgUnitId": str(self.cards_unit.id)}, version=7)
+        self.assertEqual((response.status_code, response.json()["code"]), (409, "stale_write"))
+        self.assertEqual(self.department_of("retail-compliance"), self.retail.org_unit_id)
+
+    def test_null_takes_the_team_out_of_its_department_and_a_rename_alone_keeps_it(self) -> None:
+        renamed = self.client.patch(
+            f"{V1}/vocab/team/retail-compliance",
+            data={"labels": {"en": "Retail team"}},
+            content_type="application/json",
+            **sign_in(self.admin, tenant=self.tenant),
+        )
+        self.assertEqual(renamed.status_code, 200, renamed.content)
+        self.assertEqual(self.department_of("retail-compliance"), self.retail.org_unit_id)
+        cleared = self.patch("retail-compliance", {"orgUnitId": None})
+        self.assertEqual(cleared.status_code, 200, cleared.content)
+        self.assertIsNone(self.department_of("retail-compliance"))
+        self.assertIsNone(self.events("vocabulary.updated", "retail-compliance")[-1].after["extra"]["orgUnitId"])
+
+    def test_another_banks_department_is_404_and_nothing_is_written(self) -> None:
+        theirs = factories.headed_unit(self.other, name="Their department", head=None)
+        renamed = self.client.patch(
+            f"{V1}/vocab/team/retail-compliance",
+            data={"labels": {"en": "Their retail team"}, "extra": {"orgUnitId": str(theirs.id)}},
+            content_type="application/json",
+            **sign_in(self.admin, tenant=self.tenant),
+        )
+        for response in (self.create({"orgUnitId": str(theirs.id)}), self.patch("retail-compliance", {"orgUnitId": str(theirs.id)}), renamed):
+            self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"))
+        self.assertEqual(self.get("/tenant/teams/retail-compliance/members").status_code, 200)
+        labels = {row["key"]: row["label"] for row in self.get("/tenant/teams").json()["items"]}
+        self.assertEqual(labels["retail-compliance"], "Retail compliance", "a refused department leaves the name as it was")
+        self.assertFalse(Team.objects.filter(key="payments_compliance").exists())
+        self.assertEqual(self.department_of("retail-compliance"), self.retail.org_unit_id)
+        self.assertEqual(self.events("vocabulary.updated", "retail-compliance"), [])
+        unknown = self.create({"orgUnitId": str(uuid.uuid4())})
+        self.assertEqual((unknown.status_code, unknown.json()["code"]), (404, "not_found"))
+
+    def test_a_unit_that_is_no_active_department_is_422(self) -> None:
+        entity = factories.headed_unit(self.tenant, name="Example Bank AB", head=None, kind=OrgUnitKind.LEGAL_ENTITY)
+        group = factories.headed_unit(self.tenant, name="Example Group", head=None, kind=OrgUnitKind.GROUP)
+        closed = factories.headed_unit(self.tenant, name="Closed department", head=None)
+        tenancy.activate(self.tenant.id)
+        OrgUnit.objects.filter(pk=closed.pk).update(active=False)
+        for unit in (entity, group, closed):
+            response = self.patch("retail-compliance", {"orgUnitId": str(unit.id)})
+            self.assertEqual((response.status_code, response.json()["code"]), (422, "validation_error"), unit.name)
+        garbled = self.patch("retail-compliance", {"orgUnitId": "not-a-uuid"})
+        self.assertEqual((garbled.status_code, garbled.json()["code"]), (422, "validation_error"))
+        self.assertEqual(self.department_of("retail-compliance"), self.retail.org_unit_id)
+
+    def test_without_vocab_manage_it_is_403(self) -> None:
+        response = self.patch("retail-compliance", {"orgUnitId": str(self.cards_unit.id)}, user=self.reader)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.department_of("retail-compliance"), self.retail.org_unit_id)

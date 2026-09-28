@@ -803,6 +803,11 @@ REGISTER_USAGE: dict[str, tuple[Any, ...]] = {
     "risk_acceptance_reason": (3, "RiskAcceptanceReason", "RiskAcceptanceReasonLabel", None, (), False, (), True, (), (("Gap", "acceptance_reason"),)),
     "team": (3, "Team", "TeamLabel", None, (), False, ("email",), True, (), _TEAM_LINKS),
 }
+# ten02-team-department (TEN-02): a team's department is one more column of the team list,
+# `extra.orgUnitId`, checked in the caller's bank by its resolver.
+TEAM_DEPARTMENT: dict[str, tuple[Any, ...]] = {
+    "team": (3, "Team", "TeamLabel", None, (), False, ("email", "org_unit_id"), True, (), _TEAM_LINKS),
+}
 
 # One category of each categorised tenant list and the system row that holds it (VOC-04).
 CATEGORY_ROWS = {
@@ -838,7 +843,7 @@ class RegisterLists(ScenarioTestCase):
     def test_the_registry_gained_exactly_the_five_changes(self) -> None:
         self.assertEqual(
             {name: _shape(entry) for name, entry in REGISTRY.items()},
-            REGISTRY_BEFORE_CHUNK_8 | CHUNK_8_CHANGES | JURISDICTIONS_BY_PROPOSAL | REGISTER_USAGE,
+            REGISTRY_BEFORE_CHUNK_8 | CHUNK_8_CHANGES | JURISDICTIONS_BY_PROPOSAL | REGISTER_USAGE | TEAM_DEPARTMENT,
         )
         self.assertEqual({name for name, entry in REGISTRY.items() if entry.fixed_keys}, {"jurisdiction"})
         self.assertEqual(set(REGISTRY) - set(REGISTRY_BEFORE_CHUNK_8), {"gap_status", "gap_source", "risk_acceptance_reason", "team"})
@@ -896,7 +901,7 @@ class RegisterLists(ScenarioTestCase):
         self.assertEqual(bad.status_code, 422, bad.content)
         self.assertIn("email", bad.json()["detail"])
         teams = self._items("team")
-        self.assertEqual({key: (row["label"], row["extra"]) for key, row in teams.items()}, {"compliance": ("Compliance", {"email": ""}), "legal": ("Legal", {"email": "legal@bank.example"})})
+        self.assertEqual({key: (row["label"], row["extra"]) for key, row in teams.items()}, {"compliance": ("Compliance", {"email": "", "orgUnitId": None}), "legal": ("Legal", {"email": "legal@bank.example", "orgUnitId": None})})
         self.assertEqual(self._post("/vocab/team/legal/retire", {"confirm": True}).status_code, 200)
         self.assertEqual(set(self._items("team")), {"compliance"})
         # A team is addressable by (tenant, id), so a membership can carry a composite key to it.

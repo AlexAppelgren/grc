@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import functools
 import operator
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from typing import Any
@@ -44,6 +45,7 @@ from apps.register.models import Gap, TenantObligation, TenantObligationScope
 from apps.taxonomy import repoint
 from apps.taxonomy.repoint import Link, Moves
 from apps.tenants.models import InternalItem, Licence, TeamMember
+from apps.tenants.teams import department_id
 from apps.watch.models import ChangeTerm, RegulatoryChange, Source
 from apps.taxonomy.models import (
     CaseStatusCategory,
@@ -157,6 +159,8 @@ class VocabularyList:
     usage: Callable[[QuerySet[Any]], QuerySet[Any]] = _no_usage
     repoint: Callable[..., Moves] = repoint.nothing_to_repoint  # (source, target, *, dry_run) -> ids moved and dropped per table
     references: dict[str, str] = field(default_factory=dict)  # extra field -> related list
+    # tenant lists: extra field -> (tenant id, value) -> the value stored, checked in the caller's bank
+    resolvers: dict[str, Callable[[uuid.UUID, Any], Any]] = field(default_factory=dict)
     links: tuple[Link, ...] = ()  # every column holding a value, which the usage count and the merge read
     open_work: Callable[[Any], dict[str, int]] | None = None  # tenant lists: the open work a row owns, per table
 
@@ -272,7 +276,7 @@ REGISTRY: dict[str, VocabularyList] = {
         _tenant(VocabularyList("risk_acceptance_reason", TENANT_TIER, RiskAcceptanceReason, RiskAcceptanceReasonLabel), Link(Gap, "acceptance_reason")),
         # A team that owns open work is not retired: its work is moved first, by a merge or
         # by reassigning it (TEN-03).
-        replace(_tenant(VocabularyList("team", TENANT_TIER, Team, TeamLabel, extra_fields=("email",)), *TEAM_LINKS), open_work=team_open_work),
+        replace(_tenant(VocabularyList("team", TENANT_TIER, Team, TeamLabel, extra_fields=("email", "org_unit_id"), resolvers={"org_unit_id": department_id}), *TEAM_LINKS), open_work=team_open_work),
     )
 }
 

@@ -96,12 +96,15 @@ class Labels:
 
 def extra_of(row: Any, fields: tuple[str, ...]) -> dict[str, Any]:
     """The list's own columns, camelCased so `extra` reads like the rest of the API
-    (`slaDays`, `restrictsFootprint`). A foreign key is rendered as the related row's key."""
+    (`slaDays`, `restrictsFootprint`). A foreign key is rendered as the related row's key, and
+    an id column (`orgUnitId`) as the id's text."""
     values: dict[str, Any] = {}
     for name in fields:
         value: Any = getattr(row, name, None)
         if value is not None and hasattr(value, "key"):
             value = value.key
+        if isinstance(value, uuid.UUID):
+            value = str(value)
         values[to_camel(name)] = value
     return values
 

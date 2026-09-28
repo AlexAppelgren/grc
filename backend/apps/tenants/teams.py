@@ -1,5 +1,6 @@
 """The bank's teams and who is in them (TEN-03). A team is a row of the bank's `team` list,
-so creating, renaming and retiring one are the `/vocab/team` routes, and putting a person in
+so creating, renaming, retiring and putting one in a department are the `/vocab/team`
+routes (`department_id` checks the department they name), and putting a person in
 a team is the member's own route (`identity.members_logic.set_member_teams`); this module
 reads. Only a current member counts as in a team: a deactivated member's rows stay until
 their removal ends them, and are never counted or listed here.
@@ -7,8 +8,10 @@ their removal ends them, and are never counted or listed here.
 
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
+from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, QuerySet
 
 from apps.identity.models import Membership, User
@@ -16,7 +19,7 @@ from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.shared.vocabulary import label_for
 from apps.taxonomy.models import Team
-from apps.tenants.models import TeamMember
+from apps.tenants.models import DEPARTMENT_KINDS, OrgUnit, TeamMember
 
 
 def team_of(tenant: Tenant, key: str) -> Team:
@@ -25,6 +28,25 @@ def team_of(tenant: Tenant, key: str) -> Team:
     if team is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
     return team
+
+
+def department_id(tenant_id: uuid.UUID, value: Any) -> uuid.UUID | None:
+    """The department a team is put in, from `extra.orgUnitId` on the team list's create and
+    edit (TEN-02, D-21): an active business area, business unit or function of the caller's
+    bank. A unit the bank does not have answers 404, like reaching for it by URL; a group, a
+    legal entity or a deactivated department 422. None takes the team out of its department."""
+    if value is None:
+        return None
+    try:
+        unit_id = uuid.UUID(str(value))
+    except ValueError as exc:
+        raise ValidationError("orgUnitId: Choose a department of your organisation.", code="validation_error") from exc
+    unit = OrgUnit.objects.filter(tenant_id=tenant_id, pk=unit_id).first()  # ordering: pk lookup, at most one row
+    if unit is None:
+        raise ProblemError(status=404, code="not_found", detail="Not found.")
+    if unit.kind not in DEPARTMENT_KINDS or not unit.active:
+        raise ValidationError("orgUnitId: A team sits in an active department, never in a group or a legal entity.", code="validation_error")
+    return unit.pk
 
 
 def _current_members(tenant: Tenant) -> QuerySet[Membership]:
