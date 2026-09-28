@@ -29,6 +29,7 @@ from collections import Counter
 from io import StringIO
 from pathlib import Path
 from typing import Any
+from unittest import mock
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -95,6 +96,8 @@ from apps.shared.e2e_seed import (
     SeedProposal,
     SeedRefused,
     _quarter_safe_offsets,
+    TENANT_A,
+    refuse_across_midnight,
     seed_e2e,
 )
 from apps.shared.models import AuditEvent, Tenant
@@ -1366,6 +1369,30 @@ class SeedRunsInsideTheTest(TestCase):
         with self.assertRaises(SeedRefused):
             seed_e2e()
         self.assertEqual(Tenant.objects.count(), 0)
+
+    def test_a_run_seeded_at_2358_tenant_local_is_refused_before_it_crosses_midnight(self) -> None:
+        """H114: the E2E webServer seeds with `--run-minutes`, and a run that would cross a
+        seeded tenant's midnight is refused before anything is seeded, with a message that
+        says why and what to do. Without it, a seed at 23:58 in Stockholm and journeys walked
+        after midnight failed every date-anchored journey a day apart (2026-09-27, 21:58:50
+        UTC). The same clock half an hour earlier seeds, and a plain seed never checks."""
+        seeded = datetime.datetime(2026, 9, 27, 23, 58, tzinfo=ZoneInfo(TENANT_A.timezone))
+        with mock.patch("apps.shared.e2e_seed.timezone.now", return_value=seeded):
+            with self.assertRaises(SeedRefused) as refused:
+                call_command("seed_e2e", "--run-minutes", "30", stdout=StringIO())
+        message = str(refused.exception)
+        self.assertIn("23:58 in Europe/Stockholm", message)
+        self.assertIn("midnight", message)
+        self.assertIn("E2E_RUN_MINUTES", message)
+        self.assertEqual(Tenant.objects.count(), 0)
+
+        refuse_across_midnight(30, seeded - datetime.timedelta(minutes=31))
+        refuse_across_midnight(0, seeded)
+        with self.assertRaises(SeedRefused):
+            refuse_across_midnight(30, datetime.datetime(2026, 9, 27, 21, 58, 50, tzinfo=datetime.UTC))
+
+        start_backend = (Path(settings.BASE_DIR).parent / "frontend" / "tests" / "e2e" / "support" / "start-backend.sh").read_text(encoding="utf-8")
+        self.assertIn('manage.py seed_e2e --run-minutes "${E2E_RUN_MINUTES:-30}"', start_backend)
 
     def test_the_seeded_dates_land_in_two_quarters_whatever_day_this_runs_on(self) -> None:
         """The near and far offsets `_quarter_safe_offsets()` derives stay in two different

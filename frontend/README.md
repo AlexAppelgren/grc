@@ -21,7 +21,10 @@ npm run test:e2e -- --grep @smoke
 `npm run dev` is for a person at a keyboard. E2E always runs a production
 build (`playwright.config.ts`); `E2E_SKIP_BACKEND=1` exists only for the
 specs that make no API call (gallery, spike, the Phase 0 shell smoke) and
-api-guard prints a notice whenever it is set.
+api-guard prints a notice whenever it is set. The backend refuses to seed a
+run that would cross a seeded bank's midnight within `E2E_RUN_MINUTES`
+(default 30, a full run takes about 17): start again after midnight, or set
+it to the length of a shorter run.
 
 Where things are:
 

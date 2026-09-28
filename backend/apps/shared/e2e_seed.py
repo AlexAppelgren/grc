@@ -32,6 +32,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.test.utils import override_settings
+from django.utils import timezone
 
 from apps.agents.models import AgentAccess, AgentRun, RunStatus, TenantAgent
 from apps.agents.seeds import seed_agent_definitions
@@ -289,6 +290,25 @@ def refuse_when_deployed(command: str = "seed_e2e") -> None:
             f"{command} refuses to run on deployed environment {settings.ENVIRONMENT!r}: "
             "test-only data changes never execute where a real tenant could live."
         )
+
+
+def refuse_across_midnight(run_minutes: int, now: datetime.datetime | None = None) -> None:
+    """H114: the seed anchors to each tenant's local day when it runs and the journeys to the
+    local day when they assert, so a run that crosses a tenant's midnight fails every
+    date-anchored journey a day apart. The E2E webServer passes the run's expected length and
+    a run that would cross midnight is refused before anything is seeded."""
+    now = now or timezone.now()
+    end = now + datetime.timedelta(minutes=run_minutes)
+    for spec in EXPECTED_TENANTS:
+        zone = ZoneInfo(spec.timezone)
+        local = now.astimezone(zone)
+        if local.date() != end.astimezone(zone).date():
+            raise SeedRefused(
+                f"seed_e2e refuses to start an E2E run at {local:%H:%M} in {spec.timezone}: a run of "
+                f"up to {run_minutes} minutes would cross the tenant's midnight, and every journey "
+                "anchored to the tenant-local day would assert a day after the seed. Start again "
+                "after midnight, or set E2E_RUN_MINUTES to the expected length of a shorter run."
+            )
 
 
 def seed_tenants() -> list[Tenant]:

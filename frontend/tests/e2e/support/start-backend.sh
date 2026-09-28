@@ -117,8 +117,11 @@ if [ "${E2E_COLD_START:-0}" = "1" ]; then
   echo "start-backend: cold start, seeding reference data only (as cw_app)"
   DATABASE_URL="$APP_E2E_URL" "$PY" manage.py seed_reference
 else
+  # The seed and the journeys each anchor to the tenant-local day, so a run that crosses a
+  # tenant's midnight fails every date-anchored journey a day apart (H114). The seed refuses
+  # a run of E2E_RUN_MINUTES (a full run takes about 17) that would cross it.
   echo "start-backend: seeding seed_e2e (as cw_migrator)"
-  DATABASE_URL="$MIGRATOR_E2E_URL" "$PY" manage.py seed_e2e
+  DATABASE_URL="$MIGRATOR_E2E_URL" "$PY" manage.py seed_e2e --run-minutes "${E2E_RUN_MINUTES:-30}"
 fi
 
 export DATABASE_URL="$APP_E2E_URL"
