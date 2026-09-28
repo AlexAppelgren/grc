@@ -51,8 +51,8 @@ SOURCE = "https://www.fi.se/"
 # obligation's scope now inherits through its instrument's own, `library.reading.
 # instrument_scopes()`, so the single footprint rule agrees for instruments too): the
 # scenario client's audit count (1), the request's savepoint pair (2), the auth layer for a
-# tenant session with the reader's own locale and their bank's language (4 since
-# perf-request-once, 2026-09-28, which read them as two more), their
+# tenant session with the reader's own locale and their bank's language (2 since
+# perf-tenant-in-token, 2026-09-28, ADR 0063; 4 after perf-request-once), their
 # membership for the bookmark (1), how many changes there are and the page (2), the records
 # the page names (2), the versions those changes wrote (1), and the footprint verdict,
 # which is `obligation_scopes()`'s own five queries (its own terms, its instrument id, and
@@ -60,7 +60,7 @@ SOURCE = "https://www.fi.se/"
 # that restrict it (1) and the dimensions and terms a screen names them by (3). Re-measured
 # 2026-09-23 once every instrument carries a regime (library 0008): the regime's term lookup
 # used to be skipped for this test's instrument, which had none, so the verdict read 9.
-UPDATES_QUERIES = 1 + 2 + 4 + 1 + 2 + 2 + 1 + 10
+UPDATES_QUERIES = 1 + 2 + 2 + 1 + 2 + 2 + 1 + 10
 
 
 class LibraryUpdates(ScenarioTestCase):

@@ -40,10 +40,11 @@ from apps.taxonomy.models import (
 from apps.taxonomy.tests_scenarios import V1, _seed_library
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 
-# Queries per read, measured 2026-09-23. Every read starts with the seven the scenario tests
+# Queries per read, measured 2026-09-23. Every read starts with the five the scenario tests
 # count (tests_scenarios.py): the scenario client's audit count (1), the savepoint pair (2)
 # and the auth layer, which since perf-request-once (2026-09-28) also loads the caller's
-# user and tenant (4). Then the read's own, which do not grow with the number of rows:
+# user and tenant, and since perf-tenant-in-token (2026-09-28, ADR 0063) is the signed bank
+# activated and one read of the session (2). Then the read's own, which do not grow with the number of rows:
 # - the request history: the page (1) and its
 #   total (1); the terms every request on the page adds (1) and removes (1), each read with
 #   its dimension, and their labels (1); and the waiting request's recount against today's
@@ -51,10 +52,10 @@ from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 #   (5 in this fixture: the footprint, the restricting dimensions, the obligations' scopes
 #   and their instruments, and the scopes of the bank's open cases); and the scope items
 #   every request on the page adds and removes, in one read (1, d89-scope-items-logic).
-FOOTPRINT_REQUESTS_QUERIES = 7 + 2 + 3 + 5 + 1
+FOOTPRINT_REQUESTS_QUERIES = 5 + 2 + 3 + 5 + 1
 # - the suggestion inbox: the page with each suggester (1) and its total (1). A suggestion
 #   carries its labels as typed, so no label order is read.
-SUGGESTIONS_QUERIES = 7 + 2
+SUGGESTIONS_QUERIES = 5 + 2
 
 REQUESTS = f"{V1}/tenant/footprint/requests"
 SUGGESTIONS = f"{V1}/vocab/tenant_tag/suggestions"

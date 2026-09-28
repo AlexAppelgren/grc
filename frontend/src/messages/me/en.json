@@ -117,5 +117,6 @@
   "admin.securityLog.event.token_used": "Token used",
   "admin.securityLog.event.token_revoked": "Token revoked",
   "admin.securityLog.event.credential_rate_limited": "Credential over its rate",
+  "admin.securityLog.event.access_token_refused": "Access token refused",
   "admin.securityLog.method.personal_token": "Personal access token"
 }

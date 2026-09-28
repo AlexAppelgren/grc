@@ -61,10 +61,10 @@ ALL_SERVICES = (
     "service_type:insurance_distribution",
 )
 # Queries per list read with a real session, measured 2026-09-19 and pinned so an N+1 shows
-# up as a number (playbook 10): the request's savepoint pair (2); the session (identity flag
-# on, the session row with the caller's tenant and locale, flag off with the tenant
-# activated in the same statement, the tenant role permissions with the latest step-up: 4
-# since perf-request-once, 2026-09-28 — a bank session does not read the platform roles at
+# up as a number (playbook 10): the request's savepoint pair (2); the session (the signed
+# tenant activated, then the session row with the caller's tenant and locale, the tenant
+# role permissions and the latest step-up in one read: 2 since perf-tenant-in-token,
+# 2026-09-28, ADR 0063 — a bank session does not read the platform roles at
 # all, hardening H13); the footprint and its restricting
 # dimensions (2); the count and the page (2); the page's titles and versions (2); the scope
 # (own terms, the obligations' instrument ids, the instruments' own regime pairs, the
@@ -76,9 +76,9 @@ ALL_SERVICES = (
 # with their term counts and labels (2); since c10-tag-filters-and-limits (2026-09-25,
 # VOC-08), the bank's own tags on the page with their labels (1); since c8-inventory-overlay
 # (2026-09-25, REG-01, REG-02), the bank's register overlay on the page (1).
-LIST_QUERIES = 2 + 4 + 2 + 2 + 2 + 5 + 2 + 5 + 2 + 1 + 1
+LIST_QUERIES = 2 + 2 + 2 + 2 + 2 + 5 + 2 + 5 + 2 + 1 + 1
 # Queries per card read, measured 2026-09-19 and pinned the same way: the savepoint pair (2);
-# the session with the caller's tenant and locale (4), as above; the obligation with its
+# the session with the caller's tenant and locale (2), as above; the obligation with its
 # instrument, level, duty type and verifier (1); its titles, its instrument's titles, its
 # versions, their summaries, its tags and the provisions it cites (6); the scope (5, as
 # above); one label query each for terms, tags, duty types and levels (4); the dimensions
@@ -86,7 +86,7 @@ LIST_QUERIES = 2 + 4 + 2 + 2 + 2 + 5 + 2 + 5 + 2 + 1 + 1
 # the relations, the titles of what they point at and the relation types' labels (3); the
 # bank's own tags on it with their labels (1, VOC-08); the bank's register overlay on it (1,
 # c8-inventory-overlay).
-DETAIL_QUERIES = 2 + 4 + 1 + 6 + 5 + 4 + 2 + 2 + 3 + 1 + 1
+DETAIL_QUERIES = 2 + 2 + 1 + 6 + 5 + 4 + 2 + 2 + 3 + 1 + 1
 # Who confirmed a version the library was seeded with: nobody, since nobody approved it.
 SEEDED = {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None}
 
@@ -1070,18 +1070,18 @@ class PrivateObligationIsolation(TransactionTestCase):
 
 
 # Queries per instrument list read, measured 2026-09-22 the same way as LIST_QUERIES: the
-# savepoint pair (2); the session with the caller's tenant and locale (4); the footprint
+# savepoint pair (2); the session with the caller's tenant and locale (2); the footprint
 # and its restricting dimensions (2); the count and the page with its titles (3); the
 # scope (instrument_scopes(): the regime pairs, the regime terms: 2); one label query each
 # for regimes, levels and jurisdictions (3); the dimensions with their term counts and
 # labels (2); the obligation counts of the page (1).
-INSTRUMENT_LIST_QUERIES = 2 + 4 + 2 + 3 + 2 + 3 + 2 + 1
+INSTRUMENT_LIST_QUERIES = 2 + 2 + 2 + 3 + 2 + 3 + 2 + 1
 # Queries per instrument card read, measured the same way: the savepoint pair (2); the
-# session with the caller's tenant and locale (4); the instrument with its level,
+# session with the caller's tenant and locale (2); the instrument with its level,
 # authority, jurisdiction, regime and verifier (1) and its titles (1); one label query
 # each for the regime, the level and the jurisdiction (3); the lineage, both directions,
 # and one label query for the relation types (3).
-INSTRUMENT_DETAIL_QUERIES = 2 + 4 + 1 + 1 + 3 + 3
+INSTRUMENT_DETAIL_QUERIES = 2 + 2 + 1 + 1 + 3 + 3
 
 
 def seed_instruments() -> tuple[Instrument, Instrument, Instrument]:
@@ -1385,10 +1385,10 @@ class PrivateInstrumentIsolation(TransactionTestCase):
 
 # Queries per provision tree read, measured 2026-09-22 and pinned so the tree's size
 # cannot grow the count: the savepoint pair (2); the session with the caller's tenant and
-# locale (4); the instrument (1), its provisions (1) and their kind labels (1); the
+# locale (2); the instrument (1), its provisions (1) and their kind labels (1); the
 # provision versions (1) and their texts (1); the citing links with their obligations (1)
 # and the cited obligations' titles (1).
-PROVISION_TREE_QUERIES = 2 + 4 + 1 + 1 + 1 + 1 + 1 + 1 + 1
+PROVISION_TREE_QUERIES = 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1
 
 
 def seed_provision_tree() -> tuple[Instrument, Provision, Provision, Provision]:
@@ -1588,9 +1588,9 @@ class AuthorityListTests(TestCase):
     def test_one_query_for_the_rows_and_one_for_their_labels(self) -> None:
         headers = sign_in(self.reader, tenant=self.tenant)
         # The savepoint pair (2), the session with the caller's locale and the tenant's
-        # default language (4), the authorities with their jurisdictions (1) and one query
+        # default language (2, ADR 0063), the authorities with their jurisdictions (1) and one query
         # for every jurisdiction label (1).
-        with self.assertNumQueries(2 + 4 + 1 + 1):
+        with self.assertNumQueries(2 + 2 + 1 + 1):
             self.assertEqual(self.get(headers).status_code, 200)
 
     def test_a_person_needs_library_read_and_a_key_needs_the_scope(self) -> None:

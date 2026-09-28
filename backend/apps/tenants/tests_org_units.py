@@ -37,8 +37,9 @@ UNITS = f"{V1}/tenant/org-units"
 # savepoint, then the page with its terms and heads, the legal entities' licences for the
 # whole page (one query, plus their services when any licence is held), every term's labels
 # at once and the count. The licences read replaces a `GET .../licences` per legal entity,
-# about thirteen queries each (perf-frontend-requests).
-LIST_QUERIES = 11
+# about thirteen queries each (perf-frontend-requests). Two fewer since perf-tenant-in-token
+# (2026-09-28, ADR 0063): the session is read in one statement under the bank its token signs.
+LIST_QUERIES = 9
 
 
 class OrganisationCase(ScenarioTestCase):

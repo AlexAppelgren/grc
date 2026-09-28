@@ -63,11 +63,11 @@ SOURCE = "https://www.fi.se/"
 PROVISION_SOURCE = "fffs-2017-2-9-6"
 # The whole answer a bank's own list costs, measured 2026-09-21 and pinned so an N+1 shows
 # up as a number: the scenario client's audit count (1), the request's savepoint pair (2),
-# the auth layer for a tenant session (4 since perf-request-once, 2026-09-28: the identity
-# flag on, the session row, the flag off with the tenant activated in the same statement,
-# the member's permissions with the latest step-up), and the read itself (2: how many
+# the auth layer for a tenant session (2 since perf-tenant-in-token, 2026-09-28, ADR 0063:
+# the signed tenant activated, then the session row with the member's permissions and the
+# latest step-up in one read), and the read itself (2: how many
 # proposals match, and the page).
-TENANT_LIST_QUERIES = 1 + 2 + 4 + 2
+TENANT_LIST_QUERIES = 1 + 2 + 2 + 2
 VERSION_ONE_SV = "Institutet bedömer kunden innan rådgivning. Bedömningen dokumenteras."
 PROPOSED_SV = "Institutet bedömer kunden innan rådgivning. Bedömningen dokumenteras varje år."
 LATER_SV = "Institutet bedömer kunden innan rådgivning. Bedömningen dokumenteras varje kvartal."

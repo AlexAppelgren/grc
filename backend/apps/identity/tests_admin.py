@@ -20,16 +20,18 @@ from apps.shared.adapters.mailer import MockMailer
 from apps.shared.testing import ScenarioTestCase, sign_in
 
 # Queries per members list, measured 2026-09-19 and pinned so an N+1 shows up as a number
-# (playbook 10): the request's savepoint pair (2), the auth layer (identity flag on, the
-# session row with its person and bank, flag off with the bank activated, membership
-# permissions with the latest step-up: 4), the count and the page (2), the roles and labels
+# (playbook 10): the request's savepoint pair (2), the auth layer (the signed bank activated,
+# then the session row with its person, bank, membership permissions and latest step-up in
+# one read: 2), the count and the page (2), the roles and labels
 # prefetches (2), the test's own activation (1). One fewer than measured at chunk 1's close:
 # a bank session no longer reads the platform role assignments at all (hardening H13).
 # One more from 2026-09-25 (c8-ten-teams-people, TEN-03): the page's team keys, one query
 # for the whole page, never one per member. Four fewer from 2026-09-28 (perf-request-once):
 # the flag-off and the activation are one statement, the step-up rides on the permissions,
-# and the label order takes the person and the bank the session read already loaded.
-MEMBERS_LIST_QUERIES = 12
+# and the label order takes the person and the bank the session read already loaded. Two
+# fewer from 2026-09-28 (perf-tenant-in-token, ADR 0063): the token signs the bank, so the
+# identity flag is never switched and the session, grants and step-up are one read.
+MEMBERS_LIST_QUERIES = 10
 
 
 class MembersAndInvitations(ScenarioTestCase):

@@ -70,8 +70,9 @@ from config.api import api
 V1 = "/api/v1"
 # Queries per queue read, re-measured 2026-09-22 after chunk4-T25 (D-62, ADR 0054): the
 # scenario client's audit count (1), the request's savepoint pair (2), the auth layer for a
-# platform session with no tenant (identity flag on, the session row, flag off, platform
-# roles, latest step-up: 5; the session row carries the caller's `User` row with their
+# platform session with no tenant (no bank asserted, then the session row with the platform
+# roles and the latest step-up in one read: 2 since perf-tenant-in-token, 2026-09-28, ADR
+# 0063; 5 before; the session row carries the caller's `User` row with their
 # locale since perf-request-once, 2026-09-28, which `require_reviewer` takes for the audit
 # actor's label and the reading language comes from, two reads fewer), how many proposals
 # match (1, since listProposals pages like every list)
@@ -79,7 +80,7 @@ V1 = "/api/v1"
 # library records the rows name cost two more, for the whole page at once rather than per
 # row, and this queue holds a vocabulary proposal, which names none
 # (apps/proposals/tests_reading.py pins that the cost does not grow with the row count).
-PROPOSAL_QUEUE_QUERIES = 1 + 2 + 5 + 1 + 1
+PROPOSAL_QUEUE_QUERIES = 1 + 2 + 2 + 1 + 1
 # The change an agent's watch run linked the proposal to (chunk 5 makes these rows; the
 # column is a plain id until then), and the summary version 1 carries, so a scenario can
 # prove that applying version 2 leaves version 1 exactly as it was written.

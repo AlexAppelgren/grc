@@ -562,7 +562,12 @@ class SharedScenarioTests(ScenarioTestCase):
                     self.assertEqual(Proposal.objects.count(), before)
             # Without the tone the same proposal is made, so the refusal was the tone's.
             proposal = {"kind": "vocabulary_create", "title": f"Add Client money ({who})", "payload": flag}
-            made = self.client.post(f"{V1}/proposals", proposal, content_type="application/json", **headers)
+            if who == "editor":
+                # The audit count is read before the request in the zone the editor's own
+                # session runs in, which is no bank (ADR 0063), not the bank the refused
+                # requests left the test in.
+                tenancy.clear_tenant()
+            made =self.client.post(f"{V1}/proposals", proposal, content_type="application/json", **headers)
             self.assertEqual(made.status_code, 201, made.content)
 
         # No response carries a tone, a colour, a pill, a badge or a phrase, and every
