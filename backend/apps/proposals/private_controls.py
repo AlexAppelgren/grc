@@ -38,7 +38,7 @@ from apps.proposals.schemas import ProposalControlPayload
 from apps.register.links import ITEM_CREATED, LINK_ADDED
 from apps.register.logic import ensure_register_entry
 from apps.register.models import InternalLink
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.errors import ProblemError
 from apps.taxonomy.models import LinkKind
 from apps.tenants.models import InternalItem
@@ -70,6 +70,7 @@ def held(tenant_id: uuid.UUID, payload: ProposalControlPayload) -> bool:
     ).exists()
 
 
+@batched()
 def apply_control(proposal: Proposal, payload: ProposalControlPayload, *, actor: Actor, reviewer_id: uuid.UUID, step_up: uuid.UUID | None) -> None:
     """Create or reuse the control and link it to the bank's own obligation, as the module
     docstring says. The caller holds the approval's transaction and stands in the bank's zone."""

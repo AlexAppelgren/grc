@@ -44,7 +44,7 @@ from apps.agents.models import AgentRun, ResearchRequest, ResearchRequestKind, R
 from apps.agents.screen import screen_all
 from apps.identity.models import User
 from apps.shared import ai, outbox
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor, batched, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import OutboxEvent, Tenant
 from apps.taxonomy import footprint_logic
@@ -79,6 +79,7 @@ def _waiting_because(tenant: Tenant, tenant_agent: TenantAgent | None) -> str | 
     return None
 
 
+@batched()
 def open_research(event: OutboxEvent) -> None:
     """Open the research of the scope item `event` names, in the bank's zone, or record why
     it waits."""

@@ -44,6 +44,14 @@ Rules (each has a suppression id for the inline form `# compliance: <id> <reason
                   a helper of the same module whose return is a dict. `record()`'s own
                   `summary=` is the row's sentence about the actor and the record, and is
                   exempt. Suppress on the key's line.
+  audit-door      `audit_event` and `outbox_event` are written by `record()` alone
+                  (apps/shared/audit.py, AUD-01): anywhere else, building an `AuditEvent` or
+                  `OutboxEvent`, `.objects.create`, `bulk_create`, `get_or_create` or
+                  `update_or_create` on either, or SQL that inserts into either table, is
+                  refused. Migrations and tests are exempt. Since ADR 0063 the door itself
+                  sends raw SQL, so the rule reads SQL text as well as the ORM, in any letter
+                  case, through quotes and with the schema named. This rule takes no
+                  suppression.
 
 Suppression: append `# compliance: <id> <reason>` to the offending line, or the line that
 opens the offending statement; the reason must be non-empty. A suppression with no reason
@@ -56,7 +64,9 @@ to fail 2026-09-19 by adding `SET LOCAL cw.maintenance = 'on'` to apps/library/l
 `with tenancy.library_door("proposal"):` to apps/watch/curation.py (exit 1, one finding
 named), then restored. record-content proven to fail 2026-09-25 by adding
 `after={"body": "x"}` to the record() of apps/taxonomy/tenant_lists_logic.py's restore()
-(exit 1, one finding named), then restored.
+(exit 1, one finding named), then restored. audit-door proven to fail 2026-09-28 by adding
+`AuditEvent.objects.create(action="x")` to apps/cases/logic.py (exit 1, one finding named),
+then restored.
 """
 
 from __future__ import annotations
@@ -105,6 +115,12 @@ LIBRARY_DOOR_HOMES = frozenset(
     }
 )
 
+# Only record() writes the audit trail and its outbox (AUD-01, ADR 0063).
+AUDIT_DOOR = "apps/shared/audit.py"
+AUDIT_MODELS = {"AuditEvent", "OutboxEvent"}
+AUDIT_WRITES = {"create", "bulk_create", "get_or_create", "update_or_create"}
+AUDIT_SQL = re.compile(r'insert\s+into\s+(?:"?public"?\s*\.\s*)?"?(audit_event|outbox_event)\b', re.IGNORECASE)
+
 
 @dataclass(frozen=True)
 class Finding:
@@ -131,6 +147,7 @@ class Checker:
         self.is_test = path.name.startswith("tests_") or path.name == "testing.py"
         self.may_name_hatch = rel == HATCH_HOME or "/migrations/" in rel or path.name.startswith("tests_")
         self.may_name_door = rel in LIBRARY_DOOR_HOMES or "/migrations/" in rel or path.name.startswith("tests_")
+        self.may_write_audit = rel == AUDIT_DOOR or "/migrations/" in rel or path.name.startswith("tests_")
         self.functions = {
             node.name: node for node in self.tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
         }
@@ -170,7 +187,29 @@ class Checker:
             self.check_maintenance_hatch()
         if not self.may_name_door:
             self.check_library_door()
+        if not self.may_write_audit:
+            self.check_audit_door()
         return self.findings
+
+    def check_audit_door(self) -> None:
+        """Appended directly: no suppression."""
+        lines: set[int] = set()
+        for node in ast.walk(self.tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if isinstance(func, ast.Name) and func.id in AUDIT_MODELS:
+                lines.add(node.lineno)
+            elif isinstance(func, ast.Attribute) and func.attr in AUDIT_WRITES and isinstance(func.value, ast.Attribute):
+                owner = func.value.value
+                name = owner.attr if isinstance(owner, ast.Attribute) else owner.id if isinstance(owner, ast.Name) else None
+                if func.value.attr == "objects" and name in AUDIT_MODELS:
+                    lines.add(node.lineno)
+        lines.update(number for number, line in enumerate(self.lines, start=1) if AUDIT_SQL.search(line))
+        for number in sorted(lines):
+            self.findings.append(
+                Finding(self.path, number, "audit-door", "the audit and outbox tables are written through record() alone (apps/shared/audit.py)")
+            )
 
     def check_maintenance_hatch(self) -> None:
         for number, line in enumerate(self.lines, start=1):

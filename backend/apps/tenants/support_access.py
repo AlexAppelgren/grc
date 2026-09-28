@@ -31,7 +31,7 @@ from apps.identity.models import Membership, User
 from apps.identity.schemas import SessionTokens
 from apps.shared import permissions as perms
 from apps.shared import tenancy
-from apps.shared.audit import Actor, ActorType, record
+from apps.shared.audit import Actor, ActorType, batched, record
 from apps.shared.authentication import Principal
 from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, Tenant
@@ -224,6 +224,7 @@ def live_grant(*, tenant_id: uuid.UUID, grant_id: uuid.UUID) -> SupportAccess | 
     return grant
 
 
+@batched()
 def enter(
     *, principal: Principal, grant_id: uuid.UUID, step_up_assertion_id: uuid.UUID, request: HttpRequest, response: HttpResponse
 ) -> SessionTokens:

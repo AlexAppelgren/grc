@@ -185,7 +185,7 @@ def _store(
     stored = []
     written: list[TenantObligation | TenantObligationScope | SoaUnit] = []
     applied: list[tuple[TenantObligation, TenantObligationScope | None]] = []
-    with batched():  # one audit INSERT and one outbox INSERT for every answer of the call
+    with batched():  # one statement of audit and outbox rows for every answer of the call
         missing = obligation_ids - entries.keys()
         wanted = {(answer.obligation_id, answer.org_unit_id) for answer in answers if answer.unit_id is None and answer.org_unit_id is not None}
         status = None  # the bank's default compliance status, read once if anything is created

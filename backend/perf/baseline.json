@@ -45,19 +45,19 @@
     "queries": 26
   },
   "approveFootprintRequest": {
-    "medianMs": 49.4,
-    "p95Ms": 55.7,
-    "queries": 34
+    "medianMs": 42.9,
+    "p95Ms": 53.7,
+    "queries": 27
   },
   "approvePrivateProposal": {
-    "medianMs": 28.4,
-    "p95Ms": 33.5,
-    "queries": 35
+    "medianMs": 26.7,
+    "p95Ms": 33.3,
+    "queries": 28
   },
   "approveProposal": {
-    "medianMs": 66.3,
-    "p95Ms": 74.9,
-    "queries": 62
+    "medianMs": 63.9,
+    "p95Ms": 70.8,
+    "queries": 54
   },
   "approveRiskAcceptance": {
     "medianMs": 52.1,
@@ -110,9 +110,9 @@
     "queries": 14
   },
   "consoleReissueEnrolment": {
-    "medianMs": 34.0,
-    "p95Ms": 57.2,
-    "queries": 40
+    "medianMs": 36.5,
+    "p95Ms": 40.0,
+    "queries": 29
   },
   "createAgentAccessKey": {
     "medianMs": 12.9,
@@ -140,9 +140,9 @@
     "queries": 39
   },
   "createConsoleTenant": {
-    "medianMs": 83.9,
-    "p95Ms": 96.4,
-    "queries": 74
+    "medianMs": 83.8,
+    "p95Ms": 102.8,
+    "queries": 63
   },
   "createEvalQuestion": {
     "medianMs": 14.8,
@@ -190,14 +190,14 @@
     "queries": 27
   },
   "createResearchRequest": {
-    "medianMs": 34.4,
-    "p95Ms": 37.3,
-    "queries": 40
+    "medianMs": 31.4,
+    "p95Ms": 36.1,
+    "queries": 29
   },
   "createRetagRequest": {
-    "medianMs": 25.1,
-    "p95Ms": 29.9,
-    "queries": 35
+    "medianMs": 21.8,
+    "p95Ms": 29.0,
+    "queries": 22
   },
   "createRole": {
     "medianMs": 21.4,
@@ -280,9 +280,9 @@
     "queries": 15
   },
   "enterConsoleSupportAccess": {
-    "medianMs": 23.4,
-    "p95Ms": 28.0,
-    "queries": 35
+    "medianMs": 21.3,
+    "p95Ms": 25.4,
+    "queries": 30
   },
   "findSimilar": {
     "medianMs": 45.5,
@@ -975,9 +975,9 @@
     "queries": 21
   },
   "reissueEnrolment": {
-    "medianMs": 34.9,
-    "p95Ms": 43.0,
-    "queries": 33
+    "medianMs": 33.2,
+    "p95Ms": 41.1,
+    "queries": 26
   },
   "rejectFootprintRequest": {
     "medianMs": 47.8,
@@ -1020,9 +1020,9 @@
     "queries": 12
   },
   "removeMember": {
-    "medianMs": 76.1,
-    "p95Ms": 95.1,
-    "queries": 72
+    "medianMs": 63.4,
+    "p95Ms": 71.6,
+    "queries": 53
   },
   "removeMyPasskey": {
     "medianMs": 11.9,
@@ -1180,9 +1180,9 @@
     "queries": 13
   },
   "runTenantAgentNow": {
-    "medianMs": 29.1,
-    "p95Ms": 35.0,
-    "queries": 32
+    "medianMs": 26.2,
+    "p95Ms": 28.6,
+    "queries": 25
   },
   "saveAssessment": {
     "medianMs": 36.0,

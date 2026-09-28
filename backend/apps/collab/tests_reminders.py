@@ -254,7 +254,7 @@ class QueryCount(ReminderTestCase):
         five = self.queries(1, 2, 3, 7, 30)
         self.assertEqual(one, three)
         self.assertEqual(one, five)
-        self.assertEqual(one, 34)
+        self.assertEqual(one, 32)
 
     def test_a_day_with_nothing_due_costs_seven_queries(self) -> None:
         with CaptureQueriesContext(connection) as captured:

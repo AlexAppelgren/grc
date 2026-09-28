@@ -10,8 +10,11 @@ so a conscious fix states its intent.
 
 `batched()` is the same door for a write of many subjects at once, such as a pasted
 Statement of Applicability: every `record()` inside the block is held and, when the block
-ends, its rows go in as one audit INSERT and one outbox INSERT, in the same transaction,
-under the same triggers, built by the same code as one call's rows.
+ends, its rows go in together, in the same transaction, under the same triggers, built by
+the same code as one call's rows.
+
+The audit rows and their outbox rows go in as one statement, and a savepoint is taken only
+around a write that crosses the zones (ADR 0063).
 """
 
 from __future__ import annotations
@@ -19,13 +22,14 @@ from __future__ import annotations
 import enum
 import itertools
 import uuid
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
 from django.db import connection, models, transaction
+from django.db.models.sql import InsertQuery
 
 from apps.shared import tenancy
 from apps.shared.authentication import Principal
@@ -103,9 +107,8 @@ class NotInTransaction(RuntimeError):
 
 @dataclass(frozen=True)
 class _Pending:
-    """One `record()` call's values, and the zone its rows belong to."""
+    """One `record()` call's values."""
 
-    crosses_zones: bool
     fields: dict[str, Any]
     topic: str
     payload: dict[str, Any] | None
@@ -117,8 +120,11 @@ _batch: ContextVar[list[_Pending] | None] = ContextVar("audit_batch", default=No
 
 @contextmanager
 def batched() -> Iterator[None]:
-    """Hold every `record()` of the block and write them all when it ends: one audit INSERT
-    and one outbox INSERT for the lot, in the caller's transaction, in the order recorded.
+    """Hold every `record()` of the block and write them all when it ends: one statement for
+    the lot (two when some cross the zones), in the caller's transaction, in the order
+    recorded. The zone is read when the block ends, so a block that moves between zones
+    writes each tenant's rows in that tenant's zone only if it ends there: keep a block
+    inside one bank, as the row-level security refuses anything else.
     A block that raises writes nothing, and its transaction rolls back with the change. A
     `record()` inside the block returns None, since its row does not exist yet. A block
     inside another joins it."""
@@ -167,10 +173,7 @@ def record(
             "record() must run inside the transaction of the write it records; "
             "requests run under ATOMIC_REQUESTS, tasks use @tenant_task or transaction.atomic()."
         )
-    # The zone the row belongs to, as the policies read it: the GUC, not the context
-    # variable, since that is what a policy sees.
     pending = _Pending(
-        crosses_zones=tenant_id is None and tenancy.database_tenant_id() is not None,
         fields={
             "tenant_id": tenant_id,
             "actor_type": actor.kind.value,
@@ -197,17 +200,27 @@ def record(
 
 
 def _write(pending: list[_Pending]) -> list[Any]:
-    """The audit and outbox rows of `pending`, one INSERT each per zone. The zone block comes
-    before the atomic one, so a failed insert rolls back to its savepoint before the tenant
-    goes back on and the caller sees the error the insert raised. The ids are sorted so that
-    rows stamped in the same microsecond still read back in the order recorded, as the
-    tables order by (created, id)."""
+    """The audit and outbox rows of `pending`, one statement per run of rows in one zone.
+
+    A run in the session's own zone is one statement and nothing else: if it fails, the
+    database aborts the caller's transaction and the change it records goes with it, so no
+    savepoint is wanted, and none is taken so that a caller who swallowed the error could
+    not commit the change without its rows (ADR 0063). A run that crosses the zones, a row
+    of no tenant written from a bank's session, goes in inside `platform_zone()` and a
+    savepoint: the zone block comes before the atomic one, so a failed insert rolls back to
+    its savepoint before the tenant goes back on and the caller sees the error the insert
+    raised. The zone is the GUC, not the context variable, since that is what a policy
+    sees, and it is read only when a row of no tenant is written.
+
+    The ids are sorted so that rows stamped in the same microsecond still read back in the
+    order recorded, as the tables order by (created, id)."""
     from apps.shared.models import AuditEvent, OutboxEvent
 
     if pending and not connection.in_atomic_block:
         raise NotInTransaction("record() must write in the transaction of the change it records.")
+    in_bank = any(row.fields["tenant_id"] is None for row in pending) and tenancy.database_tenant_id() is not None
     events: list[Any] = []
-    for crosses_zones, group in itertools.groupby(pending, key=lambda row: row.crosses_zones):
+    for crosses_zones, group in itertools.groupby(pending, key=lambda row: in_bank and row.fields["tenant_id"] is None):
         rows = list(group)
         ids = sorted(uuid.uuid4() for _ in rows)
         written = [AuditEvent(id=event_id, **row.fields) for event_id, row in zip(ids, rows, strict=True)]
@@ -222,8 +235,27 @@ def _write(pending: list[_Pending]) -> list[Any]:
             )
             for outbox_id, event, row in zip(sorted(uuid.uuid4() for _ in rows), written, rows, strict=True)
         ]
-        with tenancy.platform_zone() if crosses_zones else nullcontext(), transaction.atomic():
-            AuditEvent.objects.bulk_create(written)
-            OutboxEvent.objects.bulk_create(outbox)
+        with tenancy.platform_zone() if crosses_zones else nullcontext(), transaction.atomic() if crosses_zones else nullcontext():
+            _insert_both(written, outbox)
         events.extend(written)
     return events
+
+
+def _insert_both(events: Sequence[models.Model], outbox: Sequence[models.Model]) -> None:
+    """The audit rows and their outbox rows as one statement: the audit INSERT as a
+    data-modifying WITH, the outbox INSERT as its main statement. Each INSERT is the one
+    `bulk_create` would send, built by Django's own compiler from the same objects, so every
+    column, default and timestamp is what it was; the foreign key from outbox to audit is
+    checked when the statement ends, when both sets of rows exist."""
+    statements = []
+    for model_rows in (events, outbox):
+        query = InsertQuery(type(model_rows[0]))
+        query.insert_values(type(model_rows[0])._meta.concrete_fields, list(model_rows))
+        [statement] = query.get_compiler(connection=connection).as_sql()
+        statements.append(statement)
+    (audit_sql, audit_params), (outbox_sql, outbox_params) = statements
+    with connection.cursor() as cursor:
+        cursor.execute(f"WITH audit_rows AS ({audit_sql}) {outbox_sql}", (*audit_params, *outbox_params))
+    for row in (*events, *outbox):
+        row._state.adding = False
+        row._state.db = connection.alias
