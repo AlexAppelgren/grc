@@ -430,9 +430,9 @@
     "queries": 11
   },
   "getRegisterEntry": {
-    "medianMs": 21.2,
-    "p95Ms": 24.2,
-    "queries": 16
+    "medianMs": 47.5,
+    "p95Ms": 55.2,
+    "queries": 17
   },
   "getResearchRequest": {
     "medianMs": 9.4,
@@ -710,9 +710,9 @@
     "queries": 32
   },
   "listOrgUnits": {
-    "medianMs": 13.4,
-    "p95Ms": 15.7,
-    "queries": 13
+    "medianMs": 42.8,
+    "p95Ms": 49.5,
+    "queries": 15
   },
   "listPeople": {
     "medianMs": 12.6,
@@ -810,9 +810,9 @@
     "queries": 13
   },
   "listTenantAgents": {
-    "medianMs": 9.4,
-    "p95Ms": 12.7,
-    "queries": 11
+    "medianMs": 37.7,
+    "p95Ms": 40.9,
+    "queries": 12
   },
   "listTenantProposals": {
     "medianMs": 8.9,
