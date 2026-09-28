@@ -27,6 +27,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
+from apps.agents import runs_read
 from apps.agents.logic import definition_by_key, live_term_keys, term_keys
 from apps.agents.models import AgentCadence, TenantAgent, TenantAgentBudget
 from apps.agents.platform import refuse_platform_agent
@@ -100,10 +101,16 @@ def _out(agent: TenantAgent) -> dict[str, Any]:
 
 
 def list_tenant_agents(*, tenant: Tenant, limit: int, offset: int) -> dict[str, Any]:
-    """`GET /agents`: the bank's own agents by definition key. A platform definition can
-    never carry a `tenant_agent` row (agents 0005), so bleqq's agents are never here."""
+    """`GET /agents`: the bank's own agents by definition key, each with its latest runs read
+    for the whole page in one query. A platform definition can never carry a `tenant_agent`
+    row (agents 0005), so bleqq's agents are never here."""
     rows = TenantAgent.objects.filter(tenant=tenant).select_related("agent", "paused_by").order_by("agent__key")
-    return {"items": [_out(row) for row in rows[offset : offset + limit]], "total": rows.count()}
+    page = list(rows[offset : offset + limit])
+    recent = runs_read.recent_runs([row.id for row in page], per_agent=settings.AGENT_RECENT_RUNS)
+    return {
+        "items": [{**_out(row), "recent_runs": recent.get(row.id, [])} for row in page],
+        "total": rows.count(),
+    }
 
 
 # ---------------------------------------------------------------------------------------

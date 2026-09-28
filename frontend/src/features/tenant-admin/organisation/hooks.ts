@@ -9,6 +9,7 @@ import type {
   LicenceBody,
   LicencePatch,
   OrgUnit,
+  OrgUnitRow,
   OrgUnitBody,
   OrgUnitPatch,
   PersonRef,
@@ -26,17 +27,13 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 
 export const orgKeys = {
   units: ['tenant', 'org-units'] as const,
-  licences: (unitId: string) => ['tenant', 'org-units', unitId, 'licences'] as const,
   products: ['tenant', 'products'] as const,
   people: ['reference', 'people'] as const,
 };
 
-export function useOrgUnits(): UseQueryResult<OrgUnit[]> {
+/** Every unit, each legal entity with its licences: one read for the whole screen. */
+export function useOrgUnits(): UseQueryResult<OrgUnitRow[]> {
   return useQuery({ queryKey: orgKeys.units, queryFn: org.listOrgUnits });
-}
-
-export function useLicences(unitId: string): UseQueryResult<Licence[]> {
-  return useQuery({ queryKey: orgKeys.licences(unitId), queryFn: () => org.listLicences(unitId) });
 }
 
 export function useProducts(): UseQueryResult<Product[]> {
@@ -61,11 +58,11 @@ export function useUpdateOrgUnit(): UseMutationResult<OrgUnit, unknown, Versione
 }
 
 export function useCreateLicence(unitId: string): UseMutationResult<Licence, unknown, LicenceBody> {
-  return useWrite((body) => org.createLicence(unitId, body), () => orgKeys.licences(unitId));
+  return useWrite((body) => org.createLicence(unitId, body), () => orgKeys.units);
 }
 
-export function useUpdateLicence(unitId: string): UseMutationResult<Licence, unknown, VersionedPatch<LicencePatch>> {
-  return useWrite(({ id, body, version }) => org.updateLicence(id, body, version), () => orgKeys.licences(unitId));
+export function useUpdateLicence(): UseMutationResult<Licence, unknown, VersionedPatch<LicencePatch>> {
+  return useWrite(({ id, body, version }) => org.updateLicence(id, body, version), () => orgKeys.units);
 }
 
 export function useCreateProduct(): UseMutationResult<Product, unknown, ProductBody> {

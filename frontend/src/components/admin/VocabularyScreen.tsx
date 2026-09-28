@@ -727,7 +727,10 @@ export function VocabularyScreen({ list, surface = 'tenant' }: { list: string; s
   const permissions = usePermissions() ?? [];
   const canWrite = !isLibrary || unlocks(LIBRARY_PROPOSERS, permissions);
   const decidesSuggestions = lists.isSuccess && !isLibrary && permissions.includes(VOCAB_MANAGE);
-  const suggestions = useVocabularySuggestions(list, decidesSuggestions);
+  // Read beside the lists, never after them: a shared library list answers an
+  // empty inbox, so the read needs only the permission, and the tab shows once
+  // the list is known to be the bank's own.
+  const suggestions = useVocabularySuggestions(list, !inConsole && permissions.includes(VOCAB_MANAGE));
   const libraryLede = inConsole ? t('console.vocabularies.lede') : t('admin.vocabularies.libraryLede');
 
   const [editing, setEditing] = useState<string | null>(null);

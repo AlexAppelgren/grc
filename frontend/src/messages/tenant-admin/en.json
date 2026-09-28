@@ -286,7 +286,6 @@
   "admin.org.entities.inactiveOption": "Inactive, kept in the history",
   "admin.org.licences.title": "Licences and certificates",
   "admin.org.licences.lede": "What each legal entity is licensed or certified for. A certificate's expiry and next audit show on the roadmap as your own deadlines.",
-  "admin.org.licences.errorTitle": "Could not load the licences and certificates",
   "admin.org.licences.none": "No licences or certificates recorded.",
   "admin.org.licences.kind.licence": "Licence",
   "admin.org.licences.kind.certificate": "Certificate",

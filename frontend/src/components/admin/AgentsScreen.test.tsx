@@ -1,8 +1,9 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AgentsScreen } from '@/components/admin/AgentsScreen';
 import { watchFacts } from '@/components/admin/PlatformWatchPanel';
+import { RESEARCH_POLL_MS } from '@/components/admin/ResearchRequestList';
 import { requestBody } from '@/components/admin/ResearchRequestPanel';
 import { createT } from '@/shared/i18n';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
@@ -98,9 +99,8 @@ function server(world: Partial<World> = {}, extra: (sent: Sent) => Answer | unde
     if (answer !== undefined) return answer;
     if (sent.method !== 'get') return { status: 500 };
     if (sent.path === PLATFORM) return { status: 200, data: { items: [watchItem], total: 1 } };
-    if (sent.path === AGENTS) return { status: 200, data: { items: w.agents, total: w.agents.length } };
+    if (sent.path === AGENTS) return { status: 200, data: { items: w.agents.map((agent) => ({ ...agent, recentRuns: w.runs })), total: w.agents.length } };
     if (sent.path === BUDGET) return { status: 200, data: w.budget };
-    if (sent.path === RUNS) return { status: 200, data: { items: w.runs, total: w.runs.length } };
     if (sent.path === REQUESTS) return { status: 200, data: { items: w.requests, total: w.requests.length } };
     if (sent.path === `${V1}/tenant`) return { status: 200, data: tenant(w.aiEnabled) };
     if (sent.path === `${V1}/tenant/footprint`) return { status: 200, data: footprint };
@@ -207,6 +207,13 @@ describe('admin agents screen', () => {
     expect(within(card()).getByText('Sweden')).toBeInTheDocument();
   });
 
+  it("reads each agent's recent runs off the list and never once per agent", async () => {
+    const sent = server({ agents: [ownAgent(), ownAgent({ id: 'ta2', agent: 'scope-researcher' })], runs: [run('r1')] });
+    open(ADMIN);
+    await waitFor(() => expect(document.querySelectorAll('[data-run-id="r1"]')).toHaveLength(2));
+    expect(sent.some((s) => s.method === 'get' && s.path === RUNS)).toBe(false);
+  });
+
   it('runs an agent now and says where the run is', async () => {
     const sent = server({ agents: [ownAgent()] }, (s) => (s.method === 'post' && s.path === `${AGENTS}/ta1/runs` ? { status: 200, data: run('r9', { status: 'running', finishedAt: null, cost: null }) } : undefined));
     open(ADMIN);
@@ -307,6 +314,7 @@ describe('admin agents screen', () => {
 
 describe('research requests', () => {
   beforeEach(() => resetApiForTests());
+  afterEach(() => vi.useRealTimers());
 
   it('sends only the chosen kind’s own field', () => {
     const draft = { kind: 'check_url' as const, tenantAgentId: 'ta1', sourceId: 's1', url: ' https://fi.se/news ', topic: 'DORA' };
@@ -332,14 +340,16 @@ describe('research requests', () => {
     expect(await within(panel).findByText(sentence)).toBeInTheDocument();
   });
 
-  it('asks for a topic, and re-reads an open request from its status endpoint until it settles', async () => {
+  it('asks for a topic, and re-reads the list, never each request, until the open one settles', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     const queued = { id: 'rq1', kind: 'research_topic', tenantAgentId: 'ta1', topic: 'DORA subcontracting', sourceId: null, url: null, status: 'queued', requestedBy: { id: 'u1', name: 'Erik Holm' }, createdAt: '2026-09-25T07:00:00Z', completedAt: null };
     let reads = 0;
-    const sent = server({ agents: [ownAgent()], requests: [queued] }, (s) => {
+    const sent = server({ agents: [ownAgent()] }, (s) => {
       if (s.method === 'post' && s.path === REQUESTS) return { status: 201, data: queued };
-      if (s.path === `${REQUESTS}/rq1`) {
+      if (s.method === 'get' && s.path === REQUESTS) {
         reads += 1;
-        return { status: 200, data: { ...queued, status: 'done', completedAt: '2026-09-25T07:10:00Z' } };
+        const request = reads < 3 ? queued : { ...queued, status: 'done', completedAt: '2026-09-25T07:10:00Z' };
+        return { status: 200, data: { items: reads === 1 ? [] : [request], total: reads === 1 ? 0 : 1 } };
       }
       return undefined;
     });
@@ -352,8 +362,15 @@ describe('research requests', () => {
     expect(sent.filter((s) => s.method === 'post' && s.path !== REFRESH_PATH).map((s) => s.body)).toEqual([{ kind: 'research_topic', tenantAgentId: 'ta1', topic: 'DORA subcontracting' }]);
 
     const row = await found('[data-research-request="rq1"]');
+    expect(row).toHaveAttribute('data-request-status', 'queued');
+    await vi.advanceTimersByTimeAsync(RESEARCH_POLL_MS);
     await waitFor(() => expect(row).toHaveAttribute('data-request-status', 'done'));
     expect(within(row).getByText('Done')).toHaveAttribute('data-pill', 'positive');
-    expect(reads).toBeGreaterThan(0);
+    // Settled: the list stops re-reading, and no request was ever read on its own.
+    const settledAt = reads;
+    await vi.advanceTimersByTimeAsync(RESEARCH_POLL_MS * 2);
+    expect(reads).toBe(settledAt);
+    expect(sent.some((s) => s.path === `${REQUESTS}/rq1`)).toBe(false);
   });
+
 });

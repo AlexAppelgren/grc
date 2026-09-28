@@ -109,10 +109,6 @@ export async function listAssessments(obligationId: string, page: RegisterPageQu
   return (await api.get<RegisterAssessmentPage>(`${obligation(obligationId)}/assessments`, { params: page })).data;
 }
 
-export async function getInterpretation(obligationId: string): Promise<RegisterInterpretation> {
-  return (await api.get<RegisterInterpretation>(`${obligation(obligationId)}/interpretation`)).data;
-}
-
 export async function saveInterpretation(obligationId: string, body: RegisterInterpretationBody, version: number): Promise<RegisterInterpretation> {
   return (await api.put<RegisterInterpretation>(`${obligation(obligationId)}/interpretation`, body, { version })).data;
 }

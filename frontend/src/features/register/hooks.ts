@@ -60,7 +60,6 @@ export const registerKeys = {
   entry: (obligationId: string) => [...registerKeys.obligation(obligationId), 'entry'] as const,
   gaps: (obligationId: string, page: RegisterPageQuery) => [...registerKeys.obligation(obligationId), 'gaps', page] as const,
   assessments: (obligationId: string, page: RegisterPageQuery) => [...registerKeys.obligation(obligationId), 'assessments', page] as const,
-  interpretation: (obligationId: string) => [...registerKeys.obligation(obligationId), 'interpretation'] as const,
   links: (obligationId: string, page: RegisterPageQuery) => [...registerKeys.obligation(obligationId), 'links', page] as const,
   units: (obligationId: string, entity: string | undefined, page: RegisterPageQuery) =>
     [...registerKeys.obligation(obligationId), 'units', entity ?? null, page] as const,
@@ -100,7 +99,8 @@ export function useAssessments(obligationId: string, page: RegisterPageQuery = {
 }
 
 export function useInterpretation(obligationId: string): UseQueryResult<RegisterInterpretation> {
-  return useQuery({ queryKey: registerKeys.interpretation(obligationId), queryFn: () => register.getInterpretation(obligationId) });
+  // Read off the register entry, which carries it, so the page asks once for both.
+  return useQuery({ queryKey: registerKeys.entry(obligationId), queryFn: () => register.getRegisterEntry(obligationId), select: (entry) => entry.interpretation });
 }
 
 export function useInternalLinks(obligationId: string, page: RegisterPageQuery = {}): UseQueryResult<RegisterInternalLinkPage> {

@@ -8,18 +8,19 @@ import { Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { presentResearchRequest } from '@/features/agents/agents-presentation';
-import { getResearchRequest, listResearchRequests } from '@/features/agents/api';
+import { listResearchRequests } from '@/features/agents/api';
 import type { ResearchRequest, ResearchRequestState, TenantAgent } from '@/features/agents/types';
 import { useFormatContext } from '@/features/identity/hooks';
 import type { MessageKey } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { formatDateTime } from '@/shared/utils/format';
 
-// Our research requests (AGT-05), newest first. A request still queued or
-// running is re-read from its own status endpoint until it settles; the
-// client never works a status out for itself.
+// Our research requests (AGT-05), newest first. While any of them is still
+// queued or running the list is re-read as a whole, one request however many
+// are open, until every one has settled; the client never works a status out
+// for itself.
 
-/** How often an open request is re-read, in milliseconds (`NEXT_PUBLIC_RESEARCH_POLL_MS`). */
+/** How often the list is re-read while a request is open, in milliseconds (`NEXT_PUBLIC_RESEARCH_POLL_MS`). */
 export const RESEARCH_POLL_MS = Number(process.env.NEXT_PUBLIC_RESEARCH_POLL_MS ?? 5000);
 
 const SHOWN = 20;
@@ -37,16 +38,9 @@ const KIND_KEY = {
   scope_item: 'adminAgents.research.kind.scopeItem',
 } as const satisfies Record<ResearchRequest['kind'], MessageKey>;
 
-function RequestRow({ listed, agents }: { listed: ResearchRequest; agents: readonly TenantAgent[] }) {
+function RequestRow({ request, agents }: { request: ResearchRequest; agents: readonly TenantAgent[] }) {
   const t = useT();
   const ctx = useFormatContext();
-  const polled = useQuery({
-    queryKey: bankAgentKeys.request(listed.id),
-    queryFn: () => getResearchRequest(listed.id),
-    enabled: isOpen(listed.status),
-    refetchInterval: (query) => (query.state.data === undefined || isOpen(query.state.data.status) ? RESEARCH_POLL_MS : false),
-  });
-  const request = polled.data ?? listed;
   const agent = agents.find((a) => a.id === request.tenantAgentId);
   const target = request.topic ?? request.url;
   const facts = [
@@ -68,7 +62,11 @@ function RequestRow({ listed, agents }: { listed: ResearchRequest; agents: reado
 
 export function ResearchRequestList({ agents }: { agents: readonly TenantAgent[] }) {
   const t = useT();
-  const requests = useQuery({ queryKey: bankAgentKeys.requests, queryFn: () => listResearchRequests({ limit: SHOWN, offset: 0 }) });
+  const requests = useQuery({
+    queryKey: bankAgentKeys.requests,
+    queryFn: () => listResearchRequests({ limit: SHOWN, offset: 0 }),
+    refetchInterval: (query) => ((query.state.data?.items ?? []).some((request) => isOpen(request.status)) ? RESEARCH_POLL_MS : false),
+  });
 
   return (
     <Panel title={t('adminAgents.research.listTitle')} data-research-list="">
@@ -81,7 +79,7 @@ export function ResearchRequestList({ agents }: { agents: readonly TenantAgent[]
       ) : (
         <Rows>
           {requests.data.items.map((request) => (
-            <RequestRow key={request.id} listed={request} agents={agents} />
+            <RequestRow key={request.id} request={request} agents={agents} />
           ))}
         </Rows>
       )}

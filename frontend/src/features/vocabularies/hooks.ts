@@ -29,12 +29,18 @@ export const vocabularyKeys = {
   suggestions: (list: string) => ['vocab', list, 'suggestions'] as const,
 };
 
+/**
+ * How long a list read stays fresh: vocabularies change rarely, and every write
+ * here invalidates its list, so a return to a screen does not read them again.
+ */
+export const VOCABULARY_STALE_MS = 5 * 60_000;
+
 export function useVocabularies(): UseQueryResult<VocabularyListSummary[]> {
-  return useQuery({ queryKey: vocabularyKeys.lists, queryFn: vocab.listVocabularies });
+  return useQuery({ queryKey: vocabularyKeys.lists, queryFn: vocab.listVocabularies, staleTime: VOCABULARY_STALE_MS });
 }
 
 export function useVocabularyValues(list: string, includeRetired = false, enabled = true): UseQueryResult<VocabularyRow[]> {
-  return useQuery({ queryKey: vocabularyKeys.values(list, includeRetired), queryFn: () => vocab.listValues(list, { includeRetired }), enabled });
+  return useQuery({ queryKey: vocabularyKeys.values(list, includeRetired), queryFn: () => vocab.listValues(list, { includeRetired }), enabled, staleTime: VOCABULARY_STALE_MS });
 }
 
 function useInvalidateList(list: string): () => Promise<void> {

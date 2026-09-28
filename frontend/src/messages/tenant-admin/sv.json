@@ -286,7 +286,6 @@
   "admin.org.entities.inactiveOption": "Inaktiv, sparas i historiken",
   "admin.org.licences.title": "Tillstånd och certifikat",
   "admin.org.licences.lede": "Vad varje juridisk person har tillstånd eller certifikat för. Ett certifikats giltighet och nästa revision visas på färdplanen som era egna tidsfrister.",
-  "admin.org.licences.errorTitle": "Det gick inte att läsa in tillstånden och certifikaten",
   "admin.org.licences.none": "Inga tillstånd eller certifikat registrerade.",
   "admin.org.licences.kind.licence": "Tillstånd",
   "admin.org.licences.kind.certificate": "Certifikat",

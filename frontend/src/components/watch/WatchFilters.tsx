@@ -5,6 +5,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Select, TextInput } from '@/components/ui/Field';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useScopeTerms } from '@/features/watch/hooks';
+import { useWhenOpened } from '@/shared/utils/when-opened';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
 // The feed's filters (design/screens/tenant-watch.html). Every option carries
@@ -59,9 +60,12 @@ export function WatchFilterBar({
   onSearch: () => void;
 }) {
   const t = useT();
-  const regimes = useScopeTerms(REGIME);
-  const changeTypes = useVocabularyValues(CHANGE_TYPE);
-  const urgencies = useVocabularyValues(URGENCY);
+  const [regimesWanted, openRegimes] = useWhenOpened(filters.regimeTermId);
+  const [typesWanted, openTypes] = useWhenOpened(filters.changeType);
+  const [urgenciesWanted, openUrgencies] = useWhenOpened(filters.urgency);
+  const regimes = useScopeTerms(REGIME, regimesWanted);
+  const changeTypes = useVocabularyValues(CHANGE_TYPE, false, typesWanted);
+  const urgencies = useVocabularyValues(URGENCY, false, urgenciesWanted);
   const scopeLabel: Record<ScopeFilter, string> = {
     in: t('watch.filter.inScope'),
     watched: t('watch.filter.watchedMarkets'),
@@ -71,7 +75,7 @@ export function WatchFilterBar({
   return (
     <div className="mb-4 grid gap-2" data-watch-filters="">
       <div className="flex flex-wrap items-center gap-2">
-        <Select className="w-auto" aria-label={t('watch.filter.regime')} value={filters.regimeTermId} onChange={(event) => onChange({ regimeTermId: event.target.value })}>
+        <Select className="w-auto" aria-label={t('watch.filter.regime')} value={filters.regimeTermId} onChange={(event) => onChange({ regimeTermId: event.target.value })} {...openRegimes}>
           <option value="">{t('watch.filter.allRegimes')}</option>
           {(regimes.data ?? []).map((term) => (
             <option key={term.key} value={term.id}>
@@ -79,7 +83,7 @@ export function WatchFilterBar({
             </option>
           ))}
         </Select>
-        <Select className="w-auto" aria-label={t('watch.filter.type')} value={filters.changeType} onChange={(event) => onChange({ changeType: event.target.value })}>
+        <Select className="w-auto" aria-label={t('watch.filter.type')} value={filters.changeType} onChange={(event) => onChange({ changeType: event.target.value })} {...openTypes}>
           <option value="">{t('watch.filter.anyType')}</option>
           {(changeTypes.data ?? []).map((row) => (
             <option key={row.key} value={row.key}>
@@ -87,7 +91,7 @@ export function WatchFilterBar({
             </option>
           ))}
         </Select>
-        <Select className="w-auto" aria-label={t('watch.filter.urgency')} value={filters.urgency} onChange={(event) => onChange({ urgency: event.target.value })}>
+        <Select className="w-auto" aria-label={t('watch.filter.urgency')} value={filters.urgency} onChange={(event) => onChange({ urgency: event.target.value })} {...openUrgencies}>
           <option value="">{t('watch.filter.anyUrgency')}</option>
           {(urgencies.data ?? []).map((row) => (
             <option key={row.key} value={row.key}>

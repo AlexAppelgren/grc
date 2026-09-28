@@ -1,4 +1,4 @@
-import type { Licence, LicenceBody, LicencePatch, OrgUnit, OrgUnitBody, OrgUnitPatch, PersonRef, Product, ProductBody, ProductPatch } from '@/features/tenant-admin/organisation/types';
+import type { Licence, LicenceBody, LicencePatch, OrgUnit, OrgUnitBody, OrgUnitPatch, OrgUnitRow, PersonRef, Product, ProductBody, ProductPatch } from '@/features/tenant-admin/organisation/types';
 import type { Page } from '@/features/tenant-admin/types';
 import { api } from '@/shared/utils/api-client';
 
@@ -7,14 +7,14 @@ import { api } from '@/shared/utils/api-client';
 // a row someone else changed in between is refused with stale_write.
 
 const TENANT = '/api/v1/tenant';
-// One page at the server's maximum: a bank's units, one entity's licences and
-// its products are short lists.
+// One page at the server's maximum: a bank's units, each legal entity with its
+// licences, and its products are short lists.
 const ALL = { limit: 100 };
 
 const id = (value: string) => encodeURIComponent(value);
 
-export async function listOrgUnits(): Promise<OrgUnit[]> {
-  return (await api.get<Page<OrgUnit>>(`${TENANT}/org-units`, { params: ALL })).data.items;
+export async function listOrgUnits(): Promise<OrgUnitRow[]> {
+  return (await api.get<Page<OrgUnitRow>>(`${TENANT}/org-units`, { params: ALL })).data.items;
 }
 
 export async function createOrgUnit(body: OrgUnitBody): Promise<OrgUnit> {
@@ -23,10 +23,6 @@ export async function createOrgUnit(body: OrgUnitBody): Promise<OrgUnit> {
 
 export async function updateOrgUnit(unitId: string, body: OrgUnitPatch, version: number): Promise<OrgUnit> {
   return (await api.patch<OrgUnit>(`${TENANT}/org-units/${id(unitId)}`, body, { version })).data;
-}
-
-export async function listLicences(unitId: string): Promise<Licence[]> {
-  return (await api.get<Page<Licence>>(`${TENANT}/org-units/${id(unitId)}/licences`, { params: ALL })).data.items;
 }
 
 export async function createLicence(unitId: string, body: LicenceBody): Promise<Licence> {

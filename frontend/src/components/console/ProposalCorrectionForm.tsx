@@ -13,7 +13,8 @@ import { languageName } from '@/features/library/version-presentation';
 import { useApproveProposal, useScopeTermLabels } from '@/features/proposals/hooks';
 import { obligationPayloadOf } from '@/features/proposals/proposal-presentation';
 import type { ProposalRow } from '@/features/proposals/types';
-import { listScopeTerms, type ScopeTerm } from '@/features/watch/api';
+import { termRowsQuery } from '@/features/footprint/hooks';
+import { scopeTermsOf, type ScopeTerm } from '@/features/watch/api';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
 /** The remove glyph on a scope chip (design/screens/console-queue.html `.x`): an icon, not copy, so it is not in the catalog. */
@@ -41,7 +42,7 @@ const REMOVE_GLYPH = '×';
 // this correction form needs.
 
 function useDimensionTerms(dimensions: readonly string[]): Record<string, ScopeTerm[]> {
-  const results = useQueries({ queries: dimensions.map((dimension) => ({ queryKey: ['watch', 'terms', dimension], queryFn: () => listScopeTerms(dimension), staleTime: 5 * 60_000 })) });
+  const results = useQueries({ queries: dimensions.map((dimension) => ({ ...termRowsQuery(dimension), select: scopeTermsOf })) });
   const byDimension: Record<string, ScopeTerm[]> = {};
   dimensions.forEach((dimension, index) => {
     byDimension[dimension] = results[index]?.data ?? [];

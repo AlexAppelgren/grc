@@ -34,8 +34,11 @@ V1 = "/api/v1"
 UNITS = f"{V1}/tenant/org-units"
 # However many units a page holds: the test's own audit count, the session (which since
 # perf-request-once, 2026-09-28, also loads the tenant and the language order) and its
-# savepoint, then the page with its terms and heads, the term labels and the count.
-LIST_QUERIES = 10
+# savepoint, then the page with its terms and heads, the legal entities' licences for the
+# whole page (one query, plus their services when any licence is held), every term's labels
+# at once and the count. The licences read replaces a `GET .../licences` per legal entity,
+# about thirteen queries each (perf-frontend-requests).
+LIST_QUERIES = 11
 
 
 class OrganisationCase(ScenarioTestCase):
@@ -252,6 +255,19 @@ class LicenceWrites(OrganisationCase):
         self.activate(self.tenant)
         with self.assertRaises(ValidationError):
             Licence.objects.get(pk=created["id"]).delete()
+
+    def test_the_list_carries_each_entitys_licences_and_never_another_banks(self) -> None:
+        unit = self.entity()
+        department = self.post(UNITS, {"kind": "business_area", "name": "Retail", "parentId": unit["id"]}).json()
+        created = self.post(self.licences(unit), {"licenceType": "bank", "serviceTerms": ["custody"]}).json()
+        other_admin = self.other_admin()
+        theirs = self.post(UNITS, {"kind": "legal_entity", "name": "Theirs", "entityTerm": "bank"}, headers=other_admin).json()
+        self.post(f"{UNITS}/{theirs['id']}/licences", {"licenceType": "bank"}, headers=other_admin)
+        rows = {row["id"]: row for row in self.client.get(UNITS, **self.headers).json()["items"]}
+        self.assertEqual(rows[unit["id"]]["licences"], self.client.get(self.licences(unit), **self.headers).json()["items"])
+        self.assertEqual([row["id"] for row in rows[unit["id"]]["licences"]], [created["id"]])
+        self.assertEqual(rows[department["id"]]["licences"], [])
+        self.assertNotIn(theirs["id"], rows)
 
     def test_another_bank_cannot_change_a_licence(self) -> None:
         unit = self.entity()

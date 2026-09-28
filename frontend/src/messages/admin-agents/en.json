@@ -75,7 +75,6 @@
   "adminAgents.schedule.operating": "Operating market",
   "adminAgents.schedule.watched": "Watched market",
   "adminAgents.recentRuns": "Recent runs",
-  "adminAgents.runsErrorTitle": "Could not load the runs",
   "adminAgents.run.by": "{trigger} by {name}",
   "adminAgents.run.minutes": "{count, plural, one {# min} other {# min}}",
   "adminAgents.run.findings": "{count, plural, =0 {no findings} one {# finding} other {# findings}}",

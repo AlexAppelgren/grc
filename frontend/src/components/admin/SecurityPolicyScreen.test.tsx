@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { SecurityPolicyScreen } from '@/components/admin/SecurityPolicyScreen';
+import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH, setStepUpHandler } from '@/shared/utils/api-client';
 
@@ -128,6 +129,27 @@ describe('the security page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.getByLabelText(IDLE)).toHaveValue('30');
     expect(screen.queryByText('Enter a whole number of at least 1, or leave it empty.')).toBeNull();
+  });
+
+  it('reads tenant reach beside the policy, never after it', async () => {
+    let answered = false;
+    const reachBeforePolicy: boolean[] = [];
+    installAdapter((sent) => {
+      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
+      if (sent.path === '/api/v1/tenant/reach') reachBeforePolicy.push(!answered);
+      if (sent.path === PATH) answered = true;
+      return { status: 404, data: { code: 'not_found', detail: '' } };
+    });
+    const { wrapper: Query } = queryWrapper();
+    render(
+      <Query>
+        <PermissionsProvider permissions={['security.manage']}>
+          <SecurityPolicyScreen />
+        </PermissionsProvider>
+      </Query>,
+    );
+    await waitFor(() => expect(reachBeforePolicy.length).toBeGreaterThan(0));
+    expect(reachBeforePolicy[0]).toBe(true);
   });
 
   it('offers a retry when the policy cannot be read', async () => {

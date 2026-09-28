@@ -186,7 +186,11 @@ def home_today(
     bank's in-scope register entries are resolved once, before them, for the two that need
     them.
 
-    `lead` and `sources` are null for a reader without `watch.read`, and `standing` for one
+    The week's briefing items are read once, up to `BRIEFING_MAX_ITEMS`: the first is the
+    lead and their number is `briefingCount`, so the screen never chains
+    `GET /briefings/current` behind this call for "N more items this week".
+
+    `lead`, `briefingCount` and `sources` are null for a reader without `watch.read`, and `standing` for one
     without `register.read`, and the reads behind them are not made at all — the permission
     decides before the query, so a reader who may not see a panel never pays for it either.
     The same `register.read` decides whether the register's deadlines are in "Coming up", and
@@ -197,20 +201,20 @@ def home_today(
     coming_up, roadmap_count = roadmap.coming_up(
         tenant, order, settings.HOME_COMING_UP_ITEMS, in_scope=in_scope, cases_reader=cases_reader
     )
-    lead = _lead(tenant, order, week_start_of(today)) if watch_reader else None
+    week = week_cases(tenant, week_start_of(today), limit=settings.BRIEFING_MAX_ITEMS) if watch_reader else None
     return Home(
         date=today,
         coming_up=coming_up,
         roadmap_count=roadmap_count,
-        lead=lead,
+        lead=None if week is None else _lead(tenant, order, week),
+        briefing_count=None if week is None else len(week),
         sources=source_health(order) if watch_reader else None,
         standing=None if in_scope is None else standing(in_scope),
     )
 
 
-def _lead(tenant: Tenant, order: list[str], week_start: datetime.date) -> WatchChangeRow | None:
-    """The change of the running week that most deserves attention: `week_cases()`'s first
-    row, which is the same change the week's briefing leads with. Null in a week with
-    nothing open and in scope, which is a quiet week rather than a failure."""
-    cases = week_cases(tenant, week_start, limit=1)
-    return week_rows(tenant, order, cases)[0] if cases else None
+def _lead(tenant: Tenant, order: list[str], week: list[ChangeCase]) -> WatchChangeRow | None:
+    """The change of the running week that most deserves attention: the first of the week's
+    briefing items, which is the same change the week's briefing leads with. Null in a week
+    with nothing open and in scope, which is a quiet week rather than a failure."""
+    return week_rows(tenant, order, week[:1])[0] if week else None

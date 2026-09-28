@@ -164,7 +164,10 @@ class ReadingCreatesNothing(RegisterStatusCase):
         for entity in self.entities[1:]:
             self.scope(entity)
         self.assertEqual(queries(3), one)
-        self.assertLessEqual(one[0], 12, "the register read is a fixed handful of queries")
+        # 13: the fixed handful plus the bank's readings of the rule (one query), which the
+        # read carries so the obligation page no longer sends `GET .../interpretation`, a
+        # request of eleven queries of its own (perf-frontend-requests, PERF_AUDIT finding 7).
+        self.assertLessEqual(one[0], 13, "the register read is a fixed handful of queries")
 
 
 class WritingTheEntry(RegisterStatusCase):

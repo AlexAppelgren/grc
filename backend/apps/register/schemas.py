@@ -267,6 +267,7 @@ class RegisterEntry(CamelSchema):
                     "entities": [_ENTITY_EXAMPLE],
                     "version": 7,
                     "updatedAt": "2026-09-18T13:05:00Z",
+                    "interpretation": {"obligationId": "44444444-4444-4444-8444-444444444444", "current": None, "earlier": []},
                 }
             ]
         }
@@ -316,6 +317,14 @@ class RegisterEntry(CamelSchema):
     version: int = Field(description=_VERSION)
     updated_at: datetime.datetime | None = Field(
         description="The UTC timestamp of the last write to the entry, null for an entry nobody has written yet."
+    )
+    interpretation: RegisterInterpretation = Field(
+        description=(
+            "\"How we read this rule\": the bank's current reading and every earlier one, "
+            "exactly as `GET /obligations/{obligationId}/interpretation` answers it, carried "
+            "here so the obligation page reads both in one call. `current` is null when the "
+            "bank has written none. Internal legal judgement that never leaves the bank."
+        )
     )
 
 
@@ -856,6 +865,10 @@ class RegisterInterpretation(CamelSchema):
         )
     )
     earlier: list[RegisterInterpretationVersion] = Field(description="Every superseded reading, newest first, unchanged; empty when there is none.")
+
+
+# `RegisterEntry` names this schema before it is defined.
+RegisterEntry.model_rebuild()
 
 
 class RegisterInterpretationBody(WriteBody):

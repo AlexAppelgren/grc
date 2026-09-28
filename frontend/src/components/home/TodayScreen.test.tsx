@@ -96,6 +96,7 @@ const home: Home = {
   ],
   roadmapCount: 1,
   lead,
+  briefingCount: 3,
   sources: { checked: 1, total: 2, failed: [{ lastCheckedAt: '2026-09-16T06:02:00Z', lastError: '502', lastStatus: 'failed', overdue: false, source: { id: 's-1', name: 'EBA news feed', kind: { key: 'authority_site', kind: null, label: 'Authority site' }, authority: null, checkFrequency: 'weekly', active: true } as never }] },
   standing: null,
 };
@@ -147,6 +148,14 @@ describe('TodayScreen', () => {
     expect(screen.getByText('1 dated item ahead')).toBeInTheDocument();
   });
 
+  it('counts the rest of the week from GET /home and asks nothing of the briefing', async () => {
+    const sent = serve({ status: 200, data: home });
+    render(shell(<TodayScreen />));
+
+    expect(await screen.findByText('2 more items this week')).toBeInTheDocument();
+    expect(sent.map((request) => request.path)).not.toContain('/api/v1/briefings/current');
+  });
+
   it('reads Decide now from GET /me, and hides a line the permission list does not unlock', async () => {
     serve({ status: 200, data: home }, { status: 200, data: { ...me, permissions: ['watch.read', 'roadmap.read'] } });
     render(shell(<TodayScreen />, ['watch.read', 'roadmap.read']));
@@ -173,7 +182,7 @@ describe('TodayScreen', () => {
   });
 
   it('a waiting decision alone keeps the page off the empty state', async () => {
-    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null, standing: null };
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, briefingCount: null, sources: null, standing: null };
     const zeros = { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 1 };
     serve({ status: 200, data: quiet }, { status: 200, data: { ...me, permissions: ['security.manage'], counts: zeros } });
     render(shell(<TodayScreen />, ['security.manage']));
@@ -192,7 +201,7 @@ describe('TodayScreen', () => {
   });
 
   it('a quiet tenant (nothing dated, no lead, no sources, nothing to decide) gets the empty state, not a blank page', async () => {
-    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null, standing: null };
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, briefingCount: null, sources: null, standing: null };
     const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 } };
     serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
     render(shell(<TodayScreen />));
@@ -203,7 +212,7 @@ describe('TodayScreen', () => {
   // The empty state's way to the regulatory scope shows only to a holder of a
   // permission that opens it: anyone else would land on the restricted page.
   it.each([['footprint.request'], ['footprint.approve']])('offers a holder of %s the way to the regulatory scope from the empty state', async (permission) => {
-    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null, standing: null };
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, briefingCount: null, sources: null, standing: null };
     const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 } };
     serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
     render(shell(<TodayScreen />, ['watch.read', permission]));
@@ -213,7 +222,7 @@ describe('TodayScreen', () => {
   });
 
   it('leaves the link out of the empty state for a member who cannot open the regulatory scope', async () => {
-    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null, standing: null };
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, briefingCount: null, sources: null, standing: null };
     const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 } };
     serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
     render(shell(<TodayScreen />, ['watch.read', 'roadmap.read', 'audit.read']));
@@ -223,7 +232,7 @@ describe('TodayScreen', () => {
   });
 
   it('open decisions keep the page off the empty state even when nothing is dated', async () => {
-    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null, standing: null };
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, briefingCount: null, sources: null, standing: null };
     serve({ status: 200, data: quiet });
     render(shell(<TodayScreen />));
 
@@ -282,7 +291,7 @@ describe('TodayScreen', () => {
   });
 
   it('where we stand alone keeps the page off the empty state', async () => {
-    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, sources: null, standing };
+    const quiet: Home = { date: '2026-09-21', comingUp: [], roadmapCount: 0, lead: null, briefingCount: null, sources: null, standing };
     const quietMe: Me = { ...me, counts: { triage: 0, proposals: 0, assignedToMe: 0, unreadNotifications: 0, signoffs: 0, riskAcceptances: 0, supportAccessRequests: 0, tenantReachRequests: 0 } };
     serve({ status: 200, data: quiet }, { status: 200, data: quietMe });
     render(shell(<TodayScreen />, REGISTER_READER));

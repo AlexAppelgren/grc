@@ -70,7 +70,7 @@ def read_interpretation(*, tenant: Tenant, obligation_id: uuid.UUID) -> Register
     """The reading in force and every earlier one, newest first. An obligation the bank
     cannot see is 404; one without a reading has `current` null."""
     _visible(obligation_id)
-    return _interpretation_out(obligation_id)
+    return interpretation_out(obligation_id)
 
 
 def save_interpretation(
@@ -113,7 +113,7 @@ def save_interpretation(
         before={"versionNo": current_no},
         after={"obligationId": str(obligation_id), "versionNo": version.version_number},
     )
-    return _interpretation_out(obligation_id)
+    return interpretation_out(obligation_id)
 
 
 def _visible(obligation_id: uuid.UUID) -> None:
@@ -121,7 +121,9 @@ def _visible(obligation_id: uuid.UUID) -> None:
         raise ValidationError("That obligation is not here.", code="not_found")
 
 
-def _interpretation_out(obligation_id: uuid.UUID) -> RegisterInterpretation:
+def interpretation_out(obligation_id: uuid.UUID) -> RegisterInterpretation:
+    """The bank's readings of one obligation, newest first, in one query; the caller has
+    already checked the obligation is one the bank can see."""
     versions = [
         RegisterInterpretationVersion(
             version_no=row.version_number, text=row.body, author=_person(row.author), written_at=row.created_at

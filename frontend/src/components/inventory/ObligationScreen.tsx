@@ -1,5 +1,6 @@
 'use client';
 
+import type { UseQueryResult } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
@@ -17,7 +18,7 @@ import { ObligationTagsPanel } from '@/components/inventory/ObligationTagsPanel'
 import { ObligationUnitsPanel } from '@/components/inventory/ObligationUnitsPanel';
 import { RecordProblemReports } from '@/components/inventory/RecordProblemReports';
 import { ObligationRelatedChanges } from '@/components/library/ObligationRelatedChanges';
-import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
+import { ReportProblemModal } from '@/components/inventory/ReportProblemModal';
 import { VersionBar } from '@/components/inventory/VersionBar';
 import { Button } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
@@ -116,34 +117,22 @@ function Reference({ obligation }: { obligation: ObligationDetail }) {
   );
 }
 
-export function ObligationScreen({ obligationId }: { obligationId: string }) {
+interface HeadProps {
+  record: ObligationDetail;
+  selected: string;
+  onChoose: (language: string) => void;
+  asOf: string;
+  onAsOf: (asOf: string) => void;
+  showDiff: boolean;
+  onShowDiff: (show: boolean) => void;
+  diff: UseQueryResult<VersionDiff>;
+}
+
+/** Everything above the panels: it waits for the card, the panels do not. */
+function ObligationHead({ record, selected, onChoose, asOf, onAsOf, showDiff, onShowDiff, diff }: HeadProps) {
   const t = useT();
   const ctx = useFormatContext();
   const locale = useLocale();
-  const permissions = usePermissions() ?? [];
-  const [asOf, setAsOf] = useState('');
-  const [chosen, setChosen] = useState<string | null>(null);
-  const [showDiff, setShowDiff] = useState(false);
-  const [reporting, setReporting] = useState(false);
-
-  const obligation = useObligation(obligationId, asOf);
-  const record = obligation.data;
-  const selected = chosen ?? record?.summary?.language ?? locale;
-  const diff = useObligationDiff(obligationId, selected, showDiff);
-  const report = useReportObligationProblem(obligationId);
-  const refreshReports = useRefreshProblemReports();
-  // A report just filed joins the record's "Reported problems" when the form closes.
-  const onReporting = (open: boolean) => {
-    setReporting(open);
-    if (!open) refreshReports();
-  };
-
-  if (obligation.isError) {
-    if (problemStatus(obligation.error) === 404) return <NotFoundScreen backHref="/inventory" backLabel={t('inventory.obligation.back')} />;
-    return <ErrorState title={t('inventory.obligation.errorTitle')} onRetry={() => void obligation.refetch()} />;
-  }
-  if (record === undefined) return <LoadingState rows={3} />;
-
   const header = presentObligation(
     {
       instrument: { key: record.instrument.key, label: record.instrument.shortName },
@@ -160,11 +149,9 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
   const diffMachine =
     diff.data === undefined ? null : machineConfirmedLabel(record.versions.find((version) => version.versionNumber === diff.data.toVersion) ?? null, null, t, ctx);
   const original = originalLanguage(record.translations);
-  const context: ReportContext = { language: selected, ...(record.version === null ? {} : { versionNumber: record.version.versionNumber }) };
 
   return (
-    <div data-obligation={record.stableKey}>
-      <BackLink href="/inventory" label={t('inventory.obligation.back')} />
+    <>
       <div className="mb-1.5" data-header-pills="">
         <PillRow pills={header} />
       </div>
@@ -173,7 +160,7 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
       <div data-language-chips="">
         <ChipRow className="mb-3">
           {languageChoices(record.translations, selected, locale, t).map((choice) => (
-            <Chip key={choice.language} pressed={choice.selected} onClick={() => setChosen(choice.language)}>
+            <Chip key={choice.language} pressed={choice.selected} onClick={() => onChoose(choice.language)}>
               {choice.label}
             </Chip>
           ))}
@@ -184,9 +171,9 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
         versions={record.versions}
         currentVersion={record.version?.versionNumber ?? null}
         asOf={asOf}
-        onAsOf={setAsOf}
+        onAsOf={onAsOf}
         showDiff={showDiff}
-        onShowDiff={setShowDiff}
+        onShowDiff={onShowDiff}
       />
 
       {asOf === '' ? null : (
@@ -196,7 +183,7 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
               ? t('inventory.obligation.asOfNoVersion', { date: formatDate(asOf, ctx) })
               : t('inventory.obligation.asOfBanner', { number: record.version.versionNumber, date: formatDate(asOf, ctx) })}
           </span>
-          <Button variant="ghost" size="small" onClick={() => setAsOf('')}>
+          <Button variant="ghost" size="small" onClick={() => onAsOf('')}>
             {t('inventory.backToToday')}
           </Button>
         </Notice>
@@ -221,47 +208,110 @@ export function ObligationScreen({ obligationId }: { obligationId: string }) {
         <EmptyState
           title={t('library.noTextTitle', { language: languageName(selected, locale) })}
           body={t('library.noTextBody')}
-          action={original === null ? undefined : { label: t('library.showOriginal'), href: '#', onClick: () => setChosen(original) }}
+          action={original === null ? undefined : { label: t('library.showOriginal'), href: '#', onClick: () => onChoose(original) }}
         />
       ) : (
         <LegalText lang={shown.language} translatedFrom={shown.isMachine && original !== null ? original : undefined} reference={<Reference obligation={record} />}>
           {shown.text}
         </LegalText>
       )}
+    </>
+  );
+}
+
+export function ObligationScreen({ obligationId }: { obligationId: string }) {
+  const t = useT();
+  const locale = useLocale();
+  const permissions = usePermissions() ?? [];
+  const [asOf, setAsOf] = useState('');
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [showDiff, setShowDiff] = useState(false);
+  const [reporting, setReporting] = useState(false);
+
+  const obligation = useObligation(obligationId, asOf);
+  const record = obligation.data;
+  const selected = chosen ?? record?.summary?.language ?? locale;
+  const diff = useObligationDiff(obligationId, selected, showDiff);
+  const report = useReportObligationProblem(obligationId);
+  const refreshReports = useRefreshProblemReports();
+  // A report just filed joins the record's "Reported problems" when the form closes.
+  const onReporting = (open: boolean) => {
+    setReporting(open);
+    if (!open) refreshReports();
+  };
+
+  if (obligation.isError) {
+    if (problemStatus(obligation.error) === 404) return <NotFoundScreen backHref="/inventory" backLabel={t('inventory.obligation.back')} />;
+    return <ErrorState title={t('inventory.obligation.errorTitle')} onRetry={() => void obligation.refetch()} />;
+  }
+
+  // The panels need only the id in the address, so they mount beside the
+  // card's own read rather than after it: one round of requests, not two.
+  // Those drawn from the card itself wait for it.
+  return (
+    <div data-obligation={record?.stableKey}>
+      <BackLink href="/inventory" label={t('inventory.obligation.back')} />
+      {record === undefined ? (
+        <LoadingState rows={3} />
+      ) : (
+        <ObligationHead
+          record={record}
+          selected={selected}
+          onChoose={setChosen}
+          asOf={asOf}
+          onAsOf={setAsOf}
+          showDiff={showDiff}
+          onShowDiff={setShowDiff}
+          diff={diff}
+        />
+      )}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <ScopePanel obligation={record} />
-          <ObligationTagsPanel obligationId={record.id} />
-          <DutyPanel obligation={record} />
-          <VersionsPanel versions={record.versions} />
-          <RelatedPanel related={record.related} />
-          <ObligationLinksPanel obligationId={record.id} />
-          {record.bindingLevel.kind === STANDARD_LEVEL_KIND ? <ObligationUnitsPanel obligationId={record.id} /> : null}
-          <ObligationHistoryPanel obligationId={record.id} />
+          {record === undefined ? null : <ScopePanel obligation={record} />}
+          <ObligationTagsPanel obligationId={obligationId} />
+          {record === undefined ? null : (
+            <>
+              <DutyPanel obligation={record} />
+              <VersionsPanel versions={record.versions} />
+              <RelatedPanel related={record.related} />
+            </>
+          )}
+          <ObligationLinksPanel obligationId={obligationId} />
+          {record?.bindingLevel.kind === STANDARD_LEVEL_KIND ? <ObligationUnitsPanel obligationId={obligationId} /> : null}
+          <ObligationHistoryPanel obligationId={obligationId} />
         </div>
         <div>
-          <ObligationApplicabilityPanel obligationId={record.id} />
-          <ObligationStatusPanel obligationId={record.id} />
-          <ObligationGapsPanel obligationId={record.id} />
-          <ProvenancePanel
-            obligation={record}
-            actions={
-              permissions.includes(REPORT_PERMISSION) ? (
-                <Button variant="outline" size="small" className="mt-4" onClick={() => setReporting(true)}>
-                  {t('inventory.obligation.reportProblem')}
-                </Button>
-              ) : undefined
-            }
-          />
-          <RecordProblemReports subjectType="obligation" subjectId={record.id} />
+          <ObligationApplicabilityPanel obligationId={obligationId} />
+          <ObligationStatusPanel obligationId={obligationId} />
+          <ObligationGapsPanel obligationId={obligationId} />
+          {record === undefined ? null : (
+            <ProvenancePanel
+              obligation={record}
+              actions={
+                permissions.includes(REPORT_PERMISSION) ? (
+                  <Button variant="outline" size="small" className="mt-4" onClick={() => setReporting(true)}>
+                    {t('inventory.obligation.reportProblem')}
+                  </Button>
+                ) : undefined
+              }
+            />
+          )}
+          <RecordProblemReports subjectType="obligation" subjectId={obligationId} />
           <ObligationRelatedChanges obligationId={obligationId} />
-          <ObligationParticipantsPanel obligationId={record.id} />
-          <ObligationCommentsPanel obligationId={record.id} />
+          <ObligationParticipantsPanel obligationId={obligationId} />
+          <ObligationCommentsPanel obligationId={obligationId} />
         </div>
       </div>
 
-      <ReportProblemModal open={reporting} onOpenChange={onReporting} context={context} report={report} />
+      {record === undefined ? null : (
+        <ReportProblemModal
+          open={reporting}
+          onOpenChange={onReporting}
+          context={{ language: selected, ...(record.version === null ? {} : { versionNumber: record.version.versionNumber }) }}
+          report={report}
+        />
+      )}
     </div>
   );
 }
