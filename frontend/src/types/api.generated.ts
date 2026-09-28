@@ -34508,7 +34508,7 @@ export interface components {
          *         }
          *       ],
          *       "rp": {
-         *         "id": "compliance.bleqq.com",
+         *         "id": "app.bleqq.com",
          *         "name": "Compliance Watch"
          *       },
          *       "timeout": 120000,
@@ -34612,7 +34612,7 @@ export interface components {
          * @example {
          *       "allowCredentials": [],
          *       "challenge": "17VoHXgjAFgx-a7KvEKYOGhID_jY6qtdxVWbbqlYnpYZUevP1U9KO-7YdzF428z81RchpdXMzymHYrb-g5LI4g",
-         *       "rpId": "compliance.bleqq.com",
+         *       "rpId": "app.bleqq.com",
          *       "timeout": 120000,
          *       "userVerification": "required"
          *     }
@@ -34630,7 +34630,7 @@ export interface components {
             challenge: string;
             /**
              * Rpid
-             * @description The domain the passkey must have been made for, such as `compliance.bleqq.com`. The browser checks that the page is on it, and the authenticator offers only passkeys bound to exactly this domain.
+             * @description The domain the passkey must have been made for, such as `app.bleqq.com`. The browser checks that the page is on it, and the authenticator offers only passkeys bound to exactly this domain.
              */
             rpId?: string | null;
             /**
@@ -34648,14 +34648,14 @@ export interface components {
          * WebAuthnRpEntity
          * @description The service the passkey belongs to (WebAuthn `PublicKeyCredentialRpEntity`).
          * @example {
-         *       "id": "compliance.bleqq.com",
+         *       "id": "app.bleqq.com",
          *       "name": "Compliance Watch"
          *     }
          */
         WebAuthnRpEntity: {
             /**
              * Id
-             * @description The relying party identifier (RP ID): the domain the new passkey is bound to, such as `compliance.bleqq.com`. A passkey made for one RP ID never works for another, which is why the host is fixed before anybody enrols. This server always sends it; WebAuthn would read a missing value as the calling page's own domain.
+             * @description The relying party identifier (RP ID): the domain the new passkey is bound to, such as `app.bleqq.com`. A passkey made for one RP ID never works for another, which is why the host is fixed before anybody enrols. This server always sends it; WebAuthn would read a missing value as the calling page's own domain.
              */
             id?: string | null;
             /**
@@ -36232,7 +36232,7 @@ export interface operations {
                      *         }
                      *       ],
                      *       "challenge": "17VoHXgjAFgx-a7KvEKYOGhID_jY6qtdxVWbbqlYnpYZUevP1U9KO-7YdzF428z81RchpdXMzymHYrb-g5LI4g",
-                     *       "rpId": "compliance.bleqq.com",
+                     *       "rpId": "app.bleqq.com",
                      *       "timeout": 120000,
                      *       "userVerification": "required"
                      *     }

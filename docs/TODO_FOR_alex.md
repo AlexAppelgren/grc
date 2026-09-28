@@ -274,7 +274,7 @@ the first real test, then every open box a package added on 2026-09-23 and 2026-
 ## Before the first test deploy
 - [x] `docs/inputs/schema.sql` and `docs/inputs/data-model.md` (version 0.3) landed on 2026-09-19 at 09:38 together with the updated `INPUT_DELTAS.md`. Chunk 1 starts from them.
 - [ ] Create the Railway project in EU West: Postgres with pgvector, Redis, a private bucket, services `api`, `worker`, `beat`, `web`. See `docs/runbooks/RAILWAY_DEPLOY.md`.
-- [ ] Point a test host at the web service (for example `compliance-test.bleqq.com`) and set `WEBAUTHN_RP_ID` to it. Passkeys made on a `*.up.railway.app` host stop working the day the host changes.
+- [ ] Point a test host at the web service (for example `app.bleqq.com`) and set `WEBAUTHN_RP_ID` to it. Passkeys made on a `*.up.railway.app` host stop working the day the host changes.
 - [ ] A transactional email sender on an EU region for invitation codes, with SPF and DKIM on the sending domain.
 - [ ] D-09: an API key for the first embedding model to try. Until then the test deploy searches by keyword only.
 - [ ] D-07: an Anthropic API key for the test environment.
@@ -2414,33 +2414,33 @@ keeps `noindex` like every app page. The canonical host in robots.txt, the sitem
 security.txt is `https://bleqq.com`, the host that serves the public page today; a test
 deployment serves the same files.
 
-## r2f-host-split: the public page on bleqq.com, the app on compliance-test.bleqq.com (2026-09-28)
+## r2f-host-split: the public page on bleqq.com, the app on app.bleqq.com (2026-09-28)
 
 Built and off until you set two variables: on `bleqq.com` the front door becomes the public
-page itself, rendered on the server, and sign-in and the app move to `compliance-test.bleqq.com`,
+page itself, rendered on the server, and sign-in and the app move to `app.bleqq.com`,
 where every page says noindex. The sign-in and enrolment pages now carry, in their first byte,
 what the service is, the company name linking to the public page, and the privacy and security
 contacts. `docs/runbooks/DNS_DOMAINS.md` ("The public site and the app on their own hosts") has
 the rules and why. Do the steps in this order; each check tells you the step worked.
 
 - [ ] **1. The domain on Railway.** Web service › Settings › Public Networking › `+ Custom Domain`
-      › `compliance-test.bleqq.com`. Railway shows a `CNAME` target and a `TXT` record.
-- [ ] **2. DNS in Cloudflare.** Add the `CNAME` `compliance-test` → the target Railway showed,
+      › `app.bleqq.com`. Railway shows a `CNAME` target and a `TXT` record.
+- [ ] **2. DNS in Cloudflare.** Add the `CNAME` `app` → the target Railway showed,
       and the `TXT` exactly as shown (both are required; without the TXT Railway answers 404).
       If you leave the CNAME proxied (orange cloud), SSL/TLS must be **Full**, not Full (Strict).
       Wait until Railway shows the domain as ready (certificate usually within an hour).
-      *Check:* `https://compliance-test.bleqq.com/sign-in` shows the sign-in page. Nothing has
+      *Check:* `https://app.bleqq.com/sign-in` shows the sign-in page. Nothing has
       changed on `bleqq.com` yet.
 - [ ] **3. The api service's variables**, then redeploy api:
-      `CORS_ALLOWED_ORIGINS=https://compliance-test.bleqq.com`,
-      `WEBAUTHN_ORIGINS=https://compliance-test.bleqq.com`,
-      `WEBAUTHN_RP_ID=compliance-test.bleqq.com`,
-      `APP_BASE_URL=https://compliance-test.bleqq.com` (or delete it: it then follows the first
+      `CORS_ALLOWED_ORIGINS=https://app.bleqq.com`,
+      `WEBAUTHN_ORIGINS=https://app.bleqq.com`,
+      `WEBAUTHN_RP_ID=app.bleqq.com`,
+      `APP_BASE_URL=https://app.bleqq.com` (or delete it: it then follows the first
       CORS origin). `ALLOWED_HOSTS` and the api host stay as they are; the api host must stay
       under `bleqq.com`. **From this moment every existing passkey stops working** (step 5).
 - [ ] **4. The web service's variables**, then redeploy web (no rebuild is needed; both are read
       at run time): `PUBLIC_SITE_HOST=bleqq.com,www.bleqq.com`,
-      `APP_HOST=compliance-test.bleqq.com`. `NEXT_PUBLIC_API_URL` stays as it is.
+      `APP_HOST=app.bleqq.com`. `NEXT_PUBLIC_API_URL` stays as it is.
 - [ ] **5. Re-enrol.** The RP ID changed, so everyone re-enrols (default taken: the runbook's
       rule, the exact app host; keeping `bleqq.com` as the RP ID would spare the re-enrolment but
       let every bleqq.com site ask for the passkeys, and production moves host anyway). Yourself:
@@ -2455,9 +2455,9 @@ the rules and why. Do the steps in this order; each check tells you the step wor
       `curl -sI https://bleqq.com/` → 200 and no `x-robots-tag`;
       `curl -s https://bleqq.com/ | grep -c "A register of record"` → at least 1 (the whole page
       without JavaScript); `curl -sI https://bleqq.com/sign-in` → 301 to
-      `https://compliance-test.bleqq.com/sign-in`; `curl -sI https://bleqq.com/welcome` → 301 to
-      `https://bleqq.com/`; `curl -sI https://compliance-test.bleqq.com/sign-in` → 200 with
-      `x-robots-tag: noindex`; `curl -s https://compliance-test.bleqq.com/sign-in | grep -c "About this service"`
+      `https://app.bleqq.com/sign-in`; `curl -sI https://bleqq.com/welcome` → 301 to
+      `https://bleqq.com/`; `curl -sI https://app.bleqq.com/sign-in` → 200 with
+      `x-robots-tag: noindex`; `curl -s https://app.bleqq.com/sign-in | grep -c "About this service"`
       → at least 1; then sign in with your new passkey, and press the demo on `bleqq.com`. If
       `bleqq.com/sign-in` answers 200 instead of 301, the host name the web service sees is not
       the one set in step 4: tell an agent.

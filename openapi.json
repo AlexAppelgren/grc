@@ -38996,7 +38996,7 @@
               }
             ],
             "rp": {
-              "id": "compliance.bleqq.com",
+              "id": "app.bleqq.com",
               "name": "Compliance Watch"
             },
             "timeout": 120000,
@@ -39179,7 +39179,7 @@
           {
             "allowCredentials": [],
             "challenge": "17VoHXgjAFgx-a7KvEKYOGhID_jY6qtdxVWbbqlYnpYZUevP1U9KO-7YdzF428z81RchpdXMzymHYrb-g5LI4g",
-            "rpId": "compliance.bleqq.com",
+            "rpId": "app.bleqq.com",
             "timeout": 120000,
             "userVerification": "required"
           }
@@ -39214,7 +39214,7 @@
                 "type": "null"
               }
             ],
-            "description": "The domain the passkey must have been made for, such as `compliance.bleqq.com`. The browser checks that the page is on it, and the authenticator offers only passkeys bound to exactly this domain.",
+            "description": "The domain the passkey must have been made for, such as `app.bleqq.com`. The browser checks that the page is on it, and the authenticator offers only passkeys bound to exactly this domain.",
             "title": "Rpid"
           },
           "timeout": {
@@ -39252,7 +39252,7 @@
         "description": "The service the passkey belongs to (WebAuthn `PublicKeyCredentialRpEntity`).",
         "examples": [
           {
-            "id": "compliance.bleqq.com",
+            "id": "app.bleqq.com",
             "name": "Compliance Watch"
           }
         ],
@@ -39266,7 +39266,7 @@
                 "type": "null"
               }
             ],
-            "description": "The relying party identifier (RP ID): the domain the new passkey is bound to, such as `compliance.bleqq.com`. A passkey made for one RP ID never works for another, which is why the host is fixed before anybody enrols. This server always sends it; WebAuthn would read a missing value as the calling page's own domain.",
+            "description": "The relying party identifier (RP ID): the domain the new passkey is bound to, such as `app.bleqq.com`. A passkey made for one RP ID never works for another, which is why the host is fixed before anybody enrols. This server always sends it; WebAuthn would read a missing value as the calling page's own domain.",
             "title": "Id"
           },
           "name": {
@@ -42253,7 +42253,7 @@
                     }
                   ],
                   "challenge": "17VoHXgjAFgx-a7KvEKYOGhID_jY6qtdxVWbbqlYnpYZUevP1U9KO-7YdzF428z81RchpdXMzymHYrb-g5LI4g",
-                  "rpId": "compliance.bleqq.com",
+                  "rpId": "app.bleqq.com",
                   "timeout": 120000,
                   "userVerification": "required"
                 },

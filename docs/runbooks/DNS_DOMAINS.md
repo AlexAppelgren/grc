@@ -16,8 +16,8 @@ host changes.
 |---|---|---|---|---|
 | Local | `localhost:3000` | `localhost:8000` | `localhost` | `http://localhost:3000` |
 | CI and E2E | `localhost:3000` (production Next build) | `localhost:8000` | `localhost` | `http://localhost:3000` |
-| Railway test | `compliance-test.bleqq.com` (proposed; the public page on `bleqq.com`, see "The public site and the app on their own hosts") | `api.compliance-test.bleqq.com` (proposed), or the api's Railway host if the API does not need a custom domain | `compliance-test.bleqq.com` | `https://compliance-test.bleqq.com` |
-| Production (later) | `compliance.bleqq.com` (proposed, D-02) | `api.compliance.bleqq.com` (proposed) | `compliance.bleqq.com` | `https://compliance.bleqq.com` |
+| The environment banks use (today's Railway environment) | `app.bleqq.com` (D-117; the public page stays on `bleqq.com`, see "The public site and the app on their own hosts") | `api.bleqq.com`, or the api's Railway host if the API does not need a custom domain | `app.bleqq.com` | `https://app.bleqq.com` |
+| Internal staging (later, never shown to a bank) | `staging.bleqq.com` (D-117) | `api.staging.bleqq.com` | `staging.bleqq.com` | `https://staging.bleqq.com` |
 
 The RP ID is the exact web host, never the registrable domain `bleqq.com`,
 so no other bleqq.com site can request these credentials. The API host is
@@ -26,14 +26,14 @@ against `WEBAUTHN_ORIGINS`.
 
 ## Steps for the test environment
 
-1. In DNS for `bleqq.com`, add a `CNAME` for `compliance-test` pointing at the
+1. In DNS for `bleqq.com`, add a `CNAME` for `app` pointing at the
    Railway `web` service's domain target (Railway shows it when you add a
    custom domain to the service). Railway issues the TLS certificate.
-2. If the API gets its own host, add `api.compliance-test` the same way for
+2. If the API gets its own host, add `api` the same way for
    the `api` service, and set `ALLOWED_HOSTS` and `CORS_ALLOWED_ORIGINS`
    accordingly (`RAILWAY_VARIABLES.md`).
-3. Set `WEBAUTHN_RP_ID=compliance-test.bleqq.com` and
-   `WEBAUTHN_ORIGINS=https://compliance-test.bleqq.com` on the `api` service
+3. Set `WEBAUTHN_RP_ID=app.bleqq.com` and
+   `WEBAUTHN_ORIGINS=https://app.bleqq.com` on the `api` service
    before anyone enrols.
 4. Set `NEXT_PUBLIC_API_URL` on `web` to the API's public URL and redeploy
    `web` (the value is baked at build time).
@@ -51,7 +51,7 @@ WebAuthn Related Origin Requests mechanism lets the RP ID's host publish
 `/.well-known/webauthn` listing the origins allowed to use its credentials.
 Support: Chrome and Edge 128, Safari 18, Firefox 152 (verified 2026-09-19).
 This means a rebrand has two options: re-enrol everyone under the new host,
-or keep `compliance.bleqq.com` alive serving `/.well-known/webauthn` with the
+or keep `app.bleqq.com` alive serving `/.well-known/webauthn` with the
 new origin listed. Decide before the first real user enrols
 (`TODO_FOR_alex.md`). Until then nothing serves that path.
 
@@ -60,8 +60,8 @@ new origin listed. Decide before the first real user enrols
 The refresh token cookie is `HttpOnly`, `Secure`, `SameSite=Strict` and
 scoped to the auth path, so the web app and the API must share a site or
 the API must be reachable from the web origin through the same registrable
-domain. With the hosts above (`compliance-test.bleqq.com` and
-`api.compliance-test.bleqq.com`) they do.
+domain. With the hosts above (`app.bleqq.com` and
+`api.bleqq.com`) they do.
 
 ## Site trust: what a bank's web filter checks
 
@@ -152,7 +152,7 @@ already planned for the app (D-02).
 | | `/welcome` | 301 to `/` on the same host, query kept |
 | | any other path: sign-in, enrolment, invitation, the app, the console, `/api/…`, an unknown path | 301 to the same path and query on `APP_HOST` |
 | | `robots.txt`, `sitemap.xml`, `icon.svg`, `/.well-known/…`, `/demo/…`, `/_next/…` | Served as they are |
-| `APP_HOST` (`compliance-test.bleqq.com`) | `/welcome` | 301 to `/` on the first `PUBLIC_SITE_HOST` |
+| `APP_HOST` (`app.bleqq.com`) | `/welcome` | 301 to `/` on the first `PUBLIC_SITE_HOST` |
 | | everything else, `/` included | The app, as today, with `X-Robots-Tag: noindex` |
 | Any other host (the service's `*.up.railway.app` address, the health check) | anything | As today |
 | Any host, while `PUBLIC_SITE_HOST` or `APP_HOST` is unset | anything | As today: this is the default, and every journey but the host-split one runs so |
@@ -184,12 +184,12 @@ every host.
 | Service | Variable | Before | After |
 |---|---|---|---|
 | web | `PUBLIC_SITE_HOST` | unset | `bleqq.com,www.bleqq.com` |
-| web | `APP_HOST` | unset | `compliance-test.bleqq.com` |
+| web | `APP_HOST` | unset | `app.bleqq.com` |
 | web | `NEXT_PUBLIC_API_URL` | the api's public URL | unchanged |
-| api | `CORS_ALLOWED_ORIGINS` | `https://bleqq.com` | `https://compliance-test.bleqq.com`. The public host calls no API: the demo answers from its recordings |
-| api | `WEBAUTHN_ORIGINS` | `https://bleqq.com` | `https://compliance-test.bleqq.com` |
-| api | `WEBAUTHN_RP_ID` | `bleqq.com` | `compliance-test.bleqq.com` |
-| api | `APP_BASE_URL` | `https://bleqq.com`, or unset | `https://compliance-test.bleqq.com`, where invitation links point. Unset, it follows the first CORS origin |
+| api | `CORS_ALLOWED_ORIGINS` | `https://bleqq.com` | `https://app.bleqq.com`. The public host calls no API: the demo answers from its recordings |
+| api | `WEBAUTHN_ORIGINS` | `https://bleqq.com` | `https://app.bleqq.com` |
+| api | `WEBAUTHN_RP_ID` | `bleqq.com` | `app.bleqq.com` |
+| api | `APP_BASE_URL` | `https://bleqq.com`, or unset | `https://app.bleqq.com`, where invitation links point. Unset, it follows the first CORS origin |
 | api | `ALLOWED_HOSTS` | the api host | unchanged |
 
 Nothing else changes. The API sets no `CSRF_TRUSTED_ORIGINS` (it authenticates
@@ -198,12 +198,12 @@ on the api host, `SameSite=Strict`, scoped to `/api/v1/auth`, so the api host
 must stay under `bleqq.com`, the same site as the app host, as it is today.
 
 **The RP ID follows this runbook's rule: the exact web host,
-`compliance-test.bleqq.com`.** `bleqq.com` would still be a valid RP ID for
+`app.bleqq.com`.** `bleqq.com` would still be a valid RP ID for
 that origin, and would keep today's passkeys working, but it lets every
 `bleqq.com` site request them, which is what the rule exists to prevent, and
-production will move to `compliance.bleqq.com` anyway. **Changing the RP ID
+production will move to `app.bleqq.com` anyway. **Changing the RP ID
 means every test user re-enrols their passkeys**: a passkey made under
-`bleqq.com` is not offered on `compliance-test.bleqq.com` once the RP ID says
+`bleqq.com` is not offered on `app.bleqq.com` once the RP ID says
 otherwise. The way back, in order:
 
 1. The platform admin, whose own passkey stops working at the same moment:

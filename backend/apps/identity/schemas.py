@@ -79,7 +79,7 @@ _EXAMPLE_ACCESS_TOKEN = "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.1790150400.Exa
 _EXAMPLE_ENROLMENT_TOKEN = "v1.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.enrolment.1790150400.ExampleSignatureThatNoServerWillAccept00000"  # noqa: S105 a documentation example no server accepts
 _EXAMPLE_CREDENTIAL_ID = "cGAj7tm8-pSeo4if4t4UZw"
 _EXAMPLE_USER_HANDLE = "AAAAAAAAQACAAAAAAAABAg"  # Sara Lindqvist's account id, 16 bytes
-_EXAMPLE_RP: dict[str, JsonValue] = {"name": "Compliance Watch", "id": "compliance.bleqq.com"}
+_EXAMPLE_RP: dict[str, JsonValue] = {"name": "Compliance Watch", "id": "app.bleqq.com"}
 _EXAMPLE_REGISTRATION_CHALLENGE = "BqOwQC6lHBNmyZ4zHF6elkvGZbLYkjFAiy0U0_1tSvx_Bh1qcD1E8F3kx2JNoPwOOHwMjfLI0U22_mQWkR6xDw"
 _EXAMPLE_SIGN_IN_CHALLENGE = "17VoHXgjAFgx-a7KvEKYOGhID_jY6qtdxVWbbqlYnpYZUevP1U9KO-7YdzF428z81RchpdXMzymHYrb-g5LI4g"
 _EXAMPLE_DESCRIPTOR: dict[str, JsonValue] = {"id": _EXAMPLE_CREDENTIAL_ID, "type": "public-key"}
@@ -169,7 +169,7 @@ ENROLMENT_SESSION_EXAMPLE: dict[str, JsonValue] = {"accessToken": _EXAMPLE_ENROL
 STEP_UP_OPTIONS_EXAMPLE: dict[str, JsonValue] = {
     "challenge": _EXAMPLE_SIGN_IN_CHALLENGE,
     "timeout": _EXAMPLE_TIMEOUT,
-    "rpId": "compliance.bleqq.com",
+    "rpId": "app.bleqq.com",
     "allowCredentials": [_EXAMPLE_DESCRIPTOR],
     "userVerification": "required",
 }
@@ -335,7 +335,7 @@ class WebAuthnRpEntity(CamelSchema):
         default=None,
         description=(
             "The relying party identifier (RP ID): the domain the new passkey is bound to, "
-            "such as `compliance.bleqq.com`. A passkey made for one RP ID never works for "
+            "such as `app.bleqq.com`. A passkey made for one RP ID never works for "
             "another, which is why the host is fixed before anybody enrols. This server always "
             "sends it; WebAuthn would read a missing value as the calling page's own domain."
         ),
@@ -583,7 +583,7 @@ class WebAuthnRequestOptions(CamelSchema):
                 {
                     "challenge": _EXAMPLE_SIGN_IN_CHALLENGE,
                     "timeout": _EXAMPLE_TIMEOUT,
-                    "rpId": "compliance.bleqq.com",
+                    "rpId": "app.bleqq.com",
                     "allowCredentials": [],
                     "userVerification": "required",
                 }
@@ -611,7 +611,7 @@ class WebAuthnRequestOptions(CamelSchema):
     rp_id: str | None = Field(
         default=None,
         description=(
-            "The domain the passkey must have been made for, such as `compliance.bleqq.com`. "
+            "The domain the passkey must have been made for, such as `app.bleqq.com`. "
             "The browser checks that the page is on it, and the authenticator offers only "
             "passkeys bound to exactly this domain."
         ),
