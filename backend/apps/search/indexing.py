@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -128,6 +128,8 @@ INDEX_REBUILT = "search.index_rebuilt"
 # The columns a rebuild owns. `embedding` is not one of them: it is the worker's, and it
 # is cleared only when the text it was made from changed.
 REBUILT_FIELDS = ("title", "body", "hierarchy_path", "valid_from", "valid_to", "metadata")
+# What a rebuild clears when a chunk's text changed.
+EMBEDDING_FIELDS = ("embedding", "embedding_model", "embedding_version", "embedded_at")
 
 
 @dataclass(frozen=True)
@@ -168,6 +170,14 @@ def reindex(obligation_id: uuid.UUID) -> IndexCounts:
     from apps.search import sources
 
     return _write(sources.obligation_chunks(obligation_id))
+
+
+def reindex_obligations(obligation_ids: Collection[uuid.UUID]) -> IndexCounts:
+    """The same for many obligations at once, in one rebuild: the approval of a batch that
+    re-tags them (PRO-04) opens the index door once, not once per obligation."""
+    from apps.search import sources
+
+    return _write(sources.obligations_chunks(obligation_ids))
 
 
 def reindex_provision(provision_id: uuid.UUID) -> IndexCounts:
@@ -344,37 +354,34 @@ def _write(read: RecordChunks) -> IndexCounts:
     from apps.search.models import SearchChunk
 
     wanted = {(chunk.source_id, chunk.language): chunk for chunk in read.chunks}
-    created = updated = unchanged = 0
     with tenancy.platform_zone():
         existing = {
             (row.source_id, row.language_id): row
             for row in SearchChunk.objects.filter(source_type=read.source_type, source_id__in=read.source_ids)
         }
         stale = [row.id for key, row in existing.items() if key not in wanted]
+        new: list[SearchChunk] = []
+        changed: list[SearchChunk] = []
+        for key, chunk in wanted.items():
+            row = existing.get(key)
+            if row is None:
+                new.append(SearchChunk(source_type=read.source_type, source_id=chunk.source_id, language_id=chunk.language, **_fields(chunk)))
+            elif _differs(row, chunk):
+                for name, value in _fields(chunk).items():
+                    setattr(row, name, value)
+                # The vector was made from text this chunk no longer holds, so it goes
+                # with it and the worker fills a fresh one from the outbox event.
+                row.embedding, row.embedding_model, row.embedding_version, row.embedded_at = None, "", "", None
+                changed.append(row)
+        # One statement per kind of write, however many chunks the rebuild touches.
         with index_write(f"rebuilding {read.source_type} chunks from the library"):
-            for key, chunk in wanted.items():
-                row = existing.get(key)
-                if row is None:
-                    SearchChunk(
-                        source_type=read.source_type,
-                        source_id=chunk.source_id,
-                        language_id=chunk.language,
-                        **_fields(chunk),
-                    ).save()
-                    created += 1
-                elif _differs(row, chunk):
-                    for name, value in _fields(chunk).items():
-                        setattr(row, name, value)
-                    # The vector was made from text this chunk no longer holds, so it goes
-                    # with it and the worker fills a fresh one from the outbox event.
-                    row.embedding, row.embedding_model, row.embedding_version, row.embedded_at = None, "", "", None
-                    row.save()
-                    updated += 1
-                else:
-                    unchanged += 1
+            if new:
+                SearchChunk.objects.bulk_create(new)
+            if changed:
+                SearchChunk.objects.bulk_update(changed, [*REBUILT_FIELDS, *EMBEDDING_FIELDS])
             if stale:
                 SearchChunk.objects.filter(id__in=stale).delete()
-    return IndexCounts(created=created, updated=updated, unchanged=unchanged, deleted=len(stale))
+    return IndexCounts(created=len(new), updated=len(changed), unchanged=len(wanted) - len(new) - len(changed), deleted=len(stale))
 
 
 def _fields(chunk: ChunkSource) -> dict[str, Any]:
