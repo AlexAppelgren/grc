@@ -20,7 +20,7 @@ backend/agents/<agent>/v<n>/
                       # (eval.yaml beside the prompt, for scope-researcher)
 ```
 
-Four definitions ship, all drafts: `watch-sweeper` (kind `watch`), which
+Five definitions ship, all drafts: `watch-sweeper` (kind `watch`), which
 checks sources and proposes (WAT-01 to WAT-05, AGT-01, AGT-02, AGT-07),
 `library-confirmer` (kind `review`), the independent second pair of eyes that
 decides what another definition proposed and never proposes itself (PRO-02,
@@ -28,7 +28,10 @@ D-62, D-80), `tenant-source-watch` (kind `watch`), the one a bank may add
 as an agent of its own (AGT-04, ADR 0053), and `scope-researcher` (kind
 `research`), the bank's own agent that researches an approved scope item the
 shared library does not cover and files the bank's own instrument and
-obligations as proposals, a source per field (OWN-02, D-89, ADR 0059).
+obligations as proposals, a source per field (OWN-02, D-89, ADR 0059), and
+`library-baseline` (kind `backfill`), which files the library's researched starting
+inventory as proposals and calls no model; `manage.py file_library_baseline` is its
+runner (D-118, ADR 0065).
 `apps/agents/seeds/__init__.py` names them in `SHIPPED`.
 
 `scope-researcher` calls no write operation at all: its proposals and its

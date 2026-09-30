@@ -2,6 +2,31 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## The library baseline: what waits for you (2026-09-30, D-118, ADR 0065)
+
+The library's starting inventory is researched and ready to file (`backend/apps/library/baseline/`,
+counts and gaps in `docs/plans/briefs/LIBRARY_BASELINE.md`). Nothing reaches the library until a
+second principal approves it.
+
+- [ ] **File and approve it on the test deployment.** `FIRST_RUN_SETUP.md` step 17: run
+      `file_library_baseline`, approve the instruments in the console, run it again, approve the
+      duties. Until `library-confirmer` is published and its runner is live (D-07), the approver
+      is you, with the `library_editor` role and a passkey, and the records read confirmed by a
+      person. Reject anything you doubt: a rejected entry is not filed again until its file changes.
+- [ ] **Register the sources the sweeper should check.** The registry is empty on a new
+      deployment, so the watch finds nothing until each authority's site is registered in the
+      console (Sources). The brief lists one per authority the baseline names.
+- [ ] **Sanctions.** EU sanctions regulations and the national sanctions acts are not in the
+      baseline: they are not named in the sector scope and have no regime. Default: out until you
+      say they are in, and then under `aml`.
+- [ ] **Government ordinances.** A förordning, a Norwegian ministry forskrift or a Danish ministry
+      bekendtgørelse fits no instrument level, so none is in the baseline (the brief lists the ones
+      that matter most, such as penningtvättsförordningen and hvitvaskingsforskriften). Default: they
+      wait until a level `government_regulation` is added by a vocabulary proposal; say if you want it.
+- [x] **D-40's three areas.** Your instruction of 2026-09-30 ("everything relevant") takes consumer
+      credit and the Accessibility Act as applied to consumer banking in under `banking`, and
+      sustainable-finance disclosure under `securities`. Reject their proposals if you disagree.
+
 ## R2 is closed: what waits for you (2026-09-27, `r2-close-and-readiness`)
 
 R2's code (chunks 8 to 11) is on `main` and every R2 requirement reads `built` or names what

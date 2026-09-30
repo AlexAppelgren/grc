@@ -126,6 +126,7 @@
  "apps.proposals.tests_access_own_review": 1.37,
  "apps.proposals.tests_apply": 55.44,
  "apps.proposals.tests_apply_private": 5.04,
+ "apps.proposals.tests_baseline": 115.0,
  "apps.proposals.tests_batch": 21.31,
  "apps.proposals.tests_batch_decide": 23.69,
  "apps.proposals.tests_batch_models": 17.38,
