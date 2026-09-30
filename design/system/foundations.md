@@ -147,8 +147,9 @@ opens it: from the right edge on a desktop (440 px, `l2-neutral-02`, a hairline
 on its open side), from the bottom on a phone (the More sheet's rules), over
 `Modal`'s scrim. A `title` heading with a Close button, then one `microlabel`
 per filter. Short value lists are toggles, one on at most, and pressing the on
-one clears it; a long list (instruments) is a search field over rows that carry
-a count in `meta`. A change applies at once, so the footer's Done (primary)
+one clears it; a long list (instruments, owners) is a search field over rows,
+each with its count in `meta` when it has one. Every filter a list takes lives in
+the sheet, never as a select beside the button. A change applies at once, so the footer's Done (primary)
 only closes, beside Clear all (outline). Every set filter shows beside the
 Filters button as a chip: a toggle in its on colours, 28 px, `meta` at 500,
 with a 26 px Remove button labelled with the filter and its value, then a

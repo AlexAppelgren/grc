@@ -5,7 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { NavIcon } from '@/components/shell/NavIcon';
 import { Button } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
-import { Select, TextInput } from '@/components/ui/Field';
+import { TextInput } from '@/components/ui/Field';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useFootprint, useTerms } from '@/features/footprint/hooks';
 import type { TaxonomyTerm } from '@/features/footprint/types';
@@ -15,7 +15,6 @@ import { usePeople } from '@/features/register/hooks';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';
-import { useWhenOpened, type OpenHandlers } from '@/shared/utils/when-opened';
 
 // The inventory's filters (design/screens/tenant-inventory.html, D-104): a Filters
 // sheet, the set filters as removable chips beside its button, and the scope as a
@@ -24,6 +23,11 @@ import { useWhenOpened, type OpenHandlers } from '@/shared/utils/when-opened';
 // carries the row's key and shows the row's label, so a rename never changes what a
 // filter means. The values follow the scope: a filter never offers what the scope
 // would hide anyway.
+//
+// The bank's own filters sit in the same sheet (REG-01, REG-02, VOC-08): whether a
+// duty applies, how the bank stands, the first-line owner, the owning team and "Our
+// tags". Statuses, teams and tags are the bank's rows, read live, so a relabel never
+// changes what a view means; the owner is a member's id.
 
 export const REGIME = 'regime';
 export const SERVICE = 'service_type';
@@ -39,6 +43,29 @@ export interface InventoryFilters {
   asOf: string;
   scope: ScopeFilter;
 }
+
+export const COMPLIANCE_STATUS = 'compliance_status';
+export const TEAM = 'team';
+export const TENANT_TAG = 'tenant_tag';
+
+/** The register overlay's filters; empty means not filtered. */
+export interface OverlayFilters {
+  applicability: Obligation['applicability'] | '';
+  complianceStatus: string;
+  owner: string;
+  ownerTeam: string;
+}
+
+/** The Obligations tab's filters: the library's, and the bank's own. */
+export type ObligationFilters = InventoryFilters & OverlayFilters & { tenantTag: string };
+
+export const APPLICABILITY_VALUES: readonly Obligation['applicability'][] = ['applies', 'not_applicable', 'under_assessment'];
+
+const APPLICABILITY_LABEL = {
+  applies: 'obligationApplicability.applies',
+  not_applicable: 'obligationApplicability.notApplicable',
+  under_assessment: 'obligationApplicability.underAssessment',
+} as const;
 
 /** The Instruments tab's own filters: GET /instruments takes only regime, q and footprint (chunk3-rest default). */
 export interface InstrumentFilters {
@@ -112,29 +139,51 @@ function useInstrumentName(key: string, scope: ScopeFilter): string {
   return listed?.shortName ?? outside.data?.items.find((instrument) => instrument.stableKey === key)?.shortName ?? key;
 }
 
-/** One filter's values as toggles: at most one on, and pressing the on one clears it (foundations.md "Filters sheet"). */
-function ToggleGroup({ label, values, value, onChange }: { label: string; values: { key: string; label: string }[]; value: string; onChange: (next: string) => void }) {
+/**
+ * One filter's values as toggles: at most one on, and pressing the on one clears it
+ * (foundations.md "Filters sheet"). `empty` says so in words once the values are read
+ * and there are none.
+ */
+function ToggleGroup({ label, values, value, onChange, empty }: { label: string; values: readonly { key: string; label: string }[]; value: string; onChange: (next: string) => void; empty?: string }) {
   return (
     <fieldset className="m-0 min-w-0 border-0 p-0">
       <legend className="microlabel mb-2 text-muted">{label}</legend>
-      <ChipRow>
-        {values.map((row) => (
-          <Chip key={row.key} pressed={value === row.key} onClick={() => onChange(value === row.key ? '' : row.key)}>
-            {row.label}
-          </Chip>
-        ))}
-      </ChipRow>
+      {values.length === 0 && empty !== undefined ? (
+        <p className="text-meta text-muted">{empty}</p>
+      ) : (
+        <ChipRow>
+          {values.map((row) => (
+            <Chip key={row.key} pressed={value === row.key} onClick={() => onChange(value === row.key ? '' : row.key)}>
+              {row.label}
+            </Chip>
+          ))}
+        </ChipRow>
+      )}
     </fieldset>
   );
 }
 
-/** The Instrument filter: a search over rows, since the list is long, each with its obligation count. */
-function InstrumentPicker({ value, scope, onChange }: { value: string; scope: ScopeFilter; onChange: (next: string) => void }) {
+/** A long list as a filter (Instrument, Owner): a find field over the rows, "all" first, and a row's count when it has one. */
+function FindList({
+  label,
+  findLabel,
+  allLabel,
+  value,
+  rows,
+  onChange,
+}: {
+  label: string;
+  findLabel: string;
+  allLabel: string;
+  value: string;
+  rows: readonly { key: string; label: string; count?: number }[];
+  onChange: (next: string) => void;
+}) {
   const t = useT();
   const [find, setFind] = useState('');
   const wanted = find.trim().toLocaleLowerCase();
-  const options = (useInstrumentOptions(scope).data?.items ?? []).filter((instrument) => wanted === '' || instrument.shortName.toLocaleLowerCase().includes(wanted));
-  const row = (key: string, name: string, count?: number) => (
+  const shown = rows.filter((row) => wanted === '' || row.label.toLocaleLowerCase().includes(wanted));
+  const option = (key: string, name: string, count?: number) => (
     <button
       key={key}
       type="button"
@@ -149,11 +198,11 @@ function InstrumentPicker({ value, scope, onChange }: { value: string; scope: Sc
   );
   return (
     <fieldset className="m-0 min-w-0 border-0 p-0">
-      <legend className="microlabel mb-2 text-muted">{t('inventory.filter.instrument')}</legend>
-      <TextInput type="search" aria-label={t('inventory.filters.findInstrument')} placeholder={t('inventory.filters.findInstrument')} value={find} onChange={(event) => setFind(event.target.value)} />
-      <div className="mt-1.5 grid max-h-64 gap-0.5 overflow-y-auto" data-instrument-options="">
-        {row('', t('inventory.filter.allInstruments'))}
-        {options.map((instrument) => row(instrument.stableKey, instrument.shortName, instrument.obligationCount))}
+      <legend className="microlabel mb-2 text-muted">{label}</legend>
+      <TextInput type="search" aria-label={findLabel} placeholder={findLabel} value={find} onChange={(event) => setFind(event.target.value)} />
+      <div className="mt-1.5 grid max-h-64 gap-0.5 overflow-y-auto">
+        {option('', allLabel)}
+        {shown.map((row) => option(row.key, row.label, row.count))}
       </div>
     </fieldset>
   );
@@ -231,12 +280,12 @@ function SetFilters({ chips, onClear }: { chips: { filter: string; value: string
 
 /**
  * The Obligations tab's Filters button, its sheet and the chips of what is set. "As of" keeps its banner rather than a chip.
- * The sheet's terms, footprint and duty types are read only while it is open, and a chip's
- * label only while a filter is set, so the list's first answer never waits behind them (NFR-02).
+ * The sheet's lists are read only while it is open, and a chip's label only while its
+ * filter is set, so the list's first answer never waits behind them (NFR-02).
  */
-export function InventoryFilterBar({ filters, onChange }: { filters: InventoryFilters; onChange: (next: Partial<InventoryFilters>) => void }) {
-  const cleared = { instrument: '', regime: '', service: '', dutyType: '' };
-  const anySet = filters.instrument !== '' || filters.regime !== '' || filters.service !== '' || filters.dutyType !== '';
+export function InventoryFilterBar({ filters, onChange }: { filters: ObligationFilters; onChange: (next: Partial<ObligationFilters>) => void }) {
+  const cleared = { instrument: '', regime: '', service: '', dutyType: '', applicability: '', complianceStatus: '', owner: '', ownerTeam: '', tenantTag: '' } as const;
+  const anySet = Object.keys(cleared).some((key) => filters[key as keyof typeof cleared] !== '');
   return (
     <>
       <FilterSheet onClear={() => onChange({ ...cleared, asOf: '' })}>
@@ -247,17 +296,53 @@ export function InventoryFilterBar({ filters, onChange }: { filters: InventoryFi
   );
 }
 
-function InventorySheetBody({ filters, onChange }: { filters: InventoryFilters; onChange: (next: Partial<InventoryFilters>) => void }) {
+function InventorySheetBody({ filters, onChange }: { filters: ObligationFilters; onChange: (next: Partial<ObligationFilters>) => void }) {
   const t = useT();
   const regimes = useScopedTerms(REGIME, filters.scope);
   const services = useScopedTerms(SERVICE, filters.scope);
   const dutyTypes = useVocabularyValues(DUTY_TYPE).data ?? [];
+  const instruments = useInstrumentOptions(filters.scope).data?.items ?? [];
+  const statuses = useVocabularyValues(COMPLIANCE_STATUS).data ?? [];
+  const people = usePeople().data ?? [];
+  const teams = useVocabularyValues(TEAM).data ?? [];
+  const tags = useVocabularyValues(TENANT_TAG);
+  const applicability = APPLICABILITY_VALUES.map((key) => ({ key, label: t(APPLICABILITY_LABEL[key]) }));
   return (
     <>
-      <InstrumentPicker value={filters.instrument} scope={filters.scope} onChange={(instrument) => onChange({ instrument })} />
+      <FindList
+        label={t('inventory.filter.instrument')}
+        findLabel={t('inventory.filters.findInstrument')}
+        allLabel={t('inventory.filter.allInstruments')}
+        value={filters.instrument}
+        rows={instruments.map((instrument) => ({ key: instrument.stableKey, label: instrument.shortName, count: instrument.obligationCount }))}
+        onChange={(instrument) => onChange({ instrument })}
+      />
       <ToggleGroup label={t('inventory.filter.regime')} values={regimes} value={filters.regime} onChange={(regime) => onChange({ regime })} />
       <ToggleGroup label={t('inventory.filter.service')} values={services} value={filters.service} onChange={(service) => onChange({ service })} />
       <ToggleGroup label={t('inventory.filter.dutyType')} values={dutyTypes} value={filters.dutyType} onChange={(dutyType) => onChange({ dutyType })} />
+      <ToggleGroup
+        label={t('inventory.filter.applicability')}
+        values={applicability}
+        value={filters.applicability}
+        onChange={(next) => onChange({ applicability: APPLICABILITY_VALUES.find((key) => key === next) ?? '' })}
+      />
+      <ToggleGroup label={t('inventory.filter.complianceStatus')} values={statuses} value={filters.complianceStatus} onChange={(complianceStatus) => onChange({ complianceStatus })} />
+      <FindList
+        label={t('inventory.filter.owner')}
+        findLabel={t('inventory.filters.findOwner')}
+        allLabel={t('inventory.filter.anyOwner')}
+        value={filters.owner}
+        rows={people.map((person) => ({ key: person.id, label: person.name }))}
+        onChange={(owner) => onChange({ owner })}
+      />
+      <ToggleGroup label={t('inventory.filter.ownerTeam')} values={teams} value={filters.ownerTeam} onChange={(ownerTeam) => onChange({ ownerTeam })} />
+      <ToggleGroup
+        label={t('inventory.filter.tenantTag')}
+        values={tags.data ?? []}
+        value={filters.tenantTag}
+        onChange={(tenantTag) => onChange({ tenantTag })}
+        empty={tags.isSuccess ? t('inventory.filter.noTenantTags') : undefined}
+      />
       <div>
         <label htmlFor="inventory-as-of" className="microlabel mb-2 block text-muted">
           {t('inventory.asOf')}
@@ -268,18 +353,30 @@ function InventorySheetBody({ filters, onChange }: { filters: InventoryFilters; 
   );
 }
 
-function InventoryChips({ filters, onChange, onClear }: { filters: InventoryFilters; onChange: (next: Partial<InventoryFilters>) => void; onClear: () => void }) {
+function InventoryChips({ filters, onChange, onClear }: { filters: ObligationFilters; onChange: (next: Partial<ObligationFilters>) => void; onClear: () => void }) {
   const t = useT();
   const regimes = useTerms(REGIME, filters.regime !== '').data ?? [];
   const services = useTerms(SERVICE, filters.service !== '').data ?? [];
   const dutyTypes = useVocabularyValues(DUTY_TYPE, false, filters.dutyType !== '').data ?? [];
+  const statuses = useVocabularyValues(COMPLIANCE_STATUS, false, filters.complianceStatus !== '').data ?? [];
+  const people = usePeople(filters.owner !== '').data ?? [];
+  const teams = useVocabularyValues(TEAM, false, filters.ownerTeam !== '').data ?? [];
+  const tags = useVocabularyValues(TENANT_TAG, false, filters.tenantTag !== '').data ?? [];
   const instrumentName = useInstrumentName(filters.instrument, filters.scope);
-  const labelOf = (rows: { key: string; label: string }[], key: string) => rows.find((row) => row.key === key)?.label ?? key;
+  const labelOf = (rows: readonly { key: string; label: string }[], key: string) => rows.find((row) => row.key === key)?.label ?? key;
+  // A chip for each set filter; its Remove clears that filter alone.
+  const chip = (key: Exclude<keyof ObligationFilters, 'asOf' | 'scope'>, filter: string, value: string) =>
+    filters[key] === '' ? [] : [{ filter, value, onRemove: () => onChange({ [key]: '' }) }];
   const chips = [
-    ...(filters.instrument === '' ? [] : [{ filter: t('inventory.filter.instrument'), value: instrumentName, onRemove: () => onChange({ instrument: '' }) }]),
-    ...(filters.regime === '' ? [] : [{ filter: t('inventory.filter.regime'), value: labelOf(regimes, filters.regime), onRemove: () => onChange({ regime: '' }) }]),
-    ...(filters.service === '' ? [] : [{ filter: t('inventory.filter.service'), value: labelOf(services, filters.service), onRemove: () => onChange({ service: '' }) }]),
-    ...(filters.dutyType === '' ? [] : [{ filter: t('inventory.filter.dutyType'), value: labelOf(dutyTypes, filters.dutyType), onRemove: () => onChange({ dutyType: '' }) }]),
+    ...chip('instrument', t('inventory.filter.instrument'), instrumentName),
+    ...chip('regime', t('inventory.filter.regime'), labelOf(regimes, filters.regime)),
+    ...chip('service', t('inventory.filter.service'), labelOf(services, filters.service)),
+    ...chip('dutyType', t('inventory.filter.dutyType'), labelOf(dutyTypes, filters.dutyType)),
+    ...chip('applicability', t('inventory.filter.applicability'), filters.applicability === '' ? '' : t(APPLICABILITY_LABEL[filters.applicability])),
+    ...chip('complianceStatus', t('inventory.filter.complianceStatus'), labelOf(statuses, filters.complianceStatus)),
+    ...chip('owner', t('inventory.filter.owner'), people.find((person) => person.id === filters.owner)?.name ?? filters.owner),
+    ...chip('ownerTeam', t('inventory.filter.ownerTeam'), labelOf(teams, filters.ownerTeam)),
+    ...chip('tenantTag', t('inventory.filter.tenantTag'), labelOf(tags, filters.tenantTag)),
   ];
   return <SetFilters chips={chips} onClear={onClear} />;
 }
@@ -306,76 +403,4 @@ function RegimeToggles({ scope, value, onChange }: { scope: ScopeFilter; value: 
   const t = useT();
   const regimes = useScopedTerms(REGIME, scope);
   return <ToggleGroup label={t('inventory.filter.regime')} values={regimes} value={value} onChange={onChange} />;
-}
-
-// c8-ui-inventory-overlay: the bank's register overlay as filters (REG-01, REG-02). Each
-// sends a key, or a member's id for the owner, and never a label; the statuses and the
-// teams are the bank's own rows, read live, so a relabel never changes what a view means.
-
-export const COMPLIANCE_STATUS = 'compliance_status';
-export const TEAM = 'team';
-
-/** The overlay filters; empty means not filtered. */
-export interface OverlayFilters {
-  applicability: Obligation['applicability'] | '';
-  complianceStatus: string;
-  owner: string;
-  ownerTeam: string;
-}
-
-export const APPLICABILITY_VALUES: readonly Obligation['applicability'][] = ['applies', 'not_applicable', 'under_assessment'];
-
-const APPLICABILITY_LABEL = {
-  applies: 'obligationApplicability.applies',
-  not_applicable: 'obligationApplicability.notApplicable',
-  under_assessment: 'obligationApplicability.underAssessment',
-} as const;
-
-/** One option per row, and the key in the URL kept as an option of its own when no row names it. */
-function KeySelect({
-  label,
-  any,
-  value,
-  rows,
-  onChange,
-  ...opening
-}: { label: string; any: string; value: string; rows: readonly { key: string; label: string }[]; onChange: (next: string) => void } & Partial<OpenHandlers>) {
-  return (
-    <Select className="w-auto" aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} {...opening}>
-      <option value="">{any}</option>
-      {value !== '' && !rows.some((row) => row.key === value) ? <option value={value}>{value}</option> : null}
-      {rows.map((row) => (
-        <option key={row.key} value={row.key}>
-          {row.label}
-        </option>
-      ))}
-    </Select>
-  );
-}
-
-export function OverlayFilterBar({ filters, onChange }: { filters: OverlayFilters; onChange: (next: Partial<OverlayFilters>) => void }) {
-  const t = useT();
-  const [statusesWanted, openStatuses] = useWhenOpened(filters.complianceStatus);
-  const [teamsWanted, openTeams] = useWhenOpened(filters.ownerTeam);
-  const [peopleWanted, openPeople] = useWhenOpened(filters.owner);
-  const statuses = useVocabularyValues(COMPLIANCE_STATUS, false, statusesWanted);
-  const teams = useVocabularyValues(TEAM, false, teamsWanted);
-  const people = usePeople(peopleWanted);
-  const applicability = APPLICABILITY_VALUES.map((key) => ({ key, label: t(APPLICABILITY_LABEL[key]) }));
-  const owners = (people.data ?? []).map((person) => ({ key: person.id, label: person.name }));
-
-  return (
-    <>
-      <KeySelect
-        label={t('inventory.filter.applicability')}
-        any={t('inventory.filter.anyApplicability')}
-        value={filters.applicability}
-        rows={applicability}
-        onChange={(next) => onChange({ applicability: APPLICABILITY_VALUES.find((key) => key === next) ?? '' })}
-      />
-      <KeySelect label={t('inventory.filter.complianceStatus')} any={t('inventory.filter.anyComplianceStatus')} value={filters.complianceStatus} rows={statuses.data ?? []} onChange={(complianceStatus) => onChange({ complianceStatus })} {...openStatuses} />
-      <KeySelect label={t('inventory.filter.owner')} any={t('inventory.filter.anyOwner')} value={filters.owner} rows={owners} onChange={(owner) => onChange({ owner })} {...openPeople} />
-      <KeySelect label={t('inventory.filter.ownerTeam')} any={t('inventory.filter.anyOwnerTeam')} value={filters.ownerTeam} rows={teams.data ?? []} onChange={(ownerTeam) => onChange({ ownerTeam })} {...openTeams} />
-    </>
-  );
 }

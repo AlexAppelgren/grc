@@ -8,11 +8,11 @@ import {
   APPLICABILITY_VALUES,
   InstrumentFilterBar,
   InventoryFilterBar,
-  OverlayFilterBar,
   REGIME,
   SCOPE_VALUES,
   SERVICE,
   ScopeControl,
+  TENANT_TAG,
   type InstrumentFilters,
   type InventoryFilters,
   type OverlayFilters,
@@ -23,7 +23,6 @@ import { SearchHitRow } from '@/components/inventory/SearchHitRow';
 import { NavIcon } from '@/components/shell/NavIcon';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Select } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
@@ -44,7 +43,6 @@ import { findDestination, unlocks } from '@/shared/navigation/registry';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate } from '@/shared/utils/format';
 import { problemFrom } from '@/shared/utils/problem';
-import { useWhenOpened } from '@/shared/utils/when-opened';
 
 // /inventory (design/screens/tenant-inventory.html; INV-01, INV-03, INV-04,
 // FP-03, SRC-01, SRC-02, J-6, D-104). The filters live in the URL as keys and a
@@ -65,9 +63,9 @@ import { useWhenOpened } from '@/shared/utils/when-opened';
 // still in view count, and it clears when the page (the tab) changes, so Tag
 // never acts on a row the person is no longer looking at.
 //
-// The bank's register overlay (REG-01, REG-02) filters beside "Our tags":
-// whether it applies, how the bank stands, the first-line owner and the owning
-// team, each a key (a member's id for the owner) in the URL like the rest.
+// The bank's register overlay (REG-01, REG-02) and "Our tags" are filters in the
+// same sheet: whether it applies, how the bank stands, the first-line owner and
+// the owning team, each a key (a member's id for the owner) in the URL like the rest.
 
 export type InventoryTab = 'obligations' | 'instruments';
 
@@ -80,7 +78,6 @@ export type ScreenFilters = InventoryFilters & { tenantTag?: string } & Partial<
 /** The overlay filters in the order the URL carries them. */
 const OVERLAY_KEYS = ['applicability', 'complianceStatus', 'owner', 'ownerTeam'] as const;
 
-const TENANT_TAG = 'tenant_tag';
 const VOCAB_MANAGE = 'vocab.manage';
 
 /** The URL's tab; anything but "instruments" reads as the default. */
@@ -193,32 +190,6 @@ export function isNarrowed(filters: ScreenFilters): boolean {
 /** The ids of the selection that are on the page now: the only ones Tag may name. */
 export function selectedInView(selected: ReadonlySet<string>, items: readonly Obligation[]): Obligation[] {
   return items.filter((obligation) => selected.has(obligation.id));
-}
-
-/** "Our tags": the bank's own tags as a filter every role reads; it sends the key, never the label. */
-function TenantTagSelect({ value, onChange }: { value: string; onChange: (next: string) => void }) {
-  const t = useT();
-  const [wanted, opening] = useWhenOpened(value);
-  const tags = useVocabularyValues(TENANT_TAG, false, wanted);
-  const rows = tags.data ?? [];
-  if (tags.isSuccess && rows.length === 0 && value === '') {
-    return (
-      <Select className="w-auto" aria-label={t('inventory.filter.tenantTag')} value="" disabled>
-        <option value="">{t('inventory.filter.noTenantTags')}</option>
-      </Select>
-    );
-  }
-  return (
-    <Select className="w-auto" aria-label={t('inventory.filter.tenantTag')} value={value} onChange={(event) => onChange(event.target.value)} {...opening}>
-      <option value="">{t('inventory.filter.anyTenantTag')}</option>
-      {value !== '' && !rows.some((row) => row.key === value) ? <option value={value}>{value}</option> : null}
-      {rows.map((row) => (
-        <option key={row.key} value={row.key}>
-          {row.label}
-        </option>
-      ))}
-    </Select>
-  );
 }
 
 /** The select-all for the page: checked when every row is, mixed when some are. */
@@ -495,10 +466,15 @@ function ObligationsTab({ filters, apply, pathname, bar, query }: { filters: Scr
     <>
       <div className="mb-4 flex flex-wrap items-center gap-2" data-inventory-filters="">
         {unlocks(['search.use'], permissions ?? []) ? bar : null}
-        <InventoryFilterBar filters={filters} onChange={apply} />
-        <TenantTagSelect value={filters.tenantTag ?? ''} onChange={(tenantTag) => apply({ tenantTag })} />
-        <OverlayFilterBar
-          filters={{ applicability: filters.applicability ?? '', complianceStatus: filters.complianceStatus ?? '', owner: filters.owner ?? '', ownerTeam: filters.ownerTeam ?? '' }}
+        <InventoryFilterBar
+          filters={{
+            ...filters,
+            applicability: filters.applicability ?? '',
+            complianceStatus: filters.complianceStatus ?? '',
+            owner: filters.owner ?? '',
+            ownerTeam: filters.ownerTeam ?? '',
+            tenantTag: filters.tenantTag ?? '',
+          }}
           onChange={apply}
         />
       </div>

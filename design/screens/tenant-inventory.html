@@ -335,6 +335,12 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <div><p class="micro">Regime</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="true">Securities</button><button class="chip" aria-pressed="false">AML</button></div></div>
       <div><p class="micro">Service</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="false">Advice</button><button class="chip" aria-pressed="false">Execution only</button><button class="chip" aria-pressed="false">Portfolio management</button><button class="chip" aria-pressed="false">Custody</button></div></div>
       <div><p class="micro">Duty type</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="false">Conduct</button><button class="chip" aria-pressed="false">Disclosure</button><button class="chip" aria-pressed="false">Record keeping</button><button class="chip" aria-pressed="false">Reporting</button><button class="chip" aria-pressed="false">Governance</button><button class="chip" aria-pressed="false">Technical</button></div></div>
+      <div><p class="micro">Applies to us</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="true">Applies</button><button class="chip" aria-pressed="false">Does not apply</button><button class="chip" aria-pressed="false">Not assessed</button></div></div>
+      <div><p class="micro">Compliance status</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="false">Compliant</button><button class="chip" aria-pressed="false">Partly compliant</button><button class="chip" aria-pressed="false">Gap</button><button class="chip" aria-pressed="false">Not assessed</button></div></div>
+      <div><p class="micro">Owner</p><label class="searchbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input aria-label="Find a person" placeholder="Find a person"></label>
+        <div class="opts"><button aria-pressed="true">Any owner</button><button aria-pressed="false">Johan Berg</button><button aria-pressed="false">Sara Lindqvist</button></div></div>
+      <div><p class="micro">Owning team</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="false">Retail compliance</button><button class="chip" aria-pressed="false">Markets compliance</button></div></div>
+      <div><p class="micro">Our tags</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="false">Custody</button><button class="chip" aria-pressed="false">Onboarding</button><button class="chip" aria-pressed="false">Priority</button></div></div>
       <div><p class="micro"><label for="asof">As of</label></p><div class="filters" style="margin:0"><input type="date" id="asof"></div></div>
       <div class="bar"><button class="btn ghost small">Clear all</button><button class="btn small">Done</button></div>
     </div>
@@ -395,17 +401,21 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <!-- Bulk tagging (chunk 10, VOC-08, VOC-S12). Blocks 1 to 12. Tenant tags are outlined information pills, after the meta text; they are not a slot of the top line. -->
     <h2 class="k">1 · Tenant tags on each row, and the tenant-tag filter, seen by every role</h2>
     <div class="filters">
-      <select aria-label="Instrument"><option>All instruments</option></select>
-      <select aria-label="Our tags"><option>Any of our tags</option><option>Custody (4)</option><option>Onboarding (2)</option><option>Priority (1)</option></select>
-      <select aria-label="Scope"><option>In our scope</option></select>
+      <label class="searchbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input aria-label="Search the inventory" placeholder="Search by reference or idea, like FFFS 2017:2 or nudging in onboarding"></label>
+      <button class="btn ghost small" aria-haspopup="dialog">Filters</button>
     </div>
     <div class="rows">
       <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Applies</span><span class="pill">Not assessed</span><span class="pill notice">1 open change</span></div><h3>Pay for third-party research only under the permitted models</h3><div class="meta"><span class="mono">Third-party payments</span><span>Advice, Portfolio management</span><span>Johan Berg</span><span class="pill outlined">Custody</span><span class="pill outlined">Priority</span></div></a>
       <a class="row" href="#"><div class="meta"><span class="pill brand">LVM</span><span class="pill positive">Applies</span><span class="pill positive">Compliant</span></div><h3>Assess appropriateness before non-advised trades in complex instruments</h3><div class="meta"><span class="mono">9 kap.</span><span>Non-advised, Execution only</span><span>Johan Berg</span></div></a>
     </div>
 
-    <h2 class="k">2 · The filter set to one of our tags ("Custody")</h2>
-    <div class="filters"><select aria-label="Our tags"><option>Custody (4)</option></select><button class="btn ghost small">Clear our tags</button></div>
+    <h2 class="k">2 · The filter set to one of our tags ("Custody"), chosen under Our tags in the Filters sheet</h2>
+    <div class="filters">
+      <label class="searchbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input aria-label="Search the inventory" placeholder="Search by reference or idea, like FFFS 2017:2 or nudging in onboarding"></label>
+      <button class="btn ghost small" aria-haspopup="dialog">Filters</button>
+      <span class="token">Custody<button aria-label="Remove the Our tags filter, Custody">×</button></span>
+      <button class="back" style="margin:0;font-weight:400">Clear filters</button>
+    </div>
     <div class="rows">
       <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Applies</span><span class="pill warning">Partly compliant</span></div><h3>Disclose all costs and charges before and after the service</h3><div class="meta"><span class="mono">Costs and charges</span><span>All services</span><span>Sara Lindqvist</span><span class="pill outlined">Custody</span></div></a>
     </div>
@@ -484,17 +494,21 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <a class="row" href="#"><div class="meta"><span class="pill brand">FFFS 2017:2</span><span class="pill positive">Applies</span><span class="pill">Not assessed</span></div><h3>Pay for third-party research only under the permitted models</h3><div class="meta"><span class="mono">Third-party payments</span><span>Johan Berg</span><span class="pill outlined">Custody</span><span class="pill outlined">Priority</span></div></a>
     </div>
 
-    <h2 class="k">12 · The bank has no tags of its own yet</h2>
-    <div class="filters"><select aria-label="Our tags" disabled><option>No tags of our own yet</option></select></div>
+    <h2 class="k">12 · The bank has no tags of its own yet: Our tags in the Filters sheet says so</h2>
+    <div class="sheet" role="dialog" aria-label="Filters"><div><p class="micro">Our tags</p><p class="meta" style="margin:0">No tags of our own yet</p></div></div>
     <p class="meta" style="display:block">A holder of vocab.manage creates the first one from Tag, or under Admin, Vocabularies.</p>
     </div>
     <p class="note">Inventory card. One search bar and a Filters button replace the row of
     selects (D-104). The bar runs the hybrid search (SRC-01) over obligations and provisions,
-    never watch changes, inside the scope and every filter that is set; what is typed stays
+    never watch changes, inside the scope and every library filter that is set; the bank's
+    own filters narrow the list and not yet the search, which POST /search does not take. What is typed stays
     in the component and never reaches the address bar, and Enter runs it. Clearing it
     returns the list. On the Instruments tab the bar finds instruments by reference or name.
-    The sheet holds Instrument, Regime, Service, Duty type and As of on the Obligations tab,
-    and Regime on the Instruments tab. Each value is a key; a change applies at once, so Done
+    The sheet holds Instrument, Regime, Service and Duty type on the Obligations tab, then the
+    bank's own filters (Applies to us, Compliance status, Owner, Owning team and Our tags, every
+    role reads them), then As of; the Instruments tab's holds Regime. Instrument and Owner are
+    long lists, so each has a find field; the rest are toggles. Nothing is added to the row
+    beside the button but the chips of what is set. Each value is a key; a change applies at once, so Done
     only closes the sheet. A set filter shows beside the button as a chip with its own Remove,
     followed by "Clear filters"; As of keeps its banner and "Back to today" instead of a chip.
     The values follow the scope: Instrument lists the instruments with obligations inside it,

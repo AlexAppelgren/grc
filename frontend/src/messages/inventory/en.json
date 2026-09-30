@@ -28,6 +28,7 @@
   "inventory.filters.close": "Close filters",
   "inventory.filters.scopeHint": "Only values in your scope are offered. Choose Show all items to see everything.",
   "inventory.filters.findInstrument": "Find an instrument",
+  "inventory.filters.findOwner": "Find a person",
   "inventory.filters.clearAll": "Clear all",
   "inventory.filters.done": "Done",
   "inventory.filters.clear": "Clear filters",
@@ -142,7 +143,6 @@
   "inventory.reports.alreadyClosed": "Someone closed this report already. The list now shows how.",
 
   "inventory.filter.tenantTag": "Our tags",
-  "inventory.filter.anyTenantTag": "Any of our tags",
   "inventory.filter.noTenantTags": "No tags of our own yet",
   "inventory.empty.noTagMatch.title": "No obligations carry this tag",
   "inventory.empty.noTagMatch.body": "Pick another of our tags, or clear the filter.",
@@ -176,11 +176,8 @@
   "inventory.bulk.failed": "Could not tag the obligations. Nothing was changed.",
   "inventory.bulk.close": "Close",
   "inventory.filter.applicability": "Applies to us",
-  "inventory.filter.anyApplicability": "Applies or not",
   "inventory.filter.complianceStatus": "Compliance status",
-  "inventory.filter.anyComplianceStatus": "Any compliance status",
   "inventory.filter.owner": "Owner",
   "inventory.filter.anyOwner": "Any owner",
-  "inventory.filter.ownerTeam": "Owning team",
-  "inventory.filter.anyOwnerTeam": "Any team"
+  "inventory.filter.ownerTeam": "Owning team"
 }

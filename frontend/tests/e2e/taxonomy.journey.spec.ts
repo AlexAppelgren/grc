@@ -418,8 +418,10 @@ test.describe('taxonomy journeys', () => {
       for (const key of BULK_TAGGED) await expect(bulkTagPill(page.locator(`[data-obligation="${key}"]`))).toHaveCount(1);
 
       // The tag is a filter: the six are listed under it, and every row listed carries it.
-      await page.getByRole('combobox', { name: 'Our tags' }).selectOption({ label: BULK_TAG_LABEL });
+      await page.getByRole('button', { name: 'Filters', exact: true }).click();
+      await page.getByRole('dialog', { name: 'Filters' }).getByRole('group', { name: 'Our tags' }).getByRole('button', { name: BULK_TAG_LABEL, exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`tenantTag=${BULK_TAG_KEY}`));
+      await page.getByRole('button', { name: 'Done', exact: true }).click();
       for (const key of BULK_TAGGED) await expect(page.locator(`[data-obligation="${key}"]`)).toBeVisible();
       const listed = page.locator('[data-obligation-rows] [data-obligation]');
       for (const row of await listed.all()) await expect(bulkTagPill(row)).toHaveCount(1);

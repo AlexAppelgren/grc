@@ -28,6 +28,7 @@
   "inventory.filters.close": "Stäng filter",
   "inventory.filters.scopeHint": "Bara värden inom din omfattning visas. Välj Visa allt för att se allt.",
   "inventory.filters.findInstrument": "Hitta en rättsakt",
+  "inventory.filters.findOwner": "Hitta en person",
   "inventory.filters.clearAll": "Rensa alla",
   "inventory.filters.done": "Klar",
   "inventory.filters.clear": "Rensa filter",
@@ -142,7 +143,6 @@
   "inventory.reports.alreadyClosed": "Någon har redan stängt rapporten. Listan visar nu hur.",
 
   "inventory.filter.tenantTag": "Våra taggar",
-  "inventory.filter.anyTenantTag": "Någon av våra taggar",
   "inventory.filter.noTenantTags": "Inga egna taggar ännu",
   "inventory.empty.noTagMatch.title": "Inga skyldigheter har den här taggen",
   "inventory.empty.noTagMatch.body": "Välj en annan av våra taggar, eller rensa filtret.",
@@ -176,11 +176,8 @@
   "inventory.bulk.failed": "Det gick inte att tagga skyldigheterna. Inget ändrades.",
   "inventory.bulk.close": "Stäng",
   "inventory.filter.applicability": "Gäller oss",
-  "inventory.filter.anyApplicability": "Gäller eller inte",
   "inventory.filter.complianceStatus": "Efterlevnadsstatus",
-  "inventory.filter.anyComplianceStatus": "Alla statusar",
   "inventory.filter.owner": "Ägare",
   "inventory.filter.anyOwner": "Alla ägare",
-  "inventory.filter.ownerTeam": "Ägande team",
-  "inventory.filter.anyOwnerTeam": "Alla team"
+  "inventory.filter.ownerTeam": "Ägande team"
 }

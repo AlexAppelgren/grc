@@ -244,15 +244,18 @@ test.describe('library journeys', () => {
     await expect(costs).toContainText('Sara Lindqvist');
     // Tenant tags and "Private to us" keep their places: no row here waits for approval.
     await expect(page.locator('[data-obligation-rows]').getByText(/pending|approval/i)).toHaveCount(0);
-    await expect(page.getByLabel('Compliance status')).toHaveValue('partly_compliant');
+    await expect(page.getByRole('button', { name: 'Remove the Compliance status filter, Partly compliant', exact: true })).toBeVisible();
 
-    // The filters live in the URL: choosing whether it applies adds its key beside the rest.
-    await page.getByLabel('Applies to us').selectOption('applies');
+    // The filters live in the URL: choosing whether it applies, in the Filters sheet, adds its key beside the rest.
+    await page.getByRole('button', { name: 'Filters', exact: true }).click();
+    const applies = page.getByRole('dialog', { name: 'Filters' }).getByRole('group', { name: 'Applies to us' });
+    await applies.getByRole('button', { name: 'Applies', exact: true }).click();
     await expect(page).toHaveURL(/[?&]complianceStatus=partly_compliant(&|$)/);
     await expect(page).toHaveURL(/[?&]applicability=applies(&|$)/);
     await expect(costs).toBeVisible();
-    await page.getByLabel('Applies to us').selectOption('not_applicable');
+    await applies.getByRole('button', { name: 'Does not apply', exact: true }).click();
     await expect(page).toHaveURL(/[?&]applicability=not_applicable(&|$)/);
+    await page.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(page.locator('[data-obligation-rows]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
     await expect(costs).toHaveCount(0);
 

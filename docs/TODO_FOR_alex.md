@@ -773,6 +773,13 @@ section. Copied here as chunk3-rest-T20 requires.
       (TEN-03) give each person a slice, and a record outside your teams' scope will show only
       whether it applies once the register lands (chunk 8). Both belong in the R2 plan, next to
       D-69's entity scope.
+- [ ] **Search inside the bank's own filters.** Applies to us, Compliance status, Owner, Owning
+      team and Our tags now sit in the Filters sheet (2026-09-30) and narrow the list, but the
+      search bar still narrows only by Instrument, Regime, Service, Duty type, As of and the scope,
+      because `POST /search` does not take the bank's filters. The proposal: `POST /search` takes
+      them by the obligations list's own rule, and while any of them is set a search returns
+      obligations only, since a provision has no applicability, status, owner or tag of its own.
+      Say yes and it is built.
 - [ ] **The Windows tab-bar screenshot.** The tab bar now reads "Ask", so
       `frontend/tests/e2e/navigation.journey.spec.ts-snapshots/tab-bar-chromium-win32.png` is stale.
       The Linux one is re-recorded; run `npx playwright test navigation --update-snapshots` once on
