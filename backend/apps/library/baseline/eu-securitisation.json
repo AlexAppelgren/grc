@@ -1,0 +1,686 @@
+{
+ "tranche": "eu-securitisation",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add Securitisation Regulation (SECR), Regulation (EU) 2017/2402",
+   "source": "https://eur-lex.europa.eu/eli/reg/2017/2402/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017r2402",
+    "titles": {
+     "en": "Regulation (EU) 2017/2402 of the European Parliament and of the Council of 12 December 2017 laying down a general framework for securitisation and creating a specific framework for simple, transparent and standardised securitisation, and amending Directives 2009/65/EC, 2009/138/EC and 2011/61/EU and Regulations (EC) No 1060/2009 and (EU) No 648/2012"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Securitisation Regulation (SECR)",
+    "officialRef": "Regulation (EU) 2017/2402",
+    "eliUri": "https://data.europa.eu/eli/reg/2017/2402/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2018-01-17"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Verify a securitisation and assess its risks before holding a position in it",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R2402-20210409",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, consolidated text of 9 April 2021, Article 5(1) to (3)",
+     "payload": {
+      "key": "obl-eu-secr-investor-due-diligence",
+      "titles": {
+       "en": "Verify a securitisation and assess its risks before holding a position in it"
+      },
+      "summaries": {
+       "en": "Before an institutional investor other than the originator, sponsor or original lender takes on a securitisation position, it must check that the retention of at least 5% is in place and disclosed, that the Article 7 information has been made available and, where the originator or original lender is not an EU credit institution or investment firm, that credits were granted under sound criteria. It must also assess the risks of the position, the underlying exposures and the structural features; for an STS securitisation it assesses STS compliance and may rely on the STS notification to an appropriate extent, but not solely or mechanistically."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5(1) and (3)",
+      "dutyType": "governance",
+      "effectiveFrom": "2019-01-01",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Monitor securitisation positions on an ongoing basis under written procedures",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R2402-20210409",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, consolidated text of 9 April 2021, Article 5(4)",
+     "payload": {
+      "key": "obl-eu-secr-investor-monitoring",
+      "titles": {
+       "en": "Monitor securitisation positions on an ongoing basis under written procedures"
+      },
+      "summaries": {
+       "en": "An institutional investor holding a securitisation position must have written procedures, proportionate to the risk, to monitor on an ongoing basis its due-diligence checks and the performance of the position and the underlying exposures, run regular stress tests on the cash flows and collateral values (or on the sponsor's solvency and liquidity for a fully supported ABCP programme), and report the material risks to its management body. It must be able to show its competent authority on request that it understands the position and keeps records of its verifications and due diligence."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5(4)",
+      "dutyType": "governance",
+      "effectiveFrom": "2019-01-01",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Retain a material net economic interest of at least 5% in the securitisation",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R2402-20210409",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, consolidated text of 9 April 2021, Article 6(1), (3) and (3a)",
+     "payload": {
+      "key": "obl-eu-secr-risk-retention",
+      "titles": {
+       "en": "Retain a material net economic interest of at least 5% in the securitisation"
+      },
+      "summaries": {
+       "en": "The originator, sponsor or original lender must keep, on an ongoing basis, a material net economic interest of at least 5% in each securitisation, in one of the five forms the Regulation allows (such as a vertical slice of each tranche or the first-loss tranche), measured at origination; if they have not agreed who retains it, the originator does. The retained interest must not be split among different types of retainer or be hedged or credit-risk mitigated, and fees that in practice reduce it must be taken into account."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6(1) and (3)",
+      "dutyType": "governance",
+      "effectiveFrom": "2019-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Do not select worse-performing assets for transfer to the SSPE",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R2402-20210409",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, consolidated text of 9 April 2021, Article 6(2)",
+     "payload": {
+      "key": "obl-eu-secr-no-adverse-selection",
+      "titles": {
+       "en": "Do not select worse-performing assets for transfer to the SSPE"
+      },
+      "summaries": {
+       "en": "An originator must not choose the assets it transfers to the SSPE with the aim of making their losses, over the life of the transaction or at most four years, higher than the losses on comparable assets it keeps on its balance sheet. Where the transferred assets perform significantly worse because of such intent, the competent authority must impose a sanction."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6(2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2019-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Make the securitisation's information available to investors and supervisors",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R2402-20210409",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, consolidated text of 9 April 2021, Article 7(1) and (2)",
+     "payload": {
+      "key": "obl-eu-secr-transparency",
+      "titles": {
+       "en": "Make the securitisation's information available to investors and supervisors"
+      },
+      "summaries": {
+       "en": "The originator, sponsor and SSPE must give holders, the competent authorities and, on request, potential investors: before pricing, the essential transaction documents, a transaction summary where there is no prospectus and, for an STS securitisation, the STS notification; every quarter (monthly for ABCP), the underlying-exposure data and investor reports; and, without delay, inside information and significant events. They designate one of themselves to do the reporting, and for a securitisation that needs a prospectus that entity makes the information available through a registered securitisation repository."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 7(1) and (2)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2019-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Do not use securitisation positions as underlying exposures of a securitisation",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R2402-20210409",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, consolidated text of 9 April 2021, Article 8",
+     "payload": {
+      "key": "obl-eu-secr-resecuritisation-ban",
+      "titles": {
+       "en": "Do not use securitisation positions as underlying exposures of a securitisation"
+      },
+      "summaries": {
+       "en": "A securitisation issued on or after 1 January 2019 must not include securitisation positions among its underlying exposures, unless the competent authority has permitted a resecuritisation for a legitimate purpose: facilitating the winding-up or preserving the viability of a credit institution, investment firm or financial institution, or protecting investors where the underlying exposures are non-performing. A fully supported ABCP programme is not a resecuritisation if none of its transactions is one and its credit enhancement adds no second layer of tranching."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 8",
+      "dutyType": "technical",
+      "effectiveFrom": "2019-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Apply the same credit-granting criteria to securitised exposures as to other exposures",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R2402-20210409",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, consolidated text of 9 April 2021, Article 9",
+     "payload": {
+      "key": "obl-eu-secr-credit-granting",
+      "titles": {
+       "en": "Apply the same credit-granting criteria to securitised exposures as to other exposures"
+      },
+      "summaries": {
+       "en": "Originators, sponsors and original lenders must grant credits that will be securitised under the same sound criteria, approval processes and systems they use for exposures they keep, based on a thorough assessment of the borrower's creditworthiness; for exposures that were already non-performing when bought, sound standards apply to their selection and pricing. An originator that buys and securitises a third party's exposures must verify that the original lender met these standards, and a pool of residential loans made after the Mortgage Credit Directive entered into force must not include loans marketed on the premise that the applicant's information might not be verified."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 9",
+      "dutyType": "governance",
+      "effectiveFrom": "2019-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify ESMA when a securitisation is designated STS and when it stops meeting the criteria",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R2402-20210409",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, consolidated text of 9 April 2021, Articles 18 and 27",
+     "payload": {
+      "key": "obl-eu-secr-sts-notification",
+      "titles": {
+       "en": "Notify ESMA when a securitisation is designated STS and when it stops meeting the criteria"
+      },
+      "summaries": {
+       "en": "Originators and sponsors that want a securitisation to count as simple, transparent and standardised (STS) must jointly notify ESMA on the prescribed template, explaining how each STS criterion is met, inform their competent authority and name a first contact point for investors and authorities; for an ABCP programme the sponsor notifies and for a synthetic securitisation the originator alone (on-balance-sheet synthetic securitisations can be STS since 9 April 2021). The STS label may be used only once the securitisation is notified and on ESMA's list, and they must notify ESMA and inform their competent authority immediately when it no longer meets the criteria."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 18 and Art. 27(1) and (4)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2019-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Sell a securitisation position to a retail client only after a suitability test",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R2402-20210409",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402, consolidated text of 9 April 2021, Article 3",
+     "payload": {
+      "key": "obl-eu-secr-retail-sale",
+      "titles": {
+       "en": "Sell a securitisation position to a retail client only after a suitability test"
+      },
+      "summaries": {
+       "en": "A firm selling a securitisation position to a retail client must first carry out a MiFID II suitability test, be satisfied that the position suits the client and immediately give the client a report of the outcome. Where the client's financial instrument portfolio, including cash deposits, is no more than EUR 500 000, the firm must also ensure that the client puts no more than 10% of it into securitisation positions and invests at least EUR 10 000 at the outset."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3",
+      "dutyType": "conduct",
+      "effectiveFrom": "2019-01-01",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SECR amending Regulation 2021/557, Regulation (EU) 2021/557",
+   "source": "https://eur-lex.europa.eu/eli/reg/2021/557/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2021/557 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32021r0557",
+    "titles": {
+     "en": "Regulation (EU) 2021/557 of the European Parliament and of the Council of 31 March 2021 amending Regulation (EU) 2017/2402 laying down a general framework for securitisation and creating a specific framework for simple, transparent and standardised securitisation to help the recovery from the COVID-19 crisis"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SECR amending Regulation 2021/557",
+    "officialRef": "Regulation (EU) 2021/557",
+    "eliUri": "https://data.europa.eu/eli/reg/2021/557/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2021-04-09"
+   }
+  },
+  {
+   "title": "Add SECR disclosure RTS, Commission Delegated Regulation (EU) 2020/1224",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32020r1224",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2020/1224 of 16 October 2019 supplementing Regulation (EU) 2017/2402 of the European Parliament and of the Council with regard to regulatory technical standards specifying the information and the details of a securitisation to be made available by the originator, sponsor and SSPE"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SECR disclosure RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2020/1224",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2020/1224/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2020-09-23"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report underlying-exposure data and investor reports with the content set for each exposure type",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224, Articles 2 and 3",
+     "payload": {
+      "key": "obl-eu-secr-disclosure-rts-exposure-data",
+      "titles": {
+       "en": "Report underlying-exposure data and investor reports with the content set for each exposure type"
+      },
+      "summaries": {
+       "en": "The entity that reports for a securitisation must make available the data on underlying exposures set out in the Annex for each exposure type in the pool (residential real estate, commercial real estate, corporate, automobile, consumer, credit card, leasing or other), plus Annex X for a non-performing exposure securitisation and Annex XI for an ABCP transaction, covering exposures active at the data cut-off date and those active at the previous cut-off. It must also make available investor reports with the content of Annex XII (non-ABCP) or Annex XIII (ABCP)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2 and 3",
+      "dutyType": "disclosure",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Report inside information and significant events with the prescribed content",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224, Articles 6 and 7",
+     "payload": {
+      "key": "obl-eu-secr-disclosure-rts-inside-information-events",
+      "titles": {
+       "en": "Report inside information and significant events with the prescribed content"
+      },
+      "summaries": {
+       "en": "The reporting entity must make available the inside information and the information on significant events about the securitisation with the content set out in Annex XIV for a non-ABCP securitisation or Annex XV for an ABCP securitisation."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6 and 7",
+      "dutyType": "disclosure",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep securitisation disclosures complete, consistent, timely and uniquely identified",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224, Articles 9, 10 and 11",
+     "payload": {
+      "key": "obl-eu-secr-disclosure-rts-data-quality",
+      "titles": {
+       "en": "Keep securitisation disclosures complete, consistent, timely and uniquely identified"
+      },
+      "summaries": {
+       "en": "The information made available must be complete and consistent, and when the reporting entity finds a factual error it must make a corrected report of all the information available without undue delay. 'No data' values may be used only where the Annex allows them and never to get around the rules, with the reasons given to the competent authority on request; the data cut-off date may be no more than two calendar months before submission (one month for parts of ABCP reports), and each securitisation carries a unique identifier built from the reporting entity's LEI that is never changed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 9 to 11",
+      "dutyType": "technical",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SECR disclosure ITS, Commission Implementing Regulation (EU) 2020/1225",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1225/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1225 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32020r1225",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2020/1225 of 29 October 2019 laying down implementing technical standards with regard to the format and standardised templates for making available the information and details of a securitisation by the originator, sponsor and SSPE"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SECR disclosure ITS",
+    "officialRef": "Commission Implementing Regulation (EU) 2020/1225",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2020/1225/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2020-09-23"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Use the standardised templates and XML format for securitisation disclosures",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1225/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1225, Articles 1 to 5",
+     "payload": {
+      "key": "obl-eu-secr-disclosure-its-templates",
+      "titles": {
+       "en": "Use the standardised templates and XML format for securitisation disclosures"
+      },
+      "summaries": {
+       "en": "The reporting entity must make the underlying-exposure data and investor reports, and for a securitisation that needs a prospectus also the inside information and significant events, available on the templates in the Annexes that match the exposure and securitisation type, in the formats set out in Table 1 of Annex I. The information must be electronic and machine-readable, using common XML templates."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1 to 5",
+      "dutyType": "technical",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add STS notification RTS, Commission Delegated Regulation (EU) 2020/1226",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1226/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1226 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32020r1226",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2020/1226 of 12 November 2019 supplementing Regulation (EU) 2017/2402 of the European Parliament and of the Council and laying down regulatory technical standards specifying the information to be provided in accordance with the STS notification requirements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "STS notification RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2020/1226",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2020/1226/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2020-09-23"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Include in the STS notification the information set out for the securitisation type",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02020R1226-20220815",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1226, consolidated text of 15 August 2022, Articles 1 and 2",
+     "payload": {
+      "key": "obl-eu-sts-notification-rts-content",
+      "titles": {
+       "en": "Include in the STS notification the information set out for the securitisation type"
+      },
+      "summaries": {
+       "en": "An STS notification must contain the information in Annex I for a non-ABCP securitisation, Annex II for an ABCP transaction, Annex III for an ABCP programme or Annex IV for an on-balance-sheet synthetic securitisation. Relevant parts of the prospectus or other transaction documents may be referenced in the additional-information column, clearly identified; for a securitisation without a prospectus, ESMA publishes only the few fields named for that case."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1 and 2",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add STS notification ITS, Commission Implementing Regulation (EU) 2020/1227",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1227/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1227 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32020r1227",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2020/1227 of 12 November 2019 laying down implementing technical standards with regard to templates for the provision of information in accordance with the STS notification requirements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "STS notification ITS",
+    "officialRef": "Commission Implementing Regulation (EU) 2020/1227",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2020/1227/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2020-09-23"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Submit the STS notification on the prescribed templates in machine-readable form",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02020R1227-20221102",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1227, consolidated text of 2 November 2022, Article 1",
+     "payload": {
+      "key": "obl-eu-sts-notification-its-templates",
+      "titles": {
+       "en": "Submit the STS notification on the prescribed templates in machine-readable form"
+      },
+      "summaries": {
+       "en": "The STS notification must be submitted electronically and in machine-readable form on the template in Annex I (non-ABCP securitisation), Annex II (ABCP transaction), Annex III (ABCP programme) or Annex IV (on-balance-sheet synthetic securitisation), with any additional information in the 'Box to complete' field. Where information is unavailable or not required because of the transitional provisions, the field must say so in the words the Regulation prescribes."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SECR risk retention RTS, Commission Delegated Regulation (EU) 2023/2175",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32023r2175",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2023/2175 of 7 July 2023 on supplementing Regulation (EU) 2017/2402 of the European Parliament and of the Council with regard to regulatory technical standards specifying in greater detail the risk retention requirements for originators, sponsors, original lenders, and servicers"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SECR risk retention RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2023/2175",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2023/2175/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2023-11-07"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Hold and measure the retained interest as the risk retention standards prescribe",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Articles 3 to 10",
+     "payload": {
+      "key": "obl-eu-secr-rr-rts-retention-modalities",
+      "titles": {
+       "en": "Hold and measure the retained interest as the risk retention standards prescribe"
+      },
+      "summaries": {
+       "en": "The retainer must fulfil the 5% retention by one of the methods recognised for the chosen option and measure it at origination (the issue date, the date the credit protection agreement is signed or the date a refundable purchase price discount is agreed), without counting traditional excess spread; the option and method may not change during the life of the securitisation except in exceptional circumstances not used to reduce the retained amount. Retention in synthetic or contingent form must at least equal the amount the corresponding option requires and be explained in detail in the offering document or transaction summary."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3 to 10",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Do not hedge the credit risk of, sell or front-load the repayment of the retained interest",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Articles 12 and 15",
+     "payload": {
+      "key": "obl-eu-secr-rr-rts-no-hedging-or-sale",
+      "titles": {
+       "en": "Do not hedge the credit risk of, sell or front-load the repayment of the retained interest"
+      },
+      "summaries": {
+       "en": "The retained interest must not be hedged against its credit risk or credit-risk mitigated, and the retainer must not sell, transfer or surrender the rights and obligations arising from it, except on its insolvency, for legal reasons beyond its control or within retention on a consolidated basis; it may serve as collateral for secured funding as long as the credit risk stays with the retainer. Arrangements that make the retained interest decline faster than the interest transferred, including priority fees to the retainer that are not set at arm's length, or that are guaranteed or paid up front where this pushes the effective retained interest below the required minimum, are not allowed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 12 and 15",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Be able to show controls that prevent selecting worse assets for securitisation",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175, Article 18",
+     "payload": {
+      "key": "obl-eu-secr-rr-rts-asset-selection-controls",
+      "titles": {
+       "en": "Be able to show controls that prevent selecting worse assets for securitisation"
+      },
+      "summaries": {
+       "en": "Under the ban on adverse selection, balance-sheet assets that meet the securitisation's eligibility criteria count as comparable to the transferred assets when similar factors drive their expected performance and they are not expected to perform significantly better. In judging compliance, the supervisor takes into account whether the originator has internal policies, procedures and controls to prevent the systematic or intentional selection of assets of worse average credit quality for securitisation."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 18",
+      "dutyType": "governance",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add STS homogeneity RTS, Commission Delegated Regulation (EU) 2019/1851",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2019/1851/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/1851 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019r1851",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2019/1851 of 28 May 2019 supplementing Regulation (EU) 2017/2402 of the European Parliament and of the Council with regard to regulatory technical standards on the homogeneity of the underlying exposures in securitisation"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "STS homogeneity RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2019/1851",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2019/1851/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-11-26"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Build an STS pool only from exposures that meet the homogeneity conditions",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R1851-20240306",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/1851, consolidated text of 6 March 2024 (as amended by Delegated Regulation (EU) 2024/584), Articles 1 and 2",
+     "payload": {
+      "key": "obl-eu-sts-homogeneity-rts-pool",
+      "titles": {
+       "en": "Build an STS pool only from exposures that meet the homogeneity conditions"
+      },
+      "summaries": {
+       "en": "For an STS securitisation, the underlying exposures count as homogeneous only if they belong to one asset type (such as residential loans, commercial real-estate loans, consumer credit, corporate credit, auto loans and leases, credit card receivables or trade receivables), are underwritten under standards with similar approaches to credit risk, are serviced under similar procedures and, where applicable, share one or more of the homogeneity factors set for their asset type, such as the ranking of security rights, the type of property or obligor, or the jurisdiction. An exposure that fits more than one asset type is assigned to only one."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1 and 2",
+      "dutyType": "technical",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add STS synthetic performance triggers RTS, Commission Delegated Regulation (EU) 2024/920",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2024/920/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/920 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r0920",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2024/920 of 13 December 2023 supplementing Regulation (EU) 2017/2402 of the European Parliament and of the Council with regard to regulatory technical standards specifying the performance-related triggers and the criteria for the calibration of those triggers"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "STS synthetic performance triggers RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2024/920",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2024/920/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2024-04-11"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set the performance-related triggers of an STS synthetic securitisation as specified",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/920/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/920, Articles 2 to 4",
+     "payload": {
+      "key": "obl-eu-sts-triggers-rts-set-triggers",
+      "titles": {
+       "en": "Set the performance-related triggers of an STS synthetic securitisation as specified"
+      },
+      "summaries": {
+       "en": "In an STS on-balance-sheet securitisation with a non-sequential priority of payments, the parties to the credit protection agreement must measure the backward-looking triggers on cumulative defaults or losses against the portfolio amount the standards define, set a threshold for the fall in the detachment point of the most senior protected tranche, and set a forward-looking trigger based on the largest obligor exposures (effective number of exposures below 100) or on the share of higher credit-risk buckets (100 or more), with the bucket criteria written into the transaction documents."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2 to 4",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Calibrate the triggers so the protecting tranches can still absorb late losses",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/920/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/920, Articles 5 and 6",
+     "payload": {
+      "key": "obl-eu-sts-triggers-rts-calibration",
+      "titles": {
+       "en": "Calibrate the triggers so the protecting tranches can still absorb late losses"
+      },
+      "summaries": {
+       "en": "The trigger thresholds must be set so that they activate before the tranches providing credit protection have amortised too far to absorb significant losses late in the transaction, with the backward-looking triggers tested in a back-loaded loss scenario and, for an originator under the securitisation capital rules, assumptions consistent with its significant risk transfer assessment. Securitisations notified to ESMA before 11 April 2024 may keep the STS label without meeting these rules as long as they comply with Article 18 of the Securitisation Regulation."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5 and 6",
+      "dutyType": "governance",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add STS sustainability disclosure RTS, Commission Delegated Regulation (EU) 2024/1700",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1700/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1700 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r1700",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2024/1700 of 5 March 2024 supplementing Regulation (EU) 2017/2402 of the European Parliament and of the Council with regard to regulatory technical standards specifying, for simple, transparent and standardised non-ABCP traditional securitisation, and for simple, transparent and standardised on-balance-sheet securitisation, the content, methodologies and presentation of information related to the principal adverse impacts of the assets financed by the underlying exposures on sustainability factors"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "STS sustainability disclosure RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2024/1700",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2024/1700/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2024-07-08"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Publish the principal adverse impacts statement of an STS securitisation in the prescribed format",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1700/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1700, Article 2",
+     "payload": {
+      "key": "obl-eu-sts-pai-rts-statement",
+      "titles": {
+       "en": "Publish the principal adverse impacts statement of an STS securitisation in the prescribed format"
+      },
+      "summaries": {
+       "en": "An originator of an STS non-ABCP traditional or STS on-balance-sheet securitisation that chooses to publish information on the principal adverse impacts of the financed assets on sustainability factors, instead of their environmental performance, must use the statement format of Tables 1 to 3 of the Annex: a summary of at most two A4 pages, an explanation of how these impacts are considered in selecting exposures and in credit granting, and the indicators, compared with up to four previous periods. Where indicator data is not readily available, it must describe its best efforts to obtain it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2(1) to (6)",
+      "dutyType": "disclosure",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Make the sustainability statement available with the exposure data and correct errors without delay",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1700/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1700, Articles 1 and 2(7)",
+     "payload": {
+      "key": "obl-eu-sts-pai-rts-presentation",
+      "titles": {
+       "en": "Make the sustainability statement available with the exposure data and correct errors without delay"
+      },
+      "summaries": {
+       "en": "The originator must present the information using the Annex's templates, definitions and formulas in a clear, concise and not misleading way, in a searchable electronic format and on the same terms as the underlying-exposure data under Article 7(1)(a) of the Securitisation Regulation, reporting the 'No Data' option in the energy performance certificate fields of the residential and auto loan templates of the disclosure standards. When it finds a factual error, it must publish a corrected statement without undue delay."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1 and Art. 2(7)",
+      "dutyType": "disclosure",
+      "terms": []
+     }
+    }
+   ]
+  }
+ ]
+}
