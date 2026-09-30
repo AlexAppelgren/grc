@@ -30,11 +30,13 @@ ACTOR = Actor.system(SEED_REASON)
 # second pair of eyes on a proposal is never the definition that filed it. The third is the
 # one a bank may add for itself (AGT-04, ruling 1): bleqq's definition, a bank's agent. The
 # fourth is the bank's own researcher for a scope item the library does not cover (OWN-02).
+# The fifth files the library baseline, the starting inventory, as proposals (D-118).
 SHIPPED: tuple[tuple[str, int], ...] = (
     ("watch-sweeper", 1),
     ("library-confirmer", 2),
     ("tenant-source-watch", 1),
     ("scope-researcher", 1),
+    ("library-baseline", 1),
 )
 
 

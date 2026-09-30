@@ -1179,6 +1179,55 @@
    "name": "Stortinget",
    "jurisdiction": "NO",
    "url": "https://www.stortinget.no/"
+  },
+  {
+   "key": "european-commission",
+   "code": "EC",
+   "name": "European Commission",
+   "jurisdiction": "EU",
+   "url": "https://commission.europa.eu/"
+  },
+  {
+   "key": "council-eu",
+   "code": "Council",
+   "name": "Council of the European Union",
+   "jurisdiction": "EU",
+   "url": "https://www.consilium.europa.eu/"
+  },
+  {
+   "key": "eba",
+   "code": "EBA",
+   "name": "European Banking Authority",
+   "jurisdiction": "EU",
+   "url": "https://www.eba.europa.eu/"
+  },
+  {
+   "key": "eiopa",
+   "code": "EIOPA",
+   "name": "European Insurance and Occupational Pensions Authority",
+   "jurisdiction": "EU",
+   "url": "https://www.eiopa.europa.eu/"
+  },
+  {
+   "key": "folketinget",
+   "code": "FOLKETINGET",
+   "name": "Folketinget",
+   "jurisdiction": "DK",
+   "url": "https://www.ft.dk/"
+  },
+  {
+   "key": "eduskunta",
+   "code": "EDUSKUNTA",
+   "name": "Eduskunta",
+   "jurisdiction": "FI",
+   "url": "https://www.eduskunta.fi/"
+  },
+  {
+   "key": "finanssivalvonta",
+   "code": "FIN-FSA",
+   "name": "Finanssivalvonta",
+   "jurisdiction": "FI",
+   "url": "https://www.finanssivalvonta.fi/"
   }
  ],
  "instruments": [

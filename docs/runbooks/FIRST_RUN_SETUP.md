@@ -52,6 +52,7 @@ roles and its own vocabularies when it is created, not from the deploy.
 | 14 | Create an API key for the research agents with the `watch.write` and `proposals.write` scopes; store it in the runner's configuration | Tenant admin, Integrations | `integrations.manage` plus step-up | 10 |
 | 15 | Switch the agents on and set a cadence within the plan | Tenant admin, Agents | `agents.manage` | 14 (R2: chunk 11) |
 | 16 | Optional: `python manage.py seed_demo` (lands with chunk 3) loads the prototype's sample data into a demo tenant. It refuses to run when `ENVIRONMENT` is a production name | `api` shell | None | 6 |
+| 17 | Fill the shared library from its baseline (D-118, ADR 0065): `python manage.py file_library_baseline --dry-run` to see what it will file, then `python manage.py file_library_baseline`. It files every instrument of `backend/apps/library/baseline/` the library does not hold as a proposal of the agent `library-baseline`. Approve them in the console queue with a passkey, run the command again to file their duties, and approve those. Each run is safe to repeat: it files only what the library neither holds nor has open, and a rejected entry stays rejected until its file changes | `api` shell, then Platform console, Proposals | None to file; `proposals.review` (the `library_editor` role, step 13) plus step-up to approve | 5, 13 |
 
 ## The steps above are tested on an empty database
 
@@ -65,7 +66,7 @@ change, beside the ordinary E2E job.
 
 The journey is `frontend/tests/e2e/coldstart.journey.spec.ts` (scenario ADM-S8 in
 `backend/apps/governance/app.md`). When a step below changes, change it there too: the
-runbook and the test are meant to say the same thing. Steps 12 to 16 are not walked yet;
+runbook and the test are meant to say the same thing. Steps 12 to 17 are not walked yet (step 17 is proved in the backend suite, `apps/proposals/tests_baseline.py`);
 step 15 (agents) and the watch feed's empty state wait for their chunks.
 
 ## What to check before inviting anyone real

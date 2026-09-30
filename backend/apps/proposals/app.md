@@ -59,6 +59,13 @@ naming no person, and naming by definition key the agents that proposed or confi
 change (INV-05, D-62). Its own requests to a shared list it follows through
 `GET /tenant/proposals`, which answers its rows and no other bank's.
 
+The library's starting inventory arrives through this queue too (D-118, ADR 0065). The
+baseline in `apps/library/baseline/` is researched data in the shape a proposal takes, and
+`manage.py file_library_baseline` files what the library neither holds nor has open as
+proposals of the platform agent `library-baseline`, instruments first and each duty once
+its instrument is approved (`apps/proposals/baseline.py`). A second principal approves each
+one as any other: a person with a passkey today, the confirming agent once it runs.
+
 A bank's own private records travel the same table but never the console: the
 server sets the proposal's owner from the target, and a second person in the
 same bank approves under `private_records.approve` with a passkey, through the
@@ -410,5 +417,17 @@ Then the request answers 422 and nothing changes
 When they reject it with a reason
 Then it is rejected, audited, and nothing is applied
 And tenant B's fetch of either proposal answers 404, and no API key of any scope reaches the approve or reject route
+```
+### PRO-S16 — The library baseline arrives through the queue, instruments first `@integration` (PRO-01, PRO-02, INV-01, INV-03, INV-05)
+```gherkin
+Given the library baseline holds an instrument the library does not hold, with one duty under it
+When the platform files the baseline
+Then the queue holds a new instrument proposed by the agent library-baseline, naming a run of it and a source on every field
+And the duty waits, because its instrument is not in the library yet
+And the run closed as succeeded with the one proposal it submitted, handed to no runner
+When a library editor approves the instrument with a fresh passkey
+And the platform files the baseline again
+Then the duty is proposed under the instrument, and approving it applies it
+And filing a third time proposes nothing, because the library holds both
 ```
 
