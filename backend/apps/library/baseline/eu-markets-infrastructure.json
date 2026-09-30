@@ -1,0 +1,1742 @@
+{
+ "tranche": "eu-markets-infrastructure",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add EMIR, Regulation (EU) No 648/2012",
+   "source": "https://eur-lex.europa.eu/eli/reg/2012/648/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32012r0648",
+    "titles": {
+     "en": "Regulation (EU) No 648/2012 of the European Parliament and of the Council of 4 July 2012 on OTC derivatives, central counterparties and trade repositories"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EMIR",
+    "officialRef": "Regulation (EU) No 648/2012",
+    "eliUri": "https://data.europa.eu/eli/reg/2012/648/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2012-08-16"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Clear OTC derivatives in classes subject to the clearing obligation through an authorised or recognised CCP",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 4",
+     "payload": {
+      "key": "obl-eu-emir-clearing",
+      "titles": {
+       "en": "Clear OTC derivatives in classes subject to the clearing obligation through an authorised or recognised CCP"
+      },
+      "summaries": {
+       "en": "Where both counterparties are in scope (financial counterparties and non-financial counterparties above the clearing thresholds, or equivalent third-country entities), every OTC derivative in a class declared subject to the clearing obligation and entered into or novated after the obligation takes effect must be cleared at a CCP authorised or recognised under EMIR for that class. The firm must become a clearing member or a client, or set up indirect clearing arrangements; intragroup transactions can be exempted after notifying the competent authorities. The classes and the dates the obligation takes effect are set in Commission delegated regulations, the first from 21 June 2016."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4(1) to (3)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2016-06-21",
+      "terms": [
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Calculate OTC derivative positions against the clearing thresholds and notify when a threshold is exceeded",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 4a, inserted by Regulation (EU) 2019/834",
+     "payload": {
+      "key": "obl-eu-emir-clearing-threshold",
+      "titles": {
+       "en": "Calculate OTC derivative positions against the clearing thresholds and notify when a threshold is exceeded"
+      },
+      "summaries": {
+       "en": "Every 12 months a financial counterparty may calculate its aggregate month-end average position in OTC derivatives for the previous 12 months, counting the contracts of every entity in its group. If it does not calculate, or a clearing threshold is exceeded, it must notify ESMA and its competent authority immediately, set up clearing arrangements within four months and clear contracts in cleared classes entered into more than four months after the notification; it stays subject until it shows the authority it is below the threshold. The revised threshold rules of Regulation (EU) 2024/2987 for these paragraphs apply only once the new clearing threshold technical standards enter into force."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4a(1) to (3); Art. 5 of Regulation (EU) 2024/2987",
+      "dutyType": "reporting",
+      "effectiveFrom": "2019-06-17"
+     }
+    },
+    {
+     "title": "Add the duty: Provide clearing services to clients on fair, reasonable, non-discriminatory and transparent terms",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 4(3a), inserted by Regulation (EU) 2019/834",
+     "payload": {
+      "key": "obl-eu-emir-frandt-clearing",
+      "titles": {
+       "en": "Provide clearing services to clients on fair, reasonable, non-discriminatory and transparent terms"
+      },
+      "summaries": {
+       "en": "A clearing member or client that provides clearing services, directly or indirectly, must do so on fair, reasonable, non-discriminatory and transparent commercial terms, although it is not obliged to contract. It must take all reasonable measures to identify, prevent, manage and monitor conflicts of interest, in particular between its trading and clearing units, also where these sit in different group entities."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4(3a)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2021-06-18"
+     }
+    },
+    {
+     "title": "Add the duty: Tell clearing clients they can clear at an EU CCP and disclose clearing fees per CCP",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 7c, inserted by Regulation (EU) 2024/2987",
+     "payload": {
+      "key": "obl-eu-emir-clearing-fee-disclosure",
+      "titles": {
+       "en": "Tell clearing clients they can clear at an EU CCP and disclose clearing fees per CCP"
+      },
+      "summaries": {
+       "en": "A clearing member or client that offers clearing both at an EU-authorised CCP and at a recognised third-country CCP must tell its clients, where the offer is available, that they can clear through the EU CCP, when the client clearing relationship starts and at least every quarter. Anyone providing clearing services to clients must disclose clearly, for each CCP, the fees charged for the clearing service and any other associated fees and costs."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 7c(1) to (3)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2024-12-24"
+     }
+    },
+    {
+     "title": "Add the duty: Hold an operational active account at an EU CCP for euro and zloty interest rate derivatives",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 7a, inserted by Regulation (EU) 2024/2987",
+     "payload": {
+      "key": "obl-eu-emir-active-account",
+      "titles": {
+       "en": "Hold an operational active account at an EU CCP for euro and zloty interest rate derivatives"
+      },
+      "summaries": {
+       "en": "A financial or non-financial counterparty subject to the clearing obligation that exceeds the clearing threshold in euro or Polish zloty interest rate derivatives or euro short-term interest rate derivatives must notify ESMA and its competent authority and, within six months, hold at least one active account at an EU-authorised CCP that is permanently functional, can take large volumes at short notice and is stress-tested at least once a year; contracts cleared across its EU-supervised group count towards the threshold. It must also clear representative trades in that account, unless its outstanding notional cleared in those contracts is below EUR 6 billion; a counterparty clearing at least 85% of those contracts at an EU CCP is exempt from the operational conditions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 7a(1) to (6)",
+      "dutyType": "governance",
+      "effectiveFrom": "2024-12-24"
+     }
+    },
+    {
+     "title": "Add the duty: Report on the active account to the competent authority every six months",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 7b, inserted by Regulation (EU) 2024/2987",
+     "payload": {
+      "key": "obl-eu-emir-active-account-reporting",
+      "titles": {
+       "en": "Report on the active account to the competent authority every six months"
+      },
+      "summaries": {
+       "en": "A counterparty subject to the active account requirement must calculate its activity and exposures in the covered derivatives and report every six months to its competent authority what is needed to assess compliance, using its EMIR trade reports where relevant, including proof that the account's legal documentation, IT connectivity and internal processes are in place. If it also holds accounts at a Tier 2 third-country CCP for those contracts, it must report on the resources and systems that let it move large volumes to the active account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 7b(1) and (2)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-12-24",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report clearing activity at recognised third-country CCPs every year",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 7d, inserted by Regulation (EU) 2024/2987",
+     "payload": {
+      "key": "obl-eu-emir-third-country-ccp-reporting",
+      "titles": {
+       "en": "Report clearing activity at recognised third-country CCPs every year"
+      },
+      "summaries": {
+       "en": "A clearing member or client that clears contracts through a third-country CCP recognised under EMIR must report that activity annually to its competent authority, or, within a group under EU consolidated supervision, through the EU parent on a consolidated basis. The report covers the instruments cleared, average values cleared per EU currency and asset class, margins collected, default fund contributions and the largest payment obligation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 7d(1)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-12-24",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report every derivative contract to a trade repository by the next working day",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 9, as amended by Regulation (EU) 2024/2987",
+     "payload": {
+      "key": "obl-eu-emir-trade-reporting",
+      "titles": {
+       "en": "Report every derivative contract to a trade repository by the next working day"
+      },
+      "summaries": {
+       "en": "A counterparty must ensure that the details of every derivative contract it concludes, and of every modification or termination, reach a registered or recognised trade repository no later than the working day after the event, correctly and without duplication, and must have procedures that assure the quality of the data. Reporting may be delegated, but the counterparty remains responsible for correct reporting."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9(1), (1e) and (1f)",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report OTC derivatives on behalf of non-financial counterparties below the clearing thresholds",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 9(1a), inserted by Regulation (EU) 2019/834",
+     "payload": {
+      "key": "obl-eu-emir-reporting-for-small-nfc",
+      "titles": {
+       "en": "Report OTC derivatives on behalf of non-financial counterparties below the clearing thresholds"
+      },
+      "summaries": {
+       "en": "A financial counterparty that concludes an OTC derivative with a non-financial counterparty below the clearing thresholds is solely responsible and legally liable for reporting the details for both counterparties and for their correctness. The non-financial counterparty supplies the details the bank cannot be expected to hold, and may instead choose to report itself after telling the bank beforehand."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9(1a)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2020-06-18",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep a record of every derivative contract for five years after it ends",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 9(2)",
+     "payload": {
+      "key": "obl-eu-emir-record-keeping",
+      "titles": {
+       "en": "Keep a record of every derivative contract for five years after it ends"
+      },
+      "summaries": {
+       "en": "A counterparty must keep a record of every derivative contract it has concluded, and of every modification, for at least five years after the contract terminates."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9(2)",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Confirm, reconcile and resolve disputes on OTC derivatives not cleared by a CCP",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 11(1)",
+     "payload": {
+      "key": "obl-eu-emir-confirmation-reconciliation",
+      "titles": {
+       "en": "Confirm, reconcile and resolve disputes on OTC derivatives not cleared by a CCP"
+      },
+      "summaries": {
+       "en": "A counterparty that enters into an OTC derivative not cleared by a CCP must, with due diligence, have procedures to measure, monitor and mitigate operational and counterparty credit risk. These include timely confirmation of the contract terms, electronically where available, and robust, resilient and auditable processes to reconcile portfolios, identify and resolve disputes early and monitor the value of outstanding contracts."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 11(1)",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Value outstanding uncleared OTC derivatives every day",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 11(2)",
+     "payload": {
+      "key": "obl-eu-emir-daily-valuation",
+      "titles": {
+       "en": "Value outstanding uncleared OTC derivatives every day"
+      },
+      "summaries": {
+       "en": "A financial counterparty, and a non-financial counterparty above the clearing thresholds, must mark its outstanding OTC derivatives not cleared by a CCP to market every day, or use reliable and prudent marking to model where market conditions prevent marking to market."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 11(2)",
+      "dutyType": "technical",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Exchange collateral on uncleared OTC derivatives and hold capital for the risk collateral does not cover",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Article 11, as amended by Regulation (EU) 2024/2987",
+     "payload": {
+      "key": "obl-eu-emir-collateral-exchange",
+      "titles": {
+       "en": "Exchange collateral on uncleared OTC derivatives and hold capital for the risk collateral does not cover"
+      },
+      "summaries": {
+       "en": "A financial counterparty must have risk-management procedures requiring the timely, accurate and appropriately segregated exchange of collateral for OTC derivatives not cleared by a CCP, and must hold appropriate and proportionate capital for risk not covered by that exchange. Single-stock and equity index options are exempt from the collateral requirement, and intragroup transactions can be exempted on the conditions and approvals the Regulation sets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 11(3), (3a) and (4) to (10)",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Obtain supervisory authorisation before using or changing an initial margin model",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/648/2025-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012, consolidated text of 17 January 2025, Articles 11(3) and 89(13), inserted by Regulation (EU) 2024/2987",
+     "payload": {
+      "key": "obl-eu-emir-im-model-authorisation",
+      "titles": {
+       "en": "Obtain supervisory authorisation before using or changing an initial margin model"
+      },
+      "summaries": {
+       "en": "A financial counterparty must apply to its competent authority, providing the information through ESMA's central database, before it uses or changes a model to calculate initial margin for uncleared OTC derivatives; the authority decides within six months for a new model and three months for a change. A model based on a pro forma model also needs validation, by EBA once it has announced its central validation function and by the competent authority until then."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 11(3), third to fifth subparagraphs; Art. 89(13)",
+      "dutyType": "governance",
+      "effectiveFrom": "2024-12-24"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EMIR 3, Regulation (EU) 2024/2987",
+   "source": "https://eur-lex.europa.eu/eli/reg/2024/2987/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2024/2987 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r2987",
+    "titles": {
+     "en": "Regulation (EU) 2024/2987 of the European Parliament and of the Council of 27 November 2024 amending Regulations (EU) No 648/2012, (EU) No 575/2013 and (EU) 2017/1131 as regards measures to mitigate excessive exposures to third-country central counterparties and improve the efficiency of Union clearing markets"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EMIR 3",
+    "officialRef": "Regulation (EU) 2024/2987",
+    "eliUri": "https://data.europa.eu/eli/reg/2024/2987/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2024-12-24"
+   }
+  },
+  {
+   "title": "Add EMIR 3 Directive, Directive (EU) 2024/2994",
+   "source": "https://eur-lex.europa.eu/eli/dir/2024/2994/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2024/2994 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024l2994",
+    "titles": {
+     "en": "Directive (EU) 2024/2994 of the European Parliament and of the Council of 27 November 2024 amending Directives 2009/65/EC, 2013/36/EU and (EU) 2019/2034 as regards the treatment of concentration risk arising from exposures towards central counterparties and of counterparty risk in centrally cleared derivative transactions"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EMIR 3 Directive",
+    "officialRef": "Directive (EU) 2024/2994",
+    "eliUri": "https://data.europa.eu/eli/dir/2024/2994/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2024-12-24"
+   }
+  },
+  {
+   "title": "Add EMIR margin RTS, Commission Delegated Regulation (EU) 2016/2251",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2016/2251/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/2251 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r2251",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2016/2251 of 4 October 2016 supplementing Regulation (EU) No 648/2012 of the European Parliament and of the Council on OTC derivatives, central counterparties and trade repositories with regard to regulatory technical standards for risk-mitigation techniques for OTC derivative contracts not cleared by a central counterparty"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EMIR margin RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2016/2251",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2016/2251/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2017-01-04"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Establish and document risk-management procedures for exchanging collateral on uncleared OTC derivatives",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/2251/2023-02-14/eng",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/2251, consolidated text of 14 February 2023, Article 2",
+     "payload": {
+      "key": "obl-eu-emir-margin-procedures",
+      "titles": {
+       "en": "Establish and document risk-management procedures for exchanging collateral on uncleared OTC derivatives"
+      },
+      "summaries": {
+       "en": "A counterparty must establish, apply and document risk-management procedures for exchanging collateral on non-centrally cleared OTC derivatives. They must cover eligible collateral, calculating and collecting margin, managing and segregating collateral and valuing it, exceptions and their reporting to senior management, and the netting and collateral agreements that must be in place at the latest when the contract is concluded."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 2(1) and (2)",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Calculate variation margin daily and provide it within the same business day",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/2251/2023-02-14/eng",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/2251, consolidated text of 14 February 2023, Articles 9, 10, 12 and 37",
+     "payload": {
+      "key": "obl-eu-emir-margin-variation",
+      "titles": {
+       "en": "Calculate variation margin daily and provide it within the same business day"
+      },
+      "summaries": {
+       "en": "Variation margin on non-centrally cleared OTC derivatives must be calculated at least daily, and the posting counterparty must provide it within the same business day of the calculation date, or within two business days where the Regulation's conditions for the longer period are met. This has applied since 4 February 2017 between the largest groups and since 1 March 2017 for other counterparties."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9(1), 10, 12 and 37(1)",
+      "dutyType": "technical",
+      "effectiveFrom": "2017-02-04",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Calculate, post and segregate initial margin on uncleared OTC derivatives above the EUR 8 billion threshold",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/2251/2023-02-14/eng",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/2251, consolidated text of 14 February 2023, Articles 9, 13, 19, 28 and 36",
+     "payload": {
+      "key": "obl-eu-emir-margin-initial",
+      "titles": {
+       "en": "Calculate, post and segregate initial margin on uncleared OTC derivatives above the EUR 8 billion threshold"
+      },
+      "summaries": {
+       "en": "Initial margin must be calculated no later than the business day after a triggering event, such as a new contract in the netting set, and posted within the same business day of the calculation date, keeping it segregated so that it is returned to the poster if the collector defaults. Counterparties may agree not to collect initial margin on new contracts in a calendar year where either of them, at group level, had an aggregate month-end average notional of non-centrally cleared OTC derivatives below EUR 8 billion for March to May of the preceding year. The requirement was phased in from 4 February 2017 for the largest groups and has applied down to the EUR 8 billion level since 1 September 2022."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9(2), 11, 13, 19, 28 and 36(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2017-02-04"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EMIR interest rate clearing RTS, Commission Delegated Regulation (EU) 2015/2205",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2015/2205/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/2205 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32015r2205",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2015/2205 of 6 August 2015 supplementing Regulation (EU) No 648/2012 of the European Parliament and of the Council with regard to regulatory technical standards on the clearing obligation"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EMIR interest rate clearing RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2015/2205",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2015/2205/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2015-12-21"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Clear the Euribor and overnight index interest rate derivative classes declared subject to the clearing obligation",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/2205/2024-02-11/eng",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/2205, consolidated text of 11 February 2024, Articles 1 and 3 and Annex",
+     "payload": {
+      "key": "obl-eu-emir-co-g4-interest-rate-classes",
+      "titles": {
+       "en": "Clear the Euribor and overnight index interest rate derivative classes declared subject to the clearing obligation"
+      },
+      "summaries": {
+       "en": "Counterparties subject to EMIR's clearing obligation must clear these single-currency interest rate OTC derivatives without optionality: Euribor basis and fixed-to-float swaps from 28 days to 50 years and Euribor FRAs from 3 days to 3 years, and overnight index swaps on Fed Funds and €STR from 7 days to 3 years, SONIA and SOFR from 7 days to 50 years and TONA from 7 days to 30 years. The obligation took effect by counterparty category from 21 June 2016 (the later date applying between categories), from 18 May 2022 for the €STR and SONIA classes and from 11 February 2024 for the SOFR and TONA classes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 1, 3(1) to (1c) and Annex",
+      "dutyType": "conduct",
+      "effectiveFrom": "2016-06-21",
+      "terms": [
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EMIR NOK, PLN and SEK clearing RTS, Commission Delegated Regulation (EU) 2016/1178",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1178/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1178 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r1178",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2016/1178 of 10 June 2016 supplementing Regulation (EU) No 648/2012 of the European Parliament and of the Council with regard to regulatory technical standards on the clearing obligation"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EMIR NOK, PLN and SEK clearing RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2016/1178",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2016/1178/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-08-09"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Clear NIBOR, STIBOR and WIBOR interest rate swaps and FRAs declared subject to the clearing obligation",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1178/2023-02-14/eng",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1178, consolidated text of 14 February 2023, Articles 1 and 3 and Annex",
+     "payload": {
+      "key": "obl-eu-emir-co-nok-pln-sek-classes",
+      "titles": {
+       "en": "Clear NIBOR, STIBOR and WIBOR interest rate swaps and FRAs declared subject to the clearing obligation"
+      },
+      "summaries": {
+       "en": "Counterparties subject to EMIR's clearing obligation must clear single-currency fixed-to-float interest rate swaps without optionality referencing NIBOR in NOK (28 days to 10 years), STIBOR in SEK (28 days to 15 years) and WIBOR in PLN (28 days to 10 years), and FRAs referencing NIBOR (3 days to 2 years), STIBOR (3 days to 3 years) and WIBOR (3 days to 2 years). The obligation took effect by counterparty category between 9 February 2017 and 9 August 2019, the later date applying to a contract between two categories."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 1, 3(1) and Annex",
+      "dutyType": "conduct",
+      "effectiveFrom": "2017-02-09",
+      "terms": [
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EMIR reporting ITS, Commission Implementing Regulation (EU) 2022/1860",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2022/1860/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2022/1860 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32022r1860",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2022/1860 of 10 June 2022 laying down implementing technical standards for the application of Regulation (EU) No 648/2012 of the European Parliament and of the Council with regard to the standards, formats, frequency and methods and arrangements for reporting"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EMIR reporting ITS",
+    "officialRef": "Commission Implementing Regulation (EU) 2022/1860",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2022/1860/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2022-10-27"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Send EMIR derivative reports in the ISO 20022 XML format",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2022/1860/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2022/1860, Article 1",
+     "payload": {
+      "key": "obl-eu-emir-its-reporting-format",
+      "titles": {
+       "en": "Send EMIR derivative reports in the ISO 20022 XML format"
+      },
+      "summaries": {
+       "en": "The details of every derivative reported under EMIR must follow the standards and formats in the Regulation's annex and be sent electronically and machine-readably in the common ISO 20022 XML template."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 1",
+      "dutyType": "technical",
+      "effectiveFrom": "2024-04-29",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify each reported derivative with a unique transaction identifier generated by the responsible party",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2022/1860/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2022/1860, Article 7",
+     "payload": {
+      "key": "obl-eu-emir-its-uti",
+      "titles": {
+       "en": "Identify each reported derivative with a unique transaction identifier generated by the responsible party"
+      },
+      "summaries": {
+       "en": "Each reported derivative must carry an ISO 23897 unique transaction identifier made up of the generating entity's LEI and a code of up to 32 characters. The counterparties must settle who generates it by the Regulation's order of precedence, which starts with the CCP for cleared trades and the execution venue for trades executed on a venue but not cleared."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 7",
+      "dutyType": "technical",
+      "effectiveFrom": "2024-04-29",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify the competent authority promptly of significant EMIR reporting errors and obstacles",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2022/1860/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2022/1860, Article 9(1)",
+     "payload": {
+      "key": "obl-eu-emir-its-error-notification",
+      "titles": {
+       "en": "Notify the competent authority promptly of significant EMIR reporting errors and obstacles"
+      },
+      "summaries": {
+       "en": "The entity responsible for reporting must promptly notify its competent authority, and the reporting counterparty's authority if different, of misreporting from system flaws affecting a significant number of reports, of obstacles preventing reports reaching a trade repository on time, and of significant errors a trade repository would not reject. The notice states the error, when it occurred, the reports affected, the cause, the remedy and the timeline for correction."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9(1)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-04-29",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Agree data arrangements with the non-financial counterparties the bank reports for",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2022/1860/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2022/1860, Article 9(2)",
+     "payload": {
+      "key": "obl-eu-emir-its-small-nfc-arrangements",
+      "titles": {
+       "en": "Agree data arrangements with the non-financial counterparties the bank reports for"
+      },
+      "summaries": {
+       "en": "A financial counterparty that reports on behalf of a non-financial counterparty below the clearing thresholds must put arrangements in place so that counterparty supplies in time the details the bank cannot be expected to hold, tells it of changes in its clearing status, keeps its LEI renewed and gives notice when it decides to start or stop reporting itself."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9(2)",
+      "dutyType": "governance",
+      "effectiveFrom": "2024-04-29"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EMIR active account RTS, Commission Delegated Regulation (EU) 2026/305",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2026/305/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/305 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026r0305",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2026/305 of 29 October 2025 supplementing Regulation (EU) No 648/2012 of the European Parliament and of the Council with regard to regulatory technical standards specifying the operational conditions, the representativeness obligation and the reporting requirements related to the active account requirement"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EMIR active account RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2026/305",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2026/305/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2026-02-26"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Show the competent authority that the active account is contractually, technically and operationally ready, and test it every year",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/305/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/305, Articles 1 to 3",
+     "payload": {
+      "key": "obl-eu-emir-aar-operational-conditions",
+      "titles": {
+       "en": "Show the competent authority that the active account is contractually, technically and operationally ready, and test it every year"
+      },
+      "summaries": {
+       "en": "A counterparty subject to the active account requirement must be able to show its competent authority a contract for accessing and using an account at an EU CCP (directly or through a clearing member or client clearing provider), related internal policies and procedures, IT connectivity that can take the required volumes, exposure monitoring, staff and arrangements for a large inflow of trades or transfer of positions, and a written statement on the CCP's capacity. It must run technical and functional tests of the account every year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 1, 2 and 3",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Clear the required number of trades in the most relevant subcategories at an EU CCP",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/305/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/305, Articles 4 to 6",
+     "payload": {
+      "key": "obl-eu-emir-aar-representativeness",
+      "titles": {
+       "en": "Clear the required number of trades in the most relevant subcategories at an EU CCP"
+      },
+      "summaries": {
+       "en": "A counterparty in scope must clear at an EU-authorised CCP at least the minimum number of trades set in EMIR in its most relevant subcategories (by trade size and maturity) of each class: the five most relevant for euro interest rate OTC derivatives, the most relevant one for Polish zloty interest rate derivatives and the four most relevant for euro short-term interest rate derivatives, over reference periods that depend on its outstanding notional cleared."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4, 5 and 6",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Report active account data to the competent authority on the last day of January and July",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/305/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/305, Articles 7 to 10",
+     "payload": {
+      "key": "obl-eu-emir-aar-reporting",
+      "titles": {
+       "en": "Report active account data to the competent authority on the last day of January and July"
+      },
+      "summaries": {
+       "en": "A counterparty in scope must report, using the Regulation's templates, its data on the thresholds, the account's operational conditions and representativeness to its competent authority on the last day of January and of July each year, each report covering the previous 12 months. The first report is due on the first of those dates falling at least six months after 26 February 2026."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 7 to 10",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SFTR, Regulation (EU) 2015/2365",
+   "source": "https://eur-lex.europa.eu/eli/reg/2015/2365/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2015/2365 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32015r2365",
+    "titles": {
+     "en": "Regulation (EU) 2015/2365 of the European Parliament and of the Council of 25 November 2015 on transparency of securities financing transactions and of reuse and amending Regulation (EU) No 648/2012"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SFTR",
+    "officialRef": "Regulation (EU) 2015/2365",
+    "eliUri": "https://data.europa.eu/eli/reg/2015/2365/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-01-12"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report securities financing transactions to a trade repository by the next working day",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/2365/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/2365, consolidated text of 9 January 2024, Articles 4 and 33",
+     "payload": {
+      "key": "obl-eu-sftr-reporting",
+      "titles": {
+       "en": "Report securities financing transactions to a trade repository by the next working day"
+      },
+      "summaries": {
+       "en": "A counterparty to a securities financing transaction must report its details, and any modification or termination, to a registered or recognised trade repository no later than the working day after the event; a financial counterparty dealing with a small non-financial counterparty reports for both. For credit institutions and investment firms the duty applies from 11 April 2020, twelve months after the reporting standards entered into force."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4(1) and (3); Art. 33(2)(a)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2020-04-11",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep a record of every securities financing transaction for five years after it ends",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/2365/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/2365, consolidated text of 9 January 2024, Article 4(4)",
+     "payload": {
+      "key": "obl-eu-sftr-record-keeping",
+      "titles": {
+       "en": "Keep a record of every securities financing transaction for five years after it ends"
+      },
+      "summaries": {
+       "en": "A counterparty must keep a record of every securities financing transaction it has concluded, modified or terminated for at least five years after the transaction terminates."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4(4)",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Reuse collateral only after informing the provider in writing of the risks and obtaining its express consent",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/2365/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/2365, consolidated text of 9 January 2024, Article 15",
+     "payload": {
+      "key": "obl-eu-sftr-reuse",
+      "titles": {
+       "en": "Reuse collateral only after informing the provider in writing of the risks and obtaining its express consent"
+      },
+      "summaries": {
+       "en": "Before reusing financial instruments received as collateral, the receiving counterparty must have told the provider in writing of the risks and consequences of consenting to a right of use or of a title transfer arrangement, including if the receiver defaults, and must have its prior express consent evidenced in writing or equivalent. Reuse must follow the terms of the collateral arrangement and the instruments must be transferred from the provider's account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 15(1) and (2)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-13"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add CSDR, Regulation (EU) No 909/2014",
+   "source": "https://eur-lex.europa.eu/eli/reg/2014/909/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 909/2014 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014r0909",
+    "titles": {
+     "en": "Regulation (EU) No 909/2014 of the European Parliament and of the Council of 23 July 2014 on improving securities settlement in the European Union and on central securities depositories and amending Directives 98/26/EC and 2014/65/EU and Regulation (EU) No 236/2012"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "CSDR",
+    "officialRef": "Regulation (EU) No 909/2014",
+    "eliUri": "https://data.europa.eu/eli/reg/2014/909/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2014-09-17"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Issue transferable securities traded on trading venues in book-entry form",
+     "source": "https://eur-lex.europa.eu/eli/reg/2014/909/2026-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 909/2014, consolidated text of 17 January 2026, Articles 3 and 76",
+     "payload": {
+      "key": "obl-eu-csdr-book-entry",
+      "titles": {
+       "en": "Issue transferable securities traded on trading venues in book-entry form"
+      },
+      "summaries": {
+       "en": "An EU issuer of transferable securities admitted to trading or traded on a trading venue must arrange for them to be represented in book-entry form, through immobilisation or direct issuance in dematerialised form. This applies to securities issued from 1 January 2023 and to all such securities from 1 January 2025."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 3(1); Art. 76(2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2023-01-01",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Settle securities transactions on the intended settlement date",
+     "source": "https://eur-lex.europa.eu/eli/reg/2014/909/2026-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 909/2014, consolidated text of 17 January 2026, Articles 5 and 7",
+     "payload": {
+      "key": "obl-eu-csdr-settle-on-intended-date",
+      "titles": {
+       "en": "Settle securities transactions on the intended settlement date"
+      },
+      "summaries": {
+       "en": "A participant in a securities settlement system that settles transactions in transferable securities, money-market instruments, fund units or emission allowances, for itself or for others, must settle them on the intended settlement date, which for transferable securities traded on a trading venue is currently no later than the second business day after trading. A participant that causes a settlement fail pays daily cash penalties under the CSD's penalty mechanism until the transaction settles or is cancelled."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5(1) and (2); Art. 7(2)",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Settle trades in transferable securities on trading venues no later than one business day after trading",
+     "source": "https://eur-lex.europa.eu/eli/reg/2025/2075/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2025/2075, Articles 1(1) and 2, replacing Article 5(2) of Regulation (EU) No 909/2014",
+     "payload": {
+      "key": "obl-eu-csdr-t1-settlement",
+      "titles": {
+       "en": "Settle trades in transferable securities on trading venues no later than one business day after trading"
+      },
+      "summaries": {
+       "en": "From 11 October 2027 the intended settlement date for transactions in transferable securities executed on a trading venue must be no later than the first business day after trading, replacing the current two-day limit. Trades negotiated privately but executed on a venue, trades executed bilaterally and reported to a venue, the first transaction after initial book-entry recording, and repos, securities lending and buy-sell backs documented as single transactions of two linked operations are excluded."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5(2), as replaced by Art. 1(1) of Regulation (EU) 2025/2075",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-10-11",
+      "terms": [
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Agree prompt allocation and confirmation arrangements with professional clients to limit settlement fails",
+     "source": "https://eur-lex.europa.eu/eli/reg/2014/909/2026-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 909/2014, consolidated text of 17 January 2026, Article 6(2)",
+     "payload": {
+      "key": "obl-eu-csdr-allocation-confirmation",
+      "titles": {
+       "en": "Agree prompt allocation and confirmation arrangements with professional clients to limit settlement fails"
+      },
+      "summaries": {
+       "en": "An investment firm must take measures to limit the number of settlement fails, at least by agreeing with its professional clients arrangements for promptly communicating the allocation of securities to a transaction, confirming that allocation and confirming acceptance or rejection of the terms in good time before the intended settlement date."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 6(2)",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:professional",
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report internalised settlement to the competent authority every quarter",
+     "source": "https://eur-lex.europa.eu/eli/reg/2014/909/2026-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 909/2014, consolidated text of 17 January 2026, Article 9",
+     "payload": {
+      "key": "obl-eu-csdr-internalised-settlement-reporting",
+      "titles": {
+       "en": "Report internalised settlement to the competent authority every quarter"
+      },
+      "summaries": {
+       "en": "A settlement internaliser must report every quarter to the competent authority where it is established the aggregated volume and value of all securities transactions it settles outside securities settlement systems."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9(1)",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Offer clients omnibus or individual segregation at the CSD and disclose the protection and costs of each",
+     "source": "https://eur-lex.europa.eu/eli/reg/2014/909/2026-01-17/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 909/2014, consolidated text of 17 January 2026, Article 38",
+     "payload": {
+      "key": "obl-eu-csdr-client-segregation",
+      "titles": {
+       "en": "Offer clients omnibus or individual segregation at the CSD and disclose the protection and costs of each"
+      },
+      "summaries": {
+       "en": "A CSD participant must offer its clients at least the choice between omnibus client segregation and individual client segregation and inform them of the costs and risks of each option. It must publicly disclose the levels of protection and the costs of the segregation levels it provides, with their main legal implications and the applicable insolvency law, and offer them on reasonable commercial terms."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 38(5) and (6)",
+      "dutyType": "disclosure",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add CSDR Refit, Regulation (EU) 2023/2845",
+   "source": "https://eur-lex.europa.eu/eli/reg/2023/2845/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2845 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32023r2845",
+    "titles": {
+     "en": "Regulation (EU) 2023/2845 of the European Parliament and of the Council of 13 December 2023 amending Regulation (EU) No 909/2014 as regards settlement discipline, cross-border provision of services, supervisory cooperation, provision of banking-type ancillary services and requirements for third-country central securities depositories and amending Regulation (EU) No 236/2012"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "CSDR Refit",
+    "officialRef": "Regulation (EU) 2023/2845",
+    "eliUri": "https://data.europa.eu/eli/reg/2023/2845/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2024-01-16"
+   }
+  },
+  {
+   "title": "Add T+1 settlement regulation, Regulation (EU) 2025/2075",
+   "source": "https://eur-lex.europa.eu/eli/reg/2025/2075/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2025/2075 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025r2075",
+    "titles": {
+     "en": "Regulation (EU) 2025/2075 of the European Parliament and of the Council of 8 October 2025 amending Regulation (EU) No 909/2014 as regards a shorter settlement cycle in the Union"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "T+1 settlement regulation",
+    "officialRef": "Regulation (EU) 2025/2075",
+    "eliUri": "https://data.europa.eu/eli/reg/2025/2075/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2025-11-03"
+   }
+  },
+  {
+   "title": "Add CSDR settlement discipline RTS, Commission Delegated Regulation (EU) 2018/1229",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2018/1229/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/1229, entry into force as set by Article 42 as amended by Delegated Regulation (EU) 2021/70",
+   "payload": {
+    "key": "celex-32018r1229",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2018/1229 of 25 May 2018 supplementing Regulation (EU) No 909/2014 of the European Parliament and of the Council with regard to regulatory technical standards on settlement discipline"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "CSDR settlement discipline RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2018/1229",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2018/1229/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2022-02-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Obtain written allocations and confirmations from professional clients by the set deadlines",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2018/1229/2024-09-02/eng",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/1229, consolidated text of 2 September 2024, Article 2",
+     "payload": {
+      "key": "obl-eu-csdr-sdr-professional-allocations",
+      "titles": {
+       "en": "Obtain written allocations and confirmations from professional clients by the set deadlines"
+      },
+      "summaries": {
+       "en": "An investment firm must require its professional clients to send written allocations of securities or cash, naming the accounts to be credited or debited, and written confirmation of the transaction terms, so that it receives them by close of business on trade date, or by 12.00 CET the next business day where time zones differ by more than two hours or the order was executed after 16.00 CET. It must offer an electronic, standards-based way to send them and confirm receipt within two hours."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 2(1) and (2)",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:professional",
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Obtain settlement information from retail clients by noon on the business day after the trade",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2018/1229/2024-09-02/eng",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/1229, consolidated text of 2 September 2024, Article 3",
+     "payload": {
+      "key": "obl-eu-csdr-sdr-retail-settlement-information",
+      "titles": {
+       "en": "Obtain settlement information from retail clients by noon on the business day after the trade"
+      },
+      "summaries": {
+       "en": "An investment firm must require its retail clients to send all relevant settlement information by 12.00 CET on the business day after the transaction, unless the client holds the financial instruments and cash at the same firm."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 3",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Prospectus Regulation, Regulation (EU) 2017/1129",
+   "source": "https://eur-lex.europa.eu/eli/reg/2017/1129/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1129 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017r1129",
+    "titles": {
+     "en": "Regulation (EU) 2017/1129 of the European Parliament and of the Council of 14 June 2017 on the prospectus to be published when securities are offered to the public or admitted to trading on a regulated market, and repealing Directive 2003/71/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Prospectus Regulation",
+    "officialRef": "Regulation (EU) 2017/1129",
+    "eliUri": "https://data.europa.eu/eli/reg/2017/1129/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2017-07-20"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Publish a prospectus approved by the competent authority before offering securities to the public or seeking admission to a regulated market",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1129/2026-06-05/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1129, consolidated text of 5 June 2026, Articles 1, 3 and 20, as amended by Regulation (EU) 2024/2809",
+     "payload": {
+      "key": "obl-eu-prospectus-publish-approved",
+      "titles": {
+       "en": "Publish a prospectus approved by the competent authority before offering securities to the public or seeking admission to a regulated market"
+      },
+      "summaries": {
+       "en": "An issuer or offeror may offer securities to the public in the EU, or have them admitted to trading on a regulated market, only after publishing a prospectus, and a prospectus may not be published before the competent authority approves it. Exemptions include offers below EUR 12 million over 12 months (or the lower EUR 5 million a Member State may set) and a credit institution's continuous or repeated issues of non-equity securities that are not subordinated, convertible, exchangeable or derivative-linked, below EUR 150 million over 12 months."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 1(4)(j), 1(5)(i), 3(1) to (3) and 20(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2019-07-21",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Include in the prospectus the information investors need for an informed assessment, with a summary",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1129/2026-06-05/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1129, consolidated text of 5 June 2026, Articles 6 and 7",
+     "payload": {
+      "key": "obl-eu-prospectus-content",
+      "titles": {
+       "en": "Include in the prospectus the information investors need for an informed assessment, with a summary"
+      },
+      "summaries": {
+       "en": "The prospectus must contain the information material to an investor's informed assessment of the issuer's and any guarantor's financial position and prospects, the rights attached to the securities and the reasons for the issuance, and include a short, accurate, fair and clear summary consistent with the rest of it. No summary is needed for non-equity securities admitted only to a qualified-investor market or with a denomination of at least EUR 100 000."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 6(1) and 7(1) to (3)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2019-07-21",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make the approved prospectus available to the public in good time before the offer or admission",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1129/2026-06-05/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1129, consolidated text of 5 June 2026, Article 21",
+     "payload": {
+      "key": "obl-eu-prospectus-publication",
+      "titles": {
+       "en": "Make the approved prospectus available to the public in good time before the offer or admission"
+      },
+      "summaries": {
+       "en": "The issuer, offeror or person seeking admission must make the approved prospectus public a reasonable time before, and at the latest at the start of, the offer or admission, in electronic form on its own website, the website of the placing intermediaries or that of the regulated market or MTF. For a first-time initial offer of shares to be admitted to a regulated market, it must be available at least three working days before the offer ends."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 21(1) and (2)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2019-07-21",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish an approved supplement for every significant new factor, mistake or inaccuracy, stating investors' withdrawal right",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1129/2026-06-05/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1129, consolidated text of 5 June 2026, Article 23, as amended by Regulation (EU) 2024/2809",
+     "payload": {
+      "key": "obl-eu-prospectus-supplement",
+      "titles": {
+       "en": "Publish an approved supplement for every significant new factor, mistake or inaccuracy, stating investors' withdrawal right"
+      },
+      "summaries": {
+       "en": "Any significant new factor, material mistake or material inaccuracy that could affect the assessment of the securities and arises before the offer closes or trading begins must be covered without undue delay in a supplement, approved and published like the prospectus. In a public offer, investors who agreed to buy before the supplement may withdraw within three working days, and the supplement must state that right prominently, the period and whom to contact."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 23(1) and (2)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2019-07-21",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: As an intermediary, tell investors about possible supplements and contact them when one is published",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1129/2026-06-05/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1129, consolidated text of 5 June 2026, Article 23(3), as replaced by Regulation (EU) 2024/2809",
+     "payload": {
+      "key": "obl-eu-prospectus-intermediary-supplement-notice",
+      "titles": {
+       "en": "As an intermediary, tell investors about possible supplements and contact them when one is published"
+      },
+      "summaries": {
+       "en": "A financial intermediary through which investors buy or subscribe securities between approval of the prospectus and the close of the initial offer must tell them that a supplement may be published, where and when, and that it will help them withdraw; arrange electronic contact or warn those who refuse it to watch the website. Where investors have a withdrawal right, it must contact them electronically by the end of the first working day after the supplement is published."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 23(3)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2019-07-21",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep advertisements for an offer or admission recognisable, accurate and consistent with the prospectus",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1129/2026-06-05/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1129, consolidated text of 5 June 2026, Article 22",
+     "payload": {
+      "key": "obl-eu-prospectus-advertisements",
+      "titles": {
+       "en": "Keep advertisements for an offer or admission recognisable, accurate and consistent with the prospectus"
+      },
+      "summaries": {
+       "en": "An advertisement for an offer of securities to the public or an admission to a regulated market must say that a prospectus has been or will be published and where to get it, be clearly recognisable as advertising, not be inaccurate or misleading and be consistent with the prospectus. All other information about the offer, oral or written, must also be consistent with the prospectus, and material information given to selected investors must be given to all or included in the prospectus or a supplement."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 22(1) to (5)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2019-07-21",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Transparency Directive, Directive 2004/109/EC",
+   "source": "https://eur-lex.europa.eu/eli/dir/2004/109/oj",
+   "sourceLabel": "EUR-Lex, Directive 2004/109/EC as published in the Official Journal",
+   "payload": {
+    "key": "celex-32004l0109",
+    "titles": {
+     "en": "Directive 2004/109/EC of the European Parliament and of the Council of 15 December 2004 on the harmonisation of transparency requirements in relation to information about issuers whose securities are admitted to trading on a regulated market and amending Directive 2001/34/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Transparency Directive",
+    "officialRef": "Directive 2004/109/EC",
+    "eliUri": "https://data.europa.eu/eli/dir/2004/109/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2005-01-20"
+   }
+  },
+  {
+   "title": "Add Shareholder Rights Directive, Directive 2007/36/EC",
+   "source": "https://eur-lex.europa.eu/eli/dir/2007/36/oj",
+   "sourceLabel": "EUR-Lex, Directive 2007/36/EC as published in the Official Journal",
+   "payload": {
+    "key": "celex-32007l0036",
+    "titles": {
+     "en": "Directive 2007/36/EC of the European Parliament and of the Council of 11 July 2007 on the exercise of certain rights of shareholders in listed companies"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Shareholder Rights Directive",
+    "officialRef": "Directive 2007/36/EC",
+    "eliUri": "https://data.europa.eu/eli/dir/2007/36/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2007-08-03"
+   }
+  },
+  {
+   "title": "Add SRD II, Directive (EU) 2017/828",
+   "source": "https://eur-lex.europa.eu/eli/dir/2017/828/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2017/828 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017l0828",
+    "titles": {
+     "en": "Directive (EU) 2017/828 of the European Parliament and of the Council of 17 May 2017 amending Directive 2007/36/EC as regards the encouragement of long-term shareholder engagement"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SRD II",
+    "officialRef": "Directive (EU) 2017/828",
+    "eliUri": "https://data.europa.eu/eli/dir/2017/828/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2017-06-09"
+   }
+  },
+  {
+   "title": "Add SRD II implementing regulation, Commission Implementing Regulation (EU) 2018/1212",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/1212/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/1212 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32018r1212",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2018/1212 of 3 September 2018 laying down minimum requirements implementing the provisions of Directive 2007/36/EC of the European Parliament and of the Council as regards shareholder identification, the transmission of information and the facilitation of the exercise of shareholders rights"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SRD II implementing regulation",
+    "officialRef": "Commission Implementing Regulation (EU) 2018/1212",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2018/1212/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2018-09-24"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Transmit shareholder information in the standardised, machine-readable formats and give shareholders access to it",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/1212/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/1212, Article 2",
+     "payload": {
+      "key": "obl-eu-srd-cir-standard-formats",
+      "titles": {
+       "en": "Transmit shareholder information in the standardised, machine-readable formats and give shareholders access to it"
+      },
+      "summaries": {
+       "en": "An intermediary must transmit the information on shareholder identification, general meetings, entitlements, votes and other corporate events in the standardised formats of the Regulation's annex, electronically and machine-readably so that it allows straight-through processing using internationally applied standards such as ISO. It must give shareholders who are not intermediaries access to that information and to the means to act on it through generally available tools, unless the shareholder agrees otherwise."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 2(1), (3) and (4)",
+      "dutyType": "technical",
+      "effectiveFrom": "2020-09-03",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Pass on shareholder identification requests the same day and respond by the next business day",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/1212/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/1212, Articles 3 and 9(6)",
+     "payload": {
+      "key": "obl-eu-srd-cir-shareholder-identification",
+      "titles": {
+       "en": "Pass on shareholder identification requests the same day and respond by the next business day"
+      },
+      "summaries": {
+       "en": "An intermediary that receives an issuer's request to disclose shareholder identity must pass it to the next intermediary in the chain by close of business that day (by 10.00 the next business day if received after 16.00), and must respond to the addressee named in the request no later than the business day after the record date or after receiving the request, whichever is later. Requests and responses follow the formats in Tables 1 and 2 of the annex."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 3 and 9(6)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2020-09-03",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Pass on general meeting and corporate event information down the chain and to shareholders the same business day",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/1212/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/1212, Article 9",
+     "payload": {
+      "key": "obl-eu-srd-cir-corporate-event-transmission",
+      "titles": {
+       "en": "Pass on general meeting and corporate event information down the chain and to shareholders the same business day"
+      },
+      "summaries": {
+       "en": "Each intermediary must pass information about a corporate event to the next intermediary, and the last intermediary to the shareholder, without delay and by close of business on the day it receives it (by 10.00 the next business day if received after 16.00), giving shareholders enough time to act and confirming their entitlement in time for the issuer's deadline or record date."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9(2) and (3)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2020-09-03",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Transmit shareholders' votes and other actions to the issuer without delay",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/1212/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/1212, Article 9(4)",
+     "payload": {
+      "key": "obl-eu-srd-cir-shareholder-actions",
+      "titles": {
+       "en": "Transmit shareholders' votes and other actions to the issuer without delay"
+      },
+      "summaries": {
+       "en": "An intermediary must transmit information on shareholder actions, such as votes, to the issuer without delay and in time for the issuer's deadline or record date. The last intermediary may not set a deadline for shareholder action earlier than three business days before the issuer's deadline or record date."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9(4)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2020-09-03",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Secure shareholder communications and verify that requests come from the issuer",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/1212/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/1212, Article 10",
+     "payload": {
+      "key": "obl-eu-srd-cir-security",
+      "titles": {
+       "en": "Secure shareholder communications and verify that requests come from the issuer"
+      },
+      "summaries": {
+       "en": "An intermediary must implement technical and organisational measures to ensure the security, integrity and authentication of the information it transmits, and must verify that a shareholder identification request or other communication to be passed along the chain actually originates from the issuer."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 10(1) and (2)",
+      "dutyType": "technical",
+      "effectiveFrom": "2020-09-03",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MiCA, Regulation (EU) 2023/1114",
+   "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32023r1114",
+    "titles": {
+     "en": "Regulation (EU) 2023/1114 of the European Parliament and of the Council of 31 May 2023 on markets in crypto-assets, and amending Regulations (EU) No 1093/2010 and (EU) No 1095/2010 and Directives 2013/36/EU and (EU) 2019/1937"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MiCA",
+    "officialRef": "Regulation (EU) 2023/1114",
+    "eliUri": "https://data.europa.eu/eli/reg/2023/1114/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2023-06-29"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Notify the competent authority at least 40 working days before first providing crypto-asset services",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114, consolidated text of 9 January 2024, Article 60",
+     "payload": {
+      "key": "obl-eu-mica-casp-notification",
+      "titles": {
+       "en": "Notify the competent authority at least 40 working days before first providing crypto-asset services"
+      },
+      "summaries": {
+       "en": "A credit institution may provide crypto-asset services without separate authorisation only if it notifies its home competent authority at least 40 working days before first providing them. The notification includes a programme of operations, AML/CFT controls and risk assessment, business continuity plan, ICT documentation, client asset segregation, and the custody, trading platform, pricing, execution, advice and transfer arrangements relevant to the services offered."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 60(1), (7) and (10)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-12-30",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Act honestly, fairly and professionally in clients' best interests and warn them of crypto-asset risks",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114, consolidated text of 9 January 2024, Article 66",
+     "payload": {
+      "key": "obl-eu-mica-casp-conduct",
+      "titles": {
+       "en": "Act honestly, fairly and professionally in clients' best interests and warn them of crypto-asset risks"
+      },
+      "summaries": {
+       "en": "A crypto-asset service provider must act honestly, fairly and professionally in the best interests of clients, give information that is fair, clear and not misleading (with marketing identified as such), warn clients of the risks of crypto-asset transactions, link to the relevant white papers for the services that require it and publish its pricing, cost and fee policies prominently on its website."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 66(1) to (4)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Safeguard clients' crypto-assets and funds and never use them for the firm's own account",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114, consolidated text of 9 January 2024, Article 70",
+     "payload": {
+      "key": "obl-eu-mica-client-assets",
+      "titles": {
+       "en": "Safeguard clients' crypto-assets and funds and never use them for the firm's own account"
+      },
+      "summaries": {
+       "en": "A crypto-asset service provider that holds clients' crypto-assets, or the means of access to them, must have adequate arrangements to protect clients' ownership rights, particularly if it becomes insolvent, and to prevent their use for its own account; the same applies to client funds other than e-money tokens."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 70(1) and (2)",
+      "dutyType": "governance",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Identify, prevent, manage and disclose conflicts of interest in crypto-asset services",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114, consolidated text of 9 January 2024, Article 72",
+     "payload": {
+      "key": "obl-eu-mica-conflicts",
+      "titles": {
+       "en": "Identify, prevent, manage and disclose conflicts of interest in crypto-asset services"
+      },
+      "summaries": {
+       "en": "A crypto-asset service provider must keep effective policies and procedures to identify, prevent, manage and disclose conflicts of interest between itself (its shareholders, management, staff and linked persons) and its clients, and between clients. It must disclose their general nature and sources and the mitigating steps prominently on its website and review the policy at least annually."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 72(1) to (4)",
+      "dutyType": "governance",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Agree custody terms with clients and keep a register of each client's crypto-asset positions",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114, consolidated text of 9 January 2024, Article 75",
+     "payload": {
+      "key": "obl-eu-mica-custody",
+      "titles": {
+       "en": "Agree custody terms with clients and keep a register of each client's crypto-asset positions"
+      },
+      "summaries": {
+       "en": "A crypto-asset service provider offering custody and administration of crypto-assets must conclude an agreement with each client setting out at least the service, custody policy, communication and authentication means, security systems, fees and applicable law, and keep a register of positions in each client's name, recording movements on the client's instructions as soon as possible."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 75(1) and (2)",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2024-12-30",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess suitability before giving advice on crypto-assets or managing a crypto-asset portfolio",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114, consolidated text of 9 January 2024, Article 81",
+     "payload": {
+      "key": "obl-eu-mica-suitability",
+      "titles": {
+       "en": "Assess suitability before giving advice on crypto-assets or managing a crypto-asset portfolio"
+      },
+      "summaries": {
+       "en": "A crypto-asset service provider giving advice on crypto-assets or managing crypto-asset portfolios must assess whether the services or crypto-assets suit the client, considering knowledge and experience, investment objectives including risk tolerance, and financial situation including ability to bear losses. Before advising, it must tell the client whether the advice is independent and how broad the analysis is."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 81(1) and (2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-12-30",
+      "terms": [
+       "service_type:advice",
+       "service_type:portfolio_management"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Detect market abuse in crypto-asset transactions and report suspicious orders and transactions without delay",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114, consolidated text of 9 January 2024, Article 92",
+     "payload": {
+      "key": "obl-eu-mica-market-abuse-detection",
+      "titles": {
+       "en": "Detect market abuse in crypto-asset transactions and report suspicious orders and transactions without delay"
+      },
+      "summaries": {
+       "en": "Anyone professionally arranging or executing transactions in crypto-assets must have effective arrangements, systems and procedures to prevent and detect market abuse, and must report without delay to its competent authority any reasonable suspicion that an order or transaction, including a cancellation or modification, involves market abuse."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 92(1)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Offer e-money tokens only as an authorised issuer with a notified and published white paper",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114, consolidated text of 9 January 2024, Articles 48 and 51",
+     "payload": {
+      "key": "obl-eu-mica-emt-offer",
+      "titles": {
+       "en": "Offer e-money tokens only as an authorised issuer with a notified and published white paper"
+      },
+      "summaries": {
+       "en": "Only a credit institution or electronic money institution that issues an e-money token may offer it to the public or seek its admission to trading in the EU (others need the issuer's written consent). The issuer must notify its competent authority of the intention at least 40 working days in advance, notify the crypto-asset white paper at least 20 working days before publishing it, and publish it on its website before the offer or admission."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 48(1) and (6); Art. 51",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2024-06-30",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Issue e-money tokens at par and redeem them at par at any time without a fee",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114, consolidated text of 9 January 2024, Article 49",
+     "payload": {
+      "key": "obl-eu-mica-emt-redemption",
+      "titles": {
+       "en": "Issue e-money tokens at par and redeem them at par at any time without a fee"
+      },
+      "summaries": {
+       "en": "An e-money token issuer must issue tokens at par value on receipt of funds and, on a holder's request, redeem them at any time at par value in funds other than electronic money, without charging a fee, stating the redemption conditions prominently in the white paper."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 49(2) to (6)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-06-30"
+     }
+    },
+    {
+     "title": "Add the duty: Grant no interest on e-money tokens",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/2024-01-09/eng",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114, consolidated text of 9 January 2024, Article 50",
+     "payload": {
+      "key": "obl-eu-mica-emt-no-interest",
+      "titles": {
+       "en": "Grant no interest on e-money tokens"
+      },
+      "summaries": {
+       "en": "Neither an e-money token issuer nor a crypto-asset service provider serving e-money tokens may grant interest on them; any remuneration or benefit linked to how long the token is held, including equivalent compensation or discounts, counts as interest."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 50",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-06-30"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DLT Pilot Regime, Regulation (EU) 2022/858",
+   "source": "https://eur-lex.europa.eu/eli/reg/2022/858/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2022/858 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32022r0858",
+    "titles": {
+     "en": "Regulation (EU) 2022/858 of the European Parliament and of the Council of 30 May 2022 on a pilot regime for market infrastructures based on distributed ledger technology, and amending Regulations (EU) No 600/2014 and (EU) No 909/2014 and Directive 2014/65/EU"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DLT Pilot Regime",
+    "officialRef": "Regulation (EU) 2022/858",
+    "eliUri": "https://data.europa.eu/eli/reg/2022/858/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2022-06-22"
+   }
+  },
+  {
+   "title": "Add European Green Bond Regulation, Regulation (EU) 2023/2631",
+   "source": "https://eur-lex.europa.eu/eli/reg/2023/2631/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2631 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32023r2631",
+    "titles": {
+     "en": "Regulation (EU) 2023/2631 of the European Parliament and of the Council of 22 November 2023 on European Green Bonds and optional disclosures for bonds marketed as environmentally sustainable and for sustainability-linked bonds"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "European Green Bond Regulation",
+    "officialRef": "Regulation (EU) 2023/2631",
+    "eliUri": "https://data.europa.eu/eli/reg/2023/2631/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2023-12-20"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Use the European Green Bond designation only for compliant bonds and allocate the proceeds to taxonomy-aligned uses",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/2631/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2631, Articles 3 and 4",
+     "payload": {
+      "key": "obl-eu-eugb-designation-proceeds",
+      "titles": {
+       "en": "Use the European Green Bond designation only for compliant bonds and allocate the proceeds to taxonomy-aligned uses"
+      },
+      "summaries": {
+       "en": "An issuer may call a bond a European Green Bond or EuGB only if it meets the Regulation's requirements, and before maturity must allocate all its proceeds in line with the taxonomy requirements to fixed assets, eligible capital or operating expenditure, financial assets or household assets and expenditure, or, under the portfolio approach, to a portfolio of such assets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 3 and 4(1) and (2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-12-21",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Complete the European Green Bond factsheet and obtain a positive pre-issuance review before issuing",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/2631/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2631, Article 10",
+     "payload": {
+      "key": "obl-eu-eugb-factsheet-review",
+      "titles": {
+       "en": "Complete the European Green Bond factsheet and obtain a positive pre-issuance review before issuing"
+      },
+      "summaries": {
+       "en": "Before issuing a European Green Bond the issuer must complete the factsheet in Annex I and have it reviewed, with a positive opinion, by an external reviewer."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 10(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2024-12-21",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish yearly allocation reports, reviewed after issuance, and an impact report",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/2631/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2631, Articles 11 and 12",
+     "payload": {
+      "key": "obl-eu-eugb-allocation-impact-reports",
+      "titles": {
+       "en": "Publish yearly allocation reports, reviewed after issuance, and an impact report"
+      },
+      "summaries": {
+       "en": "For every 12 months until the proceeds are fully allocated, the issuer must draw up an allocation report on the Annex II template showing the proceeds were allocated in line with the Regulation and obtain an external post-issuance review of it. After full allocation, and at least once in the bond's life, it must publish an impact report on the Annex III template."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 11(1) and (4); Art. 12(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2024-12-21",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep the European Green Bond documents on the issuer's website until 12 months after maturity",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/2631/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2631, Article 15",
+     "payload": {
+      "key": "obl-eu-eugb-website-publication",
+      "titles": {
+       "en": "Keep the European Green Bond documents on the issuer's website until 12 months after maturity"
+      },
+      "summaries": {
+       "en": "The issuer must publish free of charge on its website, and keep available until at least 12 months after the bond matures, the factsheet and pre-issuance review before issuance, a link to any prospectus, and the allocation reports, their reviews and the impact report without undue delay once they exist."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 15(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2024-12-21"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Settlement Finality Directive, Directive 98/26/EC",
+   "source": "https://eur-lex.europa.eu/eli/dir/1998/26/oj",
+   "sourceLabel": "EUR-Lex, Directive 98/26/EC as published in the Official Journal",
+   "payload": {
+    "key": "celex-31998l0026",
+    "titles": {
+     "en": "Directive 98/26/EC of the European Parliament and of the Council of 19 May 1998 on settlement finality in payment and securities settlement systems"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Settlement Finality Directive",
+    "officialRef": "Directive 98/26/EC",
+    "eliUri": "https://data.europa.eu/eli/dir/1998/26/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "1998-06-11"
+   }
+  },
+  {
+   "title": "Add Financial Collateral Directive, Directive 2002/47/EC",
+   "source": "https://eur-lex.europa.eu/eli/dir/2002/47/oj",
+   "sourceLabel": "EUR-Lex, Directive 2002/47/EC as published in the Official Journal",
+   "payload": {
+    "key": "celex-32002l0047",
+    "titles": {
+     "en": "Directive 2002/47/EC of the European Parliament and of the Council of 6 June 2002 on financial collateral arrangements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Financial Collateral Directive",
+    "officialRef": "Directive 2002/47/EC",
+    "eliUri": "https://data.europa.eu/eli/dir/2002/47/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2002-06-27"
+   }
+  }
+ ]
+}

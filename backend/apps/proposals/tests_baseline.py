@@ -3,6 +3,8 @@
 `proposals.baseline` files the baseline's entries as proposals of the platform agent
 `library-baseline`; a second principal approves them. Proved here:
 
+- every entry of the real baseline files and, once a person approves it, applies: the
+  instruments on the first call, their duties on the second, nothing on the third;
 - each proposal names the agent and a run of it, carries a source on every field, and is
   open until someone else decides it; the agent can never be that someone;
 - runs hold at most `WATCH_RUN_MAX_PROPOSALS` filings and close as succeeded with the count;
@@ -28,6 +30,7 @@ from django.test import TestCase, override_settings
 
 from apps.agents.models import Agent, AgentRun, RunStatus
 from apps.agents.seeds import seed_agent_definitions
+from apps.library.models import Instrument, Obligation
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
 from apps.proposals import baseline, logic
@@ -100,6 +103,31 @@ class BaselineCase(TestCase):
             )
             approved += 1
         return approved
+
+
+class TheRealBaseline(BaselineCase):
+    def test_every_entry_files_and_applies_instruments_first_then_their_duties(self) -> None:
+        entries = baseline.load()
+        instruments = {entry.key for entry in entries if entry.kind == baseline.INSTRUMENT}
+        duties = {entry.key for entry in entries if entry.kind == baseline.OBLIGATION}
+        self.assertTrue(instruments, "the baseline holds instruments")
+
+        first = baseline.file()
+        self.assertEqual(first.refused, [])
+        self.assertEqual(sum(first.filed.values()), len(instruments), "only instruments are due on the first call")
+        self.assertEqual(sum(first.waiting.values()), len(duties))
+        self.assertEqual(self.approve_open(), len(instruments))
+
+        second = baseline.file()
+        self.assertEqual(second.refused, [])
+        self.assertEqual(sum(second.filed.values()), len(duties))
+        self.assertEqual(self.approve_open(), len(duties))
+
+        third = baseline.file()
+        self.assertEqual((sum(third.filed.values()), third.runs), (0, 0))
+        self.assertEqual(sum(third.held.values()), len(instruments) + len(duties))
+        self.assertEqual(set(Instrument.objects.filter(stable_key__in=instruments).values_list("stable_key", flat=True)), instruments)
+        self.assertEqual(set(Obligation.objects.filter(stable_key__in=duties).values_list("stable_key", flat=True)), duties)
 
 
 class FilingTheBaseline(BaselineCase):

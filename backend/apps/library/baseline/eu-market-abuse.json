@@ -1,0 +1,1998 @@
+{
+ "tranche": "eu-market-abuse",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add MAR, Regulation (EU) No 596/2014",
+   "source": "https://eur-lex.europa.eu/eli/reg/2014/596/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014r0596",
+    "titles": {
+     "en": "Regulation (EU) No 596/2014 of the European Parliament and of the Council of 16 April 2014 on market abuse (market abuse regulation) and repealing Directive 2003/6/EC of the European Parliament and of the Council and Commission Directives 2003/124/EC, 2003/125/EC and 2004/72/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR",
+    "officialRef": "Regulation (EU) No 596/2014",
+    "eliUri": "https://data.europa.eu/eli/reg/2014/596/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2014-07-02"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not deal on, recommend on or unlawfully disclose inside information",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Articles 8, 10 and 14",
+     "payload": {
+      "key": "obl-eu-mar-insider-dealing-ban",
+      "titles": {
+       "en": "Do not deal on, recommend on or unlawfully disclose inside information"
+      },
+      "summaries": {
+       "en": "The firm and the people acting for it must not use inside information to buy or sell the financial instruments it concerns, or to cancel or amend orders in them, must not recommend or induce anyone else to do so, and must not pass inside information on except in the normal exercise of their work. Attempts are prohibited as well."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 14",
+      "dutyType": "conduct",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Do not engage or attempt to engage in market manipulation",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Articles 12(1) and 15",
+     "payload": {
+      "key": "obl-eu-mar-market-manipulation-ban",
+      "titles": {
+       "en": "Do not engage or attempt to engage in market manipulation"
+      },
+      "summaries": {
+       "en": "The firm must not trade, place orders or behave in a way that gives false or misleading signals about supply, demand or price, holds a price at an abnormal or artificial level, uses a fictitious device or deception, spreads misleading information, or feeds false or misleading inputs to a benchmark. Attempted manipulation is prohibited too."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 15",
+      "dutyType": "conduct",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Maintain arrangements that detect and report suspicious orders and transactions",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 16(2)",
+     "payload": {
+      "key": "obl-eu-mar-stor-arrangements",
+      "titles": {
+       "en": "Maintain arrangements that detect and report suspicious orders and transactions"
+      },
+      "summaries": {
+       "en": "A firm that professionally arranges or executes transactions must establish and maintain effective arrangements, systems and procedures to detect and report orders and transactions that could be insider dealing or market manipulation, or attempts at either, whether placed or executed on or outside a trading venue."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 16(2)",
+      "dutyType": "governance",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Report suspicious orders and transactions to the competent authority without delay",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 16(2) and (3)",
+     "payload": {
+      "key": "obl-eu-mar-stor-reporting",
+      "titles": {
+       "en": "Report suspicious orders and transactions to the competent authority without delay"
+      },
+      "summaries": {
+       "en": "When a firm that arranges or executes transactions reasonably suspects that an order or transaction in any financial instrument could be insider dealing or market manipulation, or an attempt at either, it must notify the competent authority without delay. The report goes to the authority of the Member State where the firm is registered or has its head office, or, for a branch, where the branch is located."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 16(2)-(3)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2016-07-03",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Disclose inside information that directly concerns the issuer as soon as possible",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 17(1), as amended by Regulation (EU) 2024/2809",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-inside-information-disclosure",
+      "titles": {
+       "en": "Disclose inside information that directly concerns the issuer as soon as possible"
+      },
+      "summaries": {
+       "en": "An issuer whose financial instruments are admitted to trading, or traded with its approval, must publish inside information that directly concerns it as soon as possible, in a way that allows fast, complete and correct assessment, through the officially appointed mechanism where applicable, without mixing it with marketing, and keep it on its website for at least five years. Since 5 June 2026, intermediate steps of a protracted process need not be published; only the final event or circumstances must be disclosed, as soon as possible after they occur."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 17(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2026-06-05",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep inside information confidential until it is disclosed",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 17(1a), as amended by Regulation (EU) 2024/2809",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-inside-information-confidentiality",
+      "titles": {
+       "en": "Keep inside information confidential until it is disclosed"
+      },
+      "summaries": {
+       "en": "An issuer must ensure that information meeting the criteria of inside information stays confidential until it is disclosed to the public under Article 17(1). The duty applies from 5 June 2026."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 17(1a)",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-06-05",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Delay inside information only when every condition is met, and inform the authority afterwards",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 17(4), as amended by Regulation (EU) 2024/2809",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-delay-disclosure",
+      "titles": {
+       "en": "Delay inside information only when every condition is met, and inform the authority afterwards"
+      },
+      "summaries": {
+       "en": "An issuer may, on its own responsibility, delay publishing inside information only if immediate disclosure is likely to prejudice its legitimate interests, the information is not in contrast with its latest public announcement or other communication on the same matter, and it can keep the information confidential. Immediately after the information is published it must tell the competent authority that disclosure was delayed and explain in writing how the conditions were met, unless national law allows the explanation to be given only on request; an issuer listed only on an SME growth market explains only on request."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 17(4)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2026-06-05",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Obtain the authority's consent before delaying inside information to protect financial stability",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 17(5) and (6), as amended by Regulation (EU) 2024/2809",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-delay-financial-stability",
+      "titles": {
+       "en": "Obtain the authority's consent before delaying inside information to protect financial stability"
+      },
+      "summaries": {
+       "en": "An issuer that is a credit or financial institution, or the parent undertaking of one, may delay inside information, including information on a temporary liquidity problem or central bank liquidity assistance, only where disclosure risks undermining its own and the financial system's stability, delay is in the public interest, confidentiality can be ensured and the competent authority has consented. It must notify the authority of its intention with evidence that the conditions are met, and must disclose immediately if the authority does not consent."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 17(5)-(6)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-12-04",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Disclose delayed or protracted-process inside information as soon as confidentiality is lost",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 17(7), as amended by Regulation (EU) 2024/2809",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-confidentiality-loss-disclosure",
+      "titles": {
+       "en": "Disclose delayed or protracted-process inside information as soon as confidentiality is lost"
+      },
+      "summaries": {
+       "en": "Where the issuer has delayed inside information, or has not published intermediate steps of a protracted process, and confidentiality can no longer be ensured, it must disclose that information to the public as soon as possible. This includes a rumour that explicitly relates to the information and is accurate enough to show that confidentiality has been lost."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 17(7)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2026-06-05",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Publish inside information shared with a third party that owes no duty of confidentiality",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 17(8)",
+     "payload": {
+      "key": "obl-eu-mar-selective-disclosure",
+      "titles": {
+       "en": "Publish inside information shared with a third party that owes no duty of confidentiality"
+      },
+      "summaries": {
+       "en": "When the issuer, or someone acting for it, discloses inside information to a third party in the normal exercise of their work, it must make complete and effective public disclosure of it, at the same time if the disclosure was intentional and promptly if it was not. This does not apply where the recipient owes a duty of confidentiality under law, regulation, articles of association or contract."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 17(8)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Draw up, promptly update and keep an insider list",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 18(1) to (5), as amended by Regulation (EU) 2019/2115",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2019/2115/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-insider-lists",
+      "titles": {
+       "en": "Draw up, promptly update and keep an insider list"
+      },
+      "summaries": {
+       "en": "Issuers and each person acting on their behalf or on their account must each keep a list of everyone working for them who has access to inside information, update it promptly with the date and time of each change, provide it to the competent authority as soon as possible on request and keep it for at least five years after it is drawn up or updated. They must take all reasonable steps to have each listed person acknowledge in writing the duties involved and the sanctions for insider dealing and unlawful disclosure."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 18(1)-(5)",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2021-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: List managers and their closely associated persons and tell managers of their duties in writing",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 19(5)",
+     "payload": {
+      "key": "obl-eu-mar-pdmr-list-and-notice",
+      "titles": {
+       "en": "List managers and their closely associated persons and tell managers of their duties in writing"
+      },
+      "summaries": {
+       "en": "An issuer must inform each person discharging managerial responsibilities within it of their obligations under Article 19 in writing, and draw up a list of all such persons and of the persons closely associated with them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 19(5)",
+      "dutyType": "governance",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify managers' own-account transactions within three business days",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 19(1), (7), (8) and (9), as amended by Regulation (EU) 2024/2809",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-pdmr-transaction-notification",
+      "titles": {
+       "en": "Notify managers' own-account transactions within three business days"
+      },
+      "summaries": {
+       "en": "Persons discharging managerial responsibilities within an issuer, and persons closely associated with them, must notify the issuer and the competent authority of every own-account transaction in the issuer's shares, debt instruments or linked derivatives and instruments, including pledges, lending and transactions made for them by others, no later than three business days after it. The duty starts once their transactions reach EUR 20 000 within a calendar year, added up without netting, unless the competent authority has set EUR 10 000 or EUR 50 000 instead."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 19(1), (7)-(9)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-12-04",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Publish managers' transaction notifications within two business days",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 19(3), as amended by Regulation (EU) 2019/2115",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2019/2115/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-pdmr-publication",
+      "titles": {
+       "en": "Publish managers' transaction notifications within two business days"
+      },
+      "summaries": {
+       "en": "An issuer must make public the information in each notification of a managers' transaction within two business days of receiving it, using media that can reliably disseminate it throughout the Union and, where applicable, the officially appointed mechanism."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 19(3)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep managers from trading in the issuer's instruments during the 30-day closed period",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 19(11), (12) and (12a), as amended by Regulation (EU) 2024/2809",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-closed-period",
+      "titles": {
+       "en": "Keep managers from trading in the issuer's instruments during the 30-day closed period"
+      },
+      "summaries": {
+       "en": "A person discharging managerial responsibilities within an issuer must not trade in the issuer's shares, debt instruments or linked instruments during the 30 calendar days before an interim or year-end report the issuer must publish. The issuer may allow trading case by case in exceptional circumstances such as severe financial difficulty, or for employee share or saving schemes and transactions that do not change the beneficial interest, and must allow transactions that involve no active investment decision, result only from external factors or third-party actions, or follow predetermined terms."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 19(11)-(12a)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-12-04",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Assess and record every market sounding, and meet the safe-harbour conditions when relying on them",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 11, as amended by Regulation (EU) 2024/2809",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-market-soundings",
+      "titles": {
+       "en": "Assess and record every market sounding, and meet the safe-harbour conditions when relying on them"
+      },
+      "summaries": {
+       "en": "Before a market sounding, and for each disclosure during it, the disclosing market participant must consider whether inside information will be disclosed, record its conclusion and reasons, and give the record to the competent authority on request. If it opts to rely on the safe harbour, it must obtain the recipient's consent, give the prescribed warnings on use and confidentiality and record what it disclosed to whom and when; it must tell recipients as soon as possible when the information stops being inside information unless it has been announced, and keep all these records for at least five years."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 11(3), (4), (6), (8)",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2024-12-04",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Meet the conditions of the buy-back and stabilisation exemptions",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 5, as amended by Regulation (EU) 2024/2809",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-buyback-stabilisation",
+      "titles": {
+       "en": "Meet the conditions of the buy-back and stabilisation exemptions"
+      },
+      "summaries": {
+       "en": "Trading in own shares under a buy-back programme escapes the insider dealing and manipulation prohibitions only if the programme's full details are disclosed beforehand, it serves one of the permitted purposes, it respects price and volume limits and every transaction is reported to the competent authority of the most relevant market in terms of liquidity and then published in aggregated form. Stabilisation is exempt only for a limited period, with disclosure, price limits and notification of every stabilisation transaction to the authority of the trading venue by the end of the seventh daily market session after execution."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-12-04",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Present investment recommendations objectively and disclose interests and conflicts",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0596-20260605",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014, consolidated text of 5 June 2026, Article 20(1)",
+     "payload": {
+      "key": "obl-eu-mar-investment-recommendations",
+      "titles": {
+       "en": "Present investment recommendations objectively and disclose interests and conflicts"
+      },
+      "summaries": {
+       "en": "Anyone who produces or disseminates investment recommendations, or other information recommending or suggesting an investment strategy, must take reasonable care that it is objectively presented and must disclose their interests or indicate conflicts of interest concerning the financial instruments it relates to."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 20(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Listing Act Regulation, Regulation (EU) 2024/2809",
+   "source": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2024/2809 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r2809",
+    "titles": {
+     "en": "Regulation (EU) 2024/2809 of the European Parliament and of the Council of 23 October 2024 amending Regulations (EU) 2017/1129, (EU) No 596/2014 and (EU) No 600/2014 to make public capital markets in the Union more attractive for companies and to facilitate access to capital for small and medium-sized enterprises"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Listing Act Regulation",
+    "officialRef": "Regulation (EU) 2024/2809",
+    "eliUri": "https://data.europa.eu/eli/reg/2024/2809/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2024-12-04"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add CSMAD, Directive 2014/57/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2014/57/oj",
+   "sourceLabel": "EUR-Lex, Directive 2014/57/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014l0057",
+    "titles": {
+     "en": "Directive 2014/57/EU of the European Parliament and of the Council of 16 April 2014 on criminal sanctions for market abuse (market abuse directive)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "CSMAD",
+    "officialRef": "Directive 2014/57/EU",
+    "eliUri": "https://data.europa.eu/eli/dir/2014/57/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2014-07-02"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add MAR whistleblowing Implementing Directive, Commission Implementing Directive (EU) 2015/2392",
+   "source": "https://eur-lex.europa.eu/eli/dir_impl/2015/2392/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Directive (EU) 2015/2392 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32015l2392",
+    "titles": {
+     "en": "Commission Implementing Directive (EU) 2015/2392 of 17 December 2015 on Regulation (EU) No 596/2014 of the European Parliament and of the Council as regards reporting to competent authorities of actual or potential infringements of that Regulation"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR whistleblowing Implementing Directive",
+    "officialRef": "Commission Implementing Directive (EU) 2015/2392",
+    "eliUri": "https://data.europa.eu/eli/dir_impl/2015/2392/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-01-07"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add MAR Delegated Regulation 2016/522, Commission Delegated Regulation (EU) 2016/522",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2016/522/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/522 as published in the Official Journal",
+   "fieldSources": {
+    "titles.en": "https://eur-lex.europa.eu/eli/reg_del/2026/788/oj"
+   },
+   "payload": {
+    "key": "celex-32016r0522",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2016/522 of 17 December 2015 supplementing Regulation (EU) No 596/2014 of the European Parliament and of the Council as regards an exemption from the application of that Regulation for certain third countries public bodies and central banks, the indicators of market manipulation, the disclosure thresholds, the competent authority for notifications of delays, the permission for trading during closed periods, the types of notifiable managers’ transactions, and the list of designated trading venues that have a significant cross-border dimension in the supervision of market abuse"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR Delegated Regulation 2016/522",
+    "officialRef": "Commission Delegated Regulation (EU) 2016/522",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2016/522/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-04-25"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Take the prescribed indicators of manipulative behaviour into account when examining orders and transactions",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02016R0522-20260805",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/522, consolidated text of 5 August 2026, Article 4 and Annex II",
+     "payload": {
+      "key": "obl-eu-mar-2016-522-manipulation-indicators",
+      "titles": {
+       "en": "Take the prescribed indicators of manipulative behaviour into account when examining orders and transactions"
+      },
+      "summaries": {
+       "en": "When examining orders and transactions for possible market manipulation, the firm must take into account the practices set out in Annex II, which spell out the indicators in Annex I to MAR, such as layering and spoofing or pump and dump. Since 5 August 2026 the annex states that the indicators may be assessed over time frames longer or shorter than a day or trading session, particularly for less liquid instruments and algorithmic trading."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4, Annex II",
+      "dutyType": "technical",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify a delay in disclosing inside information to the right competent authority",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02016R0522-20260805",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/522, consolidated text of 5 August 2026, Article 6",
+     "payload": {
+      "key": "obl-eu-mar-2016-522-delay-authority",
+      "titles": {
+       "en": "Notify a delay in disclosing inside information to the right competent authority"
+      },
+      "summaries": {
+       "en": "An issuer that delays inside information must notify the competent authority of the Member State where it is registered if it has equity securities, or failing those other financial instruments, on a trading venue there. Otherwise it notifies the authority of the Member State where its instruments were first admitted to trading or traded, and for a first admission in several Member States at once, the authority of the most relevant market in terms of liquidity."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6",
+      "dutyType": "reporting",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Grant closed-period trading only on a reasoned written request and in exceptional circumstances",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02016R0522-20260805",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/522, consolidated text of 5 August 2026, as amended by Commission Delegated Regulation (EU) 2026/788, Articles 7 to 9",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg_del/2026/788/oj"
+     },
+     "payload": {
+      "key": "obl-eu-mar-2016-522-closed-period-permission",
+      "titles": {
+       "en": "Grant closed-period trading only on a reasoned written request and in exceptional circumstances"
+      },
+      "summaries": {
+       "en": "Before selling during a closed period because of exceptional circumstances, a manager must give the issuer a reasoned written request describing the sale and why selling is the only reasonable way to obtain the necessary financing. The issuer must assess each request case by case and may permit the immediate sale only where the circumstances are extremely urgent, unforeseen and compelling and outside the manager's control; Article 9 sets out further cases, such as certain employee schemes, where the issuer may permit trading."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 7-9",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-08-05",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify every type of managers' transaction the regulation lists",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02016R0522-20260805",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/522, consolidated text of 5 August 2026, Article 10",
+     "payload": {
+      "key": "obl-eu-mar-2016-522-notifiable-transactions",
+      "titles": {
+       "en": "Notify every type of managers' transaction the regulation lists"
+      },
+      "summaries": {
+       "en": "Managers and persons closely associated with them must include in their notifications every listed type of transaction, among them short sales, subscriptions, the grant, acceptance or exercise of options, equity swaps and other derivatives, contracts for difference, gifts, donations and inheritances, transactions under discretionary portfolio mandates and the borrowing or lending of the issuer's instruments."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 10",
+      "dutyType": "reporting",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MAR STOR RTS, Commission Delegated Regulation (EU) 2016/957",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2016/957/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/957 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r0957",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2016/957 of 9 March 2016 supplementing Regulation (EU) No 596/2014 of the European Parliament and of the Council with regard to regulatory technical standards for the appropriate arrangements, systems and procedures as well as notification templates to be used for preventing, detecting and reporting abusive practices or suspicious orders or transactions"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR STOR RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2016/957",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2016/957/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-06-18"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Monitor all orders and transactions with documented, proportionate surveillance arrangements",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/957/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/957, Article 2",
+     "payload": {
+      "key": "obl-eu-mar-stor-rts-monitoring",
+      "titles": {
+       "en": "Monitor all orders and transactions with documented, proportionate surveillance arrangements"
+      },
+      "summaries": {
+       "en": "A firm that professionally arranges or executes transactions must effectively and continuously monitor every order it receives and transmits and every transaction it executes, in any financial instrument, in any capacity, for any type of client, on or outside a trading venue. The arrangements must be proportionate to its business, documented in writing with the documentation kept for five years, and assessed at least annually through audit and internal review."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2(1), (2), (5)",
+      "dutyType": "governance",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Run surveillance that generates alerts over all trading and includes human analysis",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/957/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/957, Article 3",
+     "payload": {
+      "key": "obl-eu-mar-stor-rts-alerts",
+      "titles": {
+       "en": "Run surveillance that generates alerts over all trading and includes human analysis"
+      },
+      "summaries": {
+       "en": "Surveillance must be able to analyse each order and transaction individually and comparatively, produce alerts for further analysis and cover the full range of the firm's trading activity, with an appropriate level of human analysis. Monitoring may be delegated to a group entity, or data analysis and alert generation to an outside provider, under a written agreement, but the firm remains fully responsible."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3(1), (4), (6), (7)",
+      "dutyType": "technical",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep records of suspicious-activity analyses and STOR decisions for five years",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/957/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/957, Article 3(8)",
+     "payload": {
+      "key": "obl-eu-mar-stor-rts-analysis-records",
+      "titles": {
+       "en": "Keep records of suspicious-activity analyses and STOR decisions for five years"
+      },
+      "summaries": {
+       "en": "The firm must keep for five years the information documenting its analysis of orders and transactions examined as possible market abuse and the reasons for submitting or not submitting a STOR, keep that information confidential and provide it to the competent authority on request."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3(8)",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Train staff who monitor and process orders and transactions in detecting market abuse",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/957/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/957, Article 4",
+     "payload": {
+      "key": "obl-eu-mar-stor-rts-training",
+      "titles": {
+       "en": "Train staff who monitor and process orders and transactions in detecting market abuse"
+      },
+      "summaries": {
+       "en": "The firm must give regular, effective and comprehensive training, proportionate to its business, to the staff involved in monitoring, detecting and identifying possible insider dealing and market manipulation, including the staff who process orders and transactions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Submit STORs without delay on the prescribed template, without tipping off",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/957/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/957, Articles 5 to 8",
+     "payload": {
+      "key": "obl-eu-mar-stor-rts-submission",
+      "titles": {
+       "en": "Submit STORs without delay on the prescribed template, without tipping off"
+      },
+      "summaries": {
+       "en": "Once reasonable suspicion is formed the firm must submit a STOR without delay, using the template in the Annex and the electronic means the competent authority specifies, including for past orders and transactions where suspicion arises later, with an explanation of the delay, and must send any relevant information it learns afterwards. It must not let the person concerned, or anyone who does not need to know, learn that a STOR has been or will be submitted."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5-8",
+      "dutyType": "reporting",
+      "effectiveFrom": "2016-07-03",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MAR investment recommendations RTS, Commission Delegated Regulation (EU) 2016/958",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2016/958/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/958 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r0958",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2016/958 of 9 March 2016 supplementing Regulation (EU) No 596/2014 of the European Parliament and of the Council with regard to regulatory technical standards for the technical arrangements for objective presentation of investment recommendations or other information recommending or suggesting an investment strategy and for disclosure of particular interests or indications of conflicts of interest"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR investment recommendations RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2016/958",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2016/958/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-06-18"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Identify the producers of each recommendation and present it objectively",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/958/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/958, Articles 2 and 3",
+     "payload": {
+      "key": "obl-eu-mar-ir-rts-identity-objectivity",
+      "titles": {
+       "en": "Identify the producers of each recommendation and present it objectively"
+      },
+      "summaries": {
+       "en": "A producer of investment recommendations must state clearly its identity and the names and job titles of the people involved, and a credit institution or investment firm must also name its competent authority. Each recommendation must separate facts from opinion, name its material sources, flag doubtful ones, label projections and price targets with their material assumptions and show when it was completed, and the producer must be able to substantiate it to the authority on request."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2-3",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Disclose valuation methods, rating meaning and the 12-month recommendation history",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/958/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/958, Article 4",
+     "payload": {
+      "key": "obl-eu-mar-ir-rts-methodology-history",
+      "titles": {
+       "en": "Disclose valuation methods, rating meaning and the 12-month recommendation history"
+      },
+      "summaries": {
+       "en": "Credit institutions, investment firms, independent analysts, other producers whose main business is recommendations, and experts must also state the valuation basis or methodology and assumptions, what the rating means and the time horizon, a risk warning with sensitivity analysis, the planned update frequency and price dates, any change from and a list of their recommendations on the issuer over the past 12 months, and whether the recommendation was amended after being shown to the issuer."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Disclose interests and conflicts of interest in every recommendation",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/958/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/958, Articles 5 and 6",
+     "payload": {
+      "key": "obl-eu-mar-ir-rts-conflicts",
+      "titles": {
+       "en": "Disclose interests and conflicts of interest in every recommendation"
+      },
+      "summaries": {
+       "en": "A producer must disclose all relationships and circumstances that may reasonably impair a recommendation's objectivity, including group interests known to those involved. Professional producers must also state net positions above 0.5 % of the issuer's share capital, market making, lead management in the past 12 months, service agreements with the issuer, and, for credit institutions and investment firms, their information barriers and any remuneration tied to investment services or trading fees."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5-6(2)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Publish quarterly statistics on buy, hold and sell recommendations",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/958/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/958, Article 6(3)",
+     "payload": {
+      "key": "obl-eu-mar-ir-rts-quarterly-statistics",
+      "titles": {
+       "en": "Publish quarterly statistics on buy, hold and sell recommendations"
+      },
+      "summaries": {
+       "en": "A credit institution or investment firm that produces recommendations must publish every quarter the share of its recommendations over the previous 12 months that were buy, hold or sell, and for each category the share of issuers to which it supplied material investment services in that period."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6(3)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-03",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify yourself and your conflicts when disseminating someone else's recommendation",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/958/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/958, Articles 8 to 10",
+     "payload": {
+      "key": "obl-eu-mar-ir-rts-third-party-dissemination",
+      "titles": {
+       "en": "Identify yourself and your conflicts when disseminating someone else's recommendation"
+      },
+      "summaries": {
+       "en": "A firm disseminating a recommendation produced by a third party must state its identity, relevant conflicts of interest and the date and time of first dissemination; a credit institution or investment firm must also name its competent authority and its own interests. Summaries or extracts must be clear, labelled as such and identify the original, and substantial alterations must be described in detail."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 8-10",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MAR buy-back and stabilisation RTS, Commission Delegated Regulation (EU) 2016/1052",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1052/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1052 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r1052",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2016/1052 of 8 March 2016 supplementing Regulation (EU) No 596/2014 of the European Parliament and of the Council with regard to regulatory technical standards for the conditions applicable to buy-back programmes and stabilisation measures"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR buy-back and stabilisation RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2016/1052",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2016/1052/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Disclose a buy-back programme beforehand and report and publish its trades within seven market sessions",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1052/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1052, Article 2",
+     "payload": {
+      "key": "obl-eu-mar-bb-rts-buyback-disclosure",
+      "titles": {
+       "en": "Disclose a buy-back programme beforehand and report and publish its trades within seven market sessions"
+      },
+      "summaries": {
+       "en": "Before trading under a buy-back programme the issuer must publicly disclose its purpose, maximum amount, maximum number of shares and duration, and any later changes. It must record each transaction, report the transactions in detailed and aggregated form and publish them no later than the end of the seventh daily market session after execution, and keep them on its website for five years; since 4 December 2024 MAR Article 5(3) names the authority of the most relevant market in terms of liquidity as the recipient of the reports."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2",
+      "dutyType": "reporting",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep buy-back trading within the price, volume and timing limits",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1052/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1052, Articles 3 and 4",
+     "payload": {
+      "key": "obl-eu-mar-bb-rts-buyback-limits",
+      "titles": {
+       "en": "Keep buy-back trading within the price, volume and timing limits"
+      },
+      "summaries": {
+       "en": "Buy-back purchases must be made on a trading venue, not above the higher of the last independent trade and the highest current independent bid, and not more than 25 % of the average daily volume on any day, with restrictions on orders in auction phases. During the programme the issuer must not sell own shares or trade in a closed period or while delaying inside information, unless the programme is time-scheduled or independently lead-managed; a credit institution or investment firm issuer with effective information barriers is exempt to the extent the regulation sets out."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3-4",
+      "dutyType": "conduct",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Disclose and report stabilisation before, during and after the offer",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1052/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1052, Article 6",
+     "payload": {
+      "key": "obl-eu-mar-bb-rts-stabilisation-disclosure",
+      "titles": {
+       "en": "Disclose and report stabilisation before, during and after the offer"
+      },
+      "summaries": {
+       "en": "A central point appointed among the issuer, offeror and stabilisation managers must publish before the offer that stabilisation may occur, its purpose, period, stabilising entity, overallotment and greenshoe terms and venues, publish all stabilisation transactions within seven daily market sessions and publish a summary within one week of the end of the period. Entities undertaking stabilisation must record every stabilisation order and transaction and notify them to the competent authorities of the relevant trading venues."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep stabilisation within its period, price and overallotment limits",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1052/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1052, Articles 5, 7 and 8",
+     "payload": {
+      "key": "obl-eu-mar-bb-rts-stabilisation-limits",
+      "titles": {
+       "en": "Keep stabilisation within its period, price and overallotment limits"
+      },
+      "summaries": {
+       "en": "Stabilisation of shares must end within 30 calendar days of the start of trading or of allotment, and of bonds within 30 days after the issuer received the proceeds or 60 days after allotment, whichever is earlier. Shares must never be stabilised above the offer price, uncovered overallotment may not exceed 5 % and the greenshoe 15 % of the original offer, and the greenshoe's exercise must be disclosed promptly."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5, 7-8",
+      "dutyType": "conduct",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MAR managers' transactions ITS, Commission Implementing Regulation (EU) 2016/523",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/523/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/523 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r0523",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2016/523 of 10 March 2016 laying down implementing technical standards with regard to the format and template for notification and public disclosure of managers' transactions in accordance with Regulation (EU) No 596/2014 of the European Parliament and of the Council"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR managers' transactions ITS",
+    "officialRef": "Commission Implementing Regulation (EU) 2016/523",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2016/523/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-04-06"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Notify managers' transactions on the prescribed template by secure electronic means",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/523/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/523, Article 2",
+     "payload": {
+      "key": "obl-eu-mar-pdmr-its-template",
+      "titles": {
+       "en": "Notify managers' transactions on the prescribed template by secure electronic means"
+      },
+      "summaries": {
+       "en": "Managers and persons closely associated with them must notify their transactions using the template in the Annex, sent by the electronic means the competent authority publishes, which keep the information complete, intact and confidential and make its source certain."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2",
+      "dutyType": "reporting",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MAR disclosure and delay ITS, Commission Implementing Regulation (EU) 2016/1055",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/1055/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/1055 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r1055",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2016/1055 of 29 June 2016 laying down implementing technical standards with regard to the technical means for appropriate public disclosure of inside information and for delaying the public disclosure of inside information in accordance with Regulation (EU) No 596/2014 of the European Parliament and of the Council"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR disclosure and delay ITS",
+    "officialRef": "Commission Implementing Regulation (EU) 2016/1055",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2016/1055/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Disseminate inside information widely, free of charge and simultaneously across the Union",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/1055/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/1055, Article 2",
+     "payload": {
+      "key": "obl-eu-mar-disclosure-its-dissemination",
+      "titles": {
+       "en": "Disseminate inside information widely, free of charge and simultaneously across the Union"
+      },
+      "summaries": {
+       "en": "An issuer must disseminate inside information free of charge, simultaneously throughout the Union and to as wide a public as possible without discrimination, sending it electronically to media the public relies on and stating that it is inside information, the issuer's full legal name, the notifier's name and position, the subject and the date and time. It must remedy any failure or disruption in that communication without delay."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Post inside information on the website in a free, identifiable and dated section",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/1055/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/1055, Article 3",
+     "payload": {
+      "key": "obl-eu-mar-disclosure-its-website",
+      "titles": {
+       "en": "Post inside information on the website in a free, identifiable and dated section"
+      },
+      "summaries": {
+       "en": "The issuer's website must give free and non-discriminatory access to the inside information posted, in an easily identifiable section, with the date and time of each disclosure shown and the information in chronological order."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-07-03",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep a durable record of every decision to delay inside information",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/1055/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/1055, Article 4(1)",
+     "payload": {
+      "key": "obl-eu-mar-disclosure-its-delay-record",
+      "titles": {
+       "en": "Keep a durable record of every decision to delay inside information"
+      },
+      "summaries": {
+       "en": "When delaying inside information the issuer must keep in a durable medium the dates and times when the information arose, the delay was decided and disclosure is expected, who is responsible for deciding, monitoring, disclosing and informing the authority, and evidence that the conditions were and remain met, including information barriers and arrangements to disclose quickly if confidentiality is lost."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4(1)",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Send delay notifications to the authority's dedicated contact point with the prescribed content",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/1055/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/1055, Article 4(2) to (4)",
+     "payload": {
+      "key": "obl-eu-mar-disclosure-its-delay-notification",
+      "titles": {
+       "en": "Send delay notifications to the authority's dedicated contact point with the prescribed content"
+      },
+      "summaries": {
+       "en": "The written notification of a delay, and any written explanation, must go to the competent authority's dedicated contact point by the electronic means it specifies, giving the issuer's full name, the notifier's identity and contact details, identification of the published information, the date and time of the decision to delay and everyone responsible for that decision."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4(2)-(4)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify an intended financial-stability delay through the authority's dedicated contact point",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/1055/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/1055, Article 5",
+     "payload": {
+      "key": "obl-eu-mar-disclosure-its-stability-delay",
+      "titles": {
+       "en": "Notify an intended financial-stability delay through the authority's dedicated contact point"
+      },
+      "summaries": {
+       "en": "A credit or financial institution issuer that intends to delay inside information to preserve financial stability must notify the competent authority in writing through its dedicated contact point, keeping the information complete, intact and confidential, and use the same channel for any new information that may affect the authority's decision."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5",
+      "dutyType": "reporting",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MAR insider lists ITS, Commission Implementing Regulation (EU) 2026/1291",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2026/1291/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2026/1291 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026r1291",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2026/1291 of 12 June 2026 laying down implementing technical standards for the application of Regulation (EU) No 596/2014 of the European Parliament and of the Council with regard to the format of insider lists, and repealing Commission Implementing Regulation (EU) 2022/1210"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR insider lists ITS",
+    "officialRef": "Commission Implementing Regulation (EU) 2026/1291",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2026/1291/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2026-07-05"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep insider lists in the prescribed format, with a section per piece of inside information",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2026/1291/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2026/1291, Article 1(1) and (2)",
+     "payload": {
+      "key": "obl-eu-mar-insider-list-its-format",
+      "titles": {
+       "en": "Keep insider lists in the prescribed format, with a section per piece of inside information"
+      },
+      "summaries": {
+       "en": "An insider list must have a separate section for each piece of inside information, drawn up and kept current on Template 1; people who have access to all inside information at all times may instead be listed once in a permanent insiders' section on Template 2."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1(1)-(2)",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Hold the insider list electronically with restricted access and version history",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2026/1291/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2026/1291, Article 1(3) and (4)",
+     "payload": {
+      "key": "obl-eu-mar-insider-list-its-electronic",
+      "titles": {
+       "en": "Hold the insider list electronically with restricted access and version history"
+      },
+      "summaries": {
+       "en": "The insider list must be kept electronically so that access is limited to clearly identified people who need it, its content is accurate and up to date and previous versions remain accessible; it is sent to the competent authority by the electronic means the authority publishes."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1(3)-(4)",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Delete insider-list personal data five years after a person leaves the list",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2026/1291/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2026/1291, Article 1(5)",
+     "payload": {
+      "key": "obl-eu-mar-insider-list-its-retention-limit",
+      "titles": {
+       "en": "Delete insider-list personal data five years after a person leaves the list"
+      },
+      "summaries": {
+       "en": "Issuers and those acting for them must retain personal data about people on their insider list for no longer than five years after the person ceased to be on it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1(5)",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MAR protracted processes and delay Delegated Regulation, Commission Delegated Regulation (EU) 2026/789",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2026/789/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/789 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026r0789",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2026/789 of 8 April 2026 supplementing Regulation (EU) No 596/2014 of the European Parliament and of the Council as regards disclosure of inside information in protracted processes and delay of disclosure"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR protracted processes and delay Delegated Regulation",
+    "officialRef": "Commission Delegated Regulation (EU) 2026/789",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2026/789/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2026-07-19"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Identify the final event and moment of disclosure of a protracted process from the prescribed list",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/789/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/789, Article 1 and Annex I",
+     "payload": {
+      "key": "obl-eu-mar-2026-789-protracted-final-events",
+      "titles": {
+       "en": "Identify the final event and moment of disclosure of a protracted process from the prescribed list"
+      },
+      "summaries": {
+       "en": "An issuer relying on the protracted-process rule uses the non-exhaustive list in Annex I to identify the final event and when to disclose it, for example as soon as possible after signing a binding agreement, after the governing body's final decision on a capital increase or buy-back, after approval of financial results, or, for a credit institution, after receiving the final SREP decision or the authorisation to reduce own funds. For processes not listed the issuer identifies the final event itself."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1, Annex I",
+      "dutyType": "disclosure",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Check a planned delay against the listed contrast situations and communication types",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/789/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/789, Article 2 and Annexes II and III",
+     "payload": {
+      "key": "obl-eu-mar-2026-789-delay-contrast-check",
+      "titles": {
+       "en": "Check a planned delay against the listed contrast situations and communication types"
+      },
+      "summaries": {
+       "en": "Before delaying inside information, the issuer checks whether it contrasts with its latest public announcement or other communication on the same matter, using the situations in Annex II, such as a material change to previously announced forecasts, financial condition, capital structure, strategy or governance, and treating as communications the types in Annex III, including press releases, interviews, roadshows, marketing campaigns and regulatory filings."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2, Annexes II-III",
+      "dutyType": "governance",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MAR market soundings RTS, Commission Delegated Regulation (EU) 2016/960",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2016/960/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/960 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r0960",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2016/960 of 17 May 2016 supplementing Regulation (EU) No 596/2014 of the European Parliament and of the Council with regard to regulatory technical standards for the appropriate arrangements, systems and procedures for disclosing market participants conducting market soundings"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR market soundings RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2016/960",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2016/960/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-06-18"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Run market soundings under set procedures with a standard script for every recipient",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/960/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/960, Articles 1 to 3",
+     "payload": {
+      "key": "obl-eu-mar-ms-rts-procedures",
+      "titles": {
+       "en": "Run market soundings under set procedures with a standard script for every recipient"
+      },
+      "summaries": {
+       "en": "A firm conducting market soundings must keep regularly reviewed procedures for how soundings are done, use recorded telephone lines where available and consented to, have staff use only firm equipment, and give every recipient of a sounding the same predetermined standard set of information in the prescribed order, which differs according to whether the firm considers inside information will be disclosed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1-3",
+      "dutyType": "governance",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep recipient and opt-out lists and send cleansing notices with the prescribed content",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/960/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/960, Articles 4 and 5",
+     "payload": {
+      "key": "obl-eu-mar-ms-rts-recipients",
+      "titles": {
+       "en": "Keep recipient and opt-out lists and send cleansing notices with the prescribed content"
+      },
+      "summaries": {
+       "en": "For each sounding the firm must list everyone who received information with the dates, times and contact details used, keep a list of potential investors who do not want soundings and not sound them, and when information ceases to be inside information tell recipients the firm's identity, the transaction, the date and time of the sounding and the date the information ceased to be inside information."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4-5",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep complete, durable records of every market sounding",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/960/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/960, Article 6",
+     "payload": {
+      "key": "obl-eu-mar-ms-rts-records",
+      "titles": {
+       "en": "Keep complete, durable records of every market sounding"
+      },
+      "summaries": {
+       "en": "The firm must keep in a durable medium, for the MAR retention period, its procedures, the standard information set for each sounding, recipient data, all communications with recipients (call recordings, correspondence, or minutes of unrecorded meetings signed by both sides within five working days) and its cleansing assessments, and make them available to the competent authority on request."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MAR market soundings ITS, Commission Implementing Regulation (EU) 2016/959",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/959/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/959 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r0959",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2016/959 of 17 May 2016 laying down implementing technical standards for market soundings with regard to the systems and notification templates to be used by disclosing market participants and the format of the records in accordance with Regulation (EU) No 596/2014 of the European Parliament and of the Council"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MAR market soundings ITS",
+    "officialRef": "Commission Implementing Regulation (EU) 2016/959",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2016/959/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-06-18"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep market sounding records electronically on the prescribed templates",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/959/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/959, Articles 1 to 4",
+     "payload": {
+      "key": "obl-eu-mar-ms-its-record-format",
+      "titles": {
+       "en": "Keep market sounding records electronically on the prescribed templates"
+      },
+      "summaries": {
+       "en": "Market sounding records must be kept electronically, with minutes of unrecorded conversations on the Annex I or Annex II template according to whether inside information was involved, a separate recipient list for each sounding and a single list of investors who opted out. Recipients must be told in writing when the information has ceased to be inside information, recorded on the Annex III template."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1-4",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2016-07-03",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ESMA MAR Guidelines on delayed disclosure, ESMA70-159-4966",
+   "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+   "sourceLabel": "ESMA, MAR Guidelines on delay in the disclosure of inside information and interactions with prudential supervision, ESMA70-159-4966 of 13 April 2022",
+   "payload": {
+    "key": "esma-gl-2016-1478",
+    "titles": {
+     "en": "MAR Guidelines: Delay in the disclosure of inside information and interactions with prudential supervision"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ESMA MAR Guidelines on delayed disclosure",
+    "officialRef": "ESMA70-159-4966",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "esma",
+    "regime": "regime:securities",
+    "inForceFrom": "2022-06-13"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Test a planned delay against ESMA's indicative legitimate interests",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+     "sourceLabel": "ESMA, MAR Guidelines on delay in the disclosure of inside information and interactions with prudential supervision (ESMA70-159-4966), Guideline 1",
+     "payload": {
+      "key": "obl-eu-esma-delay-gl-legitimate-interests",
+      "titles": {
+       "en": "Test a planned delay against ESMA's indicative legitimate interests"
+      },
+      "summaries": {
+       "en": "When judging whether immediate disclosure is likely to prejudice its legitimate interests, an issuer should look to ESMA's indicative cases: negotiations whose outcome disclosure would jeopardise, grave and imminent danger to financial viability, decisions needing approval by another body of the issuer, protection of intellectual property, a planned purchase or sale of a major holding, and transactions awaiting a conditional public approval. Even then, it must disclose as soon as possible once confidentiality is lost."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guideline 1, paras 10(a)-(f) and 11",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Treat pending own-funds authorisations and draft SREP decisions as possible grounds for delay",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+     "sourceLabel": "ESMA, MAR Guidelines on delay in the disclosure of inside information and interactions with prudential supervision (ESMA70-159-4966), Guideline 1",
+     "payload": {
+      "key": "obl-eu-esma-delay-gl-prudential-interests",
+      "titles": {
+       "en": "Treat pending own-funds authorisations and draft SREP decisions as possible grounds for delay"
+      },
+      "summaries": {
+       "en": "An institution may treat as a legitimate interest for delaying disclosure a decision to redeem, reduce, repurchase or call own funds instruments that awaits the competent authority's authorisation under CRR Article 77, and a draft SREP decision or related preliminary information until the prudential authority's decision becomes final."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guideline 1, paras 10(g)-(h)",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess whether Pillar 2 requirements and guidance are inside information",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+     "sourceLabel": "ESMA, MAR Guidelines on delay in the disclosure of inside information and interactions with prudential supervision (ESMA70-159-4966), Guidelines 3 and 4",
+     "payload": {
+      "key": "obl-eu-esma-delay-gl-p2r-p2g",
+      "titles": {
+       "en": "Assess whether Pillar 2 requirements and guidance are inside information"
+      },
+      "summaries": {
+       "en": "An institution should assess whether its draft or final Pillar 2 requirement and Pillar 2 guidance are inside information by checking that each is non-public, directly concerns it and is precise, and by weighing price sensitivity against its current level of capital. P2R is expected to be inside information except in very limited cases after a thorough assessment, and P2G is expected to be price sensitive where meeting it needs a major reaction such as a capital increase or it departs from market expectations."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 3-4, paras 13-18",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ESMA MAR Guidelines on persons receiving market soundings, ESMA/2016/1477",
+   "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+   "sourceLabel": "ESMA, MAR Guidelines: Persons receiving market soundings, ESMA/2016/1477 of 10 November 2016",
+   "payload": {
+    "key": "esma-gl-2016-1477",
+    "titles": {
+     "en": "MAR Guidelines: Persons receiving market soundings"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ESMA MAR Guidelines on persons receiving market soundings",
+    "officialRef": "ESMA/2016/1477",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "esma",
+    "regime": "regime:securities",
+    "inForceFrom": "2017-01-10"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Have procedures and trained staff for receiving market soundings",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+     "sourceLabel": "ESMA, MAR Guidelines: Persons receiving market soundings (ESMA/2016/1477), Guideline 1",
+     "payload": {
+      "key": "obl-eu-esma-ms-gl-procedures-training",
+      "titles": {
+       "en": "Have procedures and trained staff for receiving market soundings"
+      },
+      "summaries": {
+       "en": "A firm that receives market soundings should have procedures, proportionate to its business, that tell disclosing firms its designated contact point, pass sounding information internally only through set channels on a need-to-know basis, identify and train those who assess whether inside information was received, and control the flow of that information. Staff who receive and process soundings should be trained on those procedures and on the insider dealing and unlawful disclosure prohibitions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guideline 1, paras 9-10",
+      "dutyType": "governance",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Assess independently whether a market sounding has given you inside information",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+     "sourceLabel": "ESMA, MAR Guidelines: Persons receiving market soundings (ESMA/2016/1477), Guidelines 2 to 4",
+     "payload": {
+      "key": "obl-eu-esma-ms-gl-own-assessment",
+      "titles": {
+       "en": "Assess independently whether a market sounding has given you inside information"
+      },
+      "summaries": {
+       "en": "The recipient should assess for itself whether it holds inside information after a sounding, and again after being told the information has ceased to be inside information, taking account of the discloser's view and all other information available, and if it does, identify every issuer and financial instrument concerned. It should tell a disclosing firm if it does not wish to receive future soundings."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 2-4, paras 11-14",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Sign sounding minutes within five working days and keep sounding records for five years",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+     "sourceLabel": "ESMA, MAR Guidelines: Persons receiving market soundings (ESMA/2016/1477), Guidelines 5 and 6",
+     "payload": {
+      "key": "obl-eu-esma-ms-gl-records",
+      "titles": {
+       "en": "Sign sounding minutes within five working days and keep sounding records for five years"
+      },
+      "summaries": {
+       "en": "The recipient should sign the discloser's minutes of an unrecorded sounding conversation, or return its own signed version, within five working days, and keep for at least five years in a durable medium its procedures, opt-out notices, assessments and reasons, related-instrument analysis and a chronological list of staff with access to each sounding's information."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 5-6, paras 15-16",
+      "dutyType": "record_keeping",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SSR, Regulation (EU) No 236/2012",
+   "source": "https://eur-lex.europa.eu/eli/reg/2012/236/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 236/2012 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32012r0236",
+    "titles": {
+     "en": "Regulation (EU) No 236/2012 of the European Parliament and of the Council of 14 March 2012 on short selling and certain aspects of credit default swaps"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SSR",
+    "officialRef": "Regulation (EU) No 236/2012",
+    "eliUri": "https://data.europa.eu/eli/reg/2012/236/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2012-03-25"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Notify the competent authority of net short positions in shares from 0.1 % of share capital",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02012R0236-20240116",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 236/2012, consolidated text of 16 January 2024, Articles 5 and 9, as amended by Commission Delegated Regulation (EU) 2022/27",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg_del/2022/27/oj"
+     },
+     "payload": {
+      "key": "obl-eu-ssr-net-short-shares-notification",
+      "titles": {
+       "en": "Notify the competent authority of net short positions in shares from 0.1 % of share capital"
+      },
+      "summaries": {
+       "en": "A firm with a net short position in the issued share capital of a company whose shares are admitted to trading on a trading venue must notify the competent authority each time the position reaches or falls below 0.1 % and each further 0.1 %. The position is calculated at midnight and notified by 15:30 on the next trading day, and records of the gross positions behind a significant net short position are kept for five years."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5, Art. 9",
+      "dutyType": "reporting",
+      "effectiveFrom": "2022-01-31",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Disclose net short positions in shares to the public from 0.5 % of share capital",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02012R0236-20240116",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 236/2012, consolidated text of 16 January 2024, Articles 6 and 9",
+     "payload": {
+      "key": "obl-eu-ssr-net-short-shares-disclosure",
+      "titles": {
+       "en": "Disclose net short positions in shares to the public from 0.5 % of share capital"
+      },
+      "summaries": {
+       "en": "When a net short position in a company's shares reaches or falls below 0.5 % of issued share capital, and each 0.1 % above that, the firm must also disclose it to the public, stating its identity, the size of the position, the issuer and the date, by 15:30 on the next trading day; the information appears on the competent authority's central website."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6, Art. 9",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2012-11-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify net short positions in sovereign debt and, when permitted, uncovered sovereign CDS positions",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02012R0236-20240116",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 236/2012, consolidated text of 16 January 2024, Articles 7 to 9",
+     "payload": {
+      "key": "obl-eu-ssr-sovereign-positions-notification",
+      "titles": {
+       "en": "Notify net short positions in sovereign debt and, when permitted, uncovered sovereign CDS positions"
+      },
+      "summaries": {
+       "en": "A firm must notify the competent authority when its net short position in a sovereign issuer's debt reaches or falls below the notification thresholds set for that issuer, and, while the authority has suspended the ban on uncovered sovereign credit default swaps, when an uncovered sovereign CDS position reaches or falls below those thresholds."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 7-9",
+      "dutyType": "reporting",
+      "effectiveFrom": "2012-11-01",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not short sell shares or sovereign debt uncovered, or hold uncovered sovereign CDS",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02012R0236-20240116",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 236/2012, consolidated text of 16 January 2024, Articles 12 to 14",
+     "payload": {
+      "key": "obl-eu-ssr-uncovered-short-selling-ban",
+      "titles": {
+       "en": "Do not short sell shares or sovereign debt uncovered, or hold uncovered sovereign CDS"
+      },
+      "summaries": {
+       "en": "A firm may short sell a share admitted to trading on a trading venue, or sovereign debt, only if it has borrowed it, has an enforceable agreement or claim to receive it, or has a third-party locate arrangement giving a reasonable expectation of settlement; a short sale of sovereign debt that hedges a highly correlated long position is not restricted. It may enter sovereign CDS transactions only if they do not create an uncovered position, unless the competent authority has suspended that restriction."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 12-14",
+      "dutyType": "conduct",
+      "effectiveFrom": "2012-11-01",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify use of the market-making or primary-dealer exemption 30 days in advance",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02012R0236-20240116",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 236/2012, consolidated text of 16 January 2024, Article 17",
+     "payload": {
+      "key": "obl-eu-ssr-exemption-notification",
+      "titles": {
+       "en": "Notify use of the market-making or primary-dealer exemption 30 days in advance"
+      },
+      "summaries": {
+       "en": "A firm that wants to use the exemption for market making activities must notify the competent authority of its home Member State in writing at least 30 calendar days before first using it, and an authorised primary dealer must notify the authority for the sovereign debt concerned. It must notify changes affecting its eligibility, or that it no longer wishes to use the exemption, as soon as possible, and answer the authority's requests about exempted positions within four calendar days."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 17(5)-(11)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2012-11-01",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SSR ITS 827/2012, Commission Implementing Regulation (EU) No 827/2012",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2012/827/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) No 827/2012 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32012r0827",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) No 827/2012 of 29 June 2012 laying down implementing technical standards with regard to the means for public disclosure of net position in shares, the format of the information to be provided to the European Securities and Markets Authority in relation to net short positions, the types of agreements, arrangements and measures to adequately ensure that shares or sovereign debt instruments are available for settlement and the dates and period for the determination of the principal venue for a share according to Regulation (EU) No 236/2012 of the European Parliament and of the Council on short selling and certain aspects of credit default swaps"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SSR ITS 827/2012",
+    "officialRef": "Commission Implementing Regulation (EU) No 827/2012",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2012/827/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2012-09-19"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Hold a qualifying borrow agreement or locate confirmation before every short sale",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2012/827/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) No 827/2012, Articles 5 to 7",
+     "payload": {
+      "key": "obl-eu-ssr-its-locate-arrangements",
+      "titles": {
+       "en": "Hold a qualifying borrow agreement or locate confirmation before every short sale"
+      },
+      "summaries": {
+       "en": "Before short selling a share or sovereign debt, a firm relying on an agreement to borrow must hold one of the listed binding arrangements, such as a physically settled future, option, repo or standing facility covering the amount and settlement date, and a firm relying on a locate must hold a standard, same-day or easy-to-borrow confirmation of the prescribed kind from an eligible third party. It must receive the agreement or confirmation in a durable medium."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5-7",
+      "dutyType": "conduct",
+      "effectiveFrom": "2012-11-01",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Be able to prove delivery capacity when giving locate confirmations",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2012/827/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) No 827/2012, Article 8",
+     "payload": {
+      "key": "obl-eu-ssr-its-locate-provider",
+      "titles": {
+       "en": "Be able to prove delivery capacity when giving locate confirmations"
+      },
+      "summaries": {
+       "en": "A firm that gives locate confirmations to short sellers as a third party must take part in managing the borrowing or purchase of the relevant shares or sovereign debt, be able to evidence that participation and, on request, show with statistical evidence that it can deliver or process delivery on the dates it commits to."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 8",
+      "dutyType": "conduct",
+      "effectiveFrom": "2012-11-01",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SSR Delegated Regulation 918/2012, Commission Delegated Regulation (EU) No 918/2012",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2012/918/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) No 918/2012 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32012r0918",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) No 918/2012 of 5 July 2012 supplementing Regulation (EU) No 236/2012 of the European Parliament and of the Council on short selling and certain aspects of credit default swaps with regard to definitions, the calculation of net short positions, covered sovereign credit default swaps, notification thresholds, liquidity thresholds for suspending restrictions, significant falls in the value of financial instruments and adverse events"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SSR Delegated Regulation 918/2012",
+    "officialRef": "Commission Delegated Regulation (EU) No 918/2012",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2012/918/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2012-10-12"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Calculate net short positions with the delta-adjusted method across all instruments",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02012R0918-20150212",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) No 918/2012, consolidated text of 12 February 2015, Articles 5 to 7, 10 and 11",
+     "payload": {
+      "key": "obl-eu-ssr-dr-net-short-calculation",
+      "titles": {
+       "en": "Calculate net short positions with the delta-adjusted method across all instruments"
+      },
+      "summaries": {
+       "en": "Net short positions in shares and sovereign debt must be calculated with the delta-adjusted model in Annex II, counting every financial instrument that gives a financial advantage from a change in price, whether traded on or outside a trading venue, including exposure through baskets, irrespective of cash or physical settlement, and using the same method for long and short positions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5-7, 10-11",
+      "dutyType": "technical",
+      "effectiveFrom": "2012-11-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Calculate and report net short positions at entity, group and management-entity level",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02012R0918-20150212",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) No 918/2012, consolidated text of 12 February 2015, Articles 12 and 13",
+     "payload": {
+      "key": "obl-eu-ssr-dr-group-and-fund-positions",
+      "titles": {
+       "en": "Calculate and report net short positions at entity, group and management-entity level"
+      },
+      "summaries": {
+       "en": "Each legal entity in a group calculates its own net short position and the group also aggregates and nets the positions of its entities other than those managing funds or portfolios; a management entity aggregates the positions of the funds and portfolios it manages under the same investment strategy for an issuer. A position that reaches a notification or disclosure threshold on any of these calculations must be reported and, where required, disclosed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 12-13",
+      "dutyType": "reporting",
+      "effectiveFrom": "2012-11-01",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add BMR, Regulation (EU) 2016/1011",
+   "source": "https://eur-lex.europa.eu/eli/reg/2016/1011/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2016/1011 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r1011",
+    "titles": {
+     "en": "Regulation (EU) 2016/1011 of the European Parliament and of the Council of 8 June 2016 on indices used as benchmarks in financial instruments and financial contracts or to measure the performance of investment funds and amending Directives 2008/48/EC and 2014/17/EU and Regulation (EU) No 596/2014"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "BMR",
+    "officialRef": "Regulation (EU) 2016/1011",
+    "eliUri": "https://data.europa.eu/eli/reg/2016/1011/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-06-30"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Govern and control input data contributed to in-scope benchmarks",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02016R1011-20260101",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/1011, consolidated text of 1 January 2026, Articles 2(1a) and 16, as amended by Regulation (EU) 2025/914",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2025/914/oj"
+     },
+     "payload": {
+      "key": "obl-eu-bmr-contributor-controls",
+      "titles": {
+       "en": "Govern and control input data contributed to in-scope benchmarks"
+      },
+      "summaries": {
+       "en": "A supervised entity contributing input data to a critical or significant benchmark, or to an EU Climate Transition or EU Paris-aligned Benchmark, must keep its contributions free of conflicts of interest and run a control framework for their integrity and accuracy: controls on who may submit, with senior sign-off where proportionate, training for submitters on the BMR and MAR, records of communications, submissions, conflicts and audits, and policies for expert judgement. It must cooperate with the administrator and the competent authority and make its records available."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 16, Art. 2(1a)",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify the administrator before ceasing to contribute to a critical benchmark, and contribute when required",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02016R1011-20260101",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/1011, consolidated text of 1 January 2026, Article 23, as amended by Regulation (EU) 2019/2175",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2019/2175/oj"
+     },
+     "payload": {
+      "key": "obl-eu-bmr-critical-contribution",
+      "titles": {
+       "en": "Notify the administrator before ceasing to contribute to a critical benchmark, and contribute when required"
+      },
+      "summaries": {
+       "en": "A supervised contributor to a critical benchmark that intends to stop contributing input data must promptly notify the administrator in writing. The competent authority may require it to keep contributing, and may require selected supervised entities to contribute for set periods where the benchmark's representativeness is at risk."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 23(3), (5)-(6)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2022-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Add new references only to benchmarks whose use is permitted, and check administrators' status",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02016R1011-20260101",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/1011, consolidated text of 1 January 2026, Article 29(1), as amended by Regulation (EU) 2025/914",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2025/914/oj"
+     },
+     "payload": {
+      "key": "obl-eu-bmr-use-permitted-benchmarks",
+      "titles": {
+       "en": "Add new references only to benchmarks whose use is permitted, and check administrators' status"
+      },
+      "summaries": {
+       "en": "A supervised entity must not add new references in the Union to a critical benchmark, a commodity benchmark subject to Annex II, or an EU Climate Transition or Paris-aligned Benchmark unless its administrator is in the ESMA register, nor to a significant benchmark that is the subject of a public notice under Article 24a(6). It must regularly consult the European single access point or the register to check the status of the administrators of the benchmarks it intends to use."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 29(1)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Replace a benchmark under public notice within six months or explain publicly why not",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02016R1011-20260101",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/1011, consolidated text of 1 January 2026, Article 29(1b), as amended by Regulation (EU) 2025/914",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2025/914/oj"
+     },
+     "payload": {
+      "key": "obl-eu-bmr-replace-noticed-benchmark",
+      "titles": {
+       "en": "Replace a benchmark under public notice within six months or explain publicly why not"
+      },
+      "summaries": {
+       "en": "Where a benchmark the entity uses in existing financial contracts or instruments becomes the subject of a public notice under Article 24a(6), it must replace it with an appropriate alternative within six months of the notice or publish on its website a statement giving clients a reasoned explanation of why it cannot."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 29(1b)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Keep written plans for a benchmark's material change or cessation and reflect them in fallbacks",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02016R1011-20260101",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/1011, consolidated text of 1 January 2026, Articles 2(1a) and 28(2), as amended by Regulation (EU) 2025/914",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2025/914/oj"
+     },
+     "payload": {
+      "key": "obl-eu-bmr-cessation-plans",
+      "titles": {
+       "en": "Keep written plans for a benchmark's material change or cessation and reflect them in fallbacks"
+      },
+      "summaries": {
+       "en": "A supervised entity using a critical, significant, EU Climate Transition or EU Paris-aligned benchmark must keep robust written plans for what it will do if the benchmark materially changes or ceases, naming suitable alternatives where feasible, reflect them in the fallback provisions of its contracts, instruments and investment funds, and give them to the competent authority on request without undue delay."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 28(2), Art. 2(1a)",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-01-01",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: State in a prospectus whether the referenced benchmark's administrator is registered",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02016R1011-20260101",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/1011, consolidated text of 1 January 2026, Article 29(2), as amended by Regulation (EU) 2025/914",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2025/914/oj"
+     },
+     "payload": {
+      "key": "obl-eu-bmr-prospectus-statement",
+      "titles": {
+       "en": "State in a prospectus whether the referenced benchmark's administrator is registered"
+      },
+      "summaries": {
+       "en": "An issuer, offeror or person seeking admission to trading whose prospectus covers securities or products referencing a critical, significant, Annex II commodity, EU Climate Transition or EU Paris-aligned benchmark must state clearly and prominently whether the administrator is in the ESMA register, and add without undue delay any public notice on that benchmark entered in the register."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 29(2)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2026-01-01",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add BMR amending Regulation 2025/914, Regulation (EU) 2025/914",
+   "source": "https://eur-lex.europa.eu/eli/reg/2025/914/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2025/914 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025r0914",
+    "titles": {
+     "en": "Regulation (EU) 2025/914 of the European Parliament and of the Council of 7 May 2025 amending Regulation (EU) 2016/1011 as regards the scope of the rules for benchmarks, the use in the Union of benchmarks provided by an administrator located in a third country, and certain reporting requirements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "BMR amending Regulation 2025/914",
+    "officialRef": "Regulation (EU) 2025/914",
+    "eliUri": "https://data.europa.eu/eli/reg/2025/914/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2025-06-08"
+   },
+   "obligations": []
+  }
+ ]
+}

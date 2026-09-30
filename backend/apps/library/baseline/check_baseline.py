@@ -73,6 +73,23 @@ def load_reference() -> dict[str, set[str]]:
     }
 
 
+# The fields a proposal never needs a source for (apps/proposals/logic.py UNSOURCED_FIELDS).
+UNSOURCED = {"key", "originalLanguage", "isMachine", "effectiveFromPrecision", "inForceFromPrecision", "inForceToPrecision"}
+DEFAULTS: dict[str, object] = {"eliUri": "", "binding": None, "implementsNote": "", "inForceTo": None, "inForceFrom": None, "effectiveFrom": None, "terms": None}
+
+
+def sourced_fields(payload: dict, *, obligation: bool) -> set[str]:
+    """The names `fieldSources` may use, as the door names them: every field the payload
+    sets, a text field once per language (`titles.en`). An obligation's `instrument` is set
+    by the filing and sourced like the rest."""
+    names = {"instrument"} if obligation else set()
+    for name, value in payload.items():
+        if name in UNSOURCED or (name in DEFAULTS and value == DEFAULTS[name]):
+            continue
+        names |= {f"{name}.{language}" for language in value} if isinstance(value, dict) else {name}
+    return names
+
+
 class Checker:
     def __init__(self) -> None:
         self.ref = load_reference()
@@ -130,18 +147,21 @@ class Checker:
         self.text(f"{where}.title", entry.get("title"), MAX_TITLE)
         self.link(f"{where}.source", entry.get("source"))
         self.text(f"{where}.sourceLabel", entry.get("sourceLabel"), MAX_SOURCE_LABEL)
-        sources = entry.get("fieldSources", {})
-        if not isinstance(sources, dict):
-            self.fail(f"{where}.fieldSources", "must be an object of field -> https link")
-        else:
-            for field, value in sources.items():
-                self.link(f"{where}.fieldSources.{field}", value)
         payload = entry.get("payload")
         if not isinstance(payload, dict):
             self.fail(f"{where}.payload", "must be an object")
             return None
         for stray in sorted(set(payload) - fields):
             self.fail(f"{where}.payload", f"unknown field {stray!r}")
+        sources = entry.get("fieldSources", {})
+        if not isinstance(sources, dict):
+            self.fail(f"{where}.fieldSources", "must be an object of field -> https link")
+            return payload
+        sourced = sourced_fields(payload, obligation=fields is OBLIGATION_FIELDS)
+        for name, value in sources.items():
+            self.link(f"{where}.fieldSources.{name}", value)
+            if name not in sourced:
+                self.fail(f"{where}.fieldSources.{name}", f"names no field this entry sets: {', '.join(sorted(sourced))}")
         return payload
 
     def instrument(self, where: str, entry: object) -> tuple[str | None, str | None, date | None]:

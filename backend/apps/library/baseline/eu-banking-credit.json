@@ -1,0 +1,1584 @@
+{
+ "tranche": "eu-banking-credit",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add CRR, Regulation (EU) No 575/2013",
+   "source": "https://eur-lex.europa.eu/eli/reg/2013/575/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32013r0575",
+    "titles": {
+     "en": "Regulation (EU) No 575/2013 of the European Parliament and of the Council of 26 June 2013 on prudential requirements for credit institutions and investment firms and amending Regulation (EU) No 648/2012"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "CRR",
+    "officialRef": "Regulation (EU) No 575/2013",
+    "eliUri": "https://data.europa.eu/eli/reg/2013/575/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2013-06-28"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Maintain the minimum own funds ratios at all times",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Article 92",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2013/575/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-own-funds-ratios",
+      "titles": {
+       "en": "Maintain the minimum own funds ratios at all times"
+      },
+      "summaries": {
+       "en": "Institutions must at all times hold Common Equity Tier 1 capital of at least 4.5 %, Tier 1 capital of at least 6 % and total own funds of at least 8 %, each expressed as a percentage of the total risk exposure amount."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 92(1)(a) to (c) and 92(2)",
+      "dutyType": "governance",
+      "effectiveFrom": "2014-01-01",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Apply the output floor when calculating the total risk exposure amount",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Articles 92 and 465",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/1623/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-output-floor",
+      "titles": {
+       "en": "Apply the output floor when calculating the total risk exposure amount"
+      },
+      "summaries": {
+       "en": "Institutions must set their total risk exposure amount at no less than 72.5 % of the amount the standardised approaches would give (the output floor). During the phase-in they may use a lower factor: 50 % in 2025, 55 % in 2026, 60 % in 2027, 65 % in 2028 and 70 % in 2029."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 92(3) and Art. 465(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-01-01",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Maintain a leverage ratio of at least 3 %",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Articles 92 and 429",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2019/876/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-leverage-ratio",
+      "titles": {
+       "en": "Maintain a leverage ratio of at least 3 %"
+      },
+      "summaries": {
+       "en": "Institutions must keep their Tier 1 capital at no less than 3 % of their total exposure measure, calculated at each reporting reference date. A global systemically important institution must also hold a leverage ratio buffer in Tier 1 capital on top of that."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 92(1)(d), 92(1a) and 429",
+      "dutyType": "governance",
+      "effectiveFrom": "2021-06-28",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Calculate own funds requirements for market risk under the revised approaches",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Articles 325 and 520a",
+     "payload": {
+      "key": "obl-eu-crr-market-risk-revised-approaches",
+      "titles": {
+       "en": "Calculate own funds requirements for market risk under the revised approaches"
+      },
+      "summaries": {
+       "en": "From 1 January 2027 institutions must calculate own funds requirements for market risk on all trading book positions, and on non-trading book positions carrying foreign exchange or commodity risk, using the alternative standardised approach, a permitted alternative internal model or, where eligible, the simplified standardised approach. Until then they keep applying the market risk rules as they stood on 8 July 2024."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 325(1) and Art. 520a",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-01-01",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep every exposure to a client or group of connected clients within 25 % of Tier 1 capital",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Article 395",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2013/575/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-large-exposure-limit",
+      "titles": {
+       "en": "Keep every exposure to a client or group of connected clients within 25 % of Tier 1 capital"
+      },
+      "summaries": {
+       "en": "An institution must not take on an exposure to a client or a group of connected clients that exceeds 25 % of its Tier 1 capital after credit risk mitigation. Where the client is an institution or investment firm the limit is 25 % of Tier 1 capital or EUR 150 million, whichever is higher, subject to an internal limit of at most 100 % of Tier 1 capital."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 395(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2014-01-01",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report every large exposure to the competent authority",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Article 394",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2013/575/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-large-exposure-reporting",
+      "titles": {
+       "en": "Report every large exposure to the competent authority"
+      },
+      "summaries": {
+       "en": "Institutions must report to their competent authority, for each large exposure including exempted ones, who the client or group of connected clients is and the exposure value before and after credit risk mitigation. Institutions using the internal ratings based approach also report their 20 largest exposures on a consolidated basis, and all institutions report consolidated exposures of EUR 300 million or more that are below 10 % of Tier 1 capital."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 394(1)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2014-01-01",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Maintain a net stable funding ratio of at least 100 %",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Articles 413 and 428b",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2019/876/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-net-stable-funding-ratio",
+      "titles": {
+       "en": "Maintain a net stable funding ratio of at least 100 %"
+      },
+      "summaries": {
+       "en": "Institutions must fund their long-term assets and off-balance-sheet items with a diverse set of stable funding, keeping available stable funding at no less than 100 % of required stable funding, calculated in the reporting currency for all transactions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 413(1) and 428b(2)",
+      "dutyType": "governance",
+      "effectiveFrom": "2021-06-28",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify the competent authority and submit a restoration plan when a liquidity requirement is not met",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Article 414",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2013/575/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-liquidity-breach-notification",
+      "titles": {
+       "en": "Notify the competent authority and submit a restoration plan when a liquidity requirement is not met"
+      },
+      "summaries": {
+       "en": "An institution that does not meet, or expects not to meet, the liquidity coverage or stable funding requirement, including in times of stress, must notify its competent authority at once and submit a plan to restore compliance without undue delay. Until compliance is restored it reports the liquidity items daily, unless the authority allows a lower frequency."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 414",
+      "dutyType": "reporting",
+      "effectiveFrom": "2014-01-01",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report liquidity coverage and stable funding items to the competent authority",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Article 415",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2013/575/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-liquidity-reporting",
+      "titles": {
+       "en": "Report liquidity coverage and stable funding items to the competent authority"
+      },
+      "summaries": {
+       "en": "Institutions must report the items of the liquidity coverage requirement at least monthly and the items of the stable funding requirement at least quarterly, in the reporting currency whatever the currency the items are denominated in."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 415(1)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2014-01-01",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report own funds, leverage, large exposures, liquidity and other prudential data to the competent authority",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Article 430",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2013/575/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-supervisory-reporting",
+      "titles": {
+       "en": "Report own funds, leverage, large exposures, liquidity and other prudential data to the competent authority"
+      },
+      "summaries": {
+       "en": "Institutions must report to their competent authority on their own funds requirements including the leverage ratio, large exposures, liquidity requirements, aggregate data on national immovable property markets and asset encumbrance. Since 9 July 2024 the reports also cover exposures to ESG risks and crypto-asset exposures."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 430(1)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2014-01-01",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publicly disclose Pillar 3 prudential information under a board-approved disclosure policy",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Articles 431 to 433c",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2013/575/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-pillar3-disclosure",
+      "titles": {
+       "en": "Publicly disclose Pillar 3 prudential information under a board-approved disclosure policy"
+      },
+      "summaries": {
+       "en": "Institutions must publicly disclose the prudential information in Part Eight, at the frequency that fits their size and listing status (annual, semi-annual or quarterly). The management body or senior management adopts a formal disclosure policy with internal verification, and a member attests in writing that the disclosures follow it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 431(1) and (3), 433, 433a to 433c",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2014-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Submit Pillar 3 disclosures to the EBA in electronic format",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Article 434",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/1623/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-pillar3-submission-to-eba",
+      "titles": {
+       "en": "Submit Pillar 3 disclosures to the EBA in electronic format"
+      },
+      "summaries": {
+       "en": "Institutions other than small and non-complex institutions must submit all their Pillar 3 disclosures electronically to the EBA no later than the date they publish their financial statements or reports for the period, or as soon as possible after. The EBA publishes them centrally."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 434(1)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2025-01-01",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Disclose information on environmental, social and governance risks",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02013R0575-20260626",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013, consolidated text of 26 June 2026, Article 449a",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/1623/oj"
+     },
+     "payload": {
+      "key": "obl-eu-crr-esg-risk-disclosure",
+      "titles": {
+       "en": "Disclose information on environmental, social and governance risks"
+      },
+      "summaries": {
+       "en": "Institutions must disclose their ESG risks, separating environmental, social and governance risks and, for environmental risks, physical and transition risks. The disclosure includes total exposures to fossil fuel sector entities and how ESG risks are built into strategy, processes, governance and risk management."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 449a(1) and (2)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2025-01-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add CRR3, Regulation (EU) 2024/1623",
+   "source": "https://eur-lex.europa.eu/eli/reg/2024/1623/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1623 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r1623",
+    "titles": {
+     "en": "Regulation (EU) 2024/1623 of the European Parliament and of the Council of 31 May 2024 amending Regulation (EU) No 575/2013 as regards requirements for credit risk, credit valuation adjustment risk, operational risk, market risk and the output floor"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "CRR3",
+    "officialRef": "Regulation (EU) 2024/1623",
+    "eliUri": "https://data.europa.eu/eli/reg/2024/1623/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2024-07-09"
+   }
+  },
+  {
+   "title": "Add LCR Delegated Regulation, Commission Delegated Regulation (EU) 2015/61",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2015/61/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/61 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32015r0061",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2015/61 of 10 October 2014 to supplement Regulation (EU) No 575/2013 of the European Parliament and the Council with regard to liquidity coverage requirement for Credit Institutions"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "LCR Delegated Regulation",
+    "officialRef": "Commission Delegated Regulation (EU) 2015/61",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2015/61/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:banking",
+    "inForceFrom": "2015-02-06"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Maintain a liquidity coverage ratio of at least 100 %",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/61/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/61, Articles 4 and 38",
+     "payload": {
+      "key": "obl-eu-lcr-maintain-ratio",
+      "titles": {
+       "en": "Maintain a liquidity coverage ratio of at least 100 %"
+      },
+      "summaries": {
+       "en": "Credit institutions must keep a liquidity buffer at least equal to their net liquidity outflows over a 30-day stress period, a liquidity coverage ratio of at least 100 %. They may use the buffer in times of stress and must then follow the notification and restoration rules of Article 414 of Regulation (EU) No 575/2013. The ratio was phased in from 60 % in October 2015 to 100 % from 1 January 2018."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4(1) to (4) and 38(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2015-10-01",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep the liquidity buffer diversified and ready to be monetised",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/61/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/61, Article 8",
+     "payload": {
+      "key": "obl-eu-lcr-buffer-operational-requirements",
+      "titles": {
+       "en": "Keep the liquidity buffer diversified and ready to be monetised"
+      },
+      "summaries": {
+       "en": "Credit institutions must have policies and limits that keep the liquid assets in their buffer appropriately diversified at all times, and must have ready access to those assets so they can monetise them at any time in the 30-day stress period by outright sale or repurchase agreement."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 8(1) and (2)",
+      "dutyType": "governance",
+      "effectiveFrom": "2015-10-01",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Covered Bond Regulation, Regulation (EU) 2019/2160",
+   "source": "https://eur-lex.europa.eu/eli/reg/2019/2160/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2160 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019r2160",
+    "titles": {
+     "en": "Regulation (EU) 2019/2160 of the European Parliament and of the Council of 27 November 2019 amending Regulation (EU) No 575/2013 as regards exposures in the form of covered bonds"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Covered Bond Regulation",
+    "officialRef": "Regulation (EU) 2019/2160",
+    "eliUri": "https://data.europa.eu/eli/reg/2019/2160/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2020-01-07"
+   }
+  },
+  {
+   "title": "Add CRD, Directive 2013/36/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2013/36/oj",
+   "sourceLabel": "EUR-Lex, Directive 2013/36/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32013l0036",
+    "titles": {
+     "en": "Directive 2013/36/EU of the European Parliament and of the Council of 26 June 2013 on access to the activity of credit institutions and the prudential supervision of credit institutions and investment firms, amending Directive 2002/87/EC and repealing Directives 2006/48/EC and 2006/49/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "CRD",
+    "officialRef": "Directive 2013/36/EU",
+    "eliUri": "https://data.europa.eu/eli/dir/2013/36/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2013-07-17"
+   }
+  },
+  {
+   "title": "Add CRD6, Directive (EU) 2024/1619",
+   "source": "https://eur-lex.europa.eu/eli/dir/2024/1619/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2024/1619 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024l1619",
+    "titles": {
+     "en": "Directive (EU) 2024/1619 of the European Parliament and of the Council of 31 May 2024 amending Directive 2013/36/EU as regards supervisory powers, sanctions, third-country branches, and environmental, social and governance risks"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "CRD6",
+    "officialRef": "Directive (EU) 2024/1619",
+    "eliUri": "https://data.europa.eu/eli/dir/2024/1619/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2024-07-09"
+   }
+  },
+  {
+   "title": "Add FICOD, Directive 2002/87/EC",
+   "source": "https://eur-lex.europa.eu/eli/dir/2002/87/oj",
+   "sourceLabel": "EUR-Lex, Directive 2002/87/EC as published in the Official Journal",
+   "payload": {
+    "key": "celex-32002l0087",
+    "titles": {
+     "en": "Directive 2002/87/EC of the European Parliament and of the Council of 16 December 2002 on the supplementary supervision of credit institutions, insurance undertakings and investment firms in a financial conglomerate and amending Council Directives 73/239/EEC, 79/267/EEC, 92/49/EEC, 92/96/EEC, 93/6/EEC and 93/22/EEC, and Directives 98/78/EC and 2000/12/EC of the European Parliament and of the Council"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "FICOD",
+    "officialRef": "Directive 2002/87/EC",
+    "eliUri": "https://data.europa.eu/eli/dir/2002/87/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2003-02-11"
+   }
+  },
+  {
+   "title": "Add BRRD, Directive 2014/59/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2014/59/oj",
+   "sourceLabel": "EUR-Lex, Directive 2014/59/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014l0059",
+    "titles": {
+     "en": "Directive 2014/59/EU of the European Parliament and of the Council of 15 May 2014 establishing a framework for the recovery and resolution of credit institutions and investment firms and amending Council Directive 82/891/EEC, and Directives 2001/24/EC, 2002/47/EC, 2004/25/EC, 2005/56/EC, 2007/36/EC, 2011/35/EU, 2012/30/EU and 2013/36/EU, and Regulations (EU) No 1093/2010 and (EU) No 648/2012, of the European Parliament and of the Council"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "BRRD",
+    "officialRef": "Directive 2014/59/EU",
+    "eliUri": "https://data.europa.eu/eli/dir/2014/59/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-07-02"
+   }
+  },
+  {
+   "title": "Add BRRD CMDI amendment, Directive (EU) 2026/806",
+   "source": "https://eur-lex.europa.eu/eli/dir/2026/806/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2026/806 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026l0806",
+    "titles": {
+     "en": "Directive (EU) 2026/806 of the European Parliament and of the Council of 30 March 2026 amending Directive 2014/59/EU as regards early intervention measures, conditions for resolution and funding of resolution action and Directive 2014/24/EU as regards valuation services in resolution"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "BRRD CMDI amendment",
+    "officialRef": "Directive (EU) 2026/806",
+    "eliUri": "https://data.europa.eu/eli/dir/2026/806/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2026-05-10"
+   }
+  },
+  {
+   "title": "Add DGSD, Directive 2014/49/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2014/49/oj",
+   "sourceLabel": "EUR-Lex, Directive 2014/49/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014l0049",
+    "titles": {
+     "en": "Directive 2014/49/EU of the European Parliament and of the Council of 16 April 2014 on deposit guarantee schemes (recast)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DGSD",
+    "officialRef": "Directive 2014/49/EU",
+    "eliUri": "https://data.europa.eu/eli/dir/2014/49/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-07-02"
+   }
+  },
+  {
+   "title": "Add DGSD CMDI amendment, Directive (EU) 2026/804",
+   "source": "https://eur-lex.europa.eu/eli/dir/2026/804/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2026/804 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026l0804",
+    "titles": {
+     "en": "Directive (EU) 2026/804 of the European Parliament and of the Council of 30 March 2026 amending Directive 2014/49/EU as regards the scope of deposit protection, the use of deposit guarantee schemes funds, cross-border cooperation, and transparency"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DGSD CMDI amendment",
+    "officialRef": "Directive (EU) 2026/804",
+    "eliUri": "https://data.europa.eu/eli/dir/2026/804/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2026-05-10"
+   }
+  },
+  {
+   "title": "Add SSM Regulation, Council Regulation (EU) No 1024/2013",
+   "source": "https://eur-lex.europa.eu/eli/reg/2013/1024/oj",
+   "sourceLabel": "EUR-Lex, Council Regulation (EU) No 1024/2013 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32013r1024",
+    "titles": {
+     "en": "Council Regulation (EU) No 1024/2013 of 15 October 2013 conferring specific tasks on the European Central Bank concerning policies relating to the prudential supervision of credit institutions"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SSM Regulation",
+    "officialRef": "Council Regulation (EU) No 1024/2013",
+    "eliUri": "https://data.europa.eu/eli/reg/2013/1024/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "council-eu",
+    "regime": "regime:banking",
+    "inForceFrom": "2013-11-03"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Supply the information the ECB requests for its supervisory tasks",
+     "source": "https://eur-lex.europa.eu/eli/reg/2013/1024/oj",
+     "sourceLabel": "EUR-Lex, Council Regulation (EU) No 1024/2013, Article 10",
+     "payload": {
+      "key": "obl-eu-ssm-supply-information-to-ecb",
+      "titles": {
+       "en": "Supply the information the ECB requests for its supervisory tasks"
+      },
+      "summaries": {
+       "en": "Credit institutions and their holding companies established in a participating Member State (in the Nordics, Finland) must supply the information the ECB requires for its supervisory tasks, including recurring reports in set formats. Professional secrecy does not excuse them from supplying it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 10(1) and (2)",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Submit to ECB on-site inspections",
+     "source": "https://eur-lex.europa.eu/eli/reg/2013/1024/oj",
+     "sourceLabel": "EUR-Lex, Council Regulation (EU) No 1024/2013, Article 12",
+     "payload": {
+      "key": "obl-eu-ssm-submit-to-on-site-inspections",
+      "titles": {
+       "en": "Submit to ECB on-site inspections"
+      },
+      "summaries": {
+       "en": "Credit institutions and their holding companies established in a participating Member State (in the Nordics, Finland) are subject to on-site inspections at their business premises on the basis of an ECB decision, which may come without prior announcement."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 12(1) and (3)",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SRMR, Regulation (EU) No 806/2014",
+   "source": "https://eur-lex.europa.eu/eli/reg/2014/806/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 806/2014 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014r0806",
+    "titles": {
+     "en": "Regulation (EU) No 806/2014 of the European Parliament and of the Council of 15 July 2014 establishing uniform rules and a uniform procedure for the resolution of credit institutions and certain investment firms in the framework of a Single Resolution Mechanism and a Single Resolution Fund and amending Regulation (EU) No 1093/2010"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SRMR",
+    "officialRef": "Regulation (EU) No 806/2014",
+    "eliUri": "https://data.europa.eu/eli/reg/2014/806/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-08-19"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Meet the minimum requirement for own funds and eligible liabilities at all times",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0806-20260611",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 806/2014, consolidated text of 11 June 2026, Articles 12, 12f and 12g",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2019/877/oj"
+     },
+     "payload": {
+      "key": "obl-eu-srmr-meet-mrel",
+      "titles": {
+       "en": "Meet the minimum requirement for own funds and eligible liabilities at all times"
+      },
+      "summaries": {
+       "en": "Banks and groups in the banking union (in the Nordics, Finland) must meet at all times the minimum requirement for own funds and eligible liabilities (MREL) that the Single Resolution Board sets. Resolution entities meet it on a consolidated basis at resolution group level; subsidiaries that are not resolution entities meet it individually."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 12(1), 12f(1) and 12g(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2020-12-28",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report MREL information to the national resolution authority",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0806-20260611",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 806/2014, consolidated text of 11 June 2026, Article 12",
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2019/877/oj"
+     },
+     "payload": {
+      "key": "obl-eu-srmr-report-mrel",
+      "titles": {
+       "en": "Report MREL information to the national resolution authority"
+      },
+      "summaries": {
+       "en": "Banks and groups subject to MREL in the banking union (in the Nordics, Finland) must report their own funds and eligible liabilities information, as Article 45i of Directive 2014/59/EU describes it, to the national resolution authority of the Member State where they are established, which passes it to the Single Resolution Board."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 12(2)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2020-12-28",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SRMR CMDI amendment, Regulation (EU) 2026/808",
+   "source": "https://eur-lex.europa.eu/eli/reg/2026/808/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2026/808 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026r0808",
+    "titles": {
+     "en": "Regulation (EU) 2026/808 of the European Parliament and of the Council of 30 March 2026 amending Regulation (EU) No 806/2014 as regards early intervention measures, conditions for resolution and funding of resolution action"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SRMR CMDI amendment",
+    "officialRef": "Regulation (EU) 2026/808",
+    "eliUri": "https://data.europa.eu/eli/reg/2026/808/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2026-05-10"
+   }
+  },
+  {
+   "title": "Add EBA Regulation, Regulation (EU) No 1093/2010",
+   "source": "https://eur-lex.europa.eu/eli/reg/2010/1093/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 1093/2010 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32010r1093",
+    "titles": {
+     "en": "Regulation (EU) No 1093/2010 of the European Parliament and of the Council of 24 November 2010 establishing a European Supervisory Authority (European Banking Authority), amending Decision No 716/2009/EC and repealing Commission Decision 2009/78/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EBA Regulation",
+    "officialRef": "Regulation (EU) No 1093/2010",
+    "eliUri": "https://data.europa.eu/eli/reg/2010/1093/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2010-12-16"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make every effort to comply with EBA guidelines and recommendations",
+     "source": "https://eur-lex.europa.eu/eli/reg/2010/1093/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 1093/2010, Article 16",
+     "payload": {
+      "key": "obl-eu-eba-regulation-comply-with-guidelines",
+      "titles": {
+       "en": "Make every effort to comply with EBA guidelines and recommendations"
+      },
+      "summaries": {
+       "en": "Financial institutions must make every effort to comply with the guidelines and recommendations the EBA issues. Where a guideline or recommendation requires it, they report clearly and in detail whether they comply."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 16(3)",
+      "dutyType": "governance",
+      "effectiveFrom": "2011-01-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Mortgage Credit Directive, Directive 2014/17/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2014/17/oj",
+   "sourceLabel": "EUR-Lex, Directive 2014/17/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014l0017",
+    "titles": {
+     "en": "Directive 2014/17/EU of the European Parliament and of the Council of 4 February 2014 on credit agreements for consumers relating to residential immovable property and amending Directives 2008/48/EC and 2013/36/EU and Regulation (EU) No 1093/2010"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Mortgage Credit Directive",
+    "officialRef": "Directive 2014/17/EU",
+    "eliUri": "https://data.europa.eu/eli/dir/2014/17/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-03-20"
+   }
+  },
+  {
+   "title": "Add Consumer Credit Directive, Directive 2008/48/EC",
+   "source": "https://eur-lex.europa.eu/eli/dir/2008/48/oj",
+   "sourceLabel": "EUR-Lex, Directive 2008/48/EC as published in the Official Journal",
+   "fieldSources": {
+    "inForceTo": "https://eur-lex.europa.eu/eli/dir/2023/2225/oj"
+   },
+   "payload": {
+    "key": "celex-32008l0048",
+    "titles": {
+     "en": "Directive 2008/48/EC of the European Parliament and of the Council of 23 April 2008 on credit agreements for consumers and repealing Council Directive 87/102/EEC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Consumer Credit Directive",
+    "officialRef": "Directive 2008/48/EC",
+    "eliUri": "https://data.europa.eu/eli/dir/2008/48/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2008-06-11",
+    "inForceTo": "2026-11-20"
+   }
+  },
+  {
+   "title": "Add CCD2, Directive (EU) 2023/2225",
+   "source": "https://eur-lex.europa.eu/eli/dir/2023/2225/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2023/2225 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32023l2225",
+    "titles": {
+     "en": "Directive (EU) 2023/2225 of the European Parliament and of the Council of 18 October 2023 on credit agreements for consumers and repealing Directive 2008/48/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "CCD2",
+    "officialRef": "Directive (EU) 2023/2225",
+    "eliUri": "https://data.europa.eu/eli/dir/2023/2225/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2023-11-19"
+   }
+  },
+  {
+   "title": "Add Credit Servicers Directive, Directive (EU) 2021/2167",
+   "source": "https://eur-lex.europa.eu/eli/dir/2021/2167/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2021/2167 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32021l2167",
+    "titles": {
+     "en": "Directive (EU) 2021/2167 of the European Parliament and of the Council of 24 November 2021 on credit servicers and credit purchasers and amending Directives 2008/48/EC and 2014/17/EU"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Credit Servicers Directive",
+    "officialRef": "Directive (EU) 2021/2167",
+    "eliUri": "https://data.europa.eu/eli/dir/2021/2167/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2021-12-28"
+   }
+  },
+  {
+   "title": "Add Covered Bond Directive, Directive (EU) 2019/2162",
+   "source": "https://eur-lex.europa.eu/eli/dir/2019/2162/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2019/2162 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019l2162",
+    "titles": {
+     "en": "Directive (EU) 2019/2162 of the European Parliament and of the Council of 27 November 2019 on the issue of covered bonds and covered bond public supervision and amending Directives 2009/65/EC and 2014/59/EU"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Covered Bond Directive",
+    "officialRef": "Directive (EU) 2019/2162",
+    "eliUri": "https://data.europa.eu/eli/dir/2019/2162/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2020-01-07"
+   }
+  },
+  {
+   "title": "Add Distance Financial Services Directive, Directive (EU) 2023/2673",
+   "source": "https://eur-lex.europa.eu/eli/dir/2023/2673/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2023/2673 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32023l2673",
+    "titles": {
+     "en": "Directive (EU) 2023/2673 of the European Parliament and of the Council of 22 November 2023 amending Directive 2011/83/EU as regards financial services contracts concluded at a distance and repealing Directive 2002/65/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Distance Financial Services Directive",
+    "officialRef": "Directive (EU) 2023/2673",
+    "eliUri": "https://data.europa.eu/eli/dir/2023/2673/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2023-12-18"
+   }
+  },
+  {
+   "title": "Add European Accessibility Act, Directive (EU) 2019/882",
+   "source": "https://eur-lex.europa.eu/eli/dir/2019/882/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2019/882 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019l0882",
+    "titles": {
+     "en": "Directive (EU) 2019/882 of the European Parliament and of the Council of 17 April 2019 on the accessibility requirements for products and services"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "European Accessibility Act",
+    "officialRef": "Directive (EU) 2019/882",
+    "eliUri": "https://data.europa.eu/eli/dir/2019/882/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:banking",
+    "inForceFrom": "2019-06-27"
+   }
+  },
+  {
+   "title": "Add EBA Guidelines on internal governance, EBA/GL/2021/05",
+   "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/internal-governance/guidelines-internal-governance-under-crd",
+   "sourceLabel": "EBA, Guidelines on internal governance under CRD (EBA/GL/2021/05), guideline page and final report",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016721/Final%20report%20on%20Guidelines%20on%20internal%20governance%20under%20CRD.pdf"
+   },
+   "payload": {
+    "key": "eba-gl-2021-05",
+    "titles": {
+     "en": "Guidelines on internal governance under Directive 2013/36/EU"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EBA Guidelines on internal governance",
+    "officialRef": "EBA/GL/2021/05",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:banking",
+    "inForceFrom": "2021-12-31"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Have the management body set, approve and oversee strategy, risk strategy and governance",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016721/Final%20report%20on%20Guidelines%20on%20internal%20governance%20under%20CRD.pdf",
+     "sourceLabel": "EBA, Final report on Guidelines on internal governance under Directive 2013/36/EU (EBA/GL/2021/05), Section 1",
+     "payload": {
+      "key": "obl-eu-eba-gl-internal-governance-management-body",
+      "titles": {
+       "en": "Have the management body set, approve and oversee strategy, risk strategy and governance"
+      },
+      "summaries": {
+       "en": "The management body carries ultimate responsibility for the institution. Its duties, split between the management and supervisory functions, are set out in a written document, and it sets, approves and oversees the business strategy, the risk strategy and the internal governance framework."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 19 to 22",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Maintain an internal control framework with independent control functions",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016721/Final%20report%20on%20Guidelines%20on%20internal%20governance%20under%20CRD.pdf",
+     "sourceLabel": "EBA, Final report on Guidelines on internal governance under Directive 2013/36/EU (EBA/GL/2021/05), Sections 15 to 22",
+     "payload": {
+      "key": "obl-eu-eba-gl-internal-governance-internal-control",
+      "titles": {
+       "en": "Maintain an internal control framework with independent control functions"
+      },
+      "summaries": {
+       "en": "Institutions should keep a robust internal control framework in which business lines own and control their risks, supported by a risk management framework and by internal control functions (risk management, compliance and internal audit) with enough authority, stature and access to the management body."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 141 and 142, Sections 17 and 19 to 22",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Identify, manage and prevent conflicts of interest at institution and staff level",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016721/Final%20report%20on%20Guidelines%20on%20internal%20governance%20under%20CRD.pdf",
+     "sourceLabel": "EBA, Final report on Guidelines on internal governance under Directive 2013/36/EU (EBA/GL/2021/05), Sections 11 and 12",
+     "payload": {
+      "key": "obl-eu-eba-gl-internal-governance-conflicts-of-interest",
+      "titles": {
+       "en": "Identify, manage and prevent conflicts of interest at institution and staff level"
+      },
+      "summaries": {
+       "en": "The management body should establish and oversee policies to identify, assess, manage and mitigate or prevent actual and potential conflicts of interest, both at institutional level and for staff, including loans and other transactions with members of the management body and their related parties."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 105 and 106, Section 12",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Provide an independent internal channel for staff to report breaches",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016721/Final%20report%20on%20Guidelines%20on%20internal%20governance%20under%20CRD.pdf",
+     "sourceLabel": "EBA, Final report on Guidelines on internal governance under Directive 2013/36/EU (EBA/GL/2021/05), Section 13",
+     "payload": {
+      "key": "obl-eu-eba-gl-internal-governance-internal-alert",
+      "titles": {
+       "en": "Provide an independent internal channel for staff to report breaches"
+      },
+      "summaries": {
+       "en": "Institutions should have internal alert policies and procedures through which staff can report potential or actual breaches of regulatory or internal requirements through a specific, independent and autonomous channel."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Para 132",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep a documented new product approval policy approved by the management body",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016721/Final%20report%20on%20Guidelines%20on%20internal%20governance%20under%20CRD.pdf",
+     "sourceLabel": "EBA, Final report on Guidelines on internal governance under Directive 2013/36/EU (EBA/GL/2021/05), Section 18",
+     "payload": {
+      "key": "obl-eu-eba-gl-internal-governance-new-product-approval",
+      "titles": {
+       "en": "Keep a documented new product approval policy approved by the management body"
+      },
+      "summaries": {
+       "en": "Institutions should have a well-documented new product approval policy, approved by the management body, covering new markets, products and services, significant changes to existing ones, exceptional transactions and material changes to processes and systems, so that they stay within the risk strategy and risk appetite."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Para 163",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EBA Guidelines on outsourcing arrangements, EBA/GL/2019/02",
+   "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/internal-governance/guidelines-third-party-risk-management?version=2019",
+   "sourceLabel": "EBA, Guidelines on outsourcing arrangements (EBA/GL/2019/02), guideline page (2019 version) and final report",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/documents/10180/2551996/38c80601-f5d7-4855-8ba3-702423665479/EBA%20revised%20Guidelines%20on%20outsourcing%20arrangements.pdf"
+   },
+   "payload": {
+    "key": "eba-gl-2019-02",
+    "titles": {
+     "en": "Guidelines on outsourcing arrangements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EBA Guidelines on outsourcing arrangements",
+    "officialRef": "EBA/GL/2019/02",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:banking",
+    "inForceFrom": "2019-09-30"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Adopt and keep up to date a written outsourcing policy",
+     "source": "https://www.eba.europa.eu/sites/default/files/documents/10180/2551996/38c80601-f5d7-4855-8ba3-702423665479/EBA%20revised%20Guidelines%20on%20outsourcing%20arrangements.pdf",
+     "sourceLabel": "EBA, Final report on EBA Guidelines on outsourcing arrangements (EBA/GL/2019/02), Section 7",
+     "payload": {
+      "key": "obl-eu-eba-gl-outsourcing-policy",
+      "titles": {
+       "en": "Adopt and keep up to date a written outsourcing policy"
+      },
+      "summaries": {
+       "en": "The management body of an institution that outsources or plans to should approve, regularly review and update a written outsourcing policy and ensure it is implemented. The policy covers the whole life cycle of outsourcing, including responsibilities, planning, monitoring, documentation and exit plans for critical or important functions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 41 and 42",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Assess risks and carry out due diligence before entering an outsourcing arrangement",
+     "source": "https://www.eba.europa.eu/sites/default/files/documents/10180/2551996/38c80601-f5d7-4855-8ba3-702423665479/EBA%20revised%20Guidelines%20on%20outsourcing%20arrangements.pdf",
+     "sourceLabel": "EBA, Final report on EBA Guidelines on outsourcing arrangements (EBA/GL/2019/02), Section 12",
+     "payload": {
+      "key": "obl-eu-eba-gl-outsourcing-pre-outsourcing-analysis",
+      "titles": {
+       "en": "Assess risks and carry out due diligence before entering an outsourcing arrangement"
+      },
+      "summaries": {
+       "en": "Before entering any outsourcing arrangement, institutions should assess whether it concerns a critical or important function and whether the supervisory conditions are met, identify and assess its risks, carry out due diligence on the prospective service provider and assess any conflicts of interest."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Para 61",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep an up-to-date register of all outsourcing arrangements",
+     "source": "https://www.eba.europa.eu/sites/default/files/documents/10180/2551996/38c80601-f5d7-4855-8ba3-702423665479/EBA%20revised%20Guidelines%20on%20outsourcing%20arrangements.pdf",
+     "sourceLabel": "EBA, Final report on EBA Guidelines on outsourcing arrangements (EBA/GL/2019/02), Section 11",
+     "payload": {
+      "key": "obl-eu-eba-gl-outsourcing-register",
+      "titles": {
+       "en": "Keep an up-to-date register of all outsourcing arrangements"
+      },
+      "summaries": {
+       "en": "Institutions should maintain an updated register of information on all outsourcing arrangements at individual and, where applicable, consolidated level, distinguishing critical or important functions, with at least the data points the guidelines list, and keep records of ended arrangements for an appropriate period."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 52 and 54",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Inform the competent authority of planned outsourcing of critical or important functions",
+     "source": "https://www.eba.europa.eu/sites/default/files/documents/10180/2551996/38c80601-f5d7-4855-8ba3-702423665479/EBA%20revised%20Guidelines%20on%20outsourcing%20arrangements.pdf",
+     "sourceLabel": "EBA, Final report on EBA Guidelines on outsourcing arrangements (EBA/GL/2019/02), Section 11",
+     "payload": {
+      "key": "obl-eu-eba-gl-outsourcing-notify-authority",
+      "titles": {
+       "en": "Inform the competent authority of planned outsourcing of critical or important functions"
+      },
+      "summaries": {
+       "en": "Institutions should inform their competent authority in good time, or start a supervisory dialogue, about planned outsourcing of critical or important functions or a function that has become critical or important, and should also report material changes and severe events in their outsourcing arrangements."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 58 and 59",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Keep a documented exit strategy for outsourced critical or important functions",
+     "source": "https://www.eba.europa.eu/sites/default/files/documents/10180/2551996/38c80601-f5d7-4855-8ba3-702423665479/EBA%20revised%20Guidelines%20on%20outsourcing%20arrangements.pdf",
+     "sourceLabel": "EBA, Final report on EBA Guidelines on outsourcing arrangements (EBA/GL/2019/02), Section 15",
+     "payload": {
+      "key": "obl-eu-eba-gl-outsourcing-exit-strategy",
+      "titles": {
+       "en": "Keep a documented exit strategy for outsourced critical or important functions"
+      },
+      "summaries": {
+       "en": "When outsourcing critical or important functions, institutions should have a documented exit strategy in line with their outsourcing policy and business continuity plans, covering termination, failure of the provider and deteriorating service, so that they can exit without undue disruption."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 106 and 107",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EBA Guidelines on loan origination and monitoring, EBA/GL/2020/06",
+   "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/credit-risk/guidelines-loan-origination-and-monitoring",
+   "sourceLabel": "EBA, Guidelines on loan origination and monitoring (EBA/GL/2020/06), guideline page and final report",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2020/Guidelines%20on%20loan%20origination%20and%20monitoring/884283/EBA%20GL%202020%2006%20Final%20Report%20on%20GL%20on%20loan%20origination%20and%20monitoring.pdf"
+   },
+   "payload": {
+    "key": "eba-gl-2020-06",
+    "titles": {
+     "en": "Guidelines on loan origination and monitoring"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EBA Guidelines on loan origination and monitoring",
+    "officialRef": "EBA/GL/2020/06",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:banking",
+    "inForceFrom": "2021-06-30"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set out and keep current credit risk policies and procedures covering all lending",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2020/Guidelines%20on%20loan%20origination%20and%20monitoring/884283/EBA%20GL%202020%2006%20Final%20Report%20on%20GL%20on%20loan%20origination%20and%20monitoring.pdf",
+     "sourceLabel": "EBA, Final Report on Guidelines on loan origination and monitoring (EBA/GL/2020/06), Section 4.3",
+     "payload": {
+      "key": "obl-eu-eba-gl-lom-credit-risk-policies",
+      "titles": {
+       "en": "Set out and keep current credit risk policies and procedures covering all lending"
+      },
+      "summaries": {
+       "en": "Institutions should document in their credit risk policies and procedures how they identify, assess, approve, monitor, report and mitigate credit risk, covering all lending activities, asset classes, client segments and products, and update the framework regularly."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 34 to 36",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Assess the borrower's creditworthiness before granting credit",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2020/Guidelines%20on%20loan%20origination%20and%20monitoring/884283/EBA%20GL%202020%2006%20Final%20Report%20on%20GL%20on%20loan%20origination%20and%20monitoring.pdf",
+     "sourceLabel": "EBA, Final Report on Guidelines on loan origination and monitoring (EBA/GL/2020/06), Section 5.2",
+     "payload": {
+      "key": "obl-eu-eba-gl-lom-creditworthiness-assessment",
+      "titles": {
+       "en": "Assess the borrower's creditworthiness before granting credit"
+      },
+      "summaries": {
+       "en": "Before granting a loan, institutions should analyse the application against their credit risk appetite, policies and criteria and assess the borrower's ability and prospect to meet the obligations under the agreement, based on repayment capacity rather than on collateral alone."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 95 to 97, Section 5.2",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Price loans under a documented, risk-based pricing framework",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2020/Guidelines%20on%20loan%20origination%20and%20monitoring/884283/EBA%20GL%202020%2006%20Final%20Report%20on%20GL%20on%20loan%20origination%20and%20monitoring.pdf",
+     "sourceLabel": "EBA, Final Report on Guidelines on loan origination and monitoring (EBA/GL/2020/06), Section 6",
+     "payload": {
+      "key": "obl-eu-eba-gl-lom-risk-based-pricing",
+      "titles": {
+       "en": "Price loans under a documented, risk-based pricing framework"
+      },
+      "summaries": {
+       "en": "Institutions should have a documented pricing framework, supported by appropriate governance such as a pricing committee, that reflects their credit risk appetite, business strategy and the riskiness of the borrower and the loan."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 199 and 200",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Have immovable property collateral valued by a valuer at origination",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2020/Guidelines%20on%20loan%20origination%20and%20monitoring/884283/EBA%20GL%202020%2006%20Final%20Report%20on%20GL%20on%20loan%20origination%20and%20monitoring.pdf",
+     "sourceLabel": "EBA, Final Report on Guidelines on loan origination and monitoring (EBA/GL/2020/06), Section 7",
+     "payload": {
+      "key": "obl-eu-eba-gl-lom-collateral-valuation",
+      "titles": {
+       "en": "Have immovable property collateral valued by a valuer at origination"
+      },
+      "summaries": {
+       "en": "At origination, institutions should have the value of all immovable property collateral assessed by an internal or external valuer with a full visit, with a desktop valuation supported by advanced statistical models allowed for residential property in well-developed markets; they then monitor and revalue the collateral."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 209 and 210, Section 7",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Monitor credit exposures, borrowers and collateral through a documented framework",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2020/Guidelines%20on%20loan%20origination%20and%20monitoring/884283/EBA%20GL%202020%2006%20Final%20Report%20on%20GL%20on%20loan%20origination%20and%20monitoring.pdf",
+     "sourceLabel": "EBA, Final Report on Guidelines on loan origination and monitoring (EBA/GL/2020/06), Section 8",
+     "payload": {
+      "key": "obl-eu-eba-gl-lom-credit-monitoring",
+      "titles": {
+       "en": "Monitor credit exposures, borrowers and collateral through a documented framework"
+      },
+      "summaries": {
+       "en": "Institutions should run a robust, documented credit risk monitoring framework, backed by adequate data, that keeps information on exposures, borrowers and collateral relevant and up to date and lets them manage exposures in line with their credit risk appetite."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 240 to 242",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EBA Guidelines on sound remuneration policies, EBA/GL/2021/04",
+   "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/remuneration/guidelines-sound-remuneration-policies-under-crd",
+   "sourceLabel": "EBA, Guidelines on sound remuneration policies under CRD (EBA/GL/2021/04), guideline page and final report",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016720/Draft%20Final%20report%20on%20GL%20on%20remuneration%20policies%20under%20CRD.pdf"
+   },
+   "payload": {
+    "key": "eba-gl-2021-04",
+    "titles": {
+     "en": "Guidelines on sound remuneration policies under Directive 2013/36/EU"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EBA Guidelines on sound remuneration policies",
+    "officialRef": "EBA/GL/2021/04",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:banking",
+    "inForceFrom": "2021-12-31"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep a remuneration policy for all staff adopted and overseen by the supervisory function",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016720/Draft%20Final%20report%20on%20GL%20on%20remuneration%20policies%20under%20CRD.pdf",
+     "sourceLabel": "EBA, Final report on Guidelines on sound remuneration policies under Directive 2013/36/EU (EBA/GL/2021/04), Sections 1 and 2.1",
+     "payload": {
+      "key": "obl-eu-eba-gl-remuneration-policy",
+      "titles": {
+       "en": "Keep a remuneration policy for all staff adopted and overseen by the supervisory function"
+      },
+      "summaries": {
+       "en": "Institutions should have a remuneration policy for all staff that follows the principles of Articles 92 and 94 of Directive 2013/36/EU. The management body in its supervisory function adopts and maintains it, oversees its implementation and approves material exemptions and changes."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 14 and 28",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Identify annually the staff whose work materially affects the risk profile",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016720/Draft%20Final%20report%20on%20GL%20on%20remuneration%20policies%20under%20CRD.pdf",
+     "sourceLabel": "EBA, Final report on Guidelines on sound remuneration policies under Directive 2013/36/EU (EBA/GL/2021/04), Section 5",
+     "payload": {
+      "key": "obl-eu-eba-gl-remuneration-identified-staff",
+      "titles": {
+       "en": "Identify annually the staff whose work materially affects the risk profile"
+      },
+      "summaries": {
+       "en": "Institutions should carry out a self-assessment every year to identify all staff whose professional activities have or may have a material impact on the institution's risk profile, using the criteria in Article 92(3) of Directive 2013/36/EU and the regulatory technical standards on identified staff."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 98 and 99",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Set in advance the maximum ratio of variable to fixed remuneration for identified staff",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016720/Draft%20Final%20report%20on%20GL%20on%20remuneration%20policies%20under%20CRD.pdf",
+     "sourceLabel": "EBA, Final report on Guidelines on sound remuneration policies under Directive 2013/36/EU (EBA/GL/2021/04), Section 13.2",
+     "payload": {
+      "key": "obl-eu-eba-gl-remuneration-variable-ratio",
+      "titles": {
+       "en": "Set in advance the maximum ratio of variable to fixed remuneration for identified staff"
+      },
+      "summaries": {
+       "en": "Institutions should fix in their remuneration policy, in advance, the maximum ratio between the variable and fixed components of total remuneration for identified staff, within the limits of Article 94(1)(g) of Directive 2013/36/EU and national law."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Para 206",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Defer part of the variable remuneration of identified staff",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016720/Draft%20Final%20report%20on%20GL%20on%20remuneration%20policies%20under%20CRD.pdf",
+     "sourceLabel": "EBA, Final report on Guidelines on sound remuneration policies under Directive 2013/36/EU (EBA/GL/2021/04), Section 15.2",
+     "payload": {
+      "key": "obl-eu-eba-gl-remuneration-deferral",
+      "titles": {
+       "en": "Defer part of the variable remuneration of identified staff"
+      },
+      "summaries": {
+       "en": "Institutions should defer part of the variable remuneration of identified staff, setting the deferral period and deferred share at or above the minimums of Article 94(1)(m) of Directive 2013/36/EU in the light of the staff member's responsibilities, the business cycle and the risks."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 258 and 259",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Be able to apply malus and clawback to all variable remuneration",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/1016720/Draft%20Final%20report%20on%20GL%20on%20remuneration%20policies%20under%20CRD.pdf",
+     "sourceLabel": "EBA, Final report on Guidelines on sound remuneration policies under Directive 2013/36/EU (EBA/GL/2021/04), Section 15.7.1",
+     "payload": {
+      "key": "obl-eu-eba-gl-remuneration-malus-clawback",
+      "titles": {
+       "en": "Be able to apply malus and clawback to all variable remuneration"
+      },
+      "summaries": {
+       "en": "Institutions must be able to apply malus or clawback to up to 100 % of the total variable remuneration of identified staff, whatever the method of payment, including deferred and retained amounts."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras 290 and 291",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EBA POG Guidelines, EBA/GL/2015/18",
+   "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/consumer-protection/guidelines-product-oversight-and-governance-arrangements-retail-banking-products?version=2015",
+   "sourceLabel": "EBA, Guidelines on product oversight and governance arrangements for retail banking products (EBA/GL/2015/18), guideline page (2015 version) and consolidated version of 30 June 2026",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/2026-06/8f6eeb6c-371d-4a96-ad85-f6c6d07142cc/Consolidated%20version%20of%20EBA-GL-2015-18%20on%20product%20oversight%20and%20governance%20.pdf"
+   },
+   "payload": {
+    "key": "eba-gl-2015-18",
+    "titles": {
+     "en": "Guidelines on product oversight and governance arrangements for retail banking products"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EBA POG Guidelines",
+    "officialRef": "EBA/GL/2015/18",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:banking",
+    "inForceFrom": "2017-01-03"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Establish, document and regularly review product oversight and governance arrangements as a manufacturer",
+     "source": "https://www.eba.europa.eu/sites/default/files/2026-06/8f6eeb6c-371d-4a96-ad85-f6c6d07142cc/Consolidated%20version%20of%20EBA-GL-2015-18%20on%20product%20oversight%20and%20governance%20.pdf",
+     "sourceLabel": "EBA, Guidelines on product oversight and governance arrangements for retail banking products (EBA/GL/2015/18), consolidated version of 30 June 2026, Guideline 1",
+     "payload": {
+      "key": "obl-eu-eba-gl-pog-manufacturer-arrangements",
+      "titles": {
+       "en": "Establish, document and regularly review product oversight and governance arrangements as a manufacturer"
+      },
+      "summaries": {
+       "en": "A firm that designs retail banking products should establish, implement and regularly review product oversight and governance arrangements so that consumers' interests, objectives and characteristics are taken into account, consumer detriment is avoided and conflicts of interest are minimised, and should document every action it takes under them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guideline 1.1, 1.2 and 1.4",
+      "dutyType": "governance",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify the target market and design products that meet its needs",
+     "source": "https://www.eba.europa.eu/sites/default/files/2026-06/8f6eeb6c-371d-4a96-ad85-f6c6d07142cc/Consolidated%20version%20of%20EBA-GL-2015-18%20on%20product%20oversight%20and%20governance%20.pdf",
+     "sourceLabel": "EBA, Guidelines on product oversight and governance arrangements for retail banking products (EBA/GL/2015/18), consolidated version of 30 June 2026, Guideline 3",
+     "payload": {
+      "key": "obl-eu-eba-gl-pog-target-market",
+      "titles": {
+       "en": "Identify the target market and design products that meet its needs"
+      },
+      "summaries": {
+       "en": "Manufacturers should identify the target market of each retail banking product, and the segments it does not suit, and only design and bring to market products whose features, charges and risks meet the interests, objectives and characteristics of, and benefit, that target market."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guideline 3.1 to 3.5",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Test products before launch, monitor them in the market and remedy problems",
+     "source": "https://www.eba.europa.eu/sites/default/files/2026-06/8f6eeb6c-371d-4a96-ad85-f6c6d07142cc/Consolidated%20version%20of%20EBA-GL-2015-18%20on%20product%20oversight%20and%20governance%20.pdf",
+     "sourceLabel": "EBA, Guidelines on product oversight and governance arrangements for retail banking products (EBA/GL/2015/18), consolidated version of 30 June 2026, Guidelines 4 to 6",
+     "payload": {
+      "key": "obl-eu-eba-gl-pog-testing-monitoring",
+      "titles": {
+       "en": "Test products before launch, monitor them in the market and remedy problems"
+      },
+      "summaries": {
+       "en": "Before launching a product, selling it to a new target market or changing it significantly, manufacturers should test how it would affect consumers under a range of scenarios including stress. Once it is on the market they should monitor it continuously and act to mitigate any problem and prevent it from recurring, notifying distributors promptly."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guideline 4.1, 5 and 6",
+      "dutyType": "governance",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: As a distributor, build product governance into systems and controls and know the target market",
+     "source": "https://www.eba.europa.eu/sites/default/files/2026-06/8f6eeb6c-371d-4a96-ad85-f6c6d07142cc/Consolidated%20version%20of%20EBA-GL-2015-18%20on%20product%20oversight%20and%20governance%20.pdf",
+     "sourceLabel": "EBA, Guidelines on product oversight and governance arrangements for retail banking products (EBA/GL/2015/18), consolidated version of 30 June 2026, Guidelines 10 and 11",
+     "payload": {
+      "key": "obl-eu-eba-gl-pog-distributor-arrangements",
+      "titles": {
+       "en": "As a distributor, build product governance into systems and controls and know the target market"
+      },
+      "summaries": {
+       "en": "A firm that distributes retail banking products should make product oversight and governance arrangements part of its general systems and controls, endorsed by the management body, and use the manufacturer's information to determine whether a consumer belongs to the product's target market."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guideline 10.1 and 11.1",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep sustainability claims about retail banking products fair, clear and substantiated",
+     "source": "https://www.eba.europa.eu/sites/default/files/2026-06/8f6eeb6c-371d-4a96-ad85-f6c6d07142cc/Consolidated%20version%20of%20EBA-GL-2015-18%20on%20product%20oversight%20and%20governance%20.pdf",
+     "sourceLabel": "EBA, Guidelines on product oversight and governance arrangements for retail banking products (EBA/GL/2015/18), consolidated version of 30 June 2026, Guideline 12",
+     "fieldSources": {
+      "effectiveFrom": "https://www.eba.europa.eu/sites/default/files/2026-06/d4b262c5-d8b7-45fa-a772-89a3719b61cd/EBA%20amending%20GLs%20on%20POG%20GLs%20-%20Final%20report.pdf"
+     },
+     "payload": {
+      "key": "obl-eu-eba-gl-pog-esg-claims",
+      "titles": {
+       "en": "Keep sustainability claims about retail banking products fair, clear and substantiated"
+      },
+      "summaries": {
+       "en": "From 11 January 2027, a distributor offering products with ESG features should ensure that its sustainability-related communication is fair, clear and not misleading and that its sustainability claims are accurate, substantiated and up to date."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guideline 12.1a",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2027-01-11",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EBA POG amending Guidelines, EBA/GL/2026/07",
+   "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/consumer-protection/guidelines-product-oversight-and-governance-arrangements-retail-banking-products",
+   "sourceLabel": "EBA, Guidelines amending the product oversight and governance Guidelines (EBA/GL/2026/07), guideline page and final report",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/2026-06/d4b262c5-d8b7-45fa-a772-89a3719b61cd/EBA%20amending%20GLs%20on%20POG%20GLs%20-%20Final%20report.pdf"
+   },
+   "payload": {
+    "key": "eba-gl-2026-07",
+    "titles": {
+     "en": "Guidelines amending Guidelines EBA/GL/2015/18 on product oversight and governance arrangements for retail banking products"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EBA POG amending Guidelines",
+    "officialRef": "EBA/GL/2026/07",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:banking",
+    "inForceFrom": "2027-01-11"
+   }
+  }
+ ]
+}

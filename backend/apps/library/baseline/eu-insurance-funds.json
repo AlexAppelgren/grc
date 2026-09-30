@@ -1,0 +1,1991 @@
+{
+ "tranche": "eu-insurance-funds",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add Solvency II, Directive 2009/138/EC",
+   "source": "https://eur-lex.europa.eu/eli/dir/2009/138/oj",
+   "sourceLabel": "EUR-Lex, Directive 2009/138/EC as published in the Official Journal",
+   "payload": {
+    "key": "celex-32009l0138",
+    "titles": {
+     "en": "Directive 2009/138/EC of the European Parliament and of the Council of 25 November 2009 on the taking-up and pursuit of the business of Insurance and Reinsurance (Solvency II) (recast)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Solvency II",
+    "officialRef": "Directive 2009/138/EC",
+    "eliUri": "https://data.europa.eu/eli/dir/2009/138/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:insurance",
+    "inForceFrom": "2010-01-06"
+   }
+  },
+  {
+   "title": "Add Solvency II amending directive, Directive (EU) 2025/2",
+   "source": "https://eur-lex.europa.eu/eli/dir/2025/2/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2025/2 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025l0002",
+    "titles": {
+     "en": "Directive (EU) 2025/2 of the European Parliament and of the Council of 27 November 2024 amending Directive 2009/138/EC as regards proportionality, quality of supervision, reporting, long-term guarantee measures, macro-prudential tools, sustainability risks and group and cross-border supervision, and amending Directives 2002/87/EC and 2013/34/EU"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Solvency II amending directive",
+    "officialRef": "Directive (EU) 2025/2",
+    "eliUri": "https://data.europa.eu/eli/dir/2025/2/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:insurance",
+    "inForceFrom": "2025-01-28"
+   }
+  },
+  {
+   "title": "Add IRRD, Directive (EU) 2025/1",
+   "source": "https://eur-lex.europa.eu/eli/dir/2025/1/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2025/1 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025l0001",
+    "titles": {
+     "en": "Directive (EU) 2025/1 of the European Parliament and of the Council of 27 November 2024 establishing a framework for the recovery and resolution of insurance and reinsurance undertakings and amending Directives 2002/47/EC, 2004/25/EC, 2007/36/EC, 2014/59/EU and (EU) 2017/1132 and Regulations (EU) No 1094/2010, (EU) No 648/2012, (EU) No 806/2014 and (EU) 2017/1129"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "IRRD",
+    "officialRef": "Directive (EU) 2025/1",
+    "eliUri": "https://data.europa.eu/eli/dir/2025/1/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:insurance",
+    "inForceFrom": "2025-01-28"
+   }
+  },
+  {
+   "title": "Add IDD, Directive (EU) 2016/97",
+   "source": "https://eur-lex.europa.eu/eli/dir/2016/97/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2016/97 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016l0097",
+    "titles": {
+     "en": "Directive (EU) 2016/97 of the European Parliament and of the Council of 20 January 2016 on insurance distribution (recast)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "IDD",
+    "officialRef": "Directive (EU) 2016/97",
+    "eliUri": "https://data.europa.eu/eli/dir/2016/97/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:insurance",
+    "inForceFrom": "2016-02-22"
+   }
+  },
+  {
+   "title": "Add IORP II, Directive (EU) 2016/2341",
+   "source": "https://eur-lex.europa.eu/eli/dir/2016/2341/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2016/2341 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016l2341",
+    "titles": {
+     "en": "Directive (EU) 2016/2341 of the European Parliament and of the Council of 14 December 2016 on the activities and supervision of institutions for occupational retirement provision (IORPs) (recast)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "IORP II",
+    "officialRef": "Directive (EU) 2016/2341",
+    "eliUri": "https://data.europa.eu/eli/dir/2016/2341/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:insurance",
+    "inForceFrom": "2017-01-12"
+   }
+  },
+  {
+   "title": "Add Solvency II Delegated Regulation, Commission Delegated Regulation (EU) 2015/35",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32015r0035",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2015/35 of 10 October 2014 supplementing Directive 2009/138/EC of the European Parliament and of the Council on the taking-up and pursuit of the business of Insurance and Reinsurance (Solvency II)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Solvency II Delegated Regulation",
+    "officialRef": "Commission Delegated Regulation (EU) 2015/35",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2015/35/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:insurance",
+    "inForceFrom": "2015-01-18"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Run an effective system of governance and evaluate it regularly",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Article 258(1), (4) and (6)",
+     "payload": {
+      "key": "obl-eu-sii-dr-system-of-governance",
+      "titles": {
+       "en": "Run an effective system of governance and evaluate it regularly"
+      },
+      "summaries": {
+       "en": "Insurance and reinsurance undertakings must organise clear decision-making, reporting lines and allocation of responsibilities, have a management body that is qualified both collectively and member by member, employ competent staff, keep reliable information systems and orderly records, and ensure at least two persons effectively run the undertaking. They must regularly evaluate whether the system of governance is adequate and effective and remedy deficiencies; from 30 January 2027 that evaluation also covers the composition, including gender balance and diversity, effectiveness and internal governance of the management body (Delegated Regulation (EU) 2026/269)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 258(1), (4) and (6)",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Build sustainability risks into underwriting, reserving and investment risk policies",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Articles 260 and 269 as amended by Delegated Regulation (EU) 2021/1256",
+     "payload": {
+      "key": "obl-eu-sii-dr-sustainability-risk-policies",
+      "titles": {
+       "en": "Build sustainability risks into underwriting, reserving and investment risk policies"
+      },
+      "summaries": {
+       "en": "Insurers must integrate sustainability risks into their underwriting and reserving policy and their investment risk management policy, and into their other risk management policies where relevant. The risk management function must identify and assess emerging risks and sustainability risks. These requirements were added by Delegated Regulation (EU) 2021/1256 and apply from 2 August 2022."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 260(1a) and Art. 269(1)(e)",
+      "dutyType": "governance",
+      "effectiveFrom": "2022-08-02",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep everyone who runs the undertaking or holds a key function fit and proper",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Article 273",
+     "payload": {
+      "key": "obl-eu-sii-dr-fit-and-proper",
+      "titles": {
+       "en": "Keep everyone who runs the undertaking or holds a key function fit and proper"
+      },
+      "summaries": {
+       "en": "Insurers must have documented policies and procedures ensuring that persons who effectively run the undertaking or have other key functions are fit and proper at all times. Fitness covers qualifications, knowledge and experience matched to each person's duties, with diversity across the management body; propriety covers honesty and financial soundness, including criminal, financial and supervisory history."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 273",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Adopt a written outsourcing policy and vet providers of critical or important functions",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Article 274",
+     "payload": {
+      "key": "obl-eu-sii-dr-outsourcing",
+      "titles": {
+       "en": "Adopt a written outsourcing policy and vet providers of critical or important functions"
+      },
+      "summaries": {
+       "en": "An insurer that outsources functions or activities must have a written outsourcing policy covering the impact on its business and how the outsourcing is monitored and reported. Before outsourcing a critical or important function the management body must ensure that the provider has been examined for ability, capacity and authorisation, that conflicts are managed, that a written agreement sets out rights and obligations, and that the provider is bound by the same data security and confidentiality rules as the insurer."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 274",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Apply a written remuneration policy that supports sound risk management",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Article 275(1), (2) and (4)",
+     "payload": {
+      "key": "obl-eu-sii-dr-remuneration-policy",
+      "titles": {
+       "en": "Apply a written remuneration policy that supports sound risk management"
+      },
+      "summaries": {
+       "en": "Insurers must adopt a written remuneration policy aligned with their business and risk strategy and long-term interests, overseen by the management body and disclosed to staff, with a remuneration committee where the undertaking's size and organisation warrant it. For management, key function holders and material risk takers, fixed and variable pay must be balanced, performance assessed on individual, unit and overall results using financial and non-financial criteria, and a substantial part of variable pay deferred for at least three years. The policy must explain how it takes the integration of sustainability risks in the risk management system into account."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 275(1), (2) and (4)",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make variable pay subject to sustainability conditions, malus and clawback",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Article 275 as amended by Delegated Regulation (EU) 2026/269, Article 1(83)",
+     "payload": {
+      "key": "obl-eu-sii-dr-variable-pay-malus-clawback",
+      "titles": {
+       "en": "Make variable pay subject to sustainability conditions, malus and clawback"
+      },
+      "summaries": {
+       "en": "From 30 January 2027 insurers may pay or vest variable remuneration, including deferred parts, only if it is sustainable given the undertaking's overall financial situation and justified by performance; deferred pay may vest no faster than pro rata, and variable pay must generally shrink markedly when performance is subdued or negative. Up to 100% of variable pay must be open to malus or clawback under set criteria covering conduct that caused significant losses and loss of fitness and propriety. Deferral need not apply where a person's annual variable pay is at most EUR 50 000 and at most one third of total annual pay, unless the supervisor decides otherwise."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 275(2)(ea), (2a) and (2b)",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-01-30",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish the solvency and financial condition report and keep it available",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Articles 300 and 301",
+     "payload": {
+      "key": "obl-eu-sii-dr-sfcr-publication",
+      "titles": {
+       "en": "Publish the solvency and financial condition report and keep it available"
+      },
+      "summaries": {
+       "en": "Insurers must disclose their solvency and financial condition report within 14 weeks after the financial year end, on their own website where they have one, keep it there for at least five years, send copies on request, and submit it and any update electronically to the supervisor. From 30 January 2027 the report has two parts, both of which must be published and easily accessible, and the website location must be notified to the supervisor (Delegated Regulation (EU) 2026/269)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 300 and 301",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:insurer",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Submit regular supervisory reports, ORSA reports and quantitative templates on time",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35, Articles 304 and 312",
+     "payload": {
+      "key": "obl-eu-sii-dr-regular-supervisory-reporting",
+      "titles": {
+       "en": "Submit regular supervisory reports, ORSA reports and quantitative templates on time"
+      },
+      "summaries": {
+       "en": "Insurers must submit to the supervisor the regular supervisory report at least every three years within 14 weeks of the financial year end, the ORSA supervisory report within two weeks of concluding each own risk and solvency assessment, annual quantitative templates within 14 weeks of year end and quarterly templates within five weeks of quarter end. Delegated Regulation (EU) 2026/269 replaces these reporting articles from 30 January 2027."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 304 and 312",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:insurer",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Solvency II Delegated Regulation amendment, Commission Delegated Regulation (EU) 2026/269",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2026/269/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/269 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026r0269",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2026/269 of 29 October 2025 amending Delegated Regulation (EU) 2015/35 as regards technical provisions, long-term guarantee measures, own funds, equity risk, spread risk on securitisation positions, other standard formula capital requirements, reporting and disclosure, proportionality and group solvency"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Solvency II Delegated Regulation amendment",
+    "officialRef": "Commission Delegated Regulation (EU) 2026/269",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2026/269/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:insurance",
+    "inForceFrom": "2026-03-10"
+   }
+  },
+  {
+   "title": "Add IDD product oversight and governance regulation, Commission Delegated Regulation (EU) 2017/2358",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2358/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2358 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017r2358",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2017/2358 of 21 September 2017 supplementing Directive (EU) 2016/97 of the European Parliament and of the Council with regard to product oversight and governance requirements for insurance undertakings and insurance distributors"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "IDD product oversight and governance regulation",
+    "officialRef": "Commission Delegated Regulation (EU) 2017/2358",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2017/2358/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:insurance",
+    "inForceFrom": "2018-01-09"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Maintain a written product approval process for insurance products you manufacture",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2358/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2358, Articles 4 and 9",
+     "payload": {
+      "key": "obl-eu-idd-pog-product-approval",
+      "titles": {
+       "en": "Maintain a written product approval process for insurance products you manufacture"
+      },
+      "summaries": {
+       "en": "Insurers, and intermediaries that design insurance products, must operate and regularly review a product approval process, set out in a written product oversight and governance policy, for new products and significant changes to existing ones, including corrective action for products that harm customers. The body responsible for manufacturing must endorse the process and continuously check compliance, and relevant actions must be documented and made available to supervisors."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 4 and 9",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify each product's target market and test the product before launch",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2358/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2358, Articles 5 and 6 as replaced by Delegated Regulation (EU) 2021/1257",
+     "payload": {
+      "key": "obl-eu-idd-pog-target-market-testing",
+      "titles": {
+       "en": "Identify each product's target market and test the product before launch"
+      },
+      "summaries": {
+       "en": "For every insurance product the manufacturer must identify a sufficiently granular target market, taking account of the product's features, risks and sustainability factors, and only design and market products compatible with the needs, objectives, including sustainability-related objectives, and characteristics of that market. Products must be tested, with scenario analyses where relevant, before launch, significant adaptation or a significant change in the target market, and must not be launched if testing shows they do not meet the target market's needs."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 5 and 6",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Monitor and review products on the market and fix problems that harm customers",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2358/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2358, Article 7",
+     "payload": {
+      "key": "obl-eu-idd-pog-monitoring-review",
+      "titles": {
+       "en": "Monitor and review products on the market and fix problems that harm customers"
+      },
+      "summaries": {
+       "en": "Manufacturers must continuously monitor and regularly review the insurance products they have launched, at intervals suited to each product, to check that they remain consistent with the target market and reach it. Where a circumstance may harm customers, they must act to mitigate it and promptly inform the distributors and customers concerned of the remedial action."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 7",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Choose suitable distribution channels and give distributors full product information",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2358/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2358, Article 8",
+     "payload": {
+      "key": "obl-eu-idd-pog-distribution-channels",
+      "titles": {
+       "en": "Choose suitable distribution channels and give distributors full product information"
+      },
+      "summaries": {
+       "en": "Manufacturers must select distribution channels appropriate to the target market, give distributors clear, complete and up-to-date information on the product, its target market, risks, costs and suggested distribution strategy, and regularly verify that the product is sold within the target market, taking remedial action where it is not."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 8",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep written product distribution arrangements for insurance products you distribute but did not design",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2358/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2358, Articles 10, 11 and 12",
+     "payload": {
+      "key": "obl-eu-idd-pog-distribution-arrangements",
+      "titles": {
+       "en": "Keep written product distribution arrangements for insurance products you distribute but did not design"
+      },
+      "summaries": {
+       "en": "Insurance distributors must have written product distribution arrangements to obtain and understand the manufacturer's product information, keep any distribution strategy in line with the manufacturer's target market, and review the arrangements regularly. They must promptly tell the manufacturer when a product does not fit its target market or may harm customers, provide sales information on request, and document these actions for supervisors."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 10, 11 and 12",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "service_type:insurance_distribution",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add IDD insurance-based investment products regulation, Commission Delegated Regulation (EU) 2017/2359",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2359/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2359 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017r2359",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2017/2359 of 21 September 2017 supplementing Directive (EU) 2016/97 of the European Parliament and of the Council with regard to information requirements and conduct of business rules applicable to the distribution of insurance-based investment products"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "IDD insurance-based investment products regulation",
+    "officialRef": "Commission Delegated Regulation (EU) 2017/2359",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2017/2359/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:insurance",
+    "inForceFrom": "2018-01-09"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Identify and manage conflicts of interest in selling insurance-based investment products",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2359/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2359, Articles 3, 4, 5 and 7",
+     "payload": {
+      "key": "obl-eu-idd-ibip-conflicts-policy",
+      "titles": {
+       "en": "Identify and manage conflicts of interest in selling insurance-based investment products"
+      },
+      "summaries": {
+       "en": "Insurers and intermediaries distributing insurance-based investment products must identify conflicts between their own interests, including those of linked persons, and the customer's, including the customer's sustainability preferences, and keep a written conflicts of interest policy with procedures to prevent and manage them. The policy must be reviewed at least annually, a record of conflicts kept, and senior management must receive written reports on them at least annually."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 3, 4, 5 and 7",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Disclose a conflict of interest only as a last resort, and then specifically",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2359/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2359, Article 6",
+     "payload": {
+      "key": "obl-eu-idd-ibip-conflict-disclosure",
+      "titles": {
+       "en": "Disclose a conflict of interest only as a last resort, and then specifically"
+      },
+      "summaries": {
+       "en": "Disclosing a conflict to the customer is allowed only where organisational arrangements cannot prevent the risk of harm with reasonable confidence. The disclosure must describe the specific conflict, its nature and sources, the resulting risks and the steps taken to mitigate them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess whether inducements harm the quality of the service to the customer",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2359/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2359, Article 8",
+     "payload": {
+      "key": "obl-eu-idd-ibip-inducements",
+      "titles": {
+       "en": "Assess whether inducements harm the quality of the service to the customer"
+      },
+      "summaries": {
+       "en": "For any inducement or inducement scheme linked to distributing insurance-based investment products, the firm must analyse whether it could lead to selling in a way that is not in the customer's best interest, considering criteria such as incentives to push a product that fits the customer less well, purely volume-based targets, the size of the inducement relative to the product, whether it is paid up front, and whether it can be reclaimed if the product lapses early."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 8",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Collect enough information to recommend only suitable insurance-based investment products",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2359/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2359, Article 9 as amended by Delegated Regulation (EU) 2021/1257",
+     "payload": {
+      "key": "obl-eu-idd-ibip-suitability",
+      "titles": {
+       "en": "Collect enough information to recommend only suitable insurance-based investment products"
+      },
+      "summaries": {
+       "en": "When advising on an insurance-based investment product, the firm must obtain the information needed to be satisfied that the recommendation meets the customer's investment objectives, including risk tolerance and sustainability preferences, their financial situation, including ability to bear losses, and their knowledge and experience. It must not recommend anything if no product is suitable, and must not present a product as meeting sustainability preferences that it does not meet."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 9",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "service_type:insurance_distribution",
+       "service_type:advice",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the customer a suitability statement with each piece of advice",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2359/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2359, Article 14",
+     "payload": {
+      "key": "obl-eu-idd-ibip-suitability-statement",
+      "titles": {
+       "en": "Give the customer a suitability statement with each piece of advice"
+      },
+      "summaries": {
+       "en": "The firm must give the customer a suitability statement outlining the advice and explaining how the recommendation meets the customer's objectives, financial situation and knowledge and experience, and whether periodic reviews are likely to be needed. Where a periodic suitability assessment is offered, it must take place at least annually."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 14",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "service_type:insurance_distribution",
+       "service_type:advice"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Gather the customer's knowledge and experience in the investment field",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2359/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2359, Article 17",
+     "payload": {
+      "key": "obl-eu-idd-ibip-knowledge-experience",
+      "titles": {
+       "en": "Gather the customer's knowledge and experience in the investment field"
+      },
+      "summaries": {
+       "en": "For both the suitability and the appropriateness assessment the firm must collect information on the types of products and transactions the customer knows, the nature and frequency of past transactions, and their education and profession, to the extent relevant to the product. It must not discourage the customer from providing that information."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 17",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "service_type:insurance_distribution",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Send customers at least an annual report on services and transactions",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2359/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2359, Article 18",
+     "payload": {
+      "key": "obl-eu-idd-ibip-periodic-report",
+      "titles": {
+       "en": "Send customers at least an annual report on services and transactions"
+      },
+      "summaries": {
+       "en": "The firm must give the customer, at least annually and on a durable medium, a fair and balanced report on the services provided and transactions carried out, including where relevant total costs and the value of each underlying investment asset."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 18",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "service_type:insurance_distribution",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep records of suitability and appropriateness assessments",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2359/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2359, Article 19",
+     "payload": {
+      "key": "obl-eu-idd-ibip-assessment-records",
+      "titles": {
+       "en": "Keep records of suitability and appropriateness assessments"
+      },
+      "summaries": {
+       "en": "The firm must keep records of each suitability or appropriateness assessment, including the customer information obtained and the documents agreed, for at least the duration of the customer relationship. Suitability records must also show the result, the recommendation and statement given, and later changes, such as to the customer's risk tolerance."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 19",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2018-10-01",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add IPID Regulation, Commission Implementing Regulation (EU) 2017/1469",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2017/1469/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2017/1469 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017r1469",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2017/1469 of 11 August 2017 laying down a standardised presentation format for the insurance product information document"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "IPID Regulation",
+    "officialRef": "Commission Implementing Regulation (EU) 2017/1469",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2017/1469/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:insurance",
+    "inForceFrom": "2017-09-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Draw up the insurance product information document in the standardised format",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2017/1469/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2017/1469, Articles 1 to 7",
+     "payload": {
+      "key": "obl-eu-ipid-standard-format",
+      "titles": {
+       "en": "Draw up the insurance product information document in the standardised format"
+      },
+      "summaries": {
+       "en": "The manufacturer of a non-life insurance product must present its insurance product information document in the prescribed layout: its name and status under the title, a statement that complete information is in other documents, at most two sides of A4 (exceptionally three), the fixed headings, order, symbols and icons of the Annex, plain language without jargon, and no marketing in layered digital content."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 1 to 7",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add PEPP Regulation, Regulation (EU) 2019/1238",
+   "source": "https://eur-lex.europa.eu/eli/reg/2019/1238/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2019/1238 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019r1238",
+    "titles": {
+     "en": "Regulation (EU) 2019/1238 of the European Parliament and of the Council of 20 June 2019 on a pan-European Personal Pension Product (PEPP)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "PEPP Regulation",
+    "officialRef": "Regulation (EU) 2019/1238",
+    "eliUri": "https://data.europa.eu/eli/reg/2019/1238/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:insurance",
+    "inForceFrom": "2019-08-14"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Publish a PEPP key information document before offering a PEPP",
+     "source": "https://eur-lex.europa.eu/eli/reg/2019/1238/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/1238, Article 26",
+     "payload": {
+      "key": "obl-eu-pepp-kid",
+      "titles": {
+       "en": "Publish a PEPP key information document before offering a PEPP"
+      },
+      "summaries": {
+       "en": "Before a PEPP is proposed to savers, the provider must draw up a PEPP key information document, publish it on its website and keep it accurate, fair, clear, not misleading and separate from marketing material, with a separate document for the Basic PEPP."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 26",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2022-03-22",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Specify the saver's retirement demands and needs and advise before the contract",
+     "source": "https://eur-lex.europa.eu/eli/reg/2019/1238/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/1238, Article 34",
+     "payload": {
+      "key": "obl-eu-pepp-demands-needs-advice",
+      "titles": {
+       "en": "Specify the saver's retirement demands and needs and advise before the contract"
+      },
+      "summaries": {
+       "en": "Before a PEPP contract is concluded, the provider or distributor must specify the prospective saver's retirement-related demands and needs, propose only a consistent contract, and give advice with a personalised recommendation and personalised pension benefit projections. Where a Basic PEPP without a capital guarantee is offered, it must explain in writing why, and the additional risks compared with a capital-guaranteed option."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 34",
+      "dutyType": "conduct",
+      "effectiveFrom": "2022-03-22",
+      "terms": [
+       "service_type:advice",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give every PEPP saver an annual PEPP Benefit Statement",
+     "source": "https://eur-lex.europa.eu/eli/reg/2019/1238/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/1238, Articles 35 and 36",
+     "payload": {
+      "key": "obl-eu-pepp-benefit-statement",
+      "titles": {
+       "en": "Give every PEPP saver an annual PEPP Benefit Statement"
+      },
+      "summaries": {
+       "en": "The provider must make a personalised PEPP Benefit Statement available to each saver every year during accumulation, with key information such as pension benefit projections, contributions and a full breakdown of costs over the past 12 months, and the account value. Material changes must be highlighted and changes to contract terms, provider details or ESG investment policy notified promptly."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 35 and 36",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2022-03-22",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Offer the Basic PEPP as the safe default option within the cost cap",
+     "source": "https://eur-lex.europa.eu/eli/reg/2019/1238/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/1238, Articles 42 and 45",
+     "payload": {
+      "key": "obl-eu-pepp-basic-pepp",
+      "titles": {
+       "en": "Offer the Basic PEPP as the safe default option within the cost cap"
+      },
+      "summaries": {
+       "en": "A provider may offer up to six investment options, which must include the Basic PEPP, and all options must rest on a guarantee or risk-mitigation technique. The Basic PEPP must be built on a capital guarantee or a technique aimed at recouping the capital, and its costs and fees may not exceed 1% of the accumulated capital per year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 42 and 45",
+      "dutyType": "conduct",
+      "effectiveFrom": "2022-03-22",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add UCITS Directive, Directive 2009/65/EC",
+   "source": "https://eur-lex.europa.eu/eli/dir/2009/65/oj",
+   "sourceLabel": "EUR-Lex, Directive 2009/65/EC as published in the Official Journal",
+   "payload": {
+    "key": "celex-32009l0065",
+    "titles": {
+     "en": "Directive 2009/65/EC of the European Parliament and of the Council of 13 July 2009 on the coordination of laws, regulations and administrative provisions relating to undertakings for collective investment in transferable securities (UCITS) (recast)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "UCITS Directive",
+    "officialRef": "Directive 2009/65/EC",
+    "eliUri": "https://data.europa.eu/eli/dir/2009/65/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2009-12-07"
+   }
+  },
+  {
+   "title": "Add UCITS organisational requirements directive, Commission Directive 2010/43/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2010/43/oj",
+   "sourceLabel": "EUR-Lex, Commission Directive 2010/43/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32010l0043",
+    "titles": {
+     "en": "Commission Directive 2010/43/EU of 1 July 2010 implementing Directive 2009/65/EC of the European Parliament and of the Council as regards organisational requirements, conflicts of interest, conduct of business, risk management and content of the agreement between a depositary and a management company"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "UCITS organisational requirements directive",
+    "officialRef": "Commission Directive 2010/43/EU",
+    "eliUri": "https://data.europa.eu/eli/dir/2010/43/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2010-07-30"
+   }
+  },
+  {
+   "title": "Add AIFMD, Directive 2011/61/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2011/61/oj",
+   "sourceLabel": "EUR-Lex, Directive 2011/61/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32011l0061",
+    "titles": {
+     "en": "Directive 2011/61/EU of the European Parliament and of the Council of 8 June 2011 on Alternative Investment Fund Managers and amending Directives 2003/41/EC and 2009/65/EC and Regulations (EC) No 1060/2009 and (EU) No 1095/2010"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "AIFMD",
+    "officialRef": "Directive 2011/61/EU",
+    "eliUri": "https://data.europa.eu/eli/dir/2011/61/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2011-07-21"
+   }
+  },
+  {
+   "title": "Add AIFMD II, Directive (EU) 2024/927",
+   "source": "https://eur-lex.europa.eu/eli/dir/2024/927/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2024/927 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024l0927",
+    "titles": {
+     "en": "Directive (EU) 2024/927 of the European Parliament and of the Council of 13 March 2024 amending Directives 2011/61/EU and 2009/65/EC as regards delegation arrangements, liquidity risk management, supervisory reporting, the provision of depositary and custody services and loan origination by alternative investment funds"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "AIFMD II",
+    "officialRef": "Directive (EU) 2024/927",
+    "eliUri": "https://data.europa.eu/eli/dir/2024/927/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2024-04-15"
+   }
+  },
+  {
+   "title": "Add Cross-border distribution of funds directive, Directive (EU) 2019/1160",
+   "source": "https://eur-lex.europa.eu/eli/dir/2019/1160/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2019/1160 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019l1160",
+    "titles": {
+     "en": "Directive (EU) 2019/1160 of the European Parliament and of the Council of 20 June 2019 amending Directives 2009/65/EC and 2011/61/EU with regard to cross-border distribution of collective investment undertakings"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Cross-border distribution of funds directive",
+    "officialRef": "Directive (EU) 2019/1160",
+    "eliUri": "https://data.europa.eu/eli/dir/2019/1160/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-08-01"
+   }
+  },
+  {
+   "title": "Add AIFM Delegated Regulation, Commission Delegated Regulation (EU) No 231/2013",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2013/231/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) No 231/2013 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32013r0231",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) No 231/2013 of 19 December 2012 supplementing Directive 2011/61/EU of the European Parliament and of the Council with regard to exemptions, general operating conditions, depositaries, leverage, transparency and supervision"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "AIFM Delegated Regulation",
+    "officialRef": "Commission Delegated Regulation (EU) No 231/2013",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2013/231/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-04-11"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep a written conflicts of interest policy for each AIF you manage",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2013/231/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) No 231/2013, Articles 30 and 31, Article 30 as amended by Delegated Regulation (EU) 2021/1255",
+     "payload": {
+      "key": "obl-eu-aifmr-conflicts-policy",
+      "titles": {
+       "en": "Keep a written conflicts of interest policy for each AIF you manage"
+      },
+      "summaries": {
+       "en": "An AIFM must identify the types of conflict that can harm an AIF or its investors, including those arising from the integration of sustainability risks, and apply a written conflicts of interest policy suited to its size and business, taking group circumstances into account. The policy must name the circumstances giving rise to conflicts, including through delegates, valuers and counterparties, and the procedures to prevent, manage and monitor them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 30 and 31",
+      "dutyType": "governance",
+      "effectiveFrom": "2013-07-22",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Manage and stress test the liquidity of each AIF against its redemption policy",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2013/231/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) No 231/2013, Articles 46 to 49",
+     "payload": {
+      "key": "obl-eu-aifmr-liquidity-management",
+      "titles": {
+       "en": "Manage and stress test the liquidity of each AIF against its redemption policy"
+      },
+      "summaries": {
+       "en": "An AIFM must keep a liquidity management system that holds liquidity appropriate to each AIF's obligations, monitors the portfolio's liquidity profile and investor base, sets liquidity limits and acts when they are breached. It must stress test each AIF under normal and exceptional liquidity conditions at least once a year and keep the investment strategy, liquidity profile and redemption policy aligned so that investors can redeem fairly."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 46 to 49",
+      "dutyType": "governance",
+      "effectiveFrom": "2013-07-22",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Value AIF assets under written valuation policies reviewed at least annually",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2013/231/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) No 231/2013, Articles 67, 70 and 74",
+     "payload": {
+      "key": "obl-eu-aifmr-valuation-policy",
+      "titles": {
+       "en": "Value AIF assets under written valuation policies reviewed at least annually"
+      },
+      "summaries": {
+       "en": "An AIFM must have written valuation policies and procedures for each AIF that set fair, appropriate and transparent methodologies for every asset type, use independent pricing sources where possible, and must not invest in a new asset type before a methodology exists. The policies must be reviewed at least annually and before a new strategy or asset type, and the financial instruments of an open-ended AIF must be valued each time the net asset value is calculated, with other assets at least yearly."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 67, 70 and 74",
+      "dutyType": "governance",
+      "effectiveFrom": "2013-07-22",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report AIF exposures, liquidity and risk profile to the competent authority",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2013/231/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) No 231/2013, Article 110",
+     "payload": {
+      "key": "obl-eu-aifmr-supervisory-reporting",
+      "titles": {
+       "en": "Report AIF exposures, liquidity and risk profile to the competent authority"
+      },
+      "summaries": {
+       "en": "An AIFM must report to its home authority, using the Annex IV template, the main instruments and markets it trades, each AIF's principal exposures and concentrations, illiquid assets under special arrangements, liquidity arrangements and risk profile. Reporting is half-yearly, quarterly or annual depending on assets under management and the type of AIF, and is due no later than one month after the end of the reporting period."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 110",
+      "dutyType": "reporting",
+      "effectiveFrom": "2013-07-22",
+      "terms": [
+       "legal_entity:fund_company",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add UCITS depositary regulation, Commission Delegated Regulation (EU) 2016/438",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2016/438/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/438 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r0438",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2016/438 of 17 December 2015 supplementing Directive 2009/65/EC of the European Parliament and of the Council with regard to obligations of depositaries"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "UCITS depositary regulation",
+    "officialRef": "Commission Delegated Regulation (EU) 2016/438",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2016/438/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2016-04-13"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set up risk-based oversight procedures as a UCITS depositary",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/438/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/438, Article 3",
+     "payload": {
+      "key": "obl-eu-ucits-depositary-oversight",
+      "titles": {
+       "en": "Set up risk-based oversight procedures as a UCITS depositary"
+      },
+      "summaries": {
+       "en": "On appointment, a depositary must assess the risks of the UCITS' investment policy and the management company's organisation, and on that basis devise, apply and regularly update oversight procedures, performing ex post checks and ensuring a verification and reconciliation procedure exists."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3",
+      "dutyType": "governance",
+      "effectiveFrom": "2016-10-13",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Monitor UCITS cash flows and reconcile them daily",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/438/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/438, Article 10",
+     "payload": {
+      "key": "obl-eu-ucits-depositary-cash-monitoring",
+      "titles": {
+       "en": "Monitor UCITS cash flows and reconcile them daily"
+      },
+      "summaries": {
+       "en": "The depositary must ensure all UCITS cash is booked with a central bank or an eligible credit institution, reconcile cash movements daily (or when they occur if infrequent), identify significant or inconsistent cash flows at the close of each business day, and periodically review those procedures."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 10",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2016-10-13",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Safekeep UCITS assets with accurate segregated records and ownership verification",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/438/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/438, Articles 13 and 14 as amended by Delegated Regulation (EU) 2018/1619",
+     "payload": {
+      "key": "obl-eu-ucits-depositary-safekeeping",
+      "titles": {
+       "en": "Safekeep UCITS assets with accurate segregated records and ownership verification"
+      },
+      "summaries": {
+       "en": "For financial instruments held in custody the depositary must ensure proper registration, accurate segregated records, reconciliations with any sub-custodian as often as needed, and assessment of custody risks along the chain. For other assets it must verify the UCITS' ownership, keep an up-to-date inventory and escalate discrepancies to the management company and, where they cannot be corrected, to the competent authority."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 13 and 14",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2016-10-13",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Apply documented due diligence to third parties holding UCITS assets in custody",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2016/438/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/438, Article 15 as amended by Delegated Regulation (EU) 2018/1619",
+     "payload": {
+      "key": "obl-eu-ucits-depositary-delegate-due-diligence",
+      "titles": {
+       "en": "Apply documented due diligence to third parties holding UCITS assets in custody"
+      },
+      "summaries": {
+       "en": "A depositary delegating safekeeping must select and monitor the third party under a documented due diligence procedure reviewed at least yearly, assessing its legal framework and insolvency implications, controls, financial strength and operational capacity. The contract must give the depositary information and access rights across the custody chain, and the depositary must keep contingency plans for each market and act, up to termination, if the third party stops complying."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 15",
+      "dutyType": "governance",
+      "effectiveFrom": "2016-10-13",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MMFR, Regulation (EU) 2017/1131",
+   "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017r1131",
+    "titles": {
+     "en": "Regulation (EU) 2017/1131 of the European Parliament and of the Council of 14 June 2017 on money market funds"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MMFR",
+    "officialRef": "Regulation (EU) 2017/1131",
+    "eliUri": "https://data.europa.eu/eli/reg/2017/1131/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2017-07-20"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Use the money market fund name only for a fund authorised as an MMF",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131, Articles 4 and 6",
+     "payload": {
+      "key": "obl-eu-mmfr-authorisation-designation",
+      "titles": {
+       "en": "Use the money market fund name only for a fund authorised as an MMF"
+      },
+      "summaries": {
+       "en": "A fund may be established, marketed or managed as a money market fund only once authorised under the Regulation, and only an authorised UCITS or AIF may call itself a money market fund or MMF or use a similar or misleading designation."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 4 and 6",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-07-21",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Invest only in eligible assets and within the diversification limits",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131, Articles 9 and 17",
+     "payload": {
+      "key": "obl-eu-mmfr-eligible-assets-diversification",
+      "titles": {
+       "en": "Invest only in eligible assets and within the diversification limits"
+      },
+      "summaries": {
+       "en": "An MMF may invest only in money market instruments, eligible securitisations and ABCPs, deposits with credit institutions, eligible derivatives, repos and reverse repos, and units of other MMFs, and may not short sell, take equity or commodity exposure, lend or borrow securities or cash. It must respect the issuer and counterparty limits, such as 5% of assets per issuer of money market instruments and 10% in deposits with one credit institution, with the counterparty limits for centrally cleared transactions as amended by Regulation (EU) 2024/2987."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 9 and 17",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-07-21",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Meet the maturity and liquidity portfolio rules for short-term or standard MMFs",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131, Articles 24 and 25",
+     "payload": {
+      "key": "obl-eu-mmfr-portfolio-rules",
+      "titles": {
+       "en": "Meet the maturity and liquidity portfolio rules for short-term or standard MMFs"
+      },
+      "summaries": {
+       "en": "A short-term MMF must keep a weighted average maturity of at most 60 days and a weighted average life of at most 120 days, and a standard MMF at most 6 and 12 months. Each must hold the minimum shares of daily and weekly maturing assets set for its type, for example at least 10% daily and 30% weekly for LVNAV and public debt CNAV MMFs, and at least 7.5% daily and 15% weekly for a standard MMF."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 24 and 25",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-07-21",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Apply a prudent internal credit quality assessment procedure",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131, Article 19",
+     "payload": {
+      "key": "obl-eu-mmfr-credit-quality-assessment",
+      "titles": {
+       "en": "Apply a prudent internal credit quality assessment procedure"
+      },
+      "summaries": {
+       "en": "The MMF manager must establish and consistently apply a prudent, documented internal procedure to assess the credit quality of money market instruments, securitisations and ABCPs, using reliable up-to-date information and methodologies validated against historical experience, including back testing."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 19",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-07-21",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Know the fund's investors to anticipate concurrent redemptions",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131, Article 27",
+     "payload": {
+      "key": "obl-eu-mmfr-know-your-customer",
+      "titles": {
+       "en": "Know the fund's investors to anticipate concurrent redemptions"
+      },
+      "summaries": {
+       "en": "The MMF manager must apply procedures and due diligence to anticipate the effect of several investors redeeming at the same time, considering investor types, concentration of holdings and flow patterns, with additional analysis where one investor's holding exceeds the daily liquidity requirement."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 27",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-07-21",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Stress test each MMF at least twice a year and act on vulnerabilities",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131, Article 28",
+     "payload": {
+      "key": "obl-eu-mmfr-stress-testing",
+      "titles": {
+       "en": "Stress test each MMF at least twice a year and act on vulnerabilities"
+      },
+      "summaries": {
+       "en": "Each MMF must have sound stress testing covering at least liquidity, credit, interest and exchange rate, redemption, spread and macro shocks, run at a frequency set by the board and at least twice a year. Where a vulnerability appears, the manager must prepare a report and action plan for board approval, strengthen the fund where needed, inform the competent authority, keep the report for five years and submit it for review."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 28",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-07-21",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Value MMF assets daily, marking to market wherever possible",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131, Article 29",
+     "payload": {
+      "key": "obl-eu-mmfr-daily-valuation",
+      "titles": {
+       "en": "Value MMF assets daily, marking to market wherever possible"
+      },
+      "summaries": {
+       "en": "MMF assets must be valued at least daily, by mark-to-market wherever possible on the prudent side of bid and offer using good-quality market data, and otherwise conservatively by mark-to-model; valuations must be communicated to the competent authorities."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 29",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-07-21",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not let an MMF receive external support",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131, Article 35",
+     "payload": {
+      "key": "obl-eu-mmfr-no-external-support",
+      "titles": {
+       "en": "Do not let an MMF receive external support"
+      },
+      "summaries": {
+       "en": "An MMF may not receive support from a third party, including its sponsor, that guarantees its liquidity or stabilises its net asset value, such as cash injections, purchases of its assets at inflated prices or of its units to provide liquidity, or guarantees and letters of support."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 35",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-07-21",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish weekly portfolio information and the mandatory statements in MMF marketing",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131, Article 36",
+     "payload": {
+      "key": "obl-eu-mmfr-investor-transparency",
+      "titles": {
+       "en": "Publish weekly portfolio information and the mandatory statements in MMF marketing"
+      },
+      "summaries": {
+       "en": "The manager must state the MMF's type in all investor documents, and at least weekly give investors the maturity breakdown, credit profile, WAM and WAL, ten largest holdings, total assets and net yield. Marketing documents must state that the MMF is not guaranteed, differs from a deposit, does not rely on external support and that investors bear the risk of losing principal."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 36",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-07-21",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report each MMF to its competent authority at least quarterly",
+     "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131, Article 37",
+     "payload": {
+      "key": "obl-eu-mmfr-supervisory-reporting",
+      "titles": {
+       "en": "Report each MMF to its competent authority at least quarterly"
+      },
+      "summaries": {
+       "en": "For each MMF it manages, the manager must report to the fund's competent authority at least quarterly, or annually where assets under management do not exceed EUR 100 million, on the fund's type and portfolio indicators, stress test results and action plans, assets and liabilities."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 37",
+      "dutyType": "reporting",
+      "effectiveFrom": "2018-07-21",
+      "terms": [
+       "legal_entity:fund_company",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ELTIF Regulation, Regulation (EU) 2015/760",
+   "source": "https://eur-lex.europa.eu/eli/reg/2015/760/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2015/760 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32015r0760",
+    "titles": {
+     "en": "Regulation (EU) 2015/760 of the European Parliament and of the Council of 29 April 2015 on European long-term investment funds"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ELTIF Regulation",
+    "officialRef": "Regulation (EU) 2015/760",
+    "eliUri": "https://data.europa.eu/eli/reg/2015/760/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2015-06-08"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Market a fund as an ELTIF only once authorised, and keep it compliant at all times",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/760/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/760, Articles 3(1) and (2) and 7",
+     "payload": {
+      "key": "obl-eu-eltif-authorisation-compliance",
+      "titles": {
+       "en": "Market a fund as an ELTIF only once authorised, and keep it compliant at all times"
+      },
+      "summaries": {
+       "en": "Only an EU AIF authorised as an ELTIF may be marketed as one in the Union. The ELTIF and its manager must comply with the Regulation and with Directive 2011/61/EU at all times, and the manager is responsible and liable for losses caused by non-compliance."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 3(1) and (2) and 7",
+      "dutyType": "governance",
+      "effectiveFrom": "2015-12-09",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Invest at least 55% in eligible investment assets and respect the diversification limits",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/760/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/760, Article 13 as replaced by Regulation (EU) 2023/606",
+     "payload": {
+      "key": "obl-eu-eltif-portfolio-composition",
+      "titles": {
+       "en": "Invest at least 55% in eligible investment assets and respect the diversification limits"
+      },
+      "summaries": {
+       "en": "An ELTIF must invest at least 55% of its capital in eligible investment assets and generally no more than 20% in any single qualifying portfolio undertaking, real asset or fund, with further limits for securitisations and counterparty exposure. These rules apply in the form set by Regulation (EU) 2023/606 from 10 January 2024; ELTIFs authorised under the previous rules are deemed compliant until 11 January 2029 or, if they raise no additional capital, indefinitely."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 13",
+      "dutyType": "governance",
+      "effectiveFrom": "2024-01-10",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Allow redemptions during the life of an ELTIF only under a compliant redemption policy",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/760/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/760, Article 18 as replaced by Regulation (EU) 2023/606",
+     "payload": {
+      "key": "obl-eu-eltif-redemption-policy",
+      "titles": {
+       "en": "Allow redemptions during the life of an ELTIF only under a compliant redemption policy"
+      },
+      "summaries": {
+       "en": "The ELTIF rules must fix the end of the fund's life, from which redemptions are possible; redemptions before then are allowed only after a minimum holding period and where the manager can show the competent authority an appropriate redemption policy and liquidity management tools compatible with the long-term strategy, with redemptions capped at a percentage of the fund's UCITS-eligible assets referred to in Article 9(1)(b)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 18",
+      "dutyType": "governance",
+      "effectiveFrom": "2024-01-10",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish a prospectus, and a PRIIPs key information document for retail, before marketing an ELTIF",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/760/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/760, Articles 23 and 25",
+     "payload": {
+      "key": "obl-eu-eltif-prospectus-costs",
+      "titles": {
+       "en": "Publish a prospectus, and a PRIIPs key information document for retail, before marketing an ELTIF"
+      },
+      "summaries": {
+       "en": "An ELTIF may not be marketed without a prior prospectus, nor to retail investors without a key information document under Regulation (EU) No 1286/2014. The prospectus must explain the fund's long-term nature, the asset categories and jurisdictions it may invest in, and prominently show each category of costs and, since 10 January 2024, an overall cost ratio."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 23 and 25",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2015-12-09",
+      "terms": [
+       "legal_entity:fund_company",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess suitability and warn retail investors before selling them an ELTIF",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/760/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/760, Article 30 as replaced by Regulation (EU) 2023/606",
+     "payload": {
+      "key": "obl-eu-eltif-retail-suitability",
+      "titles": {
+       "en": "Assess suitability and warn retail investors before selling them an ELTIF"
+      },
+      "summaries": {
+       "en": "An ELTIF may be sold to a retail investor, whether by a distributor or by the manager directly, only after a MiFID II suitability assessment and statement; if the ELTIF is unsuitable and no advice is given, the investor's express consent is needed to proceed, and a record must be kept. The investor must also get a clear written alert where the fund's life exceeds ten years or where a matching mechanism does not guarantee an exit."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 30(1) and (2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-01-10",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Cross-border distribution of funds regulation, Regulation (EU) 2019/1156",
+   "source": "https://eur-lex.europa.eu/eli/reg/2019/1156/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2019/1156 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019r1156",
+    "titles": {
+     "en": "Regulation (EU) 2019/1156 of the European Parliament and of the Council of 20 June 2019 on facilitating cross-border distribution of collective investment undertakings and amending Regulations (EU) No 345/2013, (EU) No 346/2013 and (EU) No 1286/2014"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Cross-border distribution of funds regulation",
+    "officialRef": "Regulation (EU) 2019/1156",
+    "eliUri": "https://data.europa.eu/eli/reg/2019/1156/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-08-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make fund marketing communications identifiable, balanced, fair, clear and not misleading",
+     "source": "https://eur-lex.europa.eu/eli/reg/2019/1156/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/1156, Article 4(1)",
+     "payload": {
+      "key": "obl-eu-cbdf-marketing-communications",
+      "titles": {
+       "en": "Make fund marketing communications identifiable, balanced, fair, clear and not misleading"
+      },
+      "summaries": {
+       "en": "UCITS management companies and AIFMs must ensure every marketing communication to investors is identifiable as such, presents risks and rewards of buying the fund with equal prominence, and is fair, clear and not misleading."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4(1)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2021-08-02",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep fund marketing consistent with the legal documents and point investors to them",
+     "source": "https://eur-lex.europa.eu/eli/reg/2019/1156/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/1156, Article 4(2) to (4)",
+     "payload": {
+      "key": "obl-eu-cbdf-marketing-consistency",
+      "titles": {
+       "en": "Keep fund marketing consistent with the legal documents and point investors to them"
+      },
+      "summaries": {
+       "en": "Marketing that contains specific information about a UCITS must not contradict or diminish the prospectus or key investor information, must say where, how and in which language they and a summary of investor rights can be obtained, with hyperlinks, and must say that marketing arrangements can be terminated. AIF marketing that invites purchases must not contradict the information investors are given under the AIFM rules."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4(2) to (4)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-08-02",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add UCITS liquidity management tools RTS, Commission Delegated Regulation (EU) 2026/466",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2026/466/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/466 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026r0466",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2026/466 of 17 November 2025 supplementing Directive 2009/65/EC of the European Parliament and of the Council with regard to regulatory technical standards specifying the characteristics of liquidity management tools"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "UCITS liquidity management tools RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2026/466",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2026/466/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2026-03-19"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Apply UCITS suspensions and redemption gates uniformly to all investors",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/466/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/466, Articles 1, 2 and 10",
+     "payload": {
+      "key": "obl-eu-ucits-lmt-suspension-gates",
+      "titles": {
+       "en": "Apply UCITS suspensions and redemption gates uniformly to all investors"
+      },
+      "summaries": {
+       "en": "A UCITS that suspends dealing must suspend subscriptions, repurchases and redemptions together, for all investors and share classes, only temporarily and where justified by investors' interests. A redemption gate must have a fund-level activation threshold based on redemption orders as a share of net asset value, apply equally to all investors and execute orders pro rata. UCITS constituted before 16 April 2026 are deemed compliant until 16 April 2027."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 1, 2 and 10",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-04-16",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Calibrate UCITS anti-dilution tools on estimated transaction costs",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/466/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/466, Articles 4 to 7",
+     "payload": {
+      "key": "obl-eu-ucits-lmt-anti-dilution",
+      "titles": {
+       "en": "Calibrate UCITS anti-dilution tools on estimated transaction costs"
+      },
+      "summaries": {
+       "en": "Redemption fees, swing factors, dual pricing adjustments and anti-dilution levies of a UCITS must reflect the estimated explicit transaction costs and, where appropriate to the investment strategy, the implicit costs including market impact, estimated on a best-effort basis, and be applied in the direction of net subscriptions or net redemptions as the Regulation sets out."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 4 to 7",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-04-16",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add AIFMD liquidity management tools RTS, Commission Delegated Regulation (EU) 2026/465",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2026/465/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/465 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026r0465",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2026/465 of 17 November 2025 supplementing Directive 2011/61/EU of the European Parliament and of the Council with regard to regulatory technical standards specifying the characteristics of liquidity management tools"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "AIFMD liquidity management tools RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2026/465",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2026/465/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2026-03-19"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Apply AIF suspensions and redemption gates uniformly to all investors",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/465/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/465, Articles 1, 2 and 10",
+     "payload": {
+      "key": "obl-eu-aif-lmt-suspension-gates",
+      "titles": {
+       "en": "Apply AIF suspensions and redemption gates uniformly to all investors"
+      },
+      "summaries": {
+       "en": "An AIFM that suspends dealing in an AIF must suspend subscriptions, repurchases and redemptions together, for all investors and share classes, only temporarily and where justified by investors' interests. A redemption gate must have an activation threshold set at fund level, investor level or both, apply uniformly to all investors and execute orders pro rata. AIFs constituted before 16 April 2026 are deemed compliant until 16 April 2027."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 1, 2 and 10",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-04-16",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Calibrate AIF anti-dilution tools on estimated transaction costs",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/465/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/465, Articles 4 to 7",
+     "payload": {
+      "key": "obl-eu-aif-lmt-anti-dilution",
+      "titles": {
+       "en": "Calibrate AIF anti-dilution tools on estimated transaction costs"
+      },
+      "summaries": {
+       "en": "Redemption fees, swing factors, dual pricing adjustments and anti-dilution levies of an AIF must reflect the estimated explicit transaction costs and, where appropriate to the investment strategy, the implicit costs including market impact, estimated on a best-effort basis."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Arts. 4 to 7",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-04-16",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EIOPA Guidelines on system of governance, EIOPA-BoS-14/253",
+   "source": "https://www.eiopa.europa.eu/publications/guidelines-system-governance_en",
+   "sourceLabel": "EIOPA, Guidelines on system of governance (EIOPA-BoS-14/253)",
+   "payload": {
+    "key": "eiopa-bos-14-253",
+    "titles": {
+     "en": "Guidelines on system of governance"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EIOPA Guidelines on system of governance",
+    "officialRef": "EIOPA-BoS-14/253",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eiopa",
+    "regime": "regime:insurance",
+    "inForceFrom": "2016-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Document the internal review of the system of governance and report it to the board",
+     "source": "https://www.eiopa.europa.eu/document/download/26a64164-1ffa-44e7-b9f4-f00859bbdbb6_en?filename=Guidelines%20on%20System%20of%20Governance.pdf",
+     "sourceLabel": "EIOPA, EIOPA-BoS-14/253, Guideline 6",
+     "payload": {
+      "key": "obl-eu-eiopa-sog-internal-review",
+      "titles": {
+       "en": "Document the internal review of the system of governance and report it to the board"
+      },
+      "summaries": {
+       "en": "The management body should set the scope and frequency of internal reviews of the system of governance in line with the nature, scale and complexity of the business, and the undertaking should document the scope, findings and conclusions, report them to the management body and follow up the actions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guideline 6",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep a fit and proper policy that also covers outsourced key functions",
+     "source": "https://www.eiopa.europa.eu/document/download/26a64164-1ffa-44e7-b9f4-f00859bbdbb6_en?filename=Guidelines%20on%20System%20of%20Governance.pdf",
+     "sourceLabel": "EIOPA, EIOPA-BoS-14/253, Guidelines 13 and 14",
+     "payload": {
+      "key": "obl-eu-eiopa-sog-fit-proper-policy",
+      "titles": {
+       "en": "Keep a fit and proper policy that also covers outsourced key functions"
+      },
+      "summaries": {
+       "en": "The undertaking should have a fit and proper policy describing how notifiable positions are identified and notified, how fitness and propriety are assessed on appointment and on an ongoing basis, and what triggers a reassessment. Where a key function is outsourced, it should assess the provider's staff under the same procedures and designate a fit and proper person inside the undertaking with overall responsibility for it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 13 and 14",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Cover the whole outsourcing life cycle in policy and notify critical outsourcing",
+     "source": "https://www.eiopa.europa.eu/document/download/26a64164-1ffa-44e7-b9f4-f00859bbdbb6_en?filename=Guidelines%20on%20System%20of%20Governance.pdf",
+     "sourceLabel": "EIOPA, EIOPA-BoS-14/253, Guidelines 63 and 64",
+     "payload": {
+      "key": "obl-eu-eiopa-sog-outsourcing-policy",
+      "titles": {
+       "en": "Cover the whole outsourcing life cycle in policy and notify critical outsourcing"
+      },
+      "summaries": {
+       "en": "The outsourcing policy should cover how critical or important functions are identified, how providers are selected and assessed and how often, what the written agreement contains, and contingency plans including exit strategies. A notification to the supervisor of outsourcing a critical or important function should describe its scope, rationale and the provider, and for a key function name the responsible person at the provider."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 63 and 64",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EIOPA complaints-handling guidelines for insurance intermediaries, EIOPA-BoS-13/164",
+   "source": "https://www.eiopa.europa.eu/publications/guidelines-complaints-handling-insurance-intermediaries_en",
+   "sourceLabel": "EIOPA, Guidelines on complaints-handling by insurance intermediaries (EIOPA-BoS-13/164)",
+   "payload": {
+    "key": "eiopa-bos-13-164",
+    "titles": {
+     "en": "Guidelines on complaints-handling by insurance intermediaries"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EIOPA complaints-handling guidelines for insurance intermediaries",
+    "officialRef": "EIOPA-BoS-13/164",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eiopa",
+    "regime": "regime:insurance"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Run insurance complaints under a board-endorsed policy, function and register",
+     "source": "https://www.eiopa.europa.eu/document/download/940d675d-23c4-4845-89b4-4a711e19bb13_en?filename=Guidelines%20on%20complaints%20handling%20by%20insurance%20intermediaries.pdf",
+     "sourceLabel": "EIOPA, EIOPA-BoS-13/164, Guidelines 2 to 6",
+     "payload": {
+      "key": "obl-eu-eiopa-chi-complaints-policy",
+      "titles": {
+       "en": "Run insurance complaints under a board-endorsed policy, function and register"
+      },
+      "summaries": {
+       "en": "An insurance intermediary should have a written complaints management policy endorsed and overseen by senior management and available to staff, a complaints management function that investigates fairly and manages conflicts of interest, and an internal register of complaints. It should be able to report complaints data to the authority or ombudsman and analyse complaints on an ongoing basis to find and correct root causes."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 2 to 6",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Inform complainants about the process and answer complaints fully and promptly",
+     "source": "https://www.eiopa.europa.eu/document/download/940d675d-23c4-4845-89b4-4a711e19bb13_en?filename=Guidelines%20on%20complaints%20handling%20by%20insurance%20intermediaries.pdf",
+     "sourceLabel": "EIOPA, EIOPA-BoS-13/164, Guidelines 1, 7 and 8",
+     "payload": {
+      "key": "obl-eu-eiopa-chi-complaint-responses",
+      "titles": {
+       "en": "Inform complainants about the process and answer complaints fully and promptly"
+      },
+      "summaries": {
+       "en": "The intermediary should publish its complaints process, explain it in writing on request or on acknowledgement, and keep the complainant informed. It should investigate all relevant evidence, answer in plain language without undue delay or within national time limits, explain any delay, and give a reasoned final decision that points to the ombudsman, alternative dispute resolution or the authority where the complaint is not fully upheld. A complaint that belongs to another financial institution should be passed on and the complainant told."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 1, 7 and 8",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EIOPA guidelines on complex insurance-based investment products, EIOPA-17/651",
+   "source": "https://www.eiopa.europa.eu/publications/guidelines-under-insurance-distribution-directive-insurance-based-investment-products-incorporate_en",
+   "sourceLabel": "EIOPA, Guidelines under the IDD on insurance-based investment products (EIOPA-17/651)",
+   "payload": {
+    "key": "eiopa-17-651",
+    "titles": {
+     "en": "Guidelines under the Insurance Distribution Directive on Insurance-based investment products that incorporate a structure which makes it difficult for the customer to understand the risks involved"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EIOPA guidelines on complex insurance-based investment products",
+    "officialRef": "EIOPA-17/651",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eiopa",
+    "regime": "regime:insurance",
+    "inForceFrom": "2018-01-19"
+   },
+   "fieldSources": {
+    "inForceFrom": "https://www.eiopa.europa.eu/guidelines-insurance-based-investment-products-incorporate-structure-2018-01-19_en"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Screen an insurance-based investment product for a hard-to-understand structure before selling it execution-only",
+     "source": "https://www.eiopa.europa.eu/document/download/79c3c1d8-909c-42d4-a58c-794e2b989553_en?filename=Guidelines%20under%20the%20IDD%20on%20Insurance-based%20investment%20products.pdf",
+     "sourceLabel": "EIOPA, EIOPA-17/651, Guidelines 1 to 8",
+     "payload": {
+      "key": "obl-eu-eiopa-ibip-complexity-assessment",
+      "titles": {
+       "en": "Screen an insurance-based investment product for a hard-to-understand structure before selling it execution-only"
+      },
+      "summaries": {
+       "en": "Before selling an insurance-based investment product without a suitability or appropriateness assessment, the distributor should check that it gives exposure only to non-complex financial instruments where that route is used, and treat it as complex where the insurer can materially change its nature or pay-out, surrender is impossible or unreasonably penalised, the maturity, surrender or death benefit depends on hard-to-understand mechanisms, costs are hard to understand, or a non-standard beneficiary clause may hinder pay-out."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 1 to 8",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:insurance_distribution",
+       "service_type:execution_only"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ESMA guidelines on liquidity management tools, ESMA34-671404336-1364",
+   "source": "https://www.esma.europa.eu/document/guidelines-liquidity-management-tools-ucits-and-open-ended-aifs",
+   "sourceLabel": "ESMA, Guidelines on liquidity management tools of UCITS and open-ended AIFs (ESMA34-671404336-1364)",
+   "payload": {
+    "key": "esma-34-671404336-1364",
+    "titles": {
+     "en": "Guidelines on Liquidity Management Tools (LMTs) of UCITS and open-ended AIFs"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ESMA guidelines on liquidity management tools",
+    "officialRef": "ESMA34-671404336-1364",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "esma",
+    "regime": "regime:securities",
+    "inForceFrom": "2026-04-16"
+   },
+   "fieldSources": {
+    "inForceFrom": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Select and calibrate at least two suitable liquidity management tools for each fund",
+     "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+     "sourceLabel": "ESMA, ESMA34-671404336-1364, paragraphs 3, 4 and 12 to 18",
+     "payload": {
+      "key": "obl-eu-esma-lmt-selection",
+      "titles": {
+       "en": "Select and calibrate at least two suitable liquidity management tools for each fund"
+      },
+      "summaries": {
+       "en": "Fund managers remain responsible for liquidity risk and should choose the liquidity management tools for each UCITS or open-ended AIF, at least the two the Directives require, considering the merit of one quantitative tool and one anti-dilution tool, after weighing the fund's structure, strategy, dealing terms, liquidity profile, stress test results, investor base and operational constraints. They should be able to show the authority that activation and calibration serve all investors, and prevent investors from gaining an edge from knowing a tool may be activated. For funds existing before 16 April 2026 the guidelines apply from 16 April 2027."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras. 3, 4 and 12 to 18",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Activate anti-dilution tools in normal and stressed markets to pass on liquidity costs",
+     "source": "https://www.esma.europa.eu/sites/default/files/2026-03/ESMA34-671404336-1364_Guidelines_on_liquidity_management_tools_of_UCITS_and_open-ended_AIFs.pdf",
+     "sourceLabel": "ESMA, ESMA34-671404336-1364, paragraphs 33 to 39",
+     "payload": {
+      "key": "obl-eu-esma-lmt-anti-dilution",
+      "titles": {
+       "en": "Activate anti-dilution tools in normal and stressed markets to pass on liquidity costs"
+      },
+      "summaries": {
+       "en": "Fund managers should consider anti-dilution tools for all funds, set and regularly review prudent activation thresholds, and activate the tools in both normal and stressed conditions so that subscribing or redeeming investors bear the estimated cost of liquidity, including explicit and, where appropriate, implicit transaction costs, starting from a pro rata slice of the portfolio. They should review the calibration regularly and be able to show the authority that it is fair."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paras. 33 to 39",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}
