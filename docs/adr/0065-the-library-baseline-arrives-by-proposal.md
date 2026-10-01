@@ -1,6 +1,6 @@
 # ADR 0065 — The library's starting inventory arrives by proposal, as a researched baseline
 
-**Date:** 2026-09-30 · **Status:** accepted (Alex, 2026-09-30: "build up the inventory for everything relevant as of today", market abuse included; D-118; PRD PRO-01, PRO-02, INV-01, INV-03, INV-05, WAT-01; follows ADR 0014, ADR 0041, ADR 0054, ADR 0058)
+**Date:** 2026-09-30, amended 2026-10-01 · **Status:** accepted (Alex, 2026-09-30: "build up the inventory for everything relevant as of today", market abuse included; 2026-10-01: bleqq files it and registers its sources, sanctions are in scope, government ordinances get a level; D-118, PRD 0.8; PRD PRO-01, PRO-02, INV-01, INV-03, INV-05, WAT-01; follows ADR 0014, ADR 0041, ADR 0054, ADR 0058)
 
 ## Context
 
@@ -28,24 +28,32 @@ desk answers to, was not named anywhere in the library's scope.
    entry to the proposal door's own rules before any deploy.
 2. **Filed through the proposal door, never the seed door.** A sixth platform definition,
    `library-baseline` (kind `backfill`, draft, manual, calling no model), files the entries
-   the library neither holds nor has open. `manage.py file_library_baseline` is its runner:
-   it opens runs of the agent with no key through the one opener, hands them to no runner,
-   files at most `WATCH_RUN_MAX_PROPOSALS` per run and closes each through the runner-event
-   path. Duties are filed on the call after their instrument is approved, because a duty
-   names an instrument the library holds.
+   the library neither holds nor has open. The beat runs it every
+   `LIBRARY_BASELINE_FILING_MINUTES` (off under E2E), and `manage.py file_library_baseline`
+   by hand: it opens runs of the agent with no key through the one opener, hands them to no
+   runner, files at most `WATCH_RUN_MAX_PROPOSALS` per run and closes each through the
+   runner-event path. Duties are filed once their instrument is approved, because a duty
+   names an instrument the library holds; on the beat that needs no one. The same filing
+   registers the pages in `sources.json` through the console's own source writer.
 3. **A second, independent principal approves each entry.** Today that is a person in the
-   console with a passkey, and the record reads confirmed by a person. Once
+   console with a passkey, one proposal at a time or a page at once: the console runs the
+   same approve route once per selected proposal under one fresh step-up, so four eyes, the
+   audit row and the apply are each proposal's own. The record reads confirmed by a person. Once
    `library-confirmer` is published and its runner is live, it works the same queue and the
    record reads machine-confirmed, naming both agents. `proposal_four_eyes` refuses
    `library-baseline` as its own reviewer either way.
 4. **Where a duty sits.** An EU regulation's duties sit under it; a directive is an
    instrument without duties, and its duties sit under each country's implementing act. A
-   government ordinance fits no instrument level and waits for one; a standard waits for
-   the legal answer on standard titles (ADR 0041).
-5. **Market abuse is securities law.** MAR, CSMAD, their delegated and implementing acts,
-   ESMA's guidelines and each country's supplementary and criminal provisions carry the
-   regime `securities`. No regime is added, so every bank that follows securities law sees
-   them at once.
+   government ordinance carries the instrument level `government_regulation`, a seeded
+   system row, with the issuing ministry as its authority; a standard waits for the legal
+   answer on standard titles (ADR 0041).
+5. **Market abuse is securities law, and sanctions are AML.** MAR, CSMAD, their delegated
+   and implementing acts, ESMA's guidelines and each country's supplementary and criminal
+   provisions carry the regime `securities`; the EU's restrictive measures, the EBA's
+   guidelines on them and each country's sanctions law (Norway's own forskrifter, since EU
+   sanctions do not bind a Norwegian bank) carry `aml`. No regime is added, so every bank
+   that follows those regimes sees them at once. The sweeper (v2) and the confirmer (v3)
+   carry the widened scope and wait for a platform admin to publish them.
 6. **Keeping it current is the agents' job.** Each watch run re-checks the records of the
    sources it checks and proposes a correction where one has drifted (WAT-01, D-50), and
    registers what is new. A later tranche is a new file and another call of the command.
@@ -59,9 +67,9 @@ is worth building only if approving one proposal at a time proves too slow.
 ## Consequences
 
 Easier: a bank's first scope setting shows real law, every record carries its source and
-its approver, and the baseline is reviewable as a diff. Harder: someone approves several
-hundred proposals, in two passes, before the library is full; until the confirmer runs,
-that someone is a person. To remember: the baseline is AI-researched, so it is AI output
+its approver, and the baseline is reviewable as a diff. Harder: someone approves well over two thousand
+proposals, a page at a time, in two passes, before the library is full; until the
+confirmer runs, that someone is a person. To remember: the baseline is AI-researched, so it is AI output
 until a principal other than `library-baseline` approves it; a rejected entry is not filed
 again until its file changes; and the research day is a snapshot the watch keeps moving.
 
@@ -70,5 +78,5 @@ again until its file changes; and the research day is a snapshot the watch keeps
 | Tranche | What | When |
 |---|---|---|
 | 1 | The corpus, the definition, the command, the checker and the suite | This change |
-| 2 | Sources registered for every authority the baseline names, so the sweeper checks them | Alex, in the console, after the test deploy |
-| 3 | Government ordinances with a level of their own; sanctions, if in scope | As Alex decides |
+| 2 | Sources registered and the baseline filed by the beat; approving many at once in the console; government ordinances and sanctions | 2026-10-01 |
+| 3 | Instruments whose issuer is not yet an authority, as their issuers are added | As they are researched |

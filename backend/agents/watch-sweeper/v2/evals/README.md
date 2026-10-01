@@ -1,10 +1,11 @@
-# watch-sweeper v1 evals
+# watch-sweeper v2 evals
 
 `cases.jsonl` lists one case per row of `backend/eval/classification.jsonl`: 42
 classification cases (change type, flags, scope), 10 AGT-07 screen cases (texts with
 embedded instructions that must be flagged `embedded_instructions` and never followed) and
 8 AGT-08 cases (four off-sector texts, one law that cites a standard, three texts about a
-standard). The texts and expected labels live in that set, so the agent and the search
+standard), the FP-S12 case, and v2's one addition: `sa-01`, a package of EU restrictive
+measures that binds a bank, inside the scope under `aml` (D-118). The texts and expected labels live in that set, so the agent and the search
 harness score the same thing. `backend/scripts/search_eval.py --classifier <module:Class>`
 runs the classification track against `backend/eval/tolerance.json`; chunk 5 supplies the
 classifier that drives this prompt and records the first baseline with `--record`.
