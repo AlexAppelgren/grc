@@ -108,6 +108,14 @@
     "binding_default": true,
     "usage_note": "A statute passed by the national legislature (SFS in Sweden). Jurisdiction comes from the instrument, never from the level."
    },
+   "government_regulation": {
+    "label_en": "Government regulation",
+    "label_sv": "Förordning",
+    "kind": null,
+    "rank": 45,
+    "binding_default": true,
+    "usage_note": "Binding rules a government or a ministry issues under an act: a Swedish förordning, a Danish ministerial bekendtgørelse, a Norwegian forskrift from a ministry, a Finnish asetus. A supervisor's own rules are a supervisory regulation."
+   },
    "authority_regulation": {
     "label_en": "Supervisory regulation",
     "label_sv": "Myndighetsföreskrift",
@@ -1228,6 +1236,41 @@
    "name": "Finanssivalvonta",
    "jurisdiction": "FI",
    "url": "https://www.finanssivalvonta.fi/"
+  },
+  {
+   "key": "erhvervsministeriet",
+   "code": "EM",
+   "name": "Erhvervsministeriet",
+   "jurisdiction": "DK",
+   "url": "https://em.dk/"
+  },
+  {
+   "key": "skm-dk",
+   "code": "SKM",
+   "name": "Skatte- og Vækstministeriet",
+   "jurisdiction": "DK",
+   "url": "https://skm.dk/"
+  },
+  {
+   "key": "finansdepartementet",
+   "code": "FIN",
+   "name": "Finansdepartementet",
+   "jurisdiction": "NO",
+   "url": "https://www.regjeringen.no/no/dep/fin/id216/"
+  },
+  {
+   "key": "valtioneuvosto",
+   "code": "VN",
+   "name": "Valtioneuvosto",
+   "jurisdiction": "FI",
+   "url": "https://valtioneuvosto.fi/"
+  },
+  {
+   "key": "valtiovarainministerio",
+   "code": "VM",
+   "name": "Valtiovarainministeriö",
+   "jurisdiction": "FI",
+   "url": "https://vm.fi/"
   }
  ],
  "instruments": [

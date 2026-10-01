@@ -31,7 +31,7 @@ DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 LANGUAGES = {"en", "sv", "da", "nb", "fi"}
 JURISDICTIONS = {"eu", "se", "dk", "no", "fi"}
 EU_LEVELS = {"eu_regulation", "eu_directive", "eu_guidance"}
-NATIONAL_LEVELS = {"act", "authority_regulation"}
+NATIONAL_LEVELS = {"act", "government_regulation", "authority_regulation"}
 PRECISIONS = {"day", "month", "quarter", "year"}
 # Terms the taxonomy seed authors beside the fixture's (apps/taxonomy/seeds `_EXTRA_TERMS`).
 EXTRA_TERMS = {"licensed_activity:card_issuing", "licensed_activity:card_acquiring"}
