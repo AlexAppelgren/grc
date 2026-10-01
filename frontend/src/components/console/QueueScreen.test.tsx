@@ -192,6 +192,27 @@ describe('the console queue', () => {
     expect(within(row).getByText('12 records')).toBeInTheDocument();
   });
 
+  it('filters to a new record\'s kind from the address, and writes the choice back to it', async () => {
+    nav.search = 'kind=new_instrument';
+    const sent = serve([proposal({ kind: 'new_instrument', title: 'Add MAR managers\' transactions ITS', targetType: '', targetId: null })]);
+    renderScreen();
+    await screen.findByRole('link', { name: /MAR managers/ });
+    expect(queueReads(sent)[0]).toMatchObject({ kind: 'new_instrument' });
+    const kind = screen.getByRole('combobox', { name: 'Kind' });
+    expect(kind).toHaveValue('new_instrument');
+
+    fireEvent.change(kind, { target: { value: 'new_obligation' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/console/queue?kind=new_obligation');
+    fireEvent.change(kind, { target: { value: 'obligation' } });
+    expect(nav.replace).toHaveBeenLastCalledWith('/console/queue?kind=obligation');
+
+    nav.search = 'kind=new_obligation';
+    const duties = serve([]);
+    renderScreen();
+    await waitFor(() => expect(queueReads(duties).length).toBeGreaterThan(0));
+    expect(queueReads(duties)[0]).toMatchObject({ kind: 'new_obligation' });
+  });
+
   it('opens the re-tag form from the head and closes it again', async () => {
     serve([]);
     renderScreen();

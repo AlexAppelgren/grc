@@ -246,8 +246,60 @@ describe('field sources', () => {
     ]);
   });
 
-  it('reads a field name the three known shapes do not match as itself, rather than guessing', () => {
+  it('reads a field name it does not know as itself, rather than guessing', () => {
     expect(fieldSourceLabel('title', langName, t)).toBe('title');
+    expect(fieldSourceLabel('labels.en', langName, t)).toBe('labels.en');
+  });
+
+  it("names every fact a new instrument sources in words, its title per language", () => {
+    const fields = ['titles.sv', 'shortName', 'officialRef', 'eliUri', 'level', 'binding', 'jurisdiction', 'authority', 'regime', 'inForceFrom', 'inForceTo', 'implementsNote'];
+    expect(fields.map((field) => fieldSourceLabel(field, langName, t))).toEqual([
+      'Title (Swedish)',
+      'Short name',
+      'Official reference',
+      'ELI',
+      'Level',
+      'Binding',
+      'Jurisdiction',
+      'Authority',
+      'Regime',
+      'In force from',
+      'In force until',
+      'Implements',
+    ]);
+  });
+
+  it("names every fact a new obligation or provision sources in words, its texts per language", () => {
+    const fields = ['instrument', 'parent', 'titles.en', 'summaries.en', 'texts.fi', 'refLabel', 'heading', 'provisionKind', 'dutyType', 'effectiveFrom', 'terms'];
+    expect(fields.map((field) => fieldSourceLabel(field, langName, t))).toEqual([
+      'Instrument',
+      'Parent provision',
+      'Title (English)',
+      'Text (English)',
+      'Legal text (Finnish)',
+      'Reference',
+      'Heading',
+      'Provision kind',
+      'Duty type',
+      'Effective date',
+      'Scope',
+    ]);
+  });
+
+  it("orders a new record's sources the same way whatever order the API answered them in", () => {
+    const sources = { terms: 'u', effectiveFrom: 'u', dutyType: 'u', refLabel: 'u', 'summaries.sv': 'u', 'summaries.en': 'u', 'titles.en': 'u', instrument: 'u', regime: 'u', inForceTo: 'u' };
+    expect(fieldSourceRows(sources).map((r) => r.field)).toEqual([
+      'instrument',
+      'titles.en',
+      'summaries.en',
+      'summaries.sv',
+      'refLabel',
+      'regime',
+      'dutyType',
+      'effectiveFrom',
+      'inForceTo',
+      'terms',
+    ]);
   });
 });
 

@@ -43,7 +43,10 @@ export const QUEUE_PAGE = 100;
 
 const OBLIGATION_KIND: ProposalKind = 'new_obligation_version';
 
-type KindFilter = '' | 'obligation' | 'vocabulary';
+// The kind filter's values as the address holds them: two groups of kinds, and the two
+// kinds a new record arrives as (the library baseline's, D-118), which are the route's own.
+const KIND_FILTERS = ['obligation', 'new_instrument', 'new_obligation', 'vocabulary'] as const;
+type KindFilter = '' | (typeof KIND_FILTERS)[number];
 type OriginFilter = '' | 'agent' | 'user';
 
 export interface QueueFilters {
@@ -59,7 +62,7 @@ function isTab(value: string | null): value is TabKey {
 }
 
 function isKindFilter(value: string | null): value is KindFilter {
-  return value === 'obligation' || value === 'vocabulary';
+  return (KIND_FILTERS as readonly (string | null)[]).includes(value);
 }
 
 function isOriginFilter(value: string | null): value is OriginFilter {
@@ -93,11 +96,12 @@ export function searchOf(filters: QueueFilters, tab: TabKey, offset = 0): string
   return search.toString();
 }
 
-/** The `kind` query the route reads: a comma list for the vocabulary group, one value for the obligation kind, none for "any kind". */
+/** The `kind` query the route reads: a comma list for the vocabulary group, one value for any other kind, none for "any kind". */
 export function kindQueryOf(kind: KindFilter): string | undefined {
+  if (kind === '') return undefined;
   if (kind === 'obligation') return OBLIGATION_KIND;
   if (kind === 'vocabulary') return [...VOCABULARY_KINDS, ...TERM_KINDS].join(',');
-  return undefined;
+  return kind;
 }
 
 function QueueRow({ row }: { row: ProposalQueueRow }) {
@@ -183,6 +187,8 @@ export function QueueScreen() {
           <Select aria-label={t('console.queue.filter.kind')} value={filters.kind} onChange={(e) => go(tab, { kind: isKindFilter(e.target.value) ? e.target.value : '' })} className="h-8 w-auto">
             <option value="">{t('console.queue.filter.kindAny')}</option>
             <option value="obligation">{t('console.queue.filter.kindObligationVersion')}</option>
+            <option value="new_instrument">{t('console.queue.filter.kindNewInstrument')}</option>
+            <option value="new_obligation">{t('console.queue.filter.kindNewObligation')}</option>
             <option value="vocabulary">{t('console.queue.filter.kindVocabulary')}</option>
           </Select>
           <Select

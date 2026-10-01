@@ -151,23 +151,62 @@ export function vocabularyPayloadOf(row: Pick<ProposalRow, 'payload'>): Vocabula
   return (row.payload ?? {}) as unknown as VocabularyProposalPayload;
 }
 
-/** The per-field source panel beside "What changes": one line per field the proposal sources, in a fixed, readable order. */
-export function fieldSourceLabel(field: string, languageName: (code: string) => string, t: Translate): string {
-  if (field === 'effectiveFrom') return t('console.queue.field.effectiveFrom');
-  if (field === 'terms') return t('console.queue.field.scope');
-  if (field.startsWith('summaries.')) return t('console.queue.field.text', { language: languageName(field.slice('summaries.'.length)) });
-  return field;
+// Every field a proposal sources (backend/apps/proposals/logic.py `sourced_fields`), named in
+// words and listed in this order: where the record sits, its names and texts, how it is
+// cited, how it is classed, when it binds, its scope, and what it implements. A text field
+// is sourced per language (`titles.sv`), so its label names the language.
+const FIELD_LABEL = {
+  instrument: 'console.queue.field.instrument',
+  parent: 'console.queue.field.parent',
+  titles: 'console.queue.field.title',
+  summaries: 'console.queue.field.text',
+  texts: 'console.queue.field.legalText',
+  shortName: 'console.queue.field.shortName',
+  officialRef: 'console.queue.field.officialRef',
+  refLabel: 'console.queue.field.refLabel',
+  heading: 'console.queue.field.heading',
+  provisionKind: 'console.queue.field.provisionKind',
+  eliUri: 'console.queue.field.eliUri',
+  level: 'console.queue.field.level',
+  binding: 'console.queue.field.binding',
+  jurisdiction: 'console.queue.field.jurisdiction',
+  authority: 'console.queue.field.authority',
+  regime: 'console.queue.field.regime',
+  dutyType: 'console.queue.field.dutyType',
+  effectiveFrom: 'console.queue.field.effectiveFrom',
+  inForceFrom: 'console.queue.field.inForceFrom',
+  inForceTo: 'console.queue.field.inForceTo',
+  terms: 'console.queue.field.scope',
+  implementsNote: 'console.queue.field.implementsNote',
+} as const satisfies Record<string, MessageKey>;
+
+type SourcedField = keyof typeof FIELD_LABEL;
+
+const FIELD_ORDER = Object.keys(FIELD_LABEL);
+
+function isSourcedField(name: string): name is SourcedField {
+  return name in FIELD_LABEL;
 }
 
-const FIELD_ORDER = ['summaries', 'effectiveFrom', 'terms'] as const;
+/** `titles.sv` belongs to `titles`; a field with no language is its own group. */
+function groupOf(field: string): string {
+  const dot = field.indexOf('.');
+  return dot === -1 ? field : field.slice(0, dot);
+}
+
+/** The per-field source panel beside "What changes": one line per field the proposal sources, in words. */
+export function fieldSourceLabel(field: string, languageName: (code: string) => string, t: Translate): string {
+  const group = groupOf(field);
+  if (!isSourcedField(group)) return field;
+  return group === field ? t(FIELD_LABEL[group]) : t(FIELD_LABEL[group], { language: languageName(field.slice(group.length + 1)) });
+}
 
 function fieldRank(field: string): number {
-  const group = field.startsWith('summaries.') ? 'summaries' : field;
-  const index = (FIELD_ORDER as readonly string[]).indexOf(group);
+  const index = FIELD_ORDER.indexOf(groupOf(field));
   return index === -1 ? FIELD_ORDER.length : index;
 }
 
-/** `fieldSources` as ordered `{field, url}` rows: summaries first (language order), then the effective date, then scope. */
+/** `fieldSources` as ordered `{field, url}` rows in the fixed order above, a text's languages alphabetically, anything else last. */
 export function fieldSourceRows(fieldSources: Record<string, string>): { field: string; url: string }[] {
   return Object.entries(fieldSources)
     .map(([field, url]) => ({ field, url }))
