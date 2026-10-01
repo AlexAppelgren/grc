@@ -68,6 +68,49 @@ export interface ObligationVersionPayload {
   terms?: string[] | null;
 }
 
+// Local: a new record's payloads (D-118, the library baseline's two kinds). `payload` reaches
+// the client as an untyped object (schemas.py `ProposalRow.payload`), so their shapes are
+// named here as `ProposalInstrumentPayload` and `ProposalObligationPayload` name them.
+
+/** `new_instrument`: an instrument the library does not hold yet. Keys name rows of their lists. */
+export interface InstrumentPayload {
+  key: string;
+  titles: Record<string, string>;
+  originalLanguage: string;
+  isMachine?: boolean;
+  shortName: string;
+  officialRef: string;
+  eliUri?: string;
+  level: string;
+  /** Null or left out: the level's own default. */
+  binding?: boolean | null;
+  jurisdiction: string;
+  authority?: string | null;
+  /** A term of the regime dimension, `regime:<key>`. */
+  regime: string;
+  inForceFrom?: string | null;
+  inForceFromPrecision?: string;
+  inForceTo?: string | null;
+  inForceToPrecision?: string;
+  implementsNote?: string;
+}
+
+/** `new_obligation`: a duty under an instrument the library holds, with its first version. */
+export interface NewObligationPayload {
+  key: string;
+  /** The instrument's stable key. */
+  instrument: string;
+  titles: Record<string, string>;
+  summaries: Record<string, string>;
+  originalLanguage: string;
+  isMachine?: boolean;
+  refLabel: string;
+  dutyType: string;
+  effectiveFrom?: string | null;
+  effectiveFromPrecision?: string;
+  terms?: string[] | null;
+}
+
 /** The vocabulary-kind payloads share this shape; a given kind reads only the fields its own schema names. */
 export interface VocabularyProposalPayload {
   list?: string;

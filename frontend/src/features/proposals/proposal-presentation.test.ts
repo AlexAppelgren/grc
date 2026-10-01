@@ -1,20 +1,29 @@
+import { AxiosError, AxiosHeaders } from 'axios';
 import { describe, expect, it } from 'vitest';
 
 import { createT, type Locale } from '@/shared/i18n';
 
 import {
   agentCorrectionLine,
+  bindingLabel,
   decisionLine,
   decisionNoteLine,
   fieldSourceLabel,
   fieldSourceRows,
+  instrumentPayloadOf,
   isObligationVersion,
   isVocabularyKind,
   kindLabel,
+  labelOfKey,
+  languageTexts,
+  newObligationPayloadOf,
   obligationPayloadOf,
+  precisionOf,
   presentProposal,
   proposerLine,
+  refusalReason,
   scopeTermPills,
+  selectionBlock,
   sourceLine,
   statusLabel,
   statusTone,
@@ -224,6 +233,74 @@ describe('payload readers', () => {
   });
 });
 
+describe('approving many', () => {
+  it('lets an open, single, unflagged proposal of someone else be selected, and says why any other cannot', () => {
+    expect(selectionBlock(row({ status: 'open', isBatch: false, isMine: false, riskFlags: [] }), t)).toBeNull();
+    expect(selectionBlock(row({ status: 'open', riskFlags: undefined }), t)).toBeNull();
+    expect(selectionBlock(row({ status: 'approved' }), t)).toBe('Already decided.');
+    expect(selectionBlock(row({ isBatch: true }), t)).toBe('A batch is decided row by row on its own screen.');
+    expect(selectionBlock(row({ isMine: true }), t)).toBe('Yours: someone else approves it.');
+    expect(selectionBlock(row({ riskFlags: ['embedded_instructions'] }), t)).toBe('Flagged: open it and read it before you approve it.');
+  });
+
+  it("says why one approval was refused by the server's code, and its own sentence otherwise", () => {
+    const refused = (status: number, data: unknown) =>
+      new AxiosError('refused', String(status), undefined, undefined, { status, statusText: '', headers: {}, config: { headers: new AxiosHeaders() }, data });
+    expect(refusalReason(refused(403, { code: 'step_up_required', detail: 'Confirm with your passkey.' }), t)).toBe('Your passkey was not confirmed, so this one and the rest are still waiting.');
+    expect(refusalReason(refused(409, { code: 'four_eyes_violation', detail: 'A second person has to approve this.' }), t)).toBe('A second person has to approve this.');
+    expect(refusalReason(refused(409, { code: 'not_open' }), t)).toBe('Something went wrong. Try again.');
+    expect(refusalReason(new AxiosError('offline'), t)).toBe('The server could not be reached. Check your connection and try again.');
+    expect(refusalReason(new Error('boom'), t)).toBe('Something went wrong. Try again.');
+  });
+});
+
+describe("a new record's payload", () => {
+  it('reads a new instrument or obligation only under its own kind and only with its titles', () => {
+    const titled = { key: 'k', titles: { en: 'A title' }, instrument: 'celex-1' };
+    expect(instrumentPayloadOf(row({ kind: 'new_instrument', payload: titled }))?.key).toBe('k');
+    expect(instrumentPayloadOf(row({ kind: 'new_obligation', payload: titled }))).toBeNull();
+    expect(instrumentPayloadOf(row({ kind: 'new_instrument', payload: { key: 'k', titles: null } }))).toBeNull();
+    expect(instrumentPayloadOf(row({ kind: 'new_instrument', payload: undefined }))).toBeNull();
+    expect(newObligationPayloadOf(row({ kind: 'new_obligation', payload: titled }))?.instrument).toBe('celex-1');
+    expect(newObligationPayloadOf(row({ kind: 'new_instrument', payload: titled }))).toBeNull();
+  });
+
+  it('lists the texts original first, then the rest alphabetically, marking machine translations only when the payload says so', () => {
+    const texts = { sv: 'Titel', en: 'Title', da: 'Titel' };
+    expect(languageTexts(texts, 'sv', true)).toEqual([
+      { language: 'sv', text: 'Titel', mark: 'original' },
+      { language: 'da', text: 'Titel', mark: 'machine' },
+      { language: 'en', text: 'Title', mark: 'machine' },
+    ]);
+    expect(languageTexts(texts, 'en').map((text) => [text.language, text.mark])).toEqual([
+      ['en', 'original'],
+      ['da', 'none'],
+      ['sv', 'none'],
+    ]);
+  });
+
+  it('reads a date precision it knows, and a day otherwise', () => {
+    expect(precisionOf('month')).toBe('month');
+    expect(precisionOf('year')).toBe('year');
+    expect(precisionOf(undefined)).toBe('day');
+    expect(precisionOf('decade')).toBe('day');
+  });
+
+  it('labels a key from the rows of its list, and leaves the key while the list is loading or lacks it', () => {
+    const rows = [{ key: 'eu_regulation', label: 'EU regulation' }];
+    expect(labelOfKey(rows, 'eu_regulation')).toBe('EU regulation');
+    expect(labelOfKey(rows, 'act')).toBe('act');
+    expect(labelOfKey(undefined, 'act')).toBe('act');
+  });
+
+  it('says whether a new instrument binds, or that its level decides', () => {
+    expect(bindingLabel(true, t)).toBe('Binding');
+    expect(bindingLabel(false, t)).toBe('Not binding');
+    expect(bindingLabel(null, t)).toBe('As its level sets it');
+    expect(bindingLabel(undefined, t)).toBe('As its level sets it');
+  });
+});
+
 describe('field sources', () => {
   it('labels each field a reviewer can trace: text per language, the effective date, the scope', () => {
     expect(fieldSourceLabel('summaries.en', langName, t)).toBe('Text (English)');
@@ -246,8 +323,60 @@ describe('field sources', () => {
     ]);
   });
 
-  it('reads a field name the three known shapes do not match as itself, rather than guessing', () => {
+  it('reads a field name it does not know as itself, rather than guessing', () => {
     expect(fieldSourceLabel('title', langName, t)).toBe('title');
+    expect(fieldSourceLabel('labels.en', langName, t)).toBe('labels.en');
+  });
+
+  it("names every fact a new instrument sources in words, its title per language", () => {
+    const fields = ['titles.sv', 'shortName', 'officialRef', 'eliUri', 'level', 'binding', 'jurisdiction', 'authority', 'regime', 'inForceFrom', 'inForceTo', 'implementsNote'];
+    expect(fields.map((field) => fieldSourceLabel(field, langName, t))).toEqual([
+      'Title (Swedish)',
+      'Short name',
+      'Official reference',
+      'ELI',
+      'Level',
+      'Binding',
+      'Jurisdiction',
+      'Authority',
+      'Regime',
+      'In force from',
+      'In force until',
+      'Implements',
+    ]);
+  });
+
+  it("names every fact a new obligation or provision sources in words, its texts per language", () => {
+    const fields = ['instrument', 'parent', 'titles.en', 'summaries.en', 'texts.fi', 'refLabel', 'heading', 'provisionKind', 'dutyType', 'effectiveFrom', 'terms'];
+    expect(fields.map((field) => fieldSourceLabel(field, langName, t))).toEqual([
+      'Instrument',
+      'Parent provision',
+      'Title (English)',
+      'Text (English)',
+      'Legal text (Finnish)',
+      'Reference',
+      'Heading',
+      'Provision kind',
+      'Duty type',
+      'Effective date',
+      'Scope',
+    ]);
+  });
+
+  it("orders a new record's sources the same way whatever order the API answered them in", () => {
+    const sources = { terms: 'u', effectiveFrom: 'u', dutyType: 'u', refLabel: 'u', 'summaries.sv': 'u', 'summaries.en': 'u', 'titles.en': 'u', instrument: 'u', regime: 'u', inForceTo: 'u' };
+    expect(fieldSourceRows(sources).map((r) => r.field)).toEqual([
+      'instrument',
+      'titles.en',
+      'summaries.en',
+      'summaries.sv',
+      'refLabel',
+      'regime',
+      'dutyType',
+      'effectiveFrom',
+      'inForceTo',
+      'terms',
+    ]);
   });
 });
 

@@ -211,6 +211,16 @@ labelled as proposed by one agent and confirmed by the other. A key of the same 
 without `proposals:review` answers 403 at the queue. The 422 and 404 refusals, the logged
 call and the audit row stay proven at the integration level (`test_pro_s13`).
 
+The baseline's proposals are approved from the console queue (console-new-records,
+2026-10-01). The queue filters to New instrument and New obligation. The review screen shows
+what a new instrument or a new obligation would add, with keys labelled through the reads a
+console session may make (the authority keeps its key, since `GET /authorities` needs
+`library.read`), and `GET /proposals/{id}` names a new obligation's instrument by the short
+name the shared library holds (`instrumentShortName`). On Waiting a reviewer selects rows and
+approves them at once: each one still goes through `POST /proposals/{id}/approve`, one after
+another, with the same four eyes, passkey step-up and audit row as if it were opened alone.
+A flagged proposal, the reviewer's own and a batch cannot be selected. PRO-S17 is its journey.
+
 ## 3. Acceptance criteria (from PRD, condensed)
 
 - **AC-PRO1** No API key scope and no tenant role can change a library record
@@ -430,4 +440,14 @@ And the platform files the baseline again
 Then the duty is proposed under the instrument, and approving it applies it
 And filing a third time proposes nothing, because the library holds both
 ```
-
+### PRO-S17 — A library editor approves the baseline's new instruments from the queue, many at once `@e2e` (PRO-01, PRO-02, PRO-03, AC-PRO2)
+```gherkin
+Given the library baseline's agent filed two new instruments, each with duties that wait for it
+When a library editor filters the console queue to "New instrument"
+Then the address keeps the filter and the queue lists the two instruments
+When the editor opens one
+Then the screen shows the facts it would add, by their labels, and a source beside every field
+When the editor goes back, selects every row on the page and approves them with a passkey
+Then each is approved through its own approval and both are listed under Approved
+And no duty of theirs waits in the queue yet: their duties are what the next filing adds
+```

@@ -39,7 +39,7 @@ from django.utils import timezone
 
 from apps.library.logic import in_force, sentence_diff
 from apps.library.models import ObligationVersion
-from apps.library.reading import localized, obligation_headings, obligation_scope_refs
+from apps.library.reading import localized, obligation_headings, obligation_scope_refs, shared_instrument_short_name
 from apps.library.schemas import DiffSegment, LibraryRef
 from apps.proposals import logic
 from apps.proposals.logic import Reviewer
@@ -47,6 +47,7 @@ from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.proposals.schemas import (
     ProposalAppliedVersion,
     ProposalDetail,
+    ProposalObligationPayload,
     ProposalObligationVersionPayload,
     ProposalQueueRow,
     ProposalSource,
@@ -194,8 +195,14 @@ def detail(proposal: Proposal, order: list[str], *, reviewer: Reviewer) -> Propo
     payload = logic.parsed_payload(proposal.kind, proposal.corrected_payload or proposal.payload)
     if not isinstance(payload, ProposalObligationVersionPayload) or proposal.target_id is None:
         # No wording to compare: a list row is written by a person, and a new record replaces
-        # nothing. Its sources are still what a reviewer checks it against.
-        return ProposalDetail(**dict(row), sources=_sources(proposal), rejection_reason=_rejection_reason(proposal, order))
+        # nothing. Its sources are still what a reviewer checks it against, and a new duty
+        # names the instrument it would sit under.
+        return ProposalDetail(
+            **dict(row),
+            sources=_sources(proposal),
+            rejection_reason=_rejection_reason(proposal, order),
+            instrument_short_name=shared_instrument_short_name(payload.instrument) if isinstance(payload, ProposalObligationPayload) else "",
+        )
     language = payload.original_language
     applied = _applied(proposal)
     replaced = _replaced(proposal.target_id, applied)
