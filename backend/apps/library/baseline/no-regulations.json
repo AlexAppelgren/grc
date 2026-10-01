@@ -1,0 +1,541 @@
+{
+ "tranche": "no-regulations",
+ "researchedOn": "2026-10-01",
+ "instruments": [
+  {
+   "title": "Add Skatteforvaltningsforskriften, FOR-2016-11-23-1360",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360",
+   "sourceLabel": "Lovdata, FOR-2016-11-23-1360, Forskrift til skatteforvaltningsloven (skatteforvaltningsforskriften), consolidated text; fastsatt av Skattedirektoratet",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2016/11/23/1360",
+    "implementsNote": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-22",
+    "inForceFrom": "https://lovdata.no/eli/forskrift/2016/11/23/1360"
+   },
+   "payload": {
+    "key": "no-for-2016-11-23-1360",
+    "titles": {
+     "nb": "Forskrift til skatteforvaltningsloven (skatteforvaltningsforskriften)",
+     "en": "Regulation to the Tax Administration Act (Tax Administration Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Skatteforvaltningsforskriften",
+    "officialRef": "FOR-2016-11-23-1360",
+    "eliUri": "https://lovdata.no/eli/forskrift/2016/11/23/1360",
+    "level": "authority_regulation",
+    "jurisdiction": "no",
+    "authority": "skattedirektoratet",
+    "regime": "regime:tax",
+    "inForceFrom": "2017-01-01",
+    "implementsNote": "In part (§ 7-3): the FATCA agreement between Norway and the United States of 15 April 2013, Article 4(1)(e) of which § 7-3-33 implements, and the OECD Common Reporting Standard under the multilateral competent authority agreement of 29 October 2014, as § 7-3-22 refers to them"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report each customer's accounts, balances, income and country codes to the tax authorities every year",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-4",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-3-3 to § 7-3-5",
+     "payload": {
+      "key": "obl-no-sffor-financial-account-report",
+      "titles": {
+       "en": "Report each customer's accounts, balances, income and country codes to the tax authorities every year"
+      },
+      "summaries": {
+       "en": "Firms with the duty to report on financial matters must report, electronically and by the time the Directorate of Taxes sets, on deposits and loans, home-savings accounts for young people, e-money products, investment products, fund holdings, insurance, annuities and individual pension savings. For each account holder, authorised user, investor, policyholder, payee and beneficial owner they give identity details, the year-end balance or value, interest, dividends and other income, interest on debt, sale proceeds, gains and losses, and country codes for foreign tax residents and US citizens. A closed account is reported for the year it was closed, amounts are given in whole Norwegian kroner, and banks must flag the accounts to be used for paying out tax refunds."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3-3, § 7-3-4, § 7-3-5",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Register with the US tax authorities to obtain a global identification number (GIIN)",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-1",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-3-1 and § 7-3-6",
+     "payload": {
+      "key": "obl-no-sffor-giin-registration",
+      "titles": {
+       "en": "Register with the US tax authorities to obtain a global identification number (GIIN)"
+      },
+      "summaries": {
+       "en": "A financial institution covered by the FATCA and CRS due diligence rules must register with the US tax authorities so that it is assigned a global identification number (GIIN). The rules cover deposit-taking institutions such as banks, custodial institutions, specified insurers and investment entities resident in Norway, and Norwegian branches of foreign firms, but not foreign branches of Norwegian firms."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3-1 annet ledd bokstav a, § 7-3-6",
+      "dutyType": "reporting"
+     },
+     "fieldSources": {
+      "summaries.en": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-6"
+     }
+    },
+    {
+     "title": "Add the duty: Identify accounts held by foreign tax residents, US citizens and non-participating FATCA institutions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-11",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-3-10 and § 7-3-11",
+     "payload": {
+      "key": "obl-no-sffor-identify-reportable-accounts",
+      "titles": {
+       "en": "Identify accounts held by foreign tax residents, US citizens and non-participating FATCA institutions"
+      },
+      "summaries": {
+       "en": "The institution must identify accounts whose holders or beneficial owners are tax resident outside Norway or are US citizens, accounts held by non-participating financial institutions under FATCA, and accounts with beneficial owners tax resident in Norway. It must collect and review account information before a new account is opened; within 90 days or by the end of the income year after a change or new relevant information; within 12 months when an entity account not reviewed before exceeds USD 250,000 at year end; within six months when an account first exceeds USD 1,000,000 at year end; and every year for undocumented accounts that have exceeded USD 1,000,000 and for accounts assigned a relationship manager."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3-10, § 7-3-11",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Obtain a tax residence self-certification before opening an account for an individual",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-17",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-3-16, § 7-3-17 and § 7-3-31",
+     "payload": {
+      "key": "obl-no-sffor-individual-self-certification",
+      "titles": {
+       "en": "Obtain a tax residence self-certification before opening an account for an individual"
+      },
+      "summaries": {
+       "en": "Before opening a new account for an individual, the institution must obtain a self-certification, signed or confirmed by the holder and dated, giving name, address, the states of tax residence, US citizenship, Norwegian national identity or D number, foreign tax identification number and date of birth, with an undertaking to report changes, and must check that it is reliable against the other information collected at opening. Without a self-certification the account may not be opened; if the information given proves wrong or insufficient, the account must be closed or blocked unless a valid new self-certification is obtained within 90 days of opening or of discovering the problem."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3-16, § 7-3-17, § 7-3-31",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     },
+     "fieldSources": {
+      "summaries.en": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-31"
+     }
+    },
+    {
+     "title": "Add the duty: Obtain a self-certification of tax residence and FATCA status before opening an account for an entity",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-21",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-3-21 to § 7-3-24 and § 7-3-32",
+     "payload": {
+      "key": "obl-no-sffor-entity-self-certification",
+      "titles": {
+       "en": "Obtain a self-certification of tax residence and FATCA status before opening an account for an entity"
+      },
+      "summaries": {
+       "en": "For a new account held by an entity, the institution must obtain a self-certification of the states where the entity is tax resident and of whether it is a non-participating financial institution under FATCA, and establish whether it is a financial institution or an active or passive entity, unless the rules let it rely on the information available. For a passive entity, the account must be marked separately and a self-certification obtained showing where its beneficial owners are tax resident and whether they are US citizens. The account may not be opened without the self-certification, and the 90-day close-or-block rule applies when the information proves wrong or insufficient."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3-21, § 7-3-22, § 7-3-23, § 7-3-24, § 7-3-32",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     },
+     "fieldSources": {
+      "summaries.en": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-24"
+     }
+    },
+    {
+     "title": "Add the duty: Search existing individual accounts for signs of foreign tax residence or US citizenship",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-18",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-3-18 to § 7-3-20",
+     "payload": {
+      "key": "obl-no-sffor-preexisting-individual-review",
+      "titles": {
+       "en": "Search existing individual accounts for signs of foreign tax residence or US citizenship"
+      },
+      "summaries": {
+       "en": "Unless it holds a current residence address based on documentary evidence, which never settles US status, the institution must search its electronically searchable data on existing individual account holders for indicia such as a foreign tax residence, a foreign postal or residence address, a foreign telephone number with no Norwegian one, a standing instruction to transfer funds from a non-deposit account to a foreign account, or a power of attorney or signing authority given to a person with a foreign address, and treat the holder as tax resident there unless the prescribed self-certification or documentary evidence shows otherwise; an account whose tax residence cannot be established is marked undocumented. For accounts above USD 1,000,000 it must also review the customer file and documents from the last five years where data is not searchable, and it must have routines so that relationship managers learn of new relevant information and their knowledge of a foreign tax residence or US citizenship is acted on."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3-18, § 7-3-19, § 7-3-20",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     },
+     "fieldSources": {
+      "summaries.en": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-20"
+     }
+    },
+    {
+     "title": "Add the duty: Review existing entity accounts for foreign tax residence, FATCA status and passive owners",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-25",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-3-25 to § 7-3-27",
+     "payload": {
+      "key": "obl-no-sffor-preexisting-entity-review",
+      "titles": {
+       "en": "Review existing entity accounts for foreign tax residence, FATCA status and passive owners"
+      },
+      "summaries": {
+       "en": "For existing accounts held by entities, the institution must review the information it holds for signs that the holder is tax resident outside Norway, such as incorporation abroad or a foreign address, or is a non-participating financial institution under FATCA, and establish, by a self-certification where needed, whether the holder is a financial institution or an active or passive entity. For a passive entity it must obtain a self-certification of where the beneficial owners are tax resident and whether they are US citizens, but for an account not above USD 1,000,000 it may rely on its own information about the owners' tax residence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3-25, § 7-3-26, § 7-3-27",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     },
+     "fieldSources": {
+      "summaries.en": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-27"
+     }
+    },
+    {
+     "title": "Add the duty: Mark reportable accounts with country codes and obtain foreign tax identification numbers",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-12",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-3-12",
+     "payload": {
+      "key": "obl-no-sffor-account-marking",
+      "titles": {
+       "en": "Mark reportable accounts with country codes and obtain foreign tax identification numbers"
+      },
+      "summaries": {
+       "en": "Where an account holder, or a beneficial owner of a passive entity, is tax resident outside Norway or is a US citizen, the institution must obtain the foreign tax identification number where one is issued and mark the account, the person and the number with the country code. Undocumented accounts and accounts of passive entities must be marked separately and accounts held by non-participating financial institutions under FATCA must be marked; for existing accounts, the date of birth and foreign identification number must be obtained by the end of the second tax period after the account was marked."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3-12",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Keep documentation of each account review for at least five years after the reporting year",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-13",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-3-13",
+     "payload": {
+      "key": "obl-no-sffor-due-diligence-records",
+      "titles": {
+       "en": "Keep documentation of each account review for at least five years after the reporting year"
+      },
+      "summaries": {
+       "en": "The institution must keep documentation showing how each account was reviewed under the FATCA and CRS due diligence rules for at least five years after the end of the reporting year. When new documentation is obtained, the documentation that mattered for earlier tax periods must also be kept for at least five years after the reporting year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3-13",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Pass on the information needed for US withholding on US-source payments to non-participating institutions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-3-33",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-3-1 and § 7-3-33",
+     "payload": {
+      "key": "obl-no-sffor-us-source-payments",
+      "titles": {
+       "en": "Pass on the information needed for US withholding on US-source payments to non-participating institutions"
+      },
+      "summaries": {
+       "en": "An institution that makes, or acts as intermediary for, a payment subject to US withholding tax to a non-participating financial institution under FATCA must give the preceding financial institution in the payment chain the information it needs to withhold US tax and to report payments to non-participating institutions. Institutions covered by Article 4(1)(d) of the Norway-United States FATCA agreement are exempt."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3-1 annet ledd bokstav c, § 7-3-33",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Give each customer a copy of the information reported about them by 15 February",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360/%C2%A77-13-1",
+     "sourceLabel": "Lovdata, skatteforvaltningsforskriften (FOR-2016-11-23-1360) § 7-13-1",
+     "payload": {
+      "key": "obl-no-sffor-taxpayer-copy",
+      "titles": {
+       "en": "Give each customer a copy of the information reported about them by 15 February"
+      },
+      "summaries": {
+       "en": "The customer must receive a copy of the information reported about them under the third-party reporting rules by 15 February of the year after the tax period, unless otherwise decided, in a form the Directorate of Taxes may set. The copy must show whether the customer was reported to the Norwegian tax authorities as tax resident in another state, include their foreign tax identification number, and tell them that the information may be exchanged with foreign tax authorities under a treaty."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-13-1",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om beregning av foretaksspesifikke satser for kapitalbufferkrav, FOR-2022-01-12-59",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2022-01-12-59",
+   "sourceLabel": "Lovdata, FOR-2022-01-12-59, Forskrift om beregning av foretaksspesifikke satser for kapitalbufferkrav, consolidated text; fastsatt av Finanstilsynet",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2022/01/12/59"
+   },
+   "payload": {
+    "key": "no-for-2022-01-12-59",
+    "titles": {
+     "nb": "Forskrift om beregning av foretaksspesifikke satser for kapitalbufferkrav",
+     "en": "Regulation on the Calculation of Institution-Specific Capital Buffer Rates"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om beregning av foretaksspesifikke satser for kapitalbufferkrav",
+    "officialRef": "FOR-2022-01-12-59",
+    "eliUri": "https://lovdata.no/eli/forskrift/2022/01/12/59",
+    "level": "authority_regulation",
+    "jurisdiction": "no",
+    "authority": "finanstilsynet-no",
+    "regime": "regime:banking",
+    "inForceFrom": "2022-01-12"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Calculate the institution-specific countercyclical buffer rate as an exposure-weighted average",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-01-12-59",
+     "sourceLabel": "Lovdata, forskrift om beregning av foretaksspesifikke satser for kapitalbufferkrav (FOR-2022-01-12-59) § 1",
+     "payload": {
+      "key": "obl-no-fsbuffer-ccyb-rate",
+      "titles": {
+       "en": "Calculate the institution-specific countercyclical buffer rate as an exposure-weighted average"
+      },
+      "summaries": {
+       "en": "The firm must calculate its institution-specific countercyclical capital buffer as the weighted average of the buffer rates that apply in the states where its relevant exposures are located, applying each state's rate to the exposure amount in that state. Relevant exposures are credit-risk exposures, trading-book exposures subject to the specific-risk and default and migration risk charges, and securitisation exposures, leaving out exposures to the public bodies, development banks, international organisations and institutions listed in CRR Article 112(a) to (f)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 første og annet ledd",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Calculate the institution-specific systemic risk buffer rate as a weighted average of the rates for its exposures",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-01-12-59",
+     "sourceLabel": "Lovdata, forskrift om beregning av foretaksspesifikke satser for kapitalbufferkrav (FOR-2022-01-12-59) § 2",
+     "payload": {
+      "key": "obl-no-fsbuffer-syrb-rate",
+      "titles": {
+       "en": "Calculate the institution-specific systemic risk buffer rate as a weighted average of the rates for its exposures"
+      },
+      "summaries": {
+       "en": "The firm must calculate its institution-specific systemic risk buffer as the weighted average, by risk-weighted exposure amount, of the systemic risk buffer rates that apply to its relevant exposures, using for exposures in each state the rate that state's authorities have set. Where the exposures are located is decided under Delegated Regulation (EU) No 1152/2014."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 første til tredje ledd",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Publish the basis for the institution-specific countercyclical and systemic risk buffers",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-01-12-59",
+     "sourceLabel": "Lovdata, forskrift om beregning av foretaksspesifikke satser for kapitalbufferkrav (FOR-2022-01-12-59) § 1 and § 2",
+     "payload": {
+      "key": "obl-no-fsbuffer-disclosure",
+      "titles": {
+       "en": "Publish the basis for the institution-specific countercyclical and systemic risk buffers"
+      },
+      "summaries": {
+       "en": "The firm must publish the basis for its institution-specific countercyclical capital buffer as Delegated Regulation (EU) 2015/1555 requires, and publish the basis for its institution-specific systemic risk buffer together with that disclosure."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 tredje ledd, § 2 fjerde ledd",
+      "dutyType": "disclosure"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om forbud mot markedsføring, distribusjon og salg av binære opsjoner til ikke-profesjonelle mv., FOR-2020-02-04-107",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2020-02-04-107",
+   "sourceLabel": "Lovdata, FOR-2020-02-04-107, Forskrift om forbud mot markedsføring, distribusjon og salg av binære opsjoner til ikke-profesjonelle mv., consolidated text; fastsatt av Finanstilsynet",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2020/02/04/107"
+   },
+   "payload": {
+    "key": "no-for-2020-02-04-107",
+    "titles": {
+     "nb": "Forskrift om forbud mot markedsføring, distribusjon og salg av binære opsjoner til ikke-profesjonelle og begrensninger i markedsføring, distribusjon og salg av finansielle differansekontrakter (CFD) til ikke-profesjonelle",
+     "en": "Regulation prohibiting the marketing, distribution and sale of binary options to non-professional clients and restricting the marketing, distribution and sale of contracts for difference (CFDs) to non-professional clients"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om forbud mot markedsføring, distribusjon og salg av binære opsjoner til ikke-profesjonelle mv.",
+    "officialRef": "FOR-2020-02-04-107",
+    "eliUri": "https://lovdata.no/eli/forskrift/2020/02/04/107",
+    "level": "authority_regulation",
+    "jurisdiction": "no",
+    "authority": "finanstilsynet-no",
+    "regime": "regime:securities",
+    "inForceFrom": "2020-02-05"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not market, distribute or sell binary options to retail clients",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-02-04-107/%C2%A71-1",
+     "sourceLabel": "Lovdata, forskrift om binære opsjoner og CFD-er til ikke-profesjonelle (FOR-2020-02-04-107) § 1-1",
+     "payload": {
+      "key": "obl-no-bocfd-binary-option-ban",
+      "titles": {
+       "en": "Do not market, distribute or sell binary options to retail clients"
+      },
+      "summaries": {
+       "en": "A firm may not market, distribute or sell binary options to non-professional clients in or from Norway. The ban does not cover a binary option whose lower fixed payout at least equals everything the client paid for it, costs included, or one with a term of at least 90 calendar days, a published approved prospectus and no market risk, profit or loss for the provider or its group beyond fees already paid."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1-1",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Sell CFDs to retail clients only with initial margin, margin close-out and negative balance protection",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-02-04-107/%C2%A72-2",
+     "sourceLabel": "Lovdata, forskrift om binære opsjoner og CFD-er til ikke-profesjonelle (FOR-2020-02-04-107) § 2-1 to § 2-4",
+     "payload": {
+      "key": "obl-no-bocfd-cfd-retail-protections",
+      "titles": {
+       "en": "Sell CFDs to retail clients only with initial margin, margin close-out and negative balance protection"
+      },
+      "summaries": {
+       "en": "A provider may market, distribute or sell CFDs to non-professional clients in or from Norway only if it requires an initial margin of between 3.33 and 50 percent of the CFD's market value depending on the underlying (3.33 percent for major currency pairs, 20 percent for shares and 50 percent for cryptocurrencies), closes positions on the terms most favourable to the client once the funds on the account plus unrealised net profit fall below half of the total initial margin, and gives the client negative balance protection that limits their total liability to the funds on the CFD account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2-2 bokstav a til c, § 2-3, § 2-4",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Offer retail clients no benefit for trading CFDs",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-02-04-107/%C2%A72-2",
+     "sourceLabel": "Lovdata, forskrift om binære opsjoner og CFD-er til ikke-profesjonelle (FOR-2020-02-04-107) § 2-2",
+     "payload": {
+      "key": "obl-no-bocfd-no-incentives",
+      "titles": {
+       "en": "Offer retail clients no benefit for trading CFDs"
+      },
+      "summaries": {
+       "en": "When marketing, distributing or selling CFDs to non-professional clients, the provider may not offer them, directly or indirectly, any monetary or non-monetary benefit other than the realised profit on the CFD and information or research tools relating to it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2-2 bokstav d",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the prescribed CFD risk warning with the firm's own loss percentage, updated every three months",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-02-04-107/%C2%A72-5",
+     "sourceLabel": "Lovdata, forskrift om binære opsjoner og CFD-er til ikke-profesjonelle (FOR-2020-02-04-107) § 2-2 and § 2-5",
+     "payload": {
+      "key": "obl-no-bocfd-cfd-risk-warning",
+      "titles": {
+       "en": "Give the prescribed CFD risk warning with the firm's own loss percentage, updated every three months"
+      },
+      "summaries": {
+       "en": "Every communication sent to, or information published for, non-professional clients about CFDs must carry the prescribed risk warning, in a prominent layout, at least the most used font size and the language of the communication. The warning gives the provider's own percentage of retail CFD accounts that lost money, recalculated every three months over the preceding 12 months, and a provider with no open retail CFD in the last period uses the standard wording of between 74 and 89 percent."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2-2 bokstav e, § 2-5",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om rapportering for forsikringsformidlingsforetak, FOR-2022-11-29-2044",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2022-11-29-2044",
+   "sourceLabel": "Lovdata, FOR-2022-11-29-2044, Forskrift om rapportering for forsikringsformidlingsforetak, consolidated text; fastsatt av Finanstilsynet",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2022/11/29/2044"
+   },
+   "payload": {
+    "key": "no-for-2022-11-29-2044",
+    "titles": {
+     "nb": "Forskrift om rapportering for forsikringsformidlingsforetak",
+     "en": "Regulation on Reporting by Insurance Intermediation Firms"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om rapportering for forsikringsformidlingsforetak",
+    "officialRef": "FOR-2022-11-29-2044",
+    "eliUri": "https://lovdata.no/eli/forskrift/2022/11/29/2044",
+    "level": "authority_regulation",
+    "jurisdiction": "no",
+    "authority": "finanstilsynet-no",
+    "regime": "regime:insurance",
+    "inForceFrom": "2022-11-29"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report on the insurance distribution business to Finanstilsynet by 15 March every year",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-11-29-2044/%C2%A72",
+     "sourceLabel": "Lovdata, forskrift om rapportering for forsikringsformidlingsforetak (FOR-2022-11-29-2044) § 1, § 2 and § 4",
+     "payload": {
+      "key": "obl-no-ffrapp-annual-reporting",
+      "titles": {
+       "en": "Report on the insurance distribution business to Finanstilsynet by 15 March every year"
+      },
+      "summaries": {
+       "en": "A firm registered as an insurance agent firm in Finanstilsynet's register, or licensed for insurance or reinsurance broking, must report on its insurance distribution business for the previous financial year by 15 March each year, or the first working day after, on Finanstilsynet's own reporting forms in Altinn."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1, § 2 første ledd, § 4",
+      "dutyType": "reporting",
+      "terms": [
+       "service_type:insurance_distribution",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Verdipapirsentralforskriften, FOR-2019-12-18-1900",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-18-1900",
+   "sourceLabel": "Lovdata, FOR-2019-12-18-1900, Forskrift om verdipapirsentraler og verdipapiroppgjør (verdipapirsentralforskriften), consolidated text; fastsatt av Finanstilsynet",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2019/12/18/1900",
+    "implementsNote": "https://lovdata.no/dokument/SF/forskrift/2019-12-18-1900/%C2%A71"
+   },
+   "payload": {
+    "key": "no-for-2019-12-18-1900",
+    "titles": {
+     "nb": "Forskrift om verdipapirsentraler og verdipapiroppgjør (verdipapirsentralforskriften)",
+     "en": "Regulation on Central Securities Depositories and Securities Settlement (CSD Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Verdipapirsentralforskriften",
+    "officialRef": "FOR-2019-12-18-1900",
+    "eliUri": "https://lovdata.no/eli/forskrift/2019/12/18/1900",
+    "level": "authority_regulation",
+    "jurisdiction": "no",
+    "authority": "finanstilsynet-no",
+    "regime": "regime:securities",
+    "inForceFrom": "2020-01-01",
+    "implementsNote": "Makes Norwegian law (§ 1) of Regulations (EU) 2017/389, 2017/390, 2017/391, 2017/392, 2017/393, 2017/394 and 2018/1229 (as amended by (EU) 2021/70, 2022/1930 and 2023/1626) and Decisions (EU) 2018/2030 and 2020/1766, which supplement or apply CSDR, Regulation (EU) No 909/2014"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: As an account operator, keep the required holder, rights and proxy details in the CSD register",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-18-1900/%C2%A76",
+     "sourceLabel": "Lovdata, verdipapirsentralforskriften (FOR-2019-12-18-1900) § 6 to § 8, read with verdipapirsentralloven (LOV-2019-03-15-6) § 6-3",
+     "payload": {
+      "key": "obl-no-vpsf-account-register-details",
+      "titles": {
+       "en": "As an account operator, keep the required holder, rights and proxy details in the CSD register"
+      },
+      "summaries": {
+       "en": "For each securities account the CSD register must hold the holder's name and address, organisation, national identity or D number, foreign tax identification number where relevant for new holders, country of tax residence and withholding tax rate for holders not tax resident in Norway, citizenship or country of registration, any account operator and any special rules on access and disposal, together with the prescribed details of limited rights and powers of attorney registered on it. Under the Central Securities Depositories Act an account operator is responsible for the accounts it operates always meeting these requirements."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6, § 7, § 8",
+      "dutyType": "record_keeping",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

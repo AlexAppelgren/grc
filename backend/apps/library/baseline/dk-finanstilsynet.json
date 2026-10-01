@@ -1,0 +1,916 @@
+{
+ "tranche": "dk-finanstilsynet",
+ "researchedOn": "2026-10-01",
+ "instruments": [
+  {
+   "title": "Add Bekendtgørelse om organisatoriske krav til værdipapirhandlere, BEK nr 921 af 26/06/2017",
+   "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+   "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017, issued by Finanstilsynet, § 14 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2024/1777"
+   },
+   "payload": {
+    "key": "dk-bek-2017-921",
+    "titles": {
+     "da": "Bekendtgørelse om de organisatoriske krav til værdipapirhandlere",
+     "en": "Executive Order on organisational requirements for securities dealers"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om organisatoriske krav til værdipapirhandlere",
+    "officialRef": "BEK nr 921 af 26/06/2017",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2017/921",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:securities",
+    "inForceFrom": "2018-01-03",
+    "implementsNote": "Parts of MiFID II, Directive 2014/65/EU, and parts of Directive (EU) 2022/2556 (the DORA amending directive)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep records that separate each client's assets from other clients' and the firm's own",
+     "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+     "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017, issued by Finanstilsynet, § 3",
+     "payload": {
+      "key": "obl-dk-orgkravbek-client-asset-records",
+      "titles": {
+       "en": "Keep records that separate each client's assets from other clients' and the firm's own"
+      },
+      "summaries": {
+       "en": "A bank that provides investment services must keep records and accounts that at all times distinguish the assets it holds for each client from other clients' assets and its own, keep them accurate enough to serve as an audit trail, and reconcile them regularly with those of third parties holding the assets. It must keep client instruments and funds held with third parties identifiable apart from the firm's, and have organisational arrangements that minimise the risk of loss of client assets through misuse, fraud, poor administration or negligence. It must be able to give the Danish FSA, insolvency practitioners and resolution authorities ready access to the client-asset information listed in § 3, stk. 7."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Deposit client financial instruments only with carefully selected and supervised third parties",
+     "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+     "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017, issued by Finanstilsynet, § 4",
+     "payload": {
+      "key": "obl-dk-orgkravbek-third-party-depositories",
+      "titles": {
+       "en": "Deposit client financial instruments only with carefully selected and supervised third parties"
+      },
+      "summaries": {
+       "en": "A bank may deposit financial instruments it holds for clients with a third party only after exercising due skill, care and diligence in selecting, appointing and periodically reviewing that third party and its arrangements, taking account of its expertise, market reputation and the legal requirements that could harm clients' rights. Deposits may only be made in a jurisdiction where safekeeping for others is specifically regulated and supervised; in a third country without such regulation only where the nature of the instruments or the service requires it or a professional client asks for it in writing."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Use client financial instruments only with the client's prior express consent",
+     "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+     "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017, issued by Finanstilsynet, § 6",
+     "payload": {
+      "key": "obl-dk-orgkravbek-use-of-client-instruments",
+      "titles": {
+       "en": "Use client financial instruments only with the client's prior express consent"
+      },
+      "summaries": {
+       "en": "A bank must not enter into securities financing transactions with financial instruments it holds for a client, or otherwise use them, unless the client has given prior express consent to specified terms, evidenced in writing and signed or equivalent, and the use stays within those terms. For omnibus accounts every client must have consented or systems must ensure only consenting clients' instruments are used, records must show whose instruments were used, and the firm must take measures against unauthorised use and ensure borrowers of client instruments provide adequate collateral."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Appoint an officer responsible for safeguarding client assets",
+     "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+     "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017, issued by Finanstilsynet, § 7",
+     "payload": {
+      "key": "obl-dk-orgkravbek-safeguarding-officer",
+      "titles": {
+       "en": "Appoint an officer responsible for safeguarding client assets"
+      },
+      "summaries": {
+       "en": "A bank that provides investment services must appoint a single employee with sufficient skill and authority who is specifically responsible for the firm's compliance with its obligations to safeguard client financial instruments and funds. The firm decides whether that person does this exclusively or alongside other responsibilities."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Have the external auditor report to the FSA every year on client-asset arrangements",
+     "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+     "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017, issued by Finanstilsynet, § 8 as amended by BEK nr 1777 af 10/12/2024 § 1, no. 6",
+     "fieldSources": {
+      "summaries.en": "https://www.retsinformation.dk/eli/lta/2024/1777"
+     },
+     "payload": {
+      "key": "obl-dk-orgkravbek-auditor-safeguarding-report",
+      "titles": {
+       "en": "Have the external auditor report to the FSA every year on client-asset arrangements"
+      },
+      "summaries": {
+       "en": "A bank that provides investment services must ensure that its external auditors report to the Danish FSA at least once a year on whether its client-asset arrangements under §§ 3-7 and 12 of the order and § 95, stk. 2, nr. 3 and 4, of the Act on investment firms and investment services are adequate, and whether it complies with § 196, stk. 2, of the Capital Markets Act."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify and manage conflicts of interest and disclose those that cannot be prevented",
+     "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+     "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017, issued by Finanstilsynet, § 9",
+     "payload": {
+      "key": "obl-dk-orgkravbek-conflicts-of-interest",
+      "titles": {
+       "en": "Identify and manage conflicts of interest and disclose those that cannot be prevented"
+      },
+      "summaries": {
+       "en": "A bank must take all appropriate steps to identify and prevent or manage conflicts of interest between itself, its management, staff and tied agents and its clients, or between clients, arising in investment and ancillary services, including those caused by third-party inducements or its own remuneration. Where its arrangements cannot prevent with reasonable confidence the risk of damage to clients, it must clearly tell the client, on a durable medium and before acting, the general nature or sources of the conflicts and the steps taken to mitigate them, in enough detail for an informed decision."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Record telephone calls and electronic communications about client orders and own-account dealing",
+     "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+     "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017, issued by Finanstilsynet, § 10",
+     "payload": {
+      "key": "obl-dk-orgkravbek-record-communications",
+      "titles": {
+       "en": "Record telephone calls and electronic communications about client orders and own-account dealing"
+      },
+      "summaries": {
+       "en": "A bank must record telephone conversations and keep electronic communications relating to own-account transactions and to receiving, transmitting and executing client orders, including those intended to lead to such transactions even if they do not, and take reasonable steps to prevent such communications on private equipment it cannot record. It must tell new and existing clients once, before providing the service, that calls are recorded, and may not provide such services by phone to clients who have not been told. Records must be available to the clients concerned and kept for at least five years, or up to seven years if the Danish FSA asks."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 10",
+      "dutyType": "record_keeping",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Secure the means of transmitting information in line with DORA",
+     "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+     "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017, issued by Finanstilsynet, § 11 as replaced by BEK nr 1777 af 10/12/2024 § 1, no. 8, in force 17 January 2025",
+     "fieldSources": {
+      "summaries.en": "https://www.retsinformation.dk/eli/lta/2024/1777"
+     },
+     "payload": {
+      "key": "obl-dk-orgkravbek-data-security",
+      "titles": {
+       "en": "Secure the means of transmitting information in line with DORA"
+      },
+      "summaries": {
+       "en": "A bank that provides investment services must have sound security mechanisms that guarantee the security and authentication of the means of transferring information, minimise the risk of data corruption and unauthorised access and prevent information leakage, so data security is maintained at all times in line with the requirements of the Digital Operational Resilience Act (DORA)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 11",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Assess and document title transfer collateral arrangements and warn professional clients of their risks",
+     "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+     "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017, issued by Finanstilsynet, § 12",
+     "payload": {
+      "key": "obl-dk-orgkravbek-title-transfer-collateral",
+      "titles": {
+       "en": "Assess and document title transfer collateral arrangements and warn professional clients of their risks"
+      },
+      "summaries": {
+       "en": "Before using title transfer collateral arrangements a bank must consider, and be able to document, whether they are appropriate given the link between the client's obligation to the firm and the client assets covered, weighing the factors in § 12, stk. 2. Where it uses them it must highlight to professional clients and eligible counterparties the risks and the effect of the arrangement on their financial instruments and funds."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 12",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:professional"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om underretninger til Hvidvasksekretariatet, BEK nr 657 af 26/05/2023",
+   "source": "https://www.retsinformation.dk/eli/lta/2023/657",
+   "sourceLabel": "Retsinformation, BEK nr 657 af 26/05/2023, issued by Finanstilsynet, § 7 on entry into force",
+   "payload": {
+    "key": "dk-bek-2023-657",
+    "titles": {
+     "da": "Bekendtgørelse om indsendelse af underretninger m.v. til Hvidvasksekretariatet",
+     "en": "Executive Order on the submission of reports etc. to the Money Laundering Secretariat"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om underretninger til Hvidvasksekretariatet",
+    "officialRef": "BEK nr 657 af 26/05/2023",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2023/657",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:aml",
+    "inForceFrom": "2023-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: File suspicious transaction reports digitally in the prescribed XML format and check they were accepted",
+     "source": "https://www.retsinformation.dk/eli/lta/2023/657",
+     "sourceLabel": "Retsinformation, BEK nr 657 af 26/05/2023, issued by Finanstilsynet, § 2",
+     "payload": {
+      "key": "obl-dk-hvsunderretbek-digital-filing",
+      "titles": {
+       "en": "File suspicious transaction reports digitally in the prescribed XML format and check they were accepted"
+      },
+      "summaries": {
+       "en": "A bank and any other firm covered by the Anti-Money Laundering Act must send its reports of suspected money laundering or terrorist financing to the Money Laundering Secretariat digitally through www.hvidvask.dk, unless agreed otherwise, in the XML format shown on that site. After filing, and before the end of the following banking day, it must check whether the report was accepted or rejected."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give every suspicious transaction report the minimum content and write it in Danish",
+     "source": "https://www.retsinformation.dk/eli/lta/2023/657",
+     "sourceLabel": "Retsinformation, BEK nr 657 af 26/05/2023, issued by Finanstilsynet, §§ 3-4, Annex 1",
+     "payload": {
+      "key": "obl-dk-hvsunderretbek-report-content",
+      "titles": {
+       "en": "Give every suspicious transaction report the minimum content and write it in Danish"
+      },
+      "summaries": {
+       "en": "Each report must contain the information described in Annex 1 to the order, which sets the structure for transaction-based and event-based reports and the minimum data on the reporter, the suspicion, transactions, senders, recipients, accounts, persons and companies. The report must as a rule be written in Danish, or in English where that is not possible."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 3-4, Annex 1",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Send reports by email or another agreed medium when the reporting site is down for a prolonged period",
+     "source": "https://www.retsinformation.dk/eli/lta/2023/657",
+     "sourceLabel": "Retsinformation, BEK nr 657 af 26/05/2023, issued by Finanstilsynet, § 5",
+     "payload": {
+      "key": "obl-dk-hvsunderretbek-outage-fallback",
+      "titles": {
+       "en": "Send reports by email or another agreed medium when the reporting site is down for a prolonged period"
+      },
+      "summaries": {
+       "en": "If www.hvidvask.dk has prolonged IT problems, meaning it is unavailable for 8 hours in a row between 08:00 and 16:00 on a weekday (planned, pre-announced shutdowns not counted), the firm must still file its reports in the XML format by email or another electronic medium agreed with the Money Laundering Secretariat."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om produktgodkendelse for detailbankprodukter, BEK nr 558 af 29/05/2024",
+   "source": "https://www.retsinformation.dk/eli/lta/2024/558",
+   "sourceLabel": "Retsinformation, BEK nr 558 af 29/05/2024, issued by Finanstilsynet, § 25 on entry into force",
+   "payload": {
+    "key": "dk-bek-2024-558",
+    "titles": {
+     "da": "Bekendtgørelse om produktgodkendelsesprocedurer for detailbankprodukter",
+     "en": "Executive Order on product approval procedures for retail banking products"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om produktgodkendelse for detailbankprodukter",
+    "officialRef": "BEK nr 558 af 29/05/2024",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2024/558",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:banking",
+    "inForceFrom": "2024-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set up board-approved product approval procedures for retail banking products",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/558",
+     "sourceLabel": "Retsinformation, BEK nr 558 af 29/05/2024, issued by Finanstilsynet, §§ 4-5, § 25, stk. 3",
+     "payload": {
+      "key": "obl-dk-detailpogbek-approval-procedures",
+      "titles": {
+       "en": "Set up board-approved product approval procedures for retail banking products"
+      },
+      "summaries": {
+       "en": "A bank that develops credit agreements, deposits, payment services, payment accounts, payment instruments or e-money for consumers must establish, apply and regularly review effective product approval procedures that take the consumers' interests, objectives and characteristics into account, proportionate to its business and the product's risk and complexity. The procedures must be part of its governance and control framework, the board must approve them and later revisions, and the executive board, supported by the compliance function, is responsible for following them. For products a bank markets, the order covers products first marketed or materially changed from 1 January 2019 to 25 June 2021 or after 1 July 2024."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 4-5, § 25, stk. 3",
+      "dutyType": "governance",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify each retail banking product's target market and test the product before launch",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/558",
+     "sourceLabel": "Retsinformation, BEK nr 558 af 29/05/2024, issued by Finanstilsynet, §§ 6-8",
+     "payload": {
+      "key": "obl-dk-detailpogbek-target-market-testing",
+      "titles": {
+       "en": "Identify each retail banking product's target market and test the product before launch"
+      },
+      "summaries": {
+       "en": "As manufacturer a bank must identify the target market for each product, make sure the product suits that group's interests, objectives and characteristics, assess their financial capacity and name the consumers the product does not suit. Before marketing a product, selling it to a new target market or materially changing it, the bank must test how it affects consumers in a range of scenarios including stress, and change the product if the tests show poor outcomes for the target market."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 6-8",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Monitor retail banking products on the market and control their distribution",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/558",
+     "sourceLabel": "Retsinformation, BEK nr 558 af 29/05/2024, issued by Finanstilsynet, §§ 9-12",
+     "payload": {
+      "key": "obl-dk-detailpogbek-monitoring-distribution",
+      "titles": {
+       "en": "Monitor retail banking products on the market and control their distribution"
+      },
+      "summaries": {
+       "en": "As manufacturer a bank must keep monitoring marketed products to check they still suit the target market, remedy any problem found and tell distributors at once of product changes and remedial measures. It must choose distribution channels and distributors suited to the target market, check that products mainly reach that market and are sold outside it only in justified cases, and give distributors clear and up-to-date information on the product's main features, risks, limits and total price."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 9-12",
+      "dutyType": "governance",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: As distributor, sell retail banking products within the target market and inform consumers",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/558",
+     "sourceLabel": "Retsinformation, BEK nr 558 af 29/05/2024, issued by Finanstilsynet, §§ 13-19",
+     "payload": {
+      "key": "obl-dk-detailpogbek-distributor-duties",
+      "titles": {
+       "en": "As distributor, sell retail banking products within the target market and inform consumers"
+      },
+      "summaries": {
+       "en": "A bank that offers or sells retail banking products must have its own product approval procedures approved by its management body, use the manufacturer's information to establish whether a consumer belongs to the target market, and sell outside the target market only in sufficiently justified cases that it can explain to the manufacturer. It must tell consumers the product's main features, risks, limits and total price including all fees, collect information that lets the manufacturer judge whether the product still fits, and tell the manufacturer at once of any problems found."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 13-19",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Document all product approval measures and hand the documentation to the FSA on request",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/558",
+     "sourceLabel": "Retsinformation, BEK nr 558 af 29/05/2024, issued by Finanstilsynet, §§ 20-22",
+     "payload": {
+      "key": "obl-dk-detailpogbek-documentation",
+      "titles": {
+       "en": "Document all product approval measures and hand the documentation to the FSA on request"
+      },
+      "summaries": {
+       "en": "A bank must document every measure it takes as manufacturer under §§ 4-12 and as distributor under §§ 13-19, keep the documentation, and hand it to the Danish FSA on request; a distributor must also make its documentation available to the manufacturer on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 20-22",
+      "dutyType": "record_keeping",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om produktgodkendelsesprocedurer, BEK nr 245 af 07/03/2023",
+   "source": "https://www.retsinformation.dk/eli/lta/2023/245",
+   "sourceLabel": "Retsinformation, BEK nr 245 af 07/03/2023, issued by Finanstilsynet, § 21 on entry into force",
+   "payload": {
+    "key": "dk-bek-2023-245",
+    "titles": {
+     "da": "Bekendtgørelse om produktgodkendelsesprocedurer",
+     "en": "Executive Order on product approval procedures"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om produktgodkendelsesprocedurer",
+    "officialRef": "BEK nr 245 af 07/03/2023",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2023/245",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:securities",
+    "inForceFrom": "2023-03-13",
+    "implementsNote": "Parts of MiFID II, Directive 2014/65/EU, as amended by Directive (EU) 2021/338; Commission Delegated Directive (EU) 2017/593, as amended by Commission Delegated Directive (EU) 2021/1269"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Approve each financial instrument or structured deposit for a defined target market before offering it",
+     "source": "https://www.retsinformation.dk/eli/lta/2023/245",
+     "sourceLabel": "Retsinformation, BEK nr 245 af 07/03/2023, issued by Finanstilsynet, § 1, stk. 6-7, §§ 3-5",
+     "payload": {
+      "key": "obl-dk-pogbek-manufacturer-approval",
+      "titles": {
+       "en": "Approve each financial instrument or structured deposit for a defined target market before offering it"
+      },
+      "summaries": {
+       "en": "A bank that creates, develops or issues financial instruments or structured deposits must run a product approval process before offering a product or a significant adaptation of one, proportionate to its risk and complexity. The process must define a target market of clients for each product, assess all relevant risks to that market and make sure the distribution strategy fits it, and the bank must take reasonable steps to have the product distributed to that market. The order does not apply to bonds whose only embedded derivative is a make-whole clause or to instruments marketed only to eligible counterparties."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1, stk. 6-7, §§ 3-5",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the management body control of product governance and test products for conflicts, charges and poor outcomes",
+     "source": "https://www.retsinformation.dk/eli/lta/2023/245",
+     "sourceLabel": "Retsinformation, BEK nr 245 af 07/03/2023, issued by Finanstilsynet, §§ 8-12",
+     "payload": {
+      "key": "obl-dk-pogbek-manufacturer-governance",
+      "titles": {
+       "en": "Give the management body control of product governance and test products for conflicts, charges and poor outcomes"
+      },
+      "summaries": {
+       "en": "As manufacturer a bank must ensure that staff involved have the qualifications to understand the product, that its management body has effective control of product governance, and that compliance monitors it and reports on the products to the management body. It must manage conflicts of interest in product design, define the target market in sufficient detail including any sustainability-related objectives and the clients the product does not suit, consider a charging structure under which charges suit the target market, do not undermine expected returns and are transparent, and run scenario analyses of poor outcomes for end clients."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 8-12",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Review products and product governance arrangements regularly",
+     "source": "https://www.retsinformation.dk/eli/lta/2023/245",
+     "sourceLabel": "Retsinformation, BEK nr 245 af 07/03/2023, issued by Finanstilsynet, § 6, § 13",
+     "payload": {
+      "key": "obl-dk-pogbek-product-review",
+      "titles": {
+       "en": "Review products and product governance arrangements regularly"
+      },
+      "summaries": {
+       "en": "A bank must regularly review the financial instruments and structured deposits it offers or manufactures, taking account of events that could materially affect the risk to the target market, and check that they still meet the target market's needs, including sustainability-related objectives, and that the distribution strategy remains appropriate. It must also regularly review and update its product approval and governance arrangements, and as manufacturer take appropriate action when a crucial event occurs, such as informing clients or distributors, changing the product or stopping its issue."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6, § 13",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Exchange product and sales information between manufacturer and distributor",
+     "source": "https://www.retsinformation.dk/eli/lta/2023/245",
+     "sourceLabel": "Retsinformation, BEK nr 245 af 07/03/2023, issued by Finanstilsynet, § 7, §§ 18-19",
+     "payload": {
+      "key": "obl-dk-pogbek-information-exchange",
+      "titles": {
+       "en": "Exchange product and sales information between manufacturer and distributor"
+      },
+      "summaries": {
+       "en": "As manufacturer a bank must give every distributor all relevant information on the product, including suitable distribution channels, the approval process, the target market assessment and its sustainability factors presented transparently. As distributor of a product it did not manufacture it must obtain and use that information, and it must give manufacturers information on sales and its own reviews."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7, §§ 18-19",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: As distributor, offer financial instruments and structured deposits only where they fit the client's target market and interest",
+     "source": "https://www.retsinformation.dk/eli/lta/2023/245",
+     "sourceLabel": "Retsinformation, BEK nr 245 af 07/03/2023, issued by Finanstilsynet, §§ 14-17",
+     "payload": {
+      "key": "obl-dk-pogbek-distributor-target-market",
+      "titles": {
+       "en": "As distributor, offer financial instruments and structured deposits only where they fit the client's target market and interest"
+      },
+      "summaries": {
+       "en": "A bank that offers or recommends financial instruments or structured deposits must understand them, assess their fit with the needs of its clients, and offer or recommend them only when this is in the client's interest. It must set its own target market and the groups of clients the product does not suit even if the manufacturer has not, give its management body effective control and its compliance function oversight of its product governance, review the products and services it offers regularly, and, where several firms distribute together, the firm with the direct client relationship bears final responsibility."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 14-17",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om revisionens gennemførelse i finansielle virksomheder, BEK nr 1529 af 05/12/2024",
+   "source": "https://www.retsinformation.dk/eli/lta/2024/1529",
+   "sourceLabel": "Retsinformation, BEK nr 1529 af 05/12/2024, issued by Finanstilsynet, § 48 on entry into force",
+   "payload": {
+    "key": "dk-bek-2024-1529",
+    "titles": {
+     "da": "Bekendtgørelse om revisionens gennemførelse i finansielle virksomheder m.v. samt finansielle koncerner",
+     "en": "Executive Order on the conduct of audits in financial undertakings etc. and financial groups"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om revisionens gennemførelse i finansielle virksomheder",
+    "officialRef": "BEK nr 1529 af 05/12/2024",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2024/1529",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:banking",
+    "inForceFrom": "2025-01-01",
+    "implementsNote": "Parts of Commission Directive 2006/73/EC"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Establish an internal audit function when the firm has 125 or more full-time employees",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/1529",
+     "sourceLabel": "Retsinformation, BEK nr 1529 af 05/12/2024, issued by Finanstilsynet, § 17",
+     "payload": {
+      "key": "obl-dk-revbek-internal-audit-function",
+      "titles": {
+       "en": "Establish an internal audit function when the firm has 125 or more full-time employees"
+      },
+      "summaries": {
+       "en": "A bank that has had on average 125 or more full-time employees in its last two financial years must establish an internal audit function; a smaller bank's board must discuss at least once a year whether one is needed, taking account of its complexity and any outsourcing, and record its decision in the board minutes. The same applies to groups."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 17",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep internal audit independent under a board-appointed chief auditor and a board-approved charter",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/1529",
+     "sourceLabel": "Retsinformation, BEK nr 1529 af 05/12/2024, issued by Finanstilsynet, §§ 18, 21, 23, 26",
+     "payload": {
+      "key": "obl-dk-revbek-internal-audit-independence",
+      "titles": {
+       "en": "Keep internal audit independent under a board-appointed chief auditor and a board-approved charter"
+      },
+      "summaries": {
+       "en": "Internal audit must work independently of day-to-day management and be led by a chief auditor whom only the board may hire or dismiss and who has an auditor-level education and at least 3 years of audit work in the last 5 years. The board must approve a function description covering internal audit's powers, staff qualifications, training and budget; internal audit must cover all material and risky areas, may do no other work, and must keep an audit book that is presented at every board meeting and signed by the whole board."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 18, 21, 23, 26",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Notify the FSA when a chief auditor takes up or leaves the post",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/1529",
+     "sourceLabel": "Retsinformation, BEK nr 1529 af 05/12/2024, issued by Finanstilsynet, § 20",
+     "payload": {
+      "key": "obl-dk-revbek-chief-auditor-notifications",
+      "titles": {
+       "en": "Notify the FSA when a chief auditor takes up or leaves the post"
+      },
+      "summaries": {
+       "en": "The firm must report a new chief auditor to the Danish FSA within one month of taking up the post, with the board's declaration that the education and experience requirements are met and whether the chief auditor signs the annual accounts. When a chief auditor leaves, the board and the chief auditor must each send the FSA an account of the reasons within one month, and the board must tell the FSA if it decides to close internal audit or changes whether the chief auditor signs the accounts."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 20",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Send the FSA the external auditor's long-form report with the annual report",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/1529",
+     "sourceLabel": "Retsinformation, BEK nr 1529 af 05/12/2024, issued by Finanstilsynet, § 5, stk. 4",
+     "payload": {
+      "key": "obl-dk-revbek-long-form-report-filing",
+      "titles": {
+       "en": "Send the FSA the external auditor's long-form report with the annual report"
+      },
+      "summaries": {
+       "en": "A bank must send the Danish FSA a copy of the external auditor's long-form audit report on the annual accounts together with the copy of the board-approved annual report, written in Danish or English."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5, stk. 4",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Prepare the overviews of large exposures and post-approvals that the external auditor reports on",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/1529",
+     "sourceLabel": "Retsinformation, BEK nr 1529 af 05/12/2024, issued by Finanstilsynet, § 34, stk. 2, § 35",
+     "payload": {
+      "key": "obl-dk-revbek-large-exposure-overview",
+      "titles": {
+       "en": "Prepare the overviews of large exposures and post-approvals that the external auditor reports on"
+      },
+      "summaries": {
+       "en": "A bank must prepare, for the external auditor to reproduce in the long-form report, an overview of its 10 largest exposures, other exposures above 10 % of its adjusted own funds and other significant exposures, giving for each its size, any derivative limits, collateral and its estimated value, impairments by stage 1, 2 and 3, any signs of credit impairment, the debtor's financial position and management's risk assessment. It must also prepare an overview of the number of loans approved by the board after the fact during the year, with management's comments and the total number of board approvals."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 34, stk. 2, § 35",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Grant no exposure to, and take no collateral from, the firm's auditors",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/1529",
+     "sourceLabel": "Retsinformation, BEK nr 1529 af 05/12/2024, issued by Finanstilsynet, § 31",
+     "payload": {
+      "key": "obl-dk-revbek-no-exposure-to-auditors",
+      "titles": {
+       "en": "Grant no exposure to, and take no collateral from, the firm's auditors"
+      },
+      "summaries": {
+       "en": "A financial undertaking, or another undertaking in the same group, may not grant an exposure to or receive collateral from its external auditor, chief auditor or deputy chief auditor."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 31",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om skattebegunstigede opsparingsformer i pengeinstitutter, BEK nr 2640 af 28/12/2021",
+   "source": "https://www.retsinformation.dk/eli/lta/2021/2640",
+   "sourceLabel": "Retsinformation, BEK nr 2640 af 28/12/2021, issued by Finanstilsynet, § 30 on entry into force",
+   "payload": {
+    "key": "dk-bek-2021-2640",
+    "titles": {
+     "da": "Bekendtgørelse om visse skattebegunstigede opsparingsformer i pengeinstitutter",
+     "en": "Executive Order on certain tax-favoured forms of savings in banks"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om skattebegunstigede opsparingsformer i pengeinstitutter",
+    "officialRef": "BEK nr 2640 af 28/12/2021",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2021/2640",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:banking",
+    "inForceFrom": "2022-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Run each pension savings pool under written, executive-approved guidelines with segregated assets",
+     "source": "https://www.retsinformation.dk/eli/lta/2021/2640",
+     "sourceLabel": "Retsinformation, BEK nr 2640 af 28/12/2021, issued by Finanstilsynet, §§ 4-6",
+     "payload": {
+      "key": "obl-dk-skatopsparbek-pool-administration",
+      "titles": {
+       "en": "Run each pension savings pool under written, executive-approved guidelines with segregated assets"
+      },
+      "summaries": {
+       "en": "A bank offering pools for rate and age pensions, capital pensions, child savings or old self-pension savings must have written guidelines for each pool, approved by the executive board, covering at least the investment strategy and risk limits, all costs and trading terms, when returns are credited and how returns are calculated. It must open a deposit account in DKK or EUR for each customer, keep pool assets apart from its other assets and be able to document the pool's results and returns to the Danish FSA."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 4-6",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Inform pool savers before and during the pool agreement, every quarter and every year",
+     "source": "https://www.retsinformation.dk/eli/lta/2021/2640",
+     "sourceLabel": "Retsinformation, BEK nr 2640 af 28/12/2021, issued by Finanstilsynet, §§ 3 and 7-9, § 9, stk. 3, as amended by BEK nr 1297 af 06/11/2023 from 1 January 2024",
+     "fieldSources": {
+      "summaries.en": "https://www.retsinformation.dk/eli/lta/2023/1297"
+     },
+     "payload": {
+      "key": "obl-dk-skatopsparbek-pool-information",
+      "titles": {
+       "en": "Inform pool savers before and during the pool agreement, every quarter and every year"
+      },
+      "summaries": {
+       "en": "A bank must conclude or confirm each pool agreement on paper or another durable medium and give the customer the pool guidelines, explain that the customer does not own the underlying assets and that returns can be negative, state entry and exit terms, the pool's returns for the previous five years (or the whole period it has been offered) and whether the account is covered by the deposit guarantee. It must give notice of material changes in good time, report each pool's percentage return and asset mix within 8 weeks after each quarter, and after each calendar year give ex-post cost information calculated under Article 50 of Delegated Regulation (EU) 2017/565 within 12 weeks."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 3, 7-9",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Calculate pool returns only on permitted instruments within issuer and derivative limits",
+     "source": "https://www.retsinformation.dk/eli/lta/2021/2640",
+     "sourceLabel": "Retsinformation, BEK nr 2640 af 28/12/2021, issued by Finanstilsynet, §§ 10-21",
+     "payload": {
+      "key": "obl-dk-skatopsparbek-pool-investment-limits",
+      "titles": {
+       "en": "Calculate pool returns only on permitted instruments within issuer and derivative limits"
+      },
+      "summaries": {
+       "en": "A bank must calculate pool returns on a portfolio of a deposit account and the instruments permitted in § 10, which must as a rule be traded on a regulated market or MTF, with no more than 20 % in instruments of a single issuer at the time of investment (with exceptions such as mortgage and covered bonds and EU government bonds). Pools may use derivatives only for hedging and portfolio management within §§ 13-21 at all times, with a credit institution, investment firm or clearing house in an OECD country as counterparty."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 10-21",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Ensure separate pension savings depots keep to the placement and concentration rules",
+     "source": "https://www.retsinformation.dk/eli/lta/2021/2640",
+     "sourceLabel": "Retsinformation, BEK nr 2640 af 28/12/2021, issued by Finanstilsynet, § 23, §§ 25-27, § 23, stk. 4 and 8, as amended by BEK nr 1600 af 09/12/2024 from 1 January 2025",
+     "fieldSources": {
+      "summaries.en": "https://www.retsinformation.dk/eli/lta/2024/1600"
+     },
+     "payload": {
+      "key": "obl-dk-skatopsparbek-depot-placement",
+      "titles": {
+       "en": "Ensure separate pension savings depots keep to the placement and concentration rules"
+      },
+      "summaries": {
+       "en": "A bank must see to it that funds in customers' separate depots are placed only in the permitted instruments, with no more than 20 % of the customer's savings in the bank in instruments of one issuer at the time of investment (5 % for instruments under § 23, stk. 1, nr. 6), derivatives only within § 25, and unlisted shares only within § 23, stk. 4: at least DKK 50,000 per company and at most 25 % of the part of the customer's savings in the bank below DKK 2 million. When an investment in unlisted shares is agreed, the bank must tell the customer that it will notify the company that all future payments go to the depot."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 23, §§ 25-27",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om kontracyklisk buffersats, maksimalt udlodningsbeløb og kapitalbevaringsplan, BEK nr 1051 af 20/08/2025",
+   "source": "https://www.retsinformation.dk/eli/lta/2025/1051",
+   "sourceLabel": "Retsinformation, BEK nr 1051 af 20/08/2025, issued by Finanstilsynet, § 10 on entry into force",
+   "payload": {
+    "key": "dk-bek-2025-1051",
+    "titles": {
+     "da": "Bekendtgørelse om opgørelse af den virksomhedsspecifikke kontracykliske buffersats, de maksimale udlodningsbeløb og indholdet af en kapitalbevaringsplan for visse finansielle virksomheder",
+     "en": "Executive Order on calculating the institution-specific countercyclical buffer rate, the maximum distributable amounts and the content of a capital conservation plan for certain financial undertakings"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om kontracyklisk buffersats, maksimalt udlodningsbeløb og kapitalbevaringsplan",
+    "officialRef": "BEK nr 1051 af 20/08/2025",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2025/1051",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:banking",
+    "inForceFrom": "2026-01-01",
+    "implementsNote": "Parts of CRD, Directive 2013/36/EU, as amended by Directive (EU) 2019/878 (CRD V) and Directive (EU) 2024/1619 (CRD VI)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Calculate the institution-specific countercyclical buffer rate",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1051",
+     "sourceLabel": "Retsinformation, BEK nr 1051 af 20/08/2025, issued by Finanstilsynet, § 3",
+     "payload": {
+      "key": "obl-dk-kapbufbek-ccyb-rate",
+      "titles": {
+       "en": "Calculate the institution-specific countercyclical buffer rate"
+      },
+      "summaries": {
+       "en": "A bank or mortgage-credit institution must calculate its institution-specific countercyclical capital buffer rate as the average of the countercyclical buffer rates that apply in the countries where it has relevant credit exposures, weighted by the own funds requirements for credit risk on those exposures under Part Three, Titles II and IV of the CRR. The location of an exposure is determined under Delegated Regulation (EU) No 1152/2014."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Calculate the maximum distributable amount and notify the FSA immediately",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1051",
+     "sourceLabel": "Retsinformation, BEK nr 1051 af 20/08/2025, issued by Finanstilsynet, §§ 4-7",
+     "payload": {
+      "key": "obl-dk-kapbufbek-mda-notification",
+      "titles": {
+       "en": "Calculate the maximum distributable amount and notify the FSA immediately"
+      },
+      "summaries": {
+       "en": "Where the Financial Business Act requires it, a bank must calculate its maximum distributable amount by multiplying its interim and year-end profits not included in CET1, less tax, by a factor of 0, 20, 40 or 60 % depending on which quartile of the combined buffer requirement its CET1 falls in, reduced by distributions already made. It must notify the Danish FSA immediately, at the latest together with its capital conservation plan; global systemically important institutions must do the same for the leverage-ratio-related maximum distributable amount."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 4-7",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Submit a board-approved capital conservation plan to the FSA",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1051",
+     "sourceLabel": "Retsinformation, BEK nr 1051 af 20/08/2025, issued by Finanstilsynet, § 8",
+     "payload": {
+      "key": "obl-dk-kapbufbek-capital-conservation-plan",
+      "titles": {
+       "en": "Submit a board-approved capital conservation plan to the FSA"
+      },
+      "summaries": {
+       "en": "A bank that must submit a capital conservation plan must include at least income and expense estimates and a balance sheet forecast, measures to raise its capital ratios or leverage ratio, a plan and timetable for meeting the combined buffer requirement or leverage ratio buffer in full, and a plan for distributions; the plan runs at least to the end of the financial year. The board must approve it, and the bank must update and resubmit it for approval if there is a material risk it cannot meet the plan."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om lempet kundekendskab for udstedere af e-penge, BEK nr 311 af 26/03/2020",
+   "source": "https://www.retsinformation.dk/eli/lta/2020/311",
+   "sourceLabel": "Retsinformation, BEK nr 311 af 26/03/2020, issued by Finanstilsynet, § 3 on entry into force",
+   "payload": {
+    "key": "dk-bek-2020-311",
+    "titles": {
+     "da": "Bekendtgørelse om lempede krav til kundekendskabsproceduren efter lov om forebyggende foranstaltninger mod hvidvask og finansiering af terrorisme (hvidvaskloven) for udstedere af elektroniske penge",
+     "en": "Executive Order on relaxed customer due diligence requirements under the Act on Measures to Prevent Money Laundering and Terrorist Financing (the Anti-Money Laundering Act) for issuers of electronic money"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om lempet kundekendskab for udstedere af e-penge",
+    "officialRef": "BEK nr 311 af 26/03/2020",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2020/311",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:aml",
+    "inForceFrom": "2020-04-01",
+    "implementsNote": "Parts of AMLD5, Directive (EU) 2018/843"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Skip due diligence for low-value e-money only when every risk-limiting condition is met",
+     "source": "https://www.retsinformation.dk/eli/lta/2020/311",
+     "sourceLabel": "Retsinformation, BEK nr 311 af 26/03/2020, issued by Finanstilsynet, §§ 1-2",
+     "payload": {
+      "key": "obl-dk-epengekkbek-exemption-conditions",
+      "titles": {
+       "en": "Skip due diligence for low-value e-money only when every risk-limiting condition is met"
+      },
+      "summaries": {
+       "en": "A bank issuing e-money, or a licensed e-money issuer, may skip the customer due diligence measures in § 11, stk. 1, nr. 1-4, and § 14 of the Anti-Money Laundering Act only if the payment instrument is not reloadable or has a monthly limit of EUR 150 usable only in Denmark, stores at most EUR 150, can only buy goods or services and cannot be funded with anonymous e-money, and the issuer monitors transactions or the relationship well enough to detect unusual or suspicious transactions. The exemption never covers cash redemption or withdrawal above EUR 50 or remote payment transactions above EUR 50 each."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 1-2",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}
