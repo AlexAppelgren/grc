@@ -32,13 +32,14 @@ cannot verify stays out, and you say so.
 ## What goes in
 
 - The sector scope only: banking, payments, investment services, insurance and pensions,
-  asset management, and the AML, data protection, ICT-risk, tax and AI rules as they apply
-  to financial firms. Market abuse is in scope. No standards.
+  asset management, and the AML (financial sanctions included), data protection, ICT-risk,
+  tax and AI rules as they apply to financial firms. Market abuse is in scope. No standards.
 - An EU regulation's duties sit under it. An EU directive is an instrument with no duties;
   its duties sit under each national act that implements it, whose implements note names it.
 - Levels: EU regulation (delegated and implementing ones too), EU directive, EU guidance,
-  act (a statute of the national parliament), authority regulation (binding rules a
-  supervisor issues under delegation). A government ordinance fits none and waits.
+  act (a statute of the national parliament), government regulation (binding rules a
+  government or a ministry issues under an act), authority regulation (binding rules a
+  supervisor or another authority issues under delegation).
 - Dates: the instrument's in-force date is the day it entered into force; a duty that
   applies later carries that day as its effective date; an instrument that stops binding
   carries the first day it no longer binds.

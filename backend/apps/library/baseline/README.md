@@ -3,13 +3,14 @@
 The shared library's starting inventory: the instruments in force within the sector scope
 on the day they were researched, for the EU, Sweden, Denmark, Norway and Finland, and the
 core duties of each in our own words. It is not loaded by a seed. Each entry is a proposal
-that `manage.py file_library_baseline` files through the proposal door as the platform
-agent `library-baseline`, and a second, independent principal approves it in the console
+that the beat (every `LIBRARY_BASELINE_FILING_MINUTES`) or `manage.py file_library_baseline`
+files through the proposal door as the platform agent `library-baseline`, and a second, independent principal approves it in the console
 queue like any other (ADR 0065, D-118, `docs/plans/briefs/LIBRARY_BASELINE.md`). From then
 on the watch agents keep it current: every run re-checks the records of the sources it
 checks and proposes a correction where one has drifted (WAT-01, D-50).
 
-One file per tranche, named by its `tranche`. `check_baseline.py` checks every file's shape
+One file per tranche, named by its `tranche`, and `sources.json`, the pages the watch checks
+for these records, which the same filing registers. `check_baseline.py` checks every file's shape
 and keys without a database; `apps/proposals/tests_baseline.py` files and approves the whole
 baseline through the real proposal code, so an entry the door would refuse fails the
 backend suite.
@@ -63,8 +64,11 @@ python backend/apps/library/baseline/check_baseline.py [file.json ...]
   names the directive.
 - **Levels.** `eu_regulation` (delegated and implementing regulations too), `eu_directive`,
   `eu_guidance` (the supervisory authorities' guidelines), `act` (a statute of the national
-  legislature) and `authority_regulation` (binding rules a supervisor issues under
-  delegation). A government ordinance fits none of them and waits for its own level.
+  legislature), `government_regulation` (binding rules a government or a ministry issues
+  under an act: a förordning, a ministerial bekendtgørelse, a ministry forskrift, an asetus)
+  and `authority_regulation` (binding rules a supervisor or another authority issues under
+  delegation).
+- **Sanctions** sit under `regime:aml`: EU restrictive measures and national sanctions law.
 - **Keys** are for ever. Instruments: `celex-<celex lowercased>` for EU acts,
   `sfs-<year>-<number>`, `fffs-<year>-<number>`, `dk-lov-<year>-<number>`,
   `dk-bek-<year>-<number>`, `no-lov-<yyyy-mm-dd>-<number>`, `no-for-<yyyy-mm-dd>-<number>`,

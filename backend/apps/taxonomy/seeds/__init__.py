@@ -159,7 +159,8 @@ _REJECTION_REASONS: list[SystemRow] = [
         {"en": "Outside the sector scope", "sv": "Utanför sektorsomfattningen"},
         "The record falls outside the library's sector scope: regulated financial services only (banking, "
         "payments, investment services, insurance and pension provision, and asset and wealth management), "
-        "with the AML, data protection and ICT-risk regimes that apply to them and the tax and AI rules as "
+        "with the AML regime (financial sanctions included), the data protection and ICT-risk regimes that apply "
+        "to them, and the tax and AI rules as "
         "they apply to financial firms and their products. Every record carries a regime from the regime "
         "list, which is the boundary. Other sectors, and standards outside that scope such as ISO 9001, "
         "ISO 14001 or ISO 45001, never enter the library.",
