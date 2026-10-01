@@ -1,0 +1,2967 @@
+{
+ "tranche": "no-sanctions",
+ "researchedOn": "2026-10-01",
+ "instruments": [
+  {
+   "title": "Add Sanksjonsforskrift Ukraina (territoriell integritet mv.), FOR-2014-08-15-1076",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076",
+   "sourceLabel": "Lovdata, FOR-2014-08-15-1076, Sanksjonsforskrift Ukraina (territoriell integritet mv.), consolidated text as last amended by FOR-2026-08-14-1632",
+   "payload": {
+    "key": "no-for-2014-08-15-1076",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak vedrørende handlinger som undergraver eller truer Ukrainas territorielle integritet, suverenitet, uavhengighet og stabilitet",
+     "en": "Regulation on restrictive measures in respect of actions undermining or threatening the territorial integrity, sovereignty, independence and stability of Ukraine"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Sanksjonsforskrift Ukraina (territoriell integritet mv.)",
+    "officialRef": "FOR-2014-08-15-1076",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2014-08-15"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Russia and Ukraine sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A73",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 3",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Russia and Ukraine sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the natural and legal persons listed in Annex I of the regulation: those responsible for or supporting actions undermining or threatening Ukraine's territorial integrity, sovereignty and independence, and the further categories § 3 sets out, such as leading Russian businesspersons and those facilitating sanctions circumvention."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 første ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Russia and Ukraine sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A73",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 3",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Russia and Ukraine sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons listed in Annex I of the regulation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 annet ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen assets and assets moved before a listing to DEKSA within two weeks",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A78",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 8",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-report",
+      "titles": {
+       "en": "Report frozen assets and assets moved before a listing to DEKSA within two weeks"
+      },
+      "summaries": {
+       "en": "Regardless of rules on reporting, confidentiality and professional secrecy, a bank must give Direktoratet for eksportkontroll og sanksjoner (DEKSA) information that facilitates compliance with the freeze no later than two weeks after receiving it: the funds and economic resources it has frozen, or holds for a listed person without treating them as frozen, and those of a listed person that were moved, transferred or used in the two weeks before the listing. Reports on frozen assets identify the owner and give amounts, market values and the form of each asset, and the bank must cooperate with DEKSA in verifying them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Freeze any credit to a frozen account and tell DEKSA at once",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A77",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 7",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-frozen-accounts",
+      "titles": {
+       "en": "Freeze any credit to a frozen account and tell DEKSA at once"
+      },
+      "summaries": {
+       "en": "A credit or financial institution may credit a frozen account with funds a third party transfers to a listed person only if the credited amounts are frozen too, and it must inform Direktoratet for eksportkontroll og sanksjoner (DEKSA) of such transactions immediately."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not deal in new securities of, or lend to, the Russian banks and companies listed for financial restrictions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A78b",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 8b",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-securities-loans",
+      "titles": {
+       "en": "Do not deal in new securities of, or lend to, the Russian banks and companies listed for financial restrictions"
+      },
+      "summaries": {
+       "en": "A bank must not buy, sell or provide investment services for transferable securities and money-market instruments issued after the cut-off dates by the Russian banks and companies listed in Annexes V, VII, VIII, XIII and XIV, their entities outside Norway and the EU owned more than 50 % by them, or anyone acting for them. Nor may it make, or take part in arrangements to make, new loans or credit to those entities (for any maturity after 19 March 2022), apart from narrow exceptions for financing non-prohibited trade and emergency funding that must be notified within three months."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8b",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not deal in new Russian sovereign debt, lend to the Russian state or handle the Central Bank of Russia's reserves",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A78c",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 8c",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-sovereign",
+      "titles": {
+       "en": "Do not deal in new Russian sovereign debt, lend to the Russian state or handle the Central Bank of Russia's reserves"
+      },
+      "summaries": {
+       "en": "A bank must not buy, sell or provide investment services for transferable securities and money-market instruments issued after 1 April 2022 by Russia, its government or the Central Bank of Russia, nor make new loans or credit to them after 18 March 2022, except documented trade finance or drawdowns under earlier contracts notified to DEKSA within three months. Transactions related to the management of the Central Bank of Russia's reserves and assets are prohibited."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8c",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not transact with the Russian state-owned entities listed in Annex XIX",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A78ca",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 8ca",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-state-entities",
+      "titles": {
+       "en": "Do not transact with the Russian state-owned entities listed in Annex XIX"
+      },
+      "summaries": {
+       "en": "A bank must not take part, directly or indirectly, in any transaction with the Russian state-controlled or majority publicly owned entities listed in Annex XIX, with their entities outside Norway and the EU owned more than 50 % by them, or with anyone acting on their behalf, except where the regulation's exceptions (for example for gas, oil, agricultural products and medicines) apply."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8ca",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not connect to SPFS or other Central Bank of Russia payment and messaging systems",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A78cd",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 8cd",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-spfs",
+      "titles": {
+       "en": "Do not connect to SPFS or other Central Bank of Russia payment and messaging systems"
+      },
+      "summaries": {
+       "en": "A legal person established in Norway must not connect to the Central Bank of Russia's System for Transfer of Financial Messages (SPFS) or equivalent specialised financial messaging services, and from 29 June 2026 to any Central Bank of Russia system, including the Fast Payment System (SBP) and Mir. It must also not transact with the entities outside Russia listed in Annex XLIV for using such services, subject to the regulation's narrow exceptions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8cd",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-10-03",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not transact with the third-country banks and financial firms listed in Annex XLV",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A78ce",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 8ce",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-third-country-banks",
+      "titles": {
+       "en": "Do not transact with the third-country banks and financial firms listed in Annex XLV"
+      },
+      "summaries": {
+       "en": "A bank must not take part, directly or indirectly, in transactions with the credit, financial and crypto-asset firms established outside Norway and the EU that are listed in Annex XLV for supporting Russia's war or sanctions circumvention, with entities acting on their behalf, or with mirror or successor entities, except for the narrow purposes the regulation exempts, such as food, medicines and humanitarian aid."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8ce",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Refuse deposits above EUR 100 000 from Russian nationals, residents and entities",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A78d",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 8d",
+     "fieldSources": {
+      "effectiveFrom": "https://lovdata.no/dokument/LTI/forskrift/2022-03-18-410"
+     },
+     "payload": {
+      "key": "obl-no-sanksjon-russland-deposits",
+      "titles": {
+       "en": "Refuse deposits above EUR 100 000 from Russian nationals, residents and entities"
+      },
+      "summaries": {
+       "en": "A bank must not accept deposits from Russian nationals, natural persons residing in Russia, legal persons established in Russia or legal persons outside Norway and the EU owned more than 50 % by them if the total value of that depositor's deposits with the bank would exceed EUR 100 000. Nationals of Norway, an EEA state or Switzerland and holders of a temporary or permanent residence permit there are exempt."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8d første og fjerde ledd",
+      "dutyType": "conduct",
+      "effectiveFrom": "2022-03-18",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not provide crypto-asset, payment-instrument or e-money services to Russian nationals, residents and entities",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/%C2%A78d",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (territoriell integritet mv.) (FOR-2014-08-15-1076) § 8d",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-payment-crypto-services",
+      "titles": {
+       "en": "Do not provide crypto-asset, payment-instrument or e-money services to Russian nationals, residents and entities"
+      },
+      "summaries": {
+       "en": "A firm must not provide, directly or indirectly, to Russian nationals, natural persons residing in Russia or legal persons established in Russia any crypto-asset services as defined in Regulation (EU) 2023/1114, the issuing of payment instruments, acquiring of payment transactions or related payment services as defined in Directive (EU) 2015/2366, or the issuing of electronic money. Nationals of Norway, an EEA state or Switzerland and holders of a residence permit there are exempt."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8d annet og fjerde ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not sell NOK- or EU-currency securities issued after the cut-off date to Russian nationals, residents and entities",
+     "source": "https://lovdata.no/dokument/LTI/forskrift/2022-03-18-410",
+     "sourceLabel": "Lovdata, FOR-2022-03-18-410 inserting § 8h in FOR-2014-08-15-1076 (prohibition on selling euro securities issued after 4 May 2022 to Russian persons), read with the current heading of § 8h in the consolidated text (Norwegian kroner or an EU member state's currency)",
+     "fieldSources": {
+      "titles.en": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/KAPITTEL_2a"
+     },
+     "payload": {
+      "key": "obl-no-sanksjon-russland-securities-sale",
+      "titles": {
+       "en": "Do not sell NOK- or EU-currency securities issued after the cut-off date to Russian nationals, residents and entities"
+      },
+      "summaries": {
+       "en": "A bank must not sell to Russian nationals, natural persons residing in Russia or legal persons established in Russia transferable securities denominated in Norwegian kroner or an official currency of an EU member state issued after the cut-off date the section sets, or units in collective investment undertakings giving exposure to such securities. As introduced in March 2022 the ban covered euro-denominated securities issued after 4 May 2022."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8h",
+      "dutyType": "conduct",
+      "effectiveFrom": "2022-03-18",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report deposits above EUR 100 000 held by Russian nationals, residents and entities to DEKSA every twelve months",
+     "source": "https://lovdata.no/dokument/LTI/forskrift/2022-03-18-410",
+     "sourceLabel": "Lovdata, FOR-2022-03-18-410 inserting § 8i (Rapporteringsplikt for kredittinstitusjoner) in FOR-2014-08-15-1076, first list due 20 June 2022 to Utenriksdepartementet; FOR-2024-11-22-2888 part XIX replaced Utenriksdepartementet with Direktoratet for eksportkontroll og sanksjoner from 1 January 2025",
+     "fieldSources": {
+      "refLabel": "https://lovdata.no/dokument/SF/forskrift/2014-08-15-1076/KAPITTEL_2a"
+     },
+     "payload": {
+      "key": "obl-no-sanksjon-russland-deposit-reporting",
+      "titles": {
+       "en": "Report deposits above EUR 100 000 held by Russian nationals, residents and entities to DEKSA every twelve months"
+      },
+      "summaries": {
+       "en": "A credit institution must give Direktoratet for eksportkontroll og sanksjoner (DEKSA) a list of deposits exceeding EUR 100 000 held by Russian nationals, natural persons residing in Russia or legal persons established in Russia, updated every twelve months, together with information on such deposits held by Russian nationals or residents who obtained Norwegian or EU citizenship or residence through an investor scheme."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8i",
+      "dutyType": "reporting",
+      "effectiveFrom": "2022-03-18",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanksjonsforskrift Russland (destabiliserende aktiviteter), FOR-2025-03-14-466",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-466",
+   "sourceLabel": "Lovdata, FOR-2025-03-14-466, Sanksjonsforskrift Russland (destabiliserende aktiviteter), consolidated text as last amended by FOR-2025-07-08-1505",
+   "payload": {
+    "key": "no-for-2025-03-14-466",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak i lys av Russlands destabiliserende aktiviteter",
+     "en": "Regulation on restrictive measures in view of Russia's destabilising activities"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Sanksjonsforskrift Russland (destabiliserende aktiviteter)",
+    "officialRef": "FOR-2025-03-14-466",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2025-03-14",
+    "implementsNote": "Makes Regulation (EU) 2024/2642 Norwegian law (§ 1)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Russia destabilising activities sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-466/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Russland (destabiliserende aktiviteter) (FOR-2025-03-14-466) § 1, Regulation (EU) 2024/2642 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-destabilisering-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Russia destabilising activities sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2024/2642, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2024/2642 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Russia destabilising activities sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-466/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Russland (destabiliserende aktiviteter) (FOR-2025-03-14-466) § 1, Regulation (EU) 2024/2642 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-destabilisering-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Russia destabilising activities sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2024/2642, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2024/2642 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Russia destabilising activities sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-466/ARTIKKEL_8",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Russland (destabiliserende aktiviteter) (FOR-2025-03-14-466) § 1 (competent authority) and Regulation (EU) 2024/2642 Art. 8(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-destabilisering-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Russia destabilising activities sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2024/2642, including the accounts and amounts frozen."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2024/2642 Art. 8(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanksjonsforskrift Russland (situasjonen i landet), FOR-2025-03-14-472",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-472",
+   "sourceLabel": "Lovdata, FOR-2025-03-14-472, Sanksjonsforskrift Russland (situasjonen i landet), consolidated text as last amended by FOR-2025-03-31-632",
+   "payload": {
+    "key": "no-for-2025-03-14-472",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak i lys av situasjonen i Russland",
+     "en": "Regulation on restrictive measures in view of the situation in Russia"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Sanksjonsforskrift Russland (situasjonen i landet)",
+    "officialRef": "FOR-2025-03-14-472",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2025-03-14",
+    "implementsNote": "Makes Regulation (EU) 2024/1485 Norwegian law (§ 1)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Russia human rights sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-472/ARTIKKEL_6",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Russland (situasjonen i landet) (FOR-2025-03-14-472) § 1, Regulation (EU) 2024/1485 Art. 6(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-situasjonen-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Russia human rights sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex IV of Regulation (EU) 2024/1485, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2024/1485 Art. 6(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Russia human rights sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-472/ARTIKKEL_6",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Russland (situasjonen i landet) (FOR-2025-03-14-472) § 1, Regulation (EU) 2024/1485 Art. 6(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-situasjonen-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Russia human rights sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex IV of Regulation (EU) 2024/1485, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2024/1485 Art. 6(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Russia human rights sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-14-472/ARTIKKEL_12",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Russland (situasjonen i landet) (FOR-2025-03-14-472) § 1 (competent authority) and Regulation (EU) 2024/1485 Art. 12(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-russland-situasjonen-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Russia human rights sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2024/1485, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2024/1485 Art. 12(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanksjonsforskrift Ukraina (menneskerettighetsbrudd mv.), FOR-2014-05-09-612",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-612",
+   "sourceLabel": "Lovdata, FOR-2014-05-09-612, Sanksjonsforskrift Ukraina (menneskerettighetsbrudd mv.), consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2014-05-09-612",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak mot personer som anses ansvarlige for underslag av offentlige midler, samt personer som anses å ha deltatt i menneskerettighetsbrudd i Ukraina",
+     "en": "Regulation on restrictive measures against persons deemed responsible for the misappropriation of public funds and persons deemed to have taken part in human rights violations in Ukraine"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Sanksjonsforskrift Ukraina (menneskerettighetsbrudd mv.)",
+    "officialRef": "FOR-2014-05-09-612",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2014-05-09",
+    "implementsNote": "Makes Regulation (EU) No 208/2014 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Ukraine misappropriation sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-612/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (menneskerettighetsbrudd mv.) (FOR-2014-05-09-612) § 2, Regulation (EU) No 208/2014 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-ukraina-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Ukraine misappropriation sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 208/2014, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 208/2014 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Ukraine misappropriation sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-612/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (menneskerettighetsbrudd mv.) (FOR-2014-05-09-612) § 2, Regulation (EU) No 208/2014 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-ukraina-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Ukraine misappropriation sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 208/2014, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 208/2014 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Ukraine misappropriation sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-612/ARTIKKEL_8",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Ukraina (menneskerettighetsbrudd mv.) (FOR-2014-05-09-612) § 2 (competent authority) and Regulation (EU) No 208/2014 Art. 8(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-ukraina-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Ukraine misappropriation sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 208/2014, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 208/2014 Art. 8(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanksjonsforskrift Belarus, FOR-2006-09-08-1041",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2006-09-08-1041",
+   "sourceLabel": "Lovdata, FOR-2006-09-08-1041, Sanksjonsforskrift Belarus, consolidated text as last amended by FOR-2026-09-14-1810",
+   "payload": {
+    "key": "no-for-2006-09-08-1041",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak i lys av situasjonen i Belarus og Belarus' medvirkning i Russlands aggresjon mot Ukraina",
+     "en": "Regulation on restrictive measures in view of the situation in Belarus and the involvement of Belarus in the Russian aggression against Ukraine"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Sanksjonsforskrift Belarus",
+    "officialRef": "FOR-2006-09-08-1041",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2006-09-08",
+    "implementsNote": "Makes Regulation (EC) No 765/2006 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Belarus sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2006-09-08-1041/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Belarus (FOR-2006-09-08-1041) § 2, Regulation (EC) No 765/2006 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-belarus-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Belarus sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EC) No 765/2006, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EC) No 765/2006 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Belarus sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2006-09-08-1041/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Belarus (FOR-2006-09-08-1041) § 2, Regulation (EC) No 765/2006 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-belarus-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Belarus sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EC) No 765/2006, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EC) No 765/2006 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Belarus sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2006-09-08-1041/ARTIKKEL_5",
+     "sourceLabel": "Lovdata, Sanksjonsforskrift Belarus (FOR-2006-09-08-1041) § 2 (competent authority) and Regulation (EC) No 765/2006 Art. 5(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-belarus-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Belarus sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EC) No 765/2006, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EC) No 765/2006 Art. 5(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner og tiltak mot Iran, FOR-2007-02-09-149",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2007-02-09-149",
+   "sourceLabel": "Lovdata, FOR-2007-02-09-149, Forskrift om sanksjoner og tiltak mot Iran, consolidated text as last amended by FOR-2026-05-11-809",
+   "payload": {
+    "key": "no-for-2007-02-09-149",
+    "titles": {
+     "nb": "Forskrift om sanksjoner og tiltak mot Iran",
+     "en": "Regulation on sanctions and measures against Iran"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner og tiltak mot Iran",
+    "officialRef": "FOR-2007-02-09-149",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2007-02-09",
+    "implementsNote": "Makes Regulation (EU) No 359/2011 (§ 1), Regulation (EU) No 267/2012 (§ 2) and Regulation (EU) 2023/1529 (§ 3) Norwegian law"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Iran sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-02-09-149/ARTIKKEL_23",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og tiltak mot Iran (FOR-2007-02-09-149), §§ 1-3, Regulation (EU) No 359/2011 Art. 2 (Vedlegg A), Regulation (EU) No 267/2012 Art. 23 (Vedlegg B) and Regulation (EU) 2023/1529 Art. 3 (Vedlegg C) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-iran-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Iran sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 359/2011 (human rights), Annexes VIII and IX of Regulation (EU) No 267/2012 (proliferation) and Annex III of Regulation (EU) 2023/1529 (military support to Russia's war against Ukraine), which §§ 1 to 3 make Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) No 359/2011 Art. 2(1)); § 2 (Regulation (EU) No 267/2012 Art. 23(1)-(2)); § 3 (Regulation (EU) 2023/1529 Art. 3(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Iran sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-02-09-149/ARTIKKEL_23",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og tiltak mot Iran (FOR-2007-02-09-149), §§ 1-3, Regulation (EU) No 359/2011 Art. 2 (Vedlegg A), Regulation (EU) No 267/2012 Art. 23 (Vedlegg B) and Regulation (EU) 2023/1529 Art. 3 (Vedlegg C) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-iran-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Iran sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 359/2011 (human rights), Annexes VIII and IX of Regulation (EU) No 267/2012 (proliferation) and Annex III of Regulation (EU) 2023/1529 (military support to Russia's war against Ukraine), which §§ 1 to 3 make Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) No 359/2011 Art. 2(2)); § 2 (Regulation (EU) No 267/2012 Art. 23(3)); § 3 (Regulation (EU) 2023/1529 Art. 3(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Iran sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-02-09-149/ARTIKKEL_40",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og tiltak mot Iran (FOR-2007-02-09-149) § 2 (competent authority) and Regulation (EU) No 267/2012 Art. 40(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-iran-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Iran sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 267/2012, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 267/2012 Art. 40(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner mv. mot Nord-Korea, FOR-2006-12-15-1405",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2006-12-15-1405",
+   "sourceLabel": "Lovdata, FOR-2006-12-15-1405, Forskrift om sanksjoner mv. mot Nord-Korea, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2006-12-15-1405",
+    "titles": {
+     "nb": "Forskrift om sanksjoner og restriktive tiltak mot Nord-Korea",
+     "en": "Regulation on sanctions and restrictive measures against North Korea"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner mv. mot Nord-Korea",
+    "officialRef": "FOR-2006-12-15-1405",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2006-12-15",
+    "implementsNote": "Makes Regulation (EU) 2017/1509 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the North Korea sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2006-12-15-1405/ARTIKKEL_34",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mv. mot Nord-Korea (FOR-2006-12-15-1405) § 2, Regulation (EU) 2017/1509 Art. 34(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-nord-korea-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the North Korea sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes XIII, XV, XVI and XVII of Regulation (EU) 2017/1509, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2017/1509 Art. 34(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the North Korea sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2006-12-15-1405/ARTIKKEL_34",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mv. mot Nord-Korea (FOR-2006-12-15-1405) § 2, Regulation (EU) 2017/1509 Art. 34(3) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-nord-korea-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the North Korea sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes XIII, XV, XVI and XVII of Regulation (EU) 2017/1509, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2017/1509 Art. 34(3))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the North Korea sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2006-12-15-1405/ARTIKKEL_50",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mv. mot Nord-Korea (FOR-2006-12-15-1405) § 2 (competent authority) and Regulation (EU) 2017/1509 Art. 50(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-nord-korea-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the North Korea sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2017/1509, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2017/1509 Art. 50(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner mot ISIL og Al-Qaida, FOR-1999-12-22-1374",
+   "source": "https://lovdata.no/dokument/SF/forskrift/1999-12-22-1374",
+   "sourceLabel": "Lovdata, FOR-1999-12-22-1374, Forskrift om sanksjoner mot ISIL og Al-Qaida, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-1999-12-22-1374",
+    "titles": {
+     "nb": "Forskrift om sanksjoner mot ISIL (Da'esh) og Al-Qaida",
+     "en": "Regulation on sanctions against ISIL (Da'esh) and Al-Qaida"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner mot ISIL og Al-Qaida",
+    "officialRef": "FOR-1999-12-22-1374",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "1999-12-22"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the ISIL (Da'esh) and Al-Qaida sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1999-12-22-1374",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot ISIL og Al-Qaida (FOR-1999-12-22-1374) § 3 første ledd",
+     "payload": {
+      "key": "obl-no-sanksjon-isil-al-qaida-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the ISIL (Da'esh) and Al-Qaida sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, a natural or legal person, entity, body or group on the UN Sanctions Committee's list of those associated with the Al-Qaida network."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 første ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the ISIL (Da'esh) and Al-Qaida sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1999-12-22-1374",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot ISIL og Al-Qaida (FOR-1999-12-22-1374) § 3 annet ledd",
+     "payload": {
+      "key": "obl-no-sanksjon-isil-al-qaida-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the ISIL (Da'esh) and Al-Qaida sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of a natural or legal person, entity, body or group on the UN Sanctions Committee's list of those associated with the Al-Qaida network."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 annet ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify DEKSA immediately of every ISIL and Al-Qaida freeze and of credits to frozen accounts",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1999-12-22-1374",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot ISIL og Al-Qaida (FOR-1999-12-22-1374) § 3 første ledd; § 6",
+     "payload": {
+      "key": "obl-no-sanksjon-isil-al-qaida-report",
+      "titles": {
+       "en": "Notify DEKSA immediately of every ISIL and Al-Qaida freeze and of credits to frozen accounts"
+      },
+      "summaries": {
+       "en": "Whoever freezes funds or economic resources under § 3 must notify Direktoratet for eksportkontroll og sanksjoner (DEKSA) of it immediately. A financial or credit institution may credit a frozen account with funds transferred to a listed person only if the credited amounts are frozen too, and must inform DEKSA of such transactions immediately."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 første ledd; § 6",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner mot Taliban, FOR-2013-11-08-1294",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2013-11-08-1294",
+   "sourceLabel": "Lovdata, FOR-2013-11-08-1294, Forskrift om sanksjoner mot Taliban, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2013-11-08-1294",
+    "titles": {
+     "nb": "Forskrift om sanksjoner mot Taliban",
+     "en": "Regulation on sanctions against the Taliban"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner mot Taliban",
+    "officialRef": "FOR-2013-11-08-1294",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2013-11-08"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Taliban sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2013-11-08-1294",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot Taliban (FOR-2013-11-08-1294) § 3 første ledd",
+     "payload": {
+      "key": "obl-no-sanksjon-taliban-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Taliban sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, a natural or legal person, entity, body or group on the UN Sanctions Committee's list under the regulation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 første ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Taliban sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2013-11-08-1294",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot Taliban (FOR-2013-11-08-1294) § 3 annet ledd",
+     "payload": {
+      "key": "obl-no-sanksjon-taliban-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Taliban sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of a natural or legal person, entity, body or group on the UN Sanctions Committee's list under the regulation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 annet ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify DEKSA immediately of every Taliban freeze and of credits to frozen accounts",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2013-11-08-1294",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot Taliban (FOR-2013-11-08-1294) § 3 første ledd; § 6",
+     "payload": {
+      "key": "obl-no-sanksjon-taliban-report",
+      "titles": {
+       "en": "Notify DEKSA immediately of every Taliban freeze and of credits to frozen accounts"
+      },
+      "summaries": {
+       "en": "Whoever freezes funds or economic resources under § 3 must notify Direktoratet for eksportkontroll og sanksjoner (DEKSA) of it immediately. A financial or credit institution may credit a frozen account with funds transferred to a listed person only if the credited amounts are frozen too, and must inform DEKSA of such transactions immediately."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 første ledd; § 6",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak mot alvorlige menneskerettsbrudd og -overgrep, FOR-2021-05-11-1458",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1458",
+   "sourceLabel": "Lovdata, FOR-2021-05-11-1458, Forskrift om restriktive tiltak mot alvorlige menneskerettsbrudd og -overgrep, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2021-05-11-1458",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak mot alvorlige menneskerettsbrudd og -overgrep",
+     "en": "Regulation on restrictive measures against serious human rights violations and abuses"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak mot alvorlige menneskerettsbrudd og -overgrep",
+    "officialRef": "FOR-2021-05-11-1458",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2021-05-11",
+    "implementsNote": "Makes Regulation (EU) 2020/1998 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the global human rights sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1458/ARTIKKEL_3",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot alvorlige menneskerettsbrudd og -overgrep (FOR-2021-05-11-1458) § 2, Regulation (EU) 2020/1998 Art. 3(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-menneskerettigheter-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the global human rights sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2020/1998, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2020/1998 Art. 3(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the global human rights sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1458/ARTIKKEL_3",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot alvorlige menneskerettsbrudd og -overgrep (FOR-2021-05-11-1458) § 2, Regulation (EU) 2020/1998 Art. 3(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-menneskerettigheter-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the global human rights sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2020/1998, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2020/1998 Art. 3(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the global human rights sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1458/ARTIKKEL_9",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot alvorlige menneskerettsbrudd og -overgrep (FOR-2021-05-11-1458) § 2 (competent authority) and Regulation (EU) 2020/1998 Art. 9(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-menneskerettigheter-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the global human rights sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2020/1998, including the accounts and amounts frozen."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2020/1998 Art. 9(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak mot cyberangrep, FOR-2021-05-11-1459",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1459",
+   "sourceLabel": "Lovdata, FOR-2021-05-11-1459, Forskrift om restriktive tiltak mot cyberangrep, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2021-05-11-1459",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak mot cyberangrep",
+     "en": "Regulation on restrictive measures against cyber-attacks"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak mot cyberangrep",
+    "officialRef": "FOR-2021-05-11-1459",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2021-05-11",
+    "implementsNote": "Makes Regulation (EU) 2019/796 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the cyber-attacks sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1459/ARTIKKEL_3",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot cyberangrep (FOR-2021-05-11-1459) § 2, Regulation (EU) 2019/796 Art. 3(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-cyber-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the cyber-attacks sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2019/796, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2019/796 Art. 3(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the cyber-attacks sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1459/ARTIKKEL_3",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot cyberangrep (FOR-2021-05-11-1459) § 2, Regulation (EU) 2019/796 Art. 3(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-cyber-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the cyber-attacks sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2019/796, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2019/796 Art. 3(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the cyber-attacks sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1459/ARTIKKEL_8",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot cyberangrep (FOR-2021-05-11-1459) § 2 (competent authority) and Regulation (EU) 2019/796 Art. 8(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-cyber-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the cyber-attacks sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2019/796, including the accounts and amounts frozen."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2019/796 Art. 8(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak mot spredning og bruk av kjemiske våpen, FOR-2021-05-11-1456",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1456",
+   "sourceLabel": "Lovdata, FOR-2021-05-11-1456, Forskrift om restriktive tiltak mot spredning og bruk av kjemiske våpen, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2021-05-11-1456",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak mot spredning og bruk av kjemiske våpen",
+     "en": "Regulation on restrictive measures against the proliferation and use of chemical weapons"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak mot spredning og bruk av kjemiske våpen",
+    "officialRef": "FOR-2021-05-11-1456",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2021-05-11",
+    "implementsNote": "Makes Regulation (EU) 2018/1542 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the chemical weapons sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1456/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot spredning og bruk av kjemiske våpen (FOR-2021-05-11-1456) § 2, Regulation (EU) 2018/1542 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-kjemiske-vapen-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the chemical weapons sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2018/1542, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2018/1542 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the chemical weapons sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1456/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot spredning og bruk av kjemiske våpen (FOR-2021-05-11-1456) § 2, Regulation (EU) 2018/1542 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-kjemiske-vapen-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the chemical weapons sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2018/1542, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2018/1542 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the chemical weapons sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-05-11-1456/ARTIKKEL_7",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot spredning og bruk av kjemiske våpen (FOR-2021-05-11-1456) § 2 (competent authority) and Regulation (EU) 2018/1542 Art. 7(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-kjemiske-vapen-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the chemical weapons sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2018/1542, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2018/1542 Art. 7(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner mot Irak, FOR-1990-08-09-635",
+   "source": "https://lovdata.no/dokument/SF/forskrift/1990-08-09-635",
+   "sourceLabel": "Lovdata, FOR-1990-08-09-635, Forskrift om sanksjoner mot Irak, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-1990-08-09-635",
+    "titles": {
+     "nb": "Forskrift om gjennomføring av De Forente Nasjoners Sikkerhetsråds resolusjoner om sanksjoner mot Irak",
+     "en": "Regulation on the implementation of the United Nations Security Council resolutions on sanctions against Iraq"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner mot Irak",
+    "officialRef": "FOR-1990-08-09-635",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "1990-08-09"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and financial assets of the former Iraqi government and its senior officials",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1990-08-09-635",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot Irak (FOR-1990-08-09-635) § 2 første til tredje ledd",
+     "payload": {
+      "key": "obl-no-sanksjon-irak-freeze",
+      "titles": {
+       "en": "Freeze the funds and financial assets of the former Iraqi government and its senior officials"
+      },
+      "summaries": {
+       "en": "A bank must freeze financial funds and assets belonging to the former Government of Iraq or its state bodies, corporations or agencies, and those of senior officials of the former government, their immediate family members and entities they own or control directly or indirectly or persons acting on their behalf, and § 2 provides for frozen funds to be transferred to the Development Fund for Iraq."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 første til tredje ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify DEKSA of every freeze of former Iraqi government assets",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1990-08-09-635",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot Irak (FOR-1990-08-09-635) § 2",
+     "payload": {
+      "key": "obl-no-sanksjon-irak-report",
+      "titles": {
+       "en": "Notify DEKSA of every freeze of former Iraqi government assets"
+      },
+      "summaries": {
+       "en": "Direktoratet for eksportkontroll og sanksjoner (DEKSA) must be notified of the measures taken under § 2, such as a freeze of funds and financial assets of the former Iraqi government or its senior officials."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner i lys av situasjonen i Somalia, FOR-1992-02-07-77",
+   "source": "https://lovdata.no/dokument/SF/forskrift/1992-02-07-77",
+   "sourceLabel": "Lovdata, FOR-1992-02-07-77, Forskrift om sanksjoner i lys av situasjonen i Somalia, consolidated text as last amended by FOR-2024-12-09-3030",
+   "payload": {
+    "key": "no-for-1992-02-07-77",
+    "titles": {
+     "nb": "Forskrift om sanksjoner i lys av situasjonen i Somalia",
+     "en": "Regulation on sanctions in view of the situation in Somalia"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner i lys av situasjonen i Somalia",
+    "officialRef": "FOR-1992-02-07-77",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "1992-02-07",
+    "implementsNote": "Makes Regulation (EU) No 356/2010 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Somalia sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1992-02-07-77/ARTIKKEL_2_1",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner i lys av situasjonen i Somalia (FOR-1992-02-07-77) § 2, Regulation (EU) No 356/2010 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-somalia-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Somalia sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 356/2010, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 356/2010 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Somalia sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1992-02-07-77/ARTIKKEL_2_1",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner i lys av situasjonen i Somalia (FOR-1992-02-07-77) § 2, Regulation (EU) No 356/2010 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-somalia-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Somalia sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 356/2010, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 356/2010 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Somalia sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1992-02-07-77/ARTIKKEL_9_2",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner i lys av situasjonen i Somalia (FOR-1992-02-07-77) § 2 (competent authority) and Regulation (EU) No 356/2010 Art. 9(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-somalia-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Somalia sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 356/2010, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 356/2010 Art. 9(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak i lys av situasjonen i Myanmar/Burma, FOR-2003-07-04-895",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2003-07-04-895",
+   "sourceLabel": "Lovdata, FOR-2003-07-04-895, Forskrift om restriktive tiltak i lys av situasjonen i Myanmar/Burma, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2003-07-04-895",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak i lys av situasjonen i Myanmar/Burma",
+     "en": "Regulation on restrictive measures in view of the situation in Myanmar/Burma"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak i lys av situasjonen i Myanmar/Burma",
+    "officialRef": "FOR-2003-07-04-895",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2003-07-04",
+    "implementsNote": "Makes Regulation (EU) No 401/2013 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Myanmar/Burma sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2003-07-04-895/ARTIKKEL_4a",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Myanmar/Burma (FOR-2003-07-04-895) § 2, Regulation (EU) No 401/2013 Art. 4a(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-myanmar-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Myanmar/Burma sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex IV of Regulation (EU) No 401/2013, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 401/2013 Art. 4a(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Myanmar/Burma sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2003-07-04-895/ARTIKKEL_4a",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Myanmar/Burma (FOR-2003-07-04-895) § 2, Regulation (EU) No 401/2013 Art. 4a(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-myanmar-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Myanmar/Burma sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex IV of Regulation (EU) No 401/2013, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 401/2013 Art. 4a(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Myanmar/Burma sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2003-07-04-895/ARTIKKEL_4e",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Myanmar/Burma (FOR-2003-07-04-895) § 2 (competent authority) and Regulation (EU) No 401/2013 Art. 4e(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-myanmar-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Myanmar/Burma sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 401/2013, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 401/2013 Art. 4e(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak mot Republikken Zimbabwe, FOR-2003-08-15-1050",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2003-08-15-1050",
+   "sourceLabel": "Lovdata, FOR-2003-08-15-1050, Forskrift om restriktive tiltak mot Republikken Zimbabwe, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2003-08-15-1050",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak mot Republikken Zimbabwe",
+     "en": "Regulation on restrictive measures against the Republic of Zimbabwe"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak mot Republikken Zimbabwe",
+    "officialRef": "FOR-2003-08-15-1050",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2003-08-15"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Zimbabwe sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2003-08-15-1050",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot Republikken Zimbabwe (FOR-2003-08-15-1050) § 7 første ledd",
+     "payload": {
+      "key": "obl-no-sanksjon-zimbabwe-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Zimbabwe sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the members of the government of Zimbabwe and the natural and legal persons, entities and bodies associated with them that are listed in Annex II of the regulation (those listed in Annex III are exempt)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7 første ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Zimbabwe sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2003-08-15-1050",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot Republikken Zimbabwe (FOR-2003-08-15-1050) § 7 tredje ledd",
+     "payload": {
+      "key": "obl-no-sanksjon-zimbabwe-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Zimbabwe sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the members of the government of Zimbabwe and the natural and legal persons, entities and bodies associated with them that are listed in Annex II of the regulation (those listed in Annex III are exempt)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7 tredje ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify DEKSA immediately of every Zimbabwe freeze",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2003-08-15-1050",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot Republikken Zimbabwe (FOR-2003-08-15-1050) § 7 annet ledd",
+     "payload": {
+      "key": "obl-no-sanksjon-zimbabwe-report",
+      "titles": {
+       "en": "Notify DEKSA immediately of every Zimbabwe freeze"
+      },
+      "summaries": {
+       "en": "Whoever freezes funds or economic resources under § 7 must notify Direktoratet for eksportkontroll og sanksjoner (DEKSA) of it immediately."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7 annet ledd",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner mot Kongo, FOR-2003-10-10-1221",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2003-10-10-1221",
+   "sourceLabel": "Lovdata, FOR-2003-10-10-1221, Forskrift om sanksjoner mot Kongo, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2003-10-10-1221",
+    "titles": {
+     "nb": "Forskrift om sanksjoner og restriktive tiltak i lys av situasjonen i Den demokratiske republikken Kongo",
+     "en": "Regulation on sanctions and restrictive measures in view of the situation in the Democratic Republic of the Congo"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner mot Kongo",
+    "officialRef": "FOR-2003-10-10-1221",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2003-10-10",
+    "implementsNote": "Makes Regulation (EC) No 1183/2005 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Democratic Republic of the Congo sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2003-10-10-1221/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot Kongo (FOR-2003-10-10-1221) § 2, Regulation (EC) No 1183/2005 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-kongo-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Democratic Republic of the Congo sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes I and Ia of Regulation (EC) No 1183/2005, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EC) No 1183/2005 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Democratic Republic of the Congo sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2003-10-10-1221/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot Kongo (FOR-2003-10-10-1221) § 2, Regulation (EC) No 1183/2005 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-kongo-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Democratic Republic of the Congo sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes I and Ia of Regulation (EC) No 1183/2005, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EC) No 1183/2005 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Democratic Republic of the Congo sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2003-10-10-1221/ARTIKKEL_6",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot Kongo (FOR-2003-10-10-1221) § 2 (competent authority) and Regulation (EC) No 1183/2005 Art. 6(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-kongo-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Democratic Republic of the Congo sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EC) No 1183/2005, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EC) No 1183/2005 Art. 6(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak i lys av situasjonen i Sudan, FOR-2006-06-02-573",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2006-06-02-573",
+   "sourceLabel": "Lovdata, FOR-2006-06-02-573, Forskrift om restriktive tiltak i lys av situasjonen i Sudan, consolidated text as last amended by FOR-2026-09-01-1723",
+   "payload": {
+    "key": "no-for-2006-06-02-573",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak i lys av situasjonen i Sudan",
+     "en": "Regulation on restrictive measures in view of the situation in Sudan"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak i lys av situasjonen i Sudan",
+    "officialRef": "FOR-2006-06-02-573",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2006-06-02",
+    "implementsNote": "Makes Regulation (EU) No 747/2014 (§ 1) and Regulation (EU) 2023/2147 (§ 2) Norwegian law"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Sudan sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2006-06-02-573/ARTIKKEL_5",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Sudan (FOR-2006-06-02-573), §§ 1-2, Regulation (EU) No 747/2014 Art. 5 (Vedlegg A) and Regulation (EU) 2023/2147 Art. 2 (Vedlegg B) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-sudan-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Sudan sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 747/2014 and Annex I of Regulation (EU) 2023/2147, which §§ 1 and 2 make Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) No 747/2014 Art. 5(1)); § 2 (Regulation (EU) 2023/2147 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Sudan sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2006-06-02-573/ARTIKKEL_5",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Sudan (FOR-2006-06-02-573), §§ 1-2, Regulation (EU) No 747/2014 Art. 5 (Vedlegg A) and Regulation (EU) 2023/2147 Art. 2 (Vedlegg B) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-sudan-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Sudan sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 747/2014 and Annex I of Regulation (EU) 2023/2147, which §§ 1 and 2 make Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) No 747/2014 Art. 5(2)); § 2 (Regulation (EU) 2023/2147 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Sudan sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2006-06-02-573/ARTIKKEL_9",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Sudan (FOR-2006-06-02-573) §§ 1-2 (competent authority), Regulation (EU) No 747/2014 Art. 9 (Vedlegg A) and Regulation (EU) 2023/2147 Art. 8 (Vedlegg B) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-sudan-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Sudan sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which §§ 1 and 2 name as the competent authority, any information that would facilitate compliance with Regulation (EU) No 747/2014 and Regulation (EU) 2023/2147, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) No 747/2014 Art. 9(1)); § 2 (Regulation (EU) 2023/2147 Art. 8(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner og restriktive tiltak mot Libya, FOR-2011-03-11-265",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2011-03-11-265",
+   "sourceLabel": "Lovdata, FOR-2011-03-11-265, Forskrift om sanksjoner og restriktive tiltak mot Libya, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2011-03-11-265",
+    "titles": {
+     "nb": "Forskrift om sanksjoner og restriktive tiltak mot Libya",
+     "en": "Regulation on sanctions and restrictive measures against Libya"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner og restriktive tiltak mot Libya",
+    "officialRef": "FOR-2011-03-11-265",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2011-03-11",
+    "implementsNote": "Makes Regulation (EU) 2016/44 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Libya sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-03-11-265/ARTIKKEL_5",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og restriktive tiltak mot Libya (FOR-2011-03-11-265) § 2, Regulation (EU) 2016/44 Art. 5(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-libya-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Libya sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes II and III of Regulation (EU) 2016/44, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2016/44 Art. 5(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Libya sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-03-11-265/ARTIKKEL_5",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og restriktive tiltak mot Libya (FOR-2011-03-11-265) § 2, Regulation (EU) 2016/44 Art. 5(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-libya-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Libya sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes II and III of Regulation (EU) 2016/44, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2016/44 Art. 5(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Libya sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-03-11-265/ARTIKKEL_13",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og restriktive tiltak mot Libya (FOR-2011-03-11-265) § 2 (competent authority) and Regulation (EU) 2016/44 Art. 13(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-libya-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Libya sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2016/44, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2016/44 Art. 13(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak mot Syria, FOR-2011-09-02-902",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2011-09-02-902",
+   "sourceLabel": "Lovdata, FOR-2011-09-02-902, Forskrift om restriktive tiltak mot Syria, consolidated text as last amended by FOR-2025-07-02-1419",
+   "payload": {
+    "key": "no-for-2011-09-02-902",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak mot Syria",
+     "en": "Regulation on restrictive measures against Syria"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak mot Syria",
+    "officialRef": "FOR-2011-09-02-902",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2011-09-02",
+    "implementsNote": "Makes Regulation (EU) No 36/2012 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Syria sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-09-02-902/ARTIKKEL_14",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot Syria (FOR-2011-09-02-902) § 2, Regulation (EU) No 36/2012 Art. 14(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-syria-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Syria sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex II of Regulation (EU) No 36/2012, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 36/2012 Art. 14(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Syria sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-09-02-902/ARTIKKEL_14",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot Syria (FOR-2011-09-02-902) § 2, Regulation (EU) No 36/2012 Art. 14(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-syria-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Syria sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex II of Regulation (EU) No 36/2012, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 36/2012 Art. 14(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Syria sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-09-02-902/ARTIKKEL_29",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot Syria (FOR-2011-09-02-902) § 2 (competent authority) and Regulation (EU) No 36/2012 Art. 29(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-syria-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Syria sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 36/2012, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 36/2012 Art. 29(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak mot Republikken Guinea, FOR-2014-05-09-626",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-626",
+   "sourceLabel": "Lovdata, FOR-2014-05-09-626, Forskrift om restriktive tiltak mot Republikken Guinea, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2014-05-09-626",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak mot Republikken Guinea",
+     "en": "Regulation on restrictive measures against the Republic of Guinea"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak mot Republikken Guinea",
+    "officialRef": "FOR-2014-05-09-626",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2014-05-09",
+    "implementsNote": "Makes Regulation (EU) No 1284/2009 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Republic of Guinea sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-626/ARTIKKEL_6",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot Republikken Guinea (FOR-2014-05-09-626) § 2, Regulation (EU) No 1284/2009 Art. 6(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-guinea-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Republic of Guinea sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex II of Regulation (EU) No 1284/2009, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 1284/2009 Art. 6(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Republic of Guinea sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-626/ARTIKKEL_6",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot Republikken Guinea (FOR-2014-05-09-626) § 2, Regulation (EU) No 1284/2009 Art. 6(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-guinea-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Republic of Guinea sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex II of Regulation (EU) No 1284/2009, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 1284/2009 Art. 6(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Republic of Guinea sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-05-09-626/ARTIKKEL_12",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot Republikken Guinea (FOR-2014-05-09-626) § 2 (competent authority) and Regulation (EU) No 1284/2009 Art. 12(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-guinea-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Republic of Guinea sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 1284/2009, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 1284/2009 Art. 12(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner mot visse personer og aktører i Jemen, FOR-2015-06-19-663",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2015-06-19-663",
+   "sourceLabel": "Lovdata, FOR-2015-06-19-663, Forskrift om sanksjoner mot visse personer og aktører i Jemen, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2015-06-19-663",
+    "titles": {
+     "nb": "Forskrift om sanksjoner mot visse personer og aktører i Jemen",
+     "en": "Regulation on sanctions against certain persons and entities in Yemen"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner mot visse personer og aktører i Jemen",
+    "officialRef": "FOR-2015-06-19-663",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2015-06-19"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Yemen sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-06-19-663",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot visse personer og aktører i Jemen (FOR-2015-06-19-663) § 3 første ledd",
+     "payload": {
+      "key": "obl-no-sanksjon-jemen-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Yemen sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the natural or legal persons, entities or bodies on the UN Sanctions Committee's list for Yemen."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 første ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Yemen sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-06-19-663",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot visse personer og aktører i Jemen (FOR-2015-06-19-663) § 3 annet ledd",
+     "payload": {
+      "key": "obl-no-sanksjon-jemen-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Yemen sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the natural or legal persons, entities or bodies on the UN Sanctions Committee's list for Yemen."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 annet ledd",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Yemen sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-06-19-663",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner mot visse personer og aktører i Jemen (FOR-2015-06-19-663) § 5; § 6",
+     "payload": {
+      "key": "obl-no-sanksjon-jemen-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Yemen sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA) any information that would facilitate compliance with the regulation, including the accounts and amounts frozen. A financial or credit institution may credit a frozen account with funds transferred to a listed person only if the credited amounts are frozen too, and must inform DEKSA of such transactions immediately."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5; § 6",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner og tiltak, Den sentralafrikanske republikk, FOR-2015-09-18-1061",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2015-09-18-1061",
+   "sourceLabel": "Lovdata, FOR-2015-09-18-1061, Forskrift om sanksjoner og tiltak, Den sentralafrikanske republikk, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2015-09-18-1061",
+    "titles": {
+     "nb": "Forskrift om sanksjoner og restriktive tiltak vedrørende situasjonen i Den sentralafrikanske republikk",
+     "en": "Regulation on sanctions and restrictive measures concerning the situation in the Central African Republic"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner og tiltak, Den sentralafrikanske republikk",
+    "officialRef": "FOR-2015-09-18-1061",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2015-09-18",
+    "implementsNote": "Makes Regulation (EU) No 224/2014 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Central African Republic sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-09-18-1061/ARTIKKEL_5",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og tiltak, Den sentralafrikanske republikk (FOR-2015-09-18-1061) § 2, Regulation (EU) No 224/2014 Art. 5(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-sentralafrikanske-republikk-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Central African Republic sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 224/2014, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 224/2014 Art. 5(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Central African Republic sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-09-18-1061/ARTIKKEL_5",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og tiltak, Den sentralafrikanske republikk (FOR-2015-09-18-1061) § 2, Regulation (EU) No 224/2014 Art. 5(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-sentralafrikanske-republikk-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Central African Republic sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 224/2014, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 224/2014 Art. 5(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Central African Republic sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-09-18-1061/ARTIKKEL_11",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og tiltak, Den sentralafrikanske republikk (FOR-2015-09-18-1061) § 2 (competent authority) and Regulation (EU) No 224/2014 Art. 11(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-sentralafrikanske-republikk-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Central African Republic sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 224/2014, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 224/2014 Art. 11(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak, Guinea-Bissau, FOR-2015-12-11-1434",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1434",
+   "sourceLabel": "Lovdata, FOR-2015-12-11-1434, Forskrift om restriktive tiltak, Guinea-Bissau, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2015-12-11-1434",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak vedrørende situasjonen i Guinea-Bissau",
+     "en": "Regulation on restrictive measures in view of the situation in Guinea-Bissau"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak, Guinea-Bissau",
+    "officialRef": "FOR-2015-12-11-1434",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2015-12-11",
+    "implementsNote": "Makes Regulation (EU) No 377/2012 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Guinea-Bissau sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1434/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Guinea-Bissau (FOR-2015-12-11-1434) § 2, Regulation (EU) No 377/2012 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-guinea-bissau-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Guinea-Bissau sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 377/2012, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 377/2012 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Guinea-Bissau sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1434/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Guinea-Bissau (FOR-2015-12-11-1434) § 2, Regulation (EU) No 377/2012 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-guinea-bissau-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Guinea-Bissau sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 377/2012, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 377/2012 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Guinea-Bissau sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1434/ARTIKKEL_8",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Guinea-Bissau (FOR-2015-12-11-1434) § 2 (competent authority) and Regulation (EU) No 377/2012 Art. 8(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-guinea-bissau-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Guinea-Bissau sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 377/2012, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 377/2012 Art. 8(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner og restriktive tiltak, Sør-Sudan, FOR-2015-12-11-1435",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1435",
+   "sourceLabel": "Lovdata, FOR-2015-12-11-1435, Forskrift om sanksjoner og restriktive tiltak, Sør-Sudan, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2015-12-11-1435",
+    "titles": {
+     "nb": "Forskrift om sanksjoner og restriktive tiltak i lys av situasjonen i Sør-Sudan",
+     "en": "Regulation on sanctions and restrictive measures in view of the situation in South Sudan"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner og restriktive tiltak, Sør-Sudan",
+    "officialRef": "FOR-2015-12-11-1435",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2015-12-11",
+    "implementsNote": "Makes Regulation (EU) 2015/735 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the South Sudan sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1435/ARTIKKEL_5",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og restriktive tiltak, Sør-Sudan (FOR-2015-12-11-1435) § 2, Regulation (EU) 2015/735 Art. 5(1)-(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-sor-sudan-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the South Sudan sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes I and II of Regulation (EU) 2015/735, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2015/735 Art. 5(1)-(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the South Sudan sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1435/ARTIKKEL_5",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og restriktive tiltak, Sør-Sudan (FOR-2015-12-11-1435) § 2, Regulation (EU) 2015/735 Art. 5(3) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-sor-sudan-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the South Sudan sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes I and II of Regulation (EU) 2015/735, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2015/735 Art. 5(3))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the South Sudan sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1435/ARTIKKEL_14",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner og restriktive tiltak, Sør-Sudan (FOR-2015-12-11-1435) § 2 (competent authority) and Regulation (EU) 2015/735 Art. 14(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-sor-sudan-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the South Sudan sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2015/735, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2015/735 Art. 14(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak mot visse personer, Tunisia, FOR-2015-12-11-1436",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1436",
+   "sourceLabel": "Lovdata, FOR-2015-12-11-1436, Forskrift om restriktive tiltak mot visse personer, Tunisia, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2015-12-11-1436",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak mot visse personer i lys av situasjonen i Tunisia",
+     "en": "Regulation on restrictive measures against certain persons in view of the situation in Tunisia"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak mot visse personer, Tunisia",
+    "officialRef": "FOR-2015-12-11-1436",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2015-12-11",
+    "implementsNote": "Makes Regulation (EU) No 101/2011 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Tunisia sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1436/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot visse personer, Tunisia (FOR-2015-12-11-1436) § 2, Regulation (EU) No 101/2011 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-tunisia-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Tunisia sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) No 101/2011, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 101/2011 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Tunisia sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1436/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot visse personer, Tunisia (FOR-2015-12-11-1436) § 2, Regulation (EU) No 101/2011 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-tunisia-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Tunisia sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) No 101/2011, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 101/2011 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Tunisia sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-11-1436/ARTIKKEL_9",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak mot visse personer, Tunisia (FOR-2015-12-11-1436) § 2 (competent authority) and Regulation (EU) No 101/2011 Art. 9(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-tunisia-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Tunisia sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) No 101/2011, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) No 101/2011 Art. 9(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak, Burundi, FOR-2016-02-05-104",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2016-02-05-104",
+   "sourceLabel": "Lovdata, FOR-2016-02-05-104, Forskrift om restriktive tiltak, Burundi, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2016-02-05-104",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak i lys av situasjonen i Burundi",
+     "en": "Regulation on restrictive measures in view of the situation in Burundi"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak, Burundi",
+    "officialRef": "FOR-2016-02-05-104",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2016-02-05",
+    "implementsNote": "Makes Regulation (EU) 2015/1755 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Burundi sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-02-05-104/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Burundi (FOR-2016-02-05-104) § 2, Regulation (EU) 2015/1755 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-burundi-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Burundi sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2015/1755, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2015/1755 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Burundi sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-02-05-104/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Burundi (FOR-2016-02-05-104) § 2, Regulation (EU) 2015/1755 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-burundi-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Burundi sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2015/1755, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2015/1755 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Burundi sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-02-05-104/ARTIKKEL_7",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Burundi (FOR-2016-02-05-104) § 2 (competent authority) and Regulation (EU) 2015/1755 Art. 7(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-burundi-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Burundi sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2015/1755, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2015/1755 Art. 7(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak, Venezuela, FOR-2017-12-15-2103",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2017-12-15-2103",
+   "sourceLabel": "Lovdata, FOR-2017-12-15-2103, Forskrift om restriktive tiltak, Venezuela, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2017-12-15-2103",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak vedrørende situasjonen i Venezuela",
+     "en": "Regulation on restrictive measures in view of the situation in Venezuela"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak, Venezuela",
+    "officialRef": "FOR-2017-12-15-2103",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2017-12-15",
+    "implementsNote": "Makes Regulation (EU) 2017/2063 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Venezuela sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2017-12-15-2103/ARTIKKEL_8",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Venezuela (FOR-2017-12-15-2103) § 2, Regulation (EU) 2017/2063 Art. 8(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-venezuela-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Venezuela sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes IV and V of Regulation (EU) 2017/2063, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2017/2063 Art. 8(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Venezuela sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2017-12-15-2103/ARTIKKEL_8",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Venezuela (FOR-2017-12-15-2103) § 2, Regulation (EU) 2017/2063 Art. 8(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-venezuela-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Venezuela sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes IV and V of Regulation (EU) 2017/2063, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2017/2063 Art. 8(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Venezuela sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2017-12-15-2103/ARTIKKEL_12",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Venezuela (FOR-2017-12-15-2103) § 2 (competent authority) and Regulation (EU) 2017/2063 Art. 12(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-venezuela-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Venezuela sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2017/2063, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2017/2063 Art. 12(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak, Mali, FOR-2020-05-07-955",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2020-05-07-955",
+   "sourceLabel": "Lovdata, FOR-2020-05-07-955, Forskrift om restriktive tiltak, Mali, consolidated text as last amended by FOR-2024-12-18-3382",
+   "payload": {
+    "key": "no-for-2020-05-07-955",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak i lys av situasjonen i Mali",
+     "en": "Regulation on restrictive measures in view of the situation in Mali"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak, Mali",
+    "officialRef": "FOR-2020-05-07-955",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2020-05-07",
+    "implementsNote": "Makes Regulation (EU) 2017/1770 Norwegian law (§ 1)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Mali sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-05-07-955/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Mali (FOR-2020-05-07-955) § 1, Regulation (EU) 2017/1770 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-mali-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Mali sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex Ia of Regulation (EU) 2017/1770, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2017/1770 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Mali sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-05-07-955/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Mali (FOR-2020-05-07-955) § 1, Regulation (EU) 2017/1770 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-mali-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Mali sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex Ia of Regulation (EU) 2017/1770, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2017/1770 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Mali sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-05-07-955/ARTIKKEL_7",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak, Mali (FOR-2020-05-07-955) § 1 (competent authority) and Regulation (EU) 2017/1770 Art. 7(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-mali-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Mali sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2017/1770, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2017/1770 Art. 7(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak i lys av situasjonen i Nicaragua, FOR-2020-06-23-1283",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2020-06-23-1283",
+   "sourceLabel": "Lovdata, FOR-2020-06-23-1283, Forskrift om restriktive tiltak i lys av situasjonen i Nicaragua, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2020-06-23-1283",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak i lys av situasjonen i Nicaragua",
+     "en": "Regulation on restrictive measures in view of the situation in Nicaragua"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak i lys av situasjonen i Nicaragua",
+    "officialRef": "FOR-2020-06-23-1283",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2020-06-23",
+    "implementsNote": "Makes Regulation (EU) 2019/1716 Norwegian law (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Nicaragua sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-06-23-1283/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Nicaragua (FOR-2020-06-23-1283) § 2, Regulation (EU) 2019/1716 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-nicaragua-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Nicaragua sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2019/1716, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2019/1716 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Nicaragua sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-06-23-1283/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Nicaragua (FOR-2020-06-23-1283) § 2, Regulation (EU) 2019/1716 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-nicaragua-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Nicaragua sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2019/1716, which § 2 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2019/1716 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Nicaragua sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-06-23-1283/ARTIKKEL_8",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Nicaragua (FOR-2020-06-23-1283) § 2 (competent authority) and Regulation (EU) 2019/1716 Art. 8(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-nicaragua-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Nicaragua sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 2 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2019/1716, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 (Regulation (EU) 2019/1716 Art. 8(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om sanksjoner i lys av situasjonen i Haiti, FOR-2023-03-24-404",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2023-03-24-404",
+   "sourceLabel": "Lovdata, FOR-2023-03-24-404, Forskrift om sanksjoner i lys av situasjonen i Haiti, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2023-03-24-404",
+    "titles": {
+     "nb": "Forskrift om sanksjoner i lys av situasjonen i Haiti",
+     "en": "Regulation on sanctions in view of the situation in Haiti"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om sanksjoner i lys av situasjonen i Haiti",
+    "officialRef": "FOR-2023-03-24-404",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2023-03-24",
+    "implementsNote": "Makes Regulation (EU) 2022/2309 Norwegian law (§ 1)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Haiti sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2023-03-24-404/ARTIKKEL_3",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner i lys av situasjonen i Haiti (FOR-2023-03-24-404) § 1, Regulation (EU) 2022/2309 Art. 3(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-haiti-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Haiti sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annexes I and Ia of Regulation (EU) 2022/2309, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2022/2309 Art. 3(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Haiti sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2023-03-24-404/ARTIKKEL_3",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner i lys av situasjonen i Haiti (FOR-2023-03-24-404) § 1, Regulation (EU) 2022/2309 Art. 3(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-haiti-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Haiti sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annexes I and Ia of Regulation (EU) 2022/2309, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2022/2309 Art. 3(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Haiti sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2023-03-24-404/ARTIKKEL_10",
+     "sourceLabel": "Lovdata, Forskrift om sanksjoner i lys av situasjonen i Haiti (FOR-2023-03-24-404) § 1 (competent authority) and Regulation (EU) 2022/2309 Art. 10(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-haiti-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Haiti sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2022/2309, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2022/2309 Art. 10(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak i lys av handlinger som destabiliserer Republikken Moldova, FOR-2023-06-20-993",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2023-06-20-993",
+   "sourceLabel": "Lovdata, FOR-2023-06-20-993, Forskrift om restriktive tiltak i lys av handlinger som destabiliserer Republikken Moldova, consolidated text as last amended by FOR-2024-11-22-2888",
+   "payload": {
+    "key": "no-for-2023-06-20-993",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak i lys av handlinger som destabiliserer Republikken Moldova",
+     "en": "Regulation on restrictive measures in view of actions destabilising the Republic of Moldova"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak i lys av handlinger som destabiliserer Republikken Moldova",
+    "officialRef": "FOR-2023-06-20-993",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2023-06-20",
+    "implementsNote": "Makes Regulation (EU) 2023/888 Norwegian law (§ 1)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Moldova sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2023-06-20-993/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av handlinger som destabiliserer Republikken Moldova (FOR-2023-06-20-993) § 1, Regulation (EU) 2023/888 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-moldova-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Moldova sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2023/888, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2023/888 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Moldova sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2023-06-20-993/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av handlinger som destabiliserer Republikken Moldova (FOR-2023-06-20-993) § 1, Regulation (EU) 2023/888 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-moldova-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Moldova sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2023/888, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2023/888 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Moldova sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2023-06-20-993/ARTIKKEL_8",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av handlinger som destabiliserer Republikken Moldova (FOR-2023-06-20-993) § 1 (competent authority) and Regulation (EU) 2023/888 Art. 8(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-moldova-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Moldova sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2023/888, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2023/888 Art. 8(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om restriktive tiltak i lys av situasjonen i Niger, FOR-2025-08-15-1655",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2025-08-15-1655",
+   "sourceLabel": "Lovdata, FOR-2025-08-15-1655, Forskrift om restriktive tiltak i lys av situasjonen i Niger, consolidated text",
+   "payload": {
+    "key": "no-for-2025-08-15-1655",
+    "titles": {
+     "nb": "Forskrift om restriktive tiltak i lys av situasjonen i Niger",
+     "en": "Regulation on restrictive measures in view of the situation in Niger"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om restriktive tiltak i lys av situasjonen i Niger",
+    "officialRef": "FOR-2025-08-15-1655",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "utenriksdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2025-08-15",
+    "implementsNote": "Makes Regulation (EU) 2023/2406 Norwegian law (§ 1)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze the funds and economic resources of persons listed under the Niger sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-08-15-1655/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Niger (FOR-2025-08-15-1655) § 1, Regulation (EU) 2023/2406 Art. 2(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-niger-freeze",
+      "titles": {
+       "en": "Freeze the funds and economic resources of persons listed under the Niger sanctions"
+      },
+      "summaries": {
+       "en": "A bank must freeze all funds and economic resources that belong to, or are owned, held or controlled by, the persons, entities and bodies listed in Annex I of Regulation (EU) 2023/2406, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2023/2406 Art. 2(1))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds or economic resources available to persons listed under the Niger sanctions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-08-15-1655/ARTIKKEL_2",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Niger (FOR-2025-08-15-1655) § 1, Regulation (EU) 2023/2406 Art. 2(2) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-niger-no-funds",
+      "titles": {
+       "en": "Make no funds or economic resources available to persons listed under the Niger sanctions"
+      },
+      "summaries": {
+       "en": "A bank must not make any funds or economic resources available, directly or indirectly, to or for the benefit of the persons, entities and bodies listed in Annex I of Regulation (EU) 2023/2406, which § 1 makes Norwegian law."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2023/2406 Art. 2(2))",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report frozen accounts and amounts under the Niger sanctions to DEKSA without delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-08-15-1655/ARTIKKEL_8",
+     "sourceLabel": "Lovdata, Forskrift om restriktive tiltak i lys av situasjonen i Niger (FOR-2025-08-15-1655) § 1 (competent authority) and Regulation (EU) 2023/2406 Art. 8(1) as incorporated",
+     "payload": {
+      "key": "obl-no-sanksjon-niger-report",
+      "titles": {
+       "en": "Report frozen accounts and amounts under the Niger sanctions to DEKSA without delay"
+      },
+      "summaries": {
+       "en": "A bank must immediately give Direktoratet for eksportkontroll og sanksjoner (DEKSA), which § 1 names as the competent authority, any information that would facilitate compliance with Regulation (EU) 2023/2406, including the accounts and amounts frozen, and must cooperate with DEKSA in verifying that information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 (Regulation (EU) 2023/2406 Art. 8(1))",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}
