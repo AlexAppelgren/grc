@@ -4,14 +4,20 @@ import { createT, type Locale } from '@/shared/i18n';
 
 import {
   agentCorrectionLine,
+  bindingLabel,
   decisionLine,
   decisionNoteLine,
   fieldSourceLabel,
   fieldSourceRows,
+  instrumentPayloadOf,
   isObligationVersion,
   isVocabularyKind,
   kindLabel,
+  labelOfKey,
+  languageTexts,
+  newObligationPayloadOf,
   obligationPayloadOf,
+  precisionOf,
   presentProposal,
   proposerLine,
   scopeTermPills,
@@ -221,6 +227,53 @@ describe('payload readers', () => {
 
   it('reads a vocabulary payload as-is', () => {
     expect(vocabularyPayloadOf(row({ payload: { list: 'flag', key: 'ai', labels: { en: 'AI' } } })).key).toBe('ai');
+  });
+});
+
+describe("a new record's payload", () => {
+  it('reads a new instrument or obligation only under its own kind and only with its titles', () => {
+    const titled = { key: 'k', titles: { en: 'A title' }, instrument: 'celex-1' };
+    expect(instrumentPayloadOf(row({ kind: 'new_instrument', payload: titled }))?.key).toBe('k');
+    expect(instrumentPayloadOf(row({ kind: 'new_obligation', payload: titled }))).toBeNull();
+    expect(instrumentPayloadOf(row({ kind: 'new_instrument', payload: { key: 'k', titles: null } }))).toBeNull();
+    expect(instrumentPayloadOf(row({ kind: 'new_instrument', payload: undefined }))).toBeNull();
+    expect(newObligationPayloadOf(row({ kind: 'new_obligation', payload: titled }))?.instrument).toBe('celex-1');
+    expect(newObligationPayloadOf(row({ kind: 'new_instrument', payload: titled }))).toBeNull();
+  });
+
+  it('lists the texts original first, then the rest alphabetically, marking machine translations only when the payload says so', () => {
+    const texts = { sv: 'Titel', en: 'Title', da: 'Titel' };
+    expect(languageTexts(texts, 'sv', true)).toEqual([
+      { language: 'sv', text: 'Titel', mark: 'original' },
+      { language: 'da', text: 'Titel', mark: 'machine' },
+      { language: 'en', text: 'Title', mark: 'machine' },
+    ]);
+    expect(languageTexts(texts, 'en').map((text) => [text.language, text.mark])).toEqual([
+      ['en', 'original'],
+      ['da', 'none'],
+      ['sv', 'none'],
+    ]);
+  });
+
+  it('reads a date precision it knows, and a day otherwise', () => {
+    expect(precisionOf('month')).toBe('month');
+    expect(precisionOf('year')).toBe('year');
+    expect(precisionOf(undefined)).toBe('day');
+    expect(precisionOf('decade')).toBe('day');
+  });
+
+  it('labels a key from the rows of its list, and leaves the key while the list is loading or lacks it', () => {
+    const rows = [{ key: 'eu_regulation', label: 'EU regulation' }];
+    expect(labelOfKey(rows, 'eu_regulation')).toBe('EU regulation');
+    expect(labelOfKey(rows, 'act')).toBe('act');
+    expect(labelOfKey(undefined, 'act')).toBe('act');
+  });
+
+  it('says whether a new instrument binds, or that its level decides', () => {
+    expect(bindingLabel(true, t)).toBe('Binding');
+    expect(bindingLabel(false, t)).toBe('Not binding');
+    expect(bindingLabel(null, t)).toBe('As its level sets it');
+    expect(bindingLabel(undefined, t)).toBe('As its level sets it');
   });
 });
 

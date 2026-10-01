@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
 import { ProposalCorrectionForm } from '@/components/console/ProposalCorrectionForm';
@@ -11,17 +11,24 @@ import { Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert } from '@/components/ui/States';
 import { SwatchPair } from '@/components/ui/Swatch';
+import { useJurisdictions } from '@/features/footprint/hooks';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useApproveProposal, useProposal, useScopeTermLabels } from '@/features/proposals/hooks';
 import {
   agentCorrectionLine,
+  bindingLabel,
   decisionLine,
   decisionNoteLine,
   fieldSourceLabel,
   fieldSourceRows,
+  instrumentPayloadOf,
   isObligationVersion,
   isVocabularyKind,
+  labelOfKey,
+  languageTexts,
+  newObligationPayloadOf,
   obligationPayloadOf,
+  precisionOf,
   presentProposal,
   proposerLine,
   scopeTermPills,
@@ -33,8 +40,9 @@ import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { listLabel, presentVocabularyValue } from '@/features/vocabularies/vocabulary-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
+import { cn } from '@/shared/utils/cn';
 import { externalHref } from '@/shared/utils/external-href';
-import { formatDate, formatDateTime } from '@/shared/utils/format';
+import { formatDate, formatDateTime, formatPartialDate } from '@/shared/utils/format';
 import { hasProblemCode } from '@/shared/utils/problem';
 
 // /console/queue/[proposalId] (design/screens/console-queue.html; PRO-01,
@@ -73,13 +81,7 @@ function SourcePanel({ proposal }: { proposal: ProposalRow }) {
             <div key={field} className="contents">
               <dt className="text-muted">{fieldSourceLabel(field, (code) => languageName(code, ctx.locale), t)}</dt>
               <dd className="m-0">
-                {externalHref(url) === null ? (
-                  <span className="break-all">{url}</span>
-                ) : (
-                  <a href={url} target="_blank" rel="noopener noreferrer" className="underline">
-                    {url}
-                  </a>
-                )}
+                <MaybeLink href={url} />
               </dd>
             </div>
           ))}
@@ -115,6 +117,156 @@ function ObligationChanges({ proposal }: { proposal: ProposalRow }) {
         <dd className="m-0">{payload.effectiveFrom ? formatDate(payload.effectiveFrom, ctx) : t('common.never')}</dd>
         <dt className="text-meta text-muted">{t('console.queue.detail.scope')}</dt>
         <dd className="m-0">{terms === null ? t('console.queue.detail.scopeUnchanged') : <PillRow pills={scopeTermPills(terms, labelOf)} />}</dd>
+      </dl>
+    </Panel>
+  );
+}
+
+/** A text per content language, the original first, each marked as the original or a machine translation (AUD-02). */
+function LanguageTextBlocks({ heading, texts, originalLanguage, isMachine, field }: { heading: string; texts: Record<string, string>; originalLanguage: string; isMachine?: boolean; field: string }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  return (
+    <div className="mb-3" data-proposal-fact={field}>
+      <p className="microlabel mb-1 text-muted">{heading}</p>
+      <div className="grid gap-2">
+        {languageTexts(texts, originalLanguage, isMachine).map(({ language, text, mark }) => (
+          <div key={language} lang={language} className="rounded-card border border-line bg-surface-2 p-3" data-language={language}>
+            <p className="mb-1 text-meta text-muted">
+              {mark === 'original'
+                ? t('console.queue.detail.languageOriginal', { language: languageName(language, ctx.locale) })
+                : mark === 'machine'
+                  ? t('console.queue.detail.languageMachine', { language: languageName(language, ctx.locale) })
+                  : languageName(language, ctx.locale)}
+            </p>
+            <p>{text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** One fact of a new record: its label, in the words the source panel uses, and its value. */
+function Fact({ field, label, children }: { field: string; label: string; children: ReactNode }) {
+  return (
+    <>
+      <dt className="text-meta text-muted">{label}</dt>
+      <dd className="m-0 min-w-0 break-words" data-proposal-fact={field}>
+        {children}
+      </dd>
+    </>
+  );
+}
+
+const FACTS = 'grid grid-cols-1 gap-x-3.5 gap-y-2 md:grid-cols-[140px_1fr]';
+
+/** An address shown as a link only when it is one (H26); otherwise as plain text. */
+function MaybeLink({ href }: { href: string }) {
+  return externalHref(href) === null ? (
+    <span className="break-all">{href}</span>
+  ) : (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="break-all underline">
+      {href}
+    </a>
+  );
+}
+
+// What a new instrument would add (D-118: the library baseline's first pass). Labels come
+// from the reads a console session may make: the level's list, the jurisdictions, the
+// regime's terms. The authority is shown by its key: its read, GET /authorities, needs
+// `library.read`, which no platform role holds.
+function NewInstrumentFacts({ proposal }: { proposal: ProposalRow }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const payload = instrumentPayloadOf(proposal);
+  const levels = useVocabularyValues('instrument_level', true, payload !== null);
+  const jurisdictions = useJurisdictions();
+  const { labelOf } = useScopeTermLabels(payload === null ? [] : [payload.regime]);
+  if (payload === null) return null;
+  const eli = payload.eliUri ?? '';
+  const implementsNote = payload.implementsNote ?? '';
+  return (
+    <Panel title={t('console.queue.detail.whatItAdds')} data-proposal-record={proposal.kind}>
+      <LanguageTextBlocks heading={t('console.queue.detail.titles')} texts={payload.titles} originalLanguage={payload.originalLanguage} isMachine={payload.isMachine} field="titles" />
+      <dl className={FACTS}>
+        <Fact field="shortName" label={t('console.queue.field.shortName')}>
+          {payload.shortName}
+        </Fact>
+        <Fact field="officialRef" label={t('console.queue.field.officialRef')}>
+          {payload.officialRef}
+        </Fact>
+        {eli === '' ? null : (
+          <Fact field="eliUri" label={t('console.queue.field.eliUri')}>
+            <MaybeLink href={eli} />
+          </Fact>
+        )}
+        <Fact field="level" label={t('console.queue.field.level')}>
+          {labelOfKey(levels.data, payload.level)}
+        </Fact>
+        <Fact field="binding" label={t('console.queue.field.binding')}>
+          {bindingLabel(payload.binding, t)}
+        </Fact>
+        <Fact field="jurisdiction" label={t('console.queue.field.jurisdiction')}>
+          {labelOfKey(jurisdictions.data, payload.jurisdiction)}
+        </Fact>
+        <Fact field="authority" label={t('console.queue.field.authority')}>
+          {payload.authority ?? t('console.queue.detail.notSet')}
+        </Fact>
+        <Fact field="regime" label={t('console.queue.field.regime')}>
+          {labelOf(payload.regime)}
+        </Fact>
+        <Fact field="inForceFrom" label={t('console.queue.field.inForceFrom')}>
+          {payload.inForceFrom ? formatPartialDate(payload.inForceFrom, precisionOf(payload.inForceFromPrecision), ctx) : t('console.queue.detail.notSet')}
+        </Fact>
+        <Fact field="inForceTo" label={t('console.queue.field.inForceTo')}>
+          {payload.inForceTo ? formatPartialDate(payload.inForceTo, precisionOf(payload.inForceToPrecision), ctx) : t('console.queue.detail.noEnd')}
+        </Fact>
+        {implementsNote === '' ? null : (
+          <Fact field="implementsNote" label={t('console.queue.field.implementsNote')}>
+            {implementsNote}
+          </Fact>
+        )}
+      </dl>
+    </Panel>
+  );
+}
+
+// What a new obligation would add (D-118: each duty once its instrument is approved). Its
+// instrument is named by the key the payload carries and by the short name the library
+// holds under it, which the detail read answers (`instrumentShortName`).
+function NewObligationFacts({ proposal }: { proposal: ProposalDetail }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const payload = newObligationPayloadOf(proposal);
+  const dutyTypes = useVocabularyValues('duty_type', true, payload !== null);
+  const terms = payload?.terms ?? [];
+  const { labelOf } = useScopeTermLabels(terms);
+  if (payload === null) return null;
+  return (
+    <Panel title={t('console.queue.detail.whatItAdds')} data-proposal-record={proposal.kind}>
+      <dl className={cn(FACTS, 'mb-3')}>
+        <Fact field="instrument" label={t('console.queue.field.instrument')}>
+          {proposal.instrumentShortName === '' ? null : <span className="mr-2">{proposal.instrumentShortName}</span>}
+          <span className="font-mono text-meta text-muted">{payload.instrument}</span>
+          {proposal.instrumentShortName === '' ? <span className="block text-meta text-muted">{t('console.queue.detail.instrumentNotHeld')}</span> : null}
+        </Fact>
+      </dl>
+      <LanguageTextBlocks heading={t('console.queue.detail.titles')} texts={payload.titles} originalLanguage={payload.originalLanguage} isMachine={payload.isMachine} field="titles" />
+      <LanguageTextBlocks heading={t('console.queue.detail.summaries')} texts={payload.summaries} originalLanguage={payload.originalLanguage} isMachine={payload.isMachine} field="summaries" />
+      <dl className={FACTS}>
+        <Fact field="refLabel" label={t('console.queue.field.refLabel')}>
+          {payload.refLabel}
+        </Fact>
+        <Fact field="dutyType" label={t('console.queue.field.dutyType')}>
+          {labelOfKey(dutyTypes.data, payload.dutyType)}
+        </Fact>
+        <Fact field="effectiveFrom" label={t('console.queue.field.effectiveFrom')}>
+          {payload.effectiveFrom ? formatPartialDate(payload.effectiveFrom, precisionOf(payload.effectiveFromPrecision), ctx) : t('console.queue.detail.sinceDutyBegan')}
+        </Fact>
+        <Fact field="terms" label={t('console.queue.field.scope')}>
+          {terms.length === 0 ? t('console.queue.detail.noTerms') : <PillRow pills={scopeTermPills(terms, labelOf)} />}
+        </Fact>
       </dl>
     </Panel>
   );
@@ -256,7 +408,15 @@ export function ProposalDetailScreen({ proposalId }: { proposalId: string }) {
 
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         <SourcePanel proposal={proposal} />
-        {isObligationVersion(proposal.kind) ? <ObligationChanges proposal={proposal} /> : isVocabularyKind(proposal.kind) ? <VocabularyChanges proposal={proposal} /> : null}
+        {isObligationVersion(proposal.kind) ? (
+          <ObligationChanges proposal={proposal} />
+        ) : isVocabularyKind(proposal.kind) ? (
+          <VocabularyChanges proposal={proposal} />
+        ) : proposal.kind === 'new_instrument' ? (
+          <NewInstrumentFacts proposal={proposal} />
+        ) : proposal.kind === 'new_obligation' ? (
+          <NewObligationFacts proposal={proposal} />
+        ) : null}
       </div>
 
       <DecisionPanel proposal={proposal} />

@@ -2,8 +2,20 @@ import type { PillTone } from '@/components/ui/pill-tones';
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
 import { proposalStatusTone, slotTone } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
+import type { DatePrecision } from '@/shared/utils/format';
 
-import { TERM_KINDS, VOCABULARY_KINDS, type ObligationVersionPayload, type ProposalKind, type ProposalQueueRow, type ProposalRow, type ProposalStatus, type VocabularyProposalPayload } from './types';
+import {
+  TERM_KINDS,
+  VOCABULARY_KINDS,
+  type InstrumentPayload,
+  type NewObligationPayload,
+  type ObligationVersionPayload,
+  type ProposalKind,
+  type ProposalQueueRow,
+  type ProposalRow,
+  type ProposalStatus,
+  type VocabularyProposalPayload,
+} from './types';
 
 // Pills and derived facts for the console queue (design/screens/console-queue.html;
 // PRO-01, PRO-02, PRO-03, AC-PRO2). Tone is never chosen by a person: the kind pill
@@ -149,6 +161,53 @@ export function obligationPayloadOf(row: Pick<ProposalRow, 'payload'>): Obligati
 
 export function vocabularyPayloadOf(row: Pick<ProposalRow, 'payload'>): VocabularyProposalPayload {
   return (row.payload ?? {}) as unknown as VocabularyProposalPayload;
+}
+
+/** A new record's payload, read by its kind; null for any other kind or a payload without its titles. */
+function newRecordPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>, kind: ProposalKind): Record<string, unknown> | null {
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+  return row.kind === kind && typeof payload.titles === 'object' && payload.titles !== null ? payload : null;
+}
+
+export function instrumentPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>): InstrumentPayload | null {
+  return newRecordPayloadOf(row, 'new_instrument') as InstrumentPayload | null;
+}
+
+export function newObligationPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>): NewObligationPayload | null {
+  return newRecordPayloadOf(row, 'new_obligation') as NewObligationPayload | null;
+}
+
+export interface LanguageText {
+  language: string;
+  text: string;
+  /** `original` for the language it was written in, `machine` for a machine translation (AUD-02), else `none`. */
+  mark: 'original' | 'machine' | 'none';
+}
+
+/** A text per language, the original first and then the rest alphabetically, each marked as the original or a machine translation. */
+export function languageTexts(texts: Readonly<Record<string, string>>, originalLanguage: string, isMachine = false): LanguageText[] {
+  return Object.entries(texts)
+    .map(([language, text]): LanguageText => ({ language, text, mark: language === originalLanguage ? 'original' : isMachine ? 'machine' : 'none' }))
+    .sort((a, b) => Number(b.mark === 'original') - Number(a.mark === 'original') || a.language.localeCompare(b.language));
+}
+
+const PRECISIONS: readonly DatePrecision[] = ['day', 'month', 'quarter', 'year'];
+
+/** A legal date's precision as the payload names it, `day` when it names none or one the client does not know. */
+export function precisionOf(value: string | undefined): DatePrecision {
+  return PRECISIONS.find((precision) => precision === value) ?? 'day';
+}
+
+/** The label of `key` in a list read from its own rows, or the key itself while the list is loading or holds no such row. */
+export function labelOfKey(rows: readonly { key: string; label: string }[] | undefined, key: string): string {
+  return rows?.find((row) => row.key === key)?.label ?? key;
+}
+
+/** Whether a new instrument binds: yes, no, or left to its level's default (schemas.py `ProposalInstrumentPayload.binding`). */
+export function bindingLabel(binding: boolean | null | undefined, t: Translate): string {
+  if (binding === true) return t('console.queue.detail.binding.yes');
+  if (binding === false) return t('console.queue.detail.binding.no');
+  return t('console.queue.detail.binding.levelDefault');
 }
 
 // Every field a proposal sources (backend/apps/proposals/logic.py `sourced_fields`), named in

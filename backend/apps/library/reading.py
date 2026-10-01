@@ -449,6 +449,14 @@ def active_instrument(key: str) -> Instrument:
     return instrument
 
 
+def shared_instrument_short_name(key: str) -> str:
+    """The short name of the shared instrument `key`, or "" when the shared library holds
+    none under it: what the console names a new obligation's instrument by (PRO-01). A
+    bank's own instrument never answers, since the console reads no bank's records (PRO-03)."""
+    found = Instrument.objects.filter(stable_key=key, owner_tenant__isnull=True).values_list("short_name", flat=True).first()  # ordering: a unique key
+    return found or ""
+
+
 def live_duty_type(key: str) -> Any:
     """The live duty type `key`, or 422 `unknown_key`."""
     from apps.taxonomy.models import DutyType
