@@ -2,7 +2,9 @@
 
 Source: Alex, 2026-09-30: "build up the inventory for everything relevant as of today", and
 market abuse laws "also needs to be included"; then "the bleqq agent will run and look for
-changes and new things". Decided in D-118 and ADR 0065. Built on the branch
+changes and new things". On 2026-10-01 Alex answered that bleqq files it and registers its
+sources, that sanctions are in scope, that government ordinances get a level, and that
+D-40's three areas are in. Decided in D-118 and ADR 0065, PRD 0.8. Built on the branch
 `claude/library-baseline`.
 
 ## Why it was needed
@@ -22,20 +24,27 @@ footprint preview would have answered nothing.
 2. **Checked twice before any deploy.** `check_baseline.py` checks shape and keys without a
    database. `apps/proposals/tests_baseline.py` files every entry through the real proposal
    code, approves it as a person and proves each one applies.
-3. **Filed through the proposal door.** `manage.py file_library_baseline` files what the
+3. **Filed through the proposal door, by itself.** The beat (every
+   `LIBRARY_BASELINE_FILING_MINUTES`, an hour by default, off under E2E) files what the
    library neither holds nor has open as proposals of the platform agent
-   `library-baseline`, instruments first, each duty on the call after its instrument is
-   approved. It is safe to repeat, and a rejected entry stays rejected until its file
-   changes.
-4. **Approved by a second principal.** A person in the console with a passkey today; the
-   confirming agent once it is published and its runner is live.
+   `library-baseline`, instruments first, each duty once its instrument is approved, and
+   registers the pages in `sources.json` for the watch. `manage.py file_library_baseline`
+   does the same by hand. It is safe to repeat, and a rejected entry stays rejected until
+   its file changes.
+4. **Approved by a second principal.** A person in the console with a passkey today, one
+   proposal at a time or a page at once (the queue's "New instrument" and "New obligation"
+   filters, then select and approve: one passkey, the same approve route per proposal);
+   the confirming agent once it is published and its runner is live. Nothing approves
+   itself, and the agent that filed an entry can never approve it.
 5. **Kept current by the watch.** Each watch run re-checks the records of the sources it
    checks and proposes a correction where one has drifted, and registers what is new.
 
 ## What it covers
 
-The sector scope on 2026-09-30, for the EU, Sweden, Denmark, Norway and Finland: what is in
-force, and what is adopted and applies later (with the later date on the duty). An EU
+The sector scope on 2026-09-30 and 2026-10-01, for the EU, Sweden, Denmark, Norway and
+Finland: what is in force, and what is adopted and applies later (with the later date on the
+duty). Government ordinances carry the level `government_regulation`, and financial
+sanctions the regime `aml`. An EU
 regulation's duties sit under it. A directive is an instrument without duties, and its
 duties sit under each country's implementing act.
 
@@ -50,12 +59,21 @@ duties sit under each country's implementing act.
 | EU insurance, pensions and funds | `eu-insurance-funds` | 27 | 63 |
 | EU AML and tax | `eu-aml-tax` | 19 | 50 |
 | EU data protection, ICT risk and AI | `eu-data-ict-ai` | 17 | 63 |
+| EU sanctions | `eu-sanctions` | 49 | 121 |
 | Sweden, acts | `se-acts` | 39 | 218 |
+| Sweden, förordningar | `se-forordningar` | 27 | 37 |
 | Sweden, Finansinspektionen's regulations | `se-fffs` | 29 | 126 |
-| Denmark | `dk` | 23 | 117 |
-| Norway | `no` | 21 | 109 |
-| Finland | `fi` | 35 | 166 |
-| **All** | | **328** | **1248** |
+| Denmark, acts and Finanstilsynet's orders | `dk` | 23 | 117 |
+| Denmark, more of Finanstilsynet's orders | `dk-finanstilsynet` | 8 | 36 |
+| Denmark, ministerial orders | `dk-bekendtgorelser` | 34 | 138 |
+| Norway, acts and Finanstilsynet's forskrifter | `no` | 21 | 109 |
+| Norway, more supervisory regulations | `no-regulations` | 5 | 20 |
+| Norway, Finansdepartementet's forskrifter | `no-forskrifter` | 19 | 73 |
+| Norway, sanctions forskrifter | `no-sanctions` | 33 | 108 |
+| Finland, acts and FIN-FSA's regulations | `fi` | 35 | 166 |
+| Finland, decrees | `fi-asetukset` | 23 | 47 |
+| Nordic sanctions acts | `nordic-sanctions` | 5 | 11 |
+| **All** | | **531** | **1839** |
 
 **Market abuse** carries the regime `securities`, so every bank that follows securities law
 sees it: MAR with the Listing Act's application dates, CSMAD, the delegated and
@@ -67,9 +85,6 @@ on market soundings, and each country's supplementary and criminal provisions.
 
 ## What it leaves out, and why
 
-- **Sanctions.** Not named in the sector scope and without a regime (owner question).
-- **Government ordinances.** A förordning, a Norwegian ministry forskrift or a Danish
-  ministry bekendtgørelse fits no instrument level (owner question).
 - **Standards.** They wait for the legal answer on standard titles (ADR 0041).
 - **Proposals not adopted on 2026-09-30.** The Payment Services Regulation and PSD3, the
   Retail Investment Strategy, FiDA, the SFDR review and the digital omnibus beyond the AI
@@ -79,12 +94,19 @@ on market soundings, and each country's supplementary and criminal provisions.
 - **Guidelines not yet researched**: ESMA's guidelines on EMIR reporting, CSDR, SFTR and
   MiCA; the EBA's on STS criteria, SREP, IRRBB and suitability; EBA/GL/2026/09 on non-ICT
   third-party risk, whose application date was still blank.
-- **National acts not yet researched**: in Norway the sanctions act, individual pension
-  savings, the beneficial-owner register and the accounting act; in Finland the banks'
-  corporate-form acts and FIN-FSA's reporting, accounting and covered-bond regulations.
+- **Not yet researched**: in Norway individual pension savings, the beneficial-owner
+  register and the accounting act; in Finland the banks' corporate-form acts and FIN-FSA's
+  reporting, accounting and covered-bond regulations.
+- **Instruments of an issuer the reference seed does not name**: Norway's
+  finansavtaleforskriften (Justis- og beredskapsdepartementet) and gjeldsinformasjons-
+  forskriften (Barne- og familiedepartementet), Denmark's orders of other ministries and
+  agencies (Justitsministeriet, Digitaliseringsministeriet, Erhvervsstyrelsen, SKAT), and
+  Norway's innskuddsgarantiforskriften (Bankenes sikringsfond). Each needs its issuer as an
+  authority first.
 - **Worth a legal read before they are left out for good**: the Cyber Resilience Act for a
-  bank that publishes apps, and Denmark's BEK 105/2023 on payment incident reporting beside
-  DORA.
+  bank that publishes apps; Denmark's BEK 105/2023 on payment incident reporting, whose
+  legal basis the DORA amendments repealed on 2025-01-17 while Retsinformation still shows
+  it in force.
 - Every tranche's report of what it left out and why is in the commit that added it, and
   every fact it could not verify is a Not verified row in the Verification log.
 
@@ -108,11 +130,11 @@ on market soundings, and each country's supplementary and criminal provisions.
   every real instrument the sample holds, so a demo database skips it; the sample's date for
   Delegated Directive (EU) 2017/593 was wrong and is corrected to 2017-04-20.
 
-## Sources the sweeper should check
+## Sources the sweeper checks
 
-The registry is empty on a new deployment. Register one source per authority the baseline
-names, in the console (Sources), so the watch re-checks these records and finds what is new:
-EUR-Lex, ESMA, EBA and EIOPA; riksdagen.se and fi.se; retsinformation.dk and
-finanstilsynet.dk; lovdata.no and finanstilsynet.no; finlex.fi and finanssivalvonta.fi.
-EUR-Lex and lovdata.no refused this build's direct requests, so the runner's network must be
-able to reach them, or the Publications Office's own service in EUR-Lex's place.
+`sources.json` names fifteen pages, registered by the same filing through the console's own
+writer, weekly to match the sweeper: the Official Journal, the Commission, ESMA, the EBA and
+EIOPA; each country's legal gazette; and Finansinspektionen (news and FFFS), IMY, both
+Finanstilsynet and Finanssivalvonta. EUR-Lex and lovdata.no refused this build's direct
+requests, so the runner's network must be able to reach them, or the Publications Office's
+own service in EUR-Lex's place.
