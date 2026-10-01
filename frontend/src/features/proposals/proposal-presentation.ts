@@ -2,7 +2,9 @@ import type { PillTone } from '@/components/ui/pill-tones';
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
 import { proposalStatusTone, slotTone } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
+import { STEP_UP_REQUIRED_CODE } from '@/shared/utils/api-client';
 import type { DatePrecision } from '@/shared/utils/format';
+import { NETWORK_PROBLEM_CODE, problemFrom } from '@/shared/utils/problem';
 
 import {
   TERM_KINDS,
@@ -136,6 +138,29 @@ export function decisionNoteLine(row: Decision, t: Translate): string | null {
 export function agentCorrectionLine(row: Decision, t: Translate): string | null {
   const agent = row.correctedByAgent?.key;
   return agent === undefined ? null : t('console.queue.detail.correctedByAgent', { agent });
+}
+
+/**
+ * Why a waiting row cannot be approved together with others, or null when it can: it is
+ * open, one record, not the reader's own, and nothing in it was flagged. A flagged
+ * proposal is opened and read before anyone approves it (AGT-07); the reader's own needs
+ * someone else (AC-PRO2); a batch is decided row by row on its own screen (PRO-04).
+ */
+export function selectionBlock(row: Pick<ProposalQueueRow, 'status' | 'isBatch' | 'isMine' | 'riskFlags'>, t: Translate): string | null {
+  if (row.status !== 'open') return t('console.queue.select.blocked.decided');
+  if (row.isBatch === true) return t('console.queue.select.blocked.batch');
+  if (row.isMine === true) return t('console.queue.select.blocked.mine');
+  if ((row.riskFlags ?? []).length > 0) return t('console.queue.select.blocked.flagged');
+  return null;
+}
+
+/** Why the server refused one approval of many: the passkey not given, the network, or the server's own sentence (branching on `code`, never on `detail`). */
+export function refusalReason(error: unknown, t: Translate): string {
+  const problem = problemFrom(error);
+  if (problem === null) return t('problem.generic');
+  if (problem.code === STEP_UP_REQUIRED_CODE) return t('console.queue.approveMany.passkeyNotGiven');
+  if (problem.code === NETWORK_PROBLEM_CODE) return t('problem.network');
+  return problem.detail === '' ? t('problem.generic') : problem.detail;
 }
 
 export function sourceLine(row: Pick<ProposalRow, 'sourceLabel'>, t: Translate): string | null {

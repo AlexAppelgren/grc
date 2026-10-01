@@ -1,10 +1,11 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { AxiosAdapter } from 'axios';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
-import { tokenStore } from '@/shared/utils/api-client';
+import { api, tokenStore } from '@/shared/utils/api-client';
 
 import type { ProposalQueueRow } from '@/features/proposals/types';
 import { QUEUE_PAGE, QueueScreen, offsetFrom, searchOf } from './QueueScreen';
@@ -211,6 +212,106 @@ describe('the console queue', () => {
     renderScreen();
     await waitFor(() => expect(queueReads(duties).length).toBeGreaterThan(0));
     expect(queueReads(duties)[0]).toMatchObject({ kind: 'new_obligation' });
+  });
+
+  it('lets Waiting select only what can be approved together, saying why each other row cannot', async () => {
+    serve([
+      proposal({ id: 'p-a', title: 'Add instrument A', kind: 'new_instrument' }),
+      proposal({ id: 'p-b', title: 'Add instrument B', kind: 'new_instrument' }),
+      proposal({ id: 'p-flag', title: 'A flagged one', riskFlags: ['embedded_instructions'] }),
+      proposal({ id: 'p-mine', title: 'My own', isMine: true }),
+      proposal({ id: 'p-batch', title: 'A batch', kind: 'obligation_scope', isBatch: true, rowCount: 3 }),
+    ]);
+    renderScreen();
+    await screen.findByRole('link', { name: /Add instrument A/ });
+    const box = (title: string) => screen.getByRole('checkbox', { name: `Select ${title}` });
+    expect(box('Add instrument A')).toBeEnabled();
+    expect(box('A flagged one')).toBeDisabled();
+    expect(box('A flagged one')).toHaveAccessibleDescription('Flagged: open it and read it before you approve it.');
+    expect(box('My own')).toHaveAccessibleDescription('Yours: someone else approves it.');
+    expect(box('A batch')).toHaveAccessibleDescription('A batch is decided row by row on its own screen.');
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all 2 on this page' }));
+    expect(box('Add instrument A')).toBeChecked();
+    expect(box('Add instrument B')).toBeChecked();
+    expect(box('A flagged one')).not.toBeChecked();
+    const selection = screen.getByRole('region', { name: 'Selection' });
+    expect(within(selection).getByText('2 selected')).toBeInTheDocument();
+
+    fireEvent.click(box('Add instrument B'));
+    expect(within(selection).getByText('1 selected')).toBeInTheDocument();
+    expect((screen.getByRole('checkbox', { name: 'Select all 2 on this page' }) as HTMLInputElement).indeterminate).toBe(true);
+    fireEvent.click(within(selection).getByRole('button', { name: 'Clear selection' }));
+    expect(screen.queryByRole('region', { name: 'Selection' })).toBeNull();
+  });
+
+  it('offers no selection on the decided tabs', async () => {
+    nav.search = 'tab=approved';
+    serve([proposal({ status: 'approved', title: 'Decided already' })]);
+    renderScreen();
+    await screen.findByRole('link', { name: /Decided already/ });
+    expect(screen.queryByRole('checkbox')).toBeNull();
+  });
+
+  it('confirms how many, approves each in turn through the approve route, and says what was refused and why', async () => {
+    const rows = [proposal({ id: 'p-a', title: 'Add instrument A' }), proposal({ id: 'p-b', title: 'Add instrument B' })];
+    const sent = installAdapter((s) => {
+      if (s.path === '/api/v1/me') return { status: 200, data: editor };
+      if (s.path === PROPOSALS) return { status: 200, data: { items: rows, total: rows.length } };
+      if (s.path === '/api/v1/proposals/p-a/approve') return { status: 200, data: { ...rows[0], status: 'approved' } };
+      return { status: 409, data: { code: 'not_open', detail: 'This proposal was decided while you were looking at it.' } };
+    });
+    renderScreen();
+    await screen.findByRole('link', { name: /Add instrument A/ });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all 2 on this page' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Approve 2 proposals' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Approve 2 proposals?' });
+    expect(dialog).toHaveAccessibleDescription(/exactly as if you opened it alone/);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Approve 2 proposals' }));
+
+    const result = await screen.findByText('1 proposal approved.');
+    const notice = result.closest('[data-approve-many-result]') as HTMLElement;
+    expect(within(notice).getByText('1 was not approved:')).toBeInTheDocument();
+    expect(within(notice).getByText('Add instrument B')).toBeInTheDocument();
+    expect(within(notice).getByText('This proposal was decided while you were looking at it.')).toBeInTheDocument();
+    expect(sent.filter((s) => s.method === 'post').map((s) => [s.path, s.body])).toEqual([
+      ['/api/v1/proposals/p-a/approve', { note: '' }],
+      ['/api/v1/proposals/p-b/approve', { note: '' }],
+    ]);
+    // The queue is read again once the run ends, and the selection is gone.
+    await waitFor(() => expect(queueReads(sent).length).toBeGreaterThan(1));
+    expect(screen.queryByRole('region', { name: 'Selection' })).toBeNull();
+    fireEvent.click(within(notice).getByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(screen.queryByText('1 proposal approved.')).toBeNull());
+  });
+
+  it('shows how far the run has got while it works', async () => {
+    const rows = [proposal({ id: 'p-a', title: 'Add instrument A' }), proposal({ id: 'p-b', title: 'Add instrument B' })];
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    installAdapter((s) => {
+      if (s.path === '/api/v1/me') return { status: 200, data: editor };
+      if (s.path === PROPOSALS) return { status: 200, data: { items: rows, total: rows.length } };
+      return { status: 200, data: {} };
+    });
+    // The second approval answers only when released, so the run is seen half done.
+    const answer = api.defaults.adapter as AxiosAdapter;
+    api.defaults.adapter = async (config) => {
+      if (config.url?.endsWith('/p-b/approve') === true) await held;
+      return answer(config);
+    };
+    renderScreen();
+    await screen.findByRole('link', { name: /Add instrument A/ });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select all 2 on this page' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Approve 2 proposals' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Approve 2 proposals' }));
+    expect(await screen.findByText('Approving 2 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Select Add instrument A' })).toBeDisabled();
+    release();
+    expect(await screen.findByText('2 proposals approved.')).toBeInTheDocument();
   });
 
   it('opens the re-tag form from the head and closes it again', async () => {

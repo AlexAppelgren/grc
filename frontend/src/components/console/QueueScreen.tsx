@@ -2,25 +2,29 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { RetagRequestForm } from '@/components/console/RetagRequestForm';
 
-import { Button } from '@/components/ui/Button';
+import { Button, ButtonBar } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Field';
+import { Modal } from '@/components/ui/Modal';
+import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { Tabs, TabPanel, type TabDef } from '@/components/ui/Tabs';
 import { useFormatContext } from '@/features/identity/hooks';
-import { presentProposal, proposerLine, sourceLine, targetLine } from '@/features/proposals/proposal-presentation';
-import { useProposals } from '@/features/proposals/hooks';
+import { presentProposal, proposerLine, refusalReason, selectionBlock, sourceLine, targetLine } from '@/features/proposals/proposal-presentation';
+import { useApproveMany, useProposals, type ApproveManyOutcome } from '@/features/proposals/hooks';
 import { TERM_KINDS, VOCABULARY_KINDS, type ProposalKind, type ProposalOrder, type ProposalQueueRow } from '@/features/proposals/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
+import { cn } from '@/shared/utils/cn';
 import { formatDateTime } from '@/shared/utils/format';
+import { problemFrom } from '@/shared/utils/problem';
 
 // /console/queue (design/screens/console-queue.html; PRO-01, PRO-02, PRO-03,
 // AC-PRO2). Waiting, Approved and Rejected tabs read GET /proposals with its
@@ -104,20 +108,29 @@ export function kindQueryOf(kind: KindFilter): string | undefined {
   return kind;
 }
 
-function QueueRow({ row }: { row: ProposalQueueRow }) {
+/** A waiting row's checkbox: ticked or not, and why it cannot be ticked when it cannot. */
+interface RowSelection {
+  checked: boolean;
+  blocked: string | null;
+  busy: boolean;
+  onChange: (checked: boolean) => void;
+}
+
+function QueueRow({ row, selection }: { row: ProposalQueueRow; selection?: RowSelection }) {
   const t = useT();
   const ctx = useFormatContext();
   const target = targetLine(row, t);
   const source = sourceLine(row, t);
+  const frame = 'rounded-card border px-4 py-3.5';
   // A batch is one queue entry (PRO-04) and opens on its own review screen.
-  return (
+  const link = (
     <Link
       href={row.isBatch === true ? `/console/queue/batches/${row.id}` : `/console/queue/${row.id}`}
       prefetch={false}
       data-proposal-id={row.id}
       data-proposal-kind={row.kind}
       data-proposal-status={row.status}
-      className="block rounded-card border border-line bg-surface px-4 py-3.5 hover:border-fg"
+      className={selection === undefined ? cn('block border-line bg-surface hover:border-fg', frame) : 'block min-w-0'}
     >
       <PillRow pills={presentProposal(row, t)}>
         <span className="text-meta text-muted">{proposerLine(row, t)}</span>
@@ -133,6 +146,72 @@ function QueueRow({ row }: { row: ProposalQueueRow }) {
       ) : null}
     </Link>
   );
+  if (selection === undefined) return link;
+  // The checkbox sits beside the link, never inside it, so no control is nested in a link.
+  const why = `proposal-blocked-${row.id}`;
+  return (
+    <div className={cn('grid grid-cols-[28px_minmax(0,1fr)] items-start gap-x-2.5 hover:border-fg', frame, selection.checked ? 'border-fg bg-subtle' : 'border-line bg-surface')}>
+      <input
+        type="checkbox"
+        className="mt-0.5 size-5 accent-button"
+        checked={selection.checked}
+        disabled={selection.blocked !== null || selection.busy}
+        onChange={(event) => selection.onChange(event.target.checked)}
+        aria-label={t('console.queue.select.row', { title: row.title })}
+        aria-describedby={selection.blocked === null ? undefined : why}
+        data-proposal-select={row.id}
+      />
+      <div className="min-w-0">
+        {link}
+        {selection.blocked === null ? null : (
+          <p id={why} className="mt-1 text-meta text-muted" data-proposal-select-blocked="">
+            {selection.blocked}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** The select-all for the page: every row that can be approved together, checked when all are, mixed when some are. */
+function SelectAll({ count, selectedCount, disabled, onChange }: { count: number; selectedCount: number; disabled: boolean; onChange: (checked: boolean) => void }) {
+  const t = useT();
+  const box = useRef<HTMLInputElement>(null);
+  const mixed = selectedCount > 0 && selectedCount < count;
+  useEffect(() => {
+    if (box.current !== null) box.current.indeterminate = mixed;
+  }, [mixed]);
+  return (
+    <label className="mb-2.5 ml-4 flex items-center gap-2.5 font-semibold">
+      <input ref={box} type="checkbox" className="size-5 accent-button" checked={selectedCount === count} disabled={disabled} onChange={(event) => onChange(event.target.checked)} data-select-all="" />
+      {t('console.queue.select.all', { count })}
+    </label>
+  );
+}
+
+/** How a run of approvals ended: how many were approved, and each refusal by its title and the server's reason. */
+function ApproveManyResult({ outcome, onDismiss }: { outcome: ApproveManyOutcome; onDismiss: () => void }) {
+  const t = useT();
+  return (
+    <Notice tone={outcome.refused.length === 0 ? 'plain' : 'warn'} data-approve-many-result="">
+      <p className="font-semibold">{t('console.queue.approveMany.approved', { count: outcome.approved })}</p>
+      {outcome.refused.length === 0 ? null : (
+        <>
+          <p className="mt-1">{t('console.queue.approveMany.refused', { count: outcome.refused.length })}</p>
+          <ul className="m-0 mt-1 grid list-none gap-1 p-0">
+            {outcome.refused.map((refusal) => (
+              <li key={refusal.id} data-approve-many-refused={refusal.id} data-problem-code={problemFrom(refusal.error)?.code}>
+                <b>{refusal.title}</b> <span className="text-meta">{refusalReason(refusal.error, t)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <Button variant="ghost" size="small" className="mt-2" onClick={onDismiss}>
+        {t('common.done')}
+      </Button>
+    </Notice>
+  );
 }
 
 export function QueueScreen() {
@@ -141,6 +220,9 @@ export function QueueScreen() {
   const pathname = usePathname();
   const params = useSearchParams();
   const [retagging, setRetagging] = useState(false);
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+  const [confirming, setConfirming] = useState(false);
+  const approveMany = useApproveMany();
 
   const tab = tabFrom(params);
   const filters = filtersFrom(params);
@@ -150,7 +232,9 @@ export function QueueScreen() {
   const forbidden = forbiddenFrom(query.error);
 
   // A changed tab or filter starts again at the first page: the old offset means nothing in the new result.
+  // A selection belongs to the page it was made on, so it goes with it.
   const go = (nextTab: TabKey, patch: Partial<QueueFilters> = {}, nextOffset = 0) => {
+    setSelected(new Set());
     const next = { ...filters, ...patch };
     const search = searchOf(next, nextTab, nextOffset);
     router.replace(search === '' ? pathname : `${pathname}?${search}`);
@@ -158,6 +242,25 @@ export function QueueScreen() {
 
   const rows = query.data?.items ?? [];
   const total = query.data?.total ?? 0;
+
+  // Approve many (D-118: the library baseline's proposals). Only Waiting selects, and only
+  // a row that can be approved as it stands; each is then approved through the one approve
+  // route in turn, exactly as if it were opened alone (features/proposals/hooks.ts).
+  const waiting = tab === 'waiting';
+  const selectable = waiting ? rows.filter((row) => selectionBlock(row, t) === null) : [];
+  const chosen = selectable.filter((row) => selected.has(row.id));
+  const busy = approveMany.isPending;
+  const running = approveMany.variables?.length ?? 0;
+  const toggle = (id: string, checked: boolean) => {
+    const next = new Set(selected);
+    if (checked) next.add(id);
+    else next.delete(id);
+    setSelected(next);
+  };
+  const start = () => {
+    setConfirming(false);
+    approveMany.mutate(chosen, { onSettled: () => setSelected(new Set()) });
+  };
 
   const tabs: TabDef[] = [
     { id: 'waiting', label: tab === 'waiting' && query.isSuccess ? t('console.queue.tab.withCount', { label: t('console.queue.tab.waiting'), count: total }) : t('console.queue.tab.waiting') },
@@ -206,6 +309,37 @@ export function QueueScreen() {
           </Chip>
         </ChipRow>
 
+        {approveMany.isSuccess ? <ApproveManyResult outcome={approveMany.data} onDismiss={() => approveMany.reset()} /> : null}
+        {busy || (waiting && chosen.length > 0) ? (
+          <div role="region" aria-label={t('console.queue.select.selection')} className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-card border border-fg bg-surface px-3.5 py-2.5" data-approve-many="">
+            {busy ? (
+              <p role="status" className="font-semibold">
+                {t('console.queue.approveMany.progress', { current: Math.min(approveMany.done + 1, running), total: running })}
+              </p>
+            ) : (
+              <>
+                <b>{t('console.queue.select.selected', { count: chosen.length })}</b>
+                <ButtonBar className="mt-0">
+                  <Button variant="ghost" size="small" onClick={() => setSelected(new Set())}>
+                    {t('console.queue.select.clear')}
+                  </Button>
+                  <Button size="small" onClick={() => setConfirming(true)}>
+                    {t('console.queue.select.approve', { count: chosen.length })}
+                  </Button>
+                </ButtonBar>
+              </>
+            )}
+          </div>
+        ) : null}
+        <Modal open={confirming} onOpenChange={setConfirming} title={t('console.queue.approveMany.title', { count: chosen.length })} description={t('console.queue.approveMany.body')}>
+          <ButtonBar>
+            <Button variant="outline" onClick={() => setConfirming(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={start}>{t('console.queue.select.approve', { count: chosen.length })}</Button>
+          </ButtonBar>
+        </Modal>
+
         {query.isPending ? (
           <LoadingState rows={3} />
         ) : forbidden !== null ? (
@@ -224,9 +358,16 @@ export function QueueScreen() {
           )
         ) : (
           <>
+            {selectable.length > 0 ? (
+              <SelectAll count={selectable.length} selectedCount={chosen.length} disabled={busy} onChange={(checked) => setSelected(new Set(checked ? selectable.map((row) => row.id) : []))} />
+            ) : null}
             <div className="grid gap-2" data-proposal-rows="">
               {rows.map((row) => (
-                <QueueRow key={row.id} row={row} />
+                <QueueRow
+                  key={row.id}
+                  row={row}
+                  selection={waiting ? { checked: selected.has(row.id), blocked: selectionBlock(row, t), busy, onChange: (checked) => toggle(row.id, checked) } : undefined}
+                />
               ))}
             </div>
             {offset > 0 || total > offset + rows.length ? (

@@ -1,3 +1,4 @@
+import { AxiosError, AxiosHeaders } from 'axios';
 import { describe, expect, it } from 'vitest';
 
 import { createT, type Locale } from '@/shared/i18n';
@@ -20,7 +21,9 @@ import {
   precisionOf,
   presentProposal,
   proposerLine,
+  refusalReason,
   scopeTermPills,
+  selectionBlock,
   sourceLine,
   statusLabel,
   statusTone,
@@ -227,6 +230,27 @@ describe('payload readers', () => {
 
   it('reads a vocabulary payload as-is', () => {
     expect(vocabularyPayloadOf(row({ payload: { list: 'flag', key: 'ai', labels: { en: 'AI' } } })).key).toBe('ai');
+  });
+});
+
+describe('approving many', () => {
+  it('lets an open, single, unflagged proposal of someone else be selected, and says why any other cannot', () => {
+    expect(selectionBlock(row({ status: 'open', isBatch: false, isMine: false, riskFlags: [] }), t)).toBeNull();
+    expect(selectionBlock(row({ status: 'open', riskFlags: undefined }), t)).toBeNull();
+    expect(selectionBlock(row({ status: 'approved' }), t)).toBe('Already decided.');
+    expect(selectionBlock(row({ isBatch: true }), t)).toBe('A batch is decided row by row on its own screen.');
+    expect(selectionBlock(row({ isMine: true }), t)).toBe('Yours: someone else approves it.');
+    expect(selectionBlock(row({ riskFlags: ['embedded_instructions'] }), t)).toBe('Flagged: open it and read it before you approve it.');
+  });
+
+  it("says why one approval was refused by the server's code, and its own sentence otherwise", () => {
+    const refused = (status: number, data: unknown) =>
+      new AxiosError('refused', String(status), undefined, undefined, { status, statusText: '', headers: {}, config: { headers: new AxiosHeaders() }, data });
+    expect(refusalReason(refused(403, { code: 'step_up_required', detail: 'Confirm with your passkey.' }), t)).toBe('Your passkey was not confirmed, so this one and the rest are still waiting.');
+    expect(refusalReason(refused(409, { code: 'four_eyes_violation', detail: 'A second person has to approve this.' }), t)).toBe('A second person has to approve this.');
+    expect(refusalReason(refused(409, { code: 'not_open' }), t)).toBe('Something went wrong. Try again.');
+    expect(refusalReason(new AxiosError('offline'), t)).toBe('The server could not be reached. Check your connection and try again.');
+    expect(refusalReason(new Error('boom'), t)).toBe('Something went wrong. Try again.');
   });
 });
 
