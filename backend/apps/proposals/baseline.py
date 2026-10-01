@@ -47,11 +47,17 @@ from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.shared.adapters.agent_runner import RunnerEvent
 from apps.shared.audit import Actor, ActorType
+from apps.watch import keys as watch_keys, sources as watch_sources
+from apps.watch.schemas import WatchSourceInput
 
 BASELINE_DIR = Path(__file__).resolve().parents[1] / "library" / "baseline"
 AGENT_KEY = "library-baseline"
-# Who opens the runs: the command, run by a platform operator in the API's shell.
+# Who opens the runs and registers the sources: the command, or the beat.
 RUN_ACTOR = Actor.system("file_library_baseline")
+# The pages the watch should check for the baseline's records, beside its tranches.
+SOURCES_FILE = "sources.json"
+# The language order a registered source is read back in; nobody reads the answer here.
+SOURCE_ORDER = ["en"]
 
 INSTRUMENT = ProposalKind.NEW_INSTRUMENT.value
 OBLIGATION = ProposalKind.NEW_OBLIGATION.value
@@ -94,7 +100,7 @@ class Report:
 
 
 def tranches(folder: Path | None = None) -> list[str]:
-    return sorted(path.stem for path in (folder or BASELINE_DIR).glob("*.json"))
+    return sorted(path.stem for path in (folder or BASELINE_DIR).glob("*.json") if path.name != SOURCES_FILE)
 
 
 def load(only: Collection[str] = (), folder: Path | None = None) -> list[Entry]:
@@ -244,3 +250,27 @@ def _file_one(entry: Entry, run: AgentRun) -> None:
         source_label=entry.source_label,
         source_url=entry.source_url,
     )
+
+
+def register_sources(folder: Path | None = None) -> int:
+    """Register every source the baseline names that the registry does not hold by name,
+    through the console's own writer (`apps.watch.sources.create_source`), so the watch
+    agents check the pages the baseline's records came from (WAT-01). Returns how many it
+    registered. A name already registered is left exactly as an editor may have changed it."""
+    path = (folder or BASELINE_DIR) / SOURCES_FILE
+    if not path.exists():
+        return 0
+    registered = 0
+    for spec in json.loads(path.read_text(encoding="utf-8"))["sources"]:
+        if watch_keys.source_with_name(spec["name"]) is not None:
+            continue
+        body = WatchSourceInput(
+            name=spec["name"],
+            url=spec["url"],
+            kind=spec["kind"],
+            authority_id=watch_keys.authority_named(spec["authority"] or ""),
+            check_frequency="weekly",
+        )
+        watch_sources.create_source(actor=RUN_ACTOR, order=SOURCE_ORDER, body=body)
+        registered += 1
+    return registered

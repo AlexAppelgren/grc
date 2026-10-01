@@ -26,6 +26,7 @@ from typing import Any
 from unittest import mock
 
 from django.db import IntegrityError, transaction
+from django.conf import settings
 from django.test import TestCase, override_settings
 
 from apps.agents.models import Agent, AgentRun, RunStatus
@@ -36,6 +37,7 @@ from apps.library.seeds.library import seed_authorities
 from apps.proposals import baseline, logic
 from apps.proposals.models import OriginType, Proposal, ProposalStatus
 from apps.shared import factories, tenancy
+from apps.shared.models import AuditEvent
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 
 SOURCE = "https://eur-lex.europa.eu/eli/reg/2099/1/oj"
@@ -233,3 +235,44 @@ class FilingTheBaseline(BaselineCase):
     def test_an_unknown_tranche_is_refused_by_name(self) -> None:
         with self.assertRaisesMessage(Exception, "No such tranche: nope"):
             baseline.file(only=["nope"])
+
+
+class RegisteringTheSources(BaselineCase):
+    """The pages the baseline's records came from are registered for the watch (WAT-01),
+    through the console's own writer, once each."""
+
+    def test_every_source_of_the_real_baseline_registers_once(self) -> None:
+        from apps.watch.models import Source
+
+        names = [spec["name"] for spec in json.loads((baseline.BASELINE_DIR / baseline.SOURCES_FILE).read_text(encoding="utf-8"))["sources"]]
+        self.assertEqual(baseline.register_sources(), len(names))
+        self.assertEqual(sorted(Source.objects.filter(name__in=names).values_list("name", flat=True)), sorted(names))
+        self.assertEqual(baseline.register_sources(), 0, "a second call registers nothing")
+        self.assertEqual(AuditEvent.objects.filter(action="source.registered").count(), len(names))
+        fi = Source.objects.select_related("authority").get(name="Finansinspektionen, nyheter")
+        self.assertEqual((getattr(fi.authority, "key", None), fi.check_frequency, fi.active), ("fi", "weekly", True))
+
+    def test_a_source_an_editor_already_registered_by_name_is_left_as_it_is(self) -> None:
+        from apps.watch.models import Source
+
+        folder = Path(tempfile.mkdtemp())
+        spec = {"name": "ESMA news", "url": "https://www.esma.europa.eu/press-news/esma-news", "kind": "authority_site", "authority": "esma"}
+        (folder / baseline.SOURCES_FILE).write_text(json.dumps({"sources": [spec]}), encoding="utf-8")
+        self.assertEqual(baseline.register_sources(folder), 1)
+        moved = {**spec, "url": "https://www.esma.europa.eu/"}
+        (folder / baseline.SOURCES_FILE).write_text(json.dumps({"sources": [moved]}), encoding="utf-8")
+        self.assertEqual(baseline.register_sources(folder), 0)
+        self.assertEqual(Source.objects.get(name="ESMA news").url, spec["url"])
+
+
+class TheBaselineOnTheBeat(BaselineCase):
+    def test_the_beat_files_the_baseline_and_registers_its_sources(self) -> None:
+        from apps.proposals import tasks
+
+        self.assertEqual(settings.CELERY_BEAT_SCHEDULE["library-baseline"]["task"], "apps.proposals.tasks.file_library_baseline")
+        folder = Path(tempfile.mkdtemp())
+        body = {"tranche": "beat", "researchedOn": "2026-10-01", "instruments": [_instrument("beat-a")]}
+        (folder / "beat.json").write_text(json.dumps(body), encoding="utf-8")
+        with mock.patch.object(baseline, "BASELINE_DIR", folder):
+            tasks.file_library_baseline()
+        self.assertEqual(Proposal.objects.get(payload__key="beat-a").proposed_by_agent.key, baseline.AGENT_KEY)  # type: ignore[union-attr]

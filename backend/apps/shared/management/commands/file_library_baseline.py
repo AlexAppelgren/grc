@@ -1,5 +1,7 @@
 """`manage.py file_library_baseline`: file the library baseline's due entries as proposals of
-the platform agent `library-baseline` (ADR 0065, D-118; apps/proposals/baseline.py).
+the platform agent `library-baseline`, after registering the sources the baseline names
+(ADR 0065, D-118; apps/proposals/baseline.py). The beat runs the same thing every
+`LIBRARY_BASELINE_FILING_MINUTES`, so this is for a first run by hand or a dry run.
 
 Run it on the API service after `seed_reference`, approve the instruments in the console
 queue, run it again for their duties, and approve those. Every run is idempotent: it files
@@ -26,6 +28,8 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any) -> None:  # compliance: allow-kwargs Django command signature
         try:
+            if not options["dry_run"]:
+                self.stdout.write(f"sources registered: {baseline.register_sources()}")
             report = baseline.file(only=options["tranche"], dry_run=options["dry_run"])
         except ValidationError as error:
             raise CommandError(" ".join(error.messages)) from error

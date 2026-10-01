@@ -1,0 +1,20 @@
+{
+ "researchedOn": "2026-10-01",
+ "sources": [
+  {"name": "EUR-Lex, Official Journal of the European Union", "url": "https://eur-lex.europa.eu/oj/direct-access.html", "kind": "legal_database", "authority": null},
+  {"name": "European Commission, financial services news", "url": "https://finance.ec.europa.eu/news_en", "kind": "authority_site", "authority": "european-commission"},
+  {"name": "ESMA news", "url": "https://www.esma.europa.eu/press-news/esma-news", "kind": "authority_site", "authority": "esma"},
+  {"name": "EBA press releases", "url": "https://www.eba.europa.eu/publications-and-media/press-releases", "kind": "authority_site", "authority": "eba"},
+  {"name": "EIOPA news", "url": "https://www.eiopa.europa.eu/media/news_en", "kind": "authority_site", "authority": "eiopa"},
+  {"name": "Svensk författningssamling, riksdagen.se", "url": "https://www.riksdagen.se/sv/dokument-och-lagar/?doktyp=sfs", "kind": "legal_database", "authority": null},
+  {"name": "Finansinspektionen, nyheter", "url": "https://www.fi.se/sv/publicerat/nyheter/", "kind": "authority_site", "authority": "fi"},
+  {"name": "Finansinspektionen, FFFS", "url": "https://www.fi.se/sv/vara-register/fffs/", "kind": "authority_site", "authority": "fi"},
+  {"name": "Integritetsskyddsmyndigheten", "url": "https://www.imy.se/", "kind": "authority_site", "authority": "imy"},
+  {"name": "Retsinformation", "url": "https://www.retsinformation.dk/", "kind": "legal_database", "authority": null},
+  {"name": "Finanstilsynet (DK), nyheder og pressemeddelelser", "url": "https://www.finanstilsynet.dk/nyheder-og-presse/nyheder-og-pressemeddelelser", "kind": "authority_site", "authority": "finanstilsynet-dk"},
+  {"name": "Norsk Lovtidend, lovdata.no", "url": "https://lovdata.no/register/lovtidend", "kind": "legal_database", "authority": null},
+  {"name": "Finanstilsynet (NO), nyhetsarkiv", "url": "https://www.finanstilsynet.no/nyhetsarkiv/", "kind": "authority_site", "authority": "finanstilsynet-no"},
+  {"name": "Finlex", "url": "https://www.finlex.fi/fi/", "kind": "legal_database", "authority": null},
+  {"name": "Finanssivalvonta, tiedotteet ja julkaisut", "url": "https://www.finanssivalvonta.fi/tiedotteet-ja-julkaisut/", "kind": "authority_site", "authority": "finanssivalvonta"}
+ ]
+}

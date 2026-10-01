@@ -26,6 +26,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 FIXTURE = HERE.parent / "fixtures" / "prototype_data.json"
 
+# The pages the watch checks for the baseline, beside the tranches: checked by `sources()`.
+SOURCES_FILE = "sources.json"
 KEY = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 LANGUAGES = {"en", "sv", "da", "nb", "fi"}
@@ -268,17 +270,40 @@ class Checker:
         self.counts[path.stem] = (len(instruments), obligations)
 
 
+def sources(ref: dict[str, set[str]]) -> list[str]:
+    """The source list: unique names, https pages, a seeded source kind and authority."""
+    path = HERE / SOURCES_FILE
+    if not path.exists():
+        return []
+    problems, names = [], set()
+    kinds = set(json.loads(FIXTURE.read_text(encoding="utf-8"))["vocabularies"]["source_kind"])
+    for i, spec in enumerate(json.loads(path.read_text(encoding="utf-8"))["sources"]):
+        where = f"{SOURCES_FILE}[{i}]"
+        if spec.get("name") in names or not spec.get("name"):
+            problems.append(f"{where}: a name is given once and never empty")
+        names.add(spec.get("name"))
+        if not str(spec.get("url", "")).startswith("https://"):
+            problems.append(f"{where}: url must be an https link")
+        if spec.get("kind") not in kinds:
+            problems.append(f"{where}: {spec.get('kind')!r} is not a source kind ({', '.join(sorted(kinds))})")
+        if spec.get("authority") is not None and spec["authority"] not in ref["authorities"]:
+            problems.append(f"{where}: {spec['authority']!r} is not a seeded authority")
+    return problems
+
+
 def main(argv: list[str]) -> int:
-    files = [Path(arg) for arg in argv] or sorted(HERE.glob("*.json"))
+    files = [Path(arg) for arg in argv] or sorted(path for path in HERE.glob("*.json") if path.name != SOURCES_FILE)
     checker = Checker()
     if argv:
         # A single file is still checked against the rest, so a key is unique baseline-wide.
-        for other in sorted(HERE.glob("*.json")):
+        for other in sorted(path for path in HERE.glob("*.json") if path.name != SOURCES_FILE):
             if other.resolve() not in {f.resolve() for f in files}:
                 Checker.file(checker, other)
         checker.problems = [p for p in checker.problems if any(p.startswith(f.name) for f in files)]
     for path in files:
         checker.file(path)
+    if not argv:
+        checker.problems += sources(checker.ref)
     for tranche, (instruments, obligations) in sorted(checker.counts.items()):
         print(f"{tranche}: {instruments} instruments, {obligations} obligations")
     if checker.problems:

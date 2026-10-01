@@ -1271,6 +1271,20 @@
    "name": "Valtiovarainministeriö",
    "jurisdiction": "FI",
    "url": "https://vm.fi/"
+  },
+  {
+   "key": "utenriksdepartementet",
+   "code": "UD",
+   "name": "Utenriksdepartementet",
+   "jurisdiction": "NO",
+   "url": "https://www.regjeringen.no/no/dep/ud/id833/"
+  },
+  {
+   "key": "skattedirektoratet",
+   "code": "SKD",
+   "name": "Skattedirektoratet",
+   "jurisdiction": "NO",
+   "url": "https://www.skatteetaten.no/"
   }
  ],
  "instruments": [
