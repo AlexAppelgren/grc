@@ -2149,6 +2149,8 @@ def seed_e2e() -> dict[str, int]:
         # d89-e2e-journey: after chunk 11's agents and cap, which a research run is opened under.
         seed_own_records(tenants)
 
+        # PRO-S17: after the agent definitions, which the baseline's own agent is one of.
+        baseline_proposals = seed_baseline_proposals()
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
         # SRC-01: last, once every shared row the index reads exists — chunk 5's changes
@@ -2168,6 +2170,7 @@ def seed_e2e() -> dict[str, int]:
         "case_evidence": case_evidence,
         "comments": comments,
         "machine_confirmed": machine_confirmed,
+        "baseline_proposals": baseline_proposals,
         "eval_questions": eval_questions,
         **library,
         **search_index,
@@ -4122,3 +4125,43 @@ def seed_own_records(tenants: list[Tenant]) -> None:
                 private_approval.approve(proposal=proposal, reviewer=approver, actor=actor, note="", step_up_assertion_id=SEED_OWN_RECORDS_STEP_UP)
     tenancy.clear_tenant()
 # --- end d89-e2e-journey --------------------------------------------------------------------
+
+
+# --- console-new-records (PRO-S17; D-118, ADR 0065) -----------------------------------------
+# A few of the library baseline's proposals, waiting in the console queue for PRO-S17: two
+# instruments copied from the market abuse tranche with their three duties, filed through
+# the proposal door exactly as `manage.py file_library_baseline` files the real baseline.
+# The prototype's sample library holds neither instrument, so both are due at once; their
+# duties wait until the instruments are approved, so a reseed of an untouched database files
+# nothing, and only a reseed after a journey approved them would file the duties.
+E2E_BASELINE = Path(__file__).resolve().parents[1] / "library" / "fixtures" / "e2e_baseline"
+
+
+@dataclass(frozen=True)
+class SeedBaseline:
+    """What PRO-S17 reads: the agent that files, the instruments it files and their duties."""
+
+    agent: str
+    instruments: tuple[str, ...]
+    duties: tuple[str, ...]
+
+
+EXPECTED_BASELINE = SeedBaseline(
+    agent="library-baseline",
+    instruments=("celex-32016r0523", "celex-32012r0827"),
+    duties=("obl-eu-mar-pdmr-its-template", "obl-eu-ssr-its-locate-arrangements", "obl-eu-ssr-its-locate-provider"),
+)
+
+
+def seed_baseline_proposals() -> int:
+    """File the fixture's due entries in the platform's zone; returns how many it filed. An
+    entry the door refuses stops the seed: the fixture is a copy of reviewed data, so a
+    refusal means the copy or the door changed, and a journey would read nothing."""
+    from apps.proposals import baseline
+
+    tenancy.clear_tenant()
+    report = baseline.file(folder=E2E_BASELINE)
+    if report.refused:
+        raise ValueError(f"The E2E baseline was refused: {report.refused}")
+    return sum(report.filed.values())
+# --- end console-new-records ----------------------------------------------------------------

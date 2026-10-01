@@ -62,7 +62,7 @@ function SourcePanel({ proposal }: { proposal: ProposalRow }) {
   const ctx = useFormatContext();
   const rows = fieldSourceRows(proposal.fieldSources ?? {});
   return (
-    <Panel title={t('console.queue.detail.sourcePanel')}>
+    <Panel title={t('console.queue.detail.sourcePanel')} data-proposal-sources="">
       {proposal.sourceLabel !== '' ? (
         <p className="mb-2 flex flex-wrap items-center gap-x-1.5">
           <span>{proposal.sourceLabel}</span>
