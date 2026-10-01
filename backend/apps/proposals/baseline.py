@@ -42,7 +42,7 @@ from django.db import transaction
 from apps.agents import runner_events, tasks
 from apps.agents.models import AgentRun, RunStatus
 from apps.library.models import SubjectType
-from apps.library.reading import stable_key_taken
+from apps.library.reading import held_stable_keys
 from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.shared.adapters.agent_runner import RunnerEvent
@@ -93,20 +93,23 @@ class Report:
     runs: int = 0
 
 
-def tranches() -> list[str]:
-    return sorted(path.stem for path in BASELINE_DIR.glob("*.json"))
+def tranches(folder: Path | None = None) -> list[str]:
+    return sorted(path.stem for path in (folder or BASELINE_DIR).glob("*.json"))
 
 
-def load(only: Collection[str] = ()) -> list[Entry]:
-    """Every entry of the named tranches, or of all, instruments before their duties."""
-    unknown = sorted(set(only) - set(tranches()))
+def load(only: Collection[str] = (), folder: Path | None = None) -> list[Entry]:
+    """Every entry of the named tranches of `folder` (the baseline's own by default), or of
+    all, instruments before their duties."""
+    folder = folder or BASELINE_DIR
+    names = tranches(folder)
+    unknown = sorted(set(only) - set(names))
     if unknown:
-        raise ValidationError(f"No such tranche: {', '.join(unknown)}. Tranches: {', '.join(tranches())}.", code="validation_error")
+        raise ValidationError(f"No such tranche: {', '.join(unknown)}. Tranches: {', '.join(names)}.", code="validation_error")
     entries: list[Entry] = []
-    for name in tranches():
+    for name in names:
         if only and name not in only:
             continue
-        data = json.loads((BASELINE_DIR / f"{name}.json").read_text(encoding="utf-8"))
+        data = json.loads((folder / f"{name}.json").read_text(encoding="utf-8"))
         for item in data["instruments"]:
             key = item["payload"]["key"]
             entries.append(_entry(name, INSTRUMENT, item, item["payload"], key))
@@ -133,35 +136,64 @@ def _entry(tranche: str, kind: str, item: dict[str, Any], payload: dict[str, Any
     )
 
 
-def _state(entry: Entry, agent_filed: set[str]) -> str:
+@dataclass(frozen=True)
+class _Library:
+    """What the library and the queue hold for the entries in hand, read in four queries:
+    the stable keys held (lowercased), the keys open in the queue per kind, and the retry
+    keys this agent ever filed."""
+
+    instruments: set[str]
+    obligations: set[str]
+    open: set[tuple[str, str]]
+    filed: set[str]
+
+
+def _library(entries: list[Entry]) -> _Library:
+    keys = {kind: {entry.key for entry in entries if entry.kind == kind} for kind in (INSTRUMENT, OBLIGATION)}
+    parents = {entry.instrument for entry in entries if entry.kind == OBLIGATION}
+    return _Library(
+        instruments=held_stable_keys(SubjectType.INSTRUMENT.value, keys[INSTRUMENT] | parents),
+        obligations=held_stable_keys(SubjectType.OBLIGATION.value, keys[OBLIGATION]),
+        open={
+            (kind, key)
+            for kind, key in Proposal.objects.filter(status=ProposalStatus.OPEN.value, kind__in=(INSTRUMENT, OBLIGATION)).values_list(
+                "kind", "payload__key"
+            )
+        },
+        filed={
+            key
+            for key in Proposal.objects.filter(proposed_by_agent__key=AGENT_KEY, idempotency_key__startswith="baseline:").values_list(
+                "idempotency_key", flat=True
+            )
+            if key
+        },
+    )
+
+
+def _state(entry: Entry, library: _Library) -> str:
     """Where `entry` stands: `held`, `open`, `decided`, `waiting` for its instrument, or `due`."""
-    subject = SubjectType.INSTRUMENT.value if entry.kind == INSTRUMENT else SubjectType.OBLIGATION.value
-    if stable_key_taken(subject, entry.key):
+    held = library.instruments if entry.kind == INSTRUMENT else library.obligations
+    if entry.key.lower() in held:
         return "held"
-    if Proposal.objects.filter(kind=entry.kind, status=ProposalStatus.OPEN.value, payload__key=entry.key).exists():
+    if (entry.kind, entry.key) in library.open:
         return "open"
-    if entry.retry_key in agent_filed:
+    if entry.retry_key in library.filed:
         return "decided"
-    if entry.kind == OBLIGATION and not stable_key_taken(SubjectType.INSTRUMENT.value, entry.instrument):
+    if entry.kind == OBLIGATION and entry.instrument.lower() not in library.instruments:
         return "waiting"
     return "due"
 
 
-def file(*, only: Collection[str] = (), dry_run: bool = False) -> Report:
+def file(*, only: Collection[str] = (), dry_run: bool = False, folder: Path | None = None) -> Report:
     """File every due entry of the named tranches, or of all. A dry run files nothing and
-    reports what a real one would."""
-    entries = load(only)
+    reports what a real one would. `folder` names another folder of tranches, as the E2E
+    seed's fixture is."""
+    entries = load(only, folder)
     report = Report()
-    agent_filed = {
-        key
-        for key in Proposal.objects.filter(proposed_by_agent__key=AGENT_KEY, idempotency_key__startswith="baseline:").values_list(
-            "idempotency_key", flat=True
-        )
-        if key
-    }
+    library = _library(entries)
     due: list[Entry] = []
     for entry in entries:
-        state = _state(entry, agent_filed)
+        state = _state(entry, library)
         tally = (entry.tranche, entry.kind)
         if state == "due":
             due.append(entry)

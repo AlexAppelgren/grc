@@ -73,7 +73,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.lookups import DataContains
 from django.core.exceptions import ValidationError
 from django.db.models import BooleanField, Count, Exists, F, Func, Model, OuterRef, Prefetch, Q, QuerySet, UUIDField, Value
-from django.db.models.functions import JSONObject
+from django.db.models.functions import JSONObject, Lower
 from django.utils import timezone
 
 from apps.library.logic import in_force, version_diff
@@ -461,6 +461,16 @@ def stable_key_taken(subject: str, key: str) -> bool:
     whoever owns it: a stable key is unique across the library and is never reused."""
     models: dict[str, Any] = {SubjectType.INSTRUMENT.value: Instrument, SubjectType.PROVISION.value: Provision}
     return bool(models.get(subject, Obligation).objects.filter(stable_key__iexact=key).exists())
+
+
+def held_stable_keys(subject: str, keys: Collection[str]) -> set[str]:
+    """Which of `keys` an instrument (`subject`) or else an obligation already carries,
+    lowercased, compared without case as `stable_key_taken` compares one key: one query for
+    a whole list."""
+    model: Any = Instrument if subject == SubjectType.INSTRUMENT.value else Obligation
+    wanted = {key.lower() for key in keys}
+    held = model.objects.annotate(folded=Lower("stable_key")).filter(folded__in=wanted).values_list("folded", flat=True)
+    return set(held)
 
 
 def held_as_own(tenant_id: uuid.UUID, *, instrument: bool, key: str, reference: str, instrument_key: str = "") -> bool:
