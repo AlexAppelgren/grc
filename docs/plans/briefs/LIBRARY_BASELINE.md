@@ -73,7 +73,8 @@ duties sit under each country's implementing act.
 | Finland, acts and FIN-FSA's regulations | `fi` | 35 | 166 |
 | Finland, decrees | `fi-asetukset` | 23 | 47 |
 | Nordic sanctions acts | `nordic-sanctions` | 5 | 11 |
-| **All** | | **531** | **1839** |
+| Other ministries' and agencies' orders | `issuer-gaps` | 13 | 55 |
+| **All** | | **544** | **1894** |
 
 **Market abuse** carries the regime `securities`, so every bank that follows securities law
 sees it: MAR with the Listing Act's application dates, CSMAD, the delegated and
@@ -97,12 +98,11 @@ on market soundings, and each country's supplementary and criminal provisions.
 - **Not yet researched**: in Norway individual pension savings, the beneficial-owner
   register and the accounting act; in Finland the banks' corporate-form acts and FIN-FSA's
   reporting, accounting and covered-bond regulations.
-- **Instruments of an issuer the reference seed does not name**: Norway's
-  finansavtaleforskriften (Justis- og beredskapsdepartementet) and gjeldsinformasjons-
-  forskriften (Barne- og familiedepartementet), Denmark's orders of other ministries and
-  agencies (Justitsministeriet, Digitaliseringsministeriet, Erhvervsstyrelsen, SKAT), and
-  Norway's innskuddsgarantiforskriften (Bankenes sikringsfond). Each needs its issuer as an
-  authority first.
+- **Orders of other issuers that bind someone else**: Denmark's BEK 1442/2005 (the
+  shareholder documents, the bank only receives the form), BEK 1311/2012 (the duties fall
+  on the pension holder), BEK 788/2025 (binds people, public payers and the agency) and BEK
+  1160/2010 (approves an optional form); BEK 970/1992, which cites sections of the 1990
+  credit act that now say something else; and Finland's 355/2016, repealed from 2026-01-01.
 - **Worth a legal read before they are left out for good**: the Cyber Resilience Act for a
   bank that publishes apps; Denmark's BEK 105/2023 on payment incident reporting, whose
   legal basis the DORA amendments repealed on 2025-01-17 while Retsinformation still shows
@@ -126,6 +126,13 @@ on market soundings, and each country's supplementary and criminal provisions.
   payment rules on 2026-10-01; the Swedish mortgage credit act is renamed and renumbered on
   2026-11-20, when the new consumer credit acts in Sweden, Denmark and Finland apply. The
   acts they replace keep governing agreements made before that day.
+- Orders of other issuers: Denmark's NemKonto order BEK 790/2025 binds only the banks that
+  join its scheme; BEK 531/2000 rests on the repealed 2000 data protection act though
+  Retsinformation lists it as valid; both NemKonto orders were issued by
+  Digitaliseringsministeriet, abolished on 2026-06-03, whose work and orders moved to
+  Forsknings-, Uddannelses- og Digitaliseringsministeriet, so the authority may want its
+  successor's key. Finland's 1030/2025 applies first to 2026 data, and 699/2004's ESAP
+  duties from 2030-01-10 are not recorded.
 - Where the baseline and the sample library meet: the baseline reuses the sample's key for
   every real instrument the sample holds, so a demo database skips it; the sample's date for
   Delegated Directive (EU) 2017/593 was wrong and is corrected to 2017-04-20.

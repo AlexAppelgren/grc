@@ -1,0 +1,1364 @@
+{
+ "tranche": "issuer-gaps",
+ "researchedOn": "2026-10-01",
+ "instruments": [
+  {
+   "title": "Add Finansavtaleforskriften, FOR-2022-09-19-1612",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612",
+   "sourceLabel": "Lovdata, FOR-2022-09-19-1612, Forskrift om finansavtaler (finansavtaleforskriften), consolidated text; fastsatt av Justis- og beredskapsdepartementet, § 8-1 on entry into force",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2022/09/19/1612"
+   },
+   "payload": {
+    "key": "no-for-2022-09-19-1612",
+    "titles": {
+     "nb": "Forskrift om finansavtaler (finansavtaleforskriften)",
+     "en": "Regulation on Financial Agreements (Financial Agreements Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Finansavtaleforskriften",
+    "officialRef": "FOR-2022-09-19-1612",
+    "eliUri": "https://lovdata.no/eli/forskrift/2022/09/19/1612",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "justis-og-beredskapsdepartementet",
+    "regime": "regime:banking",
+    "inForceFrom": "2023-01-01",
+    "implementsNote": "Payment Accounts Directive, Directive 2014/92/EU, with Commission Delegated Regulation (EU) 2018/32 and Commission Implementing Regulation (EU) 2018/34; eIDAS, Regulation (EU) No 910/2014 (the EEA references Lovdata lists)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Calculate the effective interest rate by the regulation's formula and assumptions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/KAPITTEL_1",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 1-4 and § 1-5",
+     "payload": {
+      "key": "obl-no-finavtf-effective-rate",
+      "titles": {
+       "en": "Calculate the effective interest rate by the regulation's formula and assumptions"
+      },
+      "summaries": {
+       "en": "Whenever a lender states the effective interest rate on credit, it must express the credit costs as a yearly percentage of the credit amount, calculated with the mathematical formula and on the assumptions the regulation sets out. Home loans have their own formula and assumptions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1-4, § 1-5",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Calculate the loss or gain on early repayment of fixed-rate consumer credit by the prescribed method",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/%C2%A72-1",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 2-1",
+     "payload": {
+      "key": "obl-no-finavtf-early-repayment",
+      "titles": {
+       "en": "Calculate the loss or gain on early repayment of fixed-rate consumer credit by the prescribed method"
+      },
+      "summaries": {
+       "en": "When a consumer repays fixed-rate credit early and the agreement lets the lender claim its interest loss, the lender must work out its loss or gain from the difference between the agreed rate and the rate it now offers for corresponding credit over the remaining fixed period, discounted to present value. If the agreement waives the consumer's right to be credited a gain, or uses a method that pays out less, the consumer must be told in writing before the agreement is made and the method must be written into the agreement."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2-1",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not market credit agreements through door-to-door selling",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/%C2%A73-2",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 3-1 and § 3-2",
+     "payload": {
+      "key": "obl-no-finavtf-no-door-to-door",
+      "titles": {
+       "en": "Do not market credit agreements through door-to-door selling"
+      },
+      "summaries": {
+       "en": "A lender may not market credit agreements to consumers by selling door to door."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3-1, § 3-2",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Include the prescribed information, with a representative example, in all credit marketing to consumers",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/%C2%A73-4",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 3-4",
+     "payload": {
+      "key": "obl-no-finavtf-credit-marketing-information",
+      "titles": {
+       "en": "Include the prescribed information, with a representative example, in all credit marketing to consumers"
+      },
+      "summaries": {
+       "en": "Every form of marketing of a credit agreement to a consumer must state the credit costs including the effective rate, the credit amount available, the term, any cash price and down payment, the total costs and fees, any instalments, any required payment protection or other add-on service whose cost cannot be calculated in advance, a warning of currency fluctuation, any security required and the lender's identity. The cost items must be given clearly through one representative example that is followed throughout."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3-4",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not emphasise speed, ease of access or add-on benefits in credit marketing",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/%C2%A73-5",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 3-3 and § 3-5",
+     "payload": {
+      "key": "obl-no-finavtf-credit-marketing-emphasis",
+      "titles": {
+       "en": "Do not emphasise speed, ease of access or add-on benefits in credit marketing"
+      },
+      "summaries": {
+       "en": "Credit marketing to consumers must not highlight how fast the credit can be used, how fast an answer comes (home loans excepted), a low threshold for credit, an easy application process or other easy access, nor show any other interest rate more prominently than the effective rate. Add-on benefits and permitted information about the application process may not be given more prominence than the mandatory marketing information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3-3, § 3-5",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Cover the prescribed items in the general information on home loan terms",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/%C2%A73-6",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 3-6",
+     "payload": {
+      "key": "obl-no-finavtf-home-loan-general-information",
+      "titles": {
+       "en": "Cover the prescribed items in the general information on home loan terms"
+      },
+      "summaries": {
+       "en": "A lender's general information about its standard home loan terms must cover its identity and head office address, the credit type, the effective rate with an illustrative example of all assumptions and total costs, instalments, any required insurance or add-on services and whether others may supply them, the risk of the credit not being fully repaid, required security, early or unilateral termination and its costs, the term, immediate application of reference rate changes, other possible costs, foreign currency loans and their consequences, and the risks and costs of late payment."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3-6",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give consumers the fee information document before a payment account agreement",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/%C2%A73-9",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 3-9",
+     "payload": {
+      "key": "obl-no-finavtf-fee-information-document",
+      "titles": {
+       "en": "Give consumers the fee information document before a payment account agreement"
+      },
+      "summaries": {
+       "en": "In good time before a payment account agreement with a consumer, the payment service provider must hand over a written fee information document using the standardised terms for the most representative services, show package fees, included services and extra charges where services are bundled, give consumers access to a glossary of the standardised terms, and keep the fee information and glossary available to consumers at all times."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3-9",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Use the standardised payment account terms in information to consumers",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/%C2%A73-10",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 3-10",
+     "payload": {
+      "key": "obl-no-finavtf-standardised-terms",
+      "titles": {
+       "en": "Use the standardised payment account terms in information to consumers"
+      },
+      "summaries": {
+       "en": "Where relevant, payment service providers must use the standardised terms for payment account services in contractual, commercial and marketing information to consumers. Brand names may be used only as a secondary label beside the standardised terms in the fee information document and statement of fees, and elsewhere only if the matching standardised term is clearly shown."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3-10",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give consumers the standardised withdrawal form for financial services",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/%C2%A73-12",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 3-12",
+     "payload": {
+      "key": "obl-no-finavtf-withdrawal-form",
+      "titles": {
+       "en": "Give consumers the standardised withdrawal form for financial services"
+      },
+      "summaries": {
+       "en": "Where a consumer has a right of withdrawal under § 3-41 of the Financial Agreements Act, the provider must give the consumer the standardised form for exercising that right in sales of financial services."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3-12",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell applicants what information is needed, verify it and value property security by recognised standards",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/%C2%A75-1",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 5-1 and § 6-1",
+     "payload": {
+      "key": "obl-no-finavtf-credit-assessment-basis",
+      "titles": {
+       "en": "Tell applicants what information is needed, verify it and value property security by recognised standards"
+      },
+      "summaries": {
+       "en": "When a lender collects information from a customer for a credit assessment, it must say what information is needed and by when, check the information soundly, and follow relevant recognised standards when valuing real property given as security. The same applies to the assessment of a guarantor."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5-1 (1), (3) and (4), § 6-1",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Present the credit assessment result to the customer as green, yellow or red",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612/%C2%A75-1",
+     "sourceLabel": "Lovdata, finansavtaleforskriften (FOR-2022-09-19-1612) § 5-1 and § 6-1; § 8-1 on entry into force",
+     "payload": {
+      "key": "obl-no-finavtf-credit-assessment-result",
+      "titles": {
+       "en": "Present the credit assessment result to the customer as green, yellow or red"
+      },
+      "summaries": {
+       "en": "When a lender tells a customer or guarantor the result of the credit assessment, it must classify and present it as green, yellow or red according to the risk of non-performance and whether the customer can handle a significant rise in interest rates, as defined by reference to the lending regulation. This does not apply where a municipality is the lender."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5-1 (5) to (7), § 6-1",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2023-07-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Gjeldsinformasjonsforskriften, FOR-2017-10-31-1691",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2017-10-31-1691",
+   "sourceLabel": "Lovdata, FOR-2017-10-31-1691, Forskrift om virksomhet etter gjeldsinformasjonsloven (gjeldsinformasjonsforskriften), consolidated text; fastsatt av Barne- og likestillingsdepartementet, now listed under Barne- og familiedepartementet, § 11 on entry into force",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2017/10/31/1691"
+   },
+   "payload": {
+    "key": "no-for-2017-10-31-1691",
+    "titles": {
+     "nb": "Forskrift om virksomhet etter gjeldsinformasjonsloven (gjeldsinformasjonsforskriften)",
+     "en": "Regulation on Activities under the Debt Information Act (Debt Information Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Gjeldsinformasjonsforskriften",
+    "officialRef": "FOR-2017-10-31-1691",
+    "eliUri": "https://lovdata.no/eli/forskrift/2017/10/31/1691",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "barne-og-familiedepartementet",
+    "regime": "regime:banking",
+    "inForceFrom": "2017-11-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make the prescribed debt information available to debt information companies",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2017-10-31-1691/%C2%A73",
+     "sourceLabel": "Lovdata, gjeldsinformasjonsforskriften (FOR-2017-10-31-1691) § 2 and § 3",
+     "payload": {
+      "key": "obl-no-gjinff-make-debt-data-available",
+      "titles": {
+       "en": "Make the prescribed debt information available to debt information companies"
+      },
+      "summaries": {
+       "en": "A financial institution must make its customers' debt information available to the licensed debt information companies, by reporting it or by enabling them to collect it, and adapt its systems technically and administratively to their specifications. For instalment loans, credit lines and charge cards it must give the prescribed data, such as balances including interest and costs, the effective rate and the lender's name, identify the debtor by national identity number, and flag a co-borrower without identifying them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2, § 3",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make new debts and changes available to debt information companies without undue delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2017-10-31-1691/%C2%A74",
+     "sourceLabel": "Lovdata, gjeldsinformasjonsforskriften (FOR-2017-10-31-1691) § 4",
+     "payload": {
+      "key": "obl-no-gjinff-without-undue-delay",
+      "titles": {
+       "en": "Make new debts and changes available to debt information companies without undue delay"
+      },
+      "summaries": {
+       "en": "Once an instalment loan is booked in the ledger, a credit line is made available to the customer or a balance is registered on a charge card, the financial institution must make the debt information available without undue delay, and do the same for every later change."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Use debt information only for the purposes the Debt Information Act allows",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2017-10-31-1691/%C2%A76",
+     "sourceLabel": "Lovdata, gjeldsinformasjonsforskriften (FOR-2017-10-31-1691) § 6",
+     "payload": {
+      "key": "obl-no-gjinff-purpose-limitation",
+      "titles": {
+       "en": "Use debt information only for the purposes the Debt Information Act allows"
+      },
+      "summaries": {
+       "en": "Debt information obtained from a debt information company may be used only for the purposes set out in § 12 of the Debt Information Act, and never for marketing or anything similar."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Secure the confidentiality, integrity and availability of debt information services",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2017-10-31-1691/%C2%A78",
+     "sourceLabel": "Lovdata, gjeldsinformasjonsforskriften (FOR-2017-10-31-1691) § 8",
+     "payload": {
+      "key": "obl-no-gjinff-information-security",
+      "titles": {
+       "en": "Secure the confidentiality, integrity and availability of debt information services"
+      },
+      "summaries": {
+       "en": "Financial institutions, like debt information and credit reference companies, must ensure the necessary confidentiality, integrity and availability of their services under the Debt Information Act and follow the applicable national and internationally recognised standards."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8",
+      "dutyType": "technical"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Innskuddsgarantiforskriften, FOR-2019-12-02-1640",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-02-1640",
+   "sourceLabel": "Lovdata, FOR-2019-12-02-1640, Forskrift om krav til rapportering av opplysninger om innskytere og innskudd til Bankenes sikringsfond (innskuddsgarantiforskriften); fastsatt av Bankenes sikringsfond under finansforetaksloven § 19-14, § 9 on entry into force",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2019/12/02/1640"
+   },
+   "payload": {
+    "key": "no-for-2019-12-02-1640",
+    "titles": {
+     "nb": "Forskrift om krav til rapportering av opplysninger om innskytere og innskudd til Bankenes sikringsfond (innskuddsgarantiforskriften)",
+     "en": "Regulation on Requirements for Reporting Information on Depositors and Deposits to the Norwegian Banks' Guarantee Fund (Deposit Guarantee Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Innskuddsgarantiforskriften",
+    "officialRef": "FOR-2019-12-02-1640",
+    "eliUri": "https://lovdata.no/eli/forskrift/2019/12/02/1640",
+    "level": "authority_regulation",
+    "jurisdiction": "no",
+    "authority": "bankenes-sikringsfond",
+    "regime": "regime:banking",
+    "inForceFrom": "2020-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Produce and send depositor lists to the Banks' Guarantee Fund on request",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-02-1640/%C2%A73",
+     "sourceLabel": "Lovdata, innskuddsgarantiforskriften (FOR-2019-12-02-1640) § 2 and § 3",
+     "payload": {
+      "key": "obl-no-innskgf-lists-on-request",
+      "titles": {
+       "en": "Produce and send depositor lists to the Banks' Guarantee Fund on request"
+      },
+      "summaries": {
+       "en": "A member of the deposit guarantee scheme must at all times be able to present information on depositors and eligible deposits, and produce and send the prescribed lists when the Banks' Guarantee Fund asks, within the fund's deadlines, with an explanatory cover letter on the fund's form. It must quality-assure the data before sending and tell the fund at once of errors it finds afterwards."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2, § 3",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep systems that can produce depositor files in the fund's format at any time",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-02-1640/%C2%A74",
+     "sourceLabel": "Lovdata, innskuddsgarantiforskriften (FOR-2019-12-02-1640) § 4",
+     "payload": {
+      "key": "obl-no-innskgf-file-systems",
+      "titles": {
+       "en": "Keep systems that can produce depositor files in the fund's format at any time"
+      },
+      "summaries": {
+       "en": "Member banks must have systems that can at any time produce machine-readable files with the depositor lists, in XML or another format the fund approves and structured as the fund sets, update the list data regularly and before every submission, and send the files through the channels the fund provides, encrypted with a solution it approves."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Divide, populate and mark depositor lists as the regulation prescribes",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-02-1640/%C2%A76",
+     "sourceLabel": "Lovdata, innskuddsgarantiforskriften (FOR-2019-12-02-1640) § 5, § 6 and § 7",
+     "payload": {
+      "key": "obl-no-innskgf-list-content",
+      "titles": {
+       "en": "Divide, populate and mark depositor lists as the regulation prescribes"
+      },
+      "summaries": {
+       "en": "The lists must group customers of the Norwegian business by sector code, with separate lists per state for business outside Norway, and give for each customer the identification, contact details, language preference, accounts, debit and credit balances and interest, set-off and restriction flags, in the account currency and in proportion to the customer's ownership share. Client accounts, joint accounts, deposits not held for the bank's own account and risk, pension-related deposits, accounts without customer-initiated transactions for 24 months, deposits with an unknown depositor and the type of any restriction must be marked separately."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5, § 6, § 7",
+      "dutyType": "record_keeping",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Send balance lists by noon on the third working day after deposits become unavailable",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-02-1640/%C2%A78",
+     "sourceLabel": "Lovdata, innskuddsgarantiforskriften (FOR-2019-12-02-1640) § 8",
+     "payload": {
+      "key": "obl-no-innskgf-unavailable-deposits",
+      "titles": {
+       "en": "Send balance lists by noon on the third working day after deposits become unavailable"
+      },
+      "summaries": {
+       "en": "After a decision that makes deposits in the bank unavailable to depositors, the requirements continue to apply: the bank must produce lists showing balances at the time of the decision to wind it up under public administration, once the last interbank settlement on the second working day is booked, and send them to the fund by 12:00 on the third working day after the decision."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om privates anvendelse af nemkontosystemet, BEK nr 789 af 20/06/2025",
+   "source": "https://www.retsinformation.dk/eli/lta/2025/789",
+   "sourceLabel": "Retsinformation, BEK nr 789 af 20/06/2025, signed by Digitaliseringsministeriet; Retsinformation now lists it under Forsknings-, Uddannelses- og Digitaliseringsministeriet; § 16 on entry into force",
+   "payload": {
+    "key": "dk-bek-2025-789",
+    "titles": {
+     "da": "Bekendtgørelse om private udbetaleres, private kontoformidleres og operatører af finansielle digitale infrastrukturers anvendelse af nemkontosystemet",
+     "en": "Executive Order on the use of the NemKonto system by private payers, private account intermediaries and operators of financial digital infrastructure"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om privates anvendelse af nemkontosystemet",
+    "officialRef": "BEK nr 789 af 20/06/2025",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2025/789",
+    "level": "government_regulation",
+    "jurisdiction": "dk",
+    "authority": "digitaliseringsministeriet",
+    "regime": "regime:payments",
+    "inForceFrom": "2025-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Look up a payee's NemKonto only for an imminent payout to that payee",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/789",
+     "sourceLabel": "Retsinformation, BEK nr 789 af 20/06/2025 (private aktørers anvendelse af nemkontosystemet), § 1 and § 5",
+     "payload": {
+      "key": "obl-dk-nemkonto-priv-lookup-conditions",
+      "titles": {
+       "en": "Look up a payee's NemKonto only for an imminent payout to that payee"
+      },
+      "summaries": {
+       "en": "A private payer may look up a payee's NemKonto through a private account intermediary only when it will pay that payee within four banking days and the NemKonto is the right place of payment. It must not look up a payee who has asked not to be paid to the NemKonto, look up without an imminent payout, or reuse the account details for anything else; breaches can lead Digitaliseringsstyrelsen to exclude the payer, the intermediary or the infrastructure operator."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1, § 5",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Tell the payee before the first NemKonto lookup that it can refuse NemKonto payouts",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/789",
+     "sourceLabel": "Retsinformation, BEK nr 789 af 20/06/2025 (private aktørers anvendelse af nemkontosystemet), § 2",
+     "payload": {
+      "key": "obl-dk-nemkonto-priv-opt-out-notice",
+      "titles": {
+       "en": "Tell the payee before the first NemKonto lookup that it can refuse NemKonto payouts"
+      },
+      "summaries": {
+       "en": "Before its first lookup on a payee, a private payer must tell the payee that it can at any time ask for payouts not to go to its NemKonto, keep documentation of that notice for as long as the payment relationship lasts, and send it free of charge to Digitaliseringsstyrelsen on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Tell the payee about creditor protection before paying protected amounts to its NemKonto",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/789",
+     "sourceLabel": "Retsinformation, BEK nr 789 af 20/06/2025 (private aktørers anvendelse af nemkontosystemet), § 3",
+     "payload": {
+      "key": "obl-dk-nemkonto-priv-creditor-protection-notice",
+      "titles": {
+       "en": "Tell the payee about creditor protection before paying protected amounts to its NemKonto"
+      },
+      "summaries": {
+       "en": "Before paying amounts covered by § 513 of the Administration of Justice Act to a NemKonto, a private payer must tell the payee that the money can be protected from creditors if paid into a separate bank account or otherwise kept apart, and give a reasonable deadline for naming another account. It must keep documentation of the notice while the payment relationship lasts and send it to Digitaliseringsstyrelsen on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Give Digitaliseringsstyrelsen the information it needs, free of charge",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/789",
+     "sourceLabel": "Retsinformation, BEK nr 789 af 20/06/2025 (private aktørers anvendelse af nemkontosystemet), § 14 and § 15",
+     "payload": {
+      "key": "obl-dk-nemkonto-priv-assist-agency",
+      "titles": {
+       "en": "Give Digitaliseringsstyrelsen the information it needs, free of charge"
+      },
+      "summaries": {
+       "en": "A private payer must give Digitaliseringsstyrelsen, free of charge, information for its handling of objections under Article 21 GDPR, and a private account intermediary or infrastructure operator must, free of charge, help it with information to identify and handle technical faults in the connection to and use of the NemKonto system."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 14, § 15",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om nemkontoforpligtelser til offentlig tjeneste, BEK nr 790 af 20/06/2025",
+   "source": "https://www.retsinformation.dk/eli/lta/2025/790",
+   "sourceLabel": "Retsinformation, BEK nr 790 af 20/06/2025, signed by Digitaliseringsministeriet; Retsinformation now lists it under Forsknings-, Uddannelses- og Digitaliseringsministeriet; § 11 on entry into force",
+   "payload": {
+    "key": "dk-bek-2025-790",
+    "titles": {
+     "da": "Bekendtgørelse om ordningen om forpligtelser til offentlig tjeneste i relation til nemkontosystemet",
+     "en": "Executive Order on the scheme of public service obligations in relation to the NemKonto system"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om nemkontoforpligtelser til offentlig tjeneste",
+    "officialRef": "BEK nr 790 af 20/06/2025",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2025/790",
+    "level": "government_regulation",
+    "jurisdiction": "dk",
+    "authority": "digitaliseringsministeriet",
+    "regime": "regime:payments",
+    "inForceFrom": "2025-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Help customers designate and change their NemKonto",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/790",
+     "sourceLabel": "Retsinformation, BEK nr 790 af 20/06/2025 (forpligtelser til offentlig tjeneste i relation til nemkontosystemet), § 1 and § 3",
+     "payload": {
+      "key": "obl-dk-nemkonto-pso-assist-customers",
+      "titles": {
+       "en": "Help customers designate and change their NemKonto"
+      },
+      "summaries": {
+       "en": "A bank, payment, e-money or credit institution that has joined the NemKonto public service scheme must help private persons and legal entities designate or change accounts it holds as NemKonto: report the accounts to the NemKonto system (through its branches too if it has a branch network), ask customers in its relevant processes whether they want to designate or change a NemKonto, show customers which of their accounts is registered, and mark that account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1, § 3, nr. 1-3 and 7",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep the NemKonto system current within Digitaliseringsstyrelsen's deadlines",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/790",
+     "sourceLabel": "Retsinformation, BEK nr 790 af 20/06/2025 (forpligtelser til offentlig tjeneste i relation til nemkontosystemet), § 3",
+     "payload": {
+      "key": "obl-dk-nemkonto-pso-keep-current",
+      "titles": {
+       "en": "Keep the NemKonto system current within Digitaliseringsstyrelsen's deadlines"
+      },
+      "summaries": {
+       "en": "An institution in the scheme must receive information from the NemKonto system about its accounts, including those registered through other channels, report within the deadlines Digitaliseringsstyrelsen sets, and update the system when its own changes affect registered account numbers, for example on a merger."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3, nr. 4-6",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Keep a five-year record of every NemKonto report",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/790",
+     "sourceLabel": "Retsinformation, BEK nr 790 af 20/06/2025 (forpligtelser til offentlig tjeneste i relation til nemkontosystemet), § 3",
+     "payload": {
+      "key": "obl-dk-nemkonto-pso-report-records",
+      "titles": {
+       "en": "Keep a five-year record of every NemKonto report"
+      },
+      "summaries": {
+       "en": "An institution in the scheme must store details of every NemKonto report it makes, including when it was made and which employee and branch made it, and keep them for five years."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3, nr. 8",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Connect to the NemKonto system correctly and meet the interface security requirements",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/790",
+     "sourceLabel": "Retsinformation, BEK nr 790 af 20/06/2025 (forpligtelser til offentlig tjeneste i relation til nemkontosystemet), § 9",
+     "payload": {
+      "key": "obl-dk-nemkonto-pso-connection-security",
+      "titles": {
+       "en": "Connect to the NemKonto system correctly and meet the interface security requirements"
+      },
+      "summaries": {
+       "en": "Banks, payment and e-money institutions and credit institutions must connect to and use the NemKonto system correctly, follow Digitaliseringsstyrelsen's integration requirements and its security requirements for the interface, including encryption against hacking, malware and viruses and protection of data, help the agency resolve technical faults, and bear their own costs of doing so."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9",
+      "dutyType": "technical"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om pengeinstitutters videregivelse af kreditoplysninger, BEK nr 531 af 15/06/2000",
+   "source": "https://www.retsinformation.dk/eli/lta/2000/531",
+   "sourceLabel": "Retsinformation, BEK nr 531 af 15/06/2000, signed by Justitsministeriet, status valid and linked to the Data Protection Act (LBK nr 289 af 08/03/2024); § 8 on entry into force",
+   "payload": {
+    "key": "dk-bek-2000-531",
+    "titles": {
+     "da": "Bekendtgørelse om pengeinstitutters videregivelse af kreditoplysninger",
+     "en": "Executive Order on banks' disclosure of credit information"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om pengeinstitutters videregivelse af kreditoplysninger",
+    "officialRef": "BEK nr 531 af 15/06/2000",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2000/531",
+    "level": "government_regulation",
+    "jurisdiction": "dk",
+    "authority": "justitsministeriet",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2000-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Notify the customer within four weeks after first passing on credit information",
+     "source": "https://www.retsinformation.dk/eli/lta/2000/531",
+     "sourceLabel": "Retsinformation, BEK nr 531 af 15/06/2000 (pengeinstitutters videregivelse af kreditoplysninger), § 1 and § 6",
+     "payload": {
+      "key": "obl-dk-kreditoplys-first-disclosure-notice",
+      "titles": {
+       "en": "Notify the customer within four weeks after first passing on credit information"
+      },
+      "summaries": {
+       "en": "When a bank first passes on recorded information or assessments about a customer that serve only to judge the customer's financial standing and creditworthiness, it must tell the customer within four weeks. The rules also cover information about businesses."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1, § 6",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not pass on credit information when the customer has objected in writing",
+     "source": "https://www.retsinformation.dk/eli/lta/2000/531",
+     "sourceLabel": "Retsinformation, BEK nr 531 af 15/06/2000 (pengeinstitutters videregivelse af kreditoplysninger), § 2",
+     "payload": {
+      "key": "obl-dk-kreditoplys-respect-objection",
+      "titles": {
+       "en": "Do not pass on credit information when the customer has objected in writing"
+      },
+      "summaries": {
+       "en": "A bank may not pass on credit information about a customer who has told it in writing that they do not want such information passed on."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell a customer on request, within four weeks, what credit information was passed on",
+     "source": "https://www.retsinformation.dk/eli/lta/2000/531",
+     "sourceLabel": "Retsinformation, BEK nr 531 af 15/06/2000 (pengeinstitutters videregivelse af kreditoplysninger), § 3",
+     "payload": {
+      "key": "obl-dk-kreditoplys-access-on-request",
+      "titles": {
+       "en": "Tell a customer on request, within four weeks, what credit information was passed on"
+      },
+      "summaries": {
+       "en": "On a customer's request the bank must, within four weeks and in plain terms, tell the customer the content of the credit information it passed on in the last six months, the categories of recipients and the available information on where it came from. It must answer in writing if asked, and may charge only the small capped fee the order sets for a written answer."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Correct wrong credit information and answer correction requests within four weeks",
+     "source": "https://www.retsinformation.dk/eli/lta/2000/531",
+     "sourceLabel": "Retsinformation, BEK nr 531 af 15/06/2000 (pengeinstitutters videregivelse af kreditoplysninger), § 4 and § 5",
+     "payload": {
+      "key": "obl-dk-kreditoplys-correction",
+      "titles": {
+       "en": "Correct wrong credit information and answer correction requests within four weeks"
+      },
+      "summaries": {
+       "en": "If credit information the bank passed on proves wrong or misleading, it must correct it at once and tell the customer and everyone who received it in the six months before the bank learned of the error, in writing. A customer's request for correction must be answered in writing within four weeks, and a refusal must tell the customer that the matter can be brought before Datatilsynet and by when."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4, § 5",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om indberetning af uoverensstemmelser om reelle ejere, BEK nr 1376 af 12/12/2019",
+   "source": "https://www.retsinformation.dk/eli/lta/2019/1376",
+   "sourceLabel": "Retsinformation, BEK nr 1376 af 12/12/2019, issued by Erhvervsstyrelsen under hvidvaskloven § 15 a, stk. 3; § 6 on entry into force",
+   "payload": {
+    "key": "dk-bek-2019-1376",
+    "titles": {
+     "da": "Bekendtgørelse om indberetning af uoverensstemmelser i oplysninger om reelle ejere",
+     "en": "Executive Order on reporting discrepancies in information on beneficial owners"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om indberetning af uoverensstemmelser om reelle ejere",
+    "officialRef": "BEK nr 1376 af 12/12/2019",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2019/1376",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "erhvervsstyrelsen",
+    "regime": "regime:aml",
+    "inForceFrom": "2020-01-10"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report beneficial ownership discrepancies to Erhvervsstyrelsen with documentation",
+     "source": "https://www.retsinformation.dk/eli/lta/2019/1376",
+     "sourceLabel": "Retsinformation, BEK nr 1376 af 12/12/2019 (indberetning af uoverensstemmelser i oplysninger om reelle ejere), § 1 and § 2",
+     "payload": {
+      "key": "obl-dk-reelle-ejere-report-discrepancy",
+      "titles": {
+       "en": "Report beneficial ownership discrepancies to Erhvervsstyrelsen with documentation"
+      },
+      "summaries": {
+       "en": "An obliged entity under the AML Act that finds that the beneficial ownership information available to it differs from what is registered with Erhvervsstyrelsen must report the discrepancy to Erhvervsstyrelsen. The report must give at least the reporter's name and CPR or CVR number, the name and CVR number of the entity or arrangement concerned and a description of the discrepancy, with documentation attached."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1, § 2",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File discrepancy reports through Erhvervsstyrelsen's solution on virk.dk",
+     "source": "https://www.retsinformation.dk/eli/lta/2019/1376",
+     "sourceLabel": "Retsinformation, BEK nr 1376 af 12/12/2019 (indberetning af uoverensstemmelser i oplysninger om reelle ejere), § 3, § 4 and § 5",
+     "payload": {
+      "key": "obl-dk-reelle-ejere-reporting-channel",
+      "titles": {
+       "en": "File discrepancy reports through Erhvervsstyrelsen's solution on virk.dk"
+      },
+      "summaries": {
+       "en": "Discrepancy reports must be filed through Erhvervsstyrelsen's reporting solution on virk.dk, using a digital signature or NemID the agency accepts and on the solution's conditions, and by e-mail only when the solution exceptionally cannot be used. The description and documentation must be in Danish, Swedish, Norwegian or English."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3, § 4, § 5",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Verohallinnon päätös FATCA-tiedonantovelvollisuudesta, 172/2015",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2015/172",
+   "sourceLabel": "Finlex, Verohallinnon päätös FATCA-sopimukseen perustuvasta tiedonantovelvollisuudesta (172/2015), issued by Verohallinto under verotusmenettelylaki 17 a § 2 mom.; 4 § on entry into force",
+   "payload": {
+    "key": "fi-sd-2015-172",
+    "titles": {
+     "fi": "Verohallinnon päätös FATCA-sopimukseen perustuvasta tiedonantovelvollisuudesta",
+     "en": "Decision of the Tax Administration on the Reporting Obligation under the FATCA Agreement"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Verohallinnon päätös FATCA-tiedonantovelvollisuudesta",
+    "officialRef": "172/2015",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "verohallinto",
+    "regime": "regime:tax",
+    "inForceFrom": "2015-03-09"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report FATCA information to the Tax Administration electronically by the end of January",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2015/172#sec_1",
+     "sourceLabel": "Finlex, Verohallinnon päätös FATCA-sopimukseen perustuvasta tiedonantovelvollisuudesta (172/2015), 1-3 §",
+     "payload": {
+      "key": "obl-fi-vh-fatca-annual-report",
+      "titles": {
+       "en": "Report FATCA information to the Tax Administration electronically by the end of January"
+      },
+      "summaries": {
+       "en": "A reporting Finnish financial institution must give the Tax Administration the information the FATCA agreement requires every year by the end of January for the previous calendar year, using only the Tax Administration's electronic filing services."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §, 2 §, 3 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File a nil notice when there is no FATCA information to report",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2015/172#sec_1",
+     "sourceLabel": "Finlex, Verohallinnon päätös FATCA-sopimukseen perustuvasta tiedonantovelvollisuudesta (172/2015), 1 §",
+     "payload": {
+      "key": "obl-fi-vh-fatca-nil-report",
+      "titles": {
+       "en": "File a nil notice when there is no FATCA information to report"
+      },
+      "summaries": {
+       "en": "A reporting Finnish financial institution that has no reportable FATCA information must still notify the Tax Administration of that."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 § 2 mom.",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Verohallinnon päätös koronmaksajan tiedonantovelvollisuudesta, 1009/2016",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2016/1009",
+   "sourceLabel": "Finlex, Verohallinnon päätös korkotulon lähdeverosta annetussa laissa tarkoitetun koronmaksajan yleisestä tiedonantovelvollisuudesta (1009/2016), issued by Verohallinto; 4 § on entry into force",
+   "payload": {
+    "key": "fi-sd-2016-1009",
+    "titles": {
+     "fi": "Verohallinnon päätös korkotulon lähdeverosta annetussa laissa tarkoitetun koronmaksajan yleisestä tiedonantovelvollisuudesta",
+     "en": "Decision of the Tax Administration on the General Reporting Obligation of Interest Payers under the Act on Withholding Tax on Interest Income"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Verohallinnon päätös koronmaksajan tiedonantovelvollisuudesta",
+    "officialRef": "1009/2016",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "verohallinto",
+    "regime": "regime:tax",
+    "inForceFrom": "2017-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: File the interest payer's annual return on interest source tax by 15 February",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2016/1009#sec_1",
+     "sourceLabel": "Finlex, Verohallinnon päätös koronmaksajan yleisestä tiedonantovelvollisuudesta (1009/2016), 1-3 §",
+     "payload": {
+      "key": "obl-fi-vh-interest-payer-annual-return",
+      "titles": {
+       "en": "File the interest payer's annual return on interest source tax by 15 February"
+      },
+      "summaries": {
+       "en": "A payer of interest must report in its annual return, electronically and by 15 February of the following year, the total interest paid in the previous year that was subject to interest source tax, the tax withheld on it, the total interest paid to non-residents and the total paid to residents without withholding. A bond issuer must also give identification details of the bonds it has issued."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §, 2 §, 3 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Verohallinnon päätös raportoitavista järjestelyistä, 417/2020",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2020/417",
+   "sourceLabel": "Finlex, Verohallinnon päätös raportoitavia järjestelyjä koskevasta ilmoitus- ja tiedonantovelvollisuudesta (417/2020), issued by Verohallinto; 3 § on entry into force",
+   "payload": {
+    "key": "fi-sd-2020-417",
+    "titles": {
+     "fi": "Verohallinnon päätös raportoitavia järjestelyjä koskevasta ilmoitus- ja tiedonantovelvollisuudesta",
+     "en": "Decision of the Tax Administration on the Notification and Reporting Obligation concerning Reportable Arrangements"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Verohallinnon päätös raportoitavista järjestelyistä",
+    "officialRef": "417/2020",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "verohallinto",
+    "regime": "regime:tax",
+    "inForceFrom": "2020-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: File reportable cross-border arrangements electronically with the information the Tax Procedure Act names",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2020/417#sec_1",
+     "sourceLabel": "Finlex, Verohallinnon päätös raportoitavia järjestelyjä koskevasta ilmoitus- ja tiedonantovelvollisuudesta (417/2020), 1 § and 2 §",
+     "payload": {
+      "key": "obl-fi-vh-dac6-filing",
+      "titles": {
+       "en": "File reportable cross-border arrangements electronically with the information the Tax Procedure Act names"
+      },
+      "summaries": {
+       "en": "A Finnish intermediary or relevant taxpayer under the Act on Reportable Arrangements must give the Tax Administration only the information named in § 14 f(1) and § 17 e(1)(1) of the Tax Procedure Act. Anyone other than a natural person or an estate must file electronically, unless the Tax Administration accepts its form for a particular reason."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §, 2 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Verohallinnon päätös yleisestä tiedonantovelvollisuudesta, 1030/2025",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1030",
+   "sourceLabel": "Finlex, Verohallinnon päätös yleisestä tiedonantovelvollisuudesta (1030/2025), issued by Verohallinto; 45 § on entry into force and the repeal of decision 635/2024",
+   "payload": {
+    "key": "fi-sd-2025-1030",
+    "titles": {
+     "fi": "Verohallinnon päätös yleisestä tiedonantovelvollisuudesta",
+     "en": "Decision of the Tax Administration on the General Reporting Obligation"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Verohallinnon päätös yleisestä tiedonantovelvollisuudesta",
+    "officialRef": "1030/2025",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "verohallinto",
+    "regime": "regime:tax",
+    "inForceFrom": "2026-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report interest and similar capital income paid to individuals",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1030#chp_1__sec_7",
+     "sourceLabel": "Finlex, Verohallinnon päätös yleisestä tiedonantovelvollisuudesta (1030/2025), 7 §",
+     "payload": {
+      "key": "obl-fi-vh-general-interest-income",
+      "titles": {
+       "en": "Report interest and similar capital income paid to individuals"
+      },
+      "summaries": {
+       "en": "A payer or intermediary must report the taxable interest, interest-like yield, index compensation, secondary market compensation, cash compensation paid instead of dividends, consent fees on bond exchanges or amendments, and guarantee commissions it pays or passes on to natural persons and estates; interest on wage claims, guarantee commissions and similar capital income reported to the Incomes Register are left out."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report securities trades and fund unit redemptions client by client",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1030#chp_1__sec_11",
+     "sourceLabel": "Finlex, Verohallinnon päätös yleisestä tiedonantovelvollisuudesta (1030/2025), 11 §",
+     "payload": {
+      "key": "obl-fi-vh-general-securities-trades",
+      "titles": {
+       "en": "Report securities trades and fund unit redemptions client by client"
+      },
+      "summaries": {
+       "en": "Investment firms and other providers of investment services, and the insurers the decision names, must report the trades they broker or make in shares, depositary receipts, warrants, subscription and sale rights, cooperative shares and fund units, and the derivative contracts they handle, client by client and per purchase and sale, with the instrument, quantity, trade dates, price and costs paid."
+      },
+      "originalLanguage": "en",
+      "refLabel": "11 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report the data needed to compute individuals' gains and losses on securities",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1030#chp_1__sec_12",
+     "sourceLabel": "Finlex, Verohallinnon päätös yleisestä tiedonantovelvollisuudesta (1030/2025), 12 §",
+     "payload": {
+      "key": "obl-fi-vh-general-capital-gains-data",
+      "titles": {
+       "en": "Report the data needed to compute individuals' gains and losses on securities"
+      },
+      "summaries": {
+       "en": "Credit institutions, investment firms, account operators and other custodians must give the Tax Administration the information they hold that is needed to calculate the gains and losses of natural persons and estates on sales and other disposals of securities, bonds included, apart from small cash payments of up to EUR 100 in certain corporate reorganisations and share consolidations."
+      },
+      "originalLanguage": "en",
+      "refLabel": "12 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report share savings account withdrawals, deposits and year-end values",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1030#chp_2__sec_23",
+     "sourceLabel": "Finlex, Verohallinnon päätös yleisestä tiedonantovelvollisuudesta (1030/2025), 6 § and 23 §",
+     "payload": {
+      "key": "obl-fi-vh-general-share-savings-account",
+      "titles": {
+       "en": "Report share savings account withdrawals, deposits and year-end values"
+      },
+      "summaries": {
+       "en": "A provider of share savings accounts must report the savings withdrawn and the share of the account's yield included in them, the account's start and end dates, the cash deposits made, and the fair value of the savings and the net deposits at year end. Income accruing inside the account of a resident holder is not reported separately."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 §, 23 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report loan data for each individual borrower",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1030#chp_4__sec_29",
+     "sourceLabel": "Finlex, Verohallinnon päätös yleisestä tiedonantovelvollisuudesta (1030/2025), 29 §",
+     "payload": {
+      "key": "obl-fi-vh-general-loan-data",
+      "titles": {
+       "en": "Report loan data for each individual borrower"
+      },
+      "summaries": {
+       "en": "Credit and financial institutions must report, for each loan to a natural person or estate, the lender's identification, the loan number, its purpose, the interest paid in the calendar year, the balance at year end and the number, names and identity numbers of the debtors, and flag interest paid by a guarantor or collateral provider and interest paid in advance. Continuing credits under chapter 7, § 7(1) of the Consumer Protection Act are excluded."
+      },
+      "originalLanguage": "en",
+      "refLabel": "29 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report asset management and custody fees charged to individuals",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1030#chp_4__sec_31",
+     "sourceLabel": "Finlex, Verohallinnon päätös yleisestä tiedonantovelvollisuudesta (1030/2025), 31 §",
+     "payload": {
+      "key": "obl-fi-vh-general-asset-management-fees",
+      "titles": {
+       "en": "Report asset management and custody fees charged to individuals"
+      },
+      "summaries": {
+       "en": "Investment firms, credit institutions, central securities depositories acting as account operators, account operators, fund management companies and AIF managers must report the fees they charge for managing and keeping securities, book-entry securities and similar assets of resident natural persons and estates, except fees charged on share savings account assets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "31 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File the annual information by the end of January, electronically where the decision requires",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1030#chp_6__sec_43",
+     "sourceLabel": "Finlex, Verohallinnon päätös yleisestä tiedonantovelvollisuudesta (1030/2025), 43-45 §",
+     "payload": {
+      "key": "obl-fi-vh-general-deadline-and-channel",
+      "titles": {
+       "en": "File the annual information by the end of January, electronically where the decision requires"
+      },
+      "summaries": {
+       "en": "The returns on interest, securities trades, capital gains data, share savings accounts, loan data and asset management fees must be filed each year by the end of January for the previous calendar year, first for 2026. Securities trade, capital gains, share savings account, loan and fee data may be filed only electronically, and the annual return on interest must be electronic when it covers five or more recipients."
+      },
+      "originalLanguage": "en",
+      "refLabel": "43 §, 44 §, 45 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki rajat ylittäviä maksuja koskevasta tiedonantovelvollisuudesta, 659/2023",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2023/659",
+   "sourceLabel": "Finlex, Laki rajat ylittäviä maksuja koskevasta maksupalveluntarjoajien tiedonantovelvollisuudesta (659/2023), consolidated text in force; 6 § on entry into force",
+   "payload": {
+    "key": "fi-sd-2023-659",
+    "titles": {
+     "fi": "Laki rajat ylittäviä maksuja koskevasta maksupalveluntarjoajien tiedonantovelvollisuudesta",
+     "en": "Act on Payment Service Providers' Obligation to Report Cross-border Payments"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki rajat ylittäviä maksuja koskevasta tiedonantovelvollisuudesta",
+    "officialRef": "659/2023",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:tax",
+    "inForceFrom": "2024-01-01",
+    "implementsNote": "CESOP, Council Directive (EU) 2020/284 amending Directive 2006/112/EC on payment service providers' obligations"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report cross-border payment data to the Tax Administration every quarter",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2023/659#sec_3",
+     "sourceLabel": "Finlex, Laki rajat ylittäviä maksuja koskevasta maksupalveluntarjoajien tiedonantovelvollisuudesta (659/2023), 1 §, 3 § and 4 §",
+     "payload": {
+      "key": "obl-fi-cesop-quarterly-report",
+      "titles": {
+       "en": "Report cross-border payment data to the Tax Administration every quarter"
+      },
+      "summaries": {
+       "en": "A payment service provider must report electronically, for the payment services it provides in Finland, the data on cross-border payments for each calendar quarter by the end of the following month, where in that quarter it handles more than 25 cross-border payments to the same payee. The payer's provider need not report payments where a payee's provider located in a member state takes part, though those payments count towards the threshold."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §, 3 §, 4 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep cross-border payment records for three calendar years",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2023/659#sec_3",
+     "sourceLabel": "Finlex, Laki rajat ylittäviä maksuja koskevasta maksupalveluntarjoajien tiedonantovelvollisuudesta (659/2023), 3 §",
+     "payload": {
+      "key": "obl-fi-cesop-retention",
+      "titles": {
+       "en": "Keep cross-border payment records for three calendar years"
+      },
+      "summaries": {
+       "en": "The payment service provider must keep the reportable payment data in electronic form for three calendar years from the end of the year in which the payment was dated."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 §",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Report and keep the prescribed payee and payment details",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2023/659#sec_5",
+     "sourceLabel": "Finlex, Laki rajat ylittäviä maksuja koskevasta maksupalveluntarjoajien tiedonantovelvollisuudesta (659/2023), 5 §",
+     "payload": {
+      "key": "obl-fi-cesop-data-content",
+      "titles": {
+       "en": "Report and keep the prescribed payee and payment details"
+      },
+      "summaries": {
+       "en": "The reports and records must contain the provider's BIC or other identifier, the payee's name, any VAT or other tax number, the IBAN or other identifier, the payee's provider's identifier where funds are received without an account, any address, and for each payment and refund the date and time, amount and currency, the member state of origin or destination and how it was determined, a unique reference and, where relevant, that the payment was initiated at the merchant's premises."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 §",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki rahoitus- ja vakuutusryhmittymien valvonnasta, 699/2004",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2004/699",
+   "sourceLabel": "Finlex, Laki rahoitus- ja vakuutusryhmittymien valvonnasta (699/2004), consolidated text in force; 38 § on entry into force and the application of chapter 3 from 1.1.2005",
+   "payload": {
+    "key": "fi-sd-2004-699",
+    "titles": {
+     "fi": "Laki rahoitus- ja vakuutusryhmittymien valvonnasta",
+     "en": "Act on the Supervision of Financial and Insurance Conglomerates"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki rahoitus- ja vakuutusryhmittymien valvonnasta",
+    "officialRef": "699/2004",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:banking",
+    "inForceFrom": "2004-08-05",
+    "implementsNote": "FICOD, Directive 2002/87/EC, as amended by Directive 2011/89/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report the conglomerate's structure and consolidated accounts to FIN-FSA every year",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2004/699#chp_2__sec_10",
+     "sourceLabel": "Finlex, Laki rahoitus- ja vakuutusryhmittymien valvonnasta (699/2004), 10 §",
+     "payload": {
+      "key": "obl-fi-rvrl-annual-structure-report",
+      "titles": {
+       "en": "Report the conglomerate's structure and consolidated accounts to FIN-FSA every year"
+      },
+      "summaries": {
+       "en": "The entity heading a financial conglomerate must report to the Financial Supervisory Authority every year the name, address, line of business, total assets, main branches and main owners of each group entity and the names, domicile and nationality of board members, managing directors and auditors, with any changes, together with the parent's consolidated financial statements."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep reliable governance, internal control and risk management across the conglomerate",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2004/699#chp_2__sec_16",
+     "sourceLabel": "Finlex, Laki rahoitus- ja vakuutusryhmittymien valvonnasta (699/2004), 16 §",
+     "payload": {
+      "key": "obl-fi-rvrl-governance-risk",
+      "titles": {
+       "en": "Keep reliable governance, internal control and risk management across the conglomerate"
+      },
+      "summaries": {
+       "en": "The parent of a conglomerate must have reliable governance that enables effective group risk management, adequate internal control and risk management systems, and adequate arrangements and plans for restoring or winding down the conglomerate. The holding company and each financial or insurance entity in the conglomerate must have reliable governance, internal control and risk management proportionate to their business."
+      },
+      "originalLanguage": "en",
+      "refLabel": "16 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep conglomerate own funds above the minimum and report the calculation quarterly",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2004/699#chp_3__sec_19",
+     "sourceLabel": "Finlex, Laki rahoitus- ja vakuutusryhmittymien valvonnasta (699/2004), 19 § and 38 §",
+     "payload": {
+      "key": "obl-fi-rvrl-capital-adequacy",
+      "titles": {
+       "en": "Keep conglomerate own funds above the minimum and report the calculation quarterly"
+      },
+      "summaries": {
+       "en": "The conglomerate's own funds must always at least equal its minimum requirement. The heading entity must prepare and send FIN-FSA a capital adequacy calculation every quarter showing own funds, the minimum and the difference, and adopt a plan for maintaining the conglomerate's capital adequacy."
+      },
+      "originalLanguage": "en",
+      "refLabel": "19 §",
+      "dutyType": "reporting",
+      "effectiveFrom": "2005-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Report the conglomerate's customer exposures every quarter",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2004/699#chp_3__sec_21",
+     "sourceLabel": "Finlex, Laki rahoitus- ja vakuutusryhmittymien valvonnasta (699/2004), 21 § and 38 §",
+     "payload": {
+      "key": "obl-fi-rvrl-large-exposures",
+      "titles": {
+       "en": "Report the conglomerate's customer exposures every quarter"
+      },
+      "summaries": {
+       "en": "The consolidated large exposure rules of the CRR and of the Credit Institutions Act apply to the conglomerate, and its parent must report to FIN-FSA every quarter the information needed to supervise the conglomerate's customer exposures."
+      },
+      "originalLanguage": "en",
+      "refLabel": "21 §",
+      "dutyType": "reporting",
+      "effectiveFrom": "2005-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Monitor, limit and report the conglomerate's risk concentrations",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2004/699#chp_3__sec_23",
+     "sourceLabel": "Finlex, Laki rahoitus- ja vakuutusryhmittymien valvonnasta (699/2004), 23 § and 38 §",
+     "payload": {
+      "key": "obl-fi-rvrl-risk-concentrations",
+      "titles": {
+       "en": "Monitor, limit and report the conglomerate's risk concentrations"
+      },
+      "summaries": {
+       "en": "The parent must monitor the conglomerate's real estate and shareholdings, adopt a strategy and internal limits for them, monitor and set internal limits for country, currency, interest rate and sector risks in the group's business, and report to FIN-FSA at least once a year the information needed to supervise these concentrations."
+      },
+      "originalLanguage": "en",
+      "refLabel": "23 §",
+      "dutyType": "governance",
+      "effectiveFrom": "2005-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Report significant intra-group transactions and keep them at arm's length",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2004/699#chp_3__sec_24",
+     "sourceLabel": "Finlex, Laki rahoitus- ja vakuutusryhmittymien valvonnasta (699/2004), 24 § and 38 §",
+     "payload": {
+      "key": "obl-fi-rvrl-intra-group-transactions",
+      "titles": {
+       "en": "Report significant intra-group transactions and keep them at arm's length"
+      },
+      "summaries": {
+       "en": "A regulated entity in the conglomerate must report to FIN-FSA at least yearly its transactions with other group entities above the thresholds the act sets (EUR 30 million or five per cent of the smaller financial party's own funds, ignoring transactions under EUR 1 million, or EUR 1 million where a non-financial group entity is a party), unless FIN-FSA sets another limit. Such transactions must be on arm's-length terms, with exceptions for intra-group administrative services and certain funding of subsidiaries."
+      },
+      "originalLanguage": "en",
+      "refLabel": "24 §",
+      "dutyType": "reporting",
+      "effectiveFrom": "2005-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Submit a capital recovery plan when the conglomerate's capital adequacy is negative or at risk",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2004/699#chp_3__sec_25",
+     "sourceLabel": "Finlex, Laki rahoitus- ja vakuutusryhmittymien valvonnasta (699/2004), 25 § and 38 §",
+     "payload": {
+      "key": "obl-fi-rvrl-recovery-plan",
+      "titles": {
+       "en": "Submit a capital recovery plan when the conglomerate's capital adequacy is negative or at risk"
+      },
+      "summaries": {
+       "en": "If the quarterly calculation shows the conglomerate's capital adequacy is negative or endangered, the heading entity must submit to FIN-FSA for approval, within the time it sets, a recovery plan with the proposed measures, how they are expected to protect depositors, investors and insured interests, and the deadline for carrying them out."
+      },
+      "originalLanguage": "en",
+      "refLabel": "25 §",
+      "dutyType": "reporting",
+      "effectiveFrom": "2005-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Give the conglomerate's heading entity the information it needs",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2004/699#chp_6__sec_34",
+     "sourceLabel": "Finlex, Laki rahoitus- ja vakuutusryhmittymien valvonnasta (699/2004), 34 §",
+     "payload": {
+      "key": "obl-fi-rvrl-information-to-head",
+      "titles": {
+       "en": "Give the conglomerate's heading entity the information it needs"
+      },
+      "summaries": {
+       "en": "Every entity in the conglomerate must give the heading entity the information it needs to meet its duties under the act, notwithstanding other law, and the heading entity is then bound by the same secrecy as the entity that gave it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "34 §",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  }
+ ]
+}

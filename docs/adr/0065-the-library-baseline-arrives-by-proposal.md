@@ -79,4 +79,4 @@ again until its file changes; and the research day is a snapshot the watch keeps
 |---|---|---|
 | 1 | The corpus, the definition, the command, the checker and the suite | This change |
 | 2 | Sources registered and the baseline filed by the beat; approving many at once in the console; government ordinances and sanctions | 2026-10-01 |
-| 3 | Instruments whose issuer is not yet an authority, as their issuers are added | As they are researched |
+| 3 | Orders of ministries and agencies the reference seed did not name, with their issuers as authorities | 2026-10-01 |

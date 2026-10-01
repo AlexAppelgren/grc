@@ -1285,6 +1285,55 @@
    "name": "Skattedirektoratet",
    "jurisdiction": "NO",
    "url": "https://www.skatteetaten.no/"
+  },
+  {
+   "key": "justis-og-beredskapsdepartementet",
+   "code": "JD",
+   "name": "Justis- og beredskapsdepartementet",
+   "jurisdiction": "NO",
+   "url": "https://www.regjeringen.no/no/dep/jd/id463/"
+  },
+  {
+   "key": "barne-og-familiedepartementet",
+   "code": "BFD",
+   "name": "Barne- og familiedepartementet",
+   "jurisdiction": "NO",
+   "url": "https://www.regjeringen.no/no/dep/bfd/id298/"
+  },
+  {
+   "key": "bankenes-sikringsfond",
+   "code": "BSF",
+   "name": "Bankenes sikringsfond",
+   "jurisdiction": "NO",
+   "url": "https://www.bankenessikringsfond.no/"
+  },
+  {
+   "key": "justitsministeriet",
+   "code": "JM",
+   "name": "Justitsministeriet",
+   "jurisdiction": "DK",
+   "url": "https://www.jm.dk/"
+  },
+  {
+   "key": "digitaliseringsministeriet",
+   "code": "DIGMIN",
+   "name": "Digitaliseringsministeriet",
+   "jurisdiction": "DK",
+   "url": "https://digmin.dk/"
+  },
+  {
+   "key": "erhvervsstyrelsen",
+   "code": "ERST",
+   "name": "Erhvervsstyrelsen",
+   "jurisdiction": "DK",
+   "url": "https://erhvervsstyrelsen.dk/"
+  },
+  {
+   "key": "verohallinto",
+   "code": "VERO",
+   "name": "Verohallinto",
+   "jurisdiction": "FI",
+   "url": "https://www.vero.fi/"
   }
  ],
  "instruments": [

@@ -19,6 +19,11 @@ principal approves it, and that cannot be the agent that filed it or anyone acti
 - [ ] **Publish watch-sweeper v2 and library-confirmer v3** in the console (Agents), with a
       passkey: both carry the sector scope with sanctions in it. A deploy never publishes a
       version; until you do, the sweeper's scope is v1's.
+- [ ] **Digitaliseringsministeriet's successor.** The two NemKonto orders (BEK 789 and 790/2025)
+      name Digitaliseringsministeriet, which signed them and was abolished on 2026-06-03; its
+      work moved to Forsknings-, Uddannelses- og Digitaliseringsministeriet, under which
+      Retsinformation now lists them. Default if you say nothing: the authority keeps the name
+      the orders were signed under, and a successor gets its own key when it first issues one.
 - [x] Sources: registered by the same filing (`backend/apps/library/baseline/sources.json`).
 - [x] Sanctions: in, under `aml` (Alex, 2026-10-01).
 - [x] Government ordinances: in, at the level `government_regulation` (Alex, 2026-10-01: "you
