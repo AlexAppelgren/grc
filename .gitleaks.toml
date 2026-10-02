@@ -42,6 +42,12 @@ regexes = [
 description = "CELEX numbers: the EU Publications Office's public identifier of a legal act (sector 3, year, type letter, number, e.g. celex-32017r0565), used as library stable keys in fixtures and seeds. A public citation, never a credential; the pattern is anchored to that exact shape."
 regexes = ['''^celex-3[0-9]{4}[a-z][0-9]{4}$''']
 
+[[allowlists]]
+description = "Stable keys of the library baseline's records in backend/apps/library/baseline/*.json: lowercase slugs built from public citations (e.g. dk-lov-2013-597, esma-gl-2016-1477, obl-eu-mifid2-dr-execution-policy), never credentials. Bound to those data files and to the slug shape, so the same shape anywhere else is still reported."
+condition = "AND"
+regexes = ['''^[a-z0-9]+(?:-[a-z0-9]+){2,}$''']
+paths = ['''^backend/apps/library/baseline/[a-z0-9-]+\.json$''']
+
 # Connection strings carry the dev-only passwords above. Some rules extract the
 # whole URL rather than the password, so the same literals are also accepted
 # when they appear as the password segment of a local/CI Postgres URL.
