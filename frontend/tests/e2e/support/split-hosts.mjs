@@ -10,13 +10,18 @@
 // redirect to it stays absolute. This file plays that edge: it takes the port the
 // browser uses and passes every connection, Host header and all, to Next on the
 // next port up.
+//
+// Next starts from its own bin under this Node, not through npm: Windows has no
+// `npm` executable to spawn, only npm.cmd, which Node refuses without a shell.
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 import net from 'node:net';
 
 const port = Number(process.env.E2E_SPLIT_PORT);
 const nextPort = port + 1;
 
-const next = spawn('npm', ['run', 'start', '--', '--port', String(nextPort)], { stdio: 'inherit' });
+const nextBin = createRequire(import.meta.url).resolve('next/dist/bin/next');
+const next = spawn(process.execPath, [nextBin, 'start', '--port', String(nextPort)], { stdio: 'inherit' });
 next.on('exit', (code) => process.exit(code ?? 1));
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => next.kill(signal));
 
