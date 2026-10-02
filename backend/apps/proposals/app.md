@@ -59,6 +59,13 @@ naming no person, and naming by definition key the agents that proposed or confi
 change (INV-05, D-62). Its own requests to a shared list it follows through
 `GET /tenant/proposals`, which answers its rows and no other bank's.
 
+The library's starting inventory arrives through this queue too (D-118, ADR 0065). The
+baseline in `apps/library/baseline/` is researched data in the shape a proposal takes, and
+`manage.py file_library_baseline` files what the library neither holds nor has open as
+proposals of the platform agent `library-baseline`, instruments first and each duty once
+its instrument is approved (`apps/proposals/baseline.py`). A second principal approves each
+one as any other: a person with a passkey today, the confirming agent once it runs.
+
 A bank's own private records travel the same table but never the console: the
 server sets the proposal's owner from the target, and a second person in the
 same bank approves under `private_records.approve` with a passkey, through the
@@ -203,6 +210,16 @@ applied by the agent and machine-confirmed, and a bank's reader finds version 2 
 labelled as proposed by one agent and confirmed by the other. A key of the same agent
 without `proposals:review` answers 403 at the queue. The 422 and 404 refusals, the logged
 call and the audit row stay proven at the integration level (`test_pro_s13`).
+
+The baseline's proposals are approved from the console queue (console-new-records,
+2026-10-01). The queue filters to New instrument and New obligation. The review screen shows
+what a new instrument or a new obligation would add, with keys labelled through the reads a
+console session may make (the authority keeps its key, since `GET /authorities` needs
+`library.read`), and `GET /proposals/{id}` names a new obligation's instrument by the short
+name the shared library holds (`instrumentShortName`). On Waiting a reviewer selects rows and
+approves them at once: each one still goes through `POST /proposals/{id}/approve`, one after
+another, with the same four eyes, passkey step-up and audit row as if it were opened alone.
+A flagged proposal, the reviewer's own and a batch cannot be selected. PRO-S17 is its journey.
 
 ## 3. Acceptance criteria (from PRD, condensed)
 
@@ -411,4 +428,26 @@ When they reject it with a reason
 Then it is rejected, audited, and nothing is applied
 And tenant B's fetch of either proposal answers 404, and no API key of any scope reaches the approve or reject route
 ```
-
+### PRO-S16 — The library baseline arrives through the queue, instruments first `@integration` (PRO-01, PRO-02, INV-01, INV-03, INV-05)
+```gherkin
+Given the library baseline holds an instrument the library does not hold, with one duty under it
+When the platform files the baseline
+Then the queue holds a new instrument proposed by the agent library-baseline, naming a run of it and a source on every field
+And the duty waits, because its instrument is not in the library yet
+And the run closed as succeeded with the one proposal it submitted, handed to no runner
+When a library editor approves the instrument with a fresh passkey
+And the platform files the baseline again
+Then the duty is proposed under the instrument, and approving it applies it
+And filing a third time proposes nothing, because the library holds both
+```
+### PRO-S17 — A library editor approves the baseline's new instruments from the queue, many at once `@e2e` (PRO-01, PRO-02, PRO-03, AC-PRO2)
+```gherkin
+Given the library baseline's agent filed two new instruments, each with duties that wait for it
+When a library editor filters the console queue to "New instrument"
+Then the address keeps the filter and the queue lists the two instruments
+When the editor opens one
+Then the screen shows the facts it would add, by their labels, and a source beside every field
+When the editor goes back, selects every row on the page and approves them with a passkey
+Then each is approved through its own approval and both are listed under Approved
+And no duty of theirs waits in the queue yet: their duties are what the next filing adds
+```

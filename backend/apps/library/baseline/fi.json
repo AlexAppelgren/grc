@@ -1,0 +1,3951 @@
+{
+ "tranche": "fi",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add Luottolaitoslaki, 610/2014",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610",
+   "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2014-610",
+    "titles": {
+     "fi": "Laki luottolaitostoiminnasta",
+     "en": "Act on Credit Institutions"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Luottolaitoslaki",
+    "officialRef": "610/2014",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-08-15",
+    "implementsNote": "CRD, Directive 2013/36/EU as amended (including Directives (EU) 2019/878 and (EU) 2024/1619); Payment Accounts Directive 2014/92/EU; BRRD, Directive 2014/59/EU (recovery planning)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Maintain comprehensive governance arrangements and reliable internal control",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_2__chp_7__sec_1",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 7 luku 1 §",
+     "payload": {
+      "key": "obl-fi-lll-governance",
+      "titles": {
+       "en": "Maintain comprehensive governance arrangements and reliable internal control"
+      },
+      "summaries": {
+       "en": "A credit institution must have governance arrangements that are comprehensive and proportionate to the nature, scale and complexity of its business, so that it is run effectively and prudently and its board can oversee management. The board approves the risk strategy and ensures reliable internal control over financial reporting, compliance and disclosure; duties are segregated to avoid conflicts of interest, and the board must regularly assess the effectiveness of the arrangements. The board chair may not also be the chief executive without FIN-FSA's permission, and from 1 October 2026 not at all."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 1 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Ensure board members and management are reliable and competent",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_2__chp_7__sec_4",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 7 luku 4 §",
+     "payload": {
+      "key": "obl-fi-lll-fit-proper",
+      "titles": {
+       "en": "Ensure board members and management are reliable and competent"
+      },
+      "summaries": {
+       "en": "Board members and executive management of a credit institution must be reliable persons of good repute, not bankrupt, under a business ban or of restricted legal capacity, and must have the knowledge and experience of the business, its risks and management that their role requires. Changes in management must be notified to FIN-FSA without delay. From 1 October 2026 amended rules extend the requirements to key function holders and require the institution to verify them before appointment and throughout the term."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 4 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Operate an independent internal channel for reporting suspected breaches",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_2__chp_7__sec_6",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 7 luku 6 §",
+     "payload": {
+      "key": "obl-fi-lll-whistleblowing",
+      "titles": {
+       "en": "Operate an independent internal channel for reporting suspected breaches"
+      },
+      "summaries": {
+       "en": "A credit institution must have procedures through which its employees can report suspected breaches of financial market rules internally through an independent channel, with proper handling of reports, protection of the reporter and protection of the personal data involved. Information on reports is kept and deleted after five years unless still needed for an investigation, proceedings or the protection of rights, with the need reviewed at least every three years."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 6 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Align remuneration systems with strategy, long-term interests and sound risk management",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_2__chp_8__sec_3",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 8 luku 3 §",
+     "payload": {
+      "key": "obl-fi-lll-remuneration",
+      "titles": {
+       "en": "Align remuneration systems with strategy, long-term interests and sound risk management"
+      },
+      "summaries": {
+       "en": "A credit institution's remuneration systems must be consistent with the business strategy, objectives, values and long-term interests of the institution and its consolidation group, must support sound and effective risk management and must not encourage risk-taking beyond the risk level set on the basis of its risk-bearing capacity. From 1 October 2026 they must also take account of the institution's risk appetite for ESG risks and must not treat staff unequally on the basis of gender."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 luku 3 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Maintain a recovery plan for a significant deterioration of the financial position",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_2__chp_8a__sec_1",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 8 a luku 1 §",
+     "payload": {
+      "key": "obl-fi-lll-recovery-plan",
+      "titles": {
+       "en": "Maintain a recovery plan for a significant deterioration of the financial position"
+      },
+      "summaries": {
+       "en": "A credit institution that is not part of a group under consolidated supervision must have a recovery plan for keeping its business going if its financial position deteriorates significantly, for example when it risks breaching its capital or liquidity requirements or the internal indicators set in the plan. A subsidiary credit institution of a group parent is generally covered by the group recovery plan instead."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 a luku 1 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Assess and maintain adequate internal capital at all times",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_3__chp_9__sec_1",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 9 luku 1 §",
+     "payload": {
+      "key": "obl-fi-lll-icaap",
+      "titles": {
+       "en": "Assess and maintain adequate internal capital at all times"
+      },
+      "summaries": {
+       "en": "A credit institution must at all times hold enough own funds to cover the risks it faces and must not take risks that materially endanger its solvency or liquidity. It must have sound, comprehensive and effective strategies and procedures to assess and maintain the amount, quality and distribution of internal capital; from 1 October 2026 ESG risks over the short, medium and long term must be covered as well."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 luku 1 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Maintain documented risk management and internal control systems",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_3__chp_9__sec_2",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 9 luku 2 §",
+     "payload": {
+      "key": "obl-fi-lll-risk-management",
+      "titles": {
+       "en": "Maintain documented risk management and internal control systems"
+      },
+      "summaries": {
+       "en": "A credit institution must have effective, reliable and documented governance arrangements for identifying, managing, limiting, monitoring and reporting its current and future risks. These include a clear organisational structure with well-defined lines of responsibility, effective risk reporting processes, and sound internal control, administrative and accounting procedures, proportionate to the nature, scale and complexity of the business."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 luku 2 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Adopt board-approved plans and systems for managing ESG risks",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_3__chp_9__sec_3a",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 9 luku 3 a § ja 17 a §",
+     "payload": {
+      "key": "obl-fi-lll-esg-risk",
+      "titles": {
+       "en": "Adopt board-approved plans and systems for managing ESG risks"
+      },
+      "summaries": {
+       "en": "From 1 October 2026 the board of a credit institution must approve one or more plans with quantitative targets and processes to monitor and address financial risks arising from environmental, social and governance factors in the short, medium and long term, including transition risks towards climate neutrality. The institution must have robust strategies, policies, processes and systems to identify, measure, manage and monitor ESG risks, proportionate to its business model."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 luku 3 a § ja 17 a §",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-10-01"
+     }
+    },
+    {
+     "title": "Add the duty: Outsource significant functions only under a written agreement that preserves control",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_1__chp_5__sec_10",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 5 luku 10–11 §",
+     "payload": {
+      "key": "obl-fi-lll-outsourcing",
+      "titles": {
+       "en": "Outsource significant functions only under a written agreement that preserves control"
+      },
+      "summaries": {
+       "en": "A credit institution may use agents or outsource functions significant to its business only if this does not impair its risk management, internal control or the running of its business, and it must conclude a written agreement stating the content and duration of the engagement. It must ensure that it continuously receives from the service provider the information needed for supervision, risk management and internal control and may pass it on to FIN-FSA."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 luku 10–11 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Follow good banking practice and market fairly",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_4__chp_15__sec_1",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 15 luku 1–2 §",
+     "payload": {
+      "key": "obl-fi-lll-good-banking-practice",
+      "titles": {
+       "en": "Follow good banking practice and market fairly"
+      },
+      "summaries": {
+       "en": "A credit institution must comply with good banking practice. In marketing it must give customers all information that may matter for their decisions and must not give untrue or misleading information or use practices that are inappropriate or contrary to good practice; marketing that omits information needed for the customer's financial security is always inappropriate."
+      },
+      "originalLanguage": "en",
+      "refLabel": "15 luku 1–2 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Offer basic banking services and a basic payment account without discrimination",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_4__chp_15__sec_6",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 15 luku 6 §",
+     "payload": {
+      "key": "obl-fi-lll-basic-banking",
+      "titles": {
+       "en": "Offer basic banking services and a basic payment account without discrimination"
+      },
+      "summaries": {
+       "en": "A deposit bank that offers payment accounts, payment services and electronic identification services must offer them equally and without discrimination to persons legally resident in the EEA. A deposit bank that provides payment services must offer natural persons a euro-denominated basic payment account with the related payment services and electronic identification, in line with 6 a and 6 b §."
+      },
+      "originalLanguage": "en",
+      "refLabel": "15 luku 6 §",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Respect the maximum loan-to-collateral ratio for housing loans",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_4__chp_15__sec_11",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 15 luku 11 §",
+     "payload": {
+      "key": "obl-fi-lll-ltv-cap",
+      "titles": {
+       "en": "Respect the maximum loan-to-collateral ratio for housing loans"
+      },
+      "summaries": {
+       "en": "A credit institution may grant a consumer credit secured on a home for buying or renovating a dwelling only up to 90 percent of the fair value of the collateral at the time of granting, or 95 percent for a first home; a personal guarantee does not count as collateral. FIN-FSA may lower these caps by up to 10 percentage points to curb financial stability risks, or raise the cap for other than first homes by up to 5 points in a housing market downturn."
+      },
+      "originalLanguage": "en",
+      "refLabel": "15 luku 11 §",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Base consumer lending on sound written criteria and a reliable risk rating system",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_4__chp_15__sec_11b",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 15 luku 11 b §",
+     "payload": {
+      "key": "obl-fi-lll-consumer-credit-risk",
+      "titles": {
+       "en": "Base consumer lending on sound written criteria and a reliable risk rating system"
+      },
+      "summaries": {
+       "en": "A credit institution's consumer lending must rest on sound criteria defined in writing in advance that do not obviously endanger consumers' ability to pay, and its business model must not lead to lending to consumers with an unreasonably high insolvency risk. It must keep the lending criteria for at least ten years after the end of the year they were last applied, have a risk rating system to monitor insolvency risk, and report arrears, non-performing loans, credit losses and risk ratings to FIN-FSA at least yearly."
+      },
+      "originalLanguage": "en",
+      "refLabel": "15 luku 11 b §",
+      "dutyType": "governance",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep customer information confidential",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_4__chp_15__sec_14",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 15 luku 14 §",
+     "payload": {
+      "key": "obl-fi-lll-bank-secrecy",
+      "titles": {
+       "en": "Keep customer information confidential"
+      },
+      "summaries": {
+       "en": "Anyone who, as an officer or employee of a credit institution, its group company or agent, learns information about a customer's financial position or personal circumstances or a business secret must keep it confidential. Disclosure is allowed only with the consent of the person protected or where the law permits it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "15 luku 14 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Provide an account switching service to consumers",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610#part_4__chp_15a__sec_1",
+     "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), 15 a luku 1 §",
+     "payload": {
+      "key": "obl-fi-lll-account-switching",
+      "titles": {
+       "en": "Provide an account switching service to consumers"
+      },
+      "summaries": {
+       "en": "A credit institution must offer consumers an account switching service, following the rules in 15 a luku 2–5 § on the information to be given, the fees that may be charged and the duties of the transferring and receiving institutions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "15 a luku 1 §",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sijoituspalvelulaki, 747/2012",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747",
+   "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2012-747",
+    "titles": {
+     "fi": "Sijoituspalvelulaki",
+     "en": "Investment Services Act"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Sijoituspalvelulaki",
+    "officialRef": "747/2012",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-01-01",
+    "implementsNote": "MiFID II, Directive 2014/65/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Organise investment services reliably with effective compliance arrangements",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_2__chp_7__sec_2",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 7 luku 2 §",
+     "payload": {
+      "key": "obl-fi-sipal-organisation",
+      "titles": {
+       "en": "Organise investment services reliably with effective compliance arrangements"
+      },
+      "summaries": {
+       "en": "An investment firm, and a credit institution providing investment services, must organise its business reliably and adopt policies and procedures ensuring that the firm, its management, employees and tied agents comply with the law and the rules on personal transactions. It must take reasonable steps to ensure continuity and regularity of its services using appropriate and proportionate systems, resources and procedures."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 2 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Run a product governance process for the financial instruments the firm manufactures",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_2__chp_7__sec_7",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 7 luku 7 §",
+     "payload": {
+      "key": "obl-fi-sipal-product-governance",
+      "titles": {
+       "en": "Run a product governance process for the financial instruments the firm manufactures"
+      },
+      "summaries": {
+       "en": "A firm that manufactures financial instruments must have an up-to-date product approval process that approves each instrument and significant change before it is marketed or distributed. The process must identify the target market and the clients for whom the instrument is not suitable, assess the relevant risks and costs, and check that the distribution strategy fits the target market."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 7 §",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify, prevent and disclose conflicts of interest",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_2__chp_7__sec_9",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 7 luku 9 §",
+     "payload": {
+      "key": "obl-fi-sipal-conflicts",
+      "titles": {
+       "en": "Identify, prevent and disclose conflicts of interest"
+      },
+      "summaries": {
+       "en": "The firm must take all appropriate steps to identify and prevent conflicts of interest and, where they arise, treat the client in accordance with good practice. If a conflict cannot be avoided, it must disclose its nature, sources and the mitigating steps to the client in a durable medium before acting for the client, and it must have a policy on the procedures for identifying and preventing conflicts."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 9 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Keep an insider register of the firm's insiders' holdings",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_2__chp_7__sec_12",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 7 luku 12–14 §",
+     "payload": {
+      "key": "obl-fi-sipal-insider-register",
+      "titles": {
+       "en": "Keep an insider register of the firm's insiders' holdings"
+      },
+      "summaries": {
+       "en": "The firm must keep a register of the declarations its insiders make of their holdings in shares, and instruments whose value derives from them, traded on a Finnish regulated market or MTF; insiders include board members, the chief executive, auditors and staff whose duties involve such instruments. Insiders declare within fourteen days of appointment and report changes within seven days, and register entries are kept for five years."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 12–14 §",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Act honestly, fairly and professionally in the client's best interest",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_3__chp_10__sec_2",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 10 luku 2 §",
+     "payload": {
+      "key": "obl-fi-sipal-best-interest",
+      "titles": {
+       "en": "Act honestly, fairly and professionally in the client's best interest"
+      },
+      "summaries": {
+       "en": "When providing investment and ancillary services the firm must act honestly, fairly and professionally in accordance with the client's best interest. It must not market services with untrue or misleading information; all information, including marketing communications, must be fair and clear and must be corrected or supplemented without delay if later found misleading."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 luku 2 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Assess suitability and appropriateness before providing investment services",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_3__chp_10__sec_4",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 10 luku 4 §",
+     "payload": {
+      "key": "obl-fi-sipal-suitability",
+      "titles": {
+       "en": "Assess suitability and appropriateness before providing investment services"
+      },
+      "summaries": {
+       "en": "Before giving investment advice or portfolio management, the firm must obtain information on the client's knowledge and experience, financial situation including ability to bear losses, and investment objectives including risk tolerance, so it can recommend suitable services and instruments. For other services the firm must assess whether the product or service is appropriate for the client."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 luku 4 §",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give clients information on the firm, services, instruments and all costs in good time",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_3__chp_10__sec_5",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 10 luku 5 §",
+     "payload": {
+      "key": "obl-fi-sipal-client-information",
+      "titles": {
+       "en": "Give clients information on the firm, services, instruments and all costs in good time"
+      },
+      "summaries": {
+       "en": "In good time before providing a service the firm must give clients adequate information about itself, its services, the financial instruments and proposed strategies, execution venues and all costs and associated charges, including whether any investment advice is independent and how broad its analysis is."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 luku 5 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Pay or accept inducements only where they enhance the quality of the service",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_3__chp_10__sec_6",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 10 luku 6 §",
+     "payload": {
+      "key": "obl-fi-sipal-inducements",
+      "titles": {
+       "en": "Pay or accept inducements only where they enhance the quality of the service"
+      },
+      "summaries": {
+       "en": "The firm may not pay to or accept from anyone other than the client, or a person acting for the client, any fee, commission or non-monetary benefit in connection with an investment or ancillary service unless it is designed to enhance the quality of the service to the client and does not impair the duty to act in the client's best interest."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 luku 6 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Take sufficient steps to obtain the best possible result when executing orders",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_3__chp_10__sec_8",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 10 luku 8 §",
+     "payload": {
+      "key": "obl-fi-sipal-best-execution",
+      "titles": {
+       "en": "Take sufficient steps to obtain the best possible result when executing orders"
+      },
+      "summaries": {
+       "en": "A firm executing client orders must take sufficient steps to obtain the best possible result for the client, taking into account price, costs, speed, likelihood of execution and settlement, size, nature and other relevant factors, and must follow any specific instructions from the client. For retail clients the best result is determined by the total consideration."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 luku 8 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Keep records of client orders, transactions and services",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_3__chp_10__sec_11",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 10 luku 11 §",
+     "payload": {
+      "key": "obl-fi-sipal-records",
+      "titles": {
+       "en": "Keep records of client orders, transactions and services"
+      },
+      "summaries": {
+       "en": "The firm must keep records of orders received from clients, transactions in financial instruments carried out for its own or clients' account and other services provided to clients for five years, and for up to seven years if FIN-FSA so requests."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 luku 11 §",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Record telephone conversations and electronic communications relating to transactions",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_3__chp_10__sec_12",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 10 luku 12 §",
+     "payload": {
+      "key": "obl-fi-sipal-recording",
+      "titles": {
+       "en": "Record telephone conversations and electronic communications relating to transactions"
+      },
+      "summaries": {
+       "en": "The firm must record and keep telephone conversations and electronic communications relating to dealing on own account and to the reception, transmission and execution of client orders, including those intended to lead to such transactions, and must take all reasonable steps to record them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 luku 12 §",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Give retail clients access to an independent dispute resolution body",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_3__chp_10__sec_15",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 10 luku 15 §",
+     "payload": {
+      "key": "obl-fi-sipal-dispute-resolution",
+      "titles": {
+       "en": "Give retail clients access to an independent dispute resolution body"
+      },
+      "summaries": {
+       "en": "The firm must ensure that its retail clients can take individual disputes about the application of the Act to an independent body that issues recommendations and handles cases impartially, openly and fairly, and must notify FIN-FSA of the body's name and contact details."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 luku 15 §",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Hold client assets reliably and keep them segregated from the firm's own",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747#part_2__chp_9__sec_1",
+     "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), 9 luku 1 §",
+     "payload": {
+      "key": "obl-fi-sipal-client-assets",
+      "titles": {
+       "en": "Hold client assets reliably and keep them segregated from the firm's own"
+      },
+      "summaries": {
+       "en": "The firm must hold and handle the financial instruments and funds entrusted to it by clients reliably, keep them clearly separate from its own assets and, unless it is a credit institution, prevent the use of client funds for its own account. It must keep reliable records of client assets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 luku 1 §",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Arvopaperimarkkinalaki, 746/2012",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2012/746",
+   "sourceLabel": "Finlex, Arvopaperimarkkinalaki (746/2012), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2012-746",
+    "titles": {
+     "fi": "Arvopaperimarkkinalaki",
+     "en": "Securities Markets Act"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Arvopaperimarkkinalaki",
+    "officialRef": "746/2012",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-01-01",
+    "implementsNote": "Transparency Directive 2004/109/EC as amended by Directive 2013/50/EU; Takeover Bids Directive 2004/25/EC; Directive (EU) 2024/2810; supplements MAR, Regulation (EU) No 596/2014"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not act contrary to good securities market practice",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/746#part_1__chp_1__sec_2",
+     "sourceLabel": "Finlex, Arvopaperimarkkinalaki (746/2012), 1 luku 2 §",
+     "payload": {
+      "key": "obl-fi-apml-good-practice",
+      "titles": {
+       "en": "Do not act contrary to good securities market practice"
+      },
+      "summaries": {
+       "en": "No one, including a firm dealing, advising or issuing on the securities markets, may act there in a way that is contrary to good securities market practice."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 luku 2 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Give no untrue or misleading information when marketing or trading securities",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/746#part_1__chp_1__sec_3",
+     "sourceLabel": "Finlex, Arvopaperimarkkinalaki (746/2012), 1 luku 3 §",
+     "payload": {
+      "key": "obl-fi-apml-no-misleading-information",
+      "titles": {
+       "en": "Give no untrue or misleading information when marketing or trading securities"
+      },
+      "summaries": {
+       "en": "When marketing or trading securities and other financial instruments in the course of business, and when meeting disclosure duties under the Act, a firm must not give untrue or misleading information. Information later found untrue or misleading that may matter to investors must be corrected or supplemented without delay."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 luku 3 §",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Explain to FIN-FSA on request why disclosure of inside information was delayed",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/746#part_3__chp_6__sec_2",
+     "sourceLabel": "Finlex, Arvopaperimarkkinalaki (746/2012), 6 luku 2 §",
+     "payload": {
+      "key": "obl-fi-apml-delay-explanation",
+      "titles": {
+       "en": "Explain to FIN-FSA on request why disclosure of inside information was delayed"
+      },
+      "summaries": {
+       "en": "An issuer that has delayed the public disclosure of inside information under Article 17(4) MAR must, when FIN-FSA asks, provide its written explanation of how the conditions for the delay were met."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 luku 2 §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Publish annual financial statements and half-yearly reports on time",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/746#part_3__chp_7__sec_5",
+     "sourceLabel": "Finlex, Arvopaperimarkkinalaki (746/2012), 7 luku 5 § ja 10 §",
+     "payload": {
+      "key": "obl-fi-apml-financial-reports",
+      "titles": {
+       "en": "Publish annual financial statements and half-yearly reports on time"
+      },
+      "summaries": {
+       "en": "An issuer must publish its financial statements and report of the board of directors without undue delay, at least three weeks before the general meeting that adopts them and no later than four months after the end of the financial year, in the single electronic reporting format. It must also publish a half-yearly report for the first six months of the financial year, subject to the exemptions for certain debt-only issuers."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 5 § ja 10 §",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Notify major holdings when a flagging threshold is crossed",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/746#part_3__chp_9__sec_5",
+     "sourceLabel": "Finlex, Arvopaperimarkkinalaki (746/2012), 9 luku 5 § ja 9 §",
+     "payload": {
+      "key": "obl-fi-apml-flagging",
+      "titles": {
+       "en": "Notify major holdings when a flagging threshold is crossed"
+      },
+      "summaries": {
+       "en": "A shareholder must notify the target company and FIN-FSA when its share of voting rights or shares reaches, exceeds or falls below 5, 10, 15, 20, 25, 30, 50 or 90 percent or two thirds. The notification must be made without undue delay and at the latest on the trading day after the shareholder learned or should have learned of the transaction."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 luku 5 § ja 9 §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Operate an internal channel for reporting suspected breaches as an issuer",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/746#part_5__chp_12__sec_3",
+     "sourceLabel": "Finlex, Arvopaperimarkkinalaki (746/2012), 12 luku 3 §",
+     "payload": {
+      "key": "obl-fi-apml-issuer-whistleblowing",
+      "titles": {
+       "en": "Operate an internal channel for reporting suspected breaches as an issuer"
+      },
+      "summaries": {
+       "en": "An issuer must have a procedure through which its employees can report suspected breaches of financial market rules internally through an independent channel, with proper handling of reports and protection of the reporter's identity and personal data."
+      },
+      "originalLanguage": "en",
+      "refLabel": "12 luku 3 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep managers' transaction notifications available on the website for five years",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/746#part_5__chp_12__sec_5",
+     "sourceLabel": "Finlex, Arvopaperimarkkinalaki (746/2012), 12 luku 5 §",
+     "payload": {
+      "key": "obl-fi-apml-pdmr-website",
+      "titles": {
+       "en": "Keep managers' transaction notifications available on the website for five years"
+      },
+      "summaries": {
+       "en": "An issuer whose instruments are traded on a regulated market, or on an MTF at its request, must keep the information on transactions by persons discharging managerial responsibilities and their closely associated persons, notified and published under Article 19 MAR, publicly available on its website for at least five years."
+      },
+      "originalLanguage": "en",
+      "refLabel": "12 luku 5 §",
+      "dutyType": "disclosure"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Rikoslaki, 39/1889",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/1889/39",
+   "sourceLabel": "Finlex, Rikoslaki (39/1889), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-1889-39",
+    "titles": {
+     "fi": "Rikoslaki",
+     "en": "Criminal Code"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Rikoslaki",
+    "officialRef": "39/1889",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:securities",
+    "inForceFrom": "1891-01-01",
+    "implementsNote": "Chapter 51: CSMAD, Directive 2014/57/EU on criminal sanctions for market abuse"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not use or unlawfully disclose inside information",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1889/39#chp_51__sec_1",
+     "sourceLabel": "Finlex, Rikoslaki (39/1889), 51 luku 1 §, 2 a §, 6 a § ja 8 §",
+     "payload": {
+      "key": "obl-fi-rl-insider-dealing",
+      "titles": {
+       "en": "Do not use or unlawfully disclose inside information"
+      },
+      "summaries": {
+       "en": "Using inside information on a financial instrument or crypto-asset, intentionally or through gross negligence, to buy or sell, to cancel or amend an order, or to recommend a trade to someone else, is the crime of misuse of inside information, and unlawfully passing on inside information is a separate offence. The offences apply to instruments traded or seeking admission on a regulated market, MTF, OTF or crypto trading platform, and a company can be fined under corporate criminal liability."
+      },
+      "originalLanguage": "en",
+      "refLabel": "51 luku 1 §, 2 a §, 6 a § ja 8 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Do not manipulate the market",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1889/39#chp_51__sec_3",
+     "sourceLabel": "Finlex, Rikoslaki (39/1889), 51 luku 3 § ja 8 §",
+     "payload": {
+      "key": "obl-fi-rl-market-manipulation",
+      "titles": {
+       "en": "Do not manipulate the market"
+      },
+      "summaries": {
+       "en": "Giving orders or entering transactions that give false or misleading signals about supply, demand or price, secure an abnormal or artificial price or use fictitious devices, or spreading misleading information for gain, is the crime of market manipulation for financial instruments, crypto-assets and related spot commodity contracts. A company can be fined under corporate criminal liability."
+      },
+      "originalLanguage": "en",
+      "refLabel": "51 luku 3 § ja 8 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Give no false information on securities and meet statutory disclosure duties",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1889/39#chp_51__sec_5",
+     "sourceLabel": "Finlex, Rikoslaki (39/1889), 51 luku 5 §",
+     "payload": {
+      "key": "obl-fi-rl-disclosure-offence",
+      "titles": {
+       "en": "Give no false information on securities and meet statutory disclosure duties"
+      },
+      "summaries": {
+       "en": "Giving untrue or misleading information in the marketing or trading of financial instruments, or failing to disclose information required by the Securities Markets Act or the Prospectus Regulation that could materially affect a security's value, intentionally or through gross negligence, is a securities markets information offence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "51 luku 5 §",
+      "dutyType": "disclosure"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Rahanpesulaki, 444/2017",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444",
+   "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2017-444",
+    "titles": {
+     "fi": "Laki rahanpesun ja terrorismin rahoittamisen estämisestä",
+     "en": "Act on Preventing Money Laundering and Terrorist Financing"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Rahanpesulaki",
+    "officialRef": "444/2017",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:aml",
+    "inForceFrom": "2017-07-03",
+    "implementsNote": "AMLD4, Directive (EU) 2015/849, as amended by AMLD5, Directive (EU) 2018/843"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Prepare and update a business-wide money laundering and terrorist financing risk assessment",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_2__sec_3",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 2 luku 3 §",
+     "payload": {
+      "key": "obl-fi-rpl-risk-assessment",
+      "titles": {
+       "en": "Prepare and update a business-wide money laundering and terrorist financing risk assessment"
+      },
+      "summaries": {
+       "en": "An obliged entity must prepare a risk assessment identifying and assessing its money laundering and terrorist financing risks, taking into account the nature, size and scope of its business, keep it regularly updated and deliver it to its supervisor on request. It must have adequate policies, procedures and controls to mitigate and manage the risks."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 luku 3 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Identify customers and verify their identity before establishing a relationship",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_3__sec_2",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 3 luku 1–2 §",
+     "payload": {
+      "key": "obl-fi-rpl-identify-verify",
+      "titles": {
+       "en": "Identify customers and verify their identity before establishing a relationship"
+      },
+      "summaries": {
+       "en": "An obliged entity must identify its customers and verify their identity when establishing a customer relationship and for occasional transactions at or above the thresholds, such as 10 000 euros, and must not keep anonymous accounts. If customer due diligence cannot be completed, it must not establish the relationship or carry out the transaction, and a credit institution must not execute payment transactions through a payment account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 luku 1–2 §",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep customer due diligence records up to date for five years",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_3__sec_3",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 3 luku 3 §",
+     "payload": {
+      "key": "obl-fi-rpl-kyc-records",
+      "titles": {
+       "en": "Keep customer due diligence records up to date for five years"
+      },
+      "summaries": {
+       "en": "An obliged entity must keep all customer due diligence and transaction documents and data up to date and relevant, and retain them reliably for five years after the customer relationship ends or, for an occasional transaction, after it is carried out."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 luku 3 §",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Monitor customer activity and investigate unusual transactions",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_3__sec_4",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 3 luku 4 §",
+     "payload": {
+      "key": "obl-fi-rpl-ongoing-monitoring",
+      "titles": {
+       "en": "Monitor customer activity and investigate unusual transactions"
+      },
+      "summaries": {
+       "en": "An obliged entity must obtain information on the customer's and beneficial owner's activities and the purpose of the service, and monitor the relationship in a way that fits its nature and risks so that activity matches what is known of the customer. It must pay particular attention to transactions that are unusual in structure or size or have no apparent economic purpose, and establish the origin of funds where needed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 luku 4 §",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify customers' beneficial owners and keep the information current",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_3__sec_6",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 3 luku 6 §",
+     "payload": {
+      "key": "obl-fi-rpl-beneficial-owner",
+      "titles": {
+       "en": "Identify customers' beneficial owners and keep the information current"
+      },
+      "summaries": {
+       "en": "An obliged entity must identify its customers' beneficial owners, maintain adequate, accurate and up-to-date information on them and verify their identity where necessary, and must establish with appropriate care whether someone else exercises control over a corporate customer."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 luku 6 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Apply enhanced due diligence to higher-risk customers and transactions",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_3__sec_10",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 3 luku 10 §",
+     "payload": {
+      "key": "obl-fi-rpl-edd",
+      "titles": {
+       "en": "Apply enhanced due diligence to higher-risk customers and transactions"
+      },
+      "summaries": {
+       "en": "An obliged entity must apply enhanced customer due diligence in the cases listed in the Act, such as remote identification, correspondent relationships, politically exposed persons and high-risk third countries, whenever its risk assessment indicates a higher than usual risk, and where the customer or transaction is linked to a country whose regime the Commission considers deficient."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 luku 10 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Apply enhanced due diligence before entering correspondent relationships",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_3__sec_12",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 3 luku 12 §",
+     "payload": {
+      "key": "obl-fi-rpl-correspondent",
+      "titles": {
+       "en": "Apply enhanced due diligence before entering correspondent relationships"
+      },
+      "summaries": {
+       "en": "Before a credit or financial institution enters a correspondent relationship with an institution outside the EEA, it must gather enough information to understand the respondent's business, assess its reputation, the quality of its supervision and its AML controls, obtain senior management approval and agree the due diligence responsibilities in writing. It must not start or continue a relationship with a shell bank or an institution whose accounts shell banks may use."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 luku 12 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Detect politically exposed persons and apply enhanced measures to them",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_3__sec_13",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 3 luku 13 §",
+     "payload": {
+      "key": "obl-fi-rpl-pep",
+      "titles": {
+       "en": "Detect politically exposed persons and apply enhanced measures to them"
+      },
+      "summaries": {
+       "en": "An obliged entity must have risk-based procedures to establish whether a customer or beneficial owner is, or has been, a politically exposed person, or a family member or close associate of one. For such customers senior management must approve the relationship, the source of wealth and funds must be established and the relationship must be subject to enhanced ongoing monitoring."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 luku 13 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Apply enhanced measures to transactions linked to high-risk third countries",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_3__sec_13a",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 3 luku 13 a §",
+     "payload": {
+      "key": "obl-fi-rpl-high-risk-countries",
+      "titles": {
+       "en": "Apply enhanced measures to transactions linked to high-risk third countries"
+      },
+      "summaries": {
+       "en": "When transactions or payments involve third countries the Commission has identified as high-risk, an obliged entity must obtain additional information on the customer, the beneficial owner, the purpose of the relationship, the source of funds and wealth and the reasons for the transactions, obtain senior management approval, and apply enhanced ongoing monitoring."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 luku 13 a §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Maintain policies and controls to comply with sanctions and freezing decisions",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_3__sec_16",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 3 luku 16 §",
+     "payload": {
+      "key": "obl-fi-rpl-sanctions-compliance",
+      "titles": {
+       "en": "Maintain policies and controls to comply with sanctions and freezing decisions"
+      },
+      "summaries": {
+       "en": "As part of customer due diligence an obliged entity must have effective policies, procedures and internal control to ensure it complies with EU sanctions regulations, the national sanctions decrees under the Sanctions Act (659/1967) and national asset freezing decisions under Act 325/2013."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 luku 16 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Report suspicious transactions to the Financial Intelligence Unit without delay",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_4__sec_1",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 4 luku 1 §",
+     "payload": {
+      "key": "obl-fi-rpl-suspicious-transaction-report",
+      "titles": {
+       "en": "Report suspicious transactions to the Financial Intelligence Unit without delay"
+      },
+      "summaries": {
+       "en": "After investigating an unusual transaction, an obliged entity must report a suspicious transaction to the Financial Intelligence Unit without delay, whether or not the relationship was established or the transaction carried out, suspended or refused."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 luku 1 §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Do not disclose a suspicious transaction report to the customer or others",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_4__sec_4",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 4 luku 4 §",
+     "payload": {
+      "key": "obl-fi-rpl-no-tipping-off",
+      "titles": {
+       "en": "Do not disclose a suspicious transaction report to the customer or others"
+      },
+      "summaries": {
+       "en": "An obliged entity and its employees must not reveal to the person concerned or anyone else that a suspicious transaction report has been made or is being investigated, apart from the exceptions the Act allows, such as sharing within a group."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 luku 4 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Suspend or refuse suspicious transactions",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_4__sec_5",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 4 luku 5 §",
+     "payload": {
+      "key": "obl-fi-rpl-suspend-transaction",
+      "titles": {
+       "en": "Suspend or refuse suspicious transactions"
+      },
+      "summaries": {
+       "en": "An obliged entity must suspend a transaction for further checks or refuse it if the transaction is suspicious or it suspects the funds are meant for terrorist financing. If the transaction cannot be stopped, or stopping it would hinder tracing the beneficiary, it may be completed and then reported."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 luku 5 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Operate an internal channel for reporting suspected AML breaches",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_7__sec_8",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 7 luku 8 §",
+     "payload": {
+      "key": "obl-fi-rpl-internal-reporting-channel",
+      "titles": {
+       "en": "Operate an internal channel for reporting suspected AML breaches"
+      },
+      "summaries": {
+       "en": "An obliged entity must have procedures through which its employees and agents can report suspected breaches of the AML Act and rules issued under it internally through an independent channel, unless its supervisor has decided otherwise for a small entity."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 8 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Train staff and appoint a person responsible for AML compliance",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444#chp_9__sec_1",
+     "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), 9 luku 1 §",
+     "payload": {
+      "key": "obl-fi-rpl-training-responsible-person",
+      "titles": {
+       "en": "Train staff and appoint a person responsible for AML compliance"
+      },
+      "summaries": {
+       "en": "An obliged entity must ensure that its employees are trained to comply with the AML Act and rules issued under it, appoint a member of management responsible for supervising compliance and, where justified by its size and nature, a compliance officer. An entity that is part of a group must also follow group-wide AML procedures, including information sharing within the group."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 luku 1 §",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Maksupalvelulaki, 290/2010",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2010/290",
+   "sourceLabel": "Finlex, Maksupalvelulaki (290/2010), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2010-290",
+    "titles": {
+     "fi": "Maksupalvelulaki",
+     "en": "Payment Services Act"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Maksupalvelulaki",
+    "officialRef": "290/2010",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:payments",
+    "inForceFrom": "2010-05-01",
+    "implementsNote": "PSD2, Directive (EU) 2015/2366; Payment Accounts Directive 2014/92/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give payment service users the prescribed information before a framework contract",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/290#chp_2__sec_10",
+     "sourceLabel": "Finlex, Maksupalvelulaki (290/2010), 10 §",
+     "payload": {
+      "key": "obl-fi-mpl-pre-contract-information",
+      "titles": {
+       "en": "Give payment service users the prescribed information before a framework contract"
+      },
+      "summaries": {
+       "en": "In good time before a framework contract is concluded, the payment service provider must give the user, on paper or another durable medium, the information on the provider, the payment services, communication, safeguards, liability, redress and how the contract can be changed and terminated."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Credit payments to the payee's provider by the next business day",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/290#chp_5__sec_47",
+     "sourceLabel": "Finlex, Maksupalvelulaki (290/2010), 47 §",
+     "payload": {
+      "key": "obl-fi-mpl-execution-time",
+      "titles": {
+       "en": "Credit payments to the payee's provider by the next business day"
+      },
+      "summaries": {
+       "en": "The payer's payment service provider must credit the amount of a payment to the payee's provider's account no later than the business day after receiving the payment order, or the second business day for paper-initiated payments; instant credit transfers follow the timing in the SEPA Regulation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "47 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Block a payment instrument when it is reported lost or misused",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/290#chp_6__sec_56",
+     "sourceLabel": "Finlex, Maksupalvelulaki (290/2010), 56 §",
+     "payload": {
+      "key": "obl-fi-mpl-block-instrument",
+      "titles": {
+       "en": "Block a payment instrument when it is reported lost or misused"
+      },
+      "summaries": {
+       "en": "The payment service provider must prevent the use of a payment instrument as soon as the holder notifies it of its loss, theft or unauthorised use."
+      },
+      "originalLanguage": "en",
+      "refLabel": "56 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Refund unauthorised payment transactions by the next business day",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/290#chp_7__sec_63",
+     "sourceLabel": "Finlex, Maksupalvelulaki (290/2010), 63 §",
+     "payload": {
+      "key": "obl-fi-mpl-unauthorised-refund",
+      "titles": {
+       "en": "Refund unauthorised payment transactions by the next business day"
+      },
+      "summaries": {
+       "en": "Where a payment transaction was unauthorised, the provider whose customer's funds were used must refund the amount, or restore the account, immediately and no later than the business day after noticing or being notified of the transaction, unless the payer is liable under 62 §, or the provider has justified grounds to suspect fraud and reports them in writing to FIN-FSA."
+      },
+      "originalLanguage": "en",
+      "refLabel": "63 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Apply strong customer authentication to online access and electronic payments",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/290#chp_10__sec_85c",
+     "sourceLabel": "Finlex, Maksupalvelulaki (290/2010), 85 c §",
+     "payload": {
+      "key": "obl-fi-mpl-strong-authentication",
+      "titles": {
+       "en": "Apply strong customer authentication to online access and electronic payments"
+      },
+      "summaries": {
+       "en": "The payment service provider must use strong customer authentication when the payer accesses the payment account online, initiates an electronic payment transaction or carries out any remote action that may involve a risk of fraud; for remote electronic payments the authentication must be linked dynamically to the amount and the payee."
+      },
+      "originalLanguage": "en",
+      "refLabel": "85 c §",
+      "dutyType": "technical",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Answer payment service complaints within fifteen business days",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/290#chp_10__sec_86a",
+     "sourceLabel": "Finlex, Maksupalvelulaki (290/2010), 86 a §",
+     "payload": {
+      "key": "obl-fi-mpl-complaints",
+      "titles": {
+       "en": "Answer payment service complaints within fifteen business days"
+      },
+      "summaries": {
+       "en": "The payment service provider must have effective procedures for handling user complaints and must reply on paper or another agreed durable medium, addressing all points raised, within 15 business days of receipt. In exceptional cases it may send a holding reply, but the final reply must reach the user within 35 business days."
+      },
+      "originalLanguage": "en",
+      "refLabel": "86 a §",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Maksulaitoslaki, 297/2010",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2010/297",
+   "sourceLabel": "Finlex, Maksulaitoslaki (297/2010), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2010-297",
+    "titles": {
+     "fi": "Maksulaitoslaki",
+     "en": "Payment Institutions Act"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Maksulaitoslaki",
+    "officialRef": "297/2010",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:payments",
+    "inForceFrom": "2010-05-01",
+    "implementsNote": "PSD2, Directive (EU) 2015/2366; E-Money Directive 2009/110/EC"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Provide payment services only with an EEA authorisation",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/297#chp_2__sec_6",
+     "sourceLabel": "Finlex, Maksulaitoslaki (297/2010), 6 §",
+     "payload": {
+      "key": "obl-fi-mll-licence",
+      "titles": {
+       "en": "Provide payment services only with an EEA authorisation"
+      },
+      "summaries": {
+       "en": "Payment services may be provided only with an authorisation granted in the EEA under the Act, and an e-money institution's authorisation must expressly cover issuing electronic money."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Organise the payment institution's business reliably with adequate risk management",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/297#chp_3__sec_19",
+     "sourceLabel": "Finlex, Maksulaitoslaki (297/2010), 19 §",
+     "payload": {
+      "key": "obl-fi-mll-organisation",
+      "titles": {
+       "en": "Organise the payment institution's business reliably with adequate risk management"
+      },
+      "summaries": {
+       "en": "A payment institution must organise its business reliably, must not take risks that materially endanger its solvency or liquidity, and must have governance enabling effective risk management with adequate internal control and risk management systems."
+      },
+      "originalLanguage": "en",
+      "refLabel": "19 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Manage operational and security risks and major incidents",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/297#chp_3__sec_19a",
+     "sourceLabel": "Finlex, Maksulaitoslaki (297/2010), 19 a §",
+     "payload": {
+      "key": "obl-fi-mll-operational-security-risk",
+      "titles": {
+       "en": "Manage operational and security risks and major incidents"
+      },
+      "summaries": {
+       "en": "A payment institution, a person providing payment services under an exemption and an account information service provider must have a risk management framework of mitigation measures and control mechanisms for the operational and security risks of their payment services, and an effective incident management procedure able to detect and classify major operational and security incidents, without prejudice to DORA."
+      },
+      "originalLanguage": "en",
+      "refLabel": "19 a §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Safeguard funds received from payment service users",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/297#chp_4__sec_26",
+     "sourceLabel": "Finlex, Maksulaitoslaki (297/2010), 26 §",
+     "payload": {
+      "key": "obl-fi-mll-safeguarding",
+      "titles": {
+       "en": "Safeguard funds received from payment service users"
+      },
+      "summaries": {
+       "en": "A payment institution must protect funds received from users or other providers for executing payments, or in exchange for e-money, by keeping them separate so that they cannot be mixed with other funds and, if they have not been paid out or transferred by the business day after receipt, depositing them in an account at a central bank or credit institution or investing them in low-risk liquid assets, or by the alternative protection the section allows."
+      },
+      "originalLanguage": "en",
+      "refLabel": "26 §",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give payment institutions access to bank account services on non-discriminatory terms",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/297#chp_6__sec_41d",
+     "sourceLabel": "Finlex, Maksulaitoslaki (297/2010), 41 d §",
+     "payload": {
+      "key": "obl-fi-mll-bank-account-access",
+      "titles": {
+       "en": "Give payment institutions access to bank account services on non-discriminatory terms"
+      },
+      "summaries": {
+       "en": "A credit institution that offers payment account services must offer them to payment institutions and to exempt payment and account information service providers on an objective, non-discriminatory and proportionate basis that allows them to provide their services unhindered. If it refuses, it must notify FIN-FSA of the refusal and the reasons."
+      },
+      "originalLanguage": "en",
+      "refLabel": "41 d §",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sijoitusrahastolaki, 213/2019",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2019/213",
+   "sourceLabel": "Finlex, Sijoitusrahastolaki (213/2019), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2019-213",
+    "titles": {
+     "fi": "Sijoitusrahastolaki",
+     "en": "Mutual Funds Act"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Sijoitusrahastolaki",
+    "officialRef": "213/2019",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-03-01",
+    "implementsNote": "UCITS Directive 2009/65/EC as amended, including Directive (EU) 2024/927"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Manage UCITS funds only as an authorised management company",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2019/213#part_2__chp_2__sec_1",
+     "sourceLabel": "Finlex, Sijoitusrahastolaki (213/2019), 2 luku 1 §",
+     "payload": {
+      "key": "obl-fi-srl-licence",
+      "titles": {
+       "en": "Manage UCITS funds only as an authorised management company"
+      },
+      "summaries": {
+       "en": "Only a management company authorised for this business may manage a mutual fund under the Act and carry on mutual fund business."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 luku 1 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Manage funds in unitholders' interest and treat them equally",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2019/213#part_3__chp_4__sec_2",
+     "sourceLabel": "Finlex, Sijoitusrahastolaki (213/2019), 4 luku 2 §",
+     "payload": {
+      "key": "obl-fi-srl-unitholder-interest",
+      "titles": {
+       "en": "Manage funds in unitholders' interest and treat them equally"
+      },
+      "summaries": {
+       "en": "A management company must carry on its business diligently, independently and expertly in the interests of the fund and its unitholders, treat unitholders equally, avoid conflicts of interest when organising its business and, where they arise, ensure the funds and unitholders are treated fairly."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 luku 2 §",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Maintain adequate internal control and risk management",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2019/213#part_3__chp_5__sec_1",
+     "sourceLabel": "Finlex, Sijoitusrahastolaki (213/2019), 5 luku 1 §",
+     "payload": {
+      "key": "obl-fi-srl-risk-management",
+      "titles": {
+       "en": "Maintain adequate internal control and risk management"
+      },
+      "summaries": {
+       "en": "A management company must not take risks that materially endanger its solvency and must have internal control and risk management systems adequate for its business, with ICT controls meeting DORA."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 luku 1 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Select at least two liquidity management tools for each fund and notify FIN-FSA",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2019/213#part_3__chp_5__sec_5",
+     "sourceLabel": "Finlex, Sijoitusrahastolaki (213/2019), 5 luku 5 §",
+     "payload": {
+      "key": "obl-fi-srl-liquidity-tools",
+      "titles": {
+       "en": "Select at least two liquidity management tools for each fund and notify FIN-FSA"
+      },
+      "summaries": {
+       "en": "For each mutual fund the management company must select at least two suitable liquidity management tools from those listed in the Act, assess their suitability against the fund's investment strategy, liquidity profile and redemption policy, and notify the selected tools to FIN-FSA."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 luku 5 §",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-04-16",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Provide the key information document to investors before subscription",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2019/213#part_5__chp_15__sec_10",
+     "sourceLabel": "Finlex, Sijoitusrahastolaki (213/2019), 15 luku 10 § ja 13 §",
+     "payload": {
+      "key": "obl-fi-srl-key-information",
+      "titles": {
+       "en": "Provide the key information document to investors before subscription"
+      },
+      "summaries": {
+       "en": "A management company selling fund units directly or through persons acting on its responsibility must give the investor the key investor information in good time before the subscription; a PRIIPs key information document may be used to meet this duty."
+      },
+      "originalLanguage": "en",
+      "refLabel": "15 luku 10 § ja 13 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:fund_company",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki vaihtoehtorahastojen hoitajista, 162/2014",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2014/162",
+   "sourceLabel": "Finlex, Laki vaihtoehtorahastojen hoitajista (162/2014), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2014-162",
+    "titles": {
+     "fi": "Laki vaihtoehtorahastojen hoitajista",
+     "en": "Act on Alternative Investment Fund Managers"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki vaihtoehtorahastojen hoitajista",
+    "officialRef": "162/2014",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:securities",
+    "inForceFrom": "2014-03-15",
+    "implementsNote": "AIFMD, Directive 2011/61/EU, as amended by Directive (EU) 2024/927"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Manage alternative investment funds only with an authorisation",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/162#part_2__chp_3__sec_1",
+     "sourceLabel": "Finlex, Laki vaihtoehtorahastojen hoitajista (162/2014), 3 luku 1 §",
+     "payload": {
+      "key": "obl-fi-aifml-licence",
+      "titles": {
+       "en": "Manage alternative investment funds only with an authorisation"
+      },
+      "summaries": {
+       "en": "An alternative investment fund may be managed only by a manager authorised under the Act, although a manager that is only required to register may manage funds without authorisation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 luku 1 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report regularly to FIN-FSA on each fund managed",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/162#part_3__chp_7__sec_3",
+     "sourceLabel": "Finlex, Laki vaihtoehtorahastojen hoitajista (162/2014), 7 luku 3 §",
+     "payload": {
+      "key": "obl-fi-aifml-reporting",
+      "titles": {
+       "en": "Report regularly to FIN-FSA on each fund managed"
+      },
+      "summaries": {
+       "en": "The manager must report regularly to FIN-FSA for each fund it manages on the markets and instruments it trades, its principal exposures, most important concentrations, leverage and other factors relevant to systemic risk; reporting on each fund's positions and assets applies from 16 April 2027."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 3 §",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify and prevent conflicts of interest and segregate conflicting duties",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/162#part_3__chp_7__sec_6",
+     "sourceLabel": "Finlex, Laki vaihtoehtorahastojen hoitajista (162/2014), 7 luku 6 §",
+     "payload": {
+      "key": "obl-fi-aifml-conflicts",
+      "titles": {
+       "en": "Identify and prevent conflicts of interest and segregate conflicting duties"
+      },
+      "summaries": {
+       "en": "The manager must take reasonable steps to identify and prevent conflicts of interest, treat investors in accordance with good securities market practice when they arise, and separate tasks and responsibilities that may be incompatible with each other."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 6 §",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Maintain risk and liquidity management for each fund",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/162#part_3__chp_8__sec_1",
+     "sourceLabel": "Finlex, Laki vaihtoehtorahastojen hoitajista (162/2014), 8 luku 1 § ja 6 §",
+     "payload": {
+      "key": "obl-fi-aifml-risk-liquidity",
+      "titles": {
+       "en": "Maintain risk and liquidity management for each fund"
+      },
+      "summaries": {
+       "en": "The manager must have adequate internal control and risk management arrangements, reviewed at least annually, to identify, measure, manage and monitor all material risks of each fund, and liquidity arrangements ensuring that each fund's investment strategy, liquidity profile and redemption policy are consistent, backed by regular liquidity stress tests; the liquidity rules do not apply to unleveraged closed-ended funds."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 luku 1 § ja 6 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make material fund information available to investors before they invest",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/162#part_4__chp_12__sec_4",
+     "sourceLabel": "Finlex, Laki vaihtoehtorahastojen hoitajista (162/2014), 12 luku 4 §",
+     "payload": {
+      "key": "obl-fi-aifml-investor-information",
+      "titles": {
+       "en": "Make material fund information available to investors before they invest"
+      },
+      "summaries": {
+       "en": "A manager whose funds are marketed in Finland or another EEA state must make material and sufficient information on each EEA fund available to investors before they invest, and keep material changes to that information available."
+      },
+      "originalLanguage": "en",
+      "refLabel": "12 luku 4 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:fund_company",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Vakuutusyhtiölaki, 521/2008",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2008/521",
+   "sourceLabel": "Finlex, Vakuutusyhtiölaki (521/2008), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2008-521",
+    "titles": {
+     "fi": "Vakuutusyhtiölaki",
+     "en": "Insurance Companies Act"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Vakuutusyhtiölaki",
+    "officialRef": "521/2008",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:insurance",
+    "inForceFrom": "2008-10-01",
+    "implementsNote": "Solvency II, Directive 2009/138/EC"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Maintain an adequate system of governance",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2008/521#part_2__chp_6__sec_8",
+     "sourceLabel": "Finlex, Vakuutusyhtiölaki (521/2008), 6 luku 8 §",
+     "payload": {
+      "key": "obl-fi-vyl-system-of-governance",
+      "titles": {
+       "en": "Maintain an adequate system of governance"
+      },
+      "summaries": {
+       "en": "An insurance company must have a system of governance adequate to the nature and scale of its business, with clearly defined, allocated and segregated responsibilities that allows sound and prudent management and ensures the flow of information in the company, meeting the requirements of 6 luku 9–20 §."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 luku 8 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Define key functions and ensure their holders are fit and proper",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2008/521#part_2__chp_6__sec_9",
+     "sourceLabel": "Finlex, Vakuutusyhtiölaki (521/2008), 6 luku 9 §",
+     "payload": {
+      "key": "obl-fi-vyl-key-functions",
+      "titles": {
+       "en": "Define key functions and ensure their holders are fit and proper"
+      },
+      "summaries": {
+       "en": "The board of an insurance company must define the company's key functions, and the persons responsible for them must be of good repute and have the professional qualifications and experience the task requires."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 luku 9 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Operate a risk management system covering all risks",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2008/521#part_2__chp_6__sec_10",
+     "sourceLabel": "Finlex, Vakuutusyhtiölaki (521/2008), 6 luku 10 §",
+     "payload": {
+      "key": "obl-fi-vyl-risk-management",
+      "titles": {
+       "en": "Operate a risk management system covering all risks"
+      },
+      "summaries": {
+       "en": "An insurance company must have a risk management system that covers the risks included in the solvency capital requirement and those that are not, with continuous identification, measurement, monitoring, management and reporting of individual and aggregated risks, and a risk management strategy."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 luku 10 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Carry out the own risk and solvency assessment regularly",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2008/521#part_2__chp_6__sec_12a",
+     "sourceLabel": "Finlex, Vakuutusyhtiölaki (521/2008), 6 luku 12 a §",
+     "payload": {
+      "key": "obl-fi-vyl-orsa",
+      "titles": {
+       "en": "Carry out the own risk and solvency assessment regularly"
+      },
+      "summaries": {
+       "en": "An insurance company must carry out its own risk and solvency assessment regularly and without delay after any significant change in its risk profile; from 30 January 2027 the assessment must be made at least annually."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 luku 12 a §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish an annual solvency and financial condition report",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2008/521#part_2__chp_8a__sec_1",
+     "sourceLabel": "Finlex, Vakuutusyhtiölaki (521/2008), 8 a luku 1 §",
+     "payload": {
+      "key": "obl-fi-vyl-sfcr",
+      "titles": {
+       "en": "Publish an annual solvency and financial condition report"
+      },
+      "summaries": {
+       "en": "An insurance company must publish each year a board-approved report on its solvency and financial condition and deliver it to FIN-FSA when published, in the format required by the ESAP Regulation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 a luku 1 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Cover the solvency and minimum capital requirements at all times",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2008/521#part_3__chp_11__sec_1",
+     "sourceLabel": "Finlex, Vakuutusyhtiölaki (521/2008), 11 luku 1 § ja 5 §",
+     "payload": {
+      "key": "obl-fi-vyl-capital-requirements",
+      "titles": {
+       "en": "Cover the solvency and minimum capital requirements at all times"
+      },
+      "summaries": {
+       "en": "An insurance company must at all times cover its solvency capital requirement and minimum capital requirement with own funds of sufficient quality and amount, calculating the solvency capital requirement at least annually and the minimum capital requirement at least quarterly."
+      },
+      "originalLanguage": "en",
+      "refLabel": "11 luku 1 § ja 5 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki vakuutusten tarjoamisesta, 234/2018",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2018/234",
+   "sourceLabel": "Finlex, Laki vakuutusten tarjoamisesta (234/2018), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2018-234",
+    "titles": {
+     "fi": "Laki vakuutusten tarjoamisesta",
+     "en": "Act on Insurance Distribution"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki vakuutusten tarjoamisesta",
+    "officialRef": "234/2018",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:insurance",
+    "inForceFrom": "2018-10-01",
+    "implementsNote": "IDD, Directive (EU) 2016/97"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Distribute insurance only as a registered intermediary or an insurer",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/234#chp_2__sec_6",
+     "sourceLabel": "Finlex, Laki vakuutusten tarjoamisesta (234/2018), 6 §",
+     "payload": {
+      "key": "obl-fi-vtl-registration",
+      "titles": {
+       "en": "Distribute insurance only as a registered intermediary or an insurer"
+      },
+      "summaries": {
+       "en": "Insurance may be distributed in Finland only by insurers, by intermediaries and ancillary intermediaries registered in the Finnish register of insurance intermediaries or notified from another EEA state, and by the exempt ancillary intermediaries described in the Act."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 §",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep the professional competence of insurance distribution staff up to date",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/234#chp_3__sec_20",
+     "sourceLabel": "Finlex, Laki vakuutusten tarjoamisesta (234/2018), 20 §",
+     "payload": {
+      "key": "obl-fi-vtl-cpd",
+      "titles": {
+       "en": "Keep the professional competence of insurance distribution staff up to date"
+      },
+      "summaries": {
+       "en": "Persons taking part in or responsible for insurance distribution must continuously maintain and develop their professional competence to a level adequate for the nature and scope of their tasks."
+      },
+      "originalLanguage": "en",
+      "refLabel": "20 §",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Act honestly, fairly and professionally in the customer's best interest",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/234#chp_5__sec_30",
+     "sourceLabel": "Finlex, Laki vakuutusten tarjoamisesta (234/2018), 30 §",
+     "payload": {
+      "key": "obl-fi-vtl-customer-interest",
+      "titles": {
+       "en": "Act honestly, fairly and professionally in the customer's best interest"
+      },
+      "summaries": {
+       "en": "An insurance distributor must act honestly, fairly, professionally, carefully and in the customer's best interest, following good insurance practice, and must not be remunerated, or remunerate or assess its staff, in a way that conflicts with that duty."
+      },
+      "originalLanguage": "en",
+      "refLabel": "30 §",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Offer consumers the insurance and the other product separately",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/234#chp_5__sec_40",
+     "sourceLabel": "Finlex, Laki vakuutusten tarjoamisesta (234/2018), 40 §",
+     "payload": {
+      "key": "obl-fi-vtl-no-tying",
+      "titles": {
+       "en": "Offer consumers the insurance and the other product separately"
+      },
+      "summaries": {
+       "en": "When insurance is offered to a consumer together with goods or a service other than insurance, the consumer must also be offered the possibility to buy the insurance and the goods or service separately."
+      },
+      "originalLanguage": "en",
+      "refLabel": "40 §",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:insurance_distribution",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Operate a product approval process for insurance products",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/234#chp_5__sec_42",
+     "sourceLabel": "Finlex, Laki vakuutusten tarjoamisesta (234/2018), 42 §",
+     "payload": {
+      "key": "obl-fi-vtl-product-oversight",
+      "titles": {
+       "en": "Operate a product approval process for insurance products"
+      },
+      "summaries": {
+       "en": "An insurer must maintain and review a product approval process that approves new products and significant changes before they are marketed, identifies a target market for each product, assesses the relevant risks for that market and checks that the distribution strategy fits it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "42 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:insurer",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not use old cancer diagnoses in credit-linked consumer insurance",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/234#chp_5__sec_41a",
+     "sourceLabel": "Finlex, Laki vakuutusten tarjoamisesta (234/2018), 41 a §",
+     "payload": {
+      "key": "obl-fi-vtl-cancer-data",
+      "titles": {
+       "en": "Do not use old cancer diagnoses in credit-linked consumer insurance"
+      },
+      "summaries": {
+       "en": "From 20 November 2026, where a consumer credit offer requires the consumer to take out insurance linked to the credit, the insurer must not use personal data on the consumer's cancer diagnosis once 15 years have passed since the end of the medical treatment."
+      },
+      "originalLanguage": "en",
+      "refLabel": "41 a §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-11-20",
+      "terms": [
+       "service_type:insurance_distribution",
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Kuluttajansuojalaki, 38/1978",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38",
+   "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-1978-38",
+    "titles": {
+     "fi": "Kuluttajansuojalaki",
+     "en": "Consumer Protection Act"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Kuluttajansuojalaki",
+    "officialRef": "38/1978",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:banking",
+    "inForceFrom": "1978-09-01",
+    "implementsNote": "Consumer credit (chapters 7 and 7 a): CCD, Directive 2008/48/EC; MCD, Directive 2014/17/EU; CCD2, Directive (EU) 2023/2225 (amendments applying from 20 November 2026)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the consumer the standard European credit information before a credit agreement",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7__sec_9",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 luku 9 §",
+     "payload": {
+      "key": "obl-fi-ksl-secci",
+      "titles": {
+       "en": "Give the consumer the standard European credit information before a credit agreement"
+      },
+      "summaries": {
+       "en": "In good time before a consumer credit agreement is concluded, the creditor and any credit intermediary must give the consumer clear and understandable pre-contractual information on paper or another durable medium chosen by the consumer, using the Standard European Consumer Credit Information form."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 9 §",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2010-12-01",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Lend responsibly and follow good lending practice",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7__sec_13",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 luku 13 §",
+     "payload": {
+      "key": "obl-fi-ksl-responsible-lending",
+      "titles": {
+       "en": "Lend responsibly and follow good lending practice"
+      },
+      "summaries": {
+       "en": "A creditor must act responsibly in consumer lending; for example, its marketing must not play down the seriousness of borrowing, suggest that credit solves financial problems or make unfounded claims that it is cheaper than existing credit."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 13 §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2010-12-01",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess the consumer's creditworthiness before granting credit",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7__sec_14",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 luku 14 §",
+     "payload": {
+      "key": "obl-fi-ksl-creditworthiness",
+      "titles": {
+       "en": "Assess the consumer's creditworthiness before granting credit"
+      },
+      "summaries": {
+       "en": "Before concluding a credit agreement the creditor must assess whether the consumer can meet the obligations, using sufficient information on income and other financial circumstances from the credit information register and other sources, and must update the information before raising a credit amount or limit. From 20 November 2026 the assessment must be made thoroughly and in the consumer's interest on the basis of necessary and proportionate information on income, expenses and circumstances."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 14 §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2010-12-01",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Verify the consumer's identity carefully, using strong electronic identification online",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7__sec_15",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 luku 15 §",
+     "payload": {
+      "key": "obl-fi-ksl-identity-verification",
+      "titles": {
+       "en": "Verify the consumer's identity carefully, using strong electronic identification online"
+      },
+      "summaries": {
+       "en": "When concluding a consumer credit agreement or raising a credit amount or limit, the creditor must verify the consumer's identity carefully; if identity is verified electronically, it must use a method that meets the strong electronic identification requirements or strong customer authentication under the Payment Services Act."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 15 §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2023-10-01",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep consumer credit interest and other costs within the statutory caps",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7__sec_17a",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 luku 17 a §",
+     "payload": {
+      "key": "obl-fi-ksl-interest-cap",
+      "titles": {
+       "en": "Keep consumer credit interest and other costs within the statutory caps"
+      },
+      "summaries": {
+       "en": "The agreed interest on consumer credit may not exceed the reference rate under the Interest Act plus 15 percentage points and in any case not 20 percent, and other credit costs are capped at 0.01 percent of the credit amount or limit per day, subject to the section's detailed rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 17 a §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2023-10-01",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Honour the consumer's 14-day right of withdrawal",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7__sec_20",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 luku 20 §",
+     "payload": {
+      "key": "obl-fi-ksl-withdrawal",
+      "titles": {
+       "en": "Honour the consumer's 14-day right of withdrawal"
+      },
+      "summaries": {
+       "en": "A consumer may withdraw from a consumer credit agreement by notifying the creditor within 14 days of concluding it or of receiving the contract terms, whichever is later; the creditor may then claim only interest for the time the credit was available and any non-refundable charges it paid to authorities."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 20 §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2010-12-01",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Warn in consumer credit advertising that borrowing costs money",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7__sec_8a",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 luku 8 a §",
+     "payload": {
+      "key": "obl-fi-ksl-advertising-warning",
+      "titles": {
+       "en": "Warn in consumer credit advertising that borrowing costs money"
+      },
+      "summaries": {
+       "en": "From 20 November 2026 all consumer credit advertising must clearly and prominently warn that taking out credit costs the consumer money, with the content of the warning set by government decree."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 8 a §",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2026-11-20",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell applicants promptly when a credit application is rejected",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7__sec_16b",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 luku 16 b §",
+     "payload": {
+      "key": "obl-fi-ksl-rejection-notice",
+      "titles": {
+       "en": "Tell applicants promptly when a credit application is rejected"
+      },
+      "summaries": {
+       "en": "From 20 November 2026 a creditor must inform a consumer without delay when a credit application is rejected, where needed refer the consumer to debt counselling, and on request give the reason for the rejection in writing, unless the refusal is based on the AML suspension rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 luku 16 b §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-11-20",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the ESIS form before a housing credit agreement",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7a__sec_6",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 a luku 6 §",
+     "payload": {
+      "key": "obl-fi-ksl-esis",
+      "titles": {
+       "en": "Give the ESIS form before a housing credit agreement"
+      },
+      "summaries": {
+       "en": "After the consumer has given information on needs, expectations and financial circumstances, and in good time before a housing credit agreement is concluded, the creditor and any intermediary must give personalised pre-contractual information on a durable medium using the ESIS form."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 a luku 6 §",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2017-01-01",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess creditworthiness thoroughly before a housing credit",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7a__sec_11",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 a luku 11 §",
+     "payload": {
+      "key": "obl-fi-ksl-mortgage-creditworthiness",
+      "titles": {
+       "en": "Assess creditworthiness thoroughly before a housing credit"
+      },
+      "summaries": {
+       "en": "Before concluding a housing credit agreement the creditor must thoroughly assess the consumer's creditworthiness on the basis of necessary, sufficient and proportionate information on income, expenses and other circumstances from the credit information register and other sources, and verify that the information is accurate."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 a luku 11 §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2017-01-01",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Limit housing loan repayment periods to 40 years",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38#chp_7a__sec_14a",
+     "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), 7 a luku 14 a §",
+     "payload": {
+      "key": "obl-fi-ksl-mortgage-max-term",
+      "titles": {
+       "en": "Limit housing loan repayment periods to 40 years"
+      },
+      "summaries": {
+       "en": "A creditor may not use terms under which a housing credit's repayment period at the time of granting exceeds 40 years from drawdown, although up to 10 percent of its housing lending in each quarter may exceed the limit."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 a luku 14 a §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-06-01",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Tietosuojalaki, 1050/2018",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2018/1050",
+   "sourceLabel": "Finlex, Tietosuojalaki (1050/2018), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2018-1050",
+    "titles": {
+     "fi": "Tietosuojalaki",
+     "en": "Data Protection Act"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Tietosuojalaki",
+    "officialRef": "1050/2018",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2019-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Process personal identity codes only where permitted and never as the sole means of identification",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/1050#chp_5__sec_29",
+     "sourceLabel": "Finlex, Tietosuojalaki (1050/2018), 29 §",
+     "payload": {
+      "key": "obl-fi-tsl-personal-identity-code",
+      "titles": {
+       "en": "Process personal identity codes only where permitted and never as the sole means of identification"
+      },
+      "summaries": {
+       "en": "A personal identity code may be processed with the data subject's consent, where the law provides, or where unambiguous identification is important, for example in lending, debt collection, insurance, credit institution and payment service activity. It must not be printed needlessly on documents, and identification must not rely on the code alone or on the code and name only."
+      },
+      "originalLanguage": "en",
+      "refLabel": "29 §",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Process data on criminal convictions and offences only on the permitted grounds",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/1050#chp_2__sec_7",
+     "sourceLabel": "Finlex, Tietosuojalaki (1050/2018), 7 §",
+     "payload": {
+      "key": "obl-fi-tsl-criminal-data",
+      "titles": {
+       "en": "Process data on criminal convictions and offences only on the permitted grounds"
+      },
+      "summaries": {
+       "en": "Personal data on criminal convictions and offences may be processed only where needed for legal claims, where necessary for an insurer assessing its liability, where the law provides or a statutory public-interest task requires it, or for research and statistics, with measures to protect the data subject's rights."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 §",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki Finanssivalvonnasta, 878/2008",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2008/878",
+   "sourceLabel": "Finlex, Laki Finanssivalvonnasta (878/2008), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2008-878",
+    "titles": {
+     "fi": "Laki Finanssivalvonnasta",
+     "en": "Act on the Financial Supervisory Authority"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki Finanssivalvonnasta",
+    "officialRef": "878/2008",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:banking",
+    "inForceFrom": "2009-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Provide FIN-FSA with the information it requests and its regular reports",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2008/878#chp_3__sec_18",
+     "sourceLabel": "Finlex, Laki Finanssivalvonnasta (878/2008), 18 §",
+     "payload": {
+      "key": "obl-fi-fival-information",
+      "titles": {
+       "en": "Provide FIN-FSA with the information it requests and its regular reports"
+      },
+      "summaries": {
+       "en": "A supervised entity must, notwithstanding secrecy, deliver to FIN-FSA without undue delay the information and reports FIN-FSA requests for its statutory tasks, and must report regularly on its financial position, owners, internal control and risk management, management and offices as FIN-FSA's regulations require."
+      },
+      "originalLanguage": "en",
+      "refLabel": "18 §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Give FIN-FSA access for inspections",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2008/878#chp_3__sec_24",
+     "sourceLabel": "Finlex, Laki Finanssivalvonnasta (878/2008), 24 §",
+     "payload": {
+      "key": "obl-fi-fival-inspection",
+      "titles": {
+       "en": "Give FIN-FSA access for inspections"
+      },
+      "summaries": {
+       "en": "A supervised entity must let FIN-FSA inspect, at its premises and notwithstanding secrecy, the documents, recordings of telephone and electronic communications, other traffic data and information systems concerning its business and administration, to the extent FIN-FSA needs them for supervision."
+      },
+      "originalLanguage": "en",
+      "refLabel": "24 §",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki kiinnitysluottopankeista ja katetuista joukkolainoista, 151/2022",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2022/151",
+   "sourceLabel": "Finlex, Laki kiinnitysluottopankeista ja katetuista joukkolainoista (151/2022), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2022-151",
+    "titles": {
+     "fi": "Laki kiinnitysluottopankeista ja katetuista joukkolainoista",
+     "en": "Act on Mortgage Credit Banks and Covered Bonds"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki kiinnitysluottopankeista ja katetuista joukkolainoista",
+    "officialRef": "151/2022",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:banking",
+    "inForceFrom": "2022-07-08",
+    "implementsNote": "Covered Bonds Directive (EU) 2019/2162"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Issue covered bonds only with a covered bond permit",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2022/151#chp_2__sec_3",
+     "sourceLabel": "Finlex, Laki kiinnitysluottopankeista ja katetuista joukkolainoista (151/2022), 3 §",
+     "payload": {
+      "key": "obl-fi-kjl-permit",
+      "titles": {
+       "en": "Issue covered bonds only with a covered bond permit"
+      },
+      "summaries": {
+       "en": "Mortgage credit bank business, meaning the issuing of covered bonds under the Act, may be carried on only by a mortgage credit bank or other credit institution that has received the permit referred to in 8 §."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep the cover pool above the covered bond liabilities with the minimum overcollateralisation",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2022/151#chp_4__sec_24",
+     "sourceLabel": "Finlex, Laki kiinnitysluottopankeista ja katetuista joukkolainoista (151/2022), 24 §",
+     "payload": {
+      "key": "obl-fi-kjl-overcollateralisation",
+      "titles": {
+       "en": "Keep the cover pool above the covered bond liabilities with the minimum overcollateralisation"
+      },
+      "summaries": {
+       "en": "The total value of the cover pool must continuously exceed the value of the payment obligations under the covered bonds, with overcollateralisation of at least 2 percent, or at least 5 percent where the conditions of Article 129(3a) CRR are not met."
+      },
+      "originalLanguage": "en",
+      "refLabel": "24 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep a tamper-proof register of covered bonds and their cover pools",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2022/151#chp_5__sec_27",
+     "sourceLabel": "Finlex, Laki kiinnitysluottopankeista ja katetuista joukkolainoista (151/2022), 27 §",
+     "payload": {
+      "key": "obl-fi-kjl-register",
+      "titles": {
+       "en": "Keep a tamper-proof register of covered bonds and their cover pools"
+      },
+      "summaries": {
+       "en": "The issuer must keep a register of the covered bonds it has issued and their cover pools, enter changes without delay and keep an unalterable record of the entries, so that the cover pool assets securing each bond can be identified."
+      },
+      "originalLanguage": "en",
+      "refLabel": "27 §",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Hold a cover pool liquidity buffer for 180 days of net outflows",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2022/151#chp_6__sec_31",
+     "sourceLabel": "Finlex, Laki kiinnitysluottopankeista ja katetuista joukkolainoista (151/2022), 31 §",
+     "payload": {
+      "key": "obl-fi-kjl-liquidity-buffer",
+      "titles": {
+       "en": "Hold a cover pool liquidity buffer for 180 days of net outflows"
+      },
+      "summaries": {
+       "en": "The issuer must ensure that the cover pool continuously contains eligible liquid assets covering the maximum cumulative net liquidity outflow of the covered bonds over the next 180 days."
+      },
+      "originalLanguage": "en",
+      "refLabel": "31 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Publish covered bond and cover pool information quarterly",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2022/151#chp_8__sec_36",
+     "sourceLabel": "Finlex, Laki kiinnitysluottopankeista ja katetuista joukkolainoista (151/2022), 36 §",
+     "payload": {
+      "key": "obl-fi-kjl-investor-information",
+      "titles": {
+       "en": "Publish covered bond and cover pool information quarterly"
+      },
+      "summaries": {
+       "en": "The issuer must publish on its website at least quarterly information on its covered bonds and cover pools, including the total value of the cover assets and outstanding bonds and the bonds' international identifiers, among the items listed in the section."
+      },
+      "originalLanguage": "en",
+      "refLabel": "36 §",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Report covered bond and cover pool data to FIN-FSA quarterly",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2022/151#chp_8__sec_38",
+     "sourceLabel": "Finlex, Laki kiinnitysluottopankeista ja katetuista joukkolainoista (151/2022), 38 §",
+     "payload": {
+      "key": "obl-fi-kjl-supervisory-reporting",
+      "titles": {
+       "en": "Report covered bond and cover pool data to FIN-FSA quarterly"
+      },
+      "summaries": {
+       "en": "The issuer must report to FIN-FSA quarterly, and whenever FIN-FSA requires, on the covered bonds issued, the cover pools and their valuation and the other matters listed in the section."
+      },
+      "originalLanguage": "en",
+      "refLabel": "38 §",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki eräiden luotonantajien ja luotonvälittäjien rekisteröinnistä, 186/2023",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2023/186",
+   "sourceLabel": "Finlex, Laki eräiden luotonantajien ja luotonvälittäjien rekisteröinnistä (186/2023), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2023-186",
+    "titles": {
+     "fi": "Laki eräiden luotonantajien ja luotonvälittäjien rekisteröinnistä",
+     "en": "Act on the Registration of Certain Credit Providers and Credit Intermediaries"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki eräiden luotonantajien ja luotonvälittäjien rekisteröinnistä",
+    "officialRef": "186/2023",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:banking",
+    "inForceFrom": "2023-07-01",
+    "implementsNote": "Directive (EU) 2023/2225 (amendments by Act 32/2026 applying from 20 November 2026)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Register with FIN-FSA before granting consumer credit or intermediating peer-to-peer loans",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2023/186#sec_3",
+     "sourceLabel": "Finlex, Laki eräiden luotonantajien ja luotonvälittäjien rekisteröinnistä (186/2023), 3–4 §",
+     "payload": {
+      "key": "obl-fi-lrl-registration",
+      "titles": {
+       "en": "Register with FIN-FSA before granting consumer credit or intermediating peer-to-peer loans"
+      },
+      "summaries": {
+       "en": "A business other than a credit institution may grant consumer credit or credit to housing companies only if registered as a credit provider, and may intermediate peer-to-peer loans only if registered as an intermediary or credit provider; it must file a registration notification with FIN-FSA, which keeps the register. Credit institutions are outside the Act."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3–4 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Base consumer lending on sound written criteria that protect consumers' ability to pay",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2023/186#sec_13",
+     "sourceLabel": "Finlex, Laki eräiden luotonantajien ja luotonvälittäjien rekisteröinnistä (186/2023), 13 §",
+     "payload": {
+      "key": "obl-fi-lrl-insolvency-risk",
+      "titles": {
+       "en": "Base consumer lending on sound written criteria that protect consumers' ability to pay"
+      },
+      "summaries": {
+       "en": "A registered credit provider's consumer lending must rest on sound criteria defined in writing in advance that do not obviously endanger consumers' ability to pay, and its business model must not lead to lending to consumers with an unreasonably high insolvency risk."
+      },
+      "originalLanguage": "en",
+      "refLabel": "13 §",
+      "dutyType": "governance",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Respect the maximum loan-to-collateral ratio for housing credit",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2023/186#sec_14",
+     "sourceLabel": "Finlex, Laki eräiden luotonantajien ja luotonvälittäjien rekisteröinnistä (186/2023), 14 §",
+     "payload": {
+      "key": "obl-fi-lrl-ltv-cap",
+      "titles": {
+       "en": "Respect the maximum loan-to-collateral ratio for housing credit"
+      },
+      "summaries": {
+       "en": "A registered credit provider may grant consumer credit secured on a home for buying or renovating a dwelling only up to the loan-to-collateral ratio set in the section."
+      },
+      "originalLanguage": "en",
+      "refLabel": "14 §",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep lending and intermediation records for five years after the credit falls due",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2023/186#sec_16",
+     "sourceLabel": "Finlex, Laki eräiden luotonantajien ja luotonvälittäjien rekisteröinnistä (186/2023), 16 §",
+     "payload": {
+      "key": "obl-fi-lrl-records",
+      "titles": {
+       "en": "Keep lending and intermediation records for five years after the credit falls due"
+      },
+      "summaries": {
+       "en": "Unless a longer period applies, a credit provider or peer-to-peer intermediary must keep the documents and data on its lending and intermediation for five years after the credit has fallen due in full, and longer if a dispute arises."
+      },
+      "originalLanguage": "en",
+      "refLabel": "16 §",
+      "dutyType": "record_keeping"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusta, 1194/2014",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1194",
+   "sourceLabel": "Finlex, Laki luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusta (1194/2014), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2014-1194",
+    "titles": {
+     "fi": "Laki luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusta",
+     "en": "Act on the Resolution of Credit Institutions and Investment Firms"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusta",
+    "officialRef": "1194/2014",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:banking",
+    "inForceFrom": "2015-01-01",
+    "implementsNote": "BRRD, Directive 2014/59/EU, as amended by Directive (EU) 2019/879"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Provide the Financial Stability Authority with the information needed for resolution planning",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1194#part_2__chp_2__sec_4",
+     "sourceLabel": "Finlex, Laki luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusta (1194/2014), 2 luku 4 §",
+     "payload": {
+      "key": "obl-fi-krl-resolution-planning-information",
+      "titles": {
+       "en": "Provide the Financial Stability Authority with the information needed for resolution planning"
+      },
+      "summaries": {
+       "en": "An institution must deliver to the Financial Stability Authority the information and analyses needed to draw up, maintain and implement its resolution plan."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 luku 4 §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Meet the minimum requirement for own funds and eligible liabilities at all times",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1194#part_3__chp_8__sec_7",
+     "sourceLabel": "Finlex, Laki luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusta (1194/2014), 8 luku 7 §",
+     "payload": {
+      "key": "obl-fi-krl-mrel",
+      "titles": {
+       "en": "Meet the minimum requirement for own funds and eligible liabilities at all times"
+      },
+      "summaries": {
+       "en": "An institution must at all times hold the amount of own funds and eligible liabilities set by the Financial Stability Authority as its minimum requirement (MREL), calculated as the Act provides."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 luku 7 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Include contractual recognition of bail-in in relevant liability contracts",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1194#part_3__chp_8__sec_12a",
+     "sourceLabel": "Finlex, Laki luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusta (1194/2014), 8 luku 12 a §",
+     "payload": {
+      "key": "obl-fi-krl-bail-in-clause",
+      "titles": {
+       "en": "Include contractual recognition of bail-in in relevant liability contracts"
+      },
+      "summaries": {
+       "en": "An institution must include in the contracts creating the liabilities covered by the section a term by which the creditor recognises and accepts that the liability may be written down, converted or cancelled by decision of the Financial Stability Authority."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 luku 12 a §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Report and disclose MREL-eligible liabilities",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1194#part_3__chp_8__sec_14",
+     "sourceLabel": "Finlex, Laki luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusta (1194/2014), 8 luku 14 §",
+     "payload": {
+      "key": "obl-fi-krl-mrel-reporting",
+      "titles": {
+       "en": "Report and disclose MREL-eligible liabilities"
+      },
+      "summaries": {
+       "en": "An institution must report to the Financial Stability Authority and FIN-FSA half-yearly the amount of its eligible liabilities and own funds, and yearly the amount of other bail-inable liabilities and the composition and insolvency ranking of these items. It must also publish at least yearly its MREL requirement and the amount, composition, maturity profile and ranking of its own funds and eligible liabilities."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 luku 14 §",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki rahoitusvakausviranomaisesta, 1195/2014",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1195",
+   "sourceLabel": "Finlex, Laki rahoitusvakausviranomaisesta (1195/2014), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2014-1195",
+    "titles": {
+     "fi": "Laki rahoitusvakausviranomaisesta",
+     "en": "Act on the Financial Stability Authority"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki rahoitusvakausviranomaisesta",
+    "officialRef": "1195/2014",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:banking",
+    "inForceFrom": "2015-01-01",
+    "implementsNote": "DGSD, Directive 2014/49/EU; BRRD, Directive 2014/59/EU (resolution financing)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep systems that can determine each depositor's covered deposits at any time",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1195#chp_5__sec_2",
+     "sourceLabel": "Finlex, Laki rahoitusvakausviranomaisesta (1195/2014), 5 luku 2 §",
+     "payload": {
+      "key": "obl-fi-rvvl-depositor-data",
+      "titles": {
+       "en": "Keep systems that can determine each depositor's covered deposits at any time"
+      },
+      "summaries": {
+       "en": "A deposit bank must have internal systems that allow the eligible and covered deposits of each depositor to be determined at any time, and must deliver that information to the Financial Stability Authority on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 luku 2 §",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Pay deposit guarantee contributions when due",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1195#chp_5__sec_4",
+     "sourceLabel": "Finlex, Laki rahoitusvakausviranomaisesta (1195/2014), 5 luku 4 §",
+     "payload": {
+      "key": "obl-fi-rvvl-dgs-contributions",
+      "titles": {
+       "en": "Pay deposit guarantee contributions when due"
+      },
+      "summaries": {
+       "en": "When the Deposit Guarantee Fund falls below its minimum level a deposit bank must pay the annual contribution calculated under the Act, and a new deposit bank must pay an entry fee to the deposit guarantee scheme."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 luku 4 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Inform depositors about deposit protection",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1195#chp_5__sec_18",
+     "sourceLabel": "Finlex, Laki rahoitusvakausviranomaisesta (1195/2014), 5 luku 18 §",
+     "payload": {
+      "key": "obl-fi-rvvl-depositor-information",
+      "titles": {
+       "en": "Inform depositors about deposit protection"
+      },
+      "summaries": {
+       "en": "A deposit bank must give its depositors adequate information on deposit protection and on changes to information given earlier, with the detailed content set by Ministry of Finance decree."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 luku 18 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki pankki- ja maksutilien valvontajärjestelmästä, 571/2019",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2019/571",
+   "sourceLabel": "Finlex, Laki pankki- ja maksutilien valvontajärjestelmästä (571/2019), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2019-571",
+    "titles": {
+     "fi": "Laki pankki- ja maksutilien valvontajärjestelmästä",
+     "en": "Act on the Bank and Payment Account Monitoring System"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki pankki- ja maksutilien valvontajärjestelmästä",
+    "officialRef": "571/2019",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:aml",
+    "inForceFrom": "2019-05-01",
+    "implementsNote": "AMLD5, Directive (EU) 2018/843 (centralised bank account mechanisms)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Maintain an electronic data retrieval system for authorities' account queries",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2019/571#chp_1__sec_1d",
+     "sourceLabel": "Finlex, Laki pankki- ja maksutilien valvontajärjestelmästä (571/2019), 1 d §",
+     "payload": {
+      "key": "obl-fi-tilivalvonta-retrieval-system",
+      "titles": {
+       "en": "Maintain an electronic data retrieval system for authorities' account queries"
+      },
+      "summaries": {
+       "en": "A credit institution must maintain an electronic bank and payment account data retrieval system through which it discloses to competent authorities, notwithstanding secrecy, the customer and account data, and from 1 June 2026 the balance and transaction data, referred to in chapters 2 and 3; FIN-FSA may grant an exemption where the institution's size and the nature and scope of its business justify it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 d §",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Deliver account data to the bank and payment account register",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2019/571#chp_2__sec_6",
+     "sourceLabel": "Finlex, Laki pankki- ja maksutilien valvontajärjestelmästä (571/2019), 6 §",
+     "payload": {
+      "key": "obl-fi-tilivalvonta-register-data",
+      "titles": {
+       "en": "Deliver account data to the bank and payment account register"
+      },
+      "summaries": {
+       "en": "Payment institutions, e-money institutions and crypto-asset service providers must, notwithstanding secrecy, give Finnish Customs the customer and account data listed in the section for the bank and payment account register, unless they disclose it through their own data retrieval system."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 §",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:payment_institution",
+       "legal_entity:emoney_institution"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki positiivisesta luottotietorekisteristä, 739/2022",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2022/739",
+   "sourceLabel": "Finlex, Laki positiivisesta luottotietorekisteristä (739/2022), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2022-739",
+    "titles": {
+     "fi": "Laki positiivisesta luottotietorekisteristä",
+     "en": "Act on the Positive Credit Register"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki positiivisesta luottotietorekisteristä",
+    "officialRef": "739/2022",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:banking",
+    "inForceFrom": "2022-08-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report consumer credits to the positive credit register on time",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2022/739#chp_3__sec_16",
+     "sourceLabel": "Finlex, Laki positiivisesta luottotietorekisteristä (739/2022), 16 §, 19 § ja 20 §",
+     "payload": {
+      "key": "obl-fi-pltr-report-credits",
+      "titles": {
+       "en": "Report consumer credits to the positive credit register on time"
+      },
+      "summaries": {
+       "en": "A creditor supervised by FIN-FSA, a registered credit provider or another creditor covered by the Act must report its consumer credits and the prescribed borrower, credit, interest, collateral, repayment and arrears data to the positive credit register kept by the Tax Administration's Incomes Register Unit, at the latest on the calendar day after the credit agreement is concluded, with later changes reported by the second working day after they occur."
+      },
+      "originalLanguage": "en",
+      "refLabel": "16 §, 19 § ja 20 §",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-02-01",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Register with the Incomes Register Unit before reporting starts",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2022/739#chp_3__sec_18",
+     "sourceLabel": "Finlex, Laki positiivisesta luottotietorekisteristä (739/2022), 18 §",
+     "payload": {
+      "key": "obl-fi-pltr-registration",
+      "titles": {
+       "en": "Register with the Incomes Register Unit before reporting starts"
+      },
+      "summaries": {
+       "en": "A creditor with a reporting duty must register with the Incomes Register Unit as a reporting creditor at least one month before it starts reporting data to the positive credit register."
+      },
+      "originalLanguage": "en",
+      "refLabel": "18 §",
+      "dutyType": "governance",
+      "effectiveFrom": "2024-02-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Verotusmenettelylaki, 1558/1995",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/1995/1558",
+   "sourceLabel": "Finlex, Laki verotusmenettelystä (1558/1995), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-1995-1558",
+    "titles": {
+     "fi": "Laki verotusmenettelystä",
+     "en": "Act on Tax Procedure"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Verotusmenettelylaki",
+    "officialRef": "1558/1995",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:tax",
+    "inForceFrom": "1996-01-01",
+    "implementsNote": "DAC, Council Directive 2011/16/EU as amended, including Council Directive (EU) 2018/822 (DAC6)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report payments made to customers to the Tax Administration",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1995/1558#chp_3__sec_15",
+     "sourceLabel": "Finlex, Laki verotusmenettelystä (1558/1995), 15 §",
+     "payload": {
+      "key": "obl-fi-vml-third-party-reporting",
+      "titles": {
+       "en": "Report payments made to customers to the Tax Administration"
+      },
+      "summaries": {
+       "en": "Anyone who pays or mediates payments of monetary value, such as interest, dividends, fund returns, pensions and insurance compensation, must give the Tax Administration the information needed for taxation on the payments, corrections, recipients and grounds."
+      },
+      "originalLanguage": "en",
+      "refLabel": "15 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify US reportable accounts and report them under the FATCA agreement",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1995/1558#chp_3__sec_17a",
+     "sourceLabel": "Finlex, Laki verotusmenettelystä (1558/1995), 17 a §",
+     "payload": {
+      "key": "obl-fi-vml-fatca",
+      "titles": {
+       "en": "Identify US reportable accounts and report them under the FATCA agreement"
+      },
+      "summaries": {
+       "en": "A Finnish reporting financial institution under the FATCA agreement with the United States must give the Tax Administration the information needed to apply the agreement and follow the agreement's obligations and the due diligence procedure in its Annex I to identify US reportable accounts and accounts held by non-participating financial institutions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "17 a §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Report reportable cross-border arrangements as an intermediary",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1995/1558#chp_3__sec_17e",
+     "sourceLabel": "Finlex, Laki verotusmenettelystä (1558/1995), 17 e §",
+     "payload": {
+      "key": "obl-fi-vml-dac6",
+      "titles": {
+       "en": "Report reportable cross-border arrangements as an intermediary"
+      },
+      "summaries": {
+       "en": "A Finnish intermediary under the Act on reportable arrangements in the field of taxation must give the Tax Administration the information on reportable cross-border arrangements in its knowledge, possession or control, notify other intermediaries and relevant taxpayers as that Act requires, and pass on the arrangement's reference number."
+      },
+      "originalLanguage": "en",
+      "refLabel": "17 e §",
+      "dutyType": "reporting",
+      "effectiveFrom": "2020-01-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki raportoivien finanssilaitosten tiedonantovelvollisuudesta verotuksen alalla, 1042/2025",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1042",
+   "sourceLabel": "Finlex, Laki raportoivien finanssilaitosten tiedonantovelvollisuudesta verotuksen alalla (1042/2025), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2025-1042",
+    "titles": {
+     "fi": "Laki raportoivien finanssilaitosten tiedonantovelvollisuudesta verotuksen alalla",
+     "en": "Act on the Reporting Obligations of Reporting Financial Institutions in the Field of Taxation"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki raportoivien finanssilaitosten tiedonantovelvollisuudesta verotuksen alalla",
+    "officialRef": "1042/2025",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:tax",
+    "inForceFrom": "2026-01-01",
+    "implementsNote": "Council Directive (EU) 2023/2226 (DAC8) amending the DAC; implements the Common Reporting Standard under the multilateral competent authority agreement"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Apply the CRS due diligence procedures to identify reportable accounts",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1042#chp_2__sec_73",
+     "sourceLabel": "Finlex, Laki raportoivien finanssilaitosten tiedonantovelvollisuudesta verotuksen alalla (1042/2025), 2 luku (73–102 §)",
+     "payload": {
+      "key": "obl-fi-rfl-due-diligence",
+      "titles": {
+       "en": "Apply the CRS due diligence procedures to identify reportable accounts"
+      },
+      "summaries": {
+       "en": "A reporting financial institution must review its pre-existing and new individual and entity accounts under the due diligence procedures of chapter 2, including residence tests, electronic and paper record searches, relationship manager enquiries and change-of-circumstances rules, to identify reportable accounts and controlling persons."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 luku (73–102 §)",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Obtain and validate a self-certification when a new individual account is opened",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1042#chp_2__sec_86",
+     "sourceLabel": "Finlex, Laki raportoivien finanssilaitosten tiedonantovelvollisuudesta verotuksen alalla (1042/2025), 86 §",
+     "payload": {
+      "key": "obl-fi-rfl-self-certification",
+      "titles": {
+       "en": "Obtain and validate a self-certification when a new individual account is opened"
+      },
+      "summaries": {
+       "en": "When a new individual account is opened, the reporting financial institution must obtain a self-certification that allows it to determine the account holder's tax residences and confirm its reasonableness against the information collected at account opening, including AML/KYC documentation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "86 §",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Record and keep due diligence evidence for at least six years",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1042#chp_2__sec_103",
+     "sourceLabel": "Finlex, Laki raportoivien finanssilaitosten tiedonantovelvollisuudesta verotuksen alalla (1042/2025), 103 §",
+     "payload": {
+      "key": "obl-fi-rfl-records",
+      "titles": {
+       "en": "Record and keep due diligence evidence for at least six years"
+      },
+      "summaries": {
+       "en": "A reporting financial institution must record the steps taken and evidence relied on to meet its due diligence and reporting obligations, and keep the records available for at least six years after the end of the calendar year they concern, including after an account is closed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "103 §",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Report reportable accounts to the Tax Administration by the end of January",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1042#chp_3__sec_104",
+     "sourceLabel": "Finlex, Laki raportoivien finanssilaitosten tiedonantovelvollisuudesta verotuksen alalla (1042/2025), 104 §",
+     "payload": {
+      "key": "obl-fi-rfl-annual-reporting",
+      "titles": {
+       "en": "Report reportable accounts to the Tax Administration by the end of January"
+      },
+      "summaries": {
+       "en": "Each calendar year a reporting financial institution must report the prescribed information on reportable accounts, or that it had none, to the Tax Administration by the end of the following January, using the Tax Administration's electronic filing channel; the Act applies first to calendar year 2026."
+      },
+      "originalLanguage": "en",
+      "refLabel": "104 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki korkotulon lähdeverosta, 1341/1990",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/1990/1341",
+   "sourceLabel": "Finlex, Laki korkotulon lähdeverosta (1341/1990), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-1990-1341",
+    "titles": {
+     "fi": "Laki korkotulon lähdeverosta",
+     "en": "Act on the Withholding Tax on Interest Income"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki korkotulon lähdeverosta",
+    "officialRef": "1341/1990",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:tax",
+    "inForceFrom": "1991-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Withhold the 30 percent source tax on deposit interest",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1990/1341#sec_5",
+     "sourceLabel": "Finlex, Laki korkotulon lähdeverosta (1341/1990), 5 § ja 6 §",
+     "payload": {
+      "key": "obl-fi-klvl-withholding",
+      "titles": {
+       "en": "Withhold the 30 percent source tax on deposit interest"
+      },
+      "summaries": {
+       "en": "A deposit bank, a Finnish branch of a foreign credit institution or another payer named in the Act must withhold the interest income source tax of 30 percent from each interest payment on a deposit or bond covered by the Act when it pays or credits the interest to the taxpayer, and is liable for the tax alongside the taxpayer."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 § ja 6 §",
+      "dutyType": "technical"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Kyberturvallisuuslaki, 124/2025",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2025/124",
+   "sourceLabel": "Finlex, Kyberturvallisuuslaki (124/2025), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2025-124",
+    "titles": {
+     "fi": "Kyberturvallisuuslaki",
+     "en": "Cybersecurity Act"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Kyberturvallisuuslaki",
+    "officialRef": "124/2025",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2025-04-08",
+    "implementsNote": "NIS2, Directive (EU) 2022/2555"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Identify, assess and manage cybersecurity risks to network and information systems",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/124#chp_2__sec_7",
+     "sourceLabel": "Finlex, Kyberturvallisuuslaki (124/2025), 7–9 §",
+     "payload": {
+      "key": "obl-fi-kybl-risk-management",
+      "titles": {
+       "en": "Identify, assess and manage cybersecurity risks to network and information systems"
+      },
+      "summaries": {
+       "en": "An entity within the Act's scope must identify, assess and manage the risks to the security of the network and information systems it uses, with up-to-date, proportionate and adequate measures that prevent or minimise the impact of incidents. Under 5 §, where an EU regulation imposes at least equivalent cybersecurity risk-management or incident-reporting duties, those apply instead."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7–9 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Make management responsible for cybersecurity risk management",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/124#chp_2__sec_10",
+     "sourceLabel": "Finlex, Kyberturvallisuuslaki (124/2025), 10 §",
+     "payload": {
+      "key": "obl-fi-kybl-management-responsibility",
+      "titles": {
+       "en": "Make management responsible for cybersecurity risk management"
+      },
+      "summaries": {
+       "en": "The entity's board, supervisory board and chief executive are responsible for organising and overseeing cybersecurity risk management, approve the risk management operating model and oversee its implementation, and must have sufficient knowledge of cybersecurity risk management."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Report significant incidents to the supervisor within 24 hours",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/124#chp_2__sec_11",
+     "sourceLabel": "Finlex, Kyberturvallisuuslaki (124/2025), 11–13 §",
+     "payload": {
+      "key": "obl-fi-kybl-incident-reporting",
+      "titles": {
+       "en": "Report significant incidents to the supervisor within 24 hours"
+      },
+      "summaries": {
+       "en": "The entity must notify its supervisory authority without delay of any significant incident, with an early warning within 24 hours of becoming aware of it and a follow-up notification within 72 hours, an interim report on request or after a month for a prolonged incident, and a final report within a month of the follow-up notification."
+      },
+      "originalLanguage": "en",
+      "refLabel": "11–13 §",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki kryptovarapalvelun tarjoajista ja kryptovaramarkkinoista, 402/2024",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2024/402",
+   "sourceLabel": "Finlex, Laki kryptovarapalvelun tarjoajista ja kryptovaramarkkinoista (402/2024), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2024-402",
+    "titles": {
+     "fi": "Laki kryptovarapalvelun tarjoajista ja kryptovaramarkkinoista",
+     "en": "Act on Crypto-Asset Service Providers and Crypto-Asset Markets"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki kryptovarapalvelun tarjoajista ja kryptovaramarkkinoista",
+    "officialRef": "402/2024",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:securities",
+    "inForceFrom": "2024-06-30"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep crypto-asset service customers' information confidential",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2024/402#chp_3__sec_6",
+     "sourceLabel": "Finlex, Laki kryptovarapalvelun tarjoajista ja kryptovaramarkkinoista (402/2024), 6 §",
+     "payload": {
+      "key": "obl-fi-kryptol-secrecy",
+      "titles": {
+       "en": "Keep crypto-asset service customers' information confidential"
+      },
+      "summaries": {
+       "en": "Anyone who, as an officer or employee of a crypto-asset service provider, its group company or a firm acting for it, learns information about a customer's financial position or personal circumstances or a business secret must keep it confidential unless the protected person consents or the law permits disclosure."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Explain to FIN-FSA on request why disclosure of crypto inside information was delayed",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2024/402#chp_3__sec_9",
+     "sourceLabel": "Finlex, Laki kryptovarapalvelun tarjoajista ja kryptovaramarkkinoista (402/2024), 9 §",
+     "payload": {
+      "key": "obl-fi-kryptol-delay-explanation",
+      "titles": {
+       "en": "Explain to FIN-FSA on request why disclosure of crypto inside information was delayed"
+      },
+      "summaries": {
+       "en": "An issuer, offeror or person seeking admission to trading must, when FIN-FSA asks, provide its explanation of how the conditions for delaying the disclosure of inside information under Article 88(3) MiCA were met."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 §",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Laki varojen jäädyttämisestä terrorismin torjumiseksi, 325/2013",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2013/325",
+   "sourceLabel": "Finlex, Laki varojen jäädyttämisestä terrorismin torjumiseksi (325/2013), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2013-325",
+    "titles": {
+     "fi": "Laki varojen jäädyttämisestä terrorismin torjumiseksi",
+     "en": "Act on the Freezing of Funds with a View to Combating Terrorism"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Laki varojen jäädyttämisestä terrorismin torjumiseksi",
+    "officialRef": "325/2013",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:aml",
+    "inForceFrom": "2013-06-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Freeze funds of persons subject to a national freezing decision",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2013/325#sec_3",
+     "sourceLabel": "Finlex, Laki varojen jäädyttämisestä terrorismin torjumiseksi (325/2013), 3 § ja 6 §",
+     "payload": {
+      "key": "obl-fi-jaadytys-freeze",
+      "titles": {
+       "en": "Freeze funds of persons subject to a national freezing decision"
+      },
+      "summaries": {
+       "en": "Funds belonging to persons and entities subject to a freezing decision under the Act must be frozen, and frozen funds may not be moved, transferred, converted, used or dealt with in any way that would change their amount, location, ownership, possession, nature or purpose."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 § ja 6 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Make no funds available to persons whose funds are frozen",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2013/325#sec_7",
+     "sourceLabel": "Finlex, Laki varojen jäädyttämisestä terrorismin torjumiseksi (325/2013), 7 §",
+     "payload": {
+      "key": "obl-fi-jaadytys-no-funds",
+      "titles": {
+       "en": "Make no funds available to persons whose funds are frozen"
+      },
+      "summaries": {
+       "en": "No one may directly or indirectly make funds available to a person or entity whose funds are frozen under the Act, unless an authority, credit institution or financial institution arranges it so that the funds are frozen; funds intended only for the personal use of a natural person and their family are exempt."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 §",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Rahanpesun ja terrorismin rahoittamisen estäminen, Määräykset ja ohjeet 2/2023",
+   "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/valvottavan-toiminnan-jarjestaminen/02_2023/",
+   "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 2/2023: Rahanpesun ja terrorismin rahoittamisen estäminen",
+   "fieldSources": {
+    "inForceFrom": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/02_2023/maaraykset-ja-ohjeet-2_2023_M3/"
+   },
+   "payload": {
+    "key": "fi-fiva-aml",
+    "titles": {
+     "fi": "Rahanpesun ja terrorismin rahoittamisen estäminen",
+     "en": "Prevention of money laundering and terrorist financing"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Rahanpesun ja terrorismin rahoittamisen estäminen",
+    "officialRef": "Määräykset ja ohjeet 2/2023",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "finanssivalvonta",
+    "regime": "regime:aml",
+    "inForceFrom": "2023-06-26"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Document a reasoned AML risk assessment and review it every year",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/02_2023/maaraykset-ja-ohjeet-2_2023_M3/",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 2/2023, luku 4.2 kohdat 7–15 ja luku 4.3 kohdat 23–27 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-aml-risk-assessment",
+      "titles": {
+       "en": "Document a reasoned AML risk assessment and review it every year"
+      },
+      "summaries": {
+       "en": "A supervised entity's risk assessment must set out its reasoned view of how its products and services could be used for money laundering and terrorist financing and identify and weigh the risk factors of its customers, countries, products, services, transactions, channels and technologies. It must check the assessment is up to date every year, document the check and update the assessment whenever the risk factors change, for example with new products, customer groups, regions or channels."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.2 kohdat 7–15 ja luku 4.3 kohdat 23–27",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Check that the person matches the photo on the identity document",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/02_2023/maaraykset-ja-ohjeet-2_2023_M3/",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 2/2023, luku 6.3.2 kohta 37 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-aml-id-documents",
+      "titles": {
+       "en": "Check that the person matches the photo on the identity document"
+      },
+      "summaries": {
+       "en": "When verifying identity from an identity document, the supervised entity must make sure that the person resembles the person in the document's photograph in appearance, age and the other data in the document."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 6.3.2 kohta 37",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Resource ongoing monitoring and run automated transaction monitoring",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/02_2023/maaraykset-ja-ohjeet-2_2023_M3/",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 2/2023, luku 7.1 kohdat 17–21 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-aml-transaction-monitoring",
+      "titles": {
+       "en": "Resource ongoing monitoring and run automated transaction monitoring"
+      },
+      "summaries": {
+       "en": "The supervised entity must allocate sufficient financial, technical and staff resources to ongoing monitoring so it can detect and react without undue delay to unusual transactions, and credit institutions and payment institutions must use IT-based transaction monitoring whose scenarios are based on the entity's risk assessment."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 7.1 kohdat 17–21",
+      "dutyType": "technical",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give customers reasonable time and channels to supply due diligence information",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/02_2023/maaraykset-ja-ohjeet-2_2023_M3/",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 2/2023, luku 8.2 kohdat 7–8 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-aml-customer-time",
+      "titles": {
+       "en": "Give customers reasonable time and channels to supply due diligence information"
+      },
+      "summaries": {
+       "en": "Before restricting or ending a customer relationship because due diligence cannot be completed, the supervised entity must give the customer enough time to provide the information and allow it to be provided through different means, bearing in mind that not all customers can use digital channels."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 8.2 kohdat 7–8",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Submit the annual AML risk data to FIN-FSA by 28 February",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/02_2023/maaraykset-ja-ohjeet-2_2023_M3/",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 2/2023, luku 11 kohdat 5–6 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-aml-annual-reporting",
+      "titles": {
+       "en": "Submit the annual AML risk data to FIN-FSA by 28 February"
+      },
+      "summaries": {
+       "en": "The supervised entity must submit to FIN-FSA the information on its money laundering and terrorist financing risks and risk management under the current RA data collection framework every year by 28 February."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 11 kohdat 5–6",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Pakotesääntelyn ja kansallisten jäädyttämispäätösten noudattamiseen liittyvä asiakkaan tunteminen, Määräykset ja ohjeet 4/2023",
+   "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/valvottavan-toiminnan-jarjestaminen/04_2023/",
+   "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 4/2023: Pakotesääntelyn ja kansallisten jäädyttämispäätösten noudattamiseen liittyvä asiakkaan tunteminen",
+   "fieldSources": {
+    "inForceFrom": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/04_2023/04_2023.m3.pdf"
+   },
+   "payload": {
+    "key": "fi-fiva-sanctions-cdd",
+    "titles": {
+     "fi": "Pakotesääntelyn ja kansallisten jäädyttämispäätösten noudattamiseen liittyvä asiakkaan tunteminen",
+     "en": "Customer due diligence relating to compliance with sanctions regulation and national freezing decisions"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Pakotesääntelyn ja kansallisten jäädyttämispäätösten noudattamiseen liittyvä asiakkaan tunteminen",
+    "officialRef": "Määräykset ja ohjeet 4/2023",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "finanssivalvonta",
+    "regime": "regime:aml",
+    "inForceFrom": "2024-03-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Assess the firm's exposure to sanctions breaches and evasion every year",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/04_2023/04_2023.m3.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 4/2023, luku 5 kohta 6 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-sanctions-risk-assessment",
+      "titles": {
+       "en": "Assess the firm's exposure to sanctions breaches and evasion every year"
+      },
+      "summaries": {
+       "en": "The supervised entity must prepare a risk assessment identifying the threats and vulnerabilities relating to breaches of sanctions and national freezing decisions and to sanctions evasion, and the likelihood of their occurring. It must check the assessment at least yearly, update it when needed and document the checks and updates with reasons."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 5 kohta 6",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Screen customers and beneficial owners against sanctions lists and freeze their funds",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/04_2023/04_2023.m3.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 4/2023, luku 7.2 kohdat 16–22 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-sanctions-customer-screening",
+      "titles": {
+       "en": "Screen customers and beneficial owners against sanctions lists and freeze their funds"
+      },
+      "summaries": {
+       "en": "At onboarding the supervised entity must check the current EU and national sanctions lists to establish whether the customer or its beneficial owners are designated or more than 50 percent owned or controlled by designated parties, and freeze funds where required. It must re-screen the whole customer base without delay whenever the lists are updated and when a customer's name changes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 7.2 kohdat 16–22",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Screen payments against sanctions lists before executing them",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/04_2023/04_2023.m3.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 4/2023, luku 7.3 kohdat 32–35 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-sanctions-payment-screening",
+      "titles": {
+       "en": "Screen payments against sanctions lists before executing them"
+      },
+      "summaries": {
+       "en": "Wherever technically possible, the supervised entity must check the current sanctions and national freezing lists before executing, transmitting or receiving payments, establish whether a designated party or an entity it owns or controls is involved, and freeze the funds and prevent funds being made available to them; instant credit transfers under the Instant Payments Regulation are excluded."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 7.3 kohdat 32–35",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Keep sanctions screening systems fit for purpose and test them regularly",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/04_2023/04_2023.m3.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 4/2023, luku 7.6 kohdat 61–64 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-sanctions-systems",
+      "titles": {
+       "en": "Keep sanctions screening systems fit for purpose and test them regularly"
+      },
+      "summaries": {
+       "en": "The supervised entity must ensure its sanctions monitoring systems are fit for purpose and proportionate to its size and business, test them regularly and always after system changes, correct deficiencies without delay and develop the systems as needed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 7.6 kohdat 61–64",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Submit sanctions control data to FIN-FSA by 28 February each year",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2023/04_2023/04_2023.m3.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 4/2023, luku 11 kohdat 4–5 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-sanctions-annual-reporting",
+      "titles": {
+       "en": "Submit sanctions control data to FIN-FSA by 28 February each year"
+      },
+      "summaries": {
+       "en": "The supervised entity must submit to FIN-FSA, by 28 February each year, the information on its internal control and risk management means relating to sanctions under the current RA data collection framework."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 11 kohdat 4–5",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Operatiivisen riskin hallinta rahoitussektorin valvottavissa, Määräykset ja ohjeet 8/2014",
+   "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/riskienhallinta/08_2014/",
+   "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 8/2014: Operatiivisen riskin hallinta rahoitussektorin valvottavissa",
+   "fieldSources": {
+    "inForceFrom": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2014/08_2014/08_2014.m7.pdf"
+   },
+   "payload": {
+    "key": "fi-fiva-operational-risk",
+    "titles": {
+     "fi": "Operatiivisen riskin hallinta rahoitussektorin valvottavissa",
+     "en": "Management of operational risk in supervised entities of the financial sector"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Operatiivisen riskin hallinta rahoitussektorin valvottavissa",
+    "officialRef": "Määräykset ja ohjeet 8/2014",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "finanssivalvonta",
+    "regime": "regime:banking",
+    "inForceFrom": "2015-02-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Have the board approve operational risk management policies and procedures",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2014/08_2014/08_2014.m7.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 8/2014, luku 4.3 kohdat 6–7 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-oprisk-policy",
+      "titles": {
+       "en": "Have the board approve operational risk management policies and procedures"
+      },
+      "summaries": {
+       "en": "The supervised entity's board must approve operational risk management policies and procedures covering the methods and processes for identifying, assessing, monitoring and limiting the risk, and they must be reviewed periodically to reflect changes in the operating environment and the business."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.3 kohdat 6–7",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Identify operational risks and assess new products before launch",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2014/08_2014/08_2014.m7.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 8/2014, luku 4.4 kohdat 11–15 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-oprisk-identification",
+      "titles": {
+       "en": "Identify operational risks and assess new products before launch"
+      },
+      "summaries": {
+       "en": "The supervised entity must identify the operational risks in all its significant products, services, functions, processes and systems that could materially affect its objectives, and must assess the risks of a new product, service or service model before introducing it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.4 kohdat 11–15",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Maintain tested business continuity plans for key business functions",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2014/08_2014/08_2014.m7.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 8/2014, luku 7.2 kohdat 5–10 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-oprisk-continuity",
+      "titles": {
+       "en": "Maintain tested business continuity plans for key business functions"
+      },
+      "summaries": {
+       "en": "The board is responsible for ensuring that the supervised entity's key business functions have up-to-date and adequate continuity plans, and management must define responsibilities and a clear model for preparing, maintaining and testing the plans and for identifying and prioritising the most important business processes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 7.2 kohdat 5–10",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Report the largest operational risk losses to FIN-FSA by 28 February",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2014/08_2014/08_2014.m7.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 8/2014, luku 8.2.2 kohdat 8–12 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-oprisk-loss-report",
+      "titles": {
+       "en": "Report the largest operational risk losses to FIN-FSA by 28 February"
+      },
+      "summaries": {
+       "en": "The supervised entity must send FIN-FSA by 28 February an annual report on the operational risk losses detected in the previous year, covering the five largest loss events of the calendar year in euro terms."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 8.2.2 kohdat 8–12",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Luottoriskien hallinta ja luottokelpoisuuden arviointi rahoitussektorin valvottavissa, Määräykset ja ohjeet 4/2018",
+   "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/riskienhallinta/04_2018/",
+   "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 4/2018: Luottoriskien hallinta ja luottokelpoisuuden arviointi rahoitussektorin valvottavissa",
+   "fieldSources": {
+    "inForceFrom": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2018/04_2018/2018_04.m3.pdf"
+   },
+   "payload": {
+    "key": "fi-fiva-credit-risk",
+    "titles": {
+     "fi": "Luottoriskien hallinta ja luottokelpoisuuden arviointi rahoitussektorin valvottavissa",
+     "en": "Credit risk management and creditworthiness assessment in supervised entities of the financial sector"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Luottoriskien hallinta ja luottokelpoisuuden arviointi rahoitussektorin valvottavissa",
+    "officialRef": "Määräykset ja ohjeet 4/2018",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "finanssivalvonta",
+    "regime": "regime:banking",
+    "inForceFrom": "2018-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Base every credit decision on a documented credit analysis",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2018/04_2018/2018_04.m3.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 4/2018, luku 4.4.1 kohdat 20–29 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-credit-analysis",
+      "titles": {
+       "en": "Base every credit decision on a documented credit analysis"
+      },
+      "summaries": {
+       "en": "A credit decision must be based on a credit analysis giving a sufficiently comprehensive view of the applicant, its creditworthiness and the financed project, using the listed information such as financial statements or income and expense data and credit register data whose accuracy is verified. The decision must consider at least repayment history and capacity, purpose, financing plan, collateral and the effect of changing economic conditions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.4.1 kohdat 20–29",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Lend primarily on repayment capacity, not on collateral",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2018/04_2018/2018_04.m3.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 4/2018, luku 4.4.2 kohdat 39–44 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-credit-collateral",
+      "titles": {
+       "en": "Lend primarily on repayment capacity, not on collateral"
+      },
+      "summaries": {
+       "en": "A credit decision must be based primarily on the customer's creditworthiness; credit should generally not be granted if the customer can repay only by realising collateral, and in exceptional structures relying on collateral the entity must monitor the collateral's value and ensure repayment is secured."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.4.2 kohdat 39–44",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Decide credits under a written lending policy and a documented process",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2018/04_2018/2018_04.m3.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 4/2018, luku 4.4.3 kohdat 47–64 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-credit-process",
+      "titles": {
+       "en": "Decide credits under a written lending policy and a documented process"
+      },
+      "summaries": {
+       "en": "Credit decisions must follow written lending instructions approved by executive management, and the handling of each credit from application to decision must be documented and approved at the correct decision-making level."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.4.3 kohdat 47–64",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Diversify lending and set concentration limits",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2018/04_2018/2018_04.m3.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 4/2018, luku 4.6 kohdat 77–79 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-credit-limits",
+      "titles": {
+       "en": "Diversify lending and set concentration limits"
+      },
+      "summaries": {
+       "en": "Senior management must ensure lending and other credit-risk activity is sufficiently diversified, define the significant exposures and exposure groups that need limits, and set limits at least by product, counterparty, industry and country or country group, monitoring their use."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.6 kohdat 77–79",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Ulkoistaminen rahoitussektoriin kuuluvissa valvottavissa, Määräykset ja ohjeet 1/2012",
+   "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/valvottavan-toiminnan-jarjestaminen/01_2012/",
+   "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 1/2012: Ulkoistaminen rahoitussektoriin kuuluvissa valvottavissa",
+   "fieldSources": {
+    "inForceFrom": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2012/01_2012/01_2012.m6.pdf"
+   },
+   "payload": {
+    "key": "fi-fiva-outsourcing",
+    "titles": {
+     "fi": "Ulkoistaminen rahoitussektoriin kuuluvissa valvottavissa",
+     "en": "Outsourcing in supervised entities of the financial sector"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Ulkoistaminen rahoitussektoriin kuuluvissa valvottavissa",
+    "officialRef": "Määräykset ja ohjeet 1/2012",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "finanssivalvonta",
+    "regime": "regime:banking",
+    "inForceFrom": "2012-04-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Include the prescribed details when notifying FIN-FSA of outsourcing a significant function",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2012/01_2012/01_2012.m6.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 1/2012, luku 8.3.1 kohdat 9–10 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-outsourcing-notification",
+      "titles": {
+       "en": "Include the prescribed details when notifying FIN-FSA of outsourcing a significant function"
+      },
+      "summaries": {
+       "en": "A notification to FIN-FSA of outsourcing a significant function must include the service provider's identity and address, a description of the nature and scope of the outsourced activity, an overall assessment of its impact, the provider's financial capacity, how internal control, risk management, continuity and information security are ensured, and the other items listed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 8.3.1 kohdat 9–10",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Check an outsourcing provider's resources, competence and controls before relying on it",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2012/01_2012/01_2012.m6.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 1/2012, luku 4.4 kohdat 21–22 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-outsourcing-payment-due-diligence",
+      "titles": {
+       "en": "Check an outsourcing provider's resources, competence and controls before relying on it"
+      },
+      "summaries": {
+       "en": "A payment institution must ensure that the provider of an outsourced activity has adequate resources, skills, financial capacity, expertise and any licences required, and has organised adequate internal control and risk management, and must have procedures to assess the provider's performance."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.4 kohdat 21–22",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:payment_institution"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Pankkipalveluissa noudatettavat menettelytavat, Määräykset ja ohjeet 3/2024",
+   "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/menettelytavat/03_2024/",
+   "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 3/2024: Pankkipalveluissa noudatettavat menettelytavat",
+   "fieldSources": {
+    "inForceFrom": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2024/03_2024/2024-_03.m1.pdf"
+   },
+   "payload": {
+    "key": "fi-fiva-banking-conduct",
+    "titles": {
+     "fi": "Pankkipalveluissa noudatettavat menettelytavat",
+     "en": "Conduct of business in banking services"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Pankkipalveluissa noudatettavat menettelytavat",
+    "officialRef": "Määräykset ja ohjeet 3/2024",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "finanssivalvonta",
+    "regime": "regime:banking",
+    "inForceFrom": "2024-11-07"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Use FIN-FSA's representative example for the APR in housing credit advertising",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2024/03_2024/2024-_03.m1.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 3/2024, luku 5 kohdat 7–11 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-mortgage-ad-example",
+      "titles": {
+       "en": "Use FIN-FSA's representative example for the APR in housing credit advertising"
+      },
+      "summaries": {
+       "en": "When housing credit advertising must state the annual percentage rate, it must be given through a representative example calculated on FIN-FSA's assumptions, including a 100 000 euro credit repaid over 20 years in equal monthly instalments, the most common interest rate fixation and the calculated margin from Bank of Finland statistics, unless the creditor's own loans differ significantly. The assumptions used must be stated clearly next to the calculation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 5 kohdat 7–11",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Maksukyvyttömyysriskien hallinta kuluttajaluotonannossa, Määräykset ja ohjeet 1/2025",
+   "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/menettelytavat/maksukyvyttomyysriskien-hallinta-kuluttajaluotonannossa/",
+   "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 1/2025: Maksukyvyttömyysriskien hallinta kuluttajaluotonannossa",
+   "fieldSources": {
+    "inForceFrom": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2025/01_2025/01_2025.m1"
+   },
+   "payload": {
+    "key": "fi-fiva-consumer-credit-risk",
+    "titles": {
+     "fi": "Maksukyvyttömyysriskien hallinta kuluttajaluotonannossa",
+     "en": "Management of insolvency risks in consumer lending"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Maksukyvyttömyysriskien hallinta kuluttajaluotonannossa",
+    "officialRef": "Määräykset ja ohjeet 1/2025",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "finanssivalvonta",
+    "regime": "regime:banking",
+    "inForceFrom": "2025-06-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Measure the risk rating model's reliability with a Gini coefficient",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2025/01_2025/01_2025.m1",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 1/2025, luku 4.2 kohdat 3–4 ja 8 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-ccr-gini",
+      "titles": {
+       "en": "Measure the risk rating model's reliability with a Gini coefficient"
+      },
+      "summaries": {
+       "en": "The supervised entity must measure how reliably its risk rating model assesses insolvency risk at the time of lending with a Gini coefficient, calculated with FIN-FSA's method as at 31 December over the loans granted in the preceding one-to-two-year period."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.2 kohdat 3–4 ja 8",
+      "dutyType": "governance",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Track the share of bad loans in the riskiest five percent of new lending",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2025/01_2025/01_2025.m1",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 1/2025, luku 4.4 kohdat 16–17 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-ccr-riskiest-five-percent",
+      "titles": {
+       "en": "Track the share of bad loans in the riskiest five percent of new lending"
+      },
+      "summaries": {
+       "en": "The supervised entity must use as its measure of reasonable insolvency risk the share of bad loans among all loans in the highest-risk five percent class of its risk rating system, calculated with FIN-FSA's method."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.4 kohdat 16–17",
+      "dutyType": "governance",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report unsecured consumer credit risk data to FIN-FSA on the MK form",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2025/01_2025/01_2025.m1",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 1/2025, luku 4.5 kohdat 26–38 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-ccr-mk-reporting",
+      "titles": {
+       "en": "Report unsecured consumer credit risk data to FIN-FSA on the MK form"
+      },
+      "summaries": {
+       "en": "The supervised entity, at consolidated level where it is a group parent, must report its unsecured consumer credits under chapter 7 of the Consumer Protection Act to FIN-FSA yearly on the MK form, split into twenty equal risk classes with the prescribed data."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.5 kohdat 26–38",
+      "dutyType": "reporting",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sijoituspalvelujen toiminnan järjestäminen ja menettelytavat, Määräykset ja ohjeet 7/2018",
+   "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/valvottavan-toiminnan-jarjestaminen/07_2018/",
+   "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 7/2018: Sijoituspalvelujen toiminnan järjestäminen ja menettelytavat",
+   "fieldSources": {
+    "inForceFrom": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2018/07_2018/2018_07.m6-fi.pdf"
+   },
+   "payload": {
+    "key": "fi-fiva-investment-services",
+    "titles": {
+     "fi": "Sijoituspalvelujen toiminnan järjestäminen ja menettelytavat",
+     "en": "Organisation and conduct of business in investment services"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Sijoituspalvelujen toiminnan järjestäminen ja menettelytavat",
+    "officialRef": "Määräykset ja ohjeet 7/2018",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "finanssivalvonta",
+    "regime": "regime:securities",
+    "inForceFrom": "2018-09-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Operate product governance as a distributor of financial instruments",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2018/07_2018/2018_07.m6-fi.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 7/2018, luku 4.3 kohdat 21–32 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-invserv-distributor-pog",
+      "titles": {
+       "en": "Operate product governance as a distributor of financial instruments"
+      },
+      "summaries": {
+       "en": "A firm offering or recommending financial instruments must have product governance arrangements that ensure the instruments and services are compatible with the needs, characteristics and objectives, including sustainability objectives, of the identified target market and that the distribution strategy fits it. It must obtain sufficient information from manufacturers and define a target market even where the manufacturer has not."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.3 kohdat 21–32",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep records and reconciliations that protect client assets",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2018/07_2018/2018_07.m6-fi.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 7/2018, luku 5.2 kohdat 3–7 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-invserv-safeguarding",
+      "titles": {
+       "en": "Keep records and reconciliations that protect client assets"
+      },
+      "summaries": {
+       "en": "A firm holding client assets must keep records and accounts that let it distinguish each client's assets from other clients' and its own at any time, keep them accurate, reconcile them regularly with third-party custodians' records, ensure client instruments are held in separate accounts and client funds in segregated accounts, and minimise the risk of loss."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 5.2 kohdat 3–7",
+      "dutyType": "record_keeping",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Accept inducements only against an additional or higher-quality service",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2018/07_2018/2018_07.m6-fi.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 7/2018, luku 6.3 kohdat 10–16 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-invserv-inducements",
+      "titles": {
+       "en": "Accept inducements only against an additional or higher-quality service"
+      },
+      "summaries": {
+       "en": "An inducement received in connection with services other than portfolio management or independent advice is justified only if it is matched by an additional or higher-level service to the client, such as non-independent advice on a broad range of instruments with an annual suitability review, or access to a wide range of instruments at competitive prices with value-adding tools or regular performance and cost information."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 6.3 kohdat 10–16",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Ensure staff giving investment advice have the required knowledge and competence",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2018/07_2018/2018_07.m6-fi.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 7/2018, luku 7.2.2 kohta 7 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-invserv-adviser-competence",
+      "titles": {
+       "en": "Ensure staff giving investment advice have the required knowledge and competence"
+      },
+      "summaries": {
+       "en": "The firm must ensure that natural persons giving investment advice on its behalf have sufficient knowledge and competence, including understanding the main features, risks and costs of the instruments offered or recommended and the general tax consequences for the client."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 7.2.2 kohta 7",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:advice"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Luottolaitosten riskitiedonkeruu, Määräykset ja ohjeet 1/2014",
+   "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/riskienhallinta/01_2014/",
+   "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 1/2014: Luottolaitosten riskitiedonkeruu",
+   "fieldSources": {
+    "inForceFrom": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2014/01_2014/01_2014.m10.pdf"
+   },
+   "payload": {
+    "key": "fi-fiva-risk-data-collection",
+    "titles": {
+     "fi": "Luottolaitosten riskitiedonkeruu",
+     "en": "Risk data collection from credit institutions"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Luottolaitosten riskitiedonkeruu",
+    "officialRef": "Määräykset ja ohjeet 1/2014",
+    "level": "authority_regulation",
+    "jurisdiction": "fi",
+    "authority": "finanssivalvonta",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-03-31"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report loan-to-collateral data on new housing loans to FIN-FSA quarterly",
+     "source": "https://www.finanssivalvonta.fi/globalassets/fi/saantely/maarayskokoelma/2014/01_2014/01_2014.m10.pdf",
+     "sourceLabel": "Finanssivalvonta, Määräykset ja ohjeet 1/2014, luku 4.2 kohdat 4–15 (binding regulation)",
+     "payload": {
+      "key": "obl-fi-fiva-ltc-reporting",
+      "titles": {
+       "en": "Report loan-to-collateral data on new housing loans to FIN-FSA quarterly"
+      },
+      "summaries": {
+       "en": "A credit institution must report to FIN-FSA on the LTC form the loan-to-collateral data of consumer credits for buying or renovating homes in Finland granted and not yet reported, calculated at the time of granting under FIN-FSA regulation 3/2015, for the quarter-ends 31 March, 30 June, 30 September and 31 December and within 30 banking days of each."
+      },
+      "originalLanguage": "en",
+      "refLabel": "luku 4.2 kohdat 4–15",
+      "dutyType": "reporting",
+      "effectiveFrom": "2022-01-01",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

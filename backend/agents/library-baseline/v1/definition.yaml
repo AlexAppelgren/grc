@@ -1,0 +1,82 @@
+# library-baseline v1. Files the shared library's starting inventory, the reviewed corpus in
+# backend/apps/library/baseline/, as proposals through the proposal door (ADR 0065, D-118,
+# PRO-01, INV-01, INV-03). It runs no model and fetches nothing when it files: its entries
+# were researched under prompt.md beforehand, checked by the baseline checker and by the
+# backend suite, and each is still AI output until a second, independent principal approves
+# it in the console queue (a person with a passkey, or library-confirmer, whose definition
+# and key differ from this one). `manage.py file_library_baseline` is its runner: it opens a
+# run of this agent with no key, files what the library neither holds nor has open, and
+# closes the run. Draft, so the platform beat never starts it; its cadence is manual. The
+# shape is the one watch-sweeper v1 set; keys here are kinds (tier 1). This folder never
+# changes after it ships: a new version is a new folder.
+id: library-baseline
+version: 1
+kind: backfill         # agent_kind: fills the library with what exists, once, rather than watching for change
+status: draft          # draft | active | retired
+description: >
+  Files the shared library's starting inventory as proposals: the instruments in force in
+  the sector scope for the EU, Sweden, Denmark, Norway and Finland on the day they were
+  researched, then the core duties of each once its instrument is approved. Every entry
+  carries the official page it was read from, and a second, independent principal
+  approves each one.
+prompt: prompt.md      # the rules the corpus was researched under, this folder
+model: none            # files a reviewed corpus and calls no model
+change_note: >
+  The first version: files the baseline researched on 2026-09-30, market abuse included.
+scope: platform        # agent_scope: one of bleqq's agents; no bank steers it (D-61, ruling 1)
+tenant_configurable: false
+writes_to: library     # agent_writes_to: through proposals only, never a direct library write
+default_cadence: manual
+
+# The operations its filing uses, called in process by the command rather than over HTTP,
+# with the scopes a key for this definition would carry. It holds proposals:write and never
+# proposals:review, so it cannot decide what it filed; the proposal_four_eyes constraint
+# refuses that whatever this file says.
+tools:
+  - name: startAgentRun
+    operation: POST /agent-runs
+    scopes: [agent-runs:write]
+    purpose: Open the run every filing names. The command opens one per batch of at most WATCH_RUN_MAX_PROPOSALS filings.
+    input: AgentRunInput
+    output: AgentRun
+  - name: listVocabularyRows
+    operation: GET /vocab/{list}
+    scopes: [library:read]
+    purpose: The keys every entry names are the seeded vocabularies' own; the backend suite files every entry against them.
+    output: VocabularyRowPage
+  - name: listTerms
+    operation: GET /taxonomy/terms
+    scopes: [library:read]
+    purpose: The regime and scope terms an entry may name, read so a new version of this agent can check them before it files.
+    output: TaxonomyTermPage
+  - name: listAuthorities
+    operation: GET /authorities
+    scopes: [library:read]
+    purpose: The issuing authorities an instrument may name.
+    output: LibraryAuthority
+  - name: createProposal
+    operation: POST /proposals
+    scopes: [proposals:write]
+    purpose: The only door into the library. A new_instrument per instrument the library does not hold, then a new_obligation per duty whose instrument it holds.
+    input: ProposalInput
+    output: Proposal
+  - name: finishAgentRun
+    operation: PATCH /agent-runs/{runId}
+    scopes: [agent-runs:write]
+    purpose: Close the run with what it filed and what it skipped as held or already open.
+    input: AgentRunFinish
+    output: AgentRun
+
+# The lists whose keys the baseline's entries name. Every entry is filed and approved
+# against them in the backend suite, so a key they do not hold fails before any deploy.
+vocabularies_read_at_run_start:
+  - instrument_level
+  - jurisdiction
+  - duty_type
+  - term_dimension
+  - taxonomy_term        # the regime and the scope facets
+  - authority
+
+evals:
+  checker: backend/apps/library/baseline/check_baseline.py
+  filed_and_approved_by: backend/apps/proposals/tests_baseline.py

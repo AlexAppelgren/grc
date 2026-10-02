@@ -1,0 +1,1939 @@
+{
+ "tranche": "no-forskrifter",
+ "researchedOn": "2026-10-01",
+ "instruments": [
+  {
+   "title": "Add Finansforetaksforskriften, FOR-2016-12-09-1502",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502",
+   "sourceLabel": "Lovdata, FOR-2016-12-09-1502, Forskrift om finansforetak og finanskonsern (finansforetaksforskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2016/12/09/1502"
+   },
+   "payload": {
+    "key": "no-for-2016-12-09-1502",
+    "titles": {
+     "nb": "Forskrift om finansforetak og finanskonsern (finansforetaksforskriften)",
+     "en": "Regulation on Financial Institutions and Financial Groups (Financial Institutions Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Finansforetaksforskriften",
+    "officialRef": "FOR-2016-12-09-1502",
+    "eliUri": "https://lovdata.no/eli/forskrift/2016/12/09/1502",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:banking",
+    "inForceFrom": "2017-01-01",
+    "implementsNote": "In part: BRRD, Directive 2014/59/EU, as amended by Directive (EU) 2019/879 (chapter 20), among the EEA acts Lovdata lists"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Have the board risk committee carry out its prescribed tasks",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A713-2",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 13-1, § 13-2",
+     "payload": {
+      "key": "obl-no-ffforskr-risk-committee",
+      "titles": {
+       "en": "Have the board risk committee carry out its prescribed tasks"
+      },
+      "summaries": {
+       "en": "The board risk committee must prepare the board's assessment of risk and total capital need, keep regular contact with the risk control function and receive the control functions' reporting, review the risk policies at least once a year, monitor that they are followed and assess whether product pricing reflects the business model and risk strategy. A firm whose total assets have been below NOK 20 billion for more than 12 months may let the whole board act as risk committee, and some wholly owned group subsidiaries, covered bond companies and unlisted finance companies are exempt unless Finanstilsynet decides otherwise."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 13-1, § 13-2",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Adopt, publish and independently check a remuneration scheme for all employees",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A715-1",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 15-1",
+     "payload": {
+      "key": "obl-no-ffforskr-remuneration-scheme",
+      "titles": {
+       "en": "Adopt, publish and independently check a remuneration scheme for all employees"
+      },
+      "summaries": {
+       "en": "Banks, credit and finance companies, investment firms and financial group holding companies must have a remuneration scheme for all employees, suited to their size and business, with special rules for staff who materially affect the risk profile. The board must set and regularly evaluate its principles and monitor how it is applied, an independent internal control must check its practice at least once a year, control-function staff must be paid independently of the units they control, and the firm must publish on its website how it meets the remuneration rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 15-1",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Cap, defer and pay partly in instruments the variable pay of material risk takers",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A715-4",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 15-4",
+     "payload": {
+      "key": "obl-no-ffforskr-variable-pay",
+      "titles": {
+       "en": "Cap, defer and pay partly in instruments the variable pay of material risk takers"
+      },
+      "summaries": {
+       "en": "For staff with a material impact on the risk profile, variable pay may not exceed 100 percent of fixed pay, or up to 200 percent where the general meeting so decides on the conditions in the section, and in a bank it may not exceed half of fixed pay for the chief executive and managers responsible for control functions or material business units. At least half of the variable pay must consist of shares or other instruments, and at least 40 percent, or 60 percent for particularly large amounts, must be deferred over at least four to five years, at least five for the board and senior management of large firms."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 15-4",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep the pay of credit assessors and loan advisers free of sales targets",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A715-7",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 15-7, § 15-8",
+     "payload": {
+      "key": "obl-no-ffforskr-credit-staff-pay",
+      "titles": {
+       "en": "Keep the pay of credit assessors and loan advisers free of sales targets"
+      },
+      "summaries": {
+       "en": "The firm must not pay or evaluate employees in a way that weakens their ability to look after the customer's best interests. Pay for staff who assess customers' creditworthiness, and for their managers, must support sound risk management and may not depend on the number or share of loans granted or on other sales targets, and pay for staff who advise consumers on loans may not depend on sales targets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 15-7, § 15-8",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Do not make one service conditional on the customer buying another",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A716-1",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 16-1",
+     "payload": {
+      "key": "obl-no-ffforskr-no-tying",
+      "titles": {
+       "en": "Do not make one service conditional on the customer buying another"
+      },
+      "summaries": {
+       "en": "The firm may not offer a service on condition that the customer also buys another service, nor give especially favourable terms on that condition. This does not apply where one service necessarily presupposes the other, or where the better terms reflect cost savings from offering the services together; Finanstilsynet decides doubtful cases."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 16-1",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Link to Finansportalen.no on the front page and wherever prices are shown",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A716-3",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 16-3",
+     "payload": {
+      "key": "obl-no-ffforskr-finansportalen-link",
+      "titles": {
+       "en": "Link to Finansportalen.no on the front page and wherever prices are shown"
+      },
+      "summaries": {
+       "en": "A firm offering products that Finansportalen.no covers must show clearly visible links to Finansportalen.no on all its digital platforms, placed on the front page of its website and wherever prices are presented, using the link text the regulation prescribes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 16-3",
+      "dutyType": "disclosure",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give depositors deposit guarantee information in the standard format",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A716-5",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 16-5",
+     "payload": {
+      "key": "obl-no-ffforskr-deposit-guarantee-format",
+      "titles": {
+       "en": "Give depositors deposit guarantee information in the standard format"
+      },
+      "summaries": {
+       "en": "Credit institutions must give depositors the information on the deposit guarantee scheme that the Act requires in the standardised format set by Bankenes sikringsfond in line with Annex I to Directive 2014/49/EU. They may not use information about guarantee schemes in advertising in a way that may affect the stability of the banking system or depositors' confidence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 16-5",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Let customers deposit and withdraw cash, directly or through other providers",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A716-8",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 16-8",
+     "payload": {
+      "key": "obl-no-ffforskr-cash-services",
+      "titles": {
+       "en": "Let customers deposit and withdraw cash, directly or through other providers"
+      },
+      "summaries": {
+       "en": "Every bank, including Norwegian branches of foreign credit institutions that take deposits in Norway, must give its customers the possibility to deposit and withdraw cash, either itself or through agreements with other providers of cash services."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 16-8",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Ensure staff who design, grant or advise on mortgages have the required competence",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A716-12",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 16-12, § 16-13",
+     "payload": {
+      "key": "obl-no-ffforskr-mortgage-staff-competence",
+      "titles": {
+       "en": "Ensure staff who design, grant or advise on mortgages have the required competence"
+      },
+      "summaries": {
+       "en": "Employees who design, offer or grant residential mortgages, or advise consumers on them, must have the knowledge and competence to do so soundly and together cover the listed areas, among them mortgage products, consumer protection law, the home-buying process, property valuation, land registration, the housing market, good business practice, consumer credit assessment and personal finance. The same applies to board members and managers, and the firm must have internal rules that identify the staff covered and ensure the requirements are met at all times."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 16-12, § 16-13",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Include bail-in recognition terms in liabilities governed by non-EEA law",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A720-3a",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 20-3a",
+     "payload": {
+      "key": "obl-no-ffforskr-bail-in-terms",
+      "titles": {
+       "en": "Include bail-in recognition terms in liabilities governed by non-EEA law"
+      },
+      "summaries": {
+       "en": "Where a liability is governed by the law of a state outside the EEA, its write-down and conversion terms must make the creditor accept being bound by any reduction, conversion or cancellation decided in resolution. If the firm considers it legally or otherwise impracticable to include such terms, it must notify Finanstilsynet with reasons and state where the instrument ranks in the creditor hierarchy, and liabilities lacking required terms cannot count towards its minimum requirement for own funds and eligible liabilities."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 20-3a",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the recovery plan its prescribed content and indicators",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502/%C2%A720-3b",
+     "sourceLabel": "Lovdata, finansforetaksforskriften (FOR-2016-12-09-1502) § 20-3b, § 20-3c",
+     "payload": {
+      "key": "obl-no-ffforskr-recovery-plan-content",
+      "titles": {
+       "en": "Give the recovery plan its prescribed content and indicators"
+      },
+      "summaries": {
+       "en": "The recovery plan must contain, among other things, a summary and an overall assessment of recovery capacity, material changes since the last plan, a communication plan, capital and liquidity measures with time frames, material obstacles, the critical functions and how the value of the main business lines and assets is determined. It must set indicators showing when measures may be taken, which Finanstilsynet approves, and a board decision to take or not to take measures under the plan must be reported to Finanstilsynet without undue delay."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 20-3b, § 20-3c",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add CRR/CRD-forskriften, FOR-2014-08-22-1097",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097",
+   "sourceLabel": "Lovdata, FOR-2014-08-22-1097, Forskrift om kapitalkrav og gjennomføring av CRR/CRD-regelverket (CRR/CRD-forskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2014/08/22/1097"
+   },
+   "payload": {
+    "key": "no-for-2014-08-22-1097",
+    "titles": {
+     "nb": "Forskrift om kapitalkrav og gjennomføring av CRR/CRD-regelverket (CRR/CRD-forskriften)",
+     "en": "Regulation on Capital Requirements and Implementation of the CRR/CRD Framework (CRR/CRD Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "CRR/CRD-forskriften",
+    "officialRef": "FOR-2014-08-22-1097",
+    "eliUri": "https://lovdata.no/eli/forskrift/2014/08/22/1097",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-09-30",
+    "implementsNote": "CRD, Directive 2013/36/EU, in part; makes CRR, Regulation (EU) No 575/2013, as amended among others by Regulation (EU) 2024/1623, Norwegian regulation (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep IRB risk weights on Norwegian property exposures above the minimum averages",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097/%C2%A74",
+     "sourceLabel": "Lovdata, CRR/CRD-forskriften (FOR-2014-08-22-1097) § 4",
+     "payload": {
+      "key": "obl-no-crrcrdf-irb-risk-weight-floors",
+      "titles": {
+       "en": "Keep IRB risk weights on Norwegian property exposures above the minimum averages"
+      },
+      "summaries": {
+       "en": "A firm using the IRB approach must keep the average risk weight of its exposures secured on residential property in Norway at no less than 25 percent from 1 July 2025 to 31 December 2026, and of its exposures secured on commercial property in Norway at no less than 35 percent from 1 January 2025 to 31 December 2026."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Send a capital plan within five working days and restrict distributions when the combined buffer is not met",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097/%C2%A710",
+     "sourceLabel": "Lovdata, CRR/CRD-forskriften (FOR-2014-08-22-1097) § 10",
+     "payload": {
+      "key": "obl-no-crrcrdf-buffer-shortfall",
+      "titles": {
+       "en": "Send a capital plan within five working days and restrict distributions when the combined buffer is not met"
+      },
+      "summaries": {
+       "en": "If the firm does not meet the combined buffer requirement, it must send Finanstilsynet a plan to raise its common equity tier 1 ratio, with income, cost and balance sheet forecasts and a time frame, no later than five working days after the shortfall arises. Dividends, buybacks, variable pay, discretionary pension benefits and additional tier 1 coupons are then limited to the maximum distributable amount the section sets, and none may be paid before the firm has given Finanstilsynet its capital, results, maximum distributable amount and planned distributions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 10",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Set a board-approved liquidity strategy with limits and review it every year",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097/%C2%A712",
+     "sourceLabel": "Lovdata, CRR/CRD-forskriften (FOR-2014-08-22-1097) § 12, § 13",
+     "payload": {
+      "key": "obl-no-crrcrdf-liquidity-strategy",
+      "titles": {
+       "en": "Set a board-approved liquidity strategy with limits and review it every year"
+      },
+      "summaries": {
+       "en": "The board must set a liquidity strategy covering limits and risk tolerance, holdings of liquid assets, stable long-term funding, methods for measurement, forecasting and stress testing, organisation, reporting and independent control, and must assess the strategy and compliance with it at least once a year, recording its conclusion in the board minutes. Liquidity limits must be set for different time horizons, including intraday, and ensure enough liquid assets relative to short-term liabilities."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 12, § 13",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Stress test liquidity regularly and keep a liquidity contingency plan",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097/%C2%A714",
+     "sourceLabel": "Lovdata, CRR/CRD-forskriften (FOR-2014-08-22-1097) § 14, § 16, § 17",
+     "payload": {
+      "key": "obl-no-crrcrdf-liquidity-stress-contingency",
+      "titles": {
+       "en": "Stress test liquidity regularly and keep a liquidity contingency plan"
+      },
+      "summaries": {
+       "en": "The firm must regularly run liquidity stress tests with firm-specific, market-wide and combined scenarios over different horizons, covering items on and off the balance sheet, and use the results in its strategy, limits and contingency plan. It must have a contingency plan for a loss of liquidity, which the board updates regularly in the light of the stress tests, and must at least yearly assess alternative scenarios and the assumptions behind its funding position."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 14, § 16, § 17",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Have the board approve and review policies covering every material risk",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097/%C2%A735",
+     "sourceLabel": "Lovdata, CRR/CRD-forskriften (FOR-2014-08-22-1097) § 35, § 36",
+     "payload": {
+      "key": "obl-no-crrcrdf-risk-policies",
+      "titles": {
+       "en": "Have the board approve and review policies covering every material risk"
+      },
+      "summaries": {
+       "en": "The board must approve and regularly review policies for taking, identifying, managing, monitoring and controlling risks, secure access to risk information, set rules on segregation of duties and conflicts of interest, ensure the control functions can work effectively and independently, and evaluate its own risk management competence at least yearly. The policies must at least cover credit and counterparty, residual, concentration, securitisation, market, banking-book interest rate, operational and liquidity risk and the risk of excessive leverage, and include a process for assessing new products, services and outsourcing."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 35, § 36",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Manage interest rate risk from activities outside the trading book",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097/%C2%A736a",
+     "sourceLabel": "Lovdata, CRR/CRD-forskriften (FOR-2014-08-22-1097) § 36a",
+     "payload": {
+      "key": "obl-no-crrcrdf-irrbb",
+      "titles": {
+       "en": "Manage interest rate risk from activities outside the trading book"
+      },
+      "summaries": {
+       "en": "The firm's system for managing interest rate risk must cover changes in interest rates and credit spreads from non-trading book activities, with particular regard to the economic value of equity and net interest income. The firm may use the standardised methods set by regulation, and Finanstilsynet can require it to use the standardised method where its own system is not satisfactory."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 36a",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess internal control every year and present the assessment to the board",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097/%C2%A737",
+     "sourceLabel": "Lovdata, CRR/CRD-forskriften (FOR-2014-08-22-1097) § 37",
+     "payload": {
+      "key": "obl-no-crrcrdf-internal-control-assessment",
+      "titles": {
+       "en": "Assess internal control every year and present the assessment to the board"
+      },
+      "summaries": {
+       "en": "Managers of all material business areas must continuously assess how internal control is carried out, and at least once a year the firm must make a summary assessment of whether it has worked satisfactorily and whether new measures are needed. The chief executive must present an overall assessment to the board at least yearly, and the documentation must be kept for at least three years and be available to Finanstilsynet."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 37",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Maintain independent risk control, compliance and internal audit functions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097/%C2%A738",
+     "sourceLabel": "Lovdata, CRR/CRD-forskriften (FOR-2014-08-22-1097) § 38, § 39, § 40, § 41",
+     "payload": {
+      "key": "obl-no-crrcrdf-control-functions",
+      "titles": {
+       "en": "Maintain independent risk control, compliance and internal audit functions"
+      },
+      "summaries": {
+       "en": "The firm must have an independent risk control function and an independent compliance function with sufficient competence and resources, each led by a head who reports to the chief executive and cannot be removed without the board's consent, and risk control must be able to report directly to the board. The board must approve internal audit's resources and plans each year, internal audit may attend board meetings, and large firms and firms using IRB must keep risk control and compliance as separate functions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 38, § 39, § 40, § 41",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish compliance with the liquidity coverage requirement every quarter",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097/%C2%A742",
+     "sourceLabel": "Lovdata, CRR/CRD-forskriften (FOR-2014-08-22-1097) § 42 tredje ledd",
+     "payload": {
+      "key": "obl-no-crrcrdf-lcr-disclosure",
+      "titles": {
+       "en": "Publish compliance with the liquidity coverage requirement every quarter"
+      },
+      "summaries": {
+       "en": "The firm must publish its compliance with the liquidity coverage requirement, in total and for each significant currency, every quarter together with its financial reporting."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 42 tredje ledd",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish audited country-by-country information with the annual accounts",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097/%C2%A743",
+     "sourceLabel": "Lovdata, CRR/CRD-forskriften (FOR-2014-08-22-1097) § 43",
+     "payload": {
+      "key": "obl-no-crrcrdf-country-by-country",
+      "titles": {
+       "en": "Publish audited country-by-country information with the annual accounts"
+      },
+      "summaries": {
+       "en": "For each country where it is established, the firm must disclose on a consolidated basis the names, business and location of its entities, turnover, number of full-time equivalents, profit before tax, tax and public subsidies received. The information must be audited and, where possible, published as an annex to the annual accounts."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 43",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Utlånsforskriften, FOR-2020-12-09-2648",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2020-12-09-2648",
+   "sourceLabel": "Lovdata, FOR-2020-12-09-2648, Forskrift om finansforetakenes utlånspraksis (utlånsforskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2020/12/09/2648"
+   },
+   "payload": {
+    "key": "no-for-2020-12-09-2648",
+    "titles": {
+     "nb": "Forskrift om finansforetakenes utlånspraksis (utlånsforskriften)",
+     "en": "Regulation on Financial Institutions' Lending Practices (Lending Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Utlånsforskriften",
+    "officialRef": "FOR-2020-12-09-2648",
+    "eliUri": "https://lovdata.no/eli/forskrift/2020/12/09/2648",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:banking",
+    "inForceFrom": "2021-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Document a sound credit assessment for every consumer loan",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-12-09-2648/%C2%A74",
+     "sourceLabel": "Lovdata, utlånsforskriften (FOR-2020-12-09-2648) § 4",
+     "payload": {
+      "key": "obl-no-utlansf-document-credit-assessment",
+      "titles": {
+       "en": "Document a sound credit assessment for every consumer loan"
+      },
+      "summaries": {
+       "en": "The firm must document that each loan to a consumer is granted on the basis of a sound credit assessment, using full information on the borrower's income, total debt and, where a home is pledged, the value of the home."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4",
+      "dutyType": "record_keeping",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Lend only where the borrower can withstand a three-point rate rise",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-12-09-2648/%C2%A75",
+     "sourceLabel": "Lovdata, utlånsforskriften (FOR-2020-12-09-2648) § 5",
+     "payload": {
+      "key": "obl-no-utlansf-debt-servicing-capacity",
+      "titles": {
+       "en": "Lend only where the borrower can withstand a three-point rate rise"
+      },
+      "summaries": {
+       "en": "The firm must not grant a loan if the customer would lack enough funds for normal living costs after an interest rate increase of 3 percentage points on total debt, using an interest rate of at least 7 percent in any case. The assessment rests on income and all relevant costs, assumes full use of credit lines, and for fixed-rate loans may be based on the balance and expected finances at the end of the fixed-rate period."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not lend where total debt would exceed five times annual income",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-12-09-2648/%C2%A76",
+     "sourceLabel": "Lovdata, utlånsforskriften (FOR-2020-12-09-2648) § 6",
+     "payload": {
+      "key": "obl-no-utlansf-debt-to-income",
+      "titles": {
+       "en": "Do not lend where total debt would exceed five times annual income"
+      },
+      "summaries": {
+       "en": "The firm must not grant a loan if the customer's total debt would exceed five times annual income, measured as personal income under the Tax Act or general income before deductions; documented and stable tax-free income may be included."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep mortgages within 90 percent of the home's value, and credit lines within 60 percent",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-12-09-2648/%C2%A77",
+     "sourceLabel": "Lovdata, utlånsforskriften (FOR-2020-12-09-2648) § 7, § 8",
+     "payload": {
+      "key": "obl-no-utlansf-loan-to-value",
+      "titles": {
+       "en": "Keep mortgages within 90 percent of the home's value, and credit lines within 60 percent"
+      },
+      "summaries": {
+       "en": "When granted, a repayment mortgage may not exceed 90 percent, and a credit line without repayment obligation 60 percent, of a prudent valuation of the home that is no higher than its market value. All loans secured on the home count, including the share of joint debt in a housing cooperative or co-ownership, and the home's value may be supplemented by secure additional collateral in the form of a pledge on other real property within the same limits, a surety or a guarantee."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7, § 8",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Require yearly repayments on mortgages above 60 percent of the home's value",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-12-09-2648/%C2%A79",
+     "sourceLabel": "Lovdata, utlånsforskriften (FOR-2020-12-09-2648) § 9",
+     "payload": {
+      "key": "obl-no-utlansf-amortisation",
+      "titles": {
+       "en": "Require yearly repayments on mortgages above 60 percent of the home's value"
+      },
+      "summaries": {
+       "en": "Where a mortgage exceeds 60 percent of the home's value, the firm must require yearly repayment of at least the lower of 2.5 percent of the loan and the instalment on a 30-year annuity loan, counting any credit line granted alongside. A payment holiday may be granted when circumstances arising during the loan temporarily weaken the customer's ability to pay."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Require monthly repayments that clear consumer loans within five years",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-12-09-2648/%C2%A713",
+     "sourceLabel": "Lovdata, utlånsforskriften (FOR-2020-12-09-2648) § 13",
+     "payload": {
+      "key": "obl-no-utlansf-consumer-loan-repayment",
+      "titles": {
+       "en": "Require monthly repayments that clear consumer loans within five years"
+      },
+      "summaries": {
+       "en": "For unsecured consumer loans the firm must require monthly repayments large enough to repay the loan within five years as a serial or annuity loan, and for credit lines the minimum is calculated each month on the credit used. A payment holiday may be granted when the customer's ability to pay is temporarily weakened."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 13",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep loans outside the requirements within the quarterly quotas and report them to the board",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2020-12-09-2648/%C2%A712",
+     "sourceLabel": "Lovdata, utlånsforskriften (FOR-2020-12-09-2648) § 12, § 15, § 17",
+     "payload": {
+      "key": "obl-no-utlansf-flexibility-quotas",
+      "titles": {
+       "en": "Keep loans outside the requirements within the quarterly quotas and report them to the board"
+      },
+      "summaries": {
+       "en": "Loans that breach the requirements may make up at most 10 percent of the value of mortgages granted each quarter (8 percent or NOK 15 million for homes in Oslo), 5 percent of consumer loans and 10 percent of loans secured on other assets, with refinancings allowed by the regulation not counted. The firm must set limits and guidelines for such loans and report the share each quarter to the board, or to management for a foreign branch."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 12, § 15, § 17",
+      "dutyType": "governance",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Hvitvaskingsforskriften, FOR-2018-09-14-1324",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2018-09-14-1324",
+   "sourceLabel": "Lovdata, FOR-2018-09-14-1324, Forskrift om tiltak mot hvitvasking og terrorfinansiering (hvitvaskingsforskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2018/09/14/1324"
+   },
+   "payload": {
+    "key": "no-for-2018-09-14-1324",
+    "titles": {
+     "nb": "Forskrift om tiltak mot hvitvasking og terrorfinansiering (hvitvaskingsforskriften)",
+     "en": "Regulation on Measures against Money Laundering and Terrorist Financing (Anti-Money Laundering Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Hvitvaskingsforskriften",
+    "officialRef": "FOR-2018-09-14-1324",
+    "eliUri": "https://lovdata.no/eli/forskrift/2018/09/14/1324",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2018-10-15",
+    "implementsNote": "AMLD4, Directive (EU) 2015/849; makes Delegated Regulation (EU) 2016/1675 on high-risk third countries (§ 4-10) and Delegated Regulation (EU) 2019/758 (§ 7-1) Norwegian regulation"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Verify natural persons against valid identity documents or a qualifying electronic ID",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2018-09-14-1324/%C2%A74-3",
+     "sourceLabel": "Lovdata, hvitvaskingsforskriften (FOR-2018-09-14-1324) § 4-3",
+     "payload": {
+      "key": "obl-no-hvvf-valid-identification",
+      "titles": {
+       "en": "Verify natural persons against valid identity documents or a qualifying electronic ID"
+      },
+      "summaries": {
+       "en": "For identification in person, the firm must use an original identity document issued by a public authority or another body with secure issuing controls, showing full name, signature, photo and Norwegian national identity or D-number, and for persons without such a number also date and place of birth, sex and nationality; a passport needs no signature. Where identity is not confirmed in person, an electronic signature is valid only if it meets the eID requirements of the self-declaration regulation for electronic identification schemes and is on the published list."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4-3",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Apply at least the prescribed enhanced measures to high-risk third countries",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2018-09-14-1324/%C2%A74-10",
+     "sourceLabel": "Lovdata, hvitvaskingsforskriften (FOR-2018-09-14-1324) § 4-10",
+     "payload": {
+      "key": "obl-no-hvvf-high-risk-third-countries",
+      "titles": {
+       "en": "Apply at least the prescribed enhanced measures to high-risk third countries"
+      },
+      "summaries": {
+       "en": "For customer relationships and transactions involving the high-risk third countries listed under the incorporated EU delegated regulation, the firm must at least obtain more information on the customer and beneficial owners, the purpose of the relationship, the source of funds and the background of the transaction, apply enhanced ongoing and transaction monitoring with more controls, and obtain senior management approval to establish or continue the relationship. It may not rely on customer due diligence carried out by a third party established in such a country."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4-10",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Assess and document separately any exit from basic services",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2018-09-14-1324/%C2%A74-13",
+     "sourceLabel": "Lovdata, hvitvaskingsforskriften (FOR-2018-09-14-1324) § 4-13, § 4-14",
+     "payload": {
+      "key": "obl-no-hvvf-partial-exit",
+      "titles": {
+       "en": "Assess and document separately any exit from basic services"
+      },
+      "summaries": {
+       "en": "Where due diligence cannot be completed, the firm may restrict or block the specific products concerned instead of ending the whole relationship, and must keep monitoring a relationship whose funds are blocked. Ending basic services must be assessed separately with financial inclusion in mind and the assessment documented and stored; on exit, customer funds are as a rule returned, but may be temporarily blocked until the customer gives enough information or a payment method that is not itself laundering."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4-13, § 4-14",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Send information to Økokrim electronically through Altinn",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2018-09-14-1324/%C2%A75-1",
+     "sourceLabel": "Lovdata, hvitvaskingsforskriften (FOR-2018-09-14-1324) § 5-1",
+     "payload": {
+      "key": "obl-no-hvvf-report-via-altinn",
+      "titles": {
+       "en": "Send information to Økokrim electronically through Altinn"
+      },
+      "summaries": {
+       "en": "The person designated under the Anti-Money Laundering Act as responsible for following up the firm's procedures is responsible for sending information to Økokrim, and it must be sent electronically through Altinn, or on Økokrim's form where that is not possible."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5-1",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Certify identity document copies and keep records readable with separate backups",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2018-09-14-1324/%C2%A76-2",
+     "sourceLabel": "Lovdata, hvitvaskingsforskriften (FOR-2018-09-14-1324) § 6-2",
+     "payload": {
+      "key": "obl-no-hvvf-record-storage",
+      "titles": {
+       "en": "Certify identity document copies and keep records readable with separate backups"
+      },
+      "summaries": {
+       "en": "Copies of identity documents must be marked as certified true copies with the signature of the person who confirmed them and the date, or the confirmation must be recorded in an equally reliable way. Records must be kept on a medium that stays readable for the whole retention period, and electronic material must have a backup stored apart from the original."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6-2",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Keep records of customers under enhanced due diligence for ten years",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2018-09-14-1324/%C2%A76-4",
+     "sourceLabel": "Lovdata, hvitvaskingsforskriften (FOR-2018-09-14-1324) § 6-4",
+     "payload": {
+      "key": "obl-no-hvvf-retention-enhanced-due-diligence",
+      "titles": {
+       "en": "Keep records of customers under enhanced due diligence for ten years"
+      },
+      "summaries": {
+       "en": "The retention period runs from the end of the customer relationship or the transaction, and is ten years where the relationship or transaction was subject to enhanced due diligence. After five years the firm may assess whether such records can be deleted because the customer was not in fact high-risk, and that assessment must itself be documented and kept for five more years."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6-4",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Monitor every transaction system and screen customers against sanctions lists",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2018-09-14-1324/%C2%A77-3",
+     "sourceLabel": "Lovdata, hvitvaskingsforskriften (FOR-2018-09-14-1324) § 7-3",
+     "payload": {
+      "key": "obl-no-hvvf-monitoring-and-sanctions-screening",
+      "titles": {
+       "en": "Monitor every transaction system and screen customers against sanctions lists"
+      },
+      "summaries": {
+       "en": "Electronic monitoring must cover all systems for transactions to or from the firm's customers, with rules suited to detecting the money laundering and terrorist financing indicators identified in the firm's risk assessment. The firm must also monitor electronically for transactions linked to persons under international sanctions implemented in Norwegian law, screening the customer base when a relationship is established or a transaction carried out and whenever the list of sanctioned persons changes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7-3",
+      "dutyType": "technical"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Verdipapirforskriften, FOR-2007-06-29-876",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2007-06-29-876",
+   "sourceLabel": "Lovdata, FOR-2007-06-29-876, Forskrift til verdipapirhandelloven (verdipapirforskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2007/06/29/876"
+   },
+   "payload": {
+    "key": "no-for-2007-06-29-876",
+    "titles": {
+     "nb": "Forskrift til verdipapirhandelloven (verdipapirforskriften)",
+     "en": "Regulation to the Securities Trading Act (Securities Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Verdipapirforskriften",
+    "officialRef": "FOR-2007-06-29-876",
+    "eliUri": "https://lovdata.no/eli/forskrift/2007/06/29/876",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:securities",
+    "inForceFrom": "2007-11-01",
+    "implementsNote": "MiFID II Delegated Directive (EU) 2017/593 (client assets, product governance, inducements), among the EEA acts Lovdata lists"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Send updated lists of managers and their closely associated persons to the market operator",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-06-29-876/%C2%A73-3",
+     "sourceLabel": "Lovdata, verdipapirforskriften (FOR-2007-06-29-876) § 3-3",
+     "payload": {
+      "key": "obl-no-vpforskr-pdmr-lists",
+      "titles": {
+       "en": "Send updated lists of managers and their closely associated persons to the market operator"
+      },
+      "summaries": {
+       "en": "An issuer must send its updated lists of persons discharging managerial responsibilities and their closely associated persons, drawn up under Article 19(5) of the Market Abuse Regulation, without undue delay to the operator of the regulated market, or of a multilateral trading facility run by a market operator, where its instruments are admitted or applied for. The lists must give full name, identity number and address, and for managers their position, in the format the market operator sets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3-3",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Keep recorded calls and communications retrievable and tell clients how",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-06-29-876/%C2%A79-7",
+     "sourceLabel": "Lovdata, verdipapirforskriften (FOR-2007-06-29-876) § 9-7",
+     "payload": {
+      "key": "obl-no-vpforskr-recording-retrieval",
+      "titles": {
+       "en": "Keep recorded calls and communications retrievable and tell clients how"
+      },
+      "summaries": {
+       "en": "Recordings of telephone calls must be retrievable at least by incoming and outgoing number, time and the employee involved, and other communications by client identity, time and employee. When the client relationship is established, the firm must tell every client in writing that recordings can be retrieved and by which criteria."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9-7",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Segregate, record and reconcile clients' financial instruments and money",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-06-29-876/%C2%A79-8",
+     "sourceLabel": "Lovdata, verdipapirforskriften (FOR-2007-06-29-876) § 9-8",
+     "payload": {
+      "key": "obl-no-vpforskr-client-asset-protection",
+      "titles": {
+       "en": "Segregate, record and reconcile clients' financial instruments and money"
+      },
+      "summaries": {
+       "en": "The firm must keep up-to-date records that distinguish each client's assets from other clients' and its own, keep them accurate as an audit trail, reconcile them regularly with third parties holding the assets, ensure instruments held by third parties are kept apart, and have arrangements that minimise the risk of loss through misuse, fraud or poor administration. It may not grant security interests over client assets for debts unrelated to the client, and must make records of client assets, custodians and outsourcing available to Finanstilsynet, an insolvency administrator and the resolution authority."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9-8",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Appoint a client asset safeguarding officer and have the auditor report every year",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-06-29-876/%C2%A79-13",
+     "sourceLabel": "Lovdata, verdipapirforskriften (FOR-2007-06-29-876) § 9-13, § 9-14",
+     "payload": {
+      "key": "obl-no-vpforskr-safeguarding-officer",
+      "titles": {
+       "en": "Appoint a client asset safeguarding officer and have the auditor report every year"
+      },
+      "summaries": {
+       "en": "The firm must appoint an employee with sufficient qualifications and authority who is specifically responsible for its compliance with the duty to safeguard clients' instruments and money. Its external auditor must report to Finanstilsynet at least once a year on whether the firm's safeguarding arrangements comply with the Act and the regulation's rules on client assets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9-13, § 9-14",
+      "dutyType": "reporting",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Define a target market for and review each instrument the firm manufactures",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-06-29-876/%C2%A79-20",
+     "sourceLabel": "Lovdata, verdipapirforskriften (FOR-2007-06-29-876) § 9-15, § 9-20, § 9-24",
+     "payload": {
+      "key": "obl-no-vpforskr-product-governance-manufacturer",
+      "titles": {
+       "en": "Define a target market for and review each instrument the firm manufactures"
+      },
+      "summaries": {
+       "en": "When creating, developing, issuing or designing financial instruments, the firm must identify in sufficient detail the target market each instrument is compatible with, including any sustainability-related objectives, and the clients it is not compatible with, and check that its risk and return profile fits that market. It must review its instruments regularly and before any new issue or relaunch, and when material events occur take suitable action, such as informing clients or distributors, changing or stopping the product, or notifying Finanstilsynet."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9-15, § 9-20, § 9-24",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify the target market for and review each product the firm distributes",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-06-29-876/%C2%A79-26",
+     "sourceLabel": "Lovdata, verdipapirforskriften (FOR-2007-06-29-876) § 9-25, § 9-26, § 9-29",
+     "payload": {
+      "key": "obl-no-vpforskr-product-governance-distributor",
+      "titles": {
+       "en": "Identify the target market for and review each product the firm distributes"
+      },
+      "summaries": {
+       "en": "When deciding which instruments and services to offer or recommend, the firm must identify the target market for each instrument, also where the manufacturer has not, using the manufacturer's information and its own client knowledge, and ensure the products and distribution strategy fit that market's needs, characteristics and objectives. It must obtain adequate information on instruments made by firms outside the MiFID rules, regularly review its arrangements and the products it offers, and reassess the target market where it was wrongly identified or the product no longer fits."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9-25, § 9-26, § 9-29",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Justify, list and disclose every payment to or from third parties",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-06-29-876/%C2%A710-1a",
+     "sourceLabel": "Lovdata, verdipapirforskriften (FOR-2007-06-29-876) § 10-1a, § 10-2, § 10-3",
+     "payload": {
+      "key": "obl-no-vpforskr-inducements",
+      "titles": {
+       "en": "Justify, list and disclose every payment to or from third parties"
+      },
+      "summaries": {
+       "en": "A fee or benefit received from or paid to anyone other than the client is acceptable only if it is justified by an additional or higher-quality service proportionate to it, gives the client a tangible benefit and, for ongoing payments, an ongoing benefit, and never impairs the service. The firm must keep a list of all such payments and document how each improves the service, inform the client before providing the service and afterwards of the exact amount where it was not known in advance, and report the actual amounts at least yearly where payments are ongoing."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 10-1a, § 10-2, § 10-3",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Link to Finansportalen.no wherever investment products or prices are shown",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2007-06-29-876/%C2%A710-14",
+     "sourceLabel": "Lovdata, verdipapirforskriften (FOR-2007-06-29-876) § 10-14",
+     "payload": {
+      "key": "obl-no-vpforskr-finansportalen-link",
+      "titles": {
+       "en": "Link to Finansportalen.no wherever investment products or prices are shown"
+      },
+      "summaries": {
+       "en": "A firm offering services for product types covered by Finansportalen.no must show a clearly visible link to Finansportalen.no on the front page of its website and on all other digital platforms where prices or products are presented, using the link text the regulation prescribes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 10-14",
+      "dutyType": "disclosure",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om systemer for betalingstjenester, FOR-2019-02-15-152",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2019-02-15-152",
+   "sourceLabel": "Lovdata, FOR-2019-02-15-152, Forskrift om systemer for betalingstjenester, consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2019/02/15/152"
+   },
+   "payload": {
+    "key": "no-for-2019-02-15-152",
+    "titles": {
+     "nb": "Forskrift om systemer for betalingstjenester",
+     "en": "Regulation on Systems for Payment Services"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om systemer for betalingstjenester",
+    "officialRef": "FOR-2019-02-15-152",
+    "eliUri": "https://lovdata.no/eli/forskrift/2019/02/15/152",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:payments",
+    "inForceFrom": "2019-04-01",
+    "implementsNote": "Makes the RTS on strong customer authentication, Delegated Regulation (EU) 2018/389 as amended by Delegated Regulation (EU) 2022/2360, Norwegian regulation (§ 12)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Assess risk before launching a payment service and monitor for unauthorised use",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-02-15-152/%C2%A72",
+     "sourceLabel": "Lovdata, forskrift om systemer for betalingstjenester (FOR-2019-02-15-152) § 2 første og annet ledd",
+     "payload": {
+      "key": "obl-no-betsysf-risk-assessment",
+      "titles": {
+       "en": "Assess risk before launching a payment service and monitor for unauthorised use"
+      },
+      "summaries": {
+       "en": "Payment service providers must carry out risk and vulnerability assessments before launching a new payment service and after incidents or changes that affect the security level. They must have systems and controls for operational and security risk that ensure compliance with rules, agreements and internal procedures, and must monitor electronic payment services to detect and prevent unauthorised use."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 første og annet ledd",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Give Finanstilsynet a yearly risk assessment and fraud statistics",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-02-15-152/%C2%A72",
+     "sourceLabel": "Lovdata, forskrift om systemer for betalingstjenester (FOR-2019-02-15-152) § 2 tredje og fjerde ledd",
+     "payload": {
+      "key": "obl-no-betsysf-annual-reporting",
+      "titles": {
+       "en": "Give Finanstilsynet a yearly risk assessment and fraud statistics"
+      },
+      "summaries": {
+       "en": "At least once a year the provider must give Finanstilsynet an overall assessment of the operational and security risk of its payment services and of whether its measures are adequate, and report statistics on fraud related to its payment services in the way Finanstilsynet specifies."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2 tredje og fjerde ledd",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell payment service users without undue delay about incidents affecting their financial interests",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-02-15-152/%C2%A73",
+     "sourceLabel": "Lovdata, forskrift om systemer for betalingstjenester (FOR-2019-02-15-152) § 3",
+     "payload": {
+      "key": "obl-no-betsysf-incident-notice-to-users",
+      "titles": {
+       "en": "Tell payment service users without undue delay about incidents affecting their financial interests"
+      },
+      "summaries": {
+       "en": "If an incident of the kind referred to in Article 23 of the Digital Operational Resilience Act, Regulation (EU) 2022/2554, affects or may affect the financial interests of payment service users, the provider must inform them without undue delay, describing the measures they can take."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Protect payment services end to end in line with recognised standards",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-02-15-152/%C2%A74",
+     "sourceLabel": "Lovdata, forskrift om systemer for betalingstjenester (FOR-2019-02-15-152) § 4",
+     "payload": {
+      "key": "obl-no-betsysf-end-to-end-security",
+      "titles": {
+       "en": "Protect payment services end to end in line with recognised standards"
+      },
+      "summaries": {
+       "en": "Based on its risk and vulnerability assessment, the provider must put in place measures that ensure the confidentiality, integrity and availability of its services and follow applicable national and internationally recognised standards. It is responsible for protecting the whole service end to end through logical and physical security measures."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Apply strong customer authentication to log-ins, electronic payments and risky actions",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-02-15-152/%C2%A75",
+     "sourceLabel": "Lovdata, forskrift om systemer for betalingstjenester (FOR-2019-02-15-152) § 5",
+     "payload": {
+      "key": "obl-no-betsysf-strong-customer-authentication",
+      "titles": {
+       "en": "Apply strong customer authentication to log-ins, electronic payments and risky actions"
+      },
+      "summaries": {
+       "en": "The provider must apply strong customer authentication, based on two or more independent elements, when the user logs in to the payment account online, initiates an electronic payment or takes an action that may imply a risk of fraud or misuse, and for remote electronic payments must link it to a specific amount and payee. It must protect users' personalised security credentials and let users block them, and as account servicer must let payment initiation and account information providers rely on the authentication procedures it offers its users."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5",
+      "dutyType": "technical",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give payment initiation and account information providers access without discrimination",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2019-02-15-152/%C2%A78",
+     "sourceLabel": "Lovdata, forskrift om systemer for betalingstjenester (FOR-2019-02-15-152) § 8",
+     "payload": {
+      "key": "obl-no-betsysf-third-party-access",
+      "titles": {
+       "en": "Give payment initiation and account information providers access without discrimination"
+      },
+      "summaries": {
+       "en": "The account servicing provider must give payment initiation and account information providers the access they need to the user's online payment accounts without requiring a contract with them, unless objectively justified and documented reasons point to unauthorised access, and must notify Finanstilsynet immediately with reasons when it refuses access. It may not treat orders or information requests made through such providers differently without good reason, must make all relevant information on an initiated payment available to the initiation provider at once, and must communicate securely with them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DORA-forskriften, FOR-2025-06-24-1296",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2025-06-24-1296",
+   "sourceLabel": "Lovdata, FOR-2025-06-24-1296, Forskrift om digital operasjonell motstandsdyktighet i finanssektoren (DORA-forskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2025/06/24/1296"
+   },
+   "payload": {
+    "key": "no-for-2025-06-24-1296",
+    "titles": {
+     "nb": "Forskrift om digital operasjonell motstandsdyktighet i finanssektoren (DORA-forskriften)",
+     "en": "Regulation on Digital Operational Resilience in the Financial Sector (DORA Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "DORA-forskriften",
+    "officialRef": "FOR-2025-06-24-1296",
+    "eliUri": "https://lovdata.no/eli/forskrift/2025/06/24/1296",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2025-07-01",
+    "implementsNote": "Makes level-2 acts supplementing DORA, Regulation (EU) 2022/2554, among them Delegated Regulations (EU) 2024/1772, 2024/1773, 2024/1774, 2025/301 and 2025/1190 and Implementing Regulations (EU) 2024/2956 and 2025/302, Norwegian regulation (§ 3)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Carry out threat-led penetration testing when Finanstilsynet designates the firm",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-06-24-1296/%C2%A712",
+     "sourceLabel": "Lovdata, DORA-forskriften (FOR-2025-06-24-1296) § 12, § 13, § 15, § 16",
+     "payload": {
+      "key": "obl-no-doraf-tlpt",
+      "titles": {
+       "en": "Carry out threat-led penetration testing when Finanstilsynet designates the firm"
+      },
+      "summaries": {
+       "en": "Finanstilsynet decides, after hearing Norges Bank, which firms must carry out threat-led penetration testing under Article 26 of the Digital Operational Resilience Act and how often. A designated firm must have its proposal of the functions to be tested approved by Norges Bank, which coordinates the test and issues the attestation of completion, while Finanstilsynet follows up the findings and remediation plan; Norges Bank's costs for this work are shared among the designated firms."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 12, § 13, § 15, § 16",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Kryptoeiendelsforskriften, FOR-2025-06-25-1311",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2025-06-25-1311",
+   "sourceLabel": "Lovdata, FOR-2025-06-25-1311, Forskrift til lov om kryptoeiendeler (kryptoeiendelsforskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2025/06/25/1311"
+   },
+   "payload": {
+    "key": "no-for-2025-06-25-1311",
+    "titles": {
+     "nb": "Forskrift til lov om kryptoeiendeler (kryptoeiendelsforskriften)",
+     "en": "Regulation to the Crypto-Assets Act (Crypto-Assets Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Kryptoeiendelsforskriften",
+    "officialRef": "FOR-2025-06-25-1311",
+    "eliUri": "https://lovdata.no/eli/forskrift/2025/06/25/1311",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:securities",
+    "inForceFrom": "2025-07-01",
+    "implementsNote": "Makes level-2 acts supplementing MiCA, Regulation (EU) 2023/1114, Norwegian regulation (§ 2)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Explain a delayed disclosure of crypto-asset inside information when the supervisor asks",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-06-25-1311/%C2%A73",
+     "sourceLabel": "Lovdata, kryptoeiendelsforskriften (FOR-2025-06-25-1311) § 3",
+     "payload": {
+      "key": "obl-no-kryptof-delay-explanation",
+      "titles": {
+       "en": "Explain a delayed disclosure of crypto-asset inside information when the supervisor asks"
+      },
+      "summaries": {
+       "en": "Where disclosure of inside information was delayed under Article 88(3) of the Markets in Crypto-Assets Regulation, the written explanation of the delay must be sent to the supervisory authority on request, as soon as possible."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add PRIIPs-forskriften, FOR-2024-09-16-2162",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2024-09-16-2162",
+   "sourceLabel": "Lovdata, FOR-2024-09-16-2162, Forskrift til lov om nøkkelinformasjon om sammensatte og forsikringsbaserte investeringsprodukter (PRIIPs-forskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2024/09/16/2162"
+   },
+   "payload": {
+    "key": "no-for-2024-09-16-2162",
+    "titles": {
+     "nb": "Forskrift til lov om nøkkelinformasjon om sammensatte og forsikringsbaserte investeringsprodukter (PRIIPs-forskriften)",
+     "en": "Regulation to the Act on Key Information for Packaged Retail and Insurance-based Investment Products (PRIIPs Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "PRIIPs-forskriften",
+    "officialRef": "FOR-2024-09-16-2162",
+    "eliUri": "https://lovdata.no/eli/forskrift/2024/09/16/2162",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:securities",
+    "inForceFrom": "2024-10-01",
+    "implementsNote": "Makes Delegated Regulation (EU) 2016/1904 and the PRIIPs KID RTS, Delegated Regulation (EU) 2017/653 as amended, Norwegian regulation (§ 2)"
+   }
+  },
+  {
+   "title": "Add Forskrift til lov om bærekraftsinformasjon i finanssektoren, FOR-2022-12-20-2354",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2022-12-20-2354",
+   "sourceLabel": "Lovdata, FOR-2022-12-20-2354, Forskrift til lov om offentliggjøring av bærekraftsinformasjon i finanssektoren og et rammeverk for bærekraftige investeringer, consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2022/12/20/2354"
+   },
+   "payload": {
+    "key": "no-for-2022-12-20-2354",
+    "titles": {
+     "nb": "Forskrift til lov om offentliggjøring av bærekraftsinformasjon i finanssektoren og et rammeverk for bærekraftige investeringer",
+     "en": "Regulation to the Act on Disclosure of Sustainability Information in the Financial Sector and a Framework for Sustainable Investments"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift til lov om bærekraftsinformasjon i finanssektoren",
+    "officialRef": "FOR-2022-12-20-2354",
+    "eliUri": "https://lovdata.no/eli/forskrift/2022/12/20/2354",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:securities",
+    "inForceFrom": "2023-01-01",
+    "implementsNote": "Makes the SFDR RTS, Delegated Regulation (EU) 2022/1288 (§ 2), and Taxonomy Delegated Regulations (EU) 2021/2178, 2021/2139 and 2023/2486 (§ 3) Norwegian regulation"
+   }
+  },
+  {
+   "title": "Add AIF-forskriften, FOR-2014-06-26-877",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2014-06-26-877",
+   "sourceLabel": "Lovdata, FOR-2014-06-26-877, Forskrift til lov om forvaltning av alternative investeringsfond, consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2014/06/26/877"
+   },
+   "payload": {
+    "key": "no-for-2014-06-26-877",
+    "titles": {
+     "nb": "Forskrift til lov om forvaltning av alternative investeringsfond",
+     "en": "Regulation to the Act on Management of Alternative Investment Funds (AIF Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "AIF-forskriften",
+    "officialRef": "FOR-2014-06-26-877",
+    "eliUri": "https://lovdata.no/eli/forskrift/2014/06/26/877",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:securities",
+    "inForceFrom": "2014-07-01",
+    "implementsNote": "Makes Delegated Regulation (EU) No 231/2013 Norwegian regulation (§ 8-1)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Check unit dealings, valuation, settlement and income use of each AIF the firm is depositary for",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-06-26-877/%C2%A76-2",
+     "sourceLabel": "Lovdata, AIF-forskriften (FOR-2014-06-26-877) § 6-2",
+     "payload": {
+      "key": "obl-no-aiff-depositary-oversight",
+      "titles": {
+       "en": "Check unit dealings, valuation, settlement and income use of each AIF the firm is depositary for"
+      },
+      "summaries": {
+       "en": "A depositary of an alternative investment fund must, besides its duties under the Act, check that issues, redemptions and cancellations of units follow the law and the fund's rules, that unit values are calculated correctly, that the fund receives settlement within the usual time limits and that the fund's income is applied in line with the law and its rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6-2",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Delegate AIF safekeeping only on the stated conditions and monitor the delegate",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-06-26-877/%C2%A76-3",
+     "sourceLabel": "Lovdata, AIF-forskriften (FOR-2014-06-26-877) § 6-3",
+     "payload": {
+      "key": "obl-no-aiff-depositary-delegation",
+      "titles": {
+       "en": "Delegate AIF safekeeping only on the stated conditions and monitor the delegate"
+      },
+      "summaries": {
+       "en": "The depositary may delegate safekeeping only where this is not done to avoid the Act's requirements, is objectively justified and the delegate is chosen and followed up with due care. It must check at all times that the delegate has adequate resources and competence, is regulated with capital requirements, supervision and regular external audit, keeps the fund's assets segregated, and does not use them without prior consent and notice to the depositary."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6-3",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Refuse unlawful instructions and alert Finanstilsynet if they are not corrected",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2014-06-26-877/%C2%A76-5",
+     "sourceLabel": "Lovdata, AIF-forskriften (FOR-2014-06-26-877) § 6-5",
+     "payload": {
+      "key": "obl-no-aiff-depositary-unlawful-instructions",
+      "titles": {
+       "en": "Refuse unlawful instructions and alert Finanstilsynet if they are not corrected"
+      },
+      "summaries": {
+       "en": "The depositary must not follow an instruction from the manager that breaches the law, regulations or the fund's rules, and must notify Finanstilsynet if such a breach is not corrected within a reasonable time."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6-5",
+      "dutyType": "reporting",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Verdipapirfondforskriften, FOR-2011-12-21-1467",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2011-12-21-1467",
+   "sourceLabel": "Lovdata, FOR-2011-12-21-1467, Forskrift til verdipapirfondloven (verdipapirfondforskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2011/12/21/1467"
+   },
+   "payload": {
+    "key": "no-for-2011-12-21-1467",
+    "titles": {
+     "nb": "Forskrift til verdipapirfondloven (verdipapirfondforskriften)",
+     "en": "Regulation to the Securities Funds Act (Securities Funds Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Verdipapirfondforskriften",
+    "officialRef": "FOR-2011-12-21-1467",
+    "eliUri": "https://lovdata.no/eli/forskrift/2011/12/21/1467",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:securities",
+    "inForceFrom": "2012-01-01",
+    "implementsNote": "UCITS Directive 2009/65/EC; Directives 2010/43/EU and 2010/44/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Notify Finanstilsynet at once of changes in the depositary's management",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-12-21-1467/%C2%A710-1",
+     "sourceLabel": "Lovdata, verdipapirfondforskriften (FOR-2011-12-21-1467) § 10-1",
+     "payload": {
+      "key": "obl-no-vpff-depositary-management-change",
+      "titles": {
+       "en": "Notify Finanstilsynet at once of changes in the depositary's management"
+      },
+      "summaries": {
+       "en": "The person actually managing the depositary business must be of good repute and have relevant experience for the type of fund, and senior staff must present a police certificate when the depositary is assessed. When the depositary's actual management changes, the depositary must notify Finanstilsynet at once and confirm that it has assessed whether the new management meets the requirements."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 10-1",
+      "dutyType": "reporting",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Delegate UCITS safekeeping only on the stated conditions and control the delegate",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-12-21-1467/%C2%A710-3",
+     "sourceLabel": "Lovdata, verdipapirfondforskriften (FOR-2011-12-21-1467) § 10-3",
+     "payload": {
+      "key": "obl-no-vpff-depositary-delegation",
+      "titles": {
+       "en": "Delegate UCITS safekeeping only on the stated conditions and control the delegate"
+      },
+      "summaries": {
+       "en": "The depositary may delegate safekeeping tasks only if this is not done to avoid the Act's requirements, is objectively justified and the delegate is selected and followed up with due care. It must check at all times that the delegate has adequate resources and competence, keeps the fund's assets segregated and out of reach of its own creditors, meets the Act's custody requirements and, for safekeeping, is subject to effective regulation, capital requirements, supervision and periodic external audit."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 10-3",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Reuse fund assets held in custody only for the fund's account and against collateral",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-12-21-1467/%C2%A710-4",
+     "sourceLabel": "Lovdata, verdipapirfondforskriften (FOR-2011-12-21-1467) § 10-4",
+     "payload": {
+      "key": "obl-no-vpff-reuse-of-fund-assets",
+      "titles": {
+       "en": "Reuse fund assets held in custody only for the fund's account and against collateral"
+      },
+      "summaries": {
+       "en": "Assets the depositary holds in custody may be reused, which covers any transfer, pledge, sale or loan of them, only for the fund's account on the management company's instructions, where this benefits the fund and its unitholders and the transaction is covered by high-quality liquid collateral received under a title transfer arrangement worth at all times at least the market value of the reused assets plus a margin."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 10-4",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep nominee records of unitholders and their beneficial owners for ten years",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-12-21-1467/%C2%A713-3",
+     "sourceLabel": "Lovdata, verdipapirfondforskriften (FOR-2011-12-21-1467) § 13-3, § 13-4",
+     "payload": {
+      "key": "obl-no-vpff-nominee-records",
+      "titles": {
+       "en": "Keep nominee records of unitholders and their beneficial owners for ten years"
+      },
+      "summaries": {
+       "en": "An approved nominee entered in a fund's unitholder register instead of the real owner must keep a list of the unitholders it acts for with the information required for tax reporting and under the Anti-Money Laundering Act, establish whether its client is the real owner, and store information on its assignments and changes in holdings for ten years. It must pass the tax information to the management company unprompted, provide information that public authorities are entitled to, and obtain the client's prior consent to such disclosure, giving up the assignment if consent is refused."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 13-3, § 13-4",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: State in fund marketing that a prospectus and key information exist and how to get them",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2011-12-21-1467/%C2%A79-6",
+     "sourceLabel": "Lovdata, verdipapirfondforskriften (FOR-2011-12-21-1467) § 9-6",
+     "payload": {
+      "key": "obl-no-vpff-marketing-prospectus-reference",
+      "titles": {
+       "en": "State in fund marketing that a prospectus and key information exist and how to get them"
+      },
+      "summaries": {
+       "en": "All marketing that offers to buy units in a Norwegian or foreign securities fund must state that a prospectus and, where relevant, key information exist and how they can be obtained."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9-6",
+      "dutyType": "disclosure"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forsikringsformidlingsforskriften, FOR-2021-12-22-3872",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2021-12-22-3872",
+   "sourceLabel": "Lovdata, FOR-2021-12-22-3872, Forskrift om forsikringsformidling (forsikringsformidlingsforskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2021/12/22/3872"
+   },
+   "payload": {
+    "key": "no-for-2021-12-22-3872",
+    "titles": {
+     "nb": "Forskrift om forsikringsformidling (forsikringsformidlingsforskriften)",
+     "en": "Regulation on Insurance Intermediation (Insurance Intermediation Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forsikringsformidlingsforskriften",
+    "officialRef": "FOR-2021-12-22-3872",
+    "eliUri": "https://lovdata.no/eli/forskrift/2021/12/22/3872",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:insurance",
+    "inForceFrom": "2022-01-01",
+    "implementsNote": "IDD, Directive (EU) 2016/97 as amended by Directive (EU) 2018/411"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Ensure insurance agents meet the knowledge and experience requirements",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-12-22-3872/%C2%A72-2",
+     "sourceLabel": "Lovdata, forsikringsformidlingsforskriften (FOR-2021-12-22-3872) § 2-2, § 2-3",
+     "payload": {
+      "key": "obl-no-ffmf-agent-qualifications",
+      "titles": {
+       "en": "Ensure insurance agents meet the knowledge and experience requirements"
+      },
+      "summaries": {
+       "en": "An insurance agent must show knowledge of the terms of the insurance it distributes, claims handling, complaints and out-of-court schemes, assessing customers' needs, conflicts of interest, the insurance market, the relevant rules and industry standards, and economics and finance, with further knowledge of premiums, products and investment choices in life and pensions. In addition the agent must have suitable education and one year's relevant experience, three consecutive years' relevant experience, or an authorisation approved by Finanstilsynet, with the experience ended no more than five years before taking up the position."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2-2, § 2-3",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Document each employee's continuing education in insurance distribution",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2021-12-22-3872/%C2%A72-5",
+     "sourceLabel": "Lovdata, forsikringsformidlingsforskriften (FOR-2021-12-22-3872) § 2-5",
+     "payload": {
+      "key": "obl-no-ffmf-continuing-education-records",
+      "titles": {
+       "en": "Document each employee's continuing education in insurance distribution"
+      },
+      "summaries": {
+       "en": "The intermediary must at all times be able to document that the continuing education requirements are met, recording for each employee the name and position, the course organiser, the subject with a short description of the content, and the dates and duration of the courses."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2-5",
+      "dutyType": "record_keeping",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Finanstilsynsforskriften, FOR-2025-03-27-543",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-27-543",
+   "sourceLabel": "Lovdata, FOR-2025-03-27-543, Forskrift til finanstilsynsloven (finanstilsynsforskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2025/03/27/543"
+   },
+   "payload": {
+    "key": "no-for-2025-03-27-543",
+    "titles": {
+     "nb": "Forskrift til finanstilsynsloven (finanstilsynsforskriften)",
+     "en": "Regulation to the Financial Supervision Act (Financial Supervision Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Finanstilsynsforskriften",
+    "officialRef": "FOR-2025-03-27-543",
+    "eliUri": "https://lovdata.no/eli/forskrift/2025/03/27/543",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:banking",
+    "inForceFrom": "2025-04-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Bear the share of Finanstilsynet's costs allocated by total assets",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-27-543/%C2%A76-14",
+     "sourceLabel": "Lovdata, finanstilsynsforskriften (FOR-2025-03-27-543) § 6-2, § 6-3, § 6-14",
+     "payload": {
+      "key": "obl-no-ftf-supervisory-levy",
+      "titles": {
+       "en": "Bear the share of Finanstilsynet's costs allocated by total assets"
+      },
+      "summaries": {
+       "en": "Finanstilsynet's costs are allocated to the firms under supervision at the end of the budget year, using the calculation basis at the start of that year, and a firm that comes under supervision during the year pays a minimum amount. For commercial and savings banks, finance companies and credit companies the share follows the size of total assets, with branches of banks from other EEA states assessed on 40 percent of their total assets, or 60 percent for systemically important branches."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6-2, § 6-3, § 6-14",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Valutaregisterforskriften, FOR-2004-12-06-1573",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2004-12-06-1573",
+   "sourceLabel": "Lovdata, FOR-2004-12-06-1573, Forskrift om register over opplysninger om valutaveksling og overføring av betalingsmidler inn og ut av Norge (valutaregisterforskriften), consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2004/12/06/1573"
+   },
+   "payload": {
+    "key": "no-for-2004-12-06-1573",
+    "titles": {
+     "nb": "Forskrift om register over opplysninger om valutaveksling og overføring av betalingsmidler inn og ut av Norge (valutaregisterforskriften)",
+     "en": "Regulation on the Register of Information on Currency Exchange and Transfers of Means of Payment into and out of Norway (Currency Register Regulation)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Valutaregisterforskriften",
+    "officialRef": "FOR-2004-12-06-1573",
+    "eliUri": "https://lovdata.no/eli/forskrift/2004/12/06/1573",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:aml",
+    "inForceFrom": "2005-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report cross-border transfers and currency exchange within five working days",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2004-12-06-1573/%C2%A76",
+     "sourceLabel": "Lovdata, valutaregisterforskriften (FOR-2004-12-06-1573) § 6",
+     "payload": {
+      "key": "obl-no-valregf-reporting-deadline",
+      "titles": {
+       "en": "Report cross-border transfers and currency exchange within five working days"
+      },
+      "summaries": {
+       "en": "The reporting entity must report each reportable currency exchange or transfer into or out of Norway as soon as possible and no later than five working days after it was carried out, send monthly aggregates within five working days after the end of the period, and report at the times the Tax Directorate sets even when there is nothing to report."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Include the prescribed party and transfer details in currency register reports",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2004-12-06-1573/%C2%A79",
+     "sourceLabel": "Lovdata, valutaregisterforskriften (FOR-2004-12-06-1573) § 9, § 10, § 11, § 12",
+     "payload": {
+      "key": "obl-no-valregf-report-content",
+      "titles": {
+       "en": "Include the prescribed party and transfer details in currency register reports"
+      },
+      "summaries": {
+       "en": "Reports on transfers through banks must identify the Norwegian sender or recipient by national identity, organisation or D-number, name, address and account, the foreign party with the details available, and the transfer's reference, time, amounts and currency, and for bank transfers out of Norway above NOK 100,000 what the transfer concerns and the payment type. Card payments abroad with Norwegian-issued cards and payments in Norway with foreign-issued cards are reported individually above NOK 25,000 and otherwise as monthly totals, and currency exchange for customers above NOK 5,000 is reported with the customer's details."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9, § 10, § 11, § 12",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Correct inaccurate currency register information without undue delay",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2004-12-06-1573/%C2%A75",
+     "sourceLabel": "Lovdata, valutaregisterforskriften (FOR-2004-12-06-1573) § 5",
+     "payload": {
+      "key": "obl-no-valregf-data-quality",
+      "titles": {
+       "en": "Correct inaccurate currency register information without undue delay"
+      },
+      "summaries": {
+       "en": "The reporting entity is responsible for the accuracy of the information it reports and, where information in the register proves wrong, must ensure that correct information is reported without undue delay."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Tell customers that information about them has been reported to the currency register",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2004-12-06-1573/%C2%A77",
+     "sourceLabel": "Lovdata, valutaregisterforskriften (FOR-2004-12-06-1573) § 7",
+     "payload": {
+      "key": "obl-no-valregf-customer-notice",
+      "titles": {
+       "en": "Tell customers that information about them has been reported to the currency register"
+      },
+      "summaries": {
+       "en": "The reporting entity must inform its customer that information has been given to the currency register, which for account transfers may be done in the account statement, for card payments in the card statement and for currency exchange on the receipt."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7",
+      "dutyType": "disclosure"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om fakturering av kredittkortgjeld, FOR-2017-04-04-427",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2017-04-04-427",
+   "sourceLabel": "Lovdata, FOR-2017-04-04-427, Forskrift om fakturering av kredittkortgjeld mv., consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2017/04/04/427"
+   },
+   "payload": {
+    "key": "no-for-2017-04-04-427",
+    "titles": {
+     "nb": "Forskrift om fakturering av kredittkortgjeld mv.",
+     "en": "Regulation on Invoicing of Credit Card Debt etc."
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om fakturering av kredittkortgjeld",
+    "officialRef": "FOR-2017-04-04-427",
+    "eliUri": "https://lovdata.no/eli/forskrift/2017/04/04/427",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:banking",
+    "inForceFrom": "2017-04-04"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Propose the full outstanding balance as the amount to pay on credit card bills",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2017-04-04-427/%C2%A72",
+     "sourceLabel": "Lovdata, forskrift om fakturering av kredittkortgjeld (FOR-2017-04-04-427) § 1, § 2",
+     "payload": {
+      "key": "obl-no-kkfakt-full-balance-proposal",
+      "titles": {
+       "en": "Propose the full outstanding balance as the amount to pay on credit card bills"
+      },
+      "summaries": {
+       "en": "For credit lines, including credit cards, agreed with consumers resident in Norway and not secured on registrable assets, each payment request must propose the total outstanding credit as the amount to pay, tell the consumer it can be changed to any amount at or above the minimum due, and state clearly how much falls due and when. Another proposed amount may be agreed only on the consumer's active and informed choice after proper guidance, not when the credit agreement is made and at the earliest at the first due date, and the firm must propose the full-balance setting again every year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1, § 2",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Show consumers a table of the cost of paying less than the full balance",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2017-04-04-427/%C2%A73",
+     "sourceLabel": "Lovdata, forskrift om fakturering av kredittkortgjeld (FOR-2017-04-04-427) § 3",
+     "payload": {
+      "key": "obl-no-kkfakt-cost-table",
+      "titles": {
+       "en": "Show consumers a table of the cost of paying less than the full balance"
+      },
+      "summaries": {
+       "en": "The firm must properly inform the consumer of the costs that accrue when paying less than the total outstanding credit, and each payment request must include a table showing the costs of different payments based on the consumer's outstanding credit or other relevant cost examples."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om formidlingsgebyr i kortordninger, FOR-2019-12-16-1843",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-16-1843",
+   "sourceLabel": "Lovdata, FOR-2019-12-16-1843, Forskrift om formidlingsgebyr i kortordninger mv., consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2019/12/16/1843"
+   },
+   "payload": {
+    "key": "no-for-2019-12-16-1843",
+    "titles": {
+     "nb": "Forskrift om formidlingsgebyr i kortordninger mv.",
+     "en": "Regulation on Interchange Fees in Card Schemes etc."
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om formidlingsgebyr i kortordninger",
+    "officialRef": "FOR-2019-12-16-1843",
+    "eliUri": "https://lovdata.no/eli/forskrift/2019/12/16/1843",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:payments",
+    "inForceFrom": "2020-01-01",
+    "implementsNote": "Makes the Interchange Fee Regulation, Regulation (EU) 2015/751, and Delegated Regulation (EU) 2018/72 Norwegian regulation (§ 1, § 2)"
+   }
+  },
+  {
+   "title": "Add Forskrift om årsregnskap for banker mv., FOR-1998-12-16-1240",
+   "source": "https://lovdata.no/dokument/SF/forskrift/1998-12-16-1240",
+   "sourceLabel": "Lovdata, FOR-1998-12-16-1240, Forskrift om årsregnskap for banker, kredittforetak og finansieringsforetak, consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/1998/12/16/1240"
+   },
+   "payload": {
+    "key": "no-for-1998-12-16-1240",
+    "titles": {
+     "nb": "Forskrift om årsregnskap for banker, kredittforetak og finansieringsforetak",
+     "en": "Regulation on Annual Accounts for Banks, Credit Institutions and Finance Companies"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om årsregnskap for banker mv.",
+    "officialRef": "FOR-1998-12-16-1240",
+    "eliUri": "https://lovdata.no/eli/forskrift/1998/12/16/1240",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:banking",
+    "inForceFrom": "1999-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Prepare company and group accounts under IFRS or IFRS as adapted by the regulation",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1998-12-16-1240/%C2%A71-3",
+     "sourceLabel": "Lovdata, forskrift om årsregnskap for banker mv. (FOR-1998-12-16-1240) § 1-3, § 1-4",
+     "payload": {
+      "key": "obl-no-arsregnf-ifrs",
+      "titles": {
+       "en": "Prepare company and group accounts under IFRS or IFRS as adapted by the regulation"
+      },
+      "summaries": {
+       "en": "Listed institutions with group accounts must prepare the group accounts under IFRS and the company accounts under IFRS or IFRS as adapted by the regulation, and listed institutions without group accounts use IFRS. Other institutions prepare both group and company accounts under IFRS or IFRS as adapted by the regulation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1-3, § 1-4",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Adopt the annual accounts within three months and keep them public on the website for five years",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1998-12-16-1240/%C2%A72-1",
+     "sourceLabel": "Lovdata, forskrift om årsregnskap for banker mv. (FOR-1998-12-16-1240) § 2-1, § 2-8",
+     "payload": {
+      "key": "obl-no-arsregnf-annual-accounts",
+      "titles": {
+       "en": "Adopt the annual accounts within three months and keep them public on the website for five years"
+      },
+      "summaries": {
+       "en": "The board must adopt the proposed annual accounts and directors' report no later than three months after the end of the financial year, or five months for branches of foreign firms. Once the accounts are approved, the accounts, directors' report and auditor's report must be published on the institution's website without undue delay and kept public for at least five years."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2-1, § 2-8",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Prepare quarterly interim accounts and adopt and publish them within 45 days",
+     "source": "https://lovdata.no/dokument/SF/forskrift/1998-12-16-1240/%C2%A78-1",
+     "sourceLabel": "Lovdata, forskrift om årsregnskap for banker mv. (FOR-1998-12-16-1240) § 8-1, § 8-4",
+     "payload": {
+      "key": "obl-no-arsregnf-interim-accounts",
+      "titles": {
+       "en": "Prepare quarterly interim accounts and adopt and publish them within 45 days"
+      },
+      "summaries": {
+       "en": "The institution must prepare interim accounts for each quarter, though unlisted institutions may omit the fourth quarter, and the board must adopt them within 45 days of the end of the period. They must be published on the website without undue delay, stating which parts are audited, and kept public for at least five years."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8-1, § 8-4",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forskrift om konsolidering i tverrsektorielle grupper, FOR-2015-12-18-1764",
+   "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-18-1764",
+   "sourceLabel": "Lovdata, FOR-2015-12-18-1764, Forskrift om konsolidering mv. i tverrsektorielle grupper, consolidated text",
+   "fieldSources": {
+    "eliUri": "https://lovdata.no/eli/forskrift/2015/12/18/1764"
+   },
+   "payload": {
+    "key": "no-for-2015-12-18-1764",
+    "titles": {
+     "nb": "Forskrift om konsolidering mv. i tverrsektorielle grupper",
+     "en": "Regulation on Consolidation etc. in Cross-Sector Financial Groups"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Forskrift om konsolidering i tverrsektorielle grupper",
+    "officialRef": "FOR-2015-12-18-1764",
+    "eliUri": "https://lovdata.no/eli/forskrift/2015/12/18/1764",
+    "level": "government_regulation",
+    "jurisdiction": "no",
+    "authority": "finansdepartementet",
+    "regime": "regime:banking",
+    "inForceFrom": "2016-01-31",
+    "implementsNote": "FICOD, Directive 2002/87/EC"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Cover the sum of the sector capital requirements across a cross-sector financial group",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-18-1764/%C2%A73",
+     "sourceLabel": "Lovdata, forskrift om konsolidering mv. i tverrsektorielle grupper (FOR-2015-12-18-1764) § 1, § 3",
+     "payload": {
+      "key": "obl-no-konsolf-conglomerate-solvency",
+      "titles": {
+       "en": "Cover the sum of the sector capital requirements across a cross-sector financial group"
+      },
+      "summaries": {
+       "en": "The top Norwegian entity of a cross-sector financial group must consolidate, and the group's own funds for its credit institution and investment firm business and for its insurance business, each calculated on a consolidated basis, must together cover the sum of the sector requirements: the capital and buffer requirements for banking and investment firms and the solvency capital requirement for insurance."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1, § 3",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Report group risk concentration, intra-group transactions and structure to Finanstilsynet every year",
+     "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-18-1764/%C2%A77",
+     "sourceLabel": "Lovdata, forskrift om konsolidering mv. i tverrsektorielle grupper (FOR-2015-12-18-1764) § 7",
+     "payload": {
+      "key": "obl-no-konsolf-conglomerate-reporting",
+      "titles": {
+       "en": "Report group risk concentration, intra-group transactions and structure to Finanstilsynet every year"
+      },
+      "summaries": {
+       "en": "A cross-sector financial group must report risk concentration at group level and intra-group transactions to Finanstilsynet at least once a year in the way Finanstilsynet sets, and send an overview of the group's legal structure and organisation every year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  }
+ ]
+}

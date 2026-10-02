@@ -1,0 +1,1403 @@
+{
+ "tranche": "eu-aml-tax",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add AMLD, Directive (EU) 2015/849",
+   "source": "https://eur-lex.europa.eu/eli/dir/2015/849/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2015/849 as published in the Official Journal",
+   "fieldSources": {
+    "inForceTo": "https://eur-lex.europa.eu/eli/dir/2024/1640/oj"
+   },
+   "payload": {
+    "key": "celex-32015l0849",
+    "titles": {
+     "en": "Directive (EU) 2015/849 of the European Parliament and of the Council of 20 May 2015 on the prevention of the use of the financial system for the purposes of money laundering or terrorist financing, amending Regulation (EU) No 648/2012 of the European Parliament and of the Council, and repealing Directive 2005/60/EC of the European Parliament and of the Council and Commission Directive 2006/70/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "AMLD",
+    "officialRef": "Directive (EU) 2015/849",
+    "eliUri": "https://data.europa.eu/eli/dir/2015/849/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:aml",
+    "inForceFrom": "2015-06-25",
+    "inForceTo": "2027-07-10"
+   }
+  },
+  {
+   "title": "Add AMLD6, Directive (EU) 2024/1640",
+   "source": "https://eur-lex.europa.eu/eli/dir/2024/1640/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2024/1640 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024l1640",
+    "titles": {
+     "en": "Directive (EU) 2024/1640 of the European Parliament and of the Council of 31 May 2024 on the mechanisms to be put in place by Member States for the prevention of the use of the financial system for the purposes of money laundering or terrorist financing, amending Directive(EU) 2019/1937, and amending and repealing Directive (EU) 2015/849"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "AMLD6",
+    "officialRef": "Directive (EU) 2024/1640",
+    "eliUri": "https://data.europa.eu/eli/dir/2024/1640/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:aml",
+    "inForceFrom": "2024-07-09"
+   }
+  },
+  {
+   "title": "Add Directive on combating money laundering by criminal law, Directive (EU) 2018/1673",
+   "source": "https://eur-lex.europa.eu/eli/dir/2018/1673/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2018/1673 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32018l1673",
+    "titles": {
+     "en": "Directive (EU) 2018/1673 of the European Parliament and of the Council of 23 October 2018 on combating money laundering by criminal law"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Directive on combating money laundering by criminal law",
+    "officialRef": "Directive (EU) 2018/1673",
+    "eliUri": "https://data.europa.eu/eli/dir/2018/1673/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:aml",
+    "inForceFrom": "2018-12-02"
+   }
+  },
+  {
+   "title": "Add AMLR, Regulation (EU) 2024/1624",
+   "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r1624",
+    "titles": {
+     "en": "Regulation (EU) 2024/1624 of the European Parliament and of the Council of 31 May 2024 on the prevention of the use of the financial system for the purposes of money laundering or terrorist financing"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "AMLR",
+    "officialRef": "Regulation (EU) 2024/1624",
+    "eliUri": "https://data.europa.eu/eli/reg/2024/1624/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:aml",
+    "inForceFrom": "2024-07-09"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep written AML/CFT policies, procedures and controls approved by management",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_9",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 9",
+     "payload": {
+      "key": "obl-eu-amlr-internal-policies",
+      "titles": {
+       "en": "Keep written AML/CFT policies, procedures and controls approved by management"
+      },
+      "summaries": {
+       "en": "Have internal policies, procedures and controls, proportionate to the firm's size, nature and risks, that manage the risks of money laundering, terrorist financing and evasion of targeted financial sanctions across every activity in scope. Put them in writing, have the management body approve the policies, keep them up to date, and have an independent audit function (or an external expert) test them."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 9",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Assess and document the firm's money laundering and terrorist financing risks",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_10",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 10",
+     "payload": {
+      "key": "obl-eu-amlr-business-wide-risk-assessment",
+      "titles": {
+       "en": "Assess and document the firm's money laundering and terrorist financing risks"
+      },
+      "summaries": {
+       "en": "Identify and assess the money laundering, terrorist financing and sanctions-evasion risks the firm is exposed to, using at least the risk variables and factors in the Regulation's annexes and the EU and national risk assessments, and assess new products, channels, technologies and markets before launch. Document the assessment, keep it up to date, have the compliance officer draw it up and the management body approve it, and give it to the supervisor on request."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 10",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Appoint a compliance manager and a compliance officer for AML/CFT",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_11",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 11",
+     "payload": {
+      "key": "obl-eu-amlr-compliance-functions",
+      "titles": {
+       "en": "Appoint a compliance manager and a compliance officer for AML/CFT"
+      },
+      "summaries": {
+       "en": "Name one member of the management body as responsible for AML/CFT compliance and appoint a compliance officer of sufficiently high standing who runs the day-to-day controls, reports suspicious transactions to the FIU and is the supervisors' contact point. Give both adequate resources and direct access to the management body, protect the compliance officer against retaliation, notify the supervisor if the officer is removed, and give the management body a report on the implementation of the controls at least once a year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 11",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Train staff on AML/CFT duties and assess the integrity of those who apply them",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_12",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 12, Article 13",
+     "payload": {
+      "key": "obl-eu-amlr-staff-awareness-integrity",
+      "titles": {
+       "en": "Train staff on AML/CFT duties and assess the integrity of those who apply them"
+      },
+      "summaries": {
+       "en": "Make sure employees, agents and distributors whose function requires it know the AML/CFT requirements and the firm's risk assessment and controls, through documented, ongoing training suited to their role and the firm's risks. Assess the skills and good repute of staff directly involved in AML/CFT compliance before they start and regularly afterwards, and manage conflicts of interest in those tasks."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 12, Art. 13",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Apply group-wide AML/CFT policies, risk assessment and information sharing",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_16",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 16, Article 17",
+     "payload": {
+      "key": "obl-eu-amlr-group-wide-requirements",
+      "titles": {
+       "en": "Apply group-wide AML/CFT policies, risk assessment and information sharing"
+      },
+      "summaries": {
+       "en": "A parent undertaking must carry out a group-wide risk assessment, set group-wide policies, procedures and controls, including on data protection and sharing information within the group, apply them in all branches and subsidiaries, and set up compliance functions at group level. Where a third country's rules are less strict or do not allow compliance, it must make its branches and subsidiaries there meet the Regulation's standard or take additional measures and inform the home supervisor."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 16, Art. 17",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Notify outsourced AML/CFT tasks and keep the key decisions in-house",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_18",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 18",
+     "payload": {
+      "key": "obl-eu-amlr-outsourcing-limits",
+      "titles": {
+       "en": "Notify outsourced AML/CFT tasks and keep the key decisions in-house"
+      },
+      "summaries": {
+       "en": "Notify the supervisor before a service provider starts an outsourced AML/CFT task, check that the provider is qualified, bind it in a written agreement to the firm's policies and control it regularly; the firm stays fully liable. Never outsource the approval of the business-wide risk assessment or the internal policies, the decision on a customer's risk profile or on taking the customer on, the approval of the criteria for detecting suspicious transactions, or reporting to the FIU (except to a group entity in the same Member State)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 18",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Apply customer due diligence when taking on customers and in the other required cases",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_19",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 19, Article 20, Article 22",
+     "payload": {
+      "key": "obl-eu-amlr-customer-due-diligence",
+      "titles": {
+       "en": "Apply customer due diligence when taking on customers and in the other required cases"
+      },
+      "summaries": {
+       "en": "Apply customer due diligence when establishing a business relationship, for occasional transactions of EUR 10 000 or more (EUR 1 000 for transfers of funds by credit and financial institutions), whenever money laundering or terrorist financing is suspected, and when earlier identification data or a person's authority is in doubt. The measures cover identifying and verifying the customer and anyone acting for it, understanding the purpose of the relationship and the customer's business, checking for targeted financial sanctions and politically exposed persons, and monitoring, to an extent set by an individual risk analysis."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 19, Art. 20, Art. 22",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-07-10",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify and verify beneficial owners and report discrepancies to the central register",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_20",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 20(1)(b), Article 22(7), Article 24",
+     "payload": {
+      "key": "obl-eu-amlr-beneficial-ownership",
+      "titles": {
+       "en": "Identify and verify beneficial owners and report discrepancies to the central register"
+      },
+      "summaries": {
+       "en": "Identify the customer's beneficial owners and take reasonable measures to verify their identity, including by consulting the central beneficial ownership register, so the firm understands the ownership and control structure. Report a discrepancy between what it finds and the central register without undue delay and at the latest within 14 calendar days of detecting it, save for the minor or outdated entries the Regulation lets the firm resolve with the customer."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 20(1)(b), Art. 22(7), Art. 24",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-07-10",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Refuse or end the relationship when due diligence cannot be completed",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_21",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 21",
+     "payload": {
+      "key": "obl-eu-amlr-due-diligence-failure",
+      "titles": {
+       "en": "Refuse or end the relationship when due diligence cannot be completed"
+      },
+      "summaries": {
+       "en": "If the firm cannot apply the required customer due diligence measures, it must not carry out the transaction or establish the relationship, must end an existing relationship, and must consider reporting a suspicious transaction to the FIU. It keeps a record of the due diligence actions and decisions taken."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 21",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Monitor business relationships and keep customer information up to date",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_26",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 26",
+     "payload": {
+      "key": "obl-eu-amlr-ongoing-monitoring",
+      "titles": {
+       "en": "Monitor business relationships and keep customer information up to date"
+      },
+      "summaries": {
+       "en": "Monitor the business relationship and the customer's transactions to check that they fit what the firm knows of the customer and its risk profile, and pick out transactions that need a closer assessment for possible reporting. Update customer information on a risk basis and at least every year for higher-risk customers and every five years for all others, sooner when the customer's circumstances change, and regularly re-check targeted financial sanctions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 26",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-07-10",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Apply enhanced due diligence in higher-risk cases, including high-risk third countries",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_34",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 29(4), Article 34",
+     "payload": {
+      "key": "obl-eu-amlr-enhanced-due-diligence",
+      "titles": {
+       "en": "Apply enhanced due diligence in higher-risk cases, including high-risk third countries"
+      },
+      "summaries": {
+       "en": "Apply enhanced due diligence measures proportionate to the risk in higher-risk situations, including business relationships and occasional transactions involving persons from third countries the Commission designates as high-risk. Examine the origin, destination and purpose of the funds in any transaction that is complex, unusually large, follows an unusual pattern or has no apparent economic or lawful purpose."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 29(4), Art. 34",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Vet cross-border correspondent relationships and refuse shell institutions",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_36",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 36, Article 39",
+     "payload": {
+      "key": "obl-eu-amlr-correspondent-relationships",
+      "titles": {
+       "en": "Vet cross-border correspondent relationships and refuse shell institutions"
+      },
+      "summaries": {
+       "en": "Before entering a cross-border correspondent relationship involving payments with a third-country respondent institution, gather enough information on its business, reputation and supervision, assess its AML/CFT controls, obtain senior management approval and document each institution's responsibilities; document any termination on AML/CFT grounds. Never enter into or continue a correspondent relationship with a shell institution or with an institution known to let a shell institution use its accounts."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 36, Art. 39",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Apply enhanced measures to politically exposed persons and their family and close associates",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_42",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 42, Article 45, Article 46",
+     "payload": {
+      "key": "obl-eu-amlr-politically-exposed-persons",
+      "titles": {
+       "en": "Apply enhanced measures to politically exposed persons and their family and close associates"
+      },
+      "summaries": {
+       "en": "For business relationships or occasional transactions with politically exposed persons, their family members and known close associates, obtain senior management approval, establish the source of wealth and source of funds, and apply enhanced ongoing monitoring. When the person leaves the prominent public function, keep applying risk-mitigating measures for as long as the risk lasts and for at least 12 months."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 42, Art. 45, Art. 46",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Report suspicions to the FIU and hold back suspect transactions",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_69",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 69, Article 71",
+     "payload": {
+      "key": "obl-eu-amlr-suspicious-transaction-reporting",
+      "titles": {
+       "en": "Report suspicions to the FIU and hold back suspect transactions"
+      },
+      "summaries": {
+       "en": "Report promptly to the FIU, on the firm's own initiative, whenever it knows, suspects or has reasonable grounds to suspect that funds or activities are the proceeds of crime or linked to terrorist financing, including attempted transactions, and answer FIU requests for information within five working days unless the FIU sets another deadline. Do not carry out a suspect transaction until it has been reported; it may proceed after assessing the risks if the FIU has given no contrary instruction within three working days."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 69, Art. 71",
+      "dutyType": "reporting",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Do not tell customers or third parties about suspicion reports or analyses",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_73",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 73",
+     "payload": {
+      "key": "obl-eu-amlr-no-tipping-off",
+      "titles": {
+       "en": "Do not tell customers or third parties about suspicion reports or analyses"
+      },
+      "summaries": {
+       "en": "The firm, its directors, employees, agents and distributors must not disclose to the customer or any other third person that a transaction is being assessed, that information has been or will be reported to the FIU, or that an analysis is under way. Disclosure is allowed only to supervisors and for law enforcement purposes, and in the limited cases the Regulation permits, such as within a group that applies compliant group-wide policies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 73",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-07-10"
+     }
+    },
+    {
+     "title": "Add the duty: Keep due diligence, assessment and transaction records for five years",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj#art_77",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624, Article 77",
+     "payload": {
+      "key": "obl-eu-amlr-record-retention",
+      "titles": {
+       "en": "Keep due diligence, assessment and transaction records for five years"
+      },
+      "summaries": {
+       "en": "Keep unredacted copies of customer due diligence documents, records of the assessments of possibly suspicious activity and any report filed, and the records needed to identify transactions, for five years after the business relationship ends, the occasional transaction is carried out or the customer is refused. Delete the personal data when that period ends, unless other law or a competent authority's case-by-case order requires longer retention."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 77",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2027-07-10"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add AMLA Regulation, Regulation (EU) 2024/1620",
+   "source": "https://eur-lex.europa.eu/eli/reg/2024/1620/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1620 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r1620",
+    "titles": {
+     "en": "Regulation (EU) 2024/1620 of the European Parliament and of the Council of 31 May 2024 establishing the Authority for Anti-Money Laundering and Countering the Financing of Terrorism and amending Regulations (EU) No 1093/2010, (EU) No 1094/2010 and (EU) No 1095/2010"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "AMLA Regulation",
+    "officialRef": "Regulation (EU) 2024/1620",
+    "eliUri": "https://data.europa.eu/eli/reg/2024/1620/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:aml",
+    "inForceFrom": "2024-06-26"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Supply information to AMLA and submit to its investigations and on-site inspections",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1620/oj#art_17",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1620, Article 17(2), Article 18(2), Article 19(4)",
+     "payload": {
+      "key": "obl-eu-amla-direct-supervision-cooperation",
+      "titles": {
+       "en": "Supply information to AMLA and submit to its investigations and on-site inspections"
+      },
+      "summaries": {
+       "en": "A credit or financial institution that the Authority for Anti-Money Laundering and Countering the Financing of Terrorism (AMLA) selects for direct supervision must provide the information AMLA requests without undue delay and make sure it is clear, accurate and complete, and must submit to the investigations and on-site inspections AMLA decides on. AMLA starts the first selection by 1 July 2027 and begins direct supervision six months after it publishes the list of selected entities."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 17(2), Art. 18(2), Art. 19(4)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2025-07-01"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Transfer of Funds Regulation (TFR), Regulation (EU) 2023/1113",
+   "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32023r1113",
+    "titles": {
+     "en": "Regulation (EU) 2023/1113 of the European Parliament and of the Council of 31 May 2023 on information accompanying transfers of funds and certain crypto-assets and amending Directive (EU) 2015/849"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Transfer of Funds Regulation (TFR)",
+    "officialRef": "Regulation (EU) 2023/1113",
+    "eliUri": "https://data.europa.eu/eli/reg/2023/1113/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:aml",
+    "inForceFrom": "2023-06-29"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Send complete, verified payer and payee information with every transfer of funds",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_4",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 4, Article 5, Article 6",
+     "payload": {
+      "key": "obl-eu-tfr-payer-information",
+      "titles": {
+       "en": "Send complete, verified payer and payee information with every transfer of funds"
+      },
+      "summaries": {
+       "en": "As the payer's payment service provider, make sure each transfer of funds carries the payer's name, payment account number and address (or the permitted identifiers) and the payee's name and account number, and verify the payer information from a reliable, independent source before executing the transfer. Where every provider in the chain is in the EU the account numbers suffice, but the full information must be supplied within three working days of a request from the payee's or an intermediary provider; lighter rules apply to unlinked transfers of EUR 1 000 or less."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4, Art. 5, Art. 6",
+      "dutyType": "technical",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Detect and handle incoming transfers of funds with missing payer or payee information",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_7",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 7, Article 8(1), Article 9",
+     "payload": {
+      "key": "obl-eu-tfr-payee-missing-information",
+      "titles": {
+       "en": "Detect and handle incoming transfers of funds with missing payer or payee information"
+      },
+      "summaries": {
+       "en": "As the payee's payment service provider, run effective procedures, including monitoring during or after transfers, to detect missing or inadmissible payer and payee information, and verify the payee's information before crediting a transfer above EUR 1 000. Use risk-based procedures to reject the transfer or ask for the missing information, and take missing or incomplete information into account when deciding whether to report a suspicious transaction to the FIU."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 7, Art. 8(1), Art. 9",
+      "dutyType": "technical",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Pass on all payer and payee information when acting as an intermediary provider",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_10",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 10, Article 11, Article 12(1)",
+     "payload": {
+      "key": "obl-eu-tfr-intermediary-provider",
+      "titles": {
+       "en": "Pass on all payer and payee information when acting as an intermediary provider"
+      },
+      "summaries": {
+       "en": "As an intermediary payment service provider, keep all payer and payee information received with a transfer of funds together with that transfer, run effective procedures to detect missing or inadmissible information, and decide on a risk basis whether to execute, reject or suspend a transfer lacking it or to request the missing information."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 10, Art. 11, Art. 12(1)",
+      "dutyType": "technical",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Act on and report providers that repeatedly omit required transfer information",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_8",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 8(2), Article 12(2), Article 17(2)",
+     "payload": {
+      "key": "obl-eu-tfr-repeatedly-failing-providers",
+      "titles": {
+       "en": "Act on and report providers that repeatedly omit required transfer information"
+      },
+      "summaries": {
+       "en": "Where another payment service provider or crypto-asset service provider repeatedly fails to send the required information, warn it and set deadlines or directly reject its future transfers, or restrict or end the business relationship. Report the failure and the steps taken to the authority supervising AML/CFT compliance."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 8(2), Art. 12(2), Art. 17(2)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Send originator and beneficiary information with transfers of crypto-assets",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_14",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 14",
+     "payload": {
+      "key": "obl-eu-tfr-crypto-originator-information",
+      "titles": {
+       "en": "Send originator and beneficiary information with transfers of crypto-assets"
+      },
+      "summaries": {
+       "en": "As the originator's crypto-asset service provider, make sure each transfer of crypto-assets is accompanied, in advance or at the same time and securely, by the originator's and beneficiary's names and distributed ledger addresses or crypto-asset account numbers and the originator's address or permitted identifiers, and verify the originator information before transferring. For a transfer to a self-hosted address, obtain and hold that information and, above EUR 1 000, assess whether the address is owned or controlled by the originator."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 14",
+      "dutyType": "technical",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Detect and handle incoming crypto-asset transfers with missing information",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_16",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 16, Article 17(1)",
+     "payload": {
+      "key": "obl-eu-tfr-crypto-beneficiary-checks",
+      "titles": {
+       "en": "Detect and handle incoming crypto-asset transfers with missing information"
+      },
+      "summaries": {
+       "en": "As the beneficiary's crypto-asset service provider, run effective procedures to detect whether the required originator and beneficiary information accompanies each transfer, verify the beneficiary information before making the crypto-assets available, and for a transfer above EUR 1 000 from a self-hosted address assess whether the beneficiary owns or controls it. Where information is missing, reject or return the transfer or request the information, on a risk basis and without undue delay."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 16, Art. 17(1)",
+      "dutyType": "technical",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Have controls that apply EU and national restrictive measures to transfers",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_23",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 23",
+     "payload": {
+      "key": "obl-eu-tfr-restrictive-measures-controls",
+      "titles": {
+       "en": "Have controls that apply EU and national restrictive measures to transfers"
+      },
+      "summaries": {
+       "en": "Payment service providers and crypto-asset service providers must have internal policies, procedures and controls that ensure Union and national restrictive measures are implemented when they carry out transfers of funds and crypto-assets."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 23",
+      "dutyType": "governance",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Answer AML authorities' enquiries on transfer information fully and without delay",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_24",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 24",
+     "payload": {
+      "key": "obl-eu-tfr-authority-enquiries",
+      "titles": {
+       "en": "Answer AML authorities' enquiries on transfer information fully and without delay"
+      },
+      "summaries": {
+       "en": "Payment service providers and crypto-asset service providers must answer fully and without delay enquiries from their Member State's authorities for preventing money laundering and terrorist financing about the information the Regulation requires, following national procedural rules and through a central contact point where one has been appointed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 24",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-12-30"
+     }
+    },
+    {
+     "title": "Add the duty: Keep records of transfer information for five years",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj#art_26",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113, Article 26",
+     "payload": {
+      "key": "obl-eu-tfr-record-retention",
+      "titles": {
+       "en": "Keep records of transfer information for five years"
+      },
+      "summaries": {
+       "en": "Payment service providers of the payer and the payee, and crypto-asset service providers of the originator and the beneficiary, must keep records of the information the Regulation requires for five years and then delete the personal data, unless national law provides for longer retention."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 26",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2024-12-30"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add High-risk third countries Delegated Regulation, Commission Delegated Regulation (EU) 2016/1675",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1675/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1675 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r1675",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2016/1675 of 14 July 2016 supplementing Directive (EU) 2015/849 of the European Parliament and of the Council by identifying high-risk third countries with strategic deficiencies"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "High-risk third countries Delegated Regulation",
+    "officialRef": "Commission Delegated Regulation (EU) 2016/1675",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2016/1675/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:aml",
+    "inForceFrom": "2016-09-23"
+   }
+  },
+  {
+   "title": "Add RTS on AML/CFT measures in third countries, Commission Delegated Regulation (EU) 2019/758",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019r0758",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2019/758 of 31 January 2019 supplementing Directive (EU) 2015/849 of the European Parliament and of the Council with regard to regulatory technical standards for the minimum action and the type of additional measures credit and financial institutions must take to mitigate money laundering and terrorist financing risk in certain third countries"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "RTS on AML/CFT measures in third countries",
+    "officialRef": "Commission Delegated Regulation (EU) 2019/758",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2019/758/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:aml",
+    "inForceFrom": "2019-06-03"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Assess the group risk of each third country where the firm has a branch or majority-owned subsidiary",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj#art_2",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758, Article 2",
+     "payload": {
+      "key": "obl-eu-2019-758-third-country-risk",
+      "titles": {
+       "en": "Assess the group risk of each third country where the firm has a branch or majority-owned subsidiary"
+      },
+      "summaries": {
+       "en": "For every third country where it has a branch or is the majority owner of a subsidiary, the credit or financial institution must assess, record and keep up to date the money laundering and terrorist financing risk to its group, reflect it in group-wide policies, have both approved by senior management at group level, and give relevant staff in that country targeted, effective training."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2",
+      "dutyType": "governance",
+      "effectiveFrom": "2019-09-03"
+     }
+    },
+    {
+     "title": "Add the duty: Tell the home supervisor when a third country's law blocks group AML/CFT policies",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj#art_3",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758, Article 3(1)(a), Article 4(1)(a), Article 5(1)(a), Article 6(a), Article 7(1)(a)",
+     "payload": {
+      "key": "obl-eu-2019-758-notify-legal-obstacles",
+      "titles": {
+       "en": "Tell the home supervisor when a third country's law blocks group AML/CFT policies"
+      },
+      "summaries": {
+       "en": "When a third country's law prohibits or restricts customer risk assessment, sharing or processing of customer data within the group, sharing of suspicious transaction information, transfer of customer data to the EU for supervision, or record-keeping, inform the competent authority of the home Member State without undue delay and at the latest within 28 days of identifying that country, naming it and explaining how its law restricts the measures."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3(1)(a), Art. 4(1)(a), Art. 5(1)(a), Art. 6(a), Art. 7(1)(a)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2019-09-03"
+     }
+    },
+    {
+     "title": "Add the duty: Take additional measures, or exit, where third-country law blocks group AML/CFT policies",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj#art_8",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758, Article 3(1)-(2), Article 4(1)-(3), Article 5(1)-(3), Article 7(1)-(2), Article 8",
+     "payload": {
+      "key": "obl-eu-2019-758-additional-measures",
+      "titles": {
+       "en": "Take additional measures, or exit, where third-country law blocks group AML/CFT policies"
+      },
+      "summaries": {
+       "en": "Where such a restriction exists, seek customer consent to overcome it where the third country's law allows, and otherwise apply the additional measures the Regulation lists, such as limiting the products offered, enhanced reviews or audits and senior management approval of higher-risk relationships, to an extent the firm can justify to its supervisor. If the risk still cannot be managed, make the branch or subsidiary end the relationships concerned or close down some or all of its operations."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3(1)-(2), Art. 4(1)-(3), Art. 5(1)-(3), Art. 7(1)-(2), Art. 8",
+      "dutyType": "governance",
+      "effectiveFrom": "2019-09-03"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add the ML/TF Risk Factors Guidelines, EBA/GL/2021/02",
+   "source": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/anti-money-laundering-and-countering-financing-1",
+   "sourceLabel": "European Banking Authority, EBA/GL/2021/02 (ML/TF Risk Factors Guidelines) guideline page",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/anti-money-laundering-and-countering-financing-1?version=2021"
+   },
+   "payload": {
+    "key": "eba-gl-2021-02",
+    "titles": {
+     "en": "Guidelines under Articles 17 and 18(4) of Directive (EU) 2015/849 on customer due diligence and the factors credit and financial institutions should consider when assessing the money laundering and terrorist financing risk associated with individual business relationships and occasional transactions ('The ML/TF Risk Factors Guidelines'), repealing and replacing Guidelines JC/2017/37"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ML/TF Risk Factors Guidelines",
+    "officialRef": "EBA/GL/2021/02",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:aml",
+    "inForceFrom": "2021-10-07"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Carry out and keep up to date business-wide and individual ML/TF risk assessments",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/963637/Final%20Report%20on%20Guidelines%20on%20revised%20ML%20TF%20Risk%20Factors.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2021/02 final report, Guidelines 1.2 to 1.9",
+     "payload": {
+      "key": "obl-eu-eba-rfgl-risk-assessments",
+      "titles": {
+       "en": "Carry out and keep up to date business-wide and individual ML/TF risk assessments"
+      },
+      "summaries": {
+       "en": "Assess both the money laundering and terrorist financing risk of the business as a whole and the risk of each business relationship or occasional transaction, by identifying risk factors and weighing inherent risk against the quality of controls. Record the business-wide assessment and its changes, set a date each calendar year for its next update, and have systems that pick up new or increased risks and bring them into both assessments promptly."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 1.2 to 1.9",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Build due diligence policies on the risk assessment and set the extent of each measure by risk",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/963637/Final%20Report%20on%20Guidelines%20on%20revised%20ML%20TF%20Risk%20Factors.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2021/02 final report, Guidelines 4.1 to 4.7",
+     "payload": {
+      "key": "obl-eu-eba-rfgl-risk-based-cdd",
+      "titles": {
+       "en": "Build due diligence policies on the risk assessment and set the extent of each measure by risk"
+      },
+      "summaries": {
+       "en": "Base AML/CFT policies and procedures on the risk assessments, make sure relevant staff have and understand them, and give senior management enough data, including the business-wide assessment, to judge their adequacy. Apply every customer due diligence measure but set its extent on a risk-sensitive basis, and define in the policies who the customer and beneficial owner are for each customer type and product, and when repeated occasional transactions become a business relationship."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 4.1 to 4.7",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Apply enhanced due diligence in the mandatory higher-risk cases, including high-risk third countries",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/963637/Final%20Report%20on%20Guidelines%20on%20revised%20ML%20TF%20Risk%20Factors.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2021/02 final report, Guidelines 4.45 to 4.57",
+     "payload": {
+      "key": "obl-eu-eba-rfgl-enhanced-due-diligence",
+      "titles": {
+       "en": "Apply enhanced due diligence in the mandatory higher-risk cases, including high-risk third countries"
+      },
+      "summaries": {
+       "en": "Apply enhanced due diligence in addition to regular due diligence in higher-risk situations and always for politically exposed persons, correspondent relationships with third-country institutions, complex or unusual transactions and relationships or transactions involving high-risk third countries. Treat a relationship or transaction as involving a high-risk third country where, for example, the funds were generated in, come from or go to such a country, or the customer or trustee is established there."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 4.45 to 4.57",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Monitor relationships and transactions with an intensity set by risk",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2021/963637/Final%20Report%20on%20Guidelines%20on%20revised%20ML%20TF%20Risk%20Factors.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2021/02 final report, Guidelines 4.69 to 4.72",
+     "payload": {
+      "key": "obl-eu-eba-rfgl-monitoring",
+      "titles": {
+       "en": "Monitor relationships and transactions with an intensity set by risk"
+      },
+      "summaries": {
+       "en": "Monitor transactions against the customer's risk profile, financial situation and the firm's wider knowledge of the customer to detect unusual or suspicious transactions, and keep customer documents and data up to date so that changes in risk are noticed. Set the frequency and intensity of monitoring on a risk-sensitive basis and make sure the transaction monitoring approach is effective and appropriate."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guidelines 4.69 to 4.72",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess customers that are not-for-profit organisations against their specific risk criteria",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054143/Amending%20GLs%20to%20the%20RFGLs%20in%20relation%20to%20NPOs.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2023/03 amending guidelines, Guideline 2.7(d) and Annex (as amended by EBA/GL/2023/03)",
+     "payload": {
+      "key": "obl-eu-eba-rfgl-npo-customers",
+      "titles": {
+       "en": "Assess customers that are not-for-profit organisations against their specific risk criteria"
+      },
+      "summaries": {
+       "en": "When first assessing a not-for-profit organisation as a customer, take risk-sensitive steps to understand who controls it and its beneficial owners, how it is funded, what its operations aim at, who benefits, which transactions it is likely to request and where it operates, using the criteria the 2023 amendment added to the guidelines."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Guideline 2.7(d) and Annex (as amended by EBA/GL/2023/03)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2023-11-03",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add the Remote Customer Onboarding Guidelines, EBA/GL/2022/15",
+   "source": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/anti-money-laundering-and-countering-financing-4",
+   "sourceLabel": "European Banking Authority, EBA/GL/2022/15 (Remote Customer Onboarding Guidelines) guideline page",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf"
+   },
+   "payload": {
+    "key": "eba-gl-2022-15",
+    "titles": {
+     "en": "Guidelines on the use of Remote Customer Onboarding Solutions under Article 13(1) of Directive (EU) 2015/849"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Remote Customer Onboarding Guidelines",
+    "officialRef": "EBA/GL/2022/15",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:aml",
+    "inForceFrom": "2023-10-02"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Adopt risk-sensitive remote onboarding policies approved by the management body",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2022/15 final report, Paragraphs 9 to 12",
+     "payload": {
+      "key": "obl-eu-eba-rco-policies",
+      "titles": {
+       "en": "Adopt risk-sensitive remote onboarding policies approved by the management body"
+      },
+      "summaries": {
+       "en": "Set out in policies and procedures how the remote onboarding solution collects, verifies and records information, which customers, products and services may be onboarded remotely, which steps are automated and which need a person, the controls that stop the first transaction until initial due diligence is complete, and staff training. The management body approves these policies and oversees them, and the AML/CFT compliance officer makes sure they are implemented, reviewed and updated."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 9 to 12",
+      "dutyType": "governance",
+      "terms": [
+       "channel:digital",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess and test a remote onboarding solution before use and monitor it afterwards",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2022/15 final report, Paragraphs 13 to 19",
+     "payload": {
+      "key": "obl-eu-eba-rco-pre-implementation",
+      "titles": {
+       "en": "Assess and test a remote onboarding solution before use and monitor it afterwards"
+      },
+      "summaries": {
+       "en": "Before adopting a remote onboarding solution, assess the adequacy of its data and sources and its impact on the firm's risks, test it for fraud, impersonation and ICT and security risks, run end-to-end tests, and be able to show the supervisor the outcome; start using it only once it fits the internal control system. Monitor the solution on an ongoing basis with regular and trigger-based reviews, and set out remedial measures for when risks materialise or errors are found."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 13 to 19",
+      "dutyType": "governance",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Check document authenticity and match the customer to the evidence in remote onboarding",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2022/15 final report, Paragraphs 33 to 41",
+     "payload": {
+      "key": "obl-eu-eba-rco-identity-verification",
+      "titles": {
+       "en": "Check document authenticity and match the customer to the evidence in remote onboarding"
+      },
+      "summaries": {
+       "en": "Where reproductions of identity documents are accepted, check that security features and specifications are valid and that data or the photograph has not been tampered with, and make sure the solution matches the person to the document and, for a legal entity, confirms its registration and the representative's authority. Biometric data used must reliably link to one person; where the evidence is too poor for reliable checks, stop and restart the process or redirect it to a face-to-face verification."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 33 to 41",
+      "dutyType": "technical",
+      "terms": [
+       "channel:digital",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Specify and control what third parties do in remote onboarding",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-15%20GL%20on%20remote%20customer%20onboarding/1043884/Guidelines%20on%20the%20use%20of%20Remote%20Customer%20Onboarding%20Solutions.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2022/15 final report, Paragraphs 46 to 47",
+     "payload": {
+      "key": "obl-eu-eba-rco-third-parties",
+      "titles": {
+       "en": "Specify and control what third parties do in remote onboarding"
+      },
+      "summaries": {
+       "en": "State in the policies which remote onboarding functions the firm performs itself and which a third party or outsourced provider performs. When relying on a third party's remote onboarding, be satisfied that its processes and the data it collects meet these guidelines, and protect the continuity of the customer relationship against shortcomings discovered later."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 46 to 47",
+      "dutyType": "governance",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add the AML/CFT Compliance Officer Guidelines, EBA/GL/2022/05",
+   "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/anti-money-laundering-and-countering-financing-1",
+   "sourceLabel": "European Banking Authority, EBA/GL/2022/05 (AML/CFT Compliance Officer Guidelines) guideline page",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf"
+   },
+   "payload": {
+    "key": "eba-gl-2022-05",
+    "titles": {
+     "en": "Guidelines on policies and procedures in relation to compliance management and the role and responsibilities of the AML/CFT Compliance Officer under Article 8 and Chapter VI of Directive (EU) 2015/849"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "AML/CFT Compliance Officer Guidelines",
+    "officialRef": "EBA/GL/2022/05",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:aml",
+    "inForceFrom": "2022-12-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Name a management body member responsible for AML/CFT with the knowledge and time to act",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2022/05 final report, Paragraphs 17 to 18",
+     "payload": {
+      "key": "obl-eu-eba-co-management-body-member",
+      "titles": {
+       "en": "Name a management body member responsible for AML/CFT with the knowledge and time to act"
+      },
+      "summaries": {
+       "en": "Identify the member of the management body responsible for AML/CFT, who must have sufficient knowledge, skills and experience of money laundering and terrorist financing risks and of the firm's business, commit enough time and resources, report on the tasks, and keep the management body in its supervisory function informed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 17 to 18",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Appoint the AML/CFT compliance officer at management level with the authority to act",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2022/05 final report, Paragraphs 24 to 27",
+     "payload": {
+      "key": "obl-eu-eba-co-appointment",
+      "titles": {
+       "en": "Appoint the AML/CFT compliance officer at management level with the authority to act"
+      },
+      "summaries": {
+       "en": "The management body appoints the AML/CFT compliance officer at management level, with authority to propose on their own initiative every measure needed for effective AML/CFT controls. It decides whether the role is full-time, and where the person holds other functions it identifies and avoids or manages conflicts of interest and makes sure enough time is available."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 24 to 27",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Produce an annual AML/CFT activity report and have the management body review it",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2022/05 final report, Paragraphs 13(c), 48 to 50",
+     "payload": {
+      "key": "obl-eu-eba-co-activity-report",
+      "titles": {
+       "en": "Produce an annual AML/CFT activity report and have the management body review it"
+      },
+      "summaries": {
+       "en": "The AML/CFT compliance officer produces an activity report at least once a year covering, among other things, the main findings of the business-wide risk assessment, customer risk classifications and overdue reviews, and data on unusual and reported transactions. The management body in its supervisory function reviews it at least annually, and the firm stands ready to share it with the competent authority."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 13(c), 48 to 50",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Organise AML/CFT compliance at group level with a group compliance officer",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2022/EBA-GL-2022-05%20GLs%20on%20AML%20compliance%20officers/1035126/Guidelines%20on%20AMLCFT%20compliance%20officers.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2022/05 final report, Paragraphs 77 to 79",
+     "payload": {
+      "key": "obl-eu-eba-co-group-structure",
+      "titles": {
+       "en": "Organise AML/CFT compliance at group level with a group compliance officer"
+      },
+      "summaries": {
+       "en": "A parent credit or financial institution designates a management body member or senior manager responsible for AML/CFT and a group AML/CFT compliance officer, sets up a group coordination structure with enough decision-making power, approves group AML/CFT policies, and makes group entities carry out their business-wide risk assessments on a common methodology and remedy supervisory findings promptly."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 77 to 79",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add the Access to Financial Services Guidelines, EBA/GL/2023/04",
+   "source": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/anti-money-laundering-and-countering-financing-6",
+   "sourceLabel": "European Banking Authority, EBA/GL/2023/04 (Access to Financial Services Guidelines) guideline page",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/anti-money-laundering-and-countering-financing-6"
+   },
+   "payload": {
+    "key": "eba-gl-2023-04",
+    "titles": {
+     "en": "Guidelines on policies and controls for the effective management of money laundering and terrorist financing (ML/TF) risks when providing access to financial services"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Access to Financial Services Guidelines",
+    "officialRef": "EBA/GL/2023/04",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:aml",
+    "inForceFrom": "2023-11-03"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Assess individual customers rather than refuse whole categories of customers",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2023/04 final report, Paragraphs 9 to 10",
+     "payload": {
+      "key": "obl-eu-eba-access-no-blanket-refusal",
+      "titles": {
+       "en": "Assess individual customers rather than refuse whole categories of customers"
+      },
+      "summaries": {
+       "en": "Set up policies and controls that distinguish the risk of a category of customers from the risk of each individual customer in it, and make sure they do not lead to blanket refusal or termination of business relationships with entire categories assessed as higher risk."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 9 to 10",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Consider every reasonable mitigating measure before refusing or ending a relationship",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2023/04 final report, Paragraphs 11 to 12",
+     "payload": {
+      "key": "obl-eu-eba-access-mitigate-before-refusal",
+      "titles": {
+       "en": "Consider every reasonable mitigating measure before refusing or ending a relationship"
+      },
+      "summaries": {
+       "en": "Set out in policies the criteria for rejecting or ending a business relationship or denying a transaction and the options for mitigating higher risk, at least adjusted monitoring and, where national law allows, targeted limits on products or services. Before refusing or terminating, be satisfied that every mitigating measure that could reasonably apply has been considered and rejected."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 11 to 12",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Document every refusal or termination of a business relationship and its reason",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2023/04 final report, Paragraph 14",
+     "payload": {
+      "key": "obl-eu-eba-access-document-refusals",
+      "titles": {
+       "en": "Document every refusal or termination of a business relationship and its reason"
+      },
+      "summaries": {
+       "en": "Record each decision to refuse or terminate a business relationship together with the reason for it, and be ready to make that documentation available to the competent authority on request."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraph 14",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Adjust due diligence for basic payment accounts and avoid automated rejections",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library/Publications/Guidelines/2023/1054144/Guidelines%20on%20MLTF%20risk%20management%20and%20access%20to%20financial%20services.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2023/04 final report, Paragraphs 15 to 16",
+     "payload": {
+      "key": "obl-eu-eba-access-basic-payment-accounts",
+      "titles": {
+       "en": "Adjust due diligence for basic payment accounts and avoid automated rejections"
+      },
+      "summaries": {
+       "en": "A credit institution obliged to offer payment accounts with basic features sets out in its account opening policies how due diligence is adjusted to reflect the lower risk of the account's limited functions, and makes sure any digital onboarding solution for these accounts does not produce automated rejections."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 15 to 16",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add the Travel Rule Guidelines, EBA/GL/2024/11",
+   "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/anti-money-laundering-and-countering-financing-terrorism/guidelines-information-requirements-relation-transfers-funds-and-certain-crypto-assets-transfers",
+   "sourceLabel": "European Banking Authority, EBA/GL/2024/11 (Travel Rule Guidelines) guideline page",
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf"
+   },
+   "payload": {
+    "key": "eba-gl-2024-11",
+    "titles": {
+     "en": "Guidelines on information requirements in relation to transfers of funds and certain crypto-assets transfers under Regulation (EU) 2023/1113 ('Travel Rule Guidelines')"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Travel Rule Guidelines",
+    "officialRef": "EBA/GL/2024/11",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:aml",
+    "inForceFrom": "2024-12-30"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Use messaging systems that carry the full transfer information without gaps or errors",
+     "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2024/11 final report, Paragraphs 21 to 22",
+     "payload": {
+      "key": "obl-eu-eba-trgl-messaging-systems",
+      "titles": {
+       "en": "Use messaging systems that carry the full transfer information without gaps or errors"
+      },
+      "summaries": {
+       "en": "Payment and crypto-asset service providers, including intermediaries, use infrastructures and services able to transmit and receive the full payer, payee, originator and beneficiary information without gaps or errors, and keep the data intact where it has to be converted into another format."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 21 to 22",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Define the risk factors that trigger real-time or after-the-event checks of transfers",
+     "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2024/11 final report, Paragraphs 46 to 47",
+     "payload": {
+      "key": "obl-eu-eba-trgl-monitoring-criteria",
+      "titles": {
+       "en": "Define the risk factors that trigger real-time or after-the-event checks of transfers"
+      },
+      "summaries": {
+       "en": "Set out in policies which risk factors, or combinations of them, always trigger monitoring during a transfer and which trigger a targeted review afterwards, drawing on the EBA risk factor guidelines and the firm's own risk assessment. The factors include at least unusually large values and links to countries subject to restrictive measures or associated with high money laundering and terrorist financing risk."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 46 to 47",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Set risk-based rules for rejecting, suspending or executing incomplete transfers",
+     "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2024/11 final report, Paragraphs 52 to 53",
+     "payload": {
+      "key": "obl-eu-eba-trgl-missing-information-decisions",
+      "titles": {
+       "en": "Set risk-based rules for rejecting, suspending or executing incomplete transfers"
+      },
+      "summaries": {
+       "en": "Set out in policies how the firm decides whether to reject, suspend or execute a transfer with missing or incomplete information, listing the risk factors considered for each transfer, including whether the information still identifies the parties and whether risk-increasing factors point to high risk or suspicion."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 52 to 53",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Identify repeatedly failing providers by set criteria and report them within three months",
+     "source": "https://www.eba.europa.eu/sites/default/files/2024-07/6de6e9b9-0ed9-49cd-985d-c0834b5b4356/Travel%20Rule%20Guidelines.pdf",
+     "sourceLabel": "European Banking Authority, EBA/GL/2024/11 final report, Paragraphs 67 to 69, 74 to 75",
+     "payload": {
+      "key": "obl-eu-eba-trgl-repeatedly-failing",
+      "titles": {
+       "en": "Identify repeatedly failing providers by set criteria and report them within three months"
+      },
+      "summaries": {
+       "en": "Set quantitative and qualitative criteria for deciding that a counterpart provider is repeatedly failing to send required information, and document every transfer with missing information. Report a repeatedly failing provider to the competent authority without undue delay and at the latest three months after identifying it, whatever its reasons or location."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Paragraphs 67 to 69, 74 to 75",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DAC, Council Directive 2011/16/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2011/16/oj",
+   "sourceLabel": "EUR-Lex, Council Directive 2011/16/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32011l0016",
+    "titles": {
+     "en": "Council Directive 2011/16/EU of 15 February 2011 on administrative cooperation in the field of taxation and repealing Directive 77/799/EEC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DAC",
+    "officialRef": "Council Directive 2011/16/EU",
+    "eliUri": "https://data.europa.eu/eli/dir/2011/16/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "council-eu",
+    "regime": "regime:tax",
+    "inForceFrom": "2011-03-11"
+   }
+  },
+  {
+   "title": "Add DAC2 (Common Reporting Standard), Council Directive 2014/107/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2014/107/oj",
+   "sourceLabel": "EUR-Lex, Council Directive 2014/107/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014l0107",
+    "titles": {
+     "en": "Council Directive 2014/107/EU of 9 December 2014 amending Directive 2011/16/EU as regards mandatory automatic exchange of information in the field of taxation"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DAC2 (Common Reporting Standard)",
+    "officialRef": "Council Directive 2014/107/EU",
+    "eliUri": "https://data.europa.eu/eli/dir/2014/107/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "council-eu",
+    "regime": "regime:tax",
+    "inForceFrom": "2015-01-05"
+   }
+  },
+  {
+   "title": "Add DAC6, Council Directive (EU) 2018/822",
+   "source": "https://eur-lex.europa.eu/eli/dir/2018/822/oj",
+   "sourceLabel": "EUR-Lex, Council Directive (EU) 2018/822 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32018l0822",
+    "titles": {
+     "en": "Council Directive (EU) 2018/822 of 25 May 2018 amending Directive 2011/16/EU as regards mandatory automatic exchange of information in the field of taxation in relation to reportable cross-border arrangements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DAC6",
+    "officialRef": "Council Directive (EU) 2018/822",
+    "eliUri": "https://data.europa.eu/eli/dir/2018/822/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "council-eu",
+    "regime": "regime:tax",
+    "inForceFrom": "2018-06-25"
+   }
+  },
+  {
+   "title": "Add DAC8, Council Directive (EU) 2023/2226",
+   "source": "https://eur-lex.europa.eu/eli/dir/2023/2226/oj",
+   "sourceLabel": "EUR-Lex, Council Directive (EU) 2023/2226 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32023l2226",
+    "titles": {
+     "en": "Council Directive (EU) 2023/2226 of 17 October 2023 amending Directive 2011/16/EU on administrative cooperation in the field of taxation"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DAC8",
+    "officialRef": "Council Directive (EU) 2023/2226",
+    "eliUri": "https://data.europa.eu/eli/dir/2023/2226/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "council-eu",
+    "regime": "regime:tax",
+    "inForceFrom": "2023-11-13"
+   }
+  },
+  {
+   "title": "Add CESOP Directive, Council Directive (EU) 2020/284",
+   "source": "https://eur-lex.europa.eu/eli/dir/2020/284/oj",
+   "sourceLabel": "EUR-Lex, Council Directive (EU) 2020/284 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32020l0284",
+    "titles": {
+     "en": "Council Directive (EU) 2020/284 of 18 February 2020 amending Directive 2006/112/EC as regards introducing certain requirements for payment service providers"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "CESOP Directive",
+    "officialRef": "Council Directive (EU) 2020/284",
+    "eliUri": "https://data.europa.eu/eli/dir/2020/284/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "council-eu",
+    "regime": "regime:tax",
+    "inForceFrom": "2020-03-22"
+   }
+  },
+  {
+   "title": "Add FASTER Directive, Council Directive (EU) 2025/50",
+   "source": "https://eur-lex.europa.eu/eli/dir/2025/50/oj",
+   "sourceLabel": "EUR-Lex, Council Directive (EU) 2025/50 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025l0050",
+    "titles": {
+     "en": "Council Directive (EU) 2025/50 of 10 December 2024 on faster and safer relief of excess withholding taxes"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "FASTER Directive",
+    "officialRef": "Council Directive (EU) 2025/50",
+    "eliUri": "https://data.europa.eu/eli/dir/2025/50/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "council-eu",
+    "regime": "regime:tax",
+    "inForceFrom": "2025-01-30"
+   }
+  }
+ ]
+}

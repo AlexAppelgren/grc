@@ -1,0 +1,2872 @@
+{
+ "tranche": "dk",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add Lov om finansiel virksomhed, LOV nr 453 af 10/06/2003",
+   "source": "https://www.retsinformation.dk/eli/lta/2003/453",
+   "sourceLabel": "Retsinformation, LOV nr 453 af 10/06/2003 (lov om finansiel virksomhed), § 375 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2026/432"
+   },
+   "payload": {
+    "key": "dk-lov-2003-453",
+    "titles": {
+     "da": "Lov om finansiel virksomhed",
+     "en": "Financial Business Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Lov om finansiel virksomhed",
+    "officialRef": "LOV nr 453 af 10/06/2003",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2003/453",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:banking",
+    "inForceFrom": "2004-01-01",
+    "implementsNote": "CRD, Directive 2013/36/EU (as amended by Directives (EU) 2019/878 and 2024/1619); BRRD, Directive 2014/59/EU; parts of MiFID II, Directive 2014/65/EU; and the other directives listed in the act's footnote"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Conduct business fairly and in line with good practice in the field",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 43",
+     "payload": {
+      "key": "obl-dk-fil-fair-business-practice",
+      "titles": {
+       "en": "Conduct business fairly and in line with good practice in the field"
+      },
+      "summaries": {
+       "en": "A financial undertaking must be run in line with fair business practice and good practice in its field. The detailed conduct rules issued under § 43 add to this general duty, and breaching them can make the firm liable in damages under ordinary Danish law (§ 43 a)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 43, stk. 1",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Inform a private guarantor fully before a guarantee for a bank loan is agreed",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 48",
+     "payload": {
+      "key": "obl-dk-fil-private-guarantor",
+      "titles": {
+       "en": "Inform a private guarantor fully before a guarantee for a bank loan is agreed"
+      },
+      "summaries": {
+       "en": "Before a bank agrees a guarantee given outside business relations for a loan or credit, it must make sure the guarantor is informed of what the guarantee involves, with a balanced description of the risks, and, with the debtor's consent, hand over the debtor's latest tax assessment, three latest payslips or latest annual accounts. The guarantee must be on paper or another durable medium, cannot exceed the principal or credit limit when agreed, and the bank must tell the guarantor in writing each year the size of the secured debt."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 48",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep board members and executives fit and proper at all times",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 64",
+     "payload": {
+      "key": "obl-dk-fil-fit-and-proper",
+      "titles": {
+       "en": "Keep board members and executives fit and proper at all times"
+      },
+      "summaries": {
+       "en": "Board members and executives must have sufficient knowledge, competence and experience, a good reputation, integrity and independence, and must not have relevant convictions, insolvency proceedings or conduct suggesting they cannot hold the post responsibly. The firm assesses candidates before they take office and ensures the requirements are met at all times; members report the relevant facts to the Danish FSA (Finanstilsynet) on appointment and whenever they change."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 64",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Have new bank board members complete a basic course within 12 months",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 64 b",
+     "payload": {
+      "key": "obl-dk-fil-board-basic-course",
+      "titles": {
+       "en": "Have new bank board members complete a basic course within 12 months"
+      },
+      "summaries": {
+       "en": "A new board member of a bank or mortgage-credit institution must complete a basic course in the competences the role requires as soon as possible and no later than 12 months after joining the board. The Danish FSA may exempt a member whose knowledge, competence or experience is already sufficient."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 64 b",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Have the board set the business activities, risk profile, policies and written guidelines for management",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 70",
+     "payload": {
+      "key": "obl-dk-fil-board-risk-framework",
+      "titles": {
+       "en": "Have the board set the business activities, risk profile, policies and written guidelines for management"
+      },
+      "summaries": {
+       "en": "To ensure the firm is run soundly, the board decides the main types of business, identifies and quantifies the material risks and sets the risk profile, and adopts policies for managing each material activity and risk as well as a board diversity policy. It gives the executive board written guidelines with controllable risk limits, rules on which decisions need the board and rules on risk reporting, and regularly assesses whether the profile, policies and guidelines remain adequate."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 70",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Adopt and follow a written policy for a sound corporate culture",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 70 a",
+     "payload": {
+      "key": "obl-dk-fil-corporate-culture-policy",
+      "titles": {
+       "en": "Adopt and follow a written policy for a sound corporate culture"
+      },
+      "summaries": {
+       "en": "A bank must have a written policy, set by the board, that secures and promotes a sound corporate culture. The chair reports on its implementation and compliance to the bank's supreme body, normally the general meeting, and the chief executive makes sure it is implemented and followed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 70 a",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Maintain effective governance, internal controls and ICT safeguards",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 71, stk. 1",
+     "payload": {
+      "key": "obl-dk-fil-effective-governance",
+      "titles": {
+       "en": "Maintain effective governance, internal controls and ICT safeguards"
+      },
+      "summaries": {
+       "en": "The firm must have a clear organisational structure with well-defined responsibilities, sound administrative and accounting practice, written procedures for all material areas, and effective procedures to identify, manage, monitor and report its risks, including ESG risks. It must also have adequate resources, segregation of functions to handle conflicts of interest, adequate internal controls, ICT and network security controls set up under DORA, Regulation (EU) 2022/2554, and resources for training board and executive members."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 71, stk. 1",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Operate an effective approval process for new and changed products and their distribution",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 71, stk. 2",
+     "payload": {
+      "key": "obl-dk-fil-product-approval",
+      "titles": {
+       "en": "Operate an effective approval process for new and changed products and their distribution"
+      },
+      "summaries": {
+       "en": "Banks and mortgage-credit institutions must have effective procedures for approving new products and services, material changes to existing products and services, and their distribution."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 71, stk. 2",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Draw up, maintain and submit a board-approved recovery plan",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 71 a",
+     "payload": {
+      "key": "obl-dk-fil-recovery-plan",
+      "titles": {
+       "en": "Draw up, maintain and submit a board-approved recovery plan"
+      },
+      "summaries": {
+       "en": "A bank or mortgage-credit institution must prepare and keep up to date a recovery plan approved by its board, with criteria and procedures for timely action if its financial position deteriorates quickly or significantly, a broad range of recovery options and a range of relevant severe macroeconomic and financial stress scenarios. The plan is submitted to the Danish FSA."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 71 a",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell the Danish FSA at once about matters decisive for the firm's continued operation",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 75",
+     "payload": {
+      "key": "obl-dk-fil-notify-fsa",
+      "titles": {
+       "en": "Tell the Danish FSA at once about matters decisive for the firm's continued operation"
+      },
+      "summaries": {
+       "en": "The firm must immediately inform the Danish FSA of matters that are decisive for its continued operation, and as soon as possible of information of material importance for the FSA's supervision. The same duty rests on each board member and executive."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 75, stk. 1-2",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Run an independent, anonymous channel for reporting breaches of financial regulation",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 75 a",
+     "payload": {
+      "key": "obl-dk-fil-whistleblowing",
+      "titles": {
+       "en": "Run an independent, anonymous channel for reporting breaches of financial regulation"
+      },
+      "summaries": {
+       "en": "The firm must have a scheme through which employees can report actual or potential breaches of financial regulation by the firm, its staff or board members through a special, independent and autonomous channel, anonymously if they wish. It must follow up on reports and be able to document in writing how it did so; the Whistleblower Protection Act applies to the scheme."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 75 a",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Adopt, publish and review a written, gender-neutral remuneration policy",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 77 d",
+     "payload": {
+      "key": "obl-dk-fil-remuneration-policy",
+      "titles": {
+       "en": "Adopt, publish and review a written, gender-neutral remuneration policy"
+      },
+      "summaries": {
+       "en": "The firm must have a written, gender-neutral remuneration policy that is consistent with and promotes sound and effective risk management, taking account of its appetite for ESG risks. The firm's supreme body, normally the general meeting, approves the policy, including guidelines for variable pay and severance, at every material change and at least every fourth year, and the policy is published on the firm's website as soon as possible after approval and kept there while it applies."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 77 d, stk. 1-2",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Get minuted board approval for exposures to board members and executives",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 78",
+     "payload": {
+      "key": "obl-dk-fil-management-exposures",
+      "titles": {
+       "en": "Get minuted board approval for exposures to board members and executives"
+      },
+      "summaries": {
+       "en": "The firm may not, without the board's approval recorded in its minutes, grant exposures to or accept collateral from its board members and executives or from companies where they hold a qualifying holding or sit on the board or management. The same applies to larger agreements with an executive or with a third party in which the executive has a material interest."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 78",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep adequate own funds and calculate the individual solvency need",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 124",
+     "payload": {
+      "key": "obl-dk-fil-solvency-need",
+      "titles": {
+       "en": "Keep adequate own funds and calculate the individual solvency need"
+      },
+      "summaries": {
+       "en": "The board and executive board of a bank or mortgage-credit institution must ensure adequate own funds and internal procedures for measuring and managing risk that keep capital of a size, type and distribution covering the institution's risks, with the procedures regularly checked internally. On that basis they calculate the individual solvency need as a percentage of the total risk exposure, and for excessive leverage of the total exposure, never below the minimum requirements of the CRR, Regulation (EU) No 575/2013."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 124, stk. 1-2",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Prepare an annual report with management's review and full financial statements",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+     "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed, consolidated), § 183",
+     "payload": {
+      "key": "obl-dk-fil-annual-report",
+      "titles": {
+       "en": "Prepare an annual report with management's review and full financial statements"
+      },
+      "summaries": {
+       "en": "A financial undertaking must prepare an annual report consisting of a management's review, a statement by management and financial statements with balance sheet, income statement, other comprehensive income, notes and statement of changes in equity. The auditor's report is included when the accounts are audited, as is any assurance statement on sustainability reporting."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 183, stk. 1",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Kapitalmarkedsloven, LOV nr 650 af 08/06/2017",
+   "source": "https://www.retsinformation.dk/eli/lta/2017/650",
+   "sourceLabel": "Retsinformation, LOV nr 650 af 08/06/2017 (lov om kapitalmarkeder), § 258 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2026/464"
+   },
+   "payload": {
+    "key": "dk-lov-2017-650",
+    "titles": {
+     "da": "Lov om kapitalmarkeder",
+     "en": "Capital Markets Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Kapitalmarkedsloven",
+    "officialRef": "LOV nr 650 af 08/06/2017",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2017/650",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:securities",
+    "inForceFrom": "2018-01-03",
+    "implementsNote": "Parts of MiFID II, Directive 2014/65/EU; Transparency Directive 2004/109/EC; Settlement Finality Directive 98/26/EC; Takeover Bids Directive 2004/25/EC; supplementary rules for MAR, Regulation (EU) No 596/2014"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Protect employees who report market abuse and other breaches from retaliation",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/464",
+     "sourceLabel": "Retsinformation, LBK nr 464 af 01/05/2026 (lov om kapitalmarkeder, consolidated), § 9 and § 211, stk. 2, nr. 5",
+     "payload": {
+      "key": "obl-dk-kml-whistleblower-protection",
+      "titles": {
+       "en": "Protect employees who report market abuse and other breaches from retaliation"
+      },
+      "summaries": {
+       "en": "The firm must not subject current or former employees to unfavourable treatment or consequences, including when setting, awarding or paying variable pay, because they reported an actual or potential breach of the Capital Markets Act or of the EU regulations the Danish FSA supervises under it, such as the Market Abuse Regulation, to the FSA or to an internal scheme. Employees whose rights are infringed can be awarded compensation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Disseminate inside information and regulated information quickly and without discrimination across the EU",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/464",
+     "sourceLabel": "Retsinformation, LBK nr 464 af 01/05/2026 (lov om kapitalmarkeder, consolidated), § 24",
+     "payload": {
+      "key": "obl-dk-kml-disseminate-inside-information",
+      "titles": {
+       "en": "Disseminate inside information and regulated information quickly and without discrimination across the EU"
+      },
+      "summaries": {
+       "en": "An issuer must publish and disseminate the regulated information required by the Act and the inside information it discloses under Article 17(1) and (7) of the Market Abuse Regulation in a way that gives fast access to it throughout the EU and EEA. Dissemination must be non-discriminatory."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 24, stk. 1",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Send the Danish FSA the explanation for a delayed disclosure of inside information on request",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/464",
+     "sourceLabel": "Retsinformation, LBK nr 464 af 01/05/2026 (lov om kapitalmarkeder, consolidated), § 37",
+     "payload": {
+      "key": "obl-dk-kml-delay-explanation",
+      "titles": {
+       "en": "Send the Danish FSA the explanation for a delayed disclosure of inside information on request"
+      },
+      "summaries": {
+       "en": "An issuer that delayed public disclosure of inside information under Article 17(4) of the Market Abuse Regulation must submit its explanation of the delay to the Danish FSA when the FSA asks for it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 37",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Notify the company and the Danish FSA when a shareholding crosses a major-holding threshold",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/464",
+     "sourceLabel": "Retsinformation, LBK nr 464 af 01/05/2026 (lov om kapitalmarkeder, consolidated), § 38",
+     "payload": {
+      "key": "obl-dk-kml-major-holdings",
+      "titles": {
+       "en": "Notify the company and the Danish FSA when a shareholding crosses a major-holding threshold"
+      },
+      "summaries": {
+       "en": "Anyone holding shares, directly or indirectly, in a company within § 1(4), whose shares are admitted to trading on a regulated market with Denmark as home state, must notify the company and the Danish FSA when the holding reaches, exceeds or falls below 5, 10, 15, 20, 25, 50 or 90 per cent or one third or two thirds of the voting rights or share capital. Voting rights held through certain arrangements with third parties, such as agreements on concerted voting, count towards the holding."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 38",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Refrain from insider dealing and market manipulation, which are criminal offences in Denmark",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/464",
+     "sourceLabel": "Retsinformation, LBK nr 464 af 01/05/2026 (lov om kapitalmarkeder, consolidated), § 249",
+     "payload": {
+      "key": "obl-dk-kml-mar-criminal-penalties",
+      "titles": {
+       "en": "Refrain from insider dealing and market manipulation, which are criminal offences in Denmark"
+      },
+      "summaries": {
+       "en": "Danish law punishes breaches of the Market Abuse Regulation's bans on insider dealing, unlawful disclosure of inside information and market manipulation (Articles 14 and 15) with a fine or imprisonment of up to one year and six months. Breaches of the MAR duties on market surveillance and suspicious order and transaction reports, disclosure of inside information, insider lists, managers' transactions and investment recommendations (Articles 16 to 20) are punishable by a fine."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 249",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Hvidvaskloven, LOV nr 651 af 08/06/2017",
+   "source": "https://www.retsinformation.dk/eli/lta/2017/651",
+   "sourceLabel": "Retsinformation, LOV nr 651 af 08/06/2017 (hvidvaskloven), § 81 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2026/433"
+   },
+   "payload": {
+    "key": "dk-lov-2017-651",
+    "titles": {
+     "da": "Lov om forebyggende foranstaltninger mod hvidvask og finansiering af terrorisme (hvidvaskloven)",
+     "en": "Act on Measures to Prevent Money Laundering and Financing of Terrorism (Anti-Money Laundering Act)"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Hvidvaskloven",
+    "officialRef": "LOV nr 651 af 08/06/2017",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2017/651",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:aml",
+    "inForceFrom": "2017-06-26",
+    "implementsNote": "AMLD4, Directive (EU) 2015/849, as amended by AMLD5, Directive (EU) 2018/843"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Identify, assess, document and update the firm's money laundering and terrorist financing risks",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 7, stk. 1, as amended by LOV nr 764 af 08/09/2026, § 1, nr. 2",
+     "payload": {
+      "key": "obl-dk-hvl-risk-assessment",
+      "titles": {
+       "en": "Identify, assess, document and update the firm's money laundering and terrorist financing risks"
+      },
+      "summaries": {
+       "en": "The firm must identify and assess the risk that it can be misused for money laundering or terrorist financing, based on its business model and covering customers, products, services, transactions, delivery channels and countries. Since 15 September 2026 the assessment must also cover the risk of breaching, not implementing or evading financial sanctions on proliferation financing. The assessment is documented and kept up to date."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7, stk. 1",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Appoint an employee with authority to take the firm's AML decisions",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 7, stk. 2",
+     "payload": {
+      "key": "obl-dk-hvl-aml-decision-maker",
+      "titles": {
+       "en": "Appoint an employee with authority to take the firm's AML decisions"
+      },
+      "summaries": {
+       "en": "Executive management must appoint an employee, who may be a member of management, with authority to take decisions on the firm's behalf under the Act, such as approving AML policies, relationships with politically exposed persons, enhanced due diligence cases and correspondent relationships. The person must know the firm's money laundering and terrorist financing risk well enough to take such decisions and must have a good reputation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7, stk. 2",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep risk-based written AML policies, procedures and controls",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 8, stk. 1-2",
+     "payload": {
+      "key": "obl-dk-hvl-policies-controls",
+      "titles": {
+       "en": "Keep risk-based written AML policies, procedures and controls"
+      },
+      "summaries": {
+       "en": "The firm must have adequate written policies, procedures and controls covering risk management, customer due diligence, the duties to investigate, record and report, record retention, employee screening and internal control. They must be based on the firm's risk assessment, reflect its size, and be approved by the person appointed under § 7(2)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8, stk. 1-2",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Cover compliance with financial sanctions in written policies, procedures and controls",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/764",
+     "sourceLabel": "Retsinformation, LOV nr 764 af 08/09/2026, § 1, nr. 3 (new § 8, stk. 1, 3rd and 4th sentences of hvidvaskloven), in force 15 September 2026 (§ 20)",
+     "payload": {
+      "key": "obl-dk-hvl-sanctions-policies",
+      "titles": {
+       "en": "Cover compliance with financial sanctions in written policies, procedures and controls"
+      },
+      "summaries": {
+       "en": "The firm's written policies, procedures and controls must also cover compliance with laws and regulations on financial sanctions against countries, persons, groups, legal entities or bodies. Those on proliferation-financing sanctions must be based on the firm's risk assessment and take its size into account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8, stk. 1, 3.-4. pkt.",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-09-15"
+     }
+    },
+    {
+     "title": "Add the duty: Appoint a management-level AML compliance officer",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 8, stk. 3",
+     "payload": {
+      "key": "obl-dk-hvl-compliance-officer",
+      "titles": {
+       "en": "Appoint a management-level AML compliance officer"
+      },
+      "summaries": {
+       "en": "A bank or other firm under § 1(1)(1-7) that must have a compliance function under other legislation must have its executive management appoint an AML compliance officer at management level. The officer checks and assesses whether the AML procedures and remedial measures are effective and checks that the firm reports to the Money Laundering Secretariat (Hvidvasksekretariatet)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8, stk. 3",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Train employees and management in AML rules and related data protection",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 8, stk. 6",
+     "payload": {
+      "key": "obl-dk-hvl-staff-training",
+      "titles": {
+       "en": "Train employees and management in AML rules and related data protection"
+      },
+      "summaries": {
+       "en": "The firm must ensure that its employees, including management, have received adequate training in the requirements of the Act and the rules issued under it and in the relevant data protection requirements."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8, stk. 6",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Identify and verify customers and beneficial owners and monitor the relationship",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), §§ 10, 11 and 14",
+     "payload": {
+      "key": "obl-dk-hvl-customer-due-diligence",
+      "titles": {
+       "en": "Identify and verify customers and beneficial owners and monitor the relationship"
+      },
+      "summaries": {
+       "en": "The firm must carry out customer due diligence when it establishes a business relationship, when a customer's relevant circumstances change and at other appropriate times, and for occasional transactions of at least EUR 15,000 or transfers of funds above EUR 1,000. It obtains and verifies the customer's identity from a reliable and independent source, identifies the beneficial owners and takes reasonable steps to verify them and understand the ownership and control structure, assesses the purpose and intended nature of the relationship and monitors it on an ongoing basis. Verification normally takes place before the relationship is established or the transaction carried out."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 10, 11 og 14",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report beneficial ownership discrepancies to the Danish Business Authority",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 15 a",
+     "payload": {
+      "key": "obl-dk-hvl-beneficial-owner-discrepancy",
+      "titles": {
+       "en": "Report beneficial ownership discrepancies to the Danish Business Authority"
+      },
+      "summaries": {
+       "en": "If the beneficial ownership information the firm has collected does not match what is registered in the Danish Business Authority's (Erhvervsstyrelsen) register, the firm must report the discrepancy with documentation to the Authority as soon as possible."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 15 a, stk. 1",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Apply enhanced due diligence where risk is higher and for high-risk third countries",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 17",
+     "payload": {
+      "key": "obl-dk-hvl-enhanced-due-diligence",
+      "titles": {
+       "en": "Apply enhanced due diligence where risk is higher and for high-risk third countries"
+      },
+      "summaries": {
+       "en": "Where the risk of money laundering or terrorist financing is increased, taking account of the high-risk factors in Annex 3 and other relevant factors, the firm must apply enhanced due diligence. For customers established in a country on the European Commission's list of high-risk third countries this includes more information on the customer, beneficial owners and purpose of the relationship, the source of funds and wealth, the reasons for transactions, approval by the § 7(2) person, and enhanced monitoring."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 17",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Identify politically exposed persons and apply the extra measures to them",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 18",
+     "payload": {
+      "key": "obl-dk-hvl-politically-exposed-persons",
+      "titles": {
+       "en": "Identify politically exposed persons and apply the extra measures to them"
+      },
+      "summaries": {
+       "en": "The firm must have procedures to determine whether a customer, beneficial owner or life insurance beneficiary is a politically exposed person or a family member or close associate of one. For such persons it must take adequate measures to establish the source of funds and wealth, have the relationship approved by the § 7(2) person, and monitor the relationship more closely."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 18",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Carry out extra checks before opening a cross-border correspondent relationship",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 19",
+     "payload": {
+      "key": "obl-dk-hvl-correspondent-relationships",
+      "titles": {
+       "en": "Carry out extra checks before opening a cross-border correspondent relationship"
+      },
+      "summaries": {
+       "en": "Before establishing a cross-border correspondent relationship involving payments with a respondent institution outside the EU and EEA, the correspondent must, besides ordinary due diligence, gather enough information to understand the respondent's business and judge its reputation and the quality of its supervision, make sure it has effective AML controls, get approval from the § 7(2) person, and document each party's responsibilities."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 19, stk. 1",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Investigate unusual transactions and activities and record the results",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 25",
+     "payload": {
+      "key": "obl-dk-hvl-investigate-unusual",
+      "titles": {
+       "en": "Investigate unusual transactions and activities and record the results"
+      },
+      "summaries": {
+       "en": "The firm must investigate the background and purpose of all complex or unusually large transactions, transactions in an unusual pattern and transactions or activities without an apparent economic or lawful purpose. Where relevant it extends its monitoring of the customer, and it records and keeps the results."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 25",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Report suspected money laundering or terrorist financing to the Money Laundering Secretariat immediately",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 26",
+     "payload": {
+      "key": "obl-dk-hvl-report-suspicion",
+      "titles": {
+       "en": "Report suspected money laundering or terrorist financing to the Money Laundering Secretariat immediately"
+      },
+      "summaries": {
+       "en": "The firm must immediately notify the Money Laundering Secretariat if it knows, suspects or has reasonable grounds to suspect that a transaction, funds or an activity is or has been linked to money laundering or terrorist financing, including attempted transactions. It must hold off a suspicious transaction until it has reported, and if that is impossible or could harm the investigation it reports immediately after the transaction is carried out."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 26, stk. 1 og 3",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Keep due diligence and transaction records for five years and then delete personal data",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 30",
+     "payload": {
+      "key": "obl-dk-hvl-record-retention",
+      "titles": {
+       "en": "Keep due diligence and transaction records for five years and then delete personal data"
+      },
+      "summaries": {
+       "en": "The firm must keep customer due diligence information including copies of identity documents, transaction records, account statements and correspondence, and the results of its investigations for at least five years after the relationship ends or the occasional transaction is carried out, and delete the personal data after five years unless other law provides otherwise. It must hand the material over when the Money Laundering Secretariat or another competent authority asks."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 30",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Keep reports and investigations of suspicion secret from the customer",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+     "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven, consolidated), § 38",
+     "payload": {
+      "key": "obl-dk-hvl-no-tipping-off",
+      "titles": {
+       "en": "Keep reports and investigations of suspicion secret from the customer"
+      },
+      "summaries": {
+       "en": "The firm, its management and employees must keep secret that a report to the Money Laundering Secretariat has been made or is being considered, or that an investigation under § 25 is or will be carried out. Disclosure is allowed only in the cases the Act permits, for example to the supervisory authorities on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 38",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Lov om betalinger, LOV nr 652 af 08/06/2017",
+   "source": "https://www.retsinformation.dk/eli/lta/2017/652",
+   "sourceLabel": "Retsinformation, LOV nr 652 af 08/06/2017 (lov om betalinger), § 154 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2026/463"
+   },
+   "payload": {
+    "key": "dk-lov-2017-652",
+    "titles": {
+     "da": "Lov om betalinger",
+     "en": "Payments Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Lov om betalinger",
+    "officialRef": "LOV nr 652 af 08/06/2017",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2017/652",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:payments",
+    "inForceFrom": "2018-01-01",
+    "implementsNote": "PSD2, Directive (EU) 2015/2366; EMD2, Directive 2009/110/EC"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the user the prescribed information when a payment services framework contract is concluded",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+     "sourceLabel": "Retsinformation, LBK nr 463 af 26/04/2026 (lov om betalinger, consolidated), §§ 65 and 72",
+     "payload": {
+      "key": "obl-dk-betl-framework-contract-information",
+      "titles": {
+       "en": "Give the user the prescribed information when a payment services framework contract is concluded"
+      },
+      "summaries": {
+       "en": "A payment service provider must give the user the information the Act lists about the provider, the use of the service, charges, interest and exchange rates, communication, safeguards and corrective measures, changes to and termination of the contract, and complaints and redress. It must do so no later than when the framework contract is concluded, and it bears the burden of proving that it met the information requirements (§ 65)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 72",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Protect payment instruments' security credentials and let payers block them at any time",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+     "sourceLabel": "Retsinformation, LBK nr 463 af 26/04/2026 (lov om betalinger, consolidated), § 94",
+     "payload": {
+      "key": "obl-dk-betl-payment-instrument-safeguards",
+      "titles": {
+       "en": "Protect payment instruments' security credentials and let payers block them at any time"
+      },
+      "summaries": {
+       "en": "A provider issuing a payment instrument must keep the personalised security credentials inaccessible to anyone but the payer, let the payer report loss or misuse or ask for unblocking at any time and free of charge apart from a cost-based replacement fee, let the payer prove such a report for 18 months, and stop all use of the instrument once reported. It must not send unsolicited instruments except as replacements, and it bears the risk of sending the instrument and credentials."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 94",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Refund unauthorised payment transactions by the end of the next business day",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+     "sourceLabel": "Retsinformation, LBK nr 463 af 26/04/2026 (lov om betalinger, consolidated), §§ 97, 99 and 100",
+     "payload": {
+      "key": "obl-dk-betl-refund-unauthorised",
+      "titles": {
+       "en": "Refund unauthorised payment transactions by the end of the next business day"
+      },
+      "summaries": {
+       "en": "The payer's provider is liable to the payer for losses from unauthorised payment transactions and must refund the amount immediately and no later than the end of the following business day, unless it has reasonable grounds to suspect fraud and reports those grounds to the Danish FSA. The payer bears losses only within the limits of § 100, for example up to DKK 375 where the personalised security credential was used, and objections must reach the provider within 13 months of the debit (§ 97)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 99, stk. 1",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Credit the payee's provider by the end of the business day after the order is received",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+     "sourceLabel": "Retsinformation, LBK nr 463 af 26/04/2026 (lov om betalinger, consolidated), § 113",
+     "payload": {
+      "key": "obl-dk-betl-execution-time",
+      "titles": {
+       "en": "Credit the payee's provider by the end of the business day after the order is received"
+      },
+      "summaries": {
+       "en": "The payer's provider must ensure the amount of a payment transaction is credited to the payee's provider's account no later than the end of the business day following receipt of the payment order. For paper-based transactions the deadline can be extended by one more business day."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 113, stk. 1",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Manage operational and security risks of payment services and send the FSA a yearly risk assessment",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+     "sourceLabel": "Retsinformation, LBK nr 463 af 26/04/2026 (lov om betalinger, consolidated), § 126",
+     "payload": {
+      "key": "obl-dk-betl-operational-security-risk",
+      "titles": {
+       "en": "Manage operational and security risks of payment services and send the FSA a yearly risk assessment"
+      },
+      "summaries": {
+       "en": "A payment service provider must establish and maintain procedures and controls to manage the operational and security risks of its payment services, effective procedures for handling operational and security incidents, and measures protecting the confidentiality and integrity of users' personalised security credentials, without prejudice to Chapter II of DORA, Regulation (EU) 2022/2554. Once a year it sends the Danish FSA an updated and comprehensive risk assessment with a description of its mitigating measures."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 126, stk. 1-3",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Report statistics on the operation and fraud of payment services to the FSA at least yearly",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+     "sourceLabel": "Retsinformation, LBK nr 463 af 26/04/2026 (lov om betalinger, consolidated), § 127",
+     "payload": {
+      "key": "obl-dk-betl-fraud-statistics",
+      "titles": {
+       "en": "Report statistics on the operation and fraud of payment services to the FSA at least yearly"
+      },
+      "summaries": {
+       "en": "A payment service provider must report statistics on the operation and misuse of the payment services it offers to the Danish FSA at least once a year, following the FSA's technical rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 127",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Apply strong customer authentication to online account access and electronic payments",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+     "sourceLabel": "Retsinformation, LBK nr 463 af 26/04/2026 (lov om betalinger, consolidated), § 128",
+     "payload": {
+      "key": "obl-dk-betl-strong-customer-authentication",
+      "titles": {
+       "en": "Apply strong customer authentication to online account access and electronic payments"
+      },
+      "summaries": {
+       "en": "A payment service provider must apply strong customer authentication when a user accesses a payment account online, initiates an electronic payment transaction or carries out any action through a remote channel that may imply a risk of fraud, subject to the exemptions in the Commission's technical standards. Remote electronic payments need elements that dynamically link the transaction to a specific amount and payee, and the account-servicing provider must let payment initiation and account information service providers rely on its authentication procedures."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 128",
+      "dutyType": "technical",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Process personal data for payment services only with the user's explicit consent",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+     "sourceLabel": "Retsinformation, LBK nr 463 af 26/04/2026 (lov om betalinger, consolidated), § 124",
+     "payload": {
+      "key": "obl-dk-betl-data-explicit-consent",
+      "titles": {
+       "en": "Process personal data for payment services only with the user's explicit consent"
+      },
+      "summaries": {
+       "en": "A payment service provider or e-money issuer may access, process and keep personal data necessary for providing payment services only with the user's explicit consent, apart from processing to prevent, investigate and detect payment fraud. The GDPR and the Danish Data Protection Act otherwise apply."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 124, stk. 1-3",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Kreditaftaleloven, LOV nr 398 af 13/06/1990",
+   "source": "https://www.retsinformation.dk/eli/lta/1990/398",
+   "sourceLabel": "Retsinformation, LOV nr 398 af 13/06/1990 (lov om kreditaftaler), § 58 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2019/817"
+   },
+   "payload": {
+    "key": "dk-lov-1990-398",
+    "titles": {
+     "da": "Lov om kreditaftaler",
+     "en": "Credit Agreements Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Kreditaftaleloven",
+    "officialRef": "LOV nr 398 af 13/06/1990",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/1990/398",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:banking",
+    "inForceFrom": "1991-01-01",
+    "implementsNote": "CCD, Directive 2008/48/EC; parts of MCD, Directive 2014/17/EU; CCD2, Directive (EU) 2023/2225, through LOV nr 1322 af 20/11/2025 from 20 November 2026"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give consumers the standard pre-contract credit information before they are bound",
+     "source": "https://www.retsinformation.dk/eli/lta/2019/817",
+     "sourceLabel": "Retsinformation, LBK nr 817 af 06/08/2019 (lov om kreditaftaler, consolidated), § 7 a",
+     "payload": {
+      "key": "obl-dk-kal-precontract-information",
+      "titles": {
+       "en": "Give consumers the standard pre-contract credit information before they are bound"
+      },
+      "summaries": {
+       "en": "Before a consumer is bound by a credit agreement or offer, the creditor and any credit intermediary must give the consumer the information needed to compare offers and make an informed decision, based on the credit terms offered and the consumer's preferences and information. It is given on paper or another durable medium using the standard form in Annex 2."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7 a",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess the consumer's creditworthiness before concluding a credit agreement",
+     "source": "https://www.retsinformation.dk/eli/lta/2019/817",
+     "sourceLabel": "Retsinformation, LBK nr 817 af 06/08/2019 (lov om kreditaftaler, consolidated), § 7 c",
+     "payload": {
+      "key": "obl-dk-kal-creditworthiness",
+      "titles": {
+       "en": "Assess the consumer's creditworthiness before concluding a credit agreement"
+      },
+      "summaries": {
+       "en": "Before concluding a credit agreement, the creditor must assess the consumer's creditworthiness on the basis of sufficient information, obtained from the consumer where relevant and from relevant databases where necessary, and assess it again before any significant increase in the total amount of credit. If an application is rejected because of a database search, the creditor tells the consumer at once and free of charge, with details of the database."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7 c",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Grant consumer credit only when a documented assessment shows the consumer can likely repay",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1322",
+     "sourceLabel": "Retsinformation, LOV nr 1322 af 20/11/2025, § 1, nr. 15 (new § 7 c of lov om kreditaftaler), in force 20 November 2026 (§ 6)",
+     "payload": {
+      "key": "obl-dk-kal-affordable-credit-only",
+      "titles": {
+       "en": "Grant consumer credit only when a documented assessment shows the consumer can likely repay"
+      },
+      "summaries": {
+       "en": "The creditor must make a thorough creditworthiness assessment in the consumer's interest, based on relevant and accurate information on income, expenses and other financial circumstances that is proportionate to the credit, verified where necessary, and never drawn from special categories of personal data or social networks. It must set, document and maintain procedures for the assessment, keep the information used, and make the credit available only if the assessment shows the consumer is likely to meet the obligations under the agreement."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7 c, stk. 1, 3-5 og 7",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-11-20",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give consumers human intervention and an explanation when creditworthiness is assessed automatically",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1322",
+     "sourceLabel": "Retsinformation, LOV nr 1322 af 20/11/2025, § 1, nr. 15 (new § 7 c of lov om kreditaftaler), in force 20 November 2026 (§ 6)",
+     "payload": {
+      "key": "obl-dk-kal-automated-assessment-review",
+      "titles": {
+       "en": "Give consumers human intervention and an explanation when creditworthiness is assessed automatically"
+      },
+      "summaries": {
+       "en": "Where the creditworthiness assessment involves automated processing of personal data, the consumer may request and obtain human intervention from the creditor, including a clear and understandable explanation of the assessment and of the logic and risks of the automated processing."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7 c, stk. 9",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-11-20",
+      "terms": [
+       "client_category:retail",
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make general information on credit agreements available to consumers at all times",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1322",
+     "sourceLabel": "Retsinformation, LOV nr 1322 af 20/11/2025, § 1, nr. 16 (new § 7 e of lov om kreditaftaler), in force 20 November 2026 (§ 6)",
+     "payload": {
+      "key": "obl-dk-kal-general-information",
+      "titles": {
+       "en": "Make general information on credit agreements available to consumers at all times"
+      },
+      "summaries": {
+       "en": "Creditors and credit intermediaries must at all times make clear and understandable general information on credit agreements available on paper or another durable medium chosen by the consumer, and at least on paper in their premises. It covers among other things the purposes of the credit, types of borrowing rate, a representative example with the annual percentage rate, repayment options, early repayment, the right of withdrawal and the consequences of not meeting the obligations; it does not apply to housing credit agreements."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 7 e",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2026-11-20",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Draw up credit agreements on a durable medium with the prescribed particulars",
+     "source": "https://www.retsinformation.dk/eli/lta/2019/817",
+     "sourceLabel": "Retsinformation, LBK nr 817 af 06/08/2019 (lov om kreditaftaler, consolidated), § 8",
+     "payload": {
+      "key": "obl-dk-kal-credit-agreement-form",
+      "titles": {
+       "en": "Draw up credit agreements on a durable medium with the prescribed particulars"
+      },
+      "summaries": {
+       "en": "A credit agreement must be drawn up on paper or another durable medium, every party must receive a copy, and it must state clearly and concisely the particulars the Act prescribes, among them the type of credit, the parties and any credit intermediary, the duration, the total amount of credit and the conditions for drawdown."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify consumers of a change in the borrowing rate before it takes effect",
+     "source": "https://www.retsinformation.dk/eli/lta/2019/817",
+     "sourceLabel": "Retsinformation, LBK nr 817 af 06/08/2019 (lov om kreditaftaler, consolidated), § 9",
+     "payload": {
+      "key": "obl-dk-kal-rate-change-notice",
+      "titles": {
+       "en": "Notify consumers of a change in the borrowing rate before it takes effect"
+      },
+      "summaries": {
+       "en": "The creditor must inform the consumer of any change in the borrowing rate on paper or another durable medium before the change takes effect, stating the size of the payments afterwards and any change in their number or frequency. The parties may agree that the information is given periodically where the change follows a publicly available reference rate that is also available at the creditor."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 9",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Honour the consumer's 14-day right to withdraw from a credit agreement",
+     "source": "https://www.retsinformation.dk/eli/lta/2019/817",
+     "sourceLabel": "Retsinformation, LBK nr 817 af 06/08/2019 (lov om kreditaftaler, consolidated), § 19",
+     "payload": {
+      "key": "obl-dk-kal-right-of-withdrawal",
+      "titles": {
+       "en": "Honour the consumer's 14-day right to withdraw from a credit agreement"
+      },
+      "summaries": {
+       "en": "A consumer may withdraw from a credit agreement within 14 calendar days, counted from the day the agreement is concluded or, if later, the day the consumer receives the contract terms and the § 8 information. The creditor must accept a withdrawal notified within the deadline according to the instructions it gave the consumer."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 19",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Show reasonable forbearance before starting enforcement against a consumer",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1322",
+     "sourceLabel": "Retsinformation, LOV nr 1322 af 20/11/2025, § 1, nr. 31 (new § 29 a of lov om kreditaftaler), in force 20 November 2026 (§ 6)",
+     "payload": {
+      "key": "obl-dk-kal-forbearance",
+      "titles": {
+       "en": "Show reasonable forbearance before starting enforcement against a consumer"
+      },
+      "summaries": {
+       "en": "Where relevant, the creditor must show reasonable forbearance before enforcement proceedings are started, taking account of the consumer's individual circumstances. Forbearance changes the existing terms, for example by extending the term, deferring payments, lowering the borrowing rate, partial repayment or partial write-off and debt consolidation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 29 a",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-11-20",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Detect consumers in financial difficulty early and refer them to debt advice",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1322",
+     "sourceLabel": "Retsinformation, LOV nr 1322 af 20/11/2025, § 1, nr. 31 (new § 29 b of lov om kreditaftaler), in force 20 November 2026 (§ 6)",
+     "payload": {
+      "key": "obl-dk-kal-early-detection",
+      "titles": {
+       "en": "Detect consumers in financial difficulty early and refer them to debt advice"
+      },
+      "summaries": {
+       "en": "The creditor must have policies and procedures for early detection of consumers in financial difficulty, and must refer consumers who struggle to meet their financial obligations to readily accessible debt advisory services."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 29 b",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-11-20",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Lov om investeringsforeninger m.v., LOV nr 597 af 12/06/2013",
+   "source": "https://www.retsinformation.dk/eli/lta/2013/597",
+   "sourceLabel": "Retsinformation, LOV nr 597 af 12/06/2013 (lov om investeringsforeninger m.v.), § 193 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2026/445"
+   },
+   "payload": {
+    "key": "dk-lov-2013-597",
+    "titles": {
+     "da": "Lov om investeringsforeninger m.v.",
+     "en": "Investment Associations etc. Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Lov om investeringsforeninger m.v.",
+    "officialRef": "LOV nr 597 af 12/06/2013",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2013/597",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-07-22",
+    "implementsNote": "UCITS Directive 2009/65/EC"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Run the UCITS in line with fair business practice and good practice",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/445",
+     "sourceLabel": "Retsinformation, LBK nr 445 af 17/04/2026 (lov om investeringsforeninger m.v., consolidated), § 29",
+     "payload": {
+      "key": "obl-dk-ifl-fair-business-practice",
+      "titles": {
+       "en": "Run the UCITS in line with fair business practice and good practice"
+      },
+      "summaries": {
+       "en": "A Danish UCITS must be run in line with fair business practice and good practice in its field, and so must a foreign UCITS that is a legal person when it markets its units in Denmark. The Minister's detailed conduct rules, including on marketing, elaborate the duty."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 29",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep each sub-fund's assets with an FSA-approved depositary under a written agreement",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/445",
+     "sourceLabel": "Retsinformation, LBK nr 445 af 17/04/2026 (lov om investeringsforeninger m.v., consolidated), § 5",
+     "payload": {
+      "key": "obl-dk-ifl-depositary",
+      "titles": {
+       "en": "Keep each sub-fund's assets with an FSA-approved depositary under a written agreement"
+      },
+      "summaries": {
+       "en": "The financial assets of a Danish UCITS must be managed and held separately for each sub-fund by a depositary approved by the Danish FSA that can offer sufficient financial and professional guarantees. A written agreement between the UCITS and the depositary must govern the arrangement."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5, stk. 1-2",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company",
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Redeem units at an investor's request and suspend only in the permitted cases",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/445",
+     "sourceLabel": "Retsinformation, LBK nr 445 af 17/04/2026 (lov om investeringsforeninger m.v., consolidated), § 74",
+     "payload": {
+      "key": "obl-dk-ifl-redemption",
+      "titles": {
+       "en": "Redeem units at an investor's request and suspend only in the permitted cases"
+      },
+      "summaries": {
+       "en": "A Danish UCITS must redeem units when an investor asks. It may suspend redemption only when the net asset value cannot be set because of market conditions or when equal treatment of investors requires the value to be set only after the assets needed have been sold, with further grounds for feeder funds."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 74, stk. 1-2",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish a prospectus and a key information document for each sub-fund or share class",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/445",
+     "sourceLabel": "Retsinformation, LBK nr 445 af 17/04/2026 (lov om investeringsforeninger m.v., consolidated), §§ 102 and 103",
+     "payload": {
+      "key": "obl-dk-ifl-prospectus-kid",
+      "titles": {
+       "en": "Publish a prospectus and a key information document for each sub-fund or share class"
+      },
+      "summaries": {
+       "en": "When offering units, a Danish UCITS must publish a prospectus, give it free to investors on request, keep its essential parts up to date and send it and any changes to the Danish FSA when published. It must also prepare and publish on its website a key information document under the PRIIPs Regulation, (EU) No 1286/2014, for each sub-fund or share class; for units offered to professional investors a UCITS key investor information document may be used instead."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 102-103",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish issue and redemption prices at least twice a month",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/445",
+     "sourceLabel": "Retsinformation, LBK nr 445 af 17/04/2026 (lov om investeringsforeninger m.v., consolidated), § 105",
+     "payload": {
+      "key": "obl-dk-ifl-publish-prices",
+      "titles": {
+       "en": "Publish issue and redemption prices at least twice a month"
+      },
+      "summaries": {
+       "en": "A Danish UCITS must publish its issue and redemption prices at least twice a month. The Danish FSA may allow monthly publication where investors' interests are not harmed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 105",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add FAIF-loven, LOV nr 598 af 12/06/2013",
+   "source": "https://www.retsinformation.dk/eli/lta/2013/598",
+   "sourceLabel": "Retsinformation, LOV nr 598 af 12/06/2013 (lov om forvaltere af alternative investeringsfonde m.v.), § 192 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2026/468"
+   },
+   "payload": {
+    "key": "dk-lov-2013-598",
+    "titles": {
+     "da": "Lov om forvaltere af alternative investeringsfonde m.v.",
+     "en": "Alternative Investment Fund Managers etc. Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "FAIF-loven",
+    "officialRef": "LOV nr 598 af 12/06/2013",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2013/598",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-07-22",
+    "implementsNote": "AIFMD, Directive 2011/61/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Act fairly, treat investors equally and manage conflicts of interest",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/468",
+     "sourceLabel": "Retsinformation, LBK nr 468 af 26/04/2026 (lov om forvaltere af alternative investeringsfonde m.v., consolidated), § 18",
+     "payload": {
+      "key": "obl-dk-faif-conduct-conflicts",
+      "titles": {
+       "en": "Act fairly, treat investors equally and manage conflicts of interest"
+      },
+      "summaries": {
+       "en": "An AIF manager must at all times act in line with fair business practice and good practice, have and use the resources and procedures needed, take all reasonable steps to avoid conflicts of interest and, where they cannot be avoided, identify, manage, monitor and disclose them. It must treat all investors in the funds it manages fairly, and no investor may get preferential treatment unless the fund's rules clearly provide for it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 18",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep a written remuneration policy that promotes sound risk management",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/468",
+     "sourceLabel": "Retsinformation, LBK nr 468 af 26/04/2026 (lov om forvaltere af alternative investeringsfonde m.v., consolidated), § 20",
+     "payload": {
+      "key": "obl-dk-faif-remuneration-policy",
+      "titles": {
+       "en": "Keep a written remuneration policy that promotes sound risk management"
+      },
+      "summaries": {
+       "en": "An AIF manager must have a written remuneration policy that is consistent with and promotes sound and effective risk management, and must meet the Act's requirements on variable pay for managers and other staff whose activities materially affect its or the funds' risk profile."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 20",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Run an independent risk management function with regular stress tests",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/468",
+     "sourceLabel": "Retsinformation, LBK nr 468 af 26/04/2026 (lov om forvaltere af alternative investeringsfonde m.v., consolidated), § 24",
+     "payload": {
+      "key": "obl-dk-faif-risk-management",
+      "titles": {
+       "en": "Run an independent risk management function with regular stress tests"
+      },
+      "summaries": {
+       "en": "An AIF manager must have a risk management function that is functionally and hierarchically separate from the operating units, including portfolio management, and can identify, measure, manage and monitor all risks relevant to each fund's strategy and risk profile. It carries out appropriate stress tests and ensures each fund's risk profile matches its size, portfolio structure, investment strategy and objectives."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 24",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Manage each fund's liquidity so it matches its redemption obligations",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/468",
+     "sourceLabel": "Retsinformation, LBK nr 468 af 26/04/2026 (lov om forvaltere af alternative investeringsfonde m.v., consolidated), § 25",
+     "payload": {
+      "key": "obl-dk-faif-liquidity-management",
+      "titles": {
+       "en": "Manage each fund's liquidity so it matches its redemption obligations"
+      },
+      "summaries": {
+       "en": "For each fund, other than unleveraged closed-ended funds, the manager must have an appropriate liquidity management system and procedures to monitor liquidity risk and ensure that the liquidity profile of the investments matches the fund's underlying obligations."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 25, stk. 1",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Value fund assets and net asset value correctly, independently and consistently",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/468",
+     "sourceLabel": "Retsinformation, LBK nr 468 af 26/04/2026 (lov om forvaltere af alternative investeringsfonde m.v., consolidated), § 29",
+     "payload": {
+      "key": "obl-dk-faif-valuation",
+      "titles": {
+       "en": "Value fund assets and net asset value correctly, independently and consistently"
+      },
+      "summaries": {
+       "en": "For each fund it manages, the manager must have valuation procedures ensuring that the assets are valued and the net asset value per unit calculated correctly, independently and consistently, in line with the Act and national law. The valuation rules must appear in the fund's rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 29",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Appoint a depositary for each fund under a written agreement",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/468",
+     "sourceLabel": "Retsinformation, LBK nr 468 af 26/04/2026 (lov om forvaltere af alternative investeringsfonde m.v., consolidated), § 45",
+     "payload": {
+      "key": "obl-dk-faif-depositary",
+      "titles": {
+       "en": "Appoint a depositary for each fund under a written agreement"
+      },
+      "summaries": {
+       "en": "The manager must ensure that a depositary is appointed for each fund it manages in line with the Act's depositary chapter, with a written agreement between the fund and the depositary."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 45, stk. 1-2",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give investors the prescribed fund information before they invest",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/468",
+     "sourceLabel": "Retsinformation, LBK nr 468 af 26/04/2026 (lov om forvaltere af alternative investeringsfonde m.v., consolidated), § 62",
+     "payload": {
+      "key": "obl-dk-faif-investor-disclosure",
+      "titles": {
+       "en": "Give investors the prescribed fund information before they invest"
+      },
+      "summaries": {
+       "en": "For each EU/EEA fund it manages or markets in the EU/EEA, the manager must make the information the Act lists, and any material changes, available to the fund's investors before they invest, in the way set out in the fund's rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 62",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report regularly to the Danish FSA on markets, instruments, exposures and liquidity",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/468",
+     "sourceLabel": "Retsinformation, LBK nr 468 af 26/04/2026 (lov om forvaltere af alternative investeringsfonde m.v., consolidated), § 67",
+     "payload": {
+      "key": "obl-dk-faif-fsa-reporting",
+      "titles": {
+       "en": "Report regularly to the Danish FSA on markets, instruments, exposures and liquidity"
+      },
+      "summaries": {
+       "en": "The manager must regularly report to the Danish FSA on the main markets and instruments it trades, the markets it is a member of and each fund's principal exposures and concentrations, and for each EU/EEA fund on illiquid assets, new liquidity management arrangements and risk profile, among other things. It sends a list of the funds it manages at quarter end on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 67",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:fund_company",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Forsikringsaftaleloven, LOV nr 129 af 15/04/1930",
+   "source": "https://www.retsinformation.dk/eli/lta/2015/1237",
+   "sourceLabel": "Retsinformation, LBK nr 1237 af 09/11/2015 (lov om forsikringsaftaler, consolidated), § 125 on entry into force",
+   "fieldSources": {
+    "officialRef": "https://www.retsinformation.dk/eli/lta/2018/1070",
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2025/723"
+   },
+   "payload": {
+    "key": "dk-lov-1930-129",
+    "titles": {
+     "da": "Lov om forsikringsaftaler",
+     "en": "Insurance Contracts Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Forsikringsaftaleloven",
+    "officialRef": "LOV nr 129 af 15/04/1930",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:insurance",
+    "inForceFrom": "1932-01-01",
+    "implementsNote": "Parts of Directive (EU) 2023/2673 on financial services contracts concluded at a distance, through LOV nr 723 af 20/06/2025 from 19 June 2026"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not request or use information on a person's hereditary disposition to disease",
+     "source": "https://www.retsinformation.dk/eli/lta/2015/1237",
+     "sourceLabel": "Retsinformation, LBK nr 1237 af 09/11/2015 (lov om forsikringsaftaler, consolidated), § 3 a, as amended by LOV nr 638 af 08/06/2016, § 1",
+     "payload": {
+      "key": "obl-dk-fal-no-genetic-information",
+      "titles": {
+       "en": "Do not request or use information on a person's hereditary disposition to disease"
+      },
+      "summaries": {
+       "en": "An insurer must not, when or after concluding an insurance contract, ask for, obtain, or receive and use information that can shed light on a person's hereditary disposition and risk of developing or contracting diseases, including by requiring examinations to obtain it. Information on the person's own present or past state of health is not covered; since 1 July 2016 the exception no longer extends to other persons' health (LOV nr 638 af 08/06/2016)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 a",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Pay insurance benefits within 14 days of having the information needed, with interest after that",
+     "source": "https://www.retsinformation.dk/eli/lta/2015/1237",
+     "sourceLabel": "Retsinformation, LBK nr 1237 af 09/11/2015 (lov om forsikringsaftaler, consolidated), § 24",
+     "payload": {
+      "key": "obl-dk-fal-claims-payment",
+      "titles": {
+       "en": "Pay insurance benefits within 14 days of having the information needed, with interest after that"
+      },
+      "summaries": {
+       "en": "An insurance benefit can be claimed 14 days after the insurer was able to obtain the information needed to assess the insured event and the amount, and any undisputed part can be claimed on the same terms before the final settlement. From then on the amount carries interest at the rate under § 5 of the Interest Act."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 24, stk. 1-2",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give consumers the prescribed information when selling insurance at a distance",
+     "source": "https://www.retsinformation.dk/eli/lta/2015/1237",
+     "sourceLabel": "Retsinformation, LBK nr 1237 af 09/11/2015 (lov om forsikringsaftaler, consolidated), § 34 e, as amended by LOV nr 723 af 20/06/2025, § 2, nr. 3-5",
+     "payload": {
+      "key": "obl-dk-fal-distance-sale-information",
+      "titles": {
+       "en": "Give consumers the prescribed information when selling insurance at a distance"
+      },
+      "summaries": {
+       "en": "When an insurance contract is concluded at a distance, the insurer must give the consumer the information § 34 e lists, among it its name, main business, address and supervision, how and where to send a notice of withdrawal, and how to complain. Since 19 June 2026 this also includes its telephone number and e-mail address or other means of communication and, for contracts concluded online, where the withdrawal function is found."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 34 e",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:insurer",
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not design online sales interfaces to push consumers towards particular choices",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/723",
+     "sourceLabel": "Retsinformation, LOV nr 723 af 20/06/2025, § 2, nr. 2 (new § 34 b, stk. 3, of lov om forsikringsaftaler), in force 19 June 2026",
+     "payload": {
+      "key": "obl-dk-fal-no-steering-interfaces",
+      "titles": {
+       "en": "Do not design online sales interfaces to push consumers towards particular choices"
+      },
+      "summaries": {
+       "en": "When concluding insurance contracts at a distance, the insurer must not design, organise or operate its online interfaces so that certain choices are made more prominent when the consumer is asked to take a decision."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 34 b, stk. 3",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-06-19",
+      "terms": [
+       "legal_entity:insurer",
+       "channel:digital"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Lov om forsikringsformidling, LOV nr 41 af 22/01/2018",
+   "source": "https://www.retsinformation.dk/eli/lta/2018/41",
+   "sourceLabel": "Retsinformation, LOV nr 41 af 22/01/2018 (lov om forsikringsformidling), put into force by BEK nr 360 af 26/04/2018, § 1",
+   "fieldSources": {
+    "inForceFrom": "https://www.retsinformation.dk/eli/lta/2018/360",
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2025/1543"
+   },
+   "payload": {
+    "key": "dk-lov-2018-41",
+    "titles": {
+     "da": "Lov om forsikringsformidling",
+     "en": "Insurance Distribution Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Lov om forsikringsformidling",
+    "officialRef": "LOV nr 41 af 22/01/2018",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2018/41",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:insurance",
+    "inForceFrom": "2018-10-01",
+    "implementsNote": "IDD, Directive (EU) 2016/97"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make sure staff who distribute insurance have sufficient competence",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1543",
+     "sourceLabel": "Retsinformation, LBK nr 1543 af 18/11/2025 (lov om forsikringsformidling, consolidated), § 11",
+     "payload": {
+      "key": "obl-dk-ffl-staff-competence",
+      "titles": {
+       "en": "Make sure staff who distribute insurance have sufficient competence"
+      },
+      "summaries": {
+       "en": "An insurance or reinsurance intermediary must ensure that all employees carrying out distribution have sufficient competence, and an ancillary intermediary must have appropriate knowledge of the products it distributes. The detailed competence and good-repute requirements are set in rules issued under the Act."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 11",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Distribute insurance in line with fair business practice and good practice",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1543",
+     "sourceLabel": "Retsinformation, LBK nr 1543 af 18/11/2025 (lov om forsikringsformidling, consolidated), § 12",
+     "payload": {
+      "key": "obl-dk-ffl-fair-business-practice",
+      "titles": {
+       "en": "Distribute insurance in line with fair business practice and good practice"
+      },
+      "summaries": {
+       "en": "Insurance intermediaries and ancillary intermediaries must conduct their business in line with fair business practice and good practice in the field; the detailed conduct and information rules are issued under § 12(2)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 12, stk. 1",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Place Danish risks only with authorised insurers",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1543",
+     "sourceLabel": "Retsinformation, LBK nr 1543 af 18/11/2025 (lov om forsikringsformidling, consolidated), § 12 a",
+     "payload": {
+      "key": "obl-dk-ffl-authorised-insurers-only",
+      "titles": {
+       "en": "Place Danish risks only with authorised insurers"
+      },
+      "summaries": {
+       "en": "An intermediary must not help place insurance for persons resident in Denmark, Danish ships or other risks situated in Denmark with anyone other than Danish insurers, foreign insurers meeting the conditions of the Insurance Business Act, or foreign insurers authorised by the Danish FSA."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 12 a",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep remuneration and sales targets from conflicting with the customer's best interest",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1543",
+     "sourceLabel": "Retsinformation, LBK nr 1543 af 18/11/2025 (lov om forsikringsformidling, consolidated), § 13",
+     "payload": {
+      "key": "obl-dk-ffl-remuneration-best-interest",
+      "titles": {
+       "en": "Keep remuneration and sales targets from conflicting with the customer's best interest"
+      },
+      "summaries": {
+       "en": "An intermediary must ensure that its remuneration structures, and the remuneration it receives for distribution, do not conflict with its duty to act in the customer's best interest. It must not introduce remuneration or sales targets that encourage it or its staff to recommend a particular product when another would better meet the customer's needs."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 13",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Run product approval and product information procedures for insurance products",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1543",
+     "sourceLabel": "Retsinformation, LBK nr 1543 af 18/11/2025 (lov om forsikringsformidling, consolidated), § 14",
+     "payload": {
+      "key": "obl-dk-ffl-product-oversight",
+      "titles": {
+       "en": "Run product approval and product information procedures for insurance products"
+      },
+      "summaries": {
+       "en": "An intermediary that designs insurance products must have effective procedures for approving new products, material changes to existing products and their distribution. An intermediary that advises on or proposes products it has not designed must have effective procedures for obtaining the relevant information about them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 14, stk. 1-2",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Databeskyttelsesloven, LOV nr 502 af 23/05/2018",
+   "source": "https://www.retsinformation.dk/eli/lta/2018/502",
+   "sourceLabel": "Retsinformation, LOV nr 502 af 23/05/2018 (databeskyttelsesloven), § 46 on entry into force",
+   "payload": {
+    "key": "dk-lov-2018-502",
+    "titles": {
+     "da": "Lov om supplerende bestemmelser til forordning om beskyttelse af fysiske personer i forbindelse med behandling af personoplysninger og om fri udveksling af sådanne oplysninger (databeskyttelsesloven)",
+     "en": "Act on supplementary provisions to the Regulation on the protection of natural persons with regard to the processing of personal data and on the free movement of such data (Data Protection Act)"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Databeskyttelsesloven",
+    "officialRef": "LOV nr 502 af 23/05/2018",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2018/502",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2018-05-25",
+    "implementsNote": "Supplements the GDPR, Regulation (EU) 2016/679"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Process and disclose data on criminal offences only on the grounds the Act allows",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/289",
+     "sourceLabel": "Retsinformation, LBK nr 289 af 08/03/2024 (databeskyttelsesloven, consolidated), § 8",
+     "payload": {
+      "key": "obl-dk-dbl-criminal-offence-data",
+      "titles": {
+       "en": "Process and disclose data on criminal offences only on the grounds the Act allows"
+      },
+      "summaries": {
+       "en": "A private firm may process data on criminal offences only with the data subject's explicit consent or where necessary for a legitimate interest that clearly outweighs the data subject's interests. It may disclose such data without explicit consent only where public or private interests clearly outweigh the interests in keeping them confidential."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8, stk. 3-4",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Process CPR numbers only on the permitted grounds and never publish them without consent",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/289",
+     "sourceLabel": "Retsinformation, LBK nr 289 af 08/03/2024 (databeskyttelsesloven, consolidated), § 11",
+     "payload": {
+      "key": "obl-dk-dbl-cpr-numbers",
+      "titles": {
+       "en": "Process CPR numbers only on the permitted grounds and never publish them without consent"
+      },
+      "summaries": {
+       "en": "A private firm may process national identification (CPR) numbers only where the law provides for it, with the data subject's consent, for scientific or statistical purposes, where disclosure is a natural part of normal business and decisive for unique identification or required by a public authority, or where § 7 is met. CPR numbers may not be published without consent."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 11, stk. 2-3",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Check the CPR marketing-protection register before passing on consumer data for direct marketing",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/289",
+     "sourceLabel": "Retsinformation, LBK nr 289 af 08/03/2024 (databeskyttelsesloven, consolidated), § 13",
+     "payload": {
+      "key": "obl-dk-dbl-marketing-protection",
+      "titles": {
+       "en": "Check the CPR marketing-protection register before passing on consumer data for direct marketing"
+      },
+      "summaries": {
+       "en": "Before a firm passes data about a consumer to another firm for direct marketing, or uses the data for that purpose on behalf of another firm, it must check in the CPR register whether the consumer has opted out of marketing approaches."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 13",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Lov om restrukturering og afvikling, LOV nr 333 af 31/03/2015",
+   "source": "https://www.retsinformation.dk/eli/lta/2015/333",
+   "sourceLabel": "Retsinformation, LOV nr 333 af 31/03/2015 (lov om restrukturering og afvikling af visse finansielle virksomheder), § 78 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2019/24"
+   },
+   "payload": {
+    "key": "dk-lov-2015-333",
+    "titles": {
+     "da": "Lov om restrukturering og afvikling af visse finansielle virksomheder",
+     "en": "Act on Restructuring and Resolution of Certain Financial Undertakings"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Lov om restrukturering og afvikling",
+    "officialRef": "LOV nr 333 af 31/03/2015",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2015/333",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:banking",
+    "inForceFrom": "2015-06-01",
+    "implementsNote": "BRRD, Directive 2014/59/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Pay the annual contribution to the Resolution Fund",
+     "source": "https://www.retsinformation.dk/eli/lta/2019/24",
+     "sourceLabel": "Retsinformation, LBK nr 24 af 04/01/2019 (lov om restrukturering og afvikling af visse finansielle virksomheder, consolidated; later amendments checked, none touch § 58), § 58",
+     "payload": {
+      "key": "obl-dk-raf-resolution-fund-contribution",
+      "titles": {
+       "en": "Pay the annual contribution to the Resolution Fund"
+      },
+      "summaries": {
+       "en": "Banks, mortgage-credit institutions and certain investment firms established in Denmark, and branches of institutions from outside the EU/EEA, finance the Resolution Fund (Afviklingsformuen) through annual contributions that Finansiel Stabilitet sets from their liabilities, less own funds and covered deposits, and an individual risk adjustment. Extraordinary contributions of up to three times the last annual contribution can be levied if the fund's means are insufficient."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 58, stk. 1-2 og 4",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:investment_firm"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Lov om en indskyder- og investorgarantiordning, LOV nr 415 af 26/06/1998",
+   "source": "https://www.retsinformation.dk/eli/lta/1998/415",
+   "sourceLabel": "Retsinformation, LOV nr 415 af 26/06/1998 (originally lov om en garantifond for indskydere og investorer), put into force by BEK nr 723 af 09/10/1998, § 1",
+   "fieldSources": {
+    "titles.da": "https://www.retsinformation.dk/eli/lta/2024/39",
+    "titles.en": "https://www.retsinformation.dk/eli/lta/2024/39",
+    "inForceFrom": "https://www.retsinformation.dk/eli/lta/1998/723",
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2024/39"
+   },
+   "payload": {
+    "key": "dk-lov-1998-415",
+    "titles": {
+     "da": "Lov om en indskyder- og investorgarantiordning",
+     "en": "Depositor and Investor Guarantee Scheme Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Lov om en indskyder- og investorgarantiordning",
+    "officialRef": "LOV nr 415 af 26/06/1998",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/1998/415",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:banking",
+    "inForceFrom": "1998-10-15",
+    "implementsNote": "DGSD, Directive 2014/49/EU; Investor Compensation Schemes Directive 97/9/EC"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Belong to the Guarantee Fund and pay annual risk-based contributions",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/39",
+     "sourceLabel": "Retsinformation, LBK nr 39 af 09/01/2024 (lov om en indskyder- og investorgarantiordning, consolidated), §§ 3 and 7",
+     "payload": {
+      "key": "obl-dk-igo-membership-contributions",
+      "titles": {
+       "en": "Belong to the Guarantee Fund and pay annual risk-based contributions"
+      },
+      "summaries": {
+       "en": "Banks, mortgage-credit institutions, investment firms and certain other firms must be members of and contribute to the Guarantee Fund (Garantiformuen). Banks pay annual contributions to its banking department based on their covered deposits and risk profile, until the department reaches its target level of 0.8 per cent of covered deposits."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3 og § 7, stk. 1-3",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Inform depositors and investors of the guarantee scheme's coverage",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/39",
+     "sourceLabel": "Retsinformation, LBK nr 39 af 09/01/2024 (lov om en indskyder- og investorgarantiordning, consolidated), § 15",
+     "payload": {
+      "key": "obl-dk-igo-depositor-information",
+      "titles": {
+       "en": "Inform depositors and investors of the guarantee scheme's coverage"
+      },
+      "summaries": {
+       "en": "Depositors and investors must be informed of the coverage of the guarantee scheme the institution belongs to, including the home-country scheme for branches of foreign institutions. After being told of a merger, depositors and investors have three months to withdraw or transfer, free of charge, deposits or cash that are no longer covered."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 15, stk. 1-2",
+      "dutyType": "disclosure"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Lov om fondsmæglerselskaber og investeringsservice, LOV nr 1155 af 08/06/2021",
+   "source": "https://www.retsinformation.dk/eli/lta/2021/1155",
+   "sourceLabel": "Retsinformation, LOV nr 1155 af 08/06/2021, § 288 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2026/467"
+   },
+   "payload": {
+    "key": "dk-lov-2021-1155",
+    "titles": {
+     "da": "Lov om fondsmæglerselskaber og investeringsservice og -aktiviteter",
+     "en": "Act on Investment Firms and Investment Services and Activities"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Lov om fondsmæglerselskaber og investeringsservice",
+    "officialRef": "LOV nr 1155 af 08/06/2021",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2021/1155",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:securities",
+    "inForceFrom": "2021-06-26",
+    "implementsNote": "IFD, Directive (EU) 2019/2034; parts of MiFID II, Directive 2014/65/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Provide investment services in line with fair business practice and good practice",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/467",
+     "sourceLabel": "Retsinformation, LBK nr 467 af 26/04/2026 (lov om fondsmæglerselskaber og investeringsservice og -aktiviteter, consolidated), § 45 and § 2 (applies to banks providing investment services under § 2, stk. 1)",
+     "payload": {
+      "key": "obl-dk-fml-fair-business-practice",
+      "titles": {
+       "en": "Provide investment services in line with fair business practice and good practice"
+      },
+      "summaries": {
+       "en": "Investment firms, and banks providing investment services, must act in line with fair business practice and good practice in the field. The investor protection and cost, charges and risk disclosure rules issued under § 45 elaborate the duty."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 45, stk. 1, jf. § 2, stk. 1",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Call investment advice independent only if it covers a broad, untied range of instruments",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/467",
+     "sourceLabel": "Retsinformation, LBK nr 467 af 26/04/2026 (lov om fondsmæglerselskaber og investeringsservice og -aktiviteter, consolidated), § 47 (applies to banks providing investment services under § 2, stk. 1)",
+     "payload": {
+      "key": "obl-dk-fml-independent-advice-label",
+      "titles": {
+       "en": "Call investment advice independent only if it covers a broad, untied range of instruments"
+      },
+      "summaries": {
+       "en": "A firm may tell a client that its investment advice is independent only if it assesses a sufficiently broad range of financial instruments on the market, diverse in type and issuer or provider, and not limited to instruments issued or provided by the firm itself or by entities with close links or close legal or economic ties to it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 47",
+      "dutyType": "disclosure",
+      "terms": [
+       "service_type:advice"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Pass on third-party payments received for independent advice or portfolio management",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/467",
+     "sourceLabel": "Retsinformation, LBK nr 467 af 26/04/2026 (lov om fondsmæglerselskaber og investeringsservice og -aktiviteter, consolidated), § 48 (applies to banks providing investment services under § 2, stk. 1)",
+     "payload": {
+      "key": "obl-dk-fml-inducements-ban",
+      "titles": {
+       "en": "Pass on third-party payments received for independent advice or portfolio management"
+      },
+      "summaries": {
+       "en": "When providing independent investment advice or discretionary portfolio management, the firm must not accept and keep fees, commissions or other monetary or non-monetary benefits paid by a third party in connection with the service; any such payment must be passed on to the client as soon as possible. Minor non-monetary benefits that can improve the service and do not impair the duty to act in the client's best interest are exempt."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 48",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:advice",
+       "service_type:portfolio_management"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Ensure continuity and regularity of investment services with DORA-compliant systems",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/467",
+     "sourceLabel": "Retsinformation, LBK nr 467 af 26/04/2026 (lov om fondsmæglerselskaber og investeringsservice og -aktiviteter, consolidated), § 95, stk. 1 (applies to banks providing investment services under § 2, stk. 1)",
+     "payload": {
+      "key": "obl-dk-fml-service-continuity",
+      "titles": {
+       "en": "Ensure continuity and regularity of investment services with DORA-compliant systems"
+      },
+      "summaries": {
+       "en": "The firm must take the measures needed to ensure continuity and regularity in providing investment services and activities, using appropriate and proportionate systems, including ICT systems set up and managed under Article 7 of DORA, Regulation (EU) 2022/2554, and appropriate resources and procedures."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 95, stk. 1",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep rules on staff dealing and effective procedures to prevent conflicts of interest",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/467",
+     "sourceLabel": "Retsinformation, LBK nr 467 af 26/04/2026 (lov om fondsmæglerselskaber og investeringsservice og -aktiviteter, consolidated), § 95, stk. 2 (applies to banks providing investment services under § 2, stk. 1)",
+     "payload": {
+      "key": "obl-dk-fml-personal-dealing-conflicts",
+      "titles": {
+       "en": "Keep rules on staff dealing and effective procedures to prevent conflicts of interest"
+      },
+      "summaries": {
+       "en": "The firm must have appropriate rules and procedures for transactions in financial instruments by its management, employees and tied agents, and effective procedures to take reasonable steps to prevent conflicts of interest from harming clients' interests."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 95, stk. 2, nr. 1-2",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Safeguard clients' ownership of funds and instruments and use them only with express consent",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/467",
+     "sourceLabel": "Retsinformation, LBK nr 467 af 26/04/2026 (lov om fondsmæglerselskaber og investeringsservice og -aktiviteter, consolidated), § 95, stk. 2-3 (applies to banks providing investment services under § 2, stk. 1)",
+     "payload": {
+      "key": "obl-dk-fml-client-assets",
+      "titles": {
+       "en": "Safeguard clients' ownership of funds and instruments and use them only with express consent"
+      },
+      "summaries": {
+       "en": "The firm must secure clients' ownership rights to their funds and financial instruments, protect their rights and not dispose of them without the client's express consent. Client instruments may be held in an omnibus account only if each client has been informed of the legal effects and consented, and the firm keeps a register clearly showing each client's ownership."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 95, stk. 2, nr. 3-4, og stk. 3",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep full records of all services and transactions for at least five years",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/467",
+     "sourceLabel": "Retsinformation, LBK nr 467 af 26/04/2026 (lov om fondsmæglerselskaber og investeringsservice og -aktiviteter, consolidated), § 95, stk. 2, nr. 5 (applies to banks providing investment services under § 2, stk. 1)",
+     "payload": {
+      "key": "obl-dk-fml-transaction-records",
+      "titles": {
+       "en": "Keep full records of all services and transactions for at least five years"
+      },
+      "summaries": {
+       "en": "The firm must keep and store adequate records of all services provided and transactions carried out for at least five years after the service was provided or the transaction completed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 95, stk. 2, nr. 5",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Operate effective approval procedures for new and changed investment products and their distribution",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/467",
+     "sourceLabel": "Retsinformation, LBK nr 467 af 26/04/2026 (lov om fondsmæglerselskaber og investeringsservice og -aktiviteter, consolidated), § 96 (applies to banks providing investment services under § 2, stk. 1)",
+     "payload": {
+      "key": "obl-dk-fml-product-governance",
+      "titles": {
+       "en": "Operate effective approval procedures for new and changed investment products and their distribution"
+      },
+      "summaries": {
+       "en": "The firm must have effective procedures for approving new products and services, material changes to existing ones and their distribution."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 96, stk. 1",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep staff remuneration and sales targets from conflicting with clients' best interest",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/467",
+     "sourceLabel": "Retsinformation, LBK nr 467 af 26/04/2026 (lov om fondsmæglerselskaber og investeringsservice og -aktiviteter, consolidated), § 108 (applies to banks providing investment services under § 2, stk. 1)",
+     "payload": {
+      "key": "obl-dk-fml-remuneration-client-interest",
+      "titles": {
+       "en": "Keep staff remuneration and sales targets from conflicting with clients' best interest"
+      },
+      "summaries": {
+       "en": "The firm must ensure that the remuneration of its staff does not conflict with its duty to act in clients' best interest, and must not introduce remuneration, sales targets or other arrangements that could encourage staff to recommend a particular financial instrument to a retail client when another would better meet the client's needs."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 108, stk. 1-2",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add NIS 2-loven, LOV nr 434 af 06/05/2025",
+   "source": "https://www.retsinformation.dk/eli/lta/2025/434",
+   "sourceLabel": "Retsinformation, LOV nr 434 af 06/05/2025 (NIS 2-loven), § 33 on entry into force",
+   "payload": {
+    "key": "dk-lov-2025-434",
+    "titles": {
+     "da": "Lov om foranstaltninger til sikring af et højt cybersikkerhedsniveau (NIS 2-loven)",
+     "en": "Act on measures to ensure a high level of cybersecurity (NIS 2 Act)"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "NIS 2-loven",
+    "officialRef": "LOV nr 434 af 06/05/2025",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2025/434",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2025-07-01",
+    "implementsNote": "NIS2, Directive (EU) 2022/2555"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Take cybersecurity risk-management measures approved and overseen by management",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/434",
+     "sourceLabel": "Retsinformation, LOV nr 434 af 06/05/2025 (NIS 2-loven), §§ 1, 6 and 7",
+     "payload": {
+      "key": "obl-dk-nis2-risk-management",
+      "titles": {
+       "en": "Take cybersecurity risk-management measures approved and overseen by management"
+      },
+      "summaries": {
+       "en": "Essential and important entities must take appropriate and proportionate technical, operational and organisational measures to manage the risks to their network and information systems, covering at least risk analysis and security policies, incident handling, business continuity and supply-chain security, and management must approve and oversee them and attend cybersecurity training. The Act does not apply where sector-specific EU acts and their national implementation have at least the same effect as its rules on risk management and incident notification (§ 1(3)), which financial entities under DORA, Regulation (EU) 2022/2554, should check first."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 6-7",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Notify significant incidents within 24 hours, update within 72 hours and report finally within a month",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/434",
+     "sourceLabel": "Retsinformation, LOV nr 434 af 06/05/2025 (NIS 2-loven), §§ 1, 12 and 13",
+     "payload": {
+      "key": "obl-dk-nis2-incident-notification",
+      "titles": {
+       "en": "Notify significant incidents within 24 hours, update within 72 hours and report finally within a month"
+      },
+      "summaries": {
+       "en": "Essential and important entities must notify the competent authority and the CSIRT of every significant incident: an early warning without undue delay and within 24 hours of becoming aware of it, an incident notification within 72 hours, and a final report no later than one month after the notification. The Act does not apply where sector-specific EU acts and their national implementation have at least the same effect as its rules on risk management and incident notification (§ 1(3)), which financial entities under DORA, Regulation (EU) 2022/2554, should check first."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 12-13",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Skatteindberetningsloven, LOV nr 1536 af 19/12/2017",
+   "source": "https://www.retsinformation.dk/eli/lta/2017/1536",
+   "sourceLabel": "Retsinformation, LOV nr 1536 af 19/12/2017 (skatteindberetningsloven), § 64 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2025/1059"
+   },
+   "payload": {
+    "key": "dk-lov-2017-1536",
+    "titles": {
+     "da": "Skatteindberetningslov",
+     "en": "Tax Reporting Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Skatteindberetningsloven",
+    "officialRef": "LOV nr 1536 af 19/12/2017",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2017/1536",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:tax",
+    "inForceFrom": "2019-01-01",
+    "implementsNote": "DAC, Council Directive 2011/16/EU, as amended among others by Directive 2014/107/EU on automatic exchange of financial account information"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report interest and year-end balances on deposit accounts to the tax authority each year",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1059",
+     "sourceLabel": "Retsinformation, LBK nr 1059 af 21/08/2025 (skatteindberetningsloven, consolidated), § 12",
+     "payload": {
+      "key": "obl-dk-sil-deposit-interest-reporting",
+      "titles": {
+       "en": "Report interest and year-end balances on deposit accounts to the tax authority each year"
+      },
+      "summaries": {
+       "en": "Banks and others who receive deposits must report each year to the Danish Customs and Tax Administration the interest and other returns paid, credited or charged to each account holder in the previous year and the balance at year end with each holder's share. The report includes the account type and currency, the holders' identity and the opening date, and covers accounts closed or transferred during the year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 12",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report dividends on shares held in custody to the tax authority",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1059",
+     "sourceLabel": "Retsinformation, LBK nr 1059 af 21/08/2025 (skatteindberetningsloven, consolidated), § 16",
+     "payload": {
+      "key": "obl-dk-sil-custody-dividend-reporting",
+      "titles": {
+       "en": "Report dividends on shares held in custody to the tax authority"
+      },
+      "summaries": {
+       "en": "A firm that holds shares in custody as part of its business must report to the tax authority the dividends distributed on deposited shares admitted to trading on a regulated market or MTF, or registered in a CSD, with the prescribed details for each recipient."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 16, stk. 1-2",
+      "dutyType": "reporting",
+      "terms": [
+       "service_type:custody",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report financial accounts linked to the Faroe Islands, Greenland or abroad each year",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1059",
+     "sourceLabel": "Retsinformation, LBK nr 1059 af 21/08/2025 (skatteindberetningsloven, consolidated), § 22, as amended by LOV nr 409 af 29/04/2025, § 1, nr. 3-6",
+     "payload": {
+      "key": "obl-dk-sil-foreign-account-reporting",
+      "titles": {
+       "en": "Report financial accounts linked to the Faroe Islands, Greenland or abroad each year"
+      },
+      "summaries": {
+       "en": "Under the rules the Minister for Taxation issues under § 22, financial institutions report each year to the tax authority on financial accounts linked to the Faroe Islands, Greenland or other countries. The report covers account holders' and controlling persons' identification data and jurisdictions, account type and number, the reporting institution, the balance or value and the interest, dividends, other income and sale proceeds paid or credited to the account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 22",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell each reportable person before their account information is reported",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1059",
+     "sourceLabel": "Retsinformation, LBK nr 1059 af 21/08/2025 (skatteindberetningsloven, consolidated), § 53 a",
+     "payload": {
+      "key": "obl-dk-sil-notify-reportable-persons",
+      "titles": {
+       "en": "Tell each reportable person before their account information is reported"
+      },
+      "summaries": {
+       "en": "A financial institution that must report under the rules issued under § 22 must tell each reportable person that information about them will be collected and passed on, and give them all the information they are entitled to from a data controller. It must do so in good time for them to exercise their data protection rights and in any case before the information is reported."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 53 a, stk. 1",
+      "dutyType": "disclosure"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Lov om betalingskonti, LOV nr 375 af 27/04/2016",
+   "source": "https://www.retsinformation.dk/eli/lta/2016/375",
+   "sourceLabel": "Retsinformation, LOV nr 375 af 27/04/2016 (originally lov om betalingskonti), § 26 on entry into force",
+   "fieldSources": {
+    "titles.da": "https://www.retsinformation.dk/eli/lta/2025/1462",
+    "titles.en": "https://www.retsinformation.dk/eli/lta/2025/1462",
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2025/1462"
+   },
+   "payload": {
+    "key": "dk-lov-2016-375",
+    "titles": {
+     "da": "Lov om betalingskonti og basale erhvervskonti",
+     "en": "Act on Payment Accounts and Basic Business Accounts"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Lov om betalingskonti",
+    "officialRef": "LOV nr 375 af 27/04/2016",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2016/375",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:payments",
+    "inForceFrom": "2016-07-01",
+    "implementsNote": "PAD, Directive 2014/92/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give consumers a fee information document no later than when a payment account is agreed",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1462",
+     "sourceLabel": "Retsinformation, LBK nr 1462 af 18/11/2025 (lov om betalingskonti og basale erhvervskonti, consolidated), § 3",
+     "payload": {
+      "key": "obl-dk-bkl-fee-information-document",
+      "titles": {
+       "en": "Give consumers a fee information document no later than when a payment account is agreed"
+      },
+      "summaries": {
+       "en": "A payment service provider must give the consumer a fee information document, on paper or another durable medium, no later than when an agreement on a payment account is concluded. It lists all the representative services in the Minister's list and the fees the provider charges for them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3, stk. 1",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give consumers a free statement of all payment account fees at least once a year",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1462",
+     "sourceLabel": "Retsinformation, LBK nr 1462 af 18/11/2025 (lov om betalingskonti og basale erhvervskonti, consolidated), § 5",
+     "payload": {
+      "key": "obl-dk-bkl-statement-of-fees",
+      "titles": {
+       "en": "Give consumers a free statement of all payment account fees at least once a year"
+      },
+      "summaries": {
+       "en": "A payment service provider must give consumers with a payment account, free of charge and at least once a year, a statement of all fees incurred and of the interest rates applied to services linked to the account, using the standard names of the representative services."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 5, stk. 1",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Offer consumers a basic payment account in Danish kroner",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1462",
+     "sourceLabel": "Retsinformation, LBK nr 1462 af 18/11/2025 (lov om betalingskonti og basale erhvervskonti, consolidated), §§ 9 and 11",
+     "payload": {
+      "key": "obl-dk-bkl-basic-payment-account",
+      "titles": {
+       "en": "Offer consumers a basic payment account in Danish kroner"
+      },
+      "summaries": {
+       "en": "A bank must offer a basic payment account in Danish kroner, with the services listed in § 9, to consumers legally resident in the EU/EEA and to consumers without a residence permit who cannot be deported, unless opening it would breach the AML Act. It may refuse only on the grounds in § 11(3), for example where the consumer cannot show a genuine interest or already has a Danish payment account offering those services."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 11",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Terminate a basic payment account only on the grounds the Act lists",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1462",
+     "sourceLabel": "Retsinformation, LBK nr 1462 af 18/11/2025 (lov om betalingskonti og basale erhvervskonti, consolidated), § 13",
+     "payload": {
+      "key": "obl-dk-bkl-basic-account-termination",
+      "titles": {
+       "en": "Terminate a basic payment account only on the grounds the Act lists"
+      },
+      "summaries": {
+       "en": "Notwithstanding the general termination rule in the Payments Act, a bank may terminate a basic payment account only on the grounds in § 13, such as use of the account for criminal purposes, no transactions for more than 24 consecutive months, false information given to obtain the account, loss of legal residence, a second Danish account offering the same services, or use of the account for business purposes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 13",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:bank",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not discriminate against EU/EEA-resident consumers applying for or using a payment account",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1638",
+     "sourceLabel": "Retsinformation, LOV nr 1638 af 16/12/2025, § 9, nr. 1 (new § 8 a of lov om betalingskonti og basale erhvervskonti), in force 1 January 2026 (§ 15)",
+     "payload": {
+      "key": "obl-dk-bkl-non-discrimination",
+      "titles": {
+       "en": "Do not discriminate against EU/EEA-resident consumers applying for or using a payment account"
+      },
+      "summaries": {
+       "en": "A bank must not discriminate against consumers legally resident in the EU/EEA on grounds of nationality or residence, or any other ground in Article 21 of the EU Charter of Fundamental Rights, when they apply for or use a payment account in the EU/EEA. The conditions for holding a basic payment account must in no way be discriminatory."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 8 a",
+      "dutyType": "conduct",
+      "effectiveFrom": "2026-01-01",
+      "terms": [
+       "legal_entity:bank",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Offer businesses and associations with Danish ties a basic business account",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/1462",
+     "sourceLabel": "Retsinformation, LBK nr 1462 af 18/11/2025 (lov om betalingskonti og basale erhvervskonti, consolidated), §§ 1 a and 13 c, inserted by LOV nr 1666 af 30/12/2024, § 1, in force 1 January 2025",
+     "payload": {
+      "key": "obl-dk-bkl-basic-business-account",
+      "titles": {
+       "en": "Offer businesses and associations with Danish ties a basic business account"
+      },
+      "summaries": {
+       "en": "A bank designated as a systemically important financial institution (SIFI) or part of a SIFI group, and certain branches of foreign credit institutions in such groups, must offer a basic business account in Danish kroner to businesses and associations that meet the Act's conditions of Danish residence, such as a Danish registered office and a director or beneficial owner resident in Denmark."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 13 c, jf. § 1 a",
+      "dutyType": "conduct",
+      "effectiveFrom": "2025-01-01",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Ledelsesbekendtgørelsen, BEK nr 1103 af 30/06/2022",
+   "source": "https://www.retsinformation.dk/eli/lta/2022/1103",
+   "sourceLabel": "Retsinformation, BEK nr 1103 af 30/06/2022, issued by Finanstilsynet, § 27 on entry into force",
+   "fieldSources": {
+    "implementsNote": "https://www.retsinformation.dk/eli/lta/2025/1335"
+   },
+   "payload": {
+    "key": "dk-bek-2022-1103",
+    "titles": {
+     "da": "Bekendtgørelse om ledelse og styring af pengeinstitutter m.fl.",
+     "en": "Executive Order on management and control of banks etc."
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Ledelsesbekendtgørelsen",
+    "officialRef": "BEK nr 1103 af 30/06/2022",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2022/1103",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:banking",
+    "inForceFrom": "2022-07-02",
+    "implementsNote": "Parts of CRD, Directive 2013/36/EU, as amended by Directives (EU) 2019/878 and 2024/1619"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Have the board decide the business model and policies and assess the firm's risks at least every second year",
+     "source": "https://www.retsinformation.dk/eli/lta/2022/1103",
+     "sourceLabel": "Retsinformation, BEK nr 1103 af 30/06/2022 (ledelsesbekendtgørelsen), § 3, stk. 1, as amended by BEK nr 1335 af 14/11/2025, § 1, nr. 3-4",
+     "payload": {
+      "key": "obl-dk-ledbek-board-strategic-duties",
+      "titles": {
+       "en": "Have the board decide the business model and policies and assess the firm's risks at least every second year"
+      },
+      "summaries": {
+       "en": "The board must decide the business model and, on that basis, the firm's policies, assess at least every second year the firm's individual and overall risks and whether they are acceptable, and decide on budgets, capital, liquidity, material transactions and special risks. Since 1 January 2026 it must also ensure robust strategies, policies, procedures and systems for identifying, measuring, managing and monitoring ESG risks over the short, medium and long term, with a horizon of at least ten years."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3, stk. 1",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Adopt written policies for each relevant risk area",
+     "source": "https://www.retsinformation.dk/eli/lta/2022/1103",
+     "sourceLabel": "Retsinformation, BEK nr 1103 af 30/06/2022 (ledelsesbekendtgørelsen), § 4, as amended by BEK nr 31 af 15/01/2025 and BEK nr 1335 af 14/11/2025",
+     "payload": {
+      "key": "obl-dk-ledbek-risk-policies",
+      "titles": {
+       "en": "Adopt written policies for each relevant risk area"
+      },
+      "summaries": {
+       "en": "The firm's policies must set its overall strategic objectives for each risk area, define which risks it is willing to take and how the objectives are achieved and, where relevant, include a credit policy, a market risk policy, an operational risk policy, a policy on insurance cover of risks and a liquidity policy with a contingency plan, as described in the annexes. Since 1 January 2026 the policies must also give guidelines on risks from current and short, medium and long-term ESG impacts."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Maintain a risk management function and a chief risk officer with direct access to the board",
+     "source": "https://www.retsinformation.dk/eli/lta/2022/1103",
+     "sourceLabel": "Retsinformation, BEK nr 1103 af 30/06/2022 (ledelsesbekendtgørelsen), § 16",
+     "payload": {
+      "key": "obl-dk-ledbek-risk-management-function",
+      "titles": {
+       "en": "Maintain a risk management function and a chief risk officer with direct access to the board"
+      },
+      "summaries": {
+       "en": "The executive board must ensure the firm has a risk management function and a chief risk officer (Annex 7) who can report directly to the board independently of the executive board and warn it of risk developments. Dismissing the chief risk officer requires the board's prior approval, and the executive board follows up on the officer's conclusions and recommendations."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 16",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Maintain an independent compliance function whose head can be dismissed only with board approval",
+     "source": "https://www.retsinformation.dk/eli/lta/2022/1103",
+     "sourceLabel": "Retsinformation, BEK nr 1103 af 30/06/2022 (ledelsesbekendtgørelsen), § 17, as amended by BEK nr 854 af 25/06/2024, § 1, nr. 17",
+     "payload": {
+      "key": "obl-dk-ledbek-compliance-function",
+      "titles": {
+       "en": "Maintain an independent compliance function whose head can be dismissed only with board approval"
+      },
+      "summaries": {
+       "en": "The firm must have methods and procedures to detect and reduce the risk of not complying with the law, market standards and internal rules, and an independent compliance function that checks and assesses whether these and any remedial measures are effective. Since 1 July 2024 dismissing the compliance officer requires the board's prior approval."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 17",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Set guidelines for developing and approving new products and services",
+     "source": "https://www.retsinformation.dk/eli/lta/2022/1103",
+     "sourceLabel": "Retsinformation, BEK nr 1103 af 30/06/2022 (ledelsesbekendtgørelsen), § 22",
+     "payload": {
+      "key": "obl-dk-ledbek-new-products",
+      "titles": {
+       "en": "Set guidelines for developing and approving new products and services"
+      },
+      "summaries": {
+       "en": "The executive board must ensure guidelines for developing and approving new products and services, and changes to existing ones that materially change their risk profile, which at least define when a product or service counts as new."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 22",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Solvensbehovsbekendtgørelsen, BEK nr 677 af 12/06/2025",
+   "source": "https://www.retsinformation.dk/eli/lta/2025/677",
+   "sourceLabel": "Retsinformation, BEK nr 677 af 12/06/2025, issued by Finanstilsynet, § 15 on entry into force",
+   "payload": {
+    "key": "dk-bek-2025-677",
+    "titles": {
+     "da": "Bekendtgørelse om opgørelse af risikoeksponeringer, kapitalgrundlag og solvensbehov",
+     "en": "Executive Order on the calculation of risk exposures, own funds and solvency need"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Solvensbehovsbekendtgørelsen",
+    "officialRef": "BEK nr 677 af 12/06/2025",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2025/677",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:banking",
+    "inForceFrom": "2025-07-01",
+    "implementsNote": "Parts of CRD, Directive 2013/36/EU, as amended by Directives (EU) 2019/878 and 2024/1619"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Determine adequate own funds and the solvency need taking the prescribed factors into account",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/677",
+     "sourceLabel": "Retsinformation, BEK nr 677 af 12/06/2025, issued by Finanstilsynet, § 3",
+     "payload": {
+      "key": "obl-dk-solvbek-solvency-need-method",
+      "titles": {
+       "en": "Determine adequate own funds and the solvency need taking the prescribed factors into account"
+      },
+      "summaries": {
+       "en": "When determining adequate own funds and the individual solvency need, the board and executive board must take account of the matters in Annex 1. The solvency need is expressed as adequate own funds in per cent of the total risk exposure, and the part relating to excessive leverage in per cent of the total non-risk-weighted exposure."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 3, stk. 1-2",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish information on adequate own funds and solvency need, half-yearly for large banks",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/677",
+     "sourceLabel": "Retsinformation, BEK nr 677 af 12/06/2025, issued by Finanstilsynet, §§ 4, 5 and 6",
+     "payload": {
+      "key": "obl-dk-solvbek-disclosure",
+      "titles": {
+       "en": "Publish information on adequate own funds and solvency need, half-yearly for large banks"
+      },
+      "summaries": {
+       "en": "Banks and mortgage-credit institutions must publish the information in Annex 2: point 1 at least once a year, and points 2 to 6 half-yearly for large institutions as defined in Article 4(1)(146) of the CRR and yearly for other banks. Significant changes must be published immediately, and publication may be delayed only where it would harm legitimate interests without misleading the public."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 4-6",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Regnskabsbekendtgørelsen, BEK nr 658 af 23/05/2025",
+   "source": "https://www.retsinformation.dk/eli/lta/2025/658",
+   "sourceLabel": "Retsinformation, BEK nr 658 af 23/05/2025, issued by Finanstilsynet, § 181 on entry into force",
+   "payload": {
+    "key": "dk-bek-2025-658",
+    "titles": {
+     "da": "Bekendtgørelse om finansielle rapporter for kreditinstitutter og fondsmæglerselskaber m.fl.",
+     "en": "Executive Order on financial reports for credit institutions and investment firms etc."
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Regnskabsbekendtgørelsen",
+    "officialRef": "BEK nr 658 af 23/05/2025",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2025/658",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:banking",
+    "inForceFrom": "2025-07-01",
+    "implementsNote": "Bank Accounts Directive 86/635/EEC; Accounting Directive 2013/34/EU; CSRD, Directive (EU) 2022/2464"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Prepare and publish an annual report and a half-year report in Danish or English",
+     "source": "https://www.retsinformation.dk/eli/lta/2025/658",
+     "sourceLabel": "Retsinformation, BEK nr 658 af 23/05/2025, issued by Finanstilsynet, §§ 1-2",
+     "payload": {
+      "key": "obl-dk-regnbek-annual-half-year-reports",
+      "titles": {
+       "en": "Prepare and publish an annual report and a half-year report in Danish or English"
+      },
+      "summaries": {
+       "en": "Banks, mortgage-credit institutions, investment firms, management companies and the other firms covered must prepare and publish an annual report and a half-year report for each financial year under the Executive Order, including consolidated accounts where it requires them. Both reports must be written in Danish or English."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om genopretningsplaner, BEK nr 536 af 11/06/2026",
+   "source": "https://www.retsinformation.dk/eli/lta/2026/536",
+   "sourceLabel": "Retsinformation, BEK nr 536 af 11/06/2026, issued by Finanstilsynet, § 13 on entry into force",
+   "payload": {
+    "key": "dk-bek-2026-536",
+    "titles": {
+     "da": "Bekendtgørelse om genopretningsplaner for pengeinstitutter, realkreditinstitutter, et skibsfinansieringsinstitut og fondsmæglerselskaber",
+     "en": "Executive Order on recovery plans for banks, mortgage-credit institutions, a ship finance institution and investment firms"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om genopretningsplaner",
+    "officialRef": "BEK nr 536 af 11/06/2026",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2026/536",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:banking",
+    "inForceFrom": "2026-07-01",
+    "implementsNote": "BRRD, Directive 2014/59/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set, monitor and yearly review recovery plan indicators",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/536",
+     "sourceLabel": "Retsinformation, BEK nr 536 af 11/06/2026, issued by Finanstilsynet, §§ 5, 7, 8 and 9",
+     "payload": {
+      "key": "obl-dk-genopbek-recovery-indicators",
+      "titles": {
+       "en": "Set, monitor and yearly review recovery plan indicators"
+      },
+      "summaries": {
+       "en": "The firm must set in its recovery plan quantitative and qualitative indicators marking when it must decide whether to take recovery actions, suited to its size, business model, strategy and risk profile. It monitors them regularly, reviews at least once a year whether they should change, and must be able to explain to the Danish FSA how they are set and why they are effective."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 5, 7-9",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report a breached recovery indicator to management within a business day and to the FSA the next",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/536",
+     "sourceLabel": "Retsinformation, BEK nr 536 af 11/06/2026, issued by Finanstilsynet, § 6",
+     "payload": {
+      "key": "obl-dk-genopbek-indicator-breach",
+      "titles": {
+       "en": "Report a breached recovery indicator to management within a business day and to the FSA the next"
+      },
+      "summaries": {
+       "en": "When a recovery indicator is breached, the firm must inform its management within one business day and notify the Danish FSA no later than one further business day after that internal notice."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 6, stk. 1",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell the FSA without delay when the board decides whether to activate recovery actions",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/536",
+     "sourceLabel": "Retsinformation, BEK nr 536 af 11/06/2026, issued by Finanstilsynet, § 10",
+     "payload": {
+      "key": "obl-dk-genopbek-recovery-decision",
+      "titles": {
+       "en": "Tell the FSA without delay when the board decides whether to activate recovery actions"
+      },
+      "summaries": {
+       "en": "The firm must notify the Danish FSA without undue delay if its board decides to take recovery actions under the recovery plan, or decides not to take them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 10",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Submit the recovery plan to the FSA by the deadline for the firm's category",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/536",
+     "sourceLabel": "Retsinformation, BEK nr 536 af 11/06/2026, issued by Finanstilsynet, §§ 2 and 11",
+     "payload": {
+      "key": "obl-dk-genopbek-submit-plan",
+      "titles": {
+       "en": "Submit the recovery plan to the FSA by the deadline for the firm's category"
+      },
+      "summaries": {
+       "en": "Systemically important institutions submit their recovery plan every year by 1 October and other banks and mortgage-credit institutions covered by § 2(2) by 1 November, while banks allowed simplified plans submit by 1 November 2028 and then every third year, and banks with a balance sheet of DKK 2 billion or less submit when they update the plan. Plans must also be updated and resubmitted after material changes, and the FSA may require more frequent submission."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 11",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:investment_firm"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om hvidvaskindberetning, BEK nr 1062 af 17/09/2024",
+   "source": "https://www.retsinformation.dk/eli/lta/2024/1062",
+   "sourceLabel": "Retsinformation, BEK nr 1062 af 17/09/2024, issued by Finanstilsynet, § 4 on entry into force",
+   "payload": {
+    "key": "dk-bek-2024-1062",
+    "titles": {
+     "da": "Bekendtgørelse om indberetning af oplysninger til brug for Finanstilsynets risikovurdering af virksomheder og personer omfattet af hvidvaskloven",
+     "en": "Executive Order on reporting information for Finanstilsynet's risk assessment of undertakings and persons covered by the Anti-Money Laundering Act"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om hvidvaskindberetning",
+    "officialRef": "BEK nr 1062 af 17/09/2024",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2024/1062",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:aml",
+    "inForceFrom": "2024-12-30"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report AML risk data to the Danish FSA every quarter",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/1062",
+     "sourceLabel": "Retsinformation, BEK nr 1062 af 17/09/2024, issued by Finanstilsynet, §§ 1 and 2",
+     "payload": {
+      "key": "obl-dk-hvidvaskbek-quarterly-risk-data",
+      "titles": {
+       "en": "Report AML risk data to the Danish FSA every quarter"
+      },
+      "summaries": {
+       "en": "Banks, mortgage-credit institutions and the other firms listed in § 1(1), which refers to hvidvaskloven § 1(1)(1, 2, 5, 6, 11, 12, 18 and 22), must report the specified information to the Danish FSA for its money laundering risk assessment every quarter, by 11 February, 12 May, 11 August and 11 November. Reports are filed electronically on the form on the FSA's website."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 1-2",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om grundkursus for bestyrelsesmedlemmer, BEK nr 1366 af 01/12/2024",
+   "source": "https://www.retsinformation.dk/eli/lta/2024/1366",
+   "sourceLabel": "Retsinformation, BEK nr 1366 af 01/12/2024, issued by Finanstilsynet, § 13 on entry into force",
+   "payload": {
+    "key": "dk-bek-2024-1366",
+    "titles": {
+     "da": "Bekendtgørelse om grundkursus for medlemmer af bestyrelsen i pengeinstitutter, realkreditinstitutter og forsikringsselskaber",
+     "en": "Executive Order on the basic course for board members of banks, mortgage-credit institutions and insurance undertakings"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om grundkursus for bestyrelsesmedlemmer",
+    "officialRef": "BEK nr 1366 af 01/12/2024",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2024/1366",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:banking",
+    "inForceFrom": "2025-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Complete a basic course covering the prescribed competence areas and prove it on request",
+     "source": "https://www.retsinformation.dk/eli/lta/2024/1366",
+     "sourceLabel": "Retsinformation, BEK nr 1366 af 01/12/2024, issued by Finanstilsynet, §§ 1, 2 and 4",
+     "payload": {
+      "key": "obl-dk-grundkursusbek-board-course",
+      "titles": {
+       "en": "Complete a basic course covering the prescribed competence areas and prove it on request"
+      },
+      "summaries": {
+       "en": "A person joining the board of a bank or mortgage-credit institution on or after 1 January 2025 must complete, within 12 months, a basic course covering the competence areas listed in § 2, among them the framework for the board's work, operational risk, AML, IT and cyber security, ESG, financial reporting and audit, credit, market risk, capital and buffer requirements, liquidity and the supervisory diamond. The board member must send a copy of the course certificate to the Danish FSA on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 1, 2 og 4",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om statistik over misbrug af betalingstjenester, BEK nr 1259 af 28/11/2019",
+   "source": "https://www.retsinformation.dk/eli/lta/2019/1259",
+   "sourceLabel": "Retsinformation, BEK nr 1259 af 28/11/2019, issued by Finanstilsynet, § 5 on entry into force",
+   "payload": {
+    "key": "dk-bek-2019-1259",
+    "titles": {
+     "da": "Bekendtgørelse om udbydere af betalingstjenesters indberetning af statistik om drift og misbrug af betalingstjenester",
+     "en": "Executive Order on payment service providers' reporting of statistics on the operation and misuse of payment services"
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om statistik over misbrug af betalingstjenester",
+    "officialRef": "BEK nr 1259 af 28/11/2019",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2019/1259",
+    "level": "authority_regulation",
+    "jurisdiction": "dk",
+    "authority": "finanstilsynet-dk",
+    "regime": "regime:payments",
+    "inForceFrom": "2020-01-01",
+    "implementsNote": "PSD2, Directive (EU) 2015/2366"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report payment fraud and operation statistics to the FSA every half year",
+     "source": "https://www.retsinformation.dk/eli/lta/2019/1259",
+     "sourceLabel": "Retsinformation, BEK nr 1259 af 28/11/2019, issued by Finanstilsynet, §§ 1 and 2",
+     "payload": {
+      "key": "obl-dk-betstatbek-half-yearly-fraud-statistics",
+      "titles": {
+       "en": "Report payment fraud and operation statistics to the FSA every half year"
+      },
+      "summaries": {
+       "en": "Banks, e-money institutions, payment institutions and certain branches that provide payment services must send the Danish FSA statistics on the operation and misuse of their payment services every half year: by 1 April for the second half of the previous year and by 1 October for the first half of the current year. They use the FSA's electronic forms."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

@@ -776,6 +776,24 @@ if min(WATCH_RUN_MAX_PROPOSALS, WATCH_RUN_MAX_CHANGES, WATCH_RUN_MAX_RECHECKS) <
     )
 
 # ---------------------------------------------------------------------------------------
+# ===== D-118 the library baseline's runner (apps/proposals/baseline.py, ADR 0065) ========
+# How often the beat files the library baseline's due entries and registers the sources it
+# names, in minutes. Filing is idempotent and asks four queries when nothing is due, so the
+# duties of an instrument a reviewer approved reach the queue within this interval with no
+# one running a command. 0 switches it off: the default under E2E_MODE, whose journeys read
+# a queue the seed fixed, and anywhere `manage.py file_library_baseline` should be the only
+# way. Below 0 refuses to boot.
+# ---------------------------------------------------------------------------------------
+LIBRARY_BASELINE_FILING_MINUTES = env_int("LIBRARY_BASELINE_FILING_MINUTES", 0 if E2E_MODE else 60)
+if LIBRARY_BASELINE_FILING_MINUTES < 0:
+    raise ImproperlyConfigured("Refusing to boot: LIBRARY_BASELINE_FILING_MINUTES is 0 (off) or more.")
+if LIBRARY_BASELINE_FILING_MINUTES:
+    CELERY_BEAT_SCHEDULE["library-baseline"] = {
+        "task": "apps.proposals.tasks.file_library_baseline",
+        "schedule": LIBRARY_BASELINE_FILING_MINUTES * 60,
+    }
+
+# ---------------------------------------------------------------------------------------
 # ===== HOM-01 how long Today's "Coming up" list is (apps/home/logic.py, c6-home-backend) =
 # Today shows the same short list on a 375 px phone and on a desktop, so its length is one
 # number rather than a breakpoint: the screen never decides how much of the roadmap it is

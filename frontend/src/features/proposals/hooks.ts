@@ -1,10 +1,12 @@
 'use client';
 
 import { skipToken, useMutation, useQueries, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { termRowsQuery } from '@/features/footprint/hooks';
 import { scopeTermsOf } from '@/features/watch/api';
+import { STEP_UP_REQUIRED_CODE } from '@/shared/utils/api-client';
+import { hasProblemCode } from '@/shared/utils/problem';
 
 import * as proposals from './api';
 import type {
@@ -57,6 +59,56 @@ export function useApproveProposal(proposalId: string): UseMutationResult<Propos
     mutationFn: (body) => proposals.approveProposal(proposalId, body),
     onSuccess: () => invalidate(),
   });
+}
+
+/** A proposal approving many could not approve, by its title, with the server's answer. */
+export interface ApprovalRefusal {
+  id: string;
+  title: string;
+  error: unknown;
+}
+
+export interface ApproveManyOutcome {
+  approved: number;
+  refused: ApprovalRefusal[];
+}
+
+/**
+ * Approves each proposal in turn through the one approve route (PRO-02), with an empty
+ * note, exactly as if it were opened alone: four eyes, the passkey step-up and the audit
+ * row are that route's own, and there is no second door. The API client opens the passkey
+ * prompt on the first call's `step_up_required` and retries it; the rest ride that fresh
+ * assertion, and a lapse mid-way asks again. A refusal is kept with its title and the run
+ * goes on, except when the prompt was closed without a passkey: every later call would ask
+ * again, so the rest are left waiting. `onDone` hears how many have been tried.
+ */
+export async function approveInTurn(rows: readonly Pick<ProposalRow, 'id' | 'title'>[], onDone: (count: number) => void): Promise<ApproveManyOutcome> {
+  const outcome: ApproveManyOutcome = { approved: 0, refused: [] };
+  for (const [index, row] of rows.entries()) {
+    try {
+      await proposals.approveProposal(row.id, { note: '' });
+      outcome.approved += 1;
+    } catch (error) {
+      outcome.refused.push({ id: row.id, title: row.title, error });
+      if (hasProblemCode(error, STEP_UP_REQUIRED_CODE)) break;
+    }
+    onDone(index + 1);
+  }
+  return outcome;
+}
+
+/** Approve many from the queue, one call after another; the queue re-reads however it ended. `done` counts the calls made. */
+export function useApproveMany(): UseMutationResult<ApproveManyOutcome, unknown, readonly Pick<ProposalRow, 'id' | 'title'>[]> & { done: number } {
+  const queryClient = useQueryClient();
+  const [done, setDone] = useState(0);
+  const mutation = useMutation({
+    mutationFn: (rows: readonly Pick<ProposalRow, 'id' | 'title'>[]) => {
+      setDone(0);
+      return approveInTurn(rows, setDone);
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: proposalKeys.all }),
+  });
+  return { ...mutation, done };
 }
 
 export function useRejectProposal(proposalId: string): UseMutationResult<ProposalRow, unknown, ProposalRejectBody> {

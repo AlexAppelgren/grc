@@ -2,6 +2,34 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## The library baseline: what waits for you (2026-10-01, D-118, ADR 0065)
+
+The library's starting inventory is researched and files itself: on every deploy with a
+worker, the beat registers the sources it names and files its entries as proposals of the
+agent `library-baseline` (`LIBRARY_BASELINE_FILING_MINUTES`, every hour by default). Counts
+and gaps: `docs/plans/briefs/LIBRARY_BASELINE.md`. Nothing reaches the library until a second
+principal approves it, and that cannot be the agent that filed it or anyone acting for it.
+
+- [ ] **Approve the instruments, then the duties.** In the console (Queue, Waiting, kind "New
+      instrument"), select a page and approve it with one passkey; an approved instrument's duties
+      are in the queue within the hour, under kind "New obligation". Reject anything you doubt:
+      a rejected entry is not filed again until its file changes. Until `library-confirmer` is
+      published and its runner is live (D-07), you are the approver, and the records read
+      confirmed by a person.
+- [ ] **Publish watch-sweeper v2 and library-confirmer v3** in the console (Agents), with a
+      passkey: both carry the sector scope with sanctions in it. A deploy never publishes a
+      version; until you do, the sweeper's scope is v1's.
+- [ ] **Digitaliseringsministeriet's successor.** The two NemKonto orders (BEK 789 and 790/2025)
+      name Digitaliseringsministeriet, which signed them and was abolished on 2026-06-03; its
+      work moved to Forsknings-, Uddannelses- og Digitaliseringsministeriet, under which
+      Retsinformation now lists them. Default if you say nothing: the authority keeps the name
+      the orders were signed under, and a successor gets its own key when it first issues one.
+- [x] Sources: registered by the same filing (`backend/apps/library/baseline/sources.json`).
+- [x] Sanctions: in, under `aml` (Alex, 2026-10-01).
+- [x] Government ordinances: in, at the level `government_regulation` (Alex, 2026-10-01: "you
+      can decide").
+- [x] D-40's three areas: confirmed (Alex, 2026-10-01: "Absolutely").
+
 ## R2 is closed: what waits for you (2026-09-27, `r2-close-and-readiness`)
 
 R2's code (chunks 8 to 11) is on `main` and every R2 requirement reads `built` or names what

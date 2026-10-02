@@ -1,0 +1,3084 @@
+{
+ "tranche": "se-fffs",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add FFFS 2017:11",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2017/201711/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2017:11 (Finansinspektionens föreskrifter om åtgärder mot penningtvätt och finansiering av terrorism)",
+   "payload": {
+    "key": "fffs-2017-11",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om åtgärder mot penningtvätt och finansiering av terrorism",
+     "en": "Finansinspektionen's regulations on measures against money laundering and terrorist financing"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2017:11",
+    "officialRef": "FFFS 2017:11",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:aml",
+    "inForceFrom": "2017-08-01",
+    "implementsNote": "AMLD4, Directive (EU) 2015/849"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Evaluate the general AML risk assessment at least yearly and before new products or markets",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 2 kap. 1 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-risk-assessment-review",
+      "titles": {
+       "en": "Evaluate the general AML risk assessment at least yearly and before new products or markets"
+      },
+      "summaries": {
+       "en": "The firm must evaluate its general money laundering and terrorist financing risk assessment regularly and at least once a year, and update it when needed. It must also update it before launching new or materially changed products or services, entering new markets or making other relevant changes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 1 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Cover the whole group in AML procedures and review information-sharing routines yearly",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 2 kap. 2–3 §§",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-group-procedures",
+      "titles": {
+       "en": "Cover the whole group in AML procedures and review information-sharing routines yearly"
+      },
+      "summaries": {
+       "en": "A firm's common AML procedures must include the group-wide procedures and guidelines for its branches and subsidiaries. Its routines for sharing customer, account and transaction information within the group must be evaluated at least yearly and updated when needed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 2–3 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Train staff on money laundering risks according to their role and keep them informed of new trends",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 2 kap. 5 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-training",
+      "titles": {
+       "en": "Train staff on money laundering risks according to their role and keep them informed of new trends"
+      },
+      "summaries": {
+       "en": "AML training must be built on the risks the firm has identified, with content and frequency fitted to each person's tasks, and adjusted when the risk assessment changes. Staff, contractors and similar persons must also be kept informed of new trends, patterns and methods."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 5 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Document each AML training with its content, participants and date",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 2 kap. 6 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-training-records",
+      "titles": {
+       "en": "Document each AML training with its content, participants and date"
+      },
+      "summaries": {
+       "en": "The firm must keep a record, electronic or on paper, of the AML training it gives, showing what the training covered, who took part and when it took place."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 6 §",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Identify threats and retaliation against staff and investigate incidents",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 2 kap. 7 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-staff-threats",
+      "titles": {
+       "en": "Identify threats and retaliation against staff and investigate incidents"
+      },
+      "summaries": {
+       "en": "The firm must identify and analyse threats, retaliation and other hostile acts that may be directed at employees and contractors because of AML work. It must investigate incidents and use what it learns to update its protective routines, scaled to its risk assessment and threat picture."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 7 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Verify the identity of customers and their representatives with the prescribed documents",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 3 kap. 1–7 §§",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-verify-identity",
+      "titles": {
+       "en": "Verify the identity of customers and their representatives with the prescribed documents"
+      },
+      "summaries": {
+       "en": "Beyond identifying a customer, the firm must verify the identity: for a natural person with a Swedish driving licence, passport or official ID card (or a foreign passport or ID with photo and citizenship, a copy of which is kept), and for a legal person with a registration certificate or external registers. It must also verify representatives and their authority, and follow the set steps when verifying a customer remotely."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 1–7 §§",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Check beneficial ownership data against reliable sources",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 3 kap. 8 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-beneficial-owner",
+      "titles": {
+       "en": "Check beneficial ownership data against reliable sources"
+      },
+      "summaries": {
+       "en": "When verifying a customer's beneficial owner, the firm must obtain reliable and sufficient information by checking external registers, information from the customer or other reliable sources. If no beneficial owner can be determined for a legal person, it must verify the identity of the chair, CEO or equivalent officer."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 8 §",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Run a secure system that can deliver information to the authorities in a structured digital format",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 4 kap. 1 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-reporting-system",
+      "titles": {
+       "en": "Run a secure system that can deliver information to the authorities in a structured digital format"
+      },
+      "summaries": {
+       "en": "The system the firm uses to answer authorities' requests for information must be able to deliver the data in a digital, structured and machine-processable format. The data must be sent through secure channels and handled confidentially."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 1 §",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Keep AML records securely and for ten years where the conditions are met",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 5 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-record-retention",
+      "titles": {
+       "en": "Keep AML records securely and for ten years where the conditions are met"
+      },
+      "summaries": {
+       "en": "AML documents and data must be stored securely, electronically or on paper, and be easy to retrieve. The firm must keep them for ten years when they may indicate money laundering or terrorist financing, the circumstances have been reported to the Police or the Security Service, and an authority has asked for them to be kept that long."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 1–2 §§",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Set up the AML compliance and independent audit functions and give them their prescribed tasks",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 6 kap. 1–13 §§",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-compliance-audit-functions",
+      "titles": {
+       "en": "Set up the AML compliance and independent audit functions and give them their prescribed tasks"
+      },
+      "summaries": {
+       "en": "The firm must decide, based on size, business and risk, which AML functions it needs and record in its internal rules which it has set up and how responsibility is shared. A central function officer must monitor compliance, advise, train and report at least yearly on the AML work, and an independent audit function reporting directly to the board must review the organisation, controls and risk management."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 1–13 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Validate AML models before use and after material changes",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 6 kap. 14–17 §§",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-model-validation",
+      "titles": {
+       "en": "Validate AML models before use and after material changes"
+      },
+      "summaries": {
+       "en": "The firm must describe the theory and assumptions behind each AML model and document changes to it. Every model must be validated before it is used and again after significant changes, checking data, parameters and assumptions, and each validation must end in a written report."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 14–17 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Provide a secure internal whistleblowing channel that allows anonymous reports",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 6 kap. 18 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-whistleblowing",
+      "titles": {
+       "en": "Provide a secure internal whistleblowing channel that allows anonymous reports"
+      },
+      "summaries": {
+       "en": "The firm's internal channel for reporting suspected AML breaches must protect information from unauthorised access, alteration and destruction, keep it available when needed, and allow reports to be made anonymously."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 18 §",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Report AML information to Finansinspektionen every year by 31 March",
+     "source": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:11 (consolidated version), 7 kap. 1–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2017-11-annual-report-fi",
+      "titles": {
+       "en": "Report AML information to Finansinspektionen every year by 31 March"
+      },
+      "summaries": {
+       "en": "Each year the firm must submit digitally to Finansinspektionen information about its business, risk assessment and routines, customer due diligence, monitoring and reporting, compliance work and training, as at 31 December, so that it arrives by 31 March. It must also provide further information when Finansinspektionen asks for it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 kap. 1–5 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/423320243f35401f97aa85d5562df59c/fs1711.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2014:1",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2014/20141/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2014:1 (Finansinspektionens föreskrifter och allmänna råd om styrning, riskhantering och kontroll i kreditinstitut)",
+   "payload": {
+    "key": "fffs-2014-1",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om styrning, riskhantering och kontroll i kreditinstitut",
+     "en": "Finansinspektionen's regulations and general guidelines on governance, risk management and control at credit institutions"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2014:1",
+    "officialRef": "FFFS 2014:1",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-04-01",
+    "implementsNote": "CRD, Directive 2013/36/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep a clear organisation with documented decision routes, internal controls and five-year records",
+     "source": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (consolidated version), 2 kap. 1 and 11 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-organisation",
+      "titles": {
+       "en": "Keep a clear organisation with documented decision routes, internal controls and five-year records"
+      },
+      "summaries": {
+       "en": "The credit institution must have a transparent organisation with clearly divided responsibilities, documented decision and reporting routes, job descriptions, adequate internal control mechanisms and competent staff. It must keep relevant records on its business and organisation for at least five years and regularly evaluate and fix these arrangements."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 1 och 11 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Have the board adopt and regularly review a documented risk appetite and risk strategy",
+     "source": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (consolidated version), 2 kap. 3–4 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-risk-appetite-strategy",
+      "titles": {
+       "en": "Have the board adopt and regularly review a documented risk appetite and risk strategy"
+      },
+      "summaries": {
+       "en": "The institution must have a documented risk appetite covering all its risks and a documented risk strategy. The board decides both and must evaluate and update them regularly when needed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 3–4 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Be able to aggregate risk data automatically and quickly",
+     "source": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (consolidated version), 2 kap. 7 §",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-risk-data",
+      "titles": {
+       "en": "Be able to aggregate risk data automatically and quickly"
+      },
+      "summaries": {
+       "en": "The institution must be able to collect and automatically compile data on its material, measurable risks as soon as possible, with flexible IT systems. Risk data must at least be available in crisis situations, for stress tests and when Finansinspektionen asks."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 7 §",
+      "dutyType": "technical",
+      "effectiveFrom": "2015-01-01"
+     }
+    },
+    {
+     "title": "Add the duty: Explain on the website how the institution is governed and how its leaders meet fit-and-proper requirements",
+     "source": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (consolidated version), 2 kap. 14 §",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-website-governance",
+      "titles": {
+       "en": "Explain on the website how the institution is governed and how its leaders meet fit-and-proper requirements"
+      },
+      "summaries": {
+       "en": "The institution must explain on its website how it organises and governs its business and how the board, its members and the CEO meet the requirements on knowledge, experience and suitability, or otherwise make this available to the public."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 14 §",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Adopt board-approved plans with measurable targets for ESG-driven financial risks",
+     "source": "https://www.fi.se/contentassets/a2f079ecfb36429b992fa6aaf6bebf13/fs2615.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (as amended by FFFS 2026:15), 2 kap. 15 § and 5 kap. 2 a §",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-esg-plans",
+      "titles": {
+       "en": "Adopt board-approved plans with measurable targets for ESG-driven financial risks"
+      },
+      "summaries": {
+       "en": "The institution must draw up specific plans with quantifiable targets and processes to monitor and manage the financial risks from environmental, social and governance factors over the short, medium and long term, taking account of the European Scientific Advisory Board on Climate Change's latest reports. The board decides the plans and oversees their implementation, and the risk framework must look at least ten years ahead for these risks."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 15 § och 5 kap. 2 a §",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-07-01"
+     }
+    },
+    {
+     "title": "Add the duty: Test resilience to long-term negative ESG effects in baseline and adverse scenarios",
+     "source": "https://www.fi.se/contentassets/a2f079ecfb36429b992fa6aaf6bebf13/fs2615.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (as amended by FFFS 2026:15), 5 kap. 10 a §",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-esg-stress-test",
+      "titles": {
+       "en": "Test resilience to long-term negative ESG effects in baseline and adverse scenarios"
+      },
+      "summaries": {
+       "en": "The institution must test its resilience to long-term negative effects of environmental, social and governance factors, both in a baseline scenario and in adverse scenarios."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 10 a §",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-07-01"
+     }
+    },
+    {
+     "title": "Add the duty: Plan and set targets for concentration risk towards systemically important central counterparties",
+     "source": "https://www.fi.se/contentassets/a2f079ecfb36429b992fa6aaf6bebf13/fs2615.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (as amended by FFFS 2026:15), 2 kap. 16 §",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-ccp-concentration",
+      "titles": {
+       "en": "Plan and set targets for concentration risk towards systemically important central counterparties"
+      },
+      "summaries": {
+       "en": "The institution must adopt specific plans and quantifiable targets to monitor and manage the concentration risk arising from exposures to central counterparties of substantial systemic importance, taking account of Article 7a of EMIR. The board decides the plans and targets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 16 §",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-07-01"
+     }
+    },
+    {
+     "title": "Add the duty: Assess processes before taking crypto-asset exposures and send the assessment to Finansinspektionen",
+     "source": "https://www.fi.se/contentassets/a2f079ecfb36429b992fa6aaf6bebf13/fs2615.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (as amended by FFFS 2026:15), 3 kap. 2 a §",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-crypto-assessment",
+      "titles": {
+       "en": "Assess processes before taking crypto-asset exposures and send the assessment to Finansinspektionen"
+      },
+      "summaries": {
+       "en": "Before entering into exposures to crypto-assets, the institution must assess whether its existing processes are adequate for the counterparty and market risk involved, and submit that assessment to Finansinspektionen."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 2 a §",
+      "dutyType": "reporting",
+      "effectiveFrom": "2026-07-01"
+     }
+    },
+    {
+     "title": "Add the duty: Review the board's and the CEO's internal rules at least every other year",
+     "source": "https://www.fi.se/contentassets/a2f079ecfb36429b992fa6aaf6bebf13/fs2615.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (as amended by FFFS 2026:15), 3 kap. 3 §",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-internal-rules-review",
+      "titles": {
+       "en": "Review the board's and the CEO's internal rules at least every other year"
+      },
+      "summaries": {
+       "en": "The board and the CEO must each evaluate the internal rules they have adopted at least every second year and update them when needed. They must also regularly assess how effective the institution's compliance arrangements are and correct any shortcomings."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 3 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Identify and manage conflicts of interest under board-approved internal rules",
+     "source": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (consolidated version), 4 kap. 3–6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-conflicts",
+      "titles": {
+       "en": "Identify and manage conflicts of interest under board-approved internal rules"
+      },
+      "summaries": {
+       "en": "The institution must identify and manage actual and expected conflicts of interest. Board-approved internal rules must set out the circumstances that could harm customers' interests and the procedures and measures to handle them, taking group structure into account where relevant."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 3–6 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Run a risk management framework with limits, mandates and breach handling",
+     "source": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (consolidated version), 5 kap. 1–2 and 7–9 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-risk-framework-limits",
+      "titles": {
+       "en": "Run a risk management framework with limits, mandates and breach handling"
+      },
+      "summaries": {
+       "en": "The institution must have a risk management framework of strategies, processes, internal rules, limits, controls and reporting that lets it identify, measure, manage and report all risks it faces. It must set clear limits and mandates within the risk appetite, monitor them, and have rules for handling and evaluating breaches."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 1–2 och 7–9 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Set up a board risk committee if the institution is significant",
+     "source": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (consolidated version), 5 kap. 12–15 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-risk-committee",
+      "titles": {
+       "en": "Set up a board risk committee if the institution is significant"
+      },
+      "summaries": {
+       "en": "An institution that is significant in size, organisation and complexity must have a board risk committee of non-executive members with suitable expertise. The committee advises the board on risk appetite and strategy, checks that pricing reflects the business model and risk strategy, and examines whether remuneration incentives take risk into account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 12–15 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep independent risk control, compliance and internal audit functions that report to the board",
+     "source": "https://www.fi.se/contentassets/a2f079ecfb36429b992fa6aaf6bebf13/fs2615.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (consolidated version and FFFS 2026:15), 6 kap. 1, 6 and 7 §§, 7 kap. 3 §",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-control-functions",
+      "titles": {
+       "en": "Keep independent risk control, compliance and internal audit functions that report to the board"
+      },
+      "summaries": {
+       "en": "The institution must have separate, independent functions for risk control, compliance and internal audit, whose heads are appointed and dismissed by the board, sit outside the board and do not report to the CEO. Each function must report material shortcomings and risks with recommendations at least yearly, and the risk control function must report to the board at least quarterly."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 1, 6 och 7 §§, 7 kap. 3 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Govern outsourcing with internal rules and written agreements that keep control and access",
+     "source": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:1 (consolidated version), 10 kap. 2 a–6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-1-outsourcing",
+      "titles": {
+       "en": "Govern outsourcing with internal rules and written agreements that keep control and access"
+      },
+      "summaries": {
+       "en": "The institution must have internal rules for outsourcing and, for work of material importance, keep competent staff to control it, make sure the provider follows the applicable rules, and use a written agreement covering performance, notification duties, access for the institution, its auditors and Finansinspektionen, confidentiality and continuity. ICT arrangements covered by Chapter V of DORA are outside these rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 kap. 2 a–6 §§",
+      "dutyType": "governance"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/6137dfb48719461d91ca23f569a14948/fs1401k.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/a2f079ecfb36429b992fa6aaf6bebf13/fs2615.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2017:2",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2017/20172/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2017:2 (Finansinspektionens föreskrifter om värdepappersrörelse)",
+   "payload": {
+    "key": "fffs-2017-2",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om värdepappersrörelse",
+     "en": "Finansinspektionen's regulations on securities business"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2017:2",
+    "officialRef": "FFFS 2017:2",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:securities",
+    "inForceFrom": "2018-01-03",
+    "implementsNote": "MiFID II delegated directive, Commission Delegated Directive (EU) 2017/593; CRD, Directive 2013/36/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make sure staff who advise or inform clients on investments have the required knowledge and competence",
+     "source": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702k-260603.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:2 (consolidated version), 4 kap. 2–3 and 6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2017-2-staff-competence",
+      "titles": {
+       "en": "Make sure staff who advise or inform clients on investments have the required knowledge and competence"
+      },
+      "summaries": {
+       "en": "Anyone who gives investment advice or information about financial instruments and services for the firm must know the applicable rules, the products, their risks, costs, tax effects and markets, and the firm's own procedures, at a level fitting their tasks. They must meet the competence requirement through earlier work or at least six months of full-time work under supervision of a qualified person."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 2–3 och 6 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Have advisers pass an independent knowledge test and check their knowledge every year",
+     "source": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702k-260603.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:2 (consolidated version), 4 kap. 4–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2017-2-knowledge-test",
+      "titles": {
+       "en": "Have advisers pass an independent knowledge test and check their knowledge every year"
+      },
+      "summaries": {
+       "en": "Each person who advises or informs clients must pass a knowledge test that is provided or approved by someone independent of the firm. The firm must check at least once a year, and whenever rules, products or markets change, that the person still has the required knowledge."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 4–5 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Appoint one responsible person for safeguarding client instruments and funds",
+     "source": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702k-260603.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:2 (consolidated version), 6 kap. 21–22 §§",
+     "payload": {
+      "key": "obl-se-fffs-2017-2-client-asset-officer",
+      "titles": {
+       "en": "Appoint one responsible person for safeguarding client instruments and funds"
+      },
+      "summaries": {
+       "en": "The firm must appoint a single person with sufficient knowledge, competence and authority to take specific responsibility for its duty to protect clients' financial instruments and funds, and make sure that person can do the job effectively."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 21–22 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Have the external auditors check client asset safeguards every year",
+     "source": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702k-260603.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:2 (consolidated version), 6 kap. 23 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-2-auditor-client-assets",
+      "titles": {
+       "en": "Have the external auditors check client asset safeguards every year"
+      },
+      "summaries": {
+       "en": "The firm must ensure its external auditors check at least once a year that its measures and procedures for protecting client instruments and funds are adequate. If they are not, the auditors report this to Finansinspektionen."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 23 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Accept or pay third-party inducements only when they enhance service quality, and document and disclose them",
+     "source": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702k-260603.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:2 (consolidated version), 7 kap. 2–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2017-2-inducements",
+      "titles": {
+       "en": "Accept or pay third-party inducements only when they enhance service quality, and document and disclose them"
+      },
+      "summaries": {
+       "en": "A firm that pays or receives fees or benefits from anyone other than the client must be able to show that each one raises the quality of the service, keeping an internal list of them and documenting how quality is raised. It must tell clients the amounts, afterwards where only the method was given in advance and at least yearly for ongoing payments."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 kap. 2–5 §§",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Pass third-party payments received in independent advice or portfolio management on to the client",
+     "source": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702k-260603.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:2 (consolidated version), 7 kap. 6 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-2-pass-on-inducements",
+      "titles": {
+       "en": "Pass third-party payments received in independent advice or portfolio management on to the client"
+      },
+      "summaries": {
+       "en": "When giving independent investment advice or portfolio management, the firm must transfer any fee or benefit received from a third party to the client as soon as possible, under a routine that allocates it to each client, and tell the client about the transfer."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 kap. 6 §",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:advice",
+       "service_type:portfolio_management"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep records required by securities rules for at least five years",
+     "source": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702k-260603.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:2 (consolidated version), 8 kap. 1 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-2-record-retention",
+      "titles": {
+       "en": "Keep records required by securities rules for at least five years"
+      },
+      "summaries": {
+       "en": "The firm must keep the records required by the Securities Market Act, MiFIR, the MiFID II delegated regulation and FI's regulations for at least five years, also after a withdrawn licence until the period has run out."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 kap. 1 §",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Record every client order cancellation",
+     "source": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702k-260603.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:2 (consolidated version), 8 kap. 2 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-2-order-cancellations",
+      "titles": {
+       "en": "Record every client order cancellation"
+      },
+      "summaries": {
+       "en": "When a client cancels an order, the firm must document it with a reference to the order, the time of the cancellation and, where relevant, the name of the person who received it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 kap. 2 §",
+      "dutyType": "record_keeping",
+      "terms": [
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell retail clients that cash held on account becomes part of the firm's business, and give them a copy",
+     "source": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702k-260603.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2017:2 (consolidated version), 8 kap. 3 §",
+     "payload": {
+      "key": "obl-se-fffs-2017-2-retail-cash-agreement",
+      "titles": {
+       "en": "Tell retail clients that cash held on account becomes part of the firm's business, and give them a copy"
+      },
+      "summaries": {
+       "en": "In an agreement to hold a retail client's funds on account, the firm must make clear that the funds will become part of its own business, and the client must always receive a copy of the agreement."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 kap. 3 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/5898ce29dec5450aaee888eee84f2dd1/fs1702.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2014:12",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2014/201412/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2014:12 (Finansinspektionens föreskrifter och allmänna råd om tillsynskrav och kapitalbuffertar)",
+   "payload": {
+    "key": "fffs-2014-12",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om tillsynskrav och kapitalbuffertar",
+     "en": "Finansinspektionen's regulations and general guidelines on prudential requirements and capital buffers"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2014:12",
+    "officialRef": "FFFS 2014:12",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-08-02",
+    "implementsNote": "CRD, Directive 2013/36/EU, in part; also in part the investment firms directive (värdepappersbolagsdirektivet)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Apply FI's materiality thresholds when classing past-due obligations as defaulted",
+     "source": "https://www.fi.se/contentassets/e75c5d9056e644ada589836164ff0a66/fs1412k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:12 (consolidated version), 4 kap. 3 §",
+     "payload": {
+      "key": "obl-se-fffs-2014-12-default-threshold",
+      "titles": {
+       "en": "Apply FI's materiality thresholds when classing past-due obligations as defaulted"
+      },
+      "summaries": {
+       "en": "When applying Article 178(1)(b) CRR, a credit institution must treat a past-due obligation as material using an absolute threshold of SEK 1,000 and a relative threshold of 1 percent for retail exposures, and SEK 5,000 and 1 percent for other exposures."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 3 §",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Keep the data behind supervisory reports checkable until the end of the seventh year",
+     "source": "https://www.fi.se/contentassets/e75c5d9056e644ada589836164ff0a66/fs1412k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:12 (consolidated version), 7 kap. 3 §",
+     "payload": {
+      "key": "obl-se-fffs-2014-12-reporting-records",
+      "titles": {
+       "en": "Keep the data behind supervisory reports checkable until the end of the seventh year"
+      },
+      "summaries": {
+       "en": "Credit institutions and investment firms must document the data underlying their reports to Finansinspektionen so that they can be checked at any time, and keep it until the end of the seventh year after the calendar year in which the financial year ended."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 kap. 3 §",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Publish yearly the group's legal structure and the internally assessed capital need on the website",
+     "source": "https://www.fi.se/contentassets/e75c5d9056e644ada589836164ff0a66/fs1412k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:12 (consolidated version), 8 kap. 2–4 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-12-structure-icaap-disclosure",
+      "titles": {
+       "en": "Publish yearly the group's legal structure and the internally assessed capital need on the website"
+      },
+      "summaries": {
+       "en": "A credit institution must publish each year, together with its Pillar 3 disclosures, a description of the organisational and legal structure of the consolidated situation, its close links and how the parent steers group companies, plus its internally assessed capital need. The information must be available on its website."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 kap. 2–4 §§",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Calculate the maximum distributable amount and give the prescribed conservation plan and notice when buffers are breached",
+     "source": "https://www.fi.se/contentassets/aaf7f1edb2a64aa5a8e1c3168fe95a66/fs2616.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:12 (consolidated version and FFFS 2026:16), 9 kap. 6–11 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-12-buffer-restrictions",
+      "titles": {
+       "en": "Calculate the maximum distributable amount and give the prescribed conservation plan and notice when buffers are breached"
+      },
+      "summaries": {
+       "en": "A credit institution that does not meet its combined buffer or leverage ratio buffer requirement must calculate the maximum distributable amount by FI's formula, include the prescribed forecasts and measures in its capital conservation plan, and give Finansinspektionen a notice with its own funds, profits and intended distributions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 kap. 6–11 §§",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Document the internal capital and liquidity assessment at least yearly",
+     "source": "https://www.fi.se/contentassets/e75c5d9056e644ada589836164ff0a66/fs1412k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:12 (consolidated version), 10 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-12-iclaap-document",
+      "titles": {
+       "en": "Document the internal capital and liquidity assessment at least yearly"
+      },
+      "summaries": {
+       "en": "Credit institutions and investment firms must describe in a separate document their business and risks, the methods for assessing capital and liquidity needs, the results, the kind of capital needed for each risk, the size and composition of the liquidity reserve and plans for a stressed liquidity situation. The document is drawn up at least yearly and when conditions change materially."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 kap. 1–2 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: State the size of the holding when notifying the disposal of a material holding",
+     "source": "https://www.fi.se/contentassets/aaf7f1edb2a64aa5a8e1c3168fe95a66/fs2616.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:12 (as amended by FFFS 2026:16), 12 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-12-disposal-notice",
+      "titles": {
+       "en": "State the size of the holding when notifying the disposal of a material holding"
+      },
+      "summaries": {
+       "en": "A notification under the Special Supervision Act about the disposal of a material holding must state the size of the holding concerned; when assessing whether a transfer is material, the firm leaves out non-performing assets, covered bond cover pool assets, assets to be securitised and resolution-related items."
+      },
+      "originalLanguage": "en",
+      "refLabel": "12 kap. 1–2 §§",
+      "dutyType": "reporting",
+      "effectiveFrom": "2026-07-01"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/e75c5d9056e644ada589836164ff0a66/fs1412k.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/aaf7f1edb2a64aa5a8e1c3168fe95a66/fs2616.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2018:10",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2018/201810/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2018:10 (Finansinspektionens föreskrifter om försäkringsdistribution)",
+   "payload": {
+    "key": "fffs-2018-10",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om försäkringsdistribution",
+     "en": "Finansinspektionen's regulations on insurance distribution"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2018:10",
+    "officialRef": "FFFS 2018:10",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:insurance",
+    "inForceFrom": "2018-10-01",
+    "implementsNote": "IDD, Directive (EU) 2016/97"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Ensure staff who distribute insurance have the required knowledge and practical experience",
+     "source": "https://www.fi.se/contentassets/2e8d4b4ff7124faca86cc1c2f1988c7d/fs1810k-24-09-17.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:10 (consolidated version), 4 kap. 2–7 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-10-competence",
+      "titles": {
+       "en": "Ensure staff who distribute insurance have the required knowledge and practical experience"
+      },
+      "summaries": {
+       "en": "A distributor must make sure its staff directly involved in distributing insurance know the distribution rules, FI's rules, applicable EU rules, the firm's own rules and the products they sell, and have suitable practical experience from earlier relevant work or from working under a qualified supervisor, fitted to the products and target groups; for products under chapters 6 and 7 of the Insurance Distribution Act it must equal at least six months of full-time work."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 2–7 §§",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Have distribution staff pass a knowledge test and a follow-up test every year",
+     "source": "https://www.fi.se/contentassets/2e8d4b4ff7124faca86cc1c2f1988c7d/fs1810k-24-09-17.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:10 (consolidated version), 4 kap. 8–10 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-10-knowledge-test",
+      "titles": {
+       "en": "Have distribution staff pass a knowledge test and a follow-up test every year"
+      },
+      "summaries": {
+       "en": "Staff who directly distribute insurance must pass a knowledge test provided or approved by a qualified party, and the distributor must run follow-up tests at least once a year. The distributor must be able to show Finansinspektionen the results and the level and content of the tests."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 8–10 §§",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give each distribution employee at least 15 hours of training a year",
+     "source": "https://www.fi.se/contentassets/2e8d4b4ff7124faca86cc1c2f1988c7d/fs1810k-24-09-17.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:10 (consolidated version), 4 kap. 11–12 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-10-cpd-hours",
+      "titles": {
+       "en": "Give each distribution employee at least 15 hours of training a year"
+      },
+      "summaries": {
+       "en": "Continuing training and professional development for each person directly involved in insurance distribution must amount to at least 15 hours per year, and training must be given promptly after relevant changes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 11–12 §§",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Adopt board-approved complaints rules, review them yearly and name a complaints officer to FI",
+     "source": "https://www.fi.se/contentassets/2e8d4b4ff7124faca86cc1c2f1988c7d/fs1810k-24-09-17.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:10 (consolidated version), 10 kap. 3–4 §§ and 15 kap. 5 §",
+     "payload": {
+      "key": "obl-se-fffs-2018-10-complaints-rules",
+      "titles": {
+       "en": "Adopt board-approved complaints rules, review them yearly and name a complaints officer to FI"
+      },
+      "summaries": {
+       "en": "The distributor must have internal rules on how complaints are decided, handled, followed up, prevented and reported to the board, adopted by the board and evaluated at least yearly. It must appoint a complaints officer, notify Finansinspektionen of that person and promptly report any change."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 kap. 3–4 §§, 15 kap. 5 §",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Answer complaints properly, explain delays beyond 14 days and point to dispute resolution",
+     "source": "https://www.fi.se/contentassets/2e8d4b4ff7124faca86cc1c2f1988c7d/fs1810k-24-09-17.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:10 (consolidated version), 10 kap. 5–9 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-10-complaints-handling",
+      "titles": {
+       "en": "Answer complaints properly, explain delays beyond 14 days and point to dispute resolution"
+      },
+      "summaries": {
+       "en": "Complaints must be handled with due care and answered factually, in writing if the complainant asks. If an answer cannot be given within fourteen days, the complainant must be told why and when to expect it; a rejection must give reasons and tell the complainant about out-of-court dispute resolution and the courts."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 kap. 5–9 §§",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Register every complaint and keep the file for at least three years",
+     "source": "https://www.fi.se/contentassets/2e8d4b4ff7124faca86cc1c2f1988c7d/fs1810k-24-09-17.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:10 (consolidated version), 10 kap. 10–11 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-10-complaints-records",
+      "titles": {
+       "en": "Register every complaint and keep the file for at least three years"
+      },
+      "summaries": {
+       "en": "The distributor must register all complaints and document each case so its handling can be followed afterwards, storing the files securely and searchably for at least three years or longer if the case requires."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 kap. 10–11 §§",
+      "dutyType": "record_keeping",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Document each distribution occasion, give the record to the customer and keep it",
+     "source": "https://www.fi.se/contentassets/2e8d4b4ff7124faca86cc1c2f1988c7d/fs1810k-24-09-17.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:10 (consolidated version), 12 kap. 2–6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-10-distribution-record",
+      "titles": {
+       "en": "Document each distribution occasion, give the record to the customer and keep it"
+      },
+      "summaries": {
+       "en": "For each sale the distributor must record the customer's identity, demands and needs, when it took place, what was discussed, each piece of advice with reasons and any advice against a step. The record goes to the customer at the time or as soon as possible after, and is kept securely for at least one year after the commitments and the limitation period for damages claims have ended."
+      },
+      "originalLanguage": "en",
+      "refLabel": "12 kap. 2–6 §§",
+      "dutyType": "record_keeping",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/2e8d4b4ff7124faca86cc1c2f1988c7d/fs1810.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/2e8d4b4ff7124faca86cc1c2f1988c7d/fs1810.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2024:21",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2024/202421/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2024:21 (Finansinspektionens föreskrifter och allmänna råd om insättningssystem)",
+   "payload": {
+    "key": "fffs-2024-21",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om insättningssystem",
+     "en": "Finansinspektionen's regulations and general guidelines on deposit systems"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2024:21",
+    "officialRef": "FFFS 2024:21",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2025-01-17"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep IT systems that can compile depositor data automatically in the format Riksgälden requires",
+     "source": "https://www.fi.se/contentassets/20e71c968ef24c159729e470b678f171/fs2421.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2024:21 (as published), 2 kap. 2–3 §§",
+     "payload": {
+      "key": "obl-se-fffs-2024-21-depositor-data",
+      "titles": {
+       "en": "Keep IT systems that can compile depositor data automatically in the format Riksgälden requires"
+      },
+      "summaries": {
+       "en": "A firm that takes deposits covered by the deposit guarantee must use IT systems that can automatically compile data on depositors and their deposits as Riksgälden's regulations (RGKFS 2011:2) require, with technical functions and administrative routines that keep the information available."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 2–3 §§",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Have internal audit review the deposit system every year and report to the board",
+     "source": "https://www.fi.se/contentassets/20e71c968ef24c159729e470b678f171/fs2421.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2024:21 (as published), 2 kap. 4 §",
+     "payload": {
+      "key": "obl-se-fffs-2024-21-annual-audit",
+      "titles": {
+       "en": "Have internal audit review the deposit system every year and report to the board"
+      },
+      "summaries": {
+       "en": "The internal audit function must review the deposit system and the technical functions and routines that matter for its security every year; without an internal audit function the review is outsourced to someone with security expertise. The review is documented and reported to the board."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 4 §",
+      "dutyType": "governance"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/20e71c968ef24c159729e470b678f171/fs2421.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2024:20",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2024/fffs-202420/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2024:20 (Finansinspektionens föreskrifter om rapportering av incidenter och informationsregister enligt EU:s förordning om digital operativ motståndskraft för finanssektorn)",
+   "payload": {
+    "key": "fffs-2024-20",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om rapportering av incidenter och informationsregister enligt EU:s förordning om digital operativ motståndskraft för finanssektorn",
+     "en": "Finansinspektionen's regulations on reporting of incidents and the register of information under the EU regulation on digital operational resilience for the financial sector"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2024:20",
+    "officialRef": "FFFS 2024:20",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2025-01-17"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report major ICT-related incidents to Finansinspektionen in the way FI's website sets out",
+     "source": "https://www.fi.se/contentassets/a9b636f77a0b40dab90b33d9071df0ee/fs2420.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2024:20 (as published), 3 §",
+     "payload": {
+      "key": "obl-se-fffs-2024-20-incident-reporting",
+      "titles": {
+       "en": "Report major ICT-related incidents to Finansinspektionen in the way FI's website sets out"
+      },
+      "summaries": {
+       "en": "A financial entity under FI's supervision must report major ICT-related incidents under Article 19(1) DORA to Finansinspektionen in the manner described on FI's website; voluntary notifications of significant cyber threats go the same way."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Submit the full DORA register of information to Finansinspektionen by 28 February each year",
+     "source": "https://www.fi.se/contentassets/a9b636f77a0b40dab90b33d9071df0ee/fs2420.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2024:20 (as published), 4 §",
+     "payload": {
+      "key": "obl-se-fffs-2024-20-register-submission",
+      "titles": {
+       "en": "Submit the full DORA register of information to Finansinspektionen by 28 February each year"
+      },
+      "summaries": {
+       "en": "The financial entity must give Finansinspektionen access to its complete register of contractual arrangements with ICT third-party providers by filing it every year by 28 February, reflecting the position at the end of the previous calendar year, in the way FI's website describes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/a9b636f77a0b40dab90b33d9071df0ee/fs2420.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2013:9",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2013/20139/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2013:9 (Finansinspektionens föreskrifter om värdepappersfonder)",
+   "payload": {
+    "key": "fffs-2013-9",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om värdepappersfonder",
+     "en": "Finansinspektionen's regulations on UCITS funds"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2013:9",
+    "officialRef": "FFFS 2013:9",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-07-22",
+    "implementsNote": "UCITS Directive, Directive 2009/65/EC"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep an effective and independent compliance function in the fund company",
+     "source": "https://www.fi.se/contentassets/aee63096054746a19acebb1e2c4f1536/fffs-20139-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:9 (consolidated version), 7 kap. 13–15 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-9-compliance-function",
+      "titles": {
+       "en": "Keep an effective and independent compliance function in the fund company"
+      },
+      "summaries": {
+       "en": "The fund company must have board-approved rules and routines to detect the risk of breaching fund legislation and an effective, independent compliance function that checks those measures and advises staff. It must give the function the powers, resources and information it needs and appoint a person responsible for it and its reporting."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 kap. 13–15 §§",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Manage each fund's risks under board-approved rules, including liquidity stress tests",
+     "source": "https://www.fi.se/contentassets/aee63096054746a19acebb1e2c4f1536/fffs-20139-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:9 (consolidated version), 7 kap. 16–17 §§ and 8 kap. 2–9 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-9-risk-management",
+      "titles": {
+       "en": "Manage each fund's risks under board-approved rules, including liquidity stress tests"
+      },
+      "summaries": {
+       "en": "The board must adopt risk management rules naming each fund's risks and how market, liquidity, sustainability, counterparty and operational risks are measured. The company must assess and manage each fund's risks at all times, keep a liquidity risk process with stress tests so redemptions can be met, and keep a risk management function independent of operations."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 kap. 16–17 §§, 8 kap. 2–9 §§",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Record every portfolio transaction and subscription or redemption order and keep the records five years",
+     "source": "https://www.fi.se/contentassets/aee63096054746a19acebb1e2c4f1536/fffs-20139-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:9 (consolidated version), 7 kap. 19–27 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-9-transaction-records",
+      "titles": {
+       "en": "Record every portfolio transaction and subscription or redemption order and keep the records five years"
+      },
+      "summaries": {
+       "en": "The fund company must record every portfolio transaction in enough detail to reconstruct it, and document each subscription and redemption order promptly with the prescribed details. The records must be kept for at least five years in a form Finansinspektionen can access."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 kap. 19–27 §§",
+      "dutyType": "record_keeping",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Adopt and yearly follow up a documented remuneration policy for regulated staff",
+     "source": "https://www.fi.se/contentassets/aee63096054746a19acebb1e2c4f1536/fffs-20139-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:9 (consolidated version), 8 a kap. 3–5 and 11 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-9-remuneration-policy",
+      "titles": {
+       "en": "Adopt and yearly follow up a documented remuneration policy for regulated staff"
+      },
+      "summaries": {
+       "en": "The fund company must have a documented remuneration policy covering fixed and variable pay that supports sound risk management and lists measures against conflicts of interest, based on an analysis that identifies regulated staff. The board decides the policy and follows up its application at least yearly."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 a kap. 3–5 och 11 §§",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report events of material significance to Finansinspektionen immediately",
+     "source": "https://www.fi.se/contentassets/aee63096054746a19acebb1e2c4f1536/fffs-20139-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:9 (consolidated version), 10 kap. 1–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-9-significant-events",
+      "titles": {
+       "en": "Report events of material significance to Finansinspektionen immediately"
+      },
+      "summaries": {
+       "en": "The fund company must immediately report in writing to Finansinspektionen events that may threaten its stability or the protection of client assets, stop it meeting its obligations, cause significant financial harm to many clients or serious reputational damage. The board adopts rules for handling such events, and suspected crimes are reported to the police or a prosecutor. Major ICT incidents under DORA are reported under DORA instead."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 kap. 1–5 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Handle investor complaints free of charge under board-approved routines and record each one",
+     "source": "https://www.fi.se/contentassets/aee63096054746a19acebb1e2c4f1536/fffs-20139-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:9 (consolidated version), 12 kap. 1–3 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-9-complaints",
+      "titles": {
+       "en": "Handle investor complaints free of charge under board-approved routines and record each one"
+      },
+      "summaries": {
+       "en": "The board must set routines for handling investor complaints quickly and fairly, made available to investors free of charge. Complaints must be possible to make at no cost, and the company must keep information on each complaint and what it did about it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "12 kap. 1–3 §§",
+      "dutyType": "conduct",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/aee63096054746a19acebb1e2c4f1536/fs1309.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/aee63096054746a19acebb1e2c4f1536/fs1309.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2013:10",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2013/201310/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2013:10 (Finansinspektionens föreskrifter om förvaltare av alternativa investeringsfonder)",
+   "payload": {
+    "key": "fffs-2013-10",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om förvaltare av alternativa investeringsfonder",
+     "en": "Finansinspektionen's regulations on managers of alternative investment funds"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2013:10",
+    "officialRef": "FFFS 2013:10",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-07-22",
+    "implementsNote": "AIFMD, Directive 2011/61/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Adopt a documented remuneration policy based on a risk analysis that identifies regulated staff",
+     "source": "https://www.fi.se/contentassets/38aa28b209b24936a8813e192384eb5b/fffs-201310-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:10 (consolidated version), 9 kap. 3–5 and 11–12 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-10-remuneration-policy",
+      "titles": {
+       "en": "Adopt a documented remuneration policy based on a risk analysis that identifies regulated staff"
+      },
+      "summaries": {
+       "en": "An authorised AIF manager must have a documented, regularly reviewed remuneration policy that supports sound risk management and fits the funds' risk profiles. It must analyse the risks of its pay systems to identify regulated staff, and its management decides the policy and oversees its application."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 kap. 3–5 och 11–12 §§",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Include leverage, delegation and preferential-treatment details in each fund's information brochure",
+     "source": "https://www.fi.se/contentassets/38aa28b209b24936a8813e192384eb5b/fffs-201310-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:10 (consolidated version), 13 kap. 1–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-10-prospectus-content",
+      "titles": {
+       "en": "Include leverage, delegation and preferential-treatment details in each fund's information brochure"
+      },
+      "summaries": {
+       "en": "Beyond the statutory content, the information brochure must describe any use of leverage and its limits, delegated management or custody functions and the related conflicts, prime broker arrangements, and how investors are treated fairly, including any preferential treatment."
+      },
+      "originalLanguage": "en",
+      "refLabel": "13 kap. 1–5 §§",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Provide the key information document and brochure to retail investors in Swedish and on the website",
+     "source": "https://www.fi.se/contentassets/38aa28b209b24936a8813e192384eb5b/fffs-201310-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:10 (consolidated version), 15 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-10-retail-documents",
+      "titles": {
+       "en": "Provide the key information document and brochure to retail investors in Swedish and on the website"
+      },
+      "summaries": {
+       "en": "A manager marketing an AIF to retail investors may provide the key information document or brochure on a durable medium or its website, must keep the key information document on its website, must give a free paper copy on request and must provide both documents in Swedish."
+      },
+      "originalLanguage": "en",
+      "refLabel": "15 kap. 1–2 §§",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:fund_company",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File quarterly reports on the manager and each special fund by the set deadlines",
+     "source": "https://www.fi.se/contentassets/38aa28b209b24936a8813e192384eb5b/fffs-201310-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:10 (consolidated version), 16 kap. 2–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-10-quarterly-reports",
+      "titles": {
+       "en": "File quarterly reports on the manager and each special fund by the set deadlines"
+      },
+      "summaries": {
+       "en": "A manager of special funds must file quarterly reports to Finansinspektionen on itself (income statement, balance sheet, capital base and requirement) and on each special fund, as at the last day of each quarter, so they arrive by 21 April, 21 July, 21 October and 21 January."
+      },
+      "originalLanguage": "en",
+      "refLabel": "16 kap. 2–5 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:fund_company",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Explain to Finansinspektionen how conflicts are prevented before managing a fund on a third party's initiative",
+     "source": "https://www.fi.se/contentassets/38aa28b209b24936a8813e192384eb5b/fffs-201310-konsoliderad-version.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:10 (consolidated version), 16 kap. 1 a–1 b §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-10-third-party-funds",
+      "titles": {
+       "en": "Explain to Finansinspektionen how conflicts are prevented before managing a fund on a third party's initiative"
+      },
+      "summaries": {
+       "en": "Before managing an AIF on the initiative of a third party, the manager must send Finansinspektionen a detailed account, with supporting documents, of how it will prevent, identify and handle the conflicts of interest that relationship creates. A manager already doing so on 30 June 2026 must send the account by 30 December 2026."
+      },
+      "originalLanguage": "en",
+      "refLabel": "16 kap. 1 a–1 b §§",
+      "dutyType": "reporting",
+      "effectiveFrom": "2026-07-01",
+      "terms": [
+       "legal_entity:fund_company"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/38aa28b209b24936a8813e192384eb5b/fs1310.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/38aa28b209b24936a8813e192384eb5b/fs1310.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2018:4",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2018/20184/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2018:4 (Finansinspektionens föreskrifter om verksamhet för betaltjänstleverantörer)",
+   "payload": {
+    "key": "fffs-2018-4",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om verksamhet för betaltjänstleverantörer",
+     "en": "Finansinspektionen's regulations on the business of payment service providers"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2018:4",
+    "officialRef": "FFFS 2018:4",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:payments",
+    "inForceFrom": "2018-05-01",
+    "implementsNote": "PSD2, Directive (EU) 2015/2366; Payment Accounts Directive, Directive 2014/92/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Answer payment service complaints within 15 business days, or 35 with a stated reason",
+     "source": "https://www.fi.se/contentassets/72e226a0abe14cecb44443fedd2f12c1/fs1804k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:4 (consolidated version), 2 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-4-complaints",
+      "titles": {
+       "en": "Answer payment service complaints within 15 business days, or 35 with a stated reason"
+      },
+      "summaries": {
+       "en": "The provider must have effective routines for handling complaints in every country where it offers payment services and answer in an official language of that country, on paper unless agreed otherwise. The answer is due within 15 business days; where special reasons prevent that, the user must be told why within that time and receive the answer within 35 business days."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 1–2 §§",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Publish consumer fee and rights information on the website and in branches in accessible formats",
+     "source": "https://www.fi.se/contentassets/72e226a0abe14cecb44443fedd2f12c1/fs1804k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:4 (consolidated version), 3 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-4-consumer-info-access",
+      "titles": {
+       "en": "Publish consumer fee and rights information on the website and in branches in accessible formats"
+      },
+      "summaries": {
+       "en": "The information the provider must keep available to consumers, and FI's brochure on consumer rights, must be on the provider's website and on paper at branches, agents and premises open to consumers. Web text must be readable aloud and printed information available in braille or another accessible format."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 1–2 §§",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Carry out payment account switches within the set steps and three-business-day deadlines",
+     "source": "https://www.fi.se/contentassets/72e226a0abe14cecb44443fedd2f12c1/fs1804k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:4 (consolidated version), 4 kap. 1–10 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-4-account-switching",
+      "titles": {
+       "en": "Carry out payment account switches within the set steps and three-business-day deadlines"
+      },
+      "summaries": {
+       "en": "When a consumer switches payment account, the receiving provider takes written instructions, lets the consumer choose the start date and which direct debits, standing orders and incoming payments move, sends the request on by the next business day and links the payments within three business days. The transferring provider must stop payments, move the balance and close the account within three business days."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 1–10 §§",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give consumers free information on the account switching process",
+     "source": "https://www.fi.se/contentassets/72e226a0abe14cecb44443fedd2f12c1/fs1804k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:4 (consolidated version), 4 kap. 11–12 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-4-switching-info",
+      "titles": {
+       "en": "Give consumers free information on the account switching process"
+      },
+      "summaries": {
+       "en": "The provider must describe each provider's role, the timetable, any fees, the information the consumer must give and the dispute resolution route, keep this free of charge on paper or another durable medium in its premises and electronically on its website, and give it to consumers on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 11–12 §§",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep a documented framework for operational and security risks in payment services",
+     "source": "https://www.fi.se/contentassets/72e226a0abe14cecb44443fedd2f12c1/fs1804k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:4 (consolidated version), 5 kap. 1 §",
+     "payload": {
+      "key": "obl-se-fffs-2018-4-security-framework",
+      "titles": {
+       "en": "Keep a documented framework for operational and security risks in payment services"
+      },
+      "summaries": {
+       "en": "The provider's risk management system must be a documented framework that assigns responsibilities, sets processes to identify and manage risks, assesses payment service risks including fraud, sets a risk appetite, covers outsourcing, physical security, incident monitoring, continuity plans tested yearly and customer guidance on security. ICT risks covered by DORA are outside this requirement."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 1 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Send Finansinspektionen a yearly assessment of operational and security risks by 21 February",
+     "source": "https://www.fi.se/contentassets/72e226a0abe14cecb44443fedd2f12c1/fs1804k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:4 (consolidated version), 6 kap. 1 §",
+     "payload": {
+      "key": "obl-se-fffs-2018-4-risk-report",
+      "titles": {
+       "en": "Send Finansinspektionen a yearly assessment of operational and security risks by 21 February"
+      },
+      "summaries": {
+       "en": "Each year the provider must send Finansinspektionen an up-to-date overall assessment of the operational and security risks of its payment services, the security measures taken and how adequate they are, so that it arrives by 21 February."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 1 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report payment fraud statistics twice a year by 21 February and 21 August",
+     "source": "https://www.fi.se/contentassets/eda342ddcedb407589f62764c8e01ddc/fs2506.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:4 (as amended by FFFS 2025:6), 6 kap. 2 §",
+     "payload": {
+      "key": "obl-se-fffs-2018-4-fraud-statistics",
+      "titles": {
+       "en": "Report payment fraud statistics twice a year by 21 February and 21 August"
+      },
+      "summaries": {
+       "en": "Twice a year the provider must report to Finansinspektionen total transaction volumes and fraudulent volumes for the last calendar half-year, broken down by payment service, authentication method, fraud type and geography, covering unauthorised and manipulated payments, so they arrive by 21 February and 21 August."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 2–3 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report the lowest fees for basic payment account services no later than the day they apply",
+     "source": "https://www.fi.se/contentassets/72e226a0abe14cecb44443fedd2f12c1/fs1804k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:4 (consolidated version), 6 kap. 4–6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-4-basic-account-fees",
+      "titles": {
+       "en": "Report the lowest fees for basic payment account services no later than the day they apply"
+      },
+      "summaries": {
+       "en": "A provider offering payment accounts with basic features must report to Finansinspektionen, through FI's web service, the lowest fee it offers all consumers for each service on FI's list of the most representative services, no later than the business day the fee starts to apply."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 4–6 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/72e226a0abe14cecb44443fedd2f12c1/fs1804.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/72e226a0abe14cecb44443fedd2f12c1/fs1804.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2014:4",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2014/20144/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2014:4 (Finansinspektionens föreskrifter och allmänna råd om hantering av operativa risker)",
+   "payload": {
+    "key": "fffs-2014-4",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om hantering av operativa risker",
+     "en": "Finansinspektionen's regulations and general guidelines on the management of operational risks"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2014:4",
+    "officialRef": "FFFS 2014:4",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-06-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set an operational risk appetite and limits, decided by the board and the CEO",
+     "source": "https://www.fi.se/contentassets/e9720562371742808d03dbae519473cf/fs1404k-20250623.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:4 (consolidated version), 2 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-4-appetite-limits",
+      "titles": {
+       "en": "Set an operational risk appetite and limits, decided by the board and the CEO"
+      },
+      "summaries": {
+       "en": "The firm must set and document an appetite and measurable limits for operational risk, based on its products, services, functions, processes and systems. The board decides and regularly reviews the appetite, the CEO the limits, and board-approved internal rules set out the main risks and how they are identified, measured and managed. ICT risks under DORA are outside these rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 1–2 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Record and analyse every operational incident and its losses",
+     "source": "https://www.fi.se/contentassets/e9720562371742808d03dbae519473cf/fs1404k-20250623.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:4 (consolidated version), 3 kap. 5–6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-4-incidents",
+      "titles": {
+       "en": "Record and analyse every operational incident and its losses"
+      },
+      "summaries": {
+       "en": "The firm must have internal rules for incident handling and, when an incident occurs, document and analyse it and the losses it caused, with routines to keep the data correct, and use that data when measuring operational risks."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 5–6 §§",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Report risk indicators, limit breaches and serious incidents to the board and CEO",
+     "source": "https://www.fi.se/contentassets/e9720562371742808d03dbae519473cf/fs1404k-20250623.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:4 (consolidated version), 4 kap. 1 §",
+     "payload": {
+      "key": "obl-se-fffs-2014-4-board-reporting",
+      "titles": {
+       "en": "Report risk indicators, limit breaches and serious incidents to the board and CEO"
+      },
+      "summaries": {
+       "en": "Operational risk reporting to the board and CEO must cover risk indicators, breaches of risk appetite and limits, and serious incidents, and the board must be told at least yearly the results of tests of contingency, continuity and recovery plans."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 1 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: List the critical processes, document them and name an owner for each",
+     "source": "https://www.fi.se/contentassets/e9720562371742808d03dbae519473cf/fs1404k-20250623.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:4 (consolidated version), 5 kap. 1–4 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-4-critical-processes",
+      "titles": {
+       "en": "List the critical processes, document them and name an owner for each"
+      },
+      "summaries": {
+       "en": "The firm must list the processes of material importance to its business, review the list regularly, document each process and appoint a responsible person or function for it, and analyse where the processes carry a risk of significant loss and add controls there."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 1–4 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Run an approval process for new or materially changed products, services, markets and processes",
+     "source": "https://www.fi.se/contentassets/e9720562371742808d03dbae519473cf/fs1404k-20250623.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:4 (consolidated version), 5 kap. 8–12 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-4-new-product-approval",
+      "titles": {
+       "en": "Run an approval process for new or materially changed products, services, markets and processes"
+      },
+      "summaries": {
+       "en": "The firm must have a documented approval process for new or significantly changed products, services, markets and processes and larger organisational changes, which checks compliance, analyses new or higher risks and capital impact, confirms resources and records the reasons for approval. A responsible person or function is named for the risks of each new product or process."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 8–12 §§",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep continuity management with maximum outage times and test the plans at least yearly",
+     "source": "https://www.fi.se/contentassets/e9720562371742808d03dbae519473cf/fs1404k-20250623.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:4 (consolidated version), 5 kap. 13–20 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-4-continuity",
+      "titles": {
+       "en": "Keep continuity management with maximum outage times and test the plans at least yearly"
+      },
+      "summaries": {
+       "en": "The CEO must adopt continuity rules covering contingency, continuity and recovery plans and crisis roles. The firm sets a maximum tolerable outage for each critical process, runs impact analyses across all units and outsourced activities, trains staff, and updates and tests its plans at least once a year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 13–20 §§",
+      "dutyType": "governance"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/e9720562371742808d03dbae519473cf/fs1404k-20250623.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2010:7",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2010/20107/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2010:7 (Finansinspektionens föreskrifter om hantering och offentliggörande av likviditetsrisker för kreditinstitut och värdepappersbolag)",
+   "payload": {
+    "key": "fffs-2010-7",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om hantering och offentliggörande av likviditetsrisker för kreditinstitut och värdepappersbolag",
+     "en": "Finansinspektionen's regulations on the management and disclosure of liquidity risks for credit institutions and investment firms"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2010:7",
+    "officialRef": "FFFS 2010:7",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2010-10-31",
+    "implementsNote": "CRD, Directive 2013/36/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Have the board set a liquidity risk tolerance and approve liquidity strategies at least every other year",
+     "source": "https://www.fi.se/contentassets/a4c5e788441e491c903b8c5becdb0b6f/fs2613.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2010:7 (consolidated version and FFFS 2026:13), 2 kap. 1–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2010-7-risk-tolerance",
+      "titles": {
+       "en": "Have the board set a liquidity risk tolerance and approve liquidity strategies at least every other year"
+      },
+      "summaries": {
+       "en": "The firm must have a documented liquidity risk tolerance, decided by the board, and strategies, guidelines and instructions that keep enough liquidity in normal times and in crises. The board reviews and approves the liquidity and funding strategies at least every second year and the CEO reports regularly on liquidity."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 1–5 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep an independent liquidity risk control function and regular independent review",
+     "source": "https://www.fi.se/contentassets/60b91628ff1343388e4c6cbc368cee5e/fs1007k-2023-3.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2010:7 (consolidated version), 2 kap. 7–8 §§",
+     "payload": {
+      "key": "obl-se-fffs-2010-7-independent-control",
+      "titles": {
+       "en": "Keep an independent liquidity risk control function and regular independent review"
+      },
+      "summaries": {
+       "en": "The firm must have a central, independent function for liquidity risk control that does not report to position-taking units, and must have its liquidity risk management regularly reviewed by an independent review function reporting directly to the board, such as internal audit."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 7–8 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Run regular liquidity stress tests and act on the results",
+     "source": "https://www.fi.se/contentassets/60b91628ff1343388e4c6cbc368cee5e/fs1007k-2023-3.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2010:7 (consolidated version), 3 kap. 7–9 §§",
+     "payload": {
+      "key": "obl-se-fffs-2010-7-stress-tests",
+      "titles": {
+       "en": "Run regular liquidity stress tests and act on the results"
+      },
+      "summaries": {
+       "en": "The firm must regularly stress test its liquidity under firm-specific and market-wide scenarios of different severity and length, including loss of unsecured market funding and large deposit outflows, compare the results with its risk tolerance and adjust strategies and positions accordingly."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 7–9 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Hold a liquidity reserve of unencumbered, central-bank-eligible assets and set liquidity limits",
+     "source": "https://www.fi.se/contentassets/60b91628ff1343388e4c6cbc368cee5e/fs1007k-2023-3.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2010:7 (consolidated version), 4 kap. 5 and 7 §§",
+     "payload": {
+      "key": "obl-se-fffs-2010-7-reserve-limits",
+      "titles": {
+       "en": "Hold a liquidity reserve of unencumbered, central-bank-eligible assets and set liquidity limits"
+      },
+      "summaries": {
+       "en": "The firm must hold a liquidity reserve of unencumbered assets that are liquid in private markets and eligible at central banks, large enough to withstand a severe liquidity stress without changing its business model, and set limits for its liquidity risk overall and per currency with rules for breaches."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 5 och 7 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep a tested contingency plan for liquidity crises",
+     "source": "https://www.fi.se/contentassets/60b91628ff1343388e4c6cbc368cee5e/fs1007k-2023-3.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2010:7 (consolidated version), 4 kap. 9 §",
+     "payload": {
+      "key": "obl-se-fffs-2010-7-contingency-plan",
+      "titles": {
+       "en": "Keep a tested contingency plan for liquidity crises"
+      },
+      "summaries": {
+       "en": "The firm must have a contingency plan for liquidity crises with clear responsibilities, actions for different crisis types and triggers for activating and escalating it, and must test and update it regularly, using stress test results."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 9 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Publish liquidity risk information yearly and quarterly on the website",
+     "source": "https://www.fi.se/contentassets/60b91628ff1343388e4c6cbc368cee5e/fs1007k-2023-3.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2010:7 (consolidated version), 5 kap. 1–6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2010-7-disclosure",
+      "titles": {
+       "en": "Publish liquidity risk information yearly and quarterly on the website"
+      },
+      "summaries": {
+       "en": "The firm must publish the prescribed liquidity risk information at least once a year with its annual report, and the quarterly key information four times a year within two months of each quarter end, making it available on its website with its full name and registration number."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 1–6 §§",
+      "dutyType": "disclosure"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/60b91628ff1343388e4c6cbc368cee5e/fs1007.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/a4c5e788441e491c903b8c5becdb0b6f/fs2613.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2011:1",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2011/20111/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2011:1 (Finansinspektionens föreskrifter om ersättningssystem i kreditinstitut)",
+   "payload": {
+    "key": "fffs-2011-1",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om ersättningssystem i kreditinstitut",
+     "en": "Finansinspektionen's regulations on remuneration systems in credit institutions"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2011:1",
+    "officialRef": "FFFS 2011:1",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2011-03-01",
+    "implementsNote": "CRD, Directive 2013/36/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Adopt a documented, gender-neutral remuneration policy for all staff",
+     "source": "https://www.fi.se/contentassets/0d73ff9ade66404cb60a137877ecf920/fs2614.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2011:1 (consolidated version and FFFS 2026:14), 2 kap. 1–2 b §§ and 3 kap. 1 §",
+     "payload": {
+      "key": "obl-se-fffs-2011-1-policy",
+      "titles": {
+       "en": "Adopt a documented, gender-neutral remuneration policy for all staff"
+      },
+      "summaries": {
+       "en": "The credit institution must have a documented remuneration policy, decided by the board, that supports sound risk management, discourages excessive risk-taking, covers all staff, is gender-neutral, sets clear criteria for fixed and variable pay and describes the measures taken to avoid conflicts of interest."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 1–2 b §§, 3 kap. 1 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Identify material risk takers every year in a documented analysis",
+     "source": "https://www.fi.se/contentassets/3d48edfd38c242509562281a138f95e4/fs1101k-211221.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2011:1 (consolidated version), 2 kap. 3 §",
+     "payload": {
+      "key": "obl-se-fffs-2011-1-risk-takers",
+      "titles": {
+       "en": "Identify material risk takers every year in a documented analysis"
+      },
+      "summaries": {
+       "en": "Each year the institution must analyse and document which employees have a material impact on its risk profile, considering all risks including those from its pay systems."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 3 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Explain on the website how the remuneration requirements are met",
+     "source": "https://www.fi.se/contentassets/3d48edfd38c242509562281a138f95e4/fs1101k-211221.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2011:1 (consolidated version), 2 kap. 11 §",
+     "payload": {
+      "key": "obl-se-fffs-2011-1-website",
+      "titles": {
+       "en": "Explain on the website how the remuneration requirements are met"
+      },
+      "summaries": {
+       "en": "The institution must explain on its website, or otherwise make available to the public, how it meets the requirements on remuneration policy and systems."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 11 §",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Have a remuneration committee, or a designated non-executive board member, assess the pay system",
+     "source": "https://www.fi.se/contentassets/3d48edfd38c242509562281a138f95e4/fs1101k-211221.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2011:1 (consolidated version), 3 kap. 3–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2011-1-committee",
+      "titles": {
+       "en": "Have a remuneration committee, or a designated non-executive board member, assess the pay system"
+      },
+      "summaries": {
+       "en": "A significant institution must have a remuneration committee that independently assesses the remuneration policy and system and prepares the board's pay decisions; other institutions appoint a non-executive board member with risk and pay expertise to do this."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 3–5 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Have a control function review the remuneration system yearly and report to the board",
+     "source": "https://www.fi.se/contentassets/3d48edfd38c242509562281a138f95e4/fs1101k-211221.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2011:1 (consolidated version), 3 kap. 6 §",
+     "payload": {
+      "key": "obl-se-fffs-2011-1-annual-review",
+      "titles": {
+       "en": "Have a control function review the remuneration system yearly and report to the board"
+      },
+      "summaries": {
+       "en": "At least once a year a control function must review whether the remuneration system follows the policy and report the result to the board no later than when the annual report is adopted."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 6 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Defer at least 40 percent of material risk takers' variable pay for four years, half in instruments",
+     "source": "https://www.fi.se/contentassets/3d48edfd38c242509562281a138f95e4/fs1101k-211221.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2011:1 (consolidated version), 4 kap. 6–8 §§ (with 1 kap. 2 a §)",
+     "payload": {
+      "key": "obl-se-fffs-2011-1-deferral",
+      "titles": {
+       "en": "Defer at least 40 percent of material risk takers' variable pay for four years, half in instruments"
+      },
+      "summaries": {
+       "en": "For material risk takers, at least 40 percent of variable pay must be deferred for at least four years and at least 50 percent paid in shares or equivalent instruments with a retention period, unless the employee's variable pay is at most EUR 50,000 and one third of total pay. The deferral and instrument rules do not apply to smaller institutions that meet the size tests."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 6–8 §§",
+      "dutyType": "governance"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/3d48edfd38c242509562281a138f95e4/fs1101.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/0d73ff9ade66404cb60a137877ecf920/fs2614.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2018:16",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2018/201816/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2018:16 (Finansinspektionens föreskrifter och allmänna råd om hantering av kreditrisker i kreditinstitut och värdepappersbolag)",
+   "payload": {
+    "key": "fffs-2018-16",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om hantering av kreditrisker i kreditinstitut och värdepappersbolag",
+     "en": "Finansinspektionen's regulations and general guidelines on the management of credit risks in credit institutions and investment firms"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2018:16",
+    "officialRef": "FFFS 2018:16",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2019-03-01",
+    "implementsNote": "CRD, Directive 2013/36/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set a credit risk appetite with limits and internal rules, and review lending mandates every other year",
+     "source": "https://www.fi.se/contentassets/de56928ebce84ace84047835fb72ac2f/fs2619.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:16 (as published and FFFS 2026:19), 2 kap. 1–3 and 5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-16-appetite-rules",
+      "titles": {
+       "en": "Set a credit risk appetite with limits and internal rules, and review lending mandates every other year"
+      },
+      "summaries": {
+       "en": "The firm's documented risk appetite for credit risk must set its scope, portfolio composition, diversification and concentration, with limits, and internal rules must set out organisation, lending mandates and processes. The board must evaluate and confirm the delegation rules for credit decisions at least every second year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 1–3 och 5 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Assess each borrower on defined criteria, connected clients and forward-looking repayment capacity",
+     "source": "https://www.fi.se/contentassets/2b00a4a8f3834fdb9a4be132d564add1/fs1816.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:16 (as published), 4 kap. 1–6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-16-credit-assessment",
+      "titles": {
+       "en": "Assess each borrower on defined criteria, connected clients and forward-looking repayment capacity"
+      },
+      "summaries": {
+       "en": "Credit assessment must follow well-defined criteria, investigate and limit groups of connected clients, test guarantors, rest on information giving a good picture of repayment capacity and collateral, look forward, include sensitivity analysis for institutions and companies, and stress repayment for loans in a currency the borrower does not earn in. This applies to non-consumer credits and consumer mortgage credits."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 1–6 §§",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Document each credit decision with who decided, the terms and the reasoning",
+     "source": "https://www.fi.se/contentassets/2b00a4a8f3834fdb9a4be132d564add1/fs1816.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:16 (as published), 5 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-16-decision-records",
+      "titles": {
+       "en": "Document each credit decision with who decided, the terms and the reasoning"
+      },
+      "summaries": {
+       "en": "Credit decisions must be made by people with enough experience under the internal rules, and documented to show which body and persons decided, the credit terms and the considerations behind the decision."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 1–2 §§",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Review every credit at least once a year, and higher-risk credits more often",
+     "source": "https://www.fi.se/contentassets/2b00a4a8f3834fdb9a4be132d564add1/fs1816.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:16 (as published), 6 kap. 1–4 §§ and 7 kap. 1–3 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-16-annual-review",
+      "titles": {
+       "en": "Review every credit at least once a year, and higher-risk credits more often"
+      },
+      "summaries": {
+       "en": "The firm must review all credits at least yearly, with a forward-looking check of default risk and individual reviews where its rules require, and review credits with elevated risk more often, acting without delay to reduce the risk when a borrower is unlikely to meet the agreement."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 1–4 §§, 7 kap. 1–3 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Manage and list credits to related parties under separate processes",
+     "source": "https://www.fi.se/contentassets/de56928ebce84ace84047835fb72ac2f/fs2619.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2018:16 (as published and FFFS 2026:19), 8 kap. 2–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2018-16-related-parties",
+      "titles": {
+       "en": "Manage and list credits to related parties under separate processes"
+      },
+      "summaries": {
+       "en": "The firm must have specific processes to identify, handle, report and control credits to its related-party circle, organised so no one handles a case concerning someone close to them, and keep a register giving a good picture of these credits with the prescribed details."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 kap. 2–5 §§",
+      "dutyType": "governance"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/2b00a4a8f3834fdb9a4be132d564add1/fs1816.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/de56928ebce84ace84047835fb72ac2f/fs2619.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2016:6",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2016/20166/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2016:6 (Finansinspektionens föreskrifter om återhämtningsplaner, koncernåterhämtningsplaner och avtal om finansiellt stöd inom koncerner)",
+   "payload": {
+    "key": "fffs-2016-6",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om återhämtningsplaner, koncernåterhämtningsplaner och avtal om finansiellt stöd inom koncerner",
+     "en": "Finansinspektionen's regulations on recovery plans, group recovery plans and intra-group financial support agreements"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2016:6",
+    "officialRef": "FFFS 2016:6",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2016-02-01",
+    "implementsNote": "BRRD, Directive 2014/59/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the recovery plan the content of BRRD Annex Section A without assuming state support",
+     "source": "https://www.fi.se/contentassets/5c3a6ab16cbf46579343ec9a9dd19096/fs1606k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2016:6 (consolidated version), 3–6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2016-6-plan-content",
+      "titles": {
+       "en": "Give the recovery plan the content of BRRD Annex Section A without assuming state support"
+      },
+      "summaries": {
+       "en": "A recovery plan or group recovery plan must contain what Section A of the BRRD Annex lists, must not assume state support, must analyse where relevant how and when central bank facilities could be used and which assets would serve as collateral, and must state the measures available when early intervention conditions are met."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3–6 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Monitor the recovery plan's indicators regularly",
+     "source": "https://www.fi.se/contentassets/5c3a6ab16cbf46579343ec9a9dd19096/fs1606k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2016:6 (consolidated version), 7 §",
+     "payload": {
+      "key": "obl-se-fffs-2016-6-indicators",
+      "titles": {
+       "en": "Monitor the recovery plan's indicators regularly"
+      },
+      "summaries": {
+       "en": "The firm must have suitable routines to monitor the indicators in its recovery plan easily and regularly."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Update the recovery plan every year and after material changes",
+     "source": "https://www.fi.se/contentassets/5c3a6ab16cbf46579343ec9a9dd19096/fs1606k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2016:6 (consolidated version), 14 §",
+     "payload": {
+      "key": "obl-se-fffs-2016-6-annual-update",
+      "titles": {
+       "en": "Update the recovery plan every year and after material changes"
+      },
+      "summaries": {
+       "en": "The firm must update its recovery plan or group recovery plan every year, and whenever changes in its business could materially affect the plan."
+      },
+      "originalLanguage": "en",
+      "refLabel": "14 §",
+      "dutyType": "governance"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/5c3a6ab16cbf46579343ec9a9dd19096/fs1606k.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/5c3a6ab16cbf46579343ec9a9dd19096/fs1606ny.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2004:4",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2004/20044/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2004:4 (Finansinspektionens föreskrifter och allmänna råd om finansiell rådgivning till konsumenter)",
+   "payload": {
+    "key": "fffs-2004-4",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om finansiell rådgivning till konsumenter",
+     "en": "Finansinspektionen's regulations and general guidelines on financial advice to consumers"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2004:4",
+    "officialRef": "FFFS 2004:4",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:securities",
+    "inForceFrom": "2004-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make sure consumer advisers have tested knowledge, practical experience and up-to-date skills",
+     "source": "https://www.fi.se/contentassets/3f0fdf1cfd954076934ab383c48873d5/fs0404k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2004:4 (consolidated version), 2 kap. 1–7 §§",
+     "payload": {
+      "key": "obl-se-fffs-2004-4-adviser-competence",
+      "titles": {
+       "en": "Make sure consumer advisers have tested knowledge, practical experience and up-to-date skills"
+      },
+      "summaries": {
+       "en": "A firm giving financial advice to consumers under the Financial Advice Act must make sure its advisers know the relevant rules, adviser duties and ethics, and savings in financial instruments and insurance, have passed a suitable knowledge test (independently approved if set in-house), have practical experience and keep their knowledge current. Advice given by securities institutions and foreign investment firms under the Securities Market Act, fund companies and AIF managers is outside these rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 1–7 §§",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:advice",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Document each advice session and hand the record to the consumer",
+     "source": "https://www.fi.se/contentassets/3f0fdf1cfd954076934ab383c48873d5/fs0404k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2004:4 (consolidated version), 3 kap. 1–11 §§",
+     "payload": {
+      "key": "obl-se-fffs-2004-4-advice-documentation",
+      "titles": {
+       "en": "Document each advice session and hand the record to the consumer"
+      },
+      "summaries": {
+       "en": "The firm must record who advised, the consumer's experience, finances, purpose, risk appetite and investment focus, and the time, the advice given and any advice against an investment, made at the session by the adviser. The record goes to the consumer without undue delay after the first session and is archived securely and searchably."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 1–11 §§",
+      "dutyType": "record_keeping",
+      "terms": [
+       "service_type:advice",
+       "client_category:retail"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/3f0fdf1cfd954076934ab383c48873d5/fs0404k.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2015:1",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2015/20151/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2015:1 (Finansinspektionens föreskrifter och allmänna råd om information om ränta på bostadskrediter)",
+   "payload": {
+    "key": "fffs-2015-1",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om information om ränta på bostadskrediter",
+     "en": "Finansinspektionen's regulations and general guidelines on information about interest rates on mortgage credits"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2015:1",
+    "officialRef": "FFFS 2015:1",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2015-06-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Publish average mortgage rates per fixed-rate period within five working days of each month end",
+     "source": "https://www.fi.se/contentassets/56c6ee74bd65465fa3a5bd141fff0f17/fs1501k-20250623.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2015:1 (consolidated version), 3–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2015-1-average-rates",
+      "titles": {
+       "en": "Publish average mortgage rates per fixed-rate period within five working days of each month end"
+      },
+      "summaries": {
+       "en": "A lender that markets consumer mortgages with set fixed-rate periods must publish, for each period, the average rate on mortgages whose rate was set during the previous month, weighted by size, together with the figures for the preceding twelve months, no later than five working days after month end. Averages based on fewer than five loans and favourable staff loans are left out."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3–5 §§",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Explain what factors about the borrower, loan and collateral affect the mortgage rate offered",
+     "source": "https://www.fi.se/contentassets/56c6ee74bd65465fa3a5bd141fff0f17/fs1501k-20250623.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2015:1 (consolidated version), 6 §",
+     "payload": {
+      "key": "obl-se-fffs-2015-1-rate-factors",
+      "titles": {
+       "en": "Explain what factors about the borrower, loan and collateral affect the mortgage rate offered"
+      },
+      "summaries": {
+       "en": "The lender must inform about which circumstances relating to the consumer, the credit and the collateral it takes into account when offering an interest rate on a mortgage."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 §",
+      "dutyType": "disclosure"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/56c6ee74bd65465fa3a5bd141fff0f17/fs1501k-20250623.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2016:29",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2016/201629/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2016:29 (Finansinspektionens föreskrifter och allmänna råd om verksamhet med bostadskrediter)",
+   "payload": {
+    "key": "fffs-2016-29",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om verksamhet med bostadskrediter",
+     "en": "Finansinspektionen's regulations and general guidelines on mortgage credit business"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2016:29",
+    "officialRef": "FFFS 2016:29",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2017-01-01",
+    "implementsNote": "Mortgage Credit Directive, Directive 2014/17/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Adopt board-approved mortgage lending guidelines and review them at least yearly",
+     "source": "https://www.fi.se/contentassets/dcf0df3e99164afab77f5f15129f07de/fs1629k2.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2016:29 (consolidated version), 3 kap. 1–2 §§ (applied to credit institutions by 1 kap. 1 §)",
+     "payload": {
+      "key": "obl-se-fffs-2016-29-lending-guidelines",
+      "titles": {
+       "en": "Adopt board-approved mortgage lending guidelines and review them at least yearly"
+      },
+      "summaries": {
+       "en": "A firm granting mortgages must have board-approved internal rules and lending guidelines covering what information on the consumer is collected and from where, when credit is granted or refused, accepted collateral, limits, documentation, follow-up of repayment capacity and collateral value, and handling of arrears. They are evaluated at least yearly and made known to staff. Swedish credit institutions follow these rules for their mortgage lending, intermediation and advice."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 1–2 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Keep mortgage staff variable pay independent of the number and size of loans",
+     "source": "https://www.fi.se/contentassets/dcf0df3e99164afab77f5f15129f07de/fs1629k2.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2016:29 (consolidated version), 3 kap. 5–6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2016-29-remuneration",
+      "titles": {
+       "en": "Keep mortgage staff variable pay independent of the number and size of loans"
+      },
+      "summaries": {
+       "en": "The firm must have remuneration rules that identify the mortgage staff concerned and the criteria for fixed and variable pay, and variable pay must not depend on the number or share of loans granted or brokered or on their size; the rules also cover what a lender pays credit intermediaries."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 5–6 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Value mortgage collateral under guidelines that secure valuer independence and competence, and document each valuation",
+     "source": "https://www.fi.se/contentassets/dcf0df3e99164afab77f5f15129f07de/fs1629k2.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2016:29 (consolidated version), 3 kap. 7–8 and 10 §§",
+     "payload": {
+      "key": "obl-se-fffs-2016-29-valuation",
+      "titles": {
+       "en": "Value mortgage collateral under guidelines that secure valuer independence and competence, and document each valuation"
+      },
+      "summaries": {
+       "en": "The valuation guidelines must state which method applies when, how the valuer is kept independent of the credit decision and has the needed competence, and each valuation record must show the guidelines applied, the property, the method, the basis and who valued it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 7–8 och 10 §§",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Train mortgage staff and have them pass an independent knowledge test",
+     "source": "https://www.fi.se/contentassets/dcf0df3e99164afab77f5f15129f07de/fs1629k2.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2016:29 (consolidated version), 3 kap. 15 § and 5 kap. 2–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2016-29-staff-knowledge",
+      "titles": {
+       "en": "Train mortgage staff and have them pass an independent knowledge test"
+      },
+      "summaries": {
+       "en": "The firm must have internal rules on knowledge and competence and make sure mortgage staff have practical experience, are trained in mortgages, consumer law, the purchase process, valuation, the housing market, ethics, creditworthiness assessment and personal finance, and have passed a knowledge test provided by someone independent of the firm."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 15 §, 5 kap. 2–5 §§",
+      "dutyType": "governance"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/dcf0df3e99164afab77f5f15129f07de/fs1629.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/dcf0df3e99164afab77f5f15129f07de/fs1629.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2013:1",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2013/20131/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2013:1 (Finansinspektionens föreskrifter och allmänna råd om säkerställda obligationer)",
+   "payload": {
+    "key": "fffs-2013-1",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om säkerställda obligationer",
+     "en": "Finansinspektionen's regulations and general guidelines on covered bonds"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2013:1",
+    "officialRef": "FFFS 2013:1",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2013-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Stress test the value of all mortgage collateral in the cover pool at least yearly",
+     "source": "https://www.fi.se/contentassets/04403d3fc10d41b9ab5a1a1fd0c23fe9/fffs20131k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:1 (consolidated version), 3 kap. 6 §",
+     "payload": {
+      "key": "obl-se-fffs-2013-1-sensitivity-tests",
+      "titles": {
+       "en": "Stress test the value of all mortgage collateral in the cover pool at least yearly"
+      },
+      "summaries": {
+       "en": "A covered bond issuer must test at least yearly, on conservative assumptions, how price falls of at least 5, 10, 15, 20, 25 and 30 percent affect loan-to-value ratios, the cover pool's value and the matching requirements, and show how it could improve matching if prices fall."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 6 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Check daily that the cover pool's present value exceeds the covered bonds after rate and currency shocks, and keep the results five years",
+     "source": "https://www.fi.se/contentassets/04403d3fc10d41b9ab5a1a1fd0c23fe9/fffs20131k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:1 (consolidated version), 4 kap. 2–5 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-1-matching",
+      "titles": {
+       "en": "Check daily that the cover pool's present value exceeds the covered bonds after rate and currency shocks, and keep the results five years"
+      },
+      "summaries": {
+       "en": "The issuer must calculate daily that the present value of the cover pool, including derivatives, exceeds that of the covered bond liabilities, also after a one percentage point adverse shift of the swap curve and, for unhedged currency, a ten percent adverse currency move, and keep the daily results for at least five years."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 2–5 §§",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Keep the covered bond register secure, current and available to FI and the independent reviewer",
+     "source": "https://www.fi.se/contentassets/04403d3fc10d41b9ab5a1a1fd0c23fe9/fffs20131k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:1 (consolidated version), 5 kap. 1–6 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-1-register",
+      "titles": {
+       "en": "Keep the covered bond register secure, current and available to FI and the independent reviewer"
+      },
+      "summaries": {
+       "en": "The register of covered bonds, derivatives and cover pool assets must be kept securely and clearly, bonds and derivatives entered no later than the trade date and new collateral values entered as soon as possible, separate registers kept per cover pool, and the register available at all times to Finansinspektionen and the independent reviewer."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 kap. 1–6 §§",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Publish cover pool information on the website every quarter",
+     "source": "https://www.fi.se/contentassets/04403d3fc10d41b9ab5a1a1fd0c23fe9/fffs20131k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:1 (consolidated version), 7 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-1-investor-information",
+      "titles": {
+       "en": "Publish cover pool information on the website every quarter"
+      },
+      "summaries": {
+       "en": "The issuer must publish on its website at least four times a year the prescribed information on the cover pool, the covered bonds and any derivatives, as at each quarter end, on the day it publishes its accounts for the period or as soon as possible after."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 kap. 1–2 §§",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Report cover pool data to Finansinspektionen every quarter",
+     "source": "https://www.fi.se/contentassets/04403d3fc10d41b9ab5a1a1fd0c23fe9/fffs20131k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2013:1 (consolidated version), 8 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2013-1-fi-reporting",
+      "titles": {
+       "en": "Report cover pool data to Finansinspektionen every quarter"
+      },
+      "summaries": {
+       "en": "The issuer must report the prescribed data on the cover pool, covered bonds and derivatives to Finansinspektionen four times a year, separately per register, by 30 April, 30 July, 30 October and 30 January."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 kap. 1–2 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/04403d3fc10d41b9ab5a1a1fd0c23fe9/fs1301.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2014:14",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2014/201414/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2014:14 (Finansinspektionens föreskrifter om rapportering av kvartals- och årsbokslutsuppgifter)",
+   "payload": {
+    "key": "fffs-2014-14",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om rapportering av kvartals- och årsbokslutsuppgifter",
+     "en": "Finansinspektionen's regulations on reporting of quarterly and annual accounts data"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2014:14",
+    "officialRef": "FFFS 2014:14",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-07-15"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: File the quarterly standard report with Finansinspektionen by the set deadlines",
+     "source": "https://www.fi.se/contentassets/ab9782bc9c12425e9873806b50d6b0df/fs1414k-2025-14_final.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2014:14 (consolidated version), 2–3 §§",
+     "payload": {
+      "key": "obl-se-fffs-2014-14-standard-report",
+      "titles": {
+       "en": "File the quarterly standard report with Finansinspektionen by the set deadlines"
+      },
+      "summaries": {
+       "en": "Credit institutions, investment firms, their branches abroad and certain foreign firms' branches in Sweden must report accounts data on FI's Standardrapport form as at each quarter end, so it arrives by 30 April, 10 August, 31 October and 31 January, with annual accounts data by the twentieth day of the second month after the balance sheet date, and must promptly send corrected figures."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2–3 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/ab9782bc9c12425e9873806b50d6b0df/fs1414k-2025-14_final.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2008:25",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2008/200825/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2008:25 (Finansinspektionens föreskrifter och allmänna råd om årsredovisning i kreditinstitut och värdepappersbolag)",
+   "payload": {
+    "key": "fffs-2008-25",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om årsredovisning i kreditinstitut och värdepappersbolag",
+     "en": "Finansinspektionen's regulations and general guidelines on annual accounts in credit institutions and investment firms"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2008:25",
+    "officialRef": "FFFS 2008:25",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2009-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Apply EU-endorsed IFRS in the annual accounts as far as the Swedish accounts act allows",
+     "source": "https://www.fi.se/contentassets/1c20f66e5a48439eb190bc77ed5f0f8b/fs0825k2.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2008:25 (consolidated version), 2 kap. 1 §",
+     "payload": {
+      "key": "obl-se-fffs-2008-25-legally-restricted-ifrs",
+      "titles": {
+       "en": "Apply EU-endorsed IFRS in the annual accounts as far as the Swedish accounts act allows"
+      },
+      "summaries": {
+       "en": "When preparing annual accounts, a credit institution or investment firm must apply a rule in EU-endorsed international accounting standards where it is compatible with the Annual Accounts Act for credit institutions and these regulations, and otherwise the corresponding Swedish rule; the RFR 2 rule may be used instead."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 1 §",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Show a five-year overview and the return on assets in the annual report",
+     "source": "https://www.fi.se/contentassets/1c20f66e5a48439eb190bc77ed5f0f8b/fs0825k2.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2008:25 (consolidated version), 6 kap. 2–2 a §§",
+     "payload": {
+      "key": "obl-se-fffs-2008-25-five-year-overview",
+      "titles": {
+       "en": "Show a five-year overview and the return on assets in the annual report"
+      },
+      "summaries": {
+       "en": "The annual report must present financial key ratios and summarised income statements and balance sheets for at least the last five years, restated on current principles where feasible, and disclose the return on assets as net profit divided by total assets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 2–2 a §§",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Include a capital adequacy analysis with the CRR key metrics in the annual and interim reports",
+     "source": "https://www.fi.se/contentassets/1c20f66e5a48439eb190bc77ed5f0f8b/fs0825k2.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2008:25 (consolidated version), 6 kap. 3–4 §§ and 8 kap. 4 §",
+     "payload": {
+      "key": "obl-se-fffs-2008-25-capital-analysis",
+      "titles": {
+       "en": "Include a capital adequacy analysis with the CRR key metrics in the annual and interim reports"
+      },
+      "summaries": {
+       "en": "The annual report must contain a capital adequacy analysis for the institution and its consolidated situation giving the information in Article 447 CRR, and interim reports must give the same Article 447 information or say where it is published."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 kap. 3–4 §§, 8 kap. 4 §",
+      "dutyType": "disclosure"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/1c20f66e5a48439eb190bc77ed5f0f8b/fs0825k2.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2016:1",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2016/20161/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2016:1 (Finansinspektionens föreskrifter om anmälan av vissa förvärv)",
+   "payload": {
+    "key": "fffs-2016-1",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om anmälan av vissa förvärv",
+     "en": "Finansinspektionen's regulations on notification of certain acquisitions"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2016:1",
+    "officialRef": "FFFS 2016:1",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2016-02-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Notify Finansinspektionen before acquiring property worth at least 10 percent of own funds",
+     "source": "https://www.fi.se/contentassets/bc7a09af8b1542db9e139aff7b2c9c6a/fs2617.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2016:1 (as amended by FFFS 2026:17), 3 §",
+     "payload": {
+      "key": "obl-se-fffs-2016-1-acquisition-notice",
+      "titles": {
+       "en": "Notify Finansinspektionen before acquiring property worth at least 10 percent of own funds"
+      },
+      "summaries": {
+       "en": "A bank or credit market company must notify Finansinspektionen before it acquires property where the price is at least 10 percent of its own funds. Acquisitions of shares and material transfers that already need a permit under the Special Supervision Act are outside this duty."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 §",
+      "dutyType": "reporting"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/0da051ee20674ef382a3a9a2ba0fd455/fs1601.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2011:14",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2011/201114/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2011:14 (Finansinspektionens föreskrifter och allmänna råd om rapportering av ägares kvalificerade innehav och ägarintressen)",
+   "payload": {
+    "key": "fffs-2011-14",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om rapportering av ägares kvalificerade innehav och ägarintressen",
+     "en": "Finansinspektionen's regulations and general guidelines on reporting of owners' qualifying holdings and ownership interests"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2011:14",
+    "officialRef": "FFFS 2011:14",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2011-05-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report register details, qualifying holders and subsidiaries to Finansinspektionen by 30 June each year and on change",
+     "source": "https://www.fi.se/contentassets/43ca774439844ceeb5c76e10c0cb76d1/fs1114k-2024.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2011:14 (consolidated version), 2–3 §§",
+     "payload": {
+      "key": "obl-se-fffs-2011-14-ownership-report",
+      "titles": {
+       "en": "Report register details, qualifying holders and subsidiaries to Finansinspektionen by 30 June each year and on change"
+      },
+      "summaries": {
+       "en": "Banks, credit market companies, investment firms, fund companies, insurers and other listed firms must give Finansinspektionen general register information, their qualifying holders, subsidiaries and other ownership interests as the annex prescribes, every year by 30 June and as soon as registered facts change."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2–3 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/43ca774439844ceeb5c76e10c0cb76d1/fs1114k-2024.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2011:26",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2011/201126/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2011:26 (Finansinspektionens föreskrifter och allmänna råd om särskild tillsyn över finansiella konglomerat)",
+   "payload": {
+    "key": "fffs-2011-26",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om särskild tillsyn över finansiella konglomerat",
+     "en": "Finansinspektionen's regulations and general guidelines on supplementary supervision of financial conglomerates"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2011:26",
+    "officialRef": "FFFS 2011:26",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2011-05-01",
+    "implementsNote": "FICOD, Directive 2002/87/EC"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report the conglomerate's risk concentrations and intra-group transactions yearly by 31 March",
+     "source": "https://www.fi.se/contentassets/9cdeff193a624ac3bb9dd50acbfaf296/fs1126k2.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2011:26 (consolidated version), 2 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2011-26-risk-concentrations",
+      "titles": {
+       "en": "Report the conglomerate's risk concentrations and intra-group transactions yearly by 31 March"
+      },
+      "summaries": {
+       "en": "The reporting entity of a financial conglomerate for which Finansinspektionen is coordinator must report the risk concentrations and intra-group transactions FI has decided on, as at 31 December, so the report arrives by 31 March."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 kap. 1–2 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report the conglomerate's own funds and capital requirement yearly by 31 March",
+     "source": "https://www.fi.se/contentassets/9cdeff193a624ac3bb9dd50acbfaf296/fs1126k2.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2011:26 (consolidated version), 3 kap. 2–11 §§",
+     "payload": {
+      "key": "obl-se-fffs-2011-26-capital-report",
+      "titles": {
+       "en": "Report the conglomerate's own funds and capital requirement yearly by 31 March"
+      },
+      "summaries": {
+       "en": "The conglomerate must calculate own funds and capital requirements by the permitted methods without double counting, taking full account of subsidiaries' shortfalls, and report them on FI's form as at 31 December, so the report arrives by 31 March."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 2–11 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/9cdeff193a624ac3bb9dd50acbfaf296/fs1126k2.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/9cdeff193a624ac3bb9dd50acbfaf296/fs1126.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2023:13",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2023/finansinspektionens-foreskrifter-fffs-202313-om-agar--agarlednings--och-ledningsprovning-i-kreditinstitut/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2023:13 (Finansinspektionens föreskrifter om ägar-, ägarlednings-, lednings- och lämplighetsprövning i kreditinstitut och vissa andra företag)",
+   "payload": {
+    "key": "fffs-2023-13",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om ägar-, ägarlednings-, lednings- och lämplighetsprövning i kreditinstitut och vissa andra företag",
+     "en": "Finansinspektionen's regulations on the assessment of owners, owners' management, management and suitability in credit institutions and certain other undertakings"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2023:13",
+    "officialRef": "FFFS 2023:13",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2023-07-18",
+    "implementsNote": "CRD, Directive 2013/36/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Send Finansinspektionen the prescribed information on each new board member or CEO",
+     "source": "https://www.fi.se/contentassets/0f3bb34b2c4e485d935a2f7884c1fb26/fs2313.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2023:13 (as published), 9 §",
+     "payload": {
+      "key": "obl-se-fffs-2023-13-board-ceo-changes",
+      "titles": {
+       "en": "Send Finansinspektionen the prescribed information on each new board member or CEO"
+      },
+      "summaries": {
+       "en": "When a bank or credit market company appoints or changes its board chair, board members, deputy members, CEO or deputy CEO, it must send Finansinspektionen the information in Annex 2, tell FI if the number of board members falls, and assess at each board change whether the board as a whole has enough knowledge and experience."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Send the prescribed suitability information when notifying key function holders",
+     "source": "https://www.fi.se/contentassets/8f89ed21a92844aaab745a1ff3af49a7/fs2621.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2023:13 (as amended by FFFS 2026:21), 9 a–9 b §§",
+     "payload": {
+      "key": "obl-se-fffs-2023-13-key-persons",
+      "titles": {
+       "en": "Send the prescribed suitability information when notifying key function holders"
+      },
+      "summaries": {
+       "en": "When the firm notifies Finansinspektionen of a key person for suitability assessment under the Banking and Financing Business Act or the Special Supervision Act, it must provide the information in Annex 3, in some cases at the same time as the notification."
+      },
+      "originalLanguage": "en",
+      "refLabel": "9 a–9 b §§",
+      "dutyType": "reporting",
+      "effectiveFrom": "2026-07-01"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/0f3bb34b2c4e485d935a2f7884c1fb26/fs2313.pdf",
+    "implementsNote": "https://www.fi.se/contentassets/8f89ed21a92844aaab745a1ff3af49a7/fs2621.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2019:7",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2019/20197/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2019:7 (Finansinspektionens föreskrifter om produktingripande i fråga om kontrakt som avser prisskillnader (CFD-kontrakt))",
+   "payload": {
+    "key": "fffs-2019-7",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om produktingripande i fråga om kontrakt som avser prisskillnader (CFD-kontrakt)",
+     "en": "Finansinspektionen's regulations on product intervention concerning contracts for difference (CFDs)"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2019:7",
+    "officialRef": "FFFS 2019:7",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-08-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Sell CFDs to retail clients only with margin, close-out and negative balance protection and no incentives",
+     "source": "https://www.fi.se/contentassets/cef8aaa57d2d41b083938b09b88d3927/fs1907.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2019:7 (as published), 3 kap. 1–2 §§",
+     "payload": {
+      "key": "obl-se-fffs-2019-7-retail-cfd-conditions",
+      "titles": {
+       "en": "Sell CFDs to retail clients only with margin, close-out and negative balance protection and no incentives"
+      },
+      "summaries": {
+       "en": "An investment firm may market, distribute or sell CFDs to retail clients only if the client pays the initial margin protection, gets margin close-out protection and negative balance protection, and receives no payment or benefit other than realised profits. Otherwise such sales are prohibited."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 kap. 1–2 §§",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Show the prescribed CFD risk warning with the firm's loss percentage, recalculated every three months",
+     "source": "https://www.fi.se/contentassets/cef8aaa57d2d41b083938b09b88d3927/fs1907.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2019:7 (as published), 4 kap. 1–7 §§",
+     "payload": {
+      "key": "obl-se-fffs-2019-7-risk-warning",
+      "titles": {
+       "en": "Show the prescribed CFD risk warning with the firm's loss percentage, recalculated every three months"
+      },
+      "summaries": {
+       "en": "Every communication or published information marketing CFDs to retail clients must carry a clear risk warning in the prescribed form and at least the same text size. A firm that had open retail CFD positions in the last twelve months must state the share of its retail clients who lost money, recalculated every three months."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 kap. 1–7 §§",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/cef8aaa57d2d41b083938b09b88d3927/fs1907.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2019:8",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2019/20198/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2019:8 (Finansinspektionens föreskrifter om produktingripande i fråga om binära optioner)",
+   "payload": {
+    "key": "fffs-2019-8",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om produktingripande i fråga om binära optioner",
+     "en": "Finansinspektionen's regulations on product intervention concerning binary options"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2019:8",
+    "officialRef": "FFFS 2019:8",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-07-02"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not market, distribute or sell binary options to retail clients unless the exemption conditions are met",
+     "source": "https://www.fi.se/contentassets/0f8f993a0d7c48549da319d8c6612af9/fs1908.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2019:8 (as published), 3–4 §§",
+     "payload": {
+      "key": "obl-se-fffs-2019-8-binary-options-ban",
+      "titles": {
+       "en": "Do not market, distribute or sell binary options to retail clients unless the exemption conditions are met"
+      },
+      "summaries": {
+       "en": "An investment firm must not market, distribute or sell binary options to retail clients, except options whose lower payout at least equals the total paid, with at least 90 days to expiry, an approved prospectus, no market risk for the provider and no profit or loss for the distributing firm beyond disclosed fees."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3–4 §§",
+      "dutyType": "conduct",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/0f8f993a0d7c48549da319d8c6612af9/fs1908.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2002:11",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2002/200211/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2002:11 (Finansinspektionens föreskrifter om skyldighet att elektroniskt lämna uppgifter om handel med vissa finansiella instrument)",
+   "payload": {
+    "key": "fffs-2002-11",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter om skyldighet att elektroniskt lämna uppgifter om handel med vissa finansiella instrument",
+     "en": "Finansinspektionen's regulations on the obligation to submit electronic data on trading in certain financial instruments"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2002:11",
+    "officialRef": "FFFS 2002:11",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:securities",
+    "inForceFrom": "2002-09-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Provide trade data on shares and share options electronically when Finansinspektionen asks",
+     "source": "https://www.fi.se/contentassets/3e9cd249866d4b70953f3beb5cab0a48/fs0211k-220330.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2002:11 (consolidated version), 2–3 §§",
+     "payload": {
+      "key": "obl-se-fffs-2002-11-trade-data-on-request",
+      "titles": {
+       "en": "Provide trade data on shares and share options electronically when Finansinspektionen asks"
+      },
+      "summaries": {
+       "en": "A firm that trades on a regulated market or carries on securities business must, at Finansinspektionen's request, submit electronically data on its trading in shares and options on shares in the format the annex sets out. Transactions reported under Article 26 MiFIR follow FFFS 2017:2 instead."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2–3 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/3e9cd249866d4b70953f3beb5cab0a48/fs0211k-220330.pdf"
+   }
+  },
+  {
+   "title": "Add FFFS 2024:2",
+   "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2024/20242/",
+   "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2024:2 (Finansinspektionens föreskrifter och allmänna råd om förvärv och förvaltning av nödlidande kreditavtal)",
+   "payload": {
+    "key": "fffs-2024-2",
+    "titles": {
+     "sv": "Finansinspektionens föreskrifter och allmänna råd om förvärv och förvaltning av nödlidande kreditavtal",
+     "en": "Finansinspektionen's regulations and general guidelines on the purchase and servicing of non-performing credit agreements"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "FFFS 2024:2",
+    "officialRef": "FFFS 2024:2",
+    "level": "authority_regulation",
+    "jurisdiction": "se",
+    "authority": "fi",
+    "regime": "regime:banking",
+    "inForceFrom": "2024-04-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report non-performing credit agreements transferred in each half-year by 10 August and 31 January",
+     "source": "https://www.fi.se/contentassets/6bd6875356b04aaca76cf3c3c4323fc0/fs2402k.pdf",
+     "sourceLabel": "Finansinspektionen, FFFS 2024:2 (consolidated version), 3 §",
+     "payload": {
+      "key": "obl-se-fffs-2024-2-npl-transfer-report",
+      "titles": {
+       "en": "Report non-performing credit agreements transferred in each half-year by 10 August and 31 January"
+      },
+      "summaries": {
+       "en": "A credit institution that has transferred non-performing credit agreements must report them to Finansinspektionen every half-year, as at 30 June and 31 December, covering the transfers in the preceding half-year, so the report arrives by 10 August and 31 January, converting other currencies at the spot rate on those dates."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.fi.se/contentassets/6bd6875356b04aaca76cf3c3c4323fc0/fs2402.pdf"
+   }
+  }
+ ]
+}

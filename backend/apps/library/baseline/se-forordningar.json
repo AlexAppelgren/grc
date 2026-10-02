@@ -1,0 +1,1500 @@
+{
+ "tranche": "se-forordningar",
+ "researchedOn": "2026-10-01",
+ "instruments": [
+  {
+   "title": "Add Penningtvättsförordningen, SFS 2009:92",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-200992-om-atgarder-mot-penningtvatt_sfs-2009-92/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2009:92, Förordning (2009:92) om åtgärder mot penningtvätt och finansiering av terrorism, text as amended up to SFS 2025:888",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2009:92",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2009:92"
+   },
+   "payload": {
+    "key": "sfs-2009-92",
+    "titles": {
+     "sv": "Förordning (2009:92) om åtgärder mot penningtvätt och finansiering av terrorism",
+     "en": "Ordinance (2009:92) on measures against money laundering and terrorist financing"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Penningtvättsförordningen",
+    "officialRef": "SFS 2009:92",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:aml",
+    "inForceFrom": "2009-03-15",
+    "implementsNote": "AMLD4, Directive (EU) 2015/849"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add Förordning om bank- och finansieringsrörelse, SFS 2004:329",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2004329-om-bank-och_sfs-2004-329/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2004:329, Förordning (2004:329) om bank- och finansieringsrörelse, text as amended up to SFS 2026:1092",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2004:329"
+   },
+   "payload": {
+    "key": "sfs-2004-329",
+    "titles": {
+     "sv": "Förordning (2004:329) om bank- och finansieringsrörelse",
+     "en": "Ordinance (2004:329) on banking and financing business"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om bank- och finansieringsrörelse",
+    "officialRef": "SFS 2004:329",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:banking",
+    "inForceFrom": "2004-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Consult Finansinspektionen in good time before deciding to go into liquidation",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2004329-om-bank-och_sfs-2004-329/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2004:329, Förordning (2004:329) om bank- och finansieringsrörelse, 1 kap. 8 §",
+     "payload": {
+      "key": "obl-se-bankforordning-liquidation-consultation",
+      "titles": {
+       "en": "Consult Finansinspektionen in good time before deciding to go into liquidation"
+      },
+      "summaries": {
+       "en": "A credit institution that intends to decide on its own liquidation must consult Finansinspektionen about it as early as possible before the decision is taken."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "1 kap. 8 §",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Notify Finansinspektionen before starting the business and file an auditor's certificate of initial capital",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2004329-om-bank-och_sfs-2004-329/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2004:329, Förordning (2004:329) om bank- och finansieringsrörelse, 2 kap. 4 §",
+     "payload": {
+      "key": "obl-se-bankforordning-start-of-business-notice",
+      "titles": {
+       "en": "Notify Finansinspektionen before starting the business and file an auditor's certificate of initial capital"
+      },
+      "summaries": {
+       "en": "A banking company, member bank or credit market company must tell Finansinspektionen when it intends to start banking or financing business and, before it starts, file a certificate from an approved or authorised auditor showing that it has the initial capital the Banking and Financing Business Act requires."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "2 kap. 4 §",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om särskild tillsyn och kapitalbuffertar, SFS 2014:993",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2014993-om-sarskild-tillsyn-och_sfs-2014-993/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2014:993, Förordning (2014:993) om särskild tillsyn och kapitalbuffertar, text as amended up to SFS 2026:1093",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2014:993",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2014:993"
+   },
+   "payload": {
+    "key": "sfs-2014-993",
+    "titles": {
+     "sv": "Förordning (2014:993) om särskild tillsyn och kapitalbuffertar",
+     "en": "Ordinance (2014:993) on special supervision and capital buffers"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om särskild tillsyn och kapitalbuffertar",
+    "officialRef": "SFS 2014:993",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-08-02",
+    "implementsNote": "CRD, Directive 2013/36/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Calculate the solo total risk exposure amount without the output floor when the Swedish parent applies it at group level",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2014993-om-sarskild-tillsyn-och_sfs-2014-993/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2014:993, Förordning (2014:993) om särskild tillsyn och kapitalbuffertar, 8 a §",
+     "fieldSources": {
+      "effectiveFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2014:993"
+     },
+     "payload": {
+      "key": "obl-se-sarskild-tillsyn-forordning-output-floor-solo",
+      "titles": {
+       "en": "Calculate the solo total risk exposure amount without the output floor when the Swedish parent applies it at group level"
+      },
+      "summaries": {
+       "en": "A credit institution referred to in 1 kap. 2 § first paragraph 7 a or g of the Act (2014:968) on special supervision of credit institutions and investment firms calculates its total risk exposure amount under Article 92 of the Capital Requirements Regulation without the floor, where its parent institution is established in Sweden and calculates the amount at group level."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "8 a §",
+      "dutyType": "technical",
+      "effectiveFrom": "2025-01-01",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om insättningsgaranti, SFS 2011:834",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2011834-om-insattningsgaranti_sfs-2011-834/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:834, Förordning (2011:834) om insättningsgaranti, text as amended up to SFS 2020:179",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2011:834",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2011:834"
+   },
+   "payload": {
+    "key": "sfs-2011-834",
+    "titles": {
+     "sv": "Förordning (2011:834) om insättningsgaranti",
+     "en": "Ordinance (2011:834) on deposit guarantee"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om insättningsgaranti",
+    "officialRef": "SFS 2011:834",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:banking",
+    "inForceFrom": "2011-07-01",
+    "implementsNote": "DGSD, Directive 2014/49/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Pay the fee when applying to have an account type's terms reviewed for the deposit guarantee",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2011834-om-insattningsgaranti_sfs-2011-834/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:834, Förordning (2011:834) om insättningsgaranti, 2 §",
+     "payload": {
+      "key": "obl-se-insattningsgarantiforordning-account-review-fee",
+      "titles": {
+       "en": "Pay the fee when applying to have an account type's terms reviewed for the deposit guarantee"
+      },
+      "summaries": {
+       "en": "An institution that applies to the guarantee authority for a review of the terms of an account type, or of changed terms, under 3 b § of the Deposit Guarantee Act pays a fee of SEK 2,000 to the authority when it files the application."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "2 §",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om verksamhet med bostadskrediter, SFS 2016:1033",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/rubriken-upphor-att-galla-u2026-11-20_sfs-2016-1033/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1033, Förordning (2016:1033) om verksamhet med bostadskrediter, text as amended up to SFS 2026:1034",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2016:1033",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2016:1033"
+   },
+   "payload": {
+    "key": "sfs-2016-1033",
+    "titles": {
+     "sv": "Förordning (2016:1033) om verksamhet med bostadskrediter",
+     "en": "Ordinance (2016:1033) on mortgage credit business"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om verksamhet med bostadskrediter",
+    "officialRef": "SFS 2016:1033",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:banking",
+    "inForceFrom": "2017-01-01",
+    "implementsNote": "MCD, Directive 2014/17/EU"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add Förordning om EU-faktablad och effektiv ränta vid bostadskrediter, SFS 2016:1034",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, Förordning (2016:1034) om standardiserat EU-faktablad och beräkning av effektiv ränta vid bostadskrediter, text as amended up to SFS 2026:1035",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2016:1034",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2016:1034"
+   },
+   "payload": {
+    "key": "sfs-2016-1034",
+    "titles": {
+     "sv": "Förordning (2016:1034) om standardiserat EU-faktablad och beräkning av effektiv ränta vid bostadskrediter",
+     "en": "Ordinance (2016:1034) on the European Standardised Information Sheet and the calculation of the annual percentage rate of charge for mortgage credit"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om EU-faktablad och effektiv ränta vid bostadskrediter",
+    "officialRef": "SFS 2016:1034",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:banking",
+    "inForceFrom": "2017-01-01",
+    "implementsNote": "MCD, Directive 2014/17/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give mortgage credit pre-contract information on the standardised EU information sheet in the prescribed format",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, Förordning (2016:1034) om standardiserat EU-faktablad och beräkning av effektiv ränta vid bostadskrediter, 1 §",
+     "payload": {
+      "key": "obl-se-faktabladsforordning-esis-format",
+      "titles": {
+       "en": "Give mortgage credit pre-contract information on the standardised EU information sheet in the prescribed format"
+      },
+      "summaries": {
+       "en": "The standardised EU information sheet that the Consumer Credit Act requires for mortgage credit must follow the format in Annex II to the Mortgage Credit Directive 2014/17/EU. Finansinspektionen is the authority that may design the comparison interest rate used in sections 4.2 and 6.4 of Part B of the sheet."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "1 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Calculate the annual percentage rate of charge on mortgage credit with the directive formula and assumptions",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, Förordning (2016:1034) om standardiserat EU-faktablad och beräkning av effektiv ränta vid bostadskrediter, 2, 3 och 4 §§",
+     "payload": {
+      "key": "obl-se-faktabladsforordning-apr-calculation",
+      "titles": {
+       "en": "Calculate the annual percentage rate of charge on mortgage credit with the directive formula and assumptions"
+      },
+      "summaries": {
+       "en": "The creditor computes the effective interest rate on mortgage credit with the formula in Part I of Annex I to the Mortgage Credit Directive. The total cost includes the costs of an account for drawdowns and payments where opening or keeping it is required to get the credit or its advertised terms, but not charges for the consumer's breach of contract; the calculation assumes the agreement runs for its agreed term, treats unforeseeable rate and fee changes as fixed until the end, and applies the assumptions in Part II of Annex I."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "2, 3 och 4 §§",
+      "dutyType": "technical",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Show an additional illustrative annual percentage rate of charge for rate risk in the information sheet",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, Förordning (2016:1034) om standardiserat EU-faktablad och beräkning av effektiv ränta vid bostadskrediter, 5 och 6 §§",
+     "payload": {
+      "key": "obl-se-faktabladsforordning-additional-apr",
+      "titles": {
+       "en": "Show an additional illustrative annual percentage rate of charge for rate risk in the information sheet"
+      },
+      "summaries": {
+       "en": "Where the borrowing rate can vary, the information sheet must give the consumer an additional effective interest rate illustrating the risk of a significant rate rise and, if the rate has no cap, a warning that the total cost may change. For credit with an initial fixed-rate period of at least five years followed by renegotiation, the illustration covers only that initial period and assumes the outstanding capital is repaid at its end."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5 och 6 §§",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om beräkning av effektiv ränta vid konsumentkrediter, SFS 2010:1855",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101855-om-berakning-av-effektiv_sfs-2010-1855/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1855, Förordning (2010:1855) om beräkning av effektiv ränta vid konsumentkrediter, text as amended up to SFS 2026:1031",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2010:1855",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2010:1855"
+   },
+   "payload": {
+    "key": "sfs-2010-1855",
+    "titles": {
+     "sv": "Förordning (2010:1855) om beräkning av effektiv ränta vid konsumentkrediter",
+     "en": "Ordinance (2010:1855) on the calculation of the annual percentage rate of charge for consumer credit"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om beräkning av effektiv ränta vid konsumentkrediter",
+    "officialRef": "SFS 2010:1855",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:banking",
+    "inForceFrom": "2011-01-01",
+    "implementsNote": "CCD, Directive 2008/48/EC; from 2026-11-20 CCD2, Directive (EU) 2023/2225"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Calculate the annual percentage rate of charge on consumer credit with the directive formula and assumptions",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101855-om-berakning-av-effektiv_sfs-2010-1855/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1855, Förordning (2010:1855) om beräkning av effektiv ränta vid konsumentkrediter, 2, 3 och 4 §§",
+     "payload": {
+      "key": "obl-se-effektivrantaforordning-apr-calculation",
+      "titles": {
+       "en": "Calculate the annual percentage rate of charge on consumer credit with the directive formula and assumptions"
+      },
+      "summaries": {
+       "en": "For consumer credit other than mortgage credit, the creditor computes the effective interest rate with the formula in Part I of Annex I to Directive 2008/48/EC, and from 20 November 2026, under the Consumer Credit Act (2026:1011), with the formula in Part I of Annex III to Directive (EU) 2023/2225. Charges for the consumer's breach of contract are left out of the credit cost; account and payment-instrument costs are included unless the account is optional and its costs are shown clearly and separately; the calculation assumes the agreed term, treats unforeseeable rate and fee changes as fixed, and applies the assumptions in the directive annex."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "2, 3 och 4 §§",
+      "dutyType": "technical",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om formulär för förhandsinformation vid konsumentkrediter, SFS 2010:1856",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101856-om-formular-for_sfs-2010-1856/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1856, Förordning (2010:1856) om formulär för förhandsinformation vid konsumentkrediter, text as amended up to SFS 2026:1032",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2010:1856",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2010:1856"
+   },
+   "payload": {
+    "key": "sfs-2010-1856",
+    "titles": {
+     "sv": "Förordning (2010:1856) om formulär för förhandsinformation vid konsumentkrediter",
+     "en": "Ordinance (2010:1856) on the form for pre-contractual information on consumer credit"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om formulär för förhandsinformation vid konsumentkrediter",
+    "officialRef": "SFS 2010:1856",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:banking",
+    "inForceFrom": "2011-01-01",
+    "implementsNote": "CCD, Directive 2008/48/EC; from 2026-11-20 CCD2, Directive (EU) 2023/2225"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give consumer credit pre-contract information on the prescribed standard form",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101856-om-formular-for_sfs-2010-1856/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1856, Förordning (2010:1856) om formulär för förhandsinformation vid konsumentkrediter, 1 §",
+     "payload": {
+      "key": "obl-se-forhandsinformationsforordning-secci-form",
+      "titles": {
+       "en": "Give consumer credit pre-contract information on the prescribed standard form"
+      },
+      "summaries": {
+       "en": "The form the Consumer Credit Act refers to for pre-contractual information on consumer credit is the one in Annex II to Directive 2008/48/EC. From 20 November 2026, under the Consumer Credit Act (2026:1011), it is the form in Annex I to Directive (EU) 2023/2225, made available by Konsumentverket."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "1 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om upplysningsskyldighet vid marknadsföring av konsumentkrediter, SFS 2018:479",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2018479-om-naringsidkares_sfs-2018-479/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:479, Förordning (2018:479) om näringsidkares upplysningsskyldighet vid marknadsföring av konsumentkrediter, text as amended up to SFS 2026:1036",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2018:479"
+   },
+   "payload": {
+    "key": "sfs-2018-479",
+    "titles": {
+     "sv": "Förordning (2018:479) om näringsidkares upplysningsskyldighet vid marknadsföring av konsumentkrediter",
+     "en": "Ordinance (2018:479) on traders' duty to inform when marketing consumer credit"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om upplysningsskyldighet vid marknadsföring av konsumentkrediter",
+    "officialRef": "SFS 2018:479",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:banking",
+    "inForceFrom": "2018-09-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: State that borrowing costs money when marketing consumer credit",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2018479-om-naringsidkares_sfs-2018-479/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:479, Förordning (2018:479) om näringsidkares upplysningsskyldighet vid marknadsföring av konsumentkrediter, 2 och 3 §§",
+     "fieldSources": {
+      "effectiveFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2018:479"
+     },
+     "payload": {
+      "key": "obl-se-kreditmarknadsforingsforordning-borrowing-cost-statement",
+      "titles": {
+       "en": "State that borrowing costs money when marketing consumer credit"
+      },
+      "summaries": {
+       "en": "The information the Consumer Credit Act requires in the marketing of credit agreements must contain the statement 'Att låna kostar pengar' (borrowing costs money). Konsumentverket may issue further rules on information about the risks of debt and where consumers can get budget and debt advice, and on how the information is given."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "2 och 3 §§",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2025-03-01",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om årliga avgifter till Finansinspektionen, SFS 2007:1135",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20071135-om-arliga-avgifter-for_sfs-2007-1135/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:1135, Förordning (2007:1135) om årliga avgifter för finansiering av Finansinspektionens verksamhet, text as amended up to SFS 2026:981",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2007:1135"
+   },
+   "payload": {
+    "key": "sfs-2007-1135",
+    "titles": {
+     "sv": "Förordning (2007:1135) om årliga avgifter för finansiering av Finansinspektionens verksamhet",
+     "en": "Ordinance (2007:1135) on annual fees to finance Finansinspektionen's activities"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om årliga avgifter till Finansinspektionen",
+    "officialRef": "SFS 2007:1135",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:banking",
+    "inForceFrom": "2008-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Pay Finansinspektionen's annual supervision fee by the invoice due date",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20071135-om-arliga-avgifter-for_sfs-2007-1135/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:1135, Förordning (2007:1135) om årliga avgifter för finansiering av Finansinspektionens verksamhet, 5, 6 och 24 §§",
+     "payload": {
+      "key": "obl-se-fi-avgiftsforordning-annual-fee",
+      "titles": {
+       "en": "Pay Finansinspektionen's annual supervision fee by the invoice due date"
+      },
+      "summaries": {
+       "en": "Swedish banks, credit market companies, investment firms, payment and e-money institutions and the other firms listed in 6 § pay a yearly share of the costs of Finansinspektionen and Statistics Sweden attributed to their fee group, allocated by balance sheet total at the end of the previous financial year with a minimum of SEK 150,000. Finansinspektionen sets the fee and invoices it by 30 November; late payment bears interest at the reference rate plus eight percentage points."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5, 6 och 24 §§",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om betaltjänster, SFS 2010:1008",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101008-om-betaltjanster_sfs-2010-1008/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1008, Förordning (2010:1008) om betaltjänster, text as amended up to SFS 2026:1087",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2010:1008"
+   },
+   "payload": {
+    "key": "sfs-2010-1008",
+    "titles": {
+     "sv": "Förordning (2010:1008) om betaltjänster",
+     "en": "Ordinance (2010:1008) on payment services"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om betaltjänster",
+    "officialRef": "SFS 2010:1008",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:payments",
+    "inForceFrom": "2010-08-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep cash withdrawal and deposit points close enough to meet the national distance limits",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101008-om-betaltjanster_sfs-2010-1008/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1008, Förordning (2010:1008) om betaltjänster, 13 §",
+     "payload": {
+      "key": "obl-se-betaltjanstforordning-cash-service-coverage",
+      "titles": {
+       "en": "Keep cash withdrawal and deposit points close enough to meet the national distance limits"
+      },
+      "summaries": {
+       "en": "A credit institution that must provide cash services under 9 kap. 1 § of the Payment Services Act must make sure that at most 0.3 per cent of the population lives more than 25 km by road from the nearest cash withdrawal point and at most 1.22 per cent from the nearest point for cash deposits or for business daily-takings deposits. Population and address figures come from Statistics Sweden and are updated every year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "13 §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2021-01-01",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om elektroniska pengar, SFS 2011:776",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2011776-om-elektroniska-pengar_sfs-2011-776/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:776, Förordning (2011:776) om elektroniska pengar, text as amended up to SFS 2025:200",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2011:776",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2011:776"
+   },
+   "payload": {
+    "key": "sfs-2011-776",
+    "titles": {
+     "sv": "Förordning (2011:776) om elektroniska pengar",
+     "en": "Ordinance (2011:776) on electronic money"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om elektroniska pengar",
+    "officialRef": "SFS 2011:776",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:payments",
+    "inForceFrom": "2011-07-01",
+    "implementsNote": "EMD2, Directive 2009/110/EC"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add Förordning om värdepappersmarknaden, SFS 2007:572",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2007572-om-vardepappersmarknaden_sfs-2007-572/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:572, Förordning (2007:572) om värdepappersmarknaden, text as amended up to SFS 2026:1086",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2007:572"
+   },
+   "payload": {
+    "key": "sfs-2007-572",
+    "titles": {
+     "sv": "Förordning (2007:572) om värdepappersmarknaden",
+     "en": "Ordinance (2007:572) on the securities market"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om värdepappersmarknaden",
+    "officialRef": "SFS 2007:572",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:securities",
+    "inForceFrom": "2007-11-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Register each tied agent with Bolagsverket with the required details, signed by the board or CEO",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2007572-om-vardepappersmarknaden_sfs-2007-572/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:572, Förordning (2007:572) om värdepappersmarknaden, 3 kap. 1, 2 och 4 §§",
+     "payload": {
+      "key": "obl-se-vpmforordning-tied-agent-registration",
+      "titles": {
+       "en": "Register each tied agent with Bolagsverket with the required details, signed by the board or CEO"
+      },
+      "summaries": {
+       "en": "An investment firm or credit institution that appoints a tied agent notifies Bolagsverket for registration with its own name, number and contact details, the agent's identity and contact details and the services and financial instruments the agent will cover, with a copy of an identity document where a natural-person agent is not registered as resident in Sweden. A board member or the managing director signs the notification and any request to deregister the agent."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "3 kap. 1, 2 och 4 §§",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Report changes to the tied-agent details given to Bolagsverket without delay",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2007572-om-vardepappersmarknaden_sfs-2007-572/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:572, Förordning (2007:572) om värdepappersmarknaden, 3 kap. 5 §",
+     "payload": {
+      "key": "obl-se-vpmforordning-tied-agent-changes",
+      "titles": {
+       "en": "Report changes to the tied-agent details given to Bolagsverket without delay"
+      },
+      "summaries": {
+       "en": "When details the firm has given Bolagsverket about itself or its tied agents change, the firm must report the change for registration as soon as possible."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "3 kap. 5 §",
+      "dutyType": "reporting",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om förvaltare av alternativa investeringsfonder, SFS 2013:587",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2013587-om-forvaltare-av-alternativa_sfs-2013-587/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2013:587, Förordning (2013:587) om förvaltare av alternativa investeringsfonder, text as amended up to SFS 2026:921",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2013:587",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2013:587"
+   },
+   "payload": {
+    "key": "sfs-2013-587",
+    "titles": {
+     "sv": "Förordning (2013:587) om förvaltare av alternativa investeringsfonder",
+     "en": "Ordinance (2013:587) on managers of alternative investment funds"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om förvaltare av alternativa investeringsfonder",
+    "officialRef": "SFS 2013:587",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-07-22",
+    "implementsNote": "AIFMD, Directive 2011/61/EU"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add Förordning om värdepappersfonder, SFS 2013:588",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2013588-om-vardepappersfonder_sfs-2013-588/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2013:588, Förordning (2013:588) om värdepappersfonder, text as amended up to SFS 2026:923",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2013:588"
+   },
+   "payload": {
+    "key": "sfs-2013-588",
+    "titles": {
+     "sv": "Förordning (2013:588) om värdepappersfonder",
+     "en": "Ordinance (2013:588) on securities funds"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om värdepappersfonder",
+    "officialRef": "SFS 2013:588",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-07-22"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add Förordning med kompletterande bestämmelser till MiCA, SFS 2024:1167",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20241167-med-kompletterande_sfs-2024-1167/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2024:1167, Förordning (2024:1167) med kompletterande bestämmelser till EU:s förordning om marknader för kryptotillgångar, text as amended up to SFS 2026:338",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2024:1167"
+   },
+   "payload": {
+    "key": "sfs-2024-1167",
+    "titles": {
+     "sv": "Förordning (2024:1167) med kompletterande bestämmelser till EU:s förordning om marknader för kryptotillgångar",
+     "en": "Ordinance (2024:1167) with supplementary provisions to the EU regulation on markets in crypto-assets"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning med kompletterande bestämmelser till MiCA",
+    "officialRef": "SFS 2024:1167",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:securities",
+    "inForceFrom": "2024-12-30"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add Förordning om försäkringsdistribution, SFS 2018:1231",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, Förordning (2018:1231) om försäkringsdistribution, text as amended up to SFS 2025:353",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2018:1231",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2018:1231"
+   },
+   "payload": {
+    "key": "sfs-2018-1231",
+    "titles": {
+     "sv": "Förordning (2018:1231) om försäkringsdistribution",
+     "en": "Ordinance (2018:1231) on insurance distribution"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om försäkringsdistribution",
+    "officialRef": "SFS 2018:1231",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:insurance",
+    "inForceFrom": "2018-10-01",
+    "implementsNote": "IDD, Directive (EU) 2016/97"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Check the criminal record extract of every employee who will distribute insurance",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, Förordning (2018:1231) om försäkringsdistribution, 3 kap. 5 §",
+     "payload": {
+      "key": "obl-se-forsakringsdistributionsforordning-employee-record-check",
+      "titles": {
+       "en": "Check the criminal record extract of every employee who will distribute insurance"
+      },
+      "summaries": {
+       "en": "When a legal person carries out the criminal record check the Insurance Distribution Act requires for its staff, it asks each employee who is to distribute insurance on its behalf to show an extract from the criminal records register no older than three months, records only that it was shown, and may rely only on employees not recorded for the serious financial offences listed in 3 kap. 1 § in its licence application or registration."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "3 kap. 5 §",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Register tied insurance intermediaries with Bolagsverket after checking their criminal records",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, Förordning (2018:1231) om försäkringsdistribution, 2 kap. 6, 7 och 9 §§ och 3 kap. 3 och 4 §§",
+     "payload": {
+      "key": "obl-se-forsakringsdistributionsforordning-tied-intermediary-registration",
+      "titles": {
+       "en": "Register tied insurance intermediaries with Bolagsverket after checking their criminal records"
+      },
+      "summaries": {
+       "en": "An insurer or insurance intermediary registering a tied intermediary files a notification signed by its authorised signatory naming itself, the intermediary and the kinds and classes of insurance covered. Before filing it has the intermediary, or for a legal person its management, show a criminal record extract no older than three months, and it may not register anyone recorded for the listed offences."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "2 kap. 6, 7 och 9 §§ och 3 kap. 3 och 4 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify Bolagsverket in writing without delay when registered details change",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, Förordning (2018:1231) om försäkringsdistribution, 2 kap. 10 §",
+     "payload": {
+      "key": "obl-se-forsakringsdistributionsforordning-bolagsverket-changes",
+      "titles": {
+       "en": "Notify Bolagsverket in writing without delay when registered details change"
+      },
+      "summaries": {
+       "en": "An insurer or insurance intermediary must tell Bolagsverket in writing as soon as possible when information it has given for registration changes."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "2 kap. 10 §",
+      "dutyType": "reporting",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell customers on request whether an employee of a registered intermediary may distribute insurance",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, Förordning (2018:1231) om försäkringsdistribution, 8 kap. 2 §",
+     "payload": {
+      "key": "obl-se-forsakringsdistributionsforordning-employee-authority-information",
+      "titles": {
+       "en": "Tell customers on request whether an employee of a registered intermediary may distribute insurance"
+      },
+      "summaries": {
+       "en": "An insurer or intermediary that has registered a legal person as a tied intermediary must, on request, tell customers and others whether a given employee of that legal person may distribute insurance and whether the right is limited to certain kinds or classes of insurance, and must tell Finansinspektionen how this information can be obtained."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "8 kap. 2 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "service_type:insurance_distribution"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Försäkringsrörelseförordningen, SFS 2011:257",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forsakringsrorelseforordning-2011257_sfs-2011-257/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:257, Försäkringsrörelseförordning (2011:257), text as amended up to SFS 2026:654",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2011:257"
+   },
+   "payload": {
+    "key": "sfs-2011-257",
+    "titles": {
+     "sv": "Försäkringsrörelseförordning (2011:257)",
+     "en": "Insurance Business Ordinance (2011:257)"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Försäkringsrörelseförordningen",
+    "officialRef": "SFS 2011:257",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:insurance",
+    "inForceFrom": "2011-04-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Notify Bolagsverket in writing without delay when registered details change",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forsakringsrorelseforordning-2011257_sfs-2011-257/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:257, Försäkringsrörelseförordning (2011:257), 3 kap. 23 a §",
+     "payload": {
+      "key": "obl-se-forsakringsrorelseforordning-bolagsverket-changes",
+      "titles": {
+       "en": "Notify Bolagsverket in writing without delay when registered details change"
+      },
+      "summaries": {
+       "en": "An insurance undertaking must tell Bolagsverket in writing as soon as possible when information it has given to Bolagsverket changes."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "3 kap. 23 a §",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om tjänstepensionsföretag, SFS 2019:809",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2019809-om-tjanstepensionsforetag_sfs-2019-809/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2019:809, Förordning (2019:809) om tjänstepensionsföretag, text as amended up to SFS 2026:662",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2019:809",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2019:809"
+   },
+   "payload": {
+    "key": "sfs-2019-809",
+    "titles": {
+     "sv": "Förordning (2019:809) om tjänstepensionsföretag",
+     "en": "Ordinance (2019:809) on occupational pension undertakings"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om tjänstepensionsföretag",
+    "officialRef": "SFS 2019:809",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:insurance",
+    "inForceFrom": "2019-12-15",
+    "implementsNote": "IORP II, Directive (EU) 2016/2341"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Leave out the risk of negative market rates when calculating the interest-rate risk capital requirement",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2019809-om-tjanstepensionsforetag_sfs-2019-809/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2019:809, Förordning (2019:809) om tjänstepensionsföretag, 1 kap. 6 §",
+     "payload": {
+      "key": "obl-se-tjanstepensionsforordning-negative-rates",
+      "titles": {
+       "en": "Leave out the risk of negative market rates when calculating the interest-rate risk capital requirement"
+      },
+      "summaries": {
+       "en": "An occupational pension undertaking calculating its capital requirement for interest-rate risk under 8 kap. 3 § 1 of the Occupational Pension Undertakings Act does not take account of the risk of negative market rates: a fall that would take a market rate below zero is treated as a fall to zero."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "1 kap. 6 §",
+      "dutyType": "technical",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify Bolagsverket in writing without delay when registered details change",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2019809-om-tjanstepensionsforetag_sfs-2019-809/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2019:809, Förordning (2019:809) om tjänstepensionsföretag, 3 kap. 23 §",
+     "payload": {
+      "key": "obl-se-tjanstepensionsforordning-bolagsverket-changes",
+      "titles": {
+       "en": "Notify Bolagsverket in writing without delay when registered details change"
+      },
+      "summaries": {
+       "en": "An occupational pension undertaking must tell Bolagsverket in writing as soon as possible when information it has given to Bolagsverket changes."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "3 kap. 23 §",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:insurer"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning med kompletterande bestämmelser till DORA, SFS 2024:1292",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20241292-med-kompletterande_sfs-2024-1292/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2024:1292, Förordning (2024:1292) med kompletterande bestämmelser till EU:s förordning om digital operativ motståndskraft för finanssektorn, text as issued",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2024:1292"
+   },
+   "payload": {
+    "key": "sfs-2024-1292",
+    "titles": {
+     "sv": "Förordning (2024:1292) med kompletterande bestämmelser till EU:s förordning om digital operativ motståndskraft för finanssektorn",
+     "en": "Ordinance (2024:1292) with supplementary provisions to the EU regulation on digital operational resilience for the financial sector"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning med kompletterande bestämmelser till DORA",
+    "officialRef": "SFS 2024:1292",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2025-01-17"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add Cybersäkerhetsförordningen, SFS 2025:1507",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/cybersakerhetsforordning-20251507_sfs-2025-1507/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1507, Cybersäkerhetsförordning (2025:1507), text as amended up to SFS 2026:623",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2025:1507",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2025:1507"
+   },
+   "payload": {
+    "key": "sfs-2025-1507",
+    "titles": {
+     "sv": "Cybersäkerhetsförordning (2025:1507)",
+     "en": "Cybersecurity Ordinance (2025:1507)"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Cybersäkerhetsförordningen",
+    "officialRef": "SFS 2025:1507",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2026-01-15",
+    "implementsNote": "NIS2, Directive (EU) 2022/2555"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: File the cybersecurity registration with the single point of contact, the National Defence Radio Establishment",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/cybersakerhetsforordning-20251507_sfs-2025-1507/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1507, Cybersäkerhetsförordning (2025:1507), 5 och 23 §§",
+     "payload": {
+      "key": "obl-se-cybersakerhetsforordning-registration-to-fra",
+      "titles": {
+       "en": "File the cybersecurity registration with the single point of contact, the National Defence Radio Establishment"
+      },
+      "summaries": {
+       "en": "An operator covered by the Cybersecurity Act (2025:1506) files the notification required by 2 kap. 2 § of that act with the single point of contact, which 23 § names as the National Defence Radio Establishment (Försvarets radioanstalt). Finansinspektionen is the supervisory authority under the act for the banking and financial market infrastructure sectors."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5 och 23 §§",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning med kompletterande bestämmelser till dataskyddsförordningen, SFS 2018:219",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2018219-med-kompletterande_sfs-2018-219/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:219, Förordning (2018:219) med kompletterande bestämmelser till EU:s dataskyddsförordning, text as amended up to SFS 2020:1140",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2018:219"
+   },
+   "payload": {
+    "key": "sfs-2018-219",
+    "titles": {
+     "sv": "Förordning (2018:219) med kompletterande bestämmelser till EU:s dataskyddsförordning",
+     "en": "Ordinance (2018:219) with supplementary provisions to the EU General Data Protection Regulation"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning med kompletterande bestämmelser till dataskyddsförordningen",
+    "officialRef": "SFS 2018:219",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2018-05-25"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Process personal data on criminal offences only where needed for legal claims or a legal obligation",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2018219-med-kompletterande_sfs-2018-219/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:219, Förordning (2018:219) med kompletterande bestämmelser till EU:s dataskyddsförordning, 5 och 6 §§",
+     "payload": {
+      "key": "obl-se-dataskydd-kompl-forordning-criminal-offence-data",
+      "titles": {
+       "en": "Process personal data on criminal offences only where needed for legal claims or a legal obligation"
+      },
+      "summaries": {
+       "en": "A firm that is not a public authority may process personal data on criminal convictions and offences under Article 10 of the GDPR only where this is necessary to establish, exercise or defend legal claims or to fulfil an obligation under an act or ordinance, unless Integritetsskyddsmyndigheten has allowed further cases by regulation or individual decision."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5 och 6 §§",
+      "dutyType": "governance",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om identifiering av rapporteringspliktiga konton (CRS), SFS 2015:921",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2015921-om-identifiering-av_sfs-2015-921/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:921, Förordning (2015:921) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton, text as amended up to SFS 2025:1394",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsdb.gov.se/SFSdoc/15/150921.PDF"
+   },
+   "payload": {
+    "key": "sfs-2015-921",
+    "titles": {
+     "sv": "Förordning (2015:921) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton",
+     "en": "Ordinance (2015:921) on the identification of reportable accounts in the automatic exchange of financial account information"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om identifiering av rapporteringspliktiga konton (CRS)",
+    "officialRef": "SFS 2015:921",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:tax",
+    "inForceFrom": "2016-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Aggregate related accounts and convert currencies when applying the CRS thresholds",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2015921-om-identifiering-av_sfs-2015-921/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:921, Förordning (2015:921) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton, 2, 3 och 4 §§",
+     "payload": {
+      "key": "obl-se-crs-forordning-account-aggregation",
+      "titles": {
+       "en": "Aggregate related accounts and convert currencies when applying the CRS thresholds"
+      },
+      "summaries": {
+       "en": "When testing a balance or value against the thresholds of the CRS identification act, a reporting financial institution adds together all accounts a person holds with it or a related entity where its systems allow, treats each joint holder as holding the whole balance, and also adds accounts a relationship manager has reason to believe the holder owns, controls or opened, except those held as a nominee for someone else. US-dollar amounts are converted with a published spot rate for the last day of the previous calendar year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "2, 3 och 4 §§",
+      "dutyType": "technical",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Accept only signed, dated, written self-certifications that give tax residence and tax number",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2015921-om-identifiering-av_sfs-2015-921/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:921, Förordning (2015:921) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton, 5 §",
+     "payload": {
+      "key": "obl-se-crs-forordning-self-certification-form",
+      "titles": {
+       "en": "Accept only signed, dated, written self-certifications that give tax residence and tax number"
+      },
+      "summaries": {
+       "en": "A self-certification used to identify reportable accounts must be signed or otherwise confirmed, given other than orally, dated, given on honour and conscience, and state the holder's name, address, tax residence, tax identification number and the country or countries that issued it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5 §",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make reasonable efforts to obtain the foreign tax number and date of birth for pre-existing reportable accounts",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2015921-om-identifiering-av_sfs-2015-921/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:921, Förordning (2015:921) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton, 5 a §",
+     "fieldSources": {
+      "effectiveFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2015:921"
+     },
+     "payload": {
+      "key": "obl-se-crs-forordning-tin-and-birth-date-efforts",
+      "titles": {
+       "en": "Make reasonable efforts to obtain the foreign tax number and date of birth for pre-existing reportable accounts"
+      },
+      "summaries": {
+       "en": "For a pre-existing account identified as reportable, the institution must make reasonable efforts to obtain the holder's foreign tax identification number and date of birth by the end of the second calendar year after the year of identification, and each time it must update customer information under the Anti-Money Laundering Act (2017:630)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5 a §",
+      "dutyType": "conduct",
+      "effectiveFrom": "2017-09-25",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om identifiering av rapporteringspliktiga konton enligt FATCA-avtalet, SFS 2015:70",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-201570-om-identifiering-av_sfs-2015-70/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:70, Förordning (2015:70) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet, text as issued",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2015:70"
+   },
+   "payload": {
+    "key": "sfs-2015-70",
+    "titles": {
+     "sv": "Förordning (2015:70) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet",
+     "en": "Ordinance (2015:70) on the identification of reportable accounts under the FATCA agreement"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om identifiering av rapporteringspliktiga konton enligt FATCA-avtalet",
+    "officialRef": "SFS 2015:70",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:tax",
+    "inForceFrom": "2015-04-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Review pre-existing individual accounts that pass USD 1 million within six months of the year-end",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-201570-om-identifiering-av_sfs-2015-70/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:70, Förordning (2015:70) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet, 2 §",
+     "payload": {
+      "key": "obl-se-fatca-forordning-high-value-review-deadline",
+      "titles": {
+       "en": "Review pre-existing individual accounts that pass USD 1 million within six months of the year-end"
+      },
+      "summaries": {
+       "en": "A pre-existing individual account worth USD 1,000,000 or less on 30 June 2014 whose balance or value exceeds USD 1,000,000 at the end of 2015 or a later calendar year must be reviewed under the enhanced procedures in 4 kap. 3-9 §§ of the FATCA identification act within six months after the end of that year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "2 §",
+      "dutyType": "conduct",
+      "terms": []
+     }
+    },
+    {
+     "title": "Add the duty: Aggregate related accounts and convert currencies when applying the FATCA thresholds",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-201570-om-identifiering-av_sfs-2015-70/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:70, Förordning (2015:70) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet, 3, 4 och 5 §§",
+     "payload": {
+      "key": "obl-se-fatca-forordning-account-aggregation",
+      "titles": {
+       "en": "Aggregate related accounts and convert currencies when applying the FATCA thresholds"
+      },
+      "summaries": {
+       "en": "When testing a balance or value against the FATCA thresholds, a reporting financial institution adds together all accounts a person holds with it or a related entity where its systems allow, treats each joint holder as holding the whole balance, adds accounts a relationship manager has reason to believe the holder owns or controls, and converts US-dollar amounts with a published spot rate for the last day of the previous calendar year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "3, 4 och 5 §§",
+      "dutyType": "technical",
+      "terms": []
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SFF, SFS 2011:1261",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, Skatteförfarandeförordning (2011:1261), text as amended up to SFS 2026:1570",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2011:1261"
+   },
+   "payload": {
+    "key": "sfs-2011-1261",
+    "titles": {
+     "sv": "Skatteförfarandeförordning (2011:1261)",
+     "en": "Tax Procedure Ordinance (2011:1261)"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "SFF",
+    "officialRef": "SFS 2011:1261",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:tax",
+    "inForceFrom": "2012-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the required identification details in every control statement to Skatteverket",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, Skatteförfarandeförordning (2011:1261), 5 kap. 11 §",
+     "payload": {
+      "key": "obl-se-sff-control-statement-identifiers",
+      "titles": {
+       "en": "Give the required identification details in every control statement to Skatteverket"
+      },
+      "summaries": {
+       "en": "Every control statement filed with Skatteverket gives the name, personal identity, coordination or organisation number and postal address of the filer and of the person it concerns. Where a statement under chapter 17 of the Tax Procedure Act concerns a person without a Swedish personal or coordination number, it gives that person's date and place of birth instead."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5 kap. 11 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report tax numbers, birth details and the GIIN in FATCA and CRS control statements",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, Skatteförfarandeförordning (2011:1261), 5 kap. 11 a §",
+     "payload": {
+      "key": "obl-se-sff-fatca-crs-identifiers",
+      "titles": {
+       "en": "Report tax numbers, birth details and the GIIN in FATCA and CRS control statements"
+      },
+      "summaries": {
+       "en": "A FATCA control statement gives the holder's US tax identification number, or for a pre-existing account without one the date of birth and the reason the number is missing, and the institution's Global Intermediary Identification Number. A CRS control statement gives the holder's foreign tax identification number and date of birth, and the place of birth where it is held in the institution's electronically searchable data."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5 kap. 11 a §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: State how each controlling person exercises control in CRS control statements",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, Skatteförfarandeförordning (2011:1261), 5 kap. 8 §",
+     "payload": {
+      "key": "obl-se-sff-crs-controlling-person-role",
+      "titles": {
+       "en": "State how each controlling person exercises control in CRS control statements"
+      },
+      "summaries": {
+       "en": "Where a CRS control statement must show how a controlling person exercises control, the institution uses the prescribed categories: for a legal person ownership, a position with it or other actual control; for a trust settlor, trustee, protector, beneficiary or other actual control; and the equivalent positions for other legal arrangements."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5 kap. 8 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: State the type of financial account in CRS control statements",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, Skatteförfarandeförordning (2011:1261), 5 kap. 8 a §",
+     "fieldSources": {
+      "effectiveFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2011:1261"
+     },
+     "payload": {
+      "key": "obl-se-sff-crs-account-type",
+      "titles": {
+       "en": "State the type of financial account in CRS control statements"
+      },
+      "summaries": {
+       "en": "Where a CRS control statement must give the type of financial account, the institution states whether it is a depository account, a custodial account, a cash-value insurance or annuity contract, or an equity interest in an investment entity."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5 kap. 8 a §",
+      "dutyType": "reporting",
+      "effectiveFrom": "2026-01-01",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the recipient's foreign tax number in control statements on income paid to persons resident abroad",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, Skatteförfarandeförordning (2011:1261), 5 kap. 11 c §",
+     "payload": {
+      "key": "obl-se-sff-foreign-tin-income-statements",
+      "titles": {
+       "en": "Give the recipient's foreign tax number in control statements on income paid to persons resident abroad"
+      },
+      "summaries": {
+       "en": "Control statements under the chapters of the Tax Procedure Act listed in the section, among them chapter 20 on disposals of fund units, must give the foreign tax identification number of a recipient who is fully taxable in Sweden but resident in another state or jurisdiction; statements under 23 kap. 2-3 b §§ must give it for a recipient with limited tax liability in Sweden."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "5 kap. 11 c §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: File the annual report together with the income tax return",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, Skatteförfarandeförordning (2011:1261), 6 kap. 12 §",
+     "payload": {
+      "key": "obl-se-sff-annual-report-with-tax-return",
+      "titles": {
+       "en": "File the annual report together with the income tax return"
+      },
+      "summaries": {
+       "en": "A firm covered by the Annual Accounts Act for credit institutions and investment firms (1995:1559) or for insurance undertakings (1995:1560) files its annual report with its income tax return instead of giving the details listed in 6 kap. 9 and 10 §§."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "6 kap. 12 §",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank",
+       "legal_entity:credit_market_company",
+       "legal_entity:investment_firm",
+       "legal_entity:insurer"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Förordning om uppgifter om kryptotillgångar på skatteområdet, SFS 2025:1390",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20251390-om-inhamtande-av-vissa_sfs-2025-1390/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1390, Förordning (2025:1390) om inhämtande av vissa uppgifter på skatteområdet om kryptotillgångar, text as issued",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2025:1390",
+    "implementsNote": "https://rkrattsbaser.gov.se/sfsr?bet=2025:1390"
+   },
+   "payload": {
+    "key": "sfs-2025-1390",
+    "titles": {
+     "sv": "Förordning (2025:1390) om inhämtande av vissa uppgifter på skatteområdet om kryptotillgångar",
+     "en": "Ordinance (2025:1390) on the collection of certain information on crypto-assets in the tax field"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Förordning om uppgifter om kryptotillgångar på skatteområdet",
+    "officialRef": "SFS 2025:1390",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:tax",
+    "inForceFrom": "2026-01-01",
+    "implementsNote": "DAC, Directive 2011/16/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Collect crypto-asset users' self-certifications in a non-oral form through a secure, logged system",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20251390-om-inhamtande-av-vissa_sfs-2025-1390/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1390, Förordning (2025:1390) om inhämtande av vissa uppgifter på skatteområdet om kryptotillgångar, 4 §",
+     "payload": {
+      "key": "obl-se-dac8-forordning-self-certification-system",
+      "titles": {
+       "en": "Collect crypto-asset users' self-certifications in a non-oral form through a secure, logged system"
+      },
+      "summaries": {
+       "en": "A self-certification under chapter 7 of the Act (2025:1377) on crypto-asset information in the tax field must be given electronically or in another non-oral form. An electronic system must ensure the information received is what was sent, log every access to submit, renew or change it, ensure the person submitting is the person named or someone entitled to act for them, and be able to produce a paper copy on request."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "4 §",
+      "dutyType": "technical",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Kupongskatteförordningen, SFS 1971:49",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/kupongskatteforordning-197149_sfs-1971-49/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 1971:49, Kupongskatteförordning (1971:49), text as amended up to SFS 2016:70",
+   "payload": {
+    "key": "sfs-1971-49",
+    "titles": {
+     "sv": "Kupongskatteförordning (1971:49)",
+     "en": "Coupon Tax Ordinance (1971:49)"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Kupongskatteförordningen",
+    "officialRef": "SFS 1971:49",
+    "level": "government_regulation",
+    "jurisdiction": "se",
+    "authority": "regeringen",
+    "regime": "regime:tax"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Check dividend recipients' residence details with Skatteverket when holding shares as nominee",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/kupongskatteforordning-197149_sfs-1971-49/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 1971:49, Kupongskatteförordning (1971:49), 2 §",
+     "payload": {
+      "key": "obl-se-kupongskatteforordning-nominee-recipient-check",
+      "titles": {
+       "en": "Check dividend recipients' residence details with Skatteverket when holding shares as nominee"
+      },
+      "summaries": {
+       "en": "Where shares or fund units are nominee-registered, the nominee instead of the central securities depository checks with Skatteverket the information given under 7 § second paragraph of the Coupon Tax Act that matters for tax liability, for dividend recipients who are not legal persons, at the time and in the manner Skatteverket decides."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "2 §",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the central securities depository details of interest recipients on request when acting as nominee",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/kupongskatteforordning-197149_sfs-1971-49/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 1971:49, Kupongskatteförordning (1971:49), 8 §",
+     "payload": {
+      "key": "obl-se-kupongskatteforordning-nominee-interest-information",
+      "titles": {
+       "en": "Give the central securities depository details of interest recipients on request when acting as nominee"
+      },
+      "summaries": {
+       "en": "A bank or investment firm approved by a central securities depository to be registered as nominee for shares must, when the depository asks, give the name and residence of the person on whose behalf interest is collected; the depository may not ask later than five years after the interest was paid."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "8 §",
+      "dutyType": "reporting",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

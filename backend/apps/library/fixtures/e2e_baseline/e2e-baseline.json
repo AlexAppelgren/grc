@@ -1,0 +1,114 @@
+{
+  "tranche": "e2e-baseline",
+  "researchedOn": "2026-09-30",
+  "instruments": [
+    {
+      "title": "Add MAR managers' transactions ITS, Commission Implementing Regulation (EU) 2016/523",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/523/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/523 as published in the Official Journal",
+      "payload": {
+        "key": "celex-32016r0523",
+        "titles": {
+          "en": "Commission Implementing Regulation (EU) 2016/523 of 10 March 2016 laying down implementing technical standards with regard to the format and template for notification and public disclosure of managers' transactions in accordance with Regulation (EU) No 596/2014 of the European Parliament and of the Council"
+        },
+        "originalLanguage": "en",
+        "isMachine": false,
+        "shortName": "MAR managers' transactions ITS",
+        "officialRef": "Commission Implementing Regulation (EU) 2016/523",
+        "eliUri": "https://data.europa.eu/eli/reg_impl/2016/523/oj",
+        "level": "eu_regulation",
+        "jurisdiction": "eu",
+        "authority": "european-commission",
+        "regime": "regime:securities",
+        "inForceFrom": "2016-04-06"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Notify managers' transactions on the prescribed template by secure electronic means",
+          "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/523/oj",
+          "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/523, Article 2",
+          "payload": {
+            "key": "obl-eu-mar-pdmr-its-template",
+            "titles": {
+              "en": "Notify managers' transactions on the prescribed template by secure electronic means"
+            },
+            "summaries": {
+              "en": "Managers and persons closely associated with them must notify their transactions using the template in the Annex, sent by the electronic means the competent authority publishes, which keep the information complete, intact and confidential and make its source certain."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "Art. 2",
+            "dutyType": "reporting",
+            "effectiveFrom": "2016-07-03",
+            "terms": []
+          }
+        }
+      ]
+    },
+    {
+      "title": "Add SSR ITS 827/2012, Commission Implementing Regulation (EU) No 827/2012",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2012/827/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) No 827/2012 as published in the Official Journal",
+      "payload": {
+        "key": "celex-32012r0827",
+        "titles": {
+          "en": "Commission Implementing Regulation (EU) No 827/2012 of 29 June 2012 laying down implementing technical standards with regard to the means for public disclosure of net position in shares, the format of the information to be provided to the European Securities and Markets Authority in relation to net short positions, the types of agreements, arrangements and measures to adequately ensure that shares or sovereign debt instruments are available for settlement and the dates and period for the determination of the principal venue for a share according to Regulation (EU) No 236/2012 of the European Parliament and of the Council on short selling and certain aspects of credit default swaps"
+        },
+        "originalLanguage": "en",
+        "isMachine": false,
+        "shortName": "SSR ITS 827/2012",
+        "officialRef": "Commission Implementing Regulation (EU) No 827/2012",
+        "eliUri": "https://data.europa.eu/eli/reg_impl/2012/827/oj",
+        "level": "eu_regulation",
+        "jurisdiction": "eu",
+        "authority": "european-commission",
+        "regime": "regime:securities",
+        "inForceFrom": "2012-09-19"
+      },
+      "obligations": [
+        {
+          "title": "Add the duty: Hold a qualifying borrow agreement or locate confirmation before every short sale",
+          "source": "https://eur-lex.europa.eu/eli/reg_impl/2012/827/oj",
+          "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) No 827/2012, Articles 5 to 7",
+          "payload": {
+            "key": "obl-eu-ssr-its-locate-arrangements",
+            "titles": {
+              "en": "Hold a qualifying borrow agreement or locate confirmation before every short sale"
+            },
+            "summaries": {
+              "en": "Before short selling a share or sovereign debt, a firm relying on an agreement to borrow must hold one of the listed binding arrangements, such as a physically settled future, option, repo or standing facility covering the amount and settlement date, and a firm relying on a locate must hold a standard, same-day or easy-to-borrow confirmation of the prescribed kind from an eligible third party. It must receive the agreement or confirmation in a durable medium."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "Art. 5-7",
+            "dutyType": "conduct",
+            "effectiveFrom": "2012-11-01",
+            "terms": [
+              "lifecycle_stage:pre_trade"
+            ]
+          }
+        },
+        {
+          "title": "Add the duty: Be able to prove delivery capacity when giving locate confirmations",
+          "source": "https://eur-lex.europa.eu/eli/reg_impl/2012/827/oj",
+          "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) No 827/2012, Article 8",
+          "payload": {
+            "key": "obl-eu-ssr-its-locate-provider",
+            "titles": {
+              "en": "Be able to prove delivery capacity when giving locate confirmations"
+            },
+            "summaries": {
+              "en": "A firm that gives locate confirmations to short sellers as a third party must take part in managing the borrowing or purchase of the relevant shares or sovereign debt, be able to evidence that participation and, on request, show with statistical evidence that it can deliver or process delivery on the dates it commits to."
+            },
+            "originalLanguage": "en",
+            "isMachine": false,
+            "refLabel": "Art. 8",
+            "dutyType": "conduct",
+            "effectiveFrom": "2012-11-01",
+            "terms": []
+          }
+        }
+      ]
+    }
+  ]
+}

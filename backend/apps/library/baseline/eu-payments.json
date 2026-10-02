@@ -1,0 +1,1213 @@
+{
+ "tranche": "eu-payments",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add PSD2, Directive (EU) 2015/2366",
+   "source": "https://eur-lex.europa.eu/eli/dir/2015/2366/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2015/2366 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32015l2366",
+    "titles": {
+     "en": "Directive (EU) 2015/2366 of the European Parliament and of the Council of 25 November 2015 on payment services in the internal market, amending Directives 2002/65/EC, 2009/110/EC and 2013/36/EU and Regulation (EU) No 1093/2010, and repealing Directive 2007/64/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "PSD2",
+    "officialRef": "Directive (EU) 2015/2366",
+    "eliUri": "https://data.europa.eu/eli/dir/2015/2366/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:payments",
+    "inForceFrom": "2016-01-12"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add EMD2, Directive 2009/110/EC",
+   "source": "https://eur-lex.europa.eu/eli/dir/2009/110/oj",
+   "sourceLabel": "EUR-Lex, Directive 2009/110/EC as published in the Official Journal",
+   "payload": {
+    "key": "celex-32009l0110",
+    "titles": {
+     "en": "Directive 2009/110/EC of the European Parliament and of the Council of 16 September 2009 on the taking up, pursuit and prudential supervision of the business of electronic money institutions amending Directives 2005/60/EC and 2006/48/EC and repealing Directive 2000/46/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EMD2",
+    "officialRef": "Directive 2009/110/EC",
+    "eliUri": "https://data.europa.eu/eli/dir/2009/110/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:payments",
+    "inForceFrom": "2009-10-30"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add SCA RTS, Commission Delegated Regulation (EU) 2018/389",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32018r0389",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2018/389 of 27 November 2017 supplementing Directive (EU) 2015/2366 of the European Parliament and of the Council with regard to regulatory technical standards for strong customer authentication and common and secure open standards of communication"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SCA RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2018/389",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2018/389/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:payments",
+    "inForceFrom": "2018-03-14"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Monitor payment transactions to detect unauthorised or fraudulent payments",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/oj#art_2",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 2",
+     "payload": {
+      "key": "obl-eu-sca-rts-transaction-monitoring",
+      "titles": {
+       "en": "Monitor payment transactions to detect unauthorised or fraudulent payments"
+      },
+      "summaries": {
+       "en": "Every payment service provider must run transaction monitoring that spots unauthorised or fraudulent payments, based on what is normal for the user. The monitoring must at least weigh compromised or stolen authentication elements, the amount, known fraud scenarios, signs of malware in the authentication session and, where the provider supplies the device or software, abnormal use of it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 2",
+      "dutyType": "technical",
+      "effectiveFrom": "2019-09-14"
+     }
+    },
+    {
+     "title": "Add the duty: Document, test and audit the security measures for strong customer authentication",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/oj#art_3",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 3",
+     "payload": {
+      "key": "obl-eu-sca-rts-security-audit",
+      "titles": {
+       "en": "Document, test and audit the security measures for strong customer authentication"
+      },
+      "summaries": {
+       "en": "The provider must document its authentication and credential security measures, test and evaluate them periodically and have them audited by operationally independent auditors with IT security and payments expertise. A provider that uses the transaction risk analysis exemption must have its methodology, model and reported fraud rates audited at least yearly, by an independent external auditor in the first year and at least every three years after that; the full audit report goes to the competent authority on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 3",
+      "dutyType": "governance",
+      "effectiveFrom": "2019-09-14"
+     }
+    },
+    {
+     "title": "Add the duty: Apply strong customer authentication with a single-use code and dynamic linking",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/oj#art_4",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Articles 4, 5 and 9",
+     "payload": {
+      "key": "obl-eu-sca-rts-authentication-code",
+      "titles": {
+       "en": "Apply strong customer authentication with a single-use code and dynamic linking"
+      },
+      "summaries": {
+       "en": "When strong customer authentication applies, the provider must combine at least two independent elements (knowledge, possession, inherence) into an authentication code that is accepted only once, cannot be forged or derived, blocks access after at most five consecutive failed attempts and times out online sessions after at most five minutes of inactivity. For remote electronic payments the payer must see the amount and the payee, and the code must be tied to that amount and payee so that any change invalidates it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Arts. 4, 5 and 9",
+      "dutyType": "technical",
+      "effectiveFrom": "2019-09-14"
+     }
+    },
+    {
+     "title": "Add the duty: Protect the confidentiality and integrity of personalised security credentials",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/oj#art_22",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 22",
+     "payload": {
+      "key": "obl-eu-sca-rts-credential-confidentiality",
+      "titles": {
+       "en": "Protect the confidentiality and integrity of personalised security credentials"
+      },
+      "summaries": {
+       "en": "The provider must keep users' personalised security credentials and authentication codes confidential and intact at every stage: masked on display, never stored in plain text, with secret cryptographic material protected. It must document how it manages the cryptographic material and process and route credentials only in secure environments that follow strong, widely recognised industry standards."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 22",
+      "dutyType": "technical",
+      "effectiveFrom": "2019-09-14"
+     }
+    },
+    {
+     "title": "Add the duty: Record fraud data for authentication exemptions and report when fraud rates are exceeded",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/oj#art_21",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Articles 20 and 21",
+     "payload": {
+      "key": "obl-eu-sca-rts-exemption-fraud-monitoring",
+      "titles": {
+       "en": "Record fraud data for authentication exemptions and report when fraud rates are exceeded"
+      },
+      "summaries": {
+       "en": "A provider that uses any exemption from strong customer authentication must record and monitor, at least quarterly and per transaction type, the value of fraudulent transactions, fraud rates, average values and how often each exemption was used, and give the results to the competent authority or the EBA on request. A provider using the transaction risk analysis exemption must report at once to the competent authority when a monitored fraud rate exceeds the reference rate, and must stop using that exemption after two consecutive quarters above it."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Arts. 20 and 21",
+      "dutyType": "reporting",
+      "effectiveFrom": "2019-09-14",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give account information and payment initiation providers a secure access interface",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/oj#art_30",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Articles 30 and 32",
+     "payload": {
+      "key": "obl-eu-sca-rts-access-interface",
+      "titles": {
+       "en": "Give account information and payment initiation providers a secure access interface"
+      },
+      "summaries": {
+       "en": "A bank offering online payment accounts must keep at least one interface through which account information, payment initiation and card-issuing providers can identify themselves, communicate securely and rely on the bank's own authentication procedures, documented and with a testing facility available to them and a public summary of the documentation. It must announce interface changes at least three months ahead, save in emergencies, and a dedicated interface must match the availability and performance of the customer channel, without obstacles, with its statistics published quarterly."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Arts. 30 and 32",
+      "dutyType": "technical",
+      "effectiveFrom": "2019-09-14",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep contingency measures for the dedicated interface and report its problems",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/oj#art_33",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389, Article 33",
+     "payload": {
+      "key": "obl-eu-sca-rts-interface-contingency",
+      "titles": {
+       "en": "Keep contingency measures for the dedicated interface and report its problems"
+      },
+      "summaries": {
+       "en": "A bank that runs a dedicated interface must build in a contingency strategy for poor performance, unplanned unavailability and systems breakdown, including a communication plan for the providers using it. It must report problems with the dedicated interface to its competent authority without delay and, unless its authority has exempted it, let those providers fall back on the customer interface until the dedicated one is restored."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 33",
+      "dutyType": "technical",
+      "effectiveFrom": "2019-09-14",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Skip strong customer authentication for account information access for 180 days at a time",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2022/2360/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2022/2360, Article 1(2), inserting Article 10a into Delegated Regulation (EU) 2018/389",
+     "payload": {
+      "key": "obl-eu-sca-rts-ais-180-day-access",
+      "titles": {
+       "en": "Skip strong customer authentication for account information access for 180 days at a time"
+      },
+      "summaries": {
+       "en": "When a customer reaches the balance or the last 90 days of transactions through an account information service provider, the bank must not apply strong customer authentication except the first time and once more than 180 days have passed since it last did. It may still authenticate where it has objectively justified, documented reasons relating to unauthorised or fraudulent access, and must explain them to its competent authority on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 10a, inserted by Delegated Regulation (EU) 2022/2360",
+      "dutyType": "technical",
+      "effectiveFrom": "2023-07-25",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add IFR, Regulation (EU) 2015/751",
+   "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32015r0751",
+    "titles": {
+     "en": "Regulation (EU) 2015/751 of the European Parliament and of the Council of 29 April 2015 on interchange fees for card-based payment transactions"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "IFR",
+    "officialRef": "Regulation (EU) 2015/751",
+    "eliUri": "https://data.europa.eu/eli/reg/2015/751/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:payments",
+    "inForceFrom": "2015-06-08"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep consumer card interchange fees within 0.2 % for debit and 0.3 % for credit cards",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_3",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Articles 1, 3 and 4",
+     "payload": {
+      "key": "obl-eu-ifr-interchange-caps",
+      "titles": {
+       "en": "Keep consumer card interchange fees within 0.2 % for debit and 0.3 % for credit cards"
+      },
+      "summaries": {
+       "en": "A card issuer or acquirer must not offer or request a per-transaction interchange fee above 0.2 % of the transaction value for a consumer debit card transaction (prepaid cards included) or 0.3 % for a consumer credit card transaction; a Member State may set lower caps for domestic transactions. The caps do not cover commercial cards, cash withdrawals at ATMs or counters, or cards of three-party schemes, although a three-party scheme that licenses other issuers or acquirers, or issues through a co-branding partner or an agent, counts as a four-party scheme."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Arts. 1(3), 1(5), 3(1) and 4",
+      "dutyType": "conduct",
+      "effectiveFrom": "2015-12-09",
+      "terms": [
+       "licensed_activity:card_issuing",
+       "licensed_activity:card_acquiring"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Count net compensation received as an issuer towards the interchange fee caps",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_5",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 5",
+     "payload": {
+      "key": "obl-eu-ifr-no-circumvention",
+      "titles": {
+       "en": "Count net compensation received as an issuer towards the interchange fee caps"
+      },
+      "summaries": {
+       "en": "When checking the caps, an issuer must treat any remuneration with the same object or effect as an interchange fee, including net compensation from the card scheme, the acquirer or any intermediary, as part of the interchange fee."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5",
+      "dutyType": "conduct",
+      "terms": [
+       "licensed_activity:card_issuing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Inform consumers about the payment brands they can have on one card before contracting",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_8",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 8(2)",
+     "payload": {
+      "key": "obl-eu-ifr-cobadging-information",
+      "titles": {
+       "en": "Inform consumers about the payment brands they can have on one card before contracting"
+      },
+      "summaries": {
+       "en": "Where the issuer offers co-badging, a consumer may ask for two or more payment brands on one card. In good time before the contract is signed the issuer must give the consumer clear, objective information on all available brands and their functionality, cost and security."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 8(2)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-06-09",
+      "terms": [
+       "licensed_activity:card_issuing",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not limit the payer's or payee's choice of brand on a co-badged card",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_8",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 8(6)",
+     "payload": {
+      "key": "obl-eu-ifr-brand-choice",
+      "titles": {
+       "en": "Do not limit the payer's or payee's choice of brand on a co-badged card"
+      },
+      "summaries": {
+       "en": "Issuers and acquirers must not build automatic mechanisms, software or devices into the card or the point-of-sale equipment that restrict which payment brand or application the payer or payee can choose on a co-badged card."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 8(6)",
+      "dutyType": "technical",
+      "effectiveFrom": "2016-06-09",
+      "terms": [
+       "licensed_activity:card_issuing",
+       "licensed_activity:card_acquiring"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Price merchant service charges separately for each card category and brand",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_9",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 9",
+     "payload": {
+      "key": "obl-eu-ifr-unblending",
+      "titles": {
+       "en": "Price merchant service charges separately for each card category and brand"
+      },
+      "summaries": {
+       "en": "An acquirer must offer and charge merchants service charges specified separately for each category and brand of card with a different interchange level, unless the merchant asks in writing for blended pricing. Its merchant agreements must state the merchant service charge, interchange fee and scheme fee for each category and brand, unless the merchant later asks otherwise in writing."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2016-06-09",
+      "terms": [
+       "licensed_activity:card_acquiring"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make every card identifiable by brand and category",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_10",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 10(5)",
+     "payload": {
+      "key": "obl-eu-ifr-card-identification",
+      "titles": {
+       "en": "Make every card identifiable by brand and category"
+      },
+      "summaries": {
+       "en": "An issuer must ensure that its payment instruments are electronically identifiable, and newly issued cards also visibly identifiable, so that merchants and payers can tell the brand and whether it is a prepaid, debit, credit or commercial card."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 10(5)",
+      "dutyType": "technical",
+      "effectiveFrom": "2016-06-09",
+      "terms": [
+       "licensed_activity:card_issuing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep anti-steering clauses out of merchant agreements",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_11",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 11",
+     "payload": {
+      "key": "obl-eu-ifr-no-anti-steering",
+      "titles": {
+       "en": "Keep anti-steering clauses out of merchant agreements"
+      },
+      "summaries": {
+       "en": "An acquirer's agreements with merchants must not stop them from steering consumers to the payment instrument they prefer, from treating one scheme's cards more or less favourably than another's, or from telling payers about interchange fees and merchant service charges."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 11",
+      "dutyType": "conduct",
+      "terms": [
+       "licensed_activity:card_acquiring"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give merchants the reference, amount and charges of each card transaction",
+     "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj#art_12",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751, Article 12",
+     "payload": {
+      "key": "obl-eu-ifr-merchant-transaction-information",
+      "titles": {
+       "en": "Give merchants the reference, amount and charges of each card transaction"
+      },
+      "summaries": {
+       "en": "After each card transaction the acquirer must give the merchant a reference identifying it, the amount in the currency credited, and the charges with the merchant service charge and the interchange fee shown separately. With the merchant's prior explicit consent the information may be aggregated, and the contract may provide for it at least monthly in a form the merchant can store."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 12",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2015-12-09",
+      "terms": [
+       "licensed_activity:card_acquiring"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Cross-border Payments Regulation, Regulation (EU) 2021/1230",
+   "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32021r1230",
+    "titles": {
+     "en": "Regulation (EU) 2021/1230 of the European Parliament and of the Council of 14 July 2021 on cross-border payments in the Union (codification)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Cross-border Payments Regulation",
+    "officialRef": "Regulation (EU) 2021/1230",
+    "eliUri": "https://data.europa.eu/eli/reg/2021/1230/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:payments",
+    "inForceFrom": "2021-08-19"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Charge the same for cross-border payments in euro as for corresponding national payments",
+     "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/oj#art_3",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230, Article 3",
+     "payload": {
+      "key": "obl-eu-cbpr-charges-parity",
+      "titles": {
+       "en": "Charge the same for cross-border payments in euro as for corresponding national payments"
+      },
+      "summaries": {
+       "en": "A payment service provider must charge its users the same for a cross-border payment in euro as for a corresponding national payment of the same value in the national currency of its own Member State, and must identify which national payment corresponds. The same parity applies to cross-border payments in the currency of a Member State that has extended the Regulation to its currency; currency conversion charges are outside the rule."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 3(1) to (4)",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Show currency conversion charges on card transactions as a mark-up over the ECB reference rate",
+     "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/oj#art_4",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230, Article 4",
+     "payload": {
+      "key": "obl-eu-cbpr-card-conversion-markup",
+      "titles": {
+       "en": "Show currency conversion charges on card transactions as a mark-up over the ECB reference rate"
+      },
+      "summaries": {
+       "en": "For card payments and ATM withdrawals involving currency conversion, the provider must express the total conversion charge as a percentage mark-up over the latest ECB euro reference rate and disclose it to the payer before the transaction is initiated. The provider must also publish the mark-up on a broadly available electronic platform, free of charge and in a neutral, comprehensible way."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4(1), (2) and (7)",
+      "dutyType": "disclosure"
+     }
+    },
+    {
+     "title": "Add the duty: Send card holders an electronic message on the conversion mark-up after a payment in another Union currency",
+     "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/oj#art_4",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230, Article 4(5) and (6)",
+     "payload": {
+      "key": "obl-eu-cbpr-conversion-message",
+      "titles": {
+       "en": "Send card holders an electronic message on the conversion mark-up after a payment in another Union currency"
+      },
+      "summaries": {
+       "en": "When a card holder pays at the point of sale or withdraws cash at an ATM in a Union currency different from the account currency, the issuing provider must send an electronic message with the mark-up without undue delay, then once a month per currency. It must agree the channel with the user, offer an opt-out, and may agree with a non-consumer to disapply the message."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4(5) and (6)",
+      "dutyType": "disclosure",
+      "terms": [
+       "licensed_activity:card_issuing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Show estimated conversion charges and amounts before an online credit transfer with currency conversion",
+     "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/oj#art_5",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230, Article 5",
+     "payload": {
+      "key": "obl-eu-cbpr-credit-transfer-conversion",
+      "titles": {
+       "en": "Show estimated conversion charges and amounts before an online credit transfer with currency conversion"
+      },
+      "summaries": {
+       "en": "When a provider offers currency conversion on a credit transfer initiated online in its website or mobile app, it must tell the payer before initiation, clearly and neutrally, the estimated conversion charges. It must also show the estimated total in the account currency including fees and conversion charges, and the estimated amount the payee will receive in the payee's currency."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5",
+      "dutyType": "disclosure",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give payment service users their IBAN and the provider's BIC free of charge",
+     "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/oj#art_6",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230, Article 6",
+     "payload": {
+      "key": "obl-eu-cbpr-iban-bic",
+      "titles": {
+       "en": "Give payment service users their IBAN and the provider's BIC free of charge"
+      },
+      "summaries": {
+       "en": "Where applicable, the provider must communicate the user's IBAN and its own BIC to the user and show them on account statements or an annex, free of charge. Any extra charge for a cross-border payment ordered without the IBAN must be agreed, cost-based and announced in good time before the user is bound."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 6(1) and (2)",
+      "dutyType": "disclosure"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SEPA Regulation, Regulation (EU) No 260/2012",
+   "source": "https://eur-lex.europa.eu/eli/reg/2012/260/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32012r0260",
+    "titles": {
+     "en": "Regulation (EU) No 260/2012 of the European Parliament and of the Council of 14 March 2012 establishing technical and business requirements for credit transfers and direct debits in euro and amending Regulation (EC) No 924/2009"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SEPA Regulation",
+    "officialRef": "Regulation (EU) No 260/2012",
+    "eliUri": "https://data.europa.eu/eli/reg/2012/260/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:payments",
+    "inForceFrom": "2012-03-31"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Be reachable for euro credit transfers and direct debits from any Member State",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/260/oj#art_3",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Articles 3 and 16(2)",
+     "payload": {
+      "key": "obl-eu-sepa-reachability",
+      "titles": {
+       "en": "Be reachable for euro credit transfers and direct debits from any Member State"
+      },
+      "summaries": {
+       "en": "A payment service provider reachable for national euro credit transfers must also be reachable, under a Union-wide scheme, for credit transfers initiated through a provider in any Member State, and the same applies to consumer direct debits. Providers in Member States outside the euro area had to meet this for their euro services by 31 October 2016."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Arts. 3 and 16(2)",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Use IBAN and ISO 20022 XML messages for euro credit transfers and direct debits",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/260/oj#art_5",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Articles 5, 6 and 16 and the Annex",
+     "payload": {
+      "key": "obl-eu-sepa-iban-iso20022",
+      "titles": {
+       "en": "Use IBAN and ISO 20022 XML messages for euro credit transfers and direct debits"
+      },
+      "summaries": {
+       "en": "Providers must identify payment accounts by IBAN, use ISO 20022 XML message formats between providers and for bundled payments of users that are neither consumers nor micro-enterprises, pass the required data elements in full, and not require users to give a BIC (for cross-border payments from 1 February 2016). The format requirements applied from 1 February 2014 in the euro area, with a transition to 1 August 2014, and from 31 October 2016 for providers in Member States outside the euro area."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Arts. 5(1), (2) and (7), 6 and 16(1) and (8); Annex",
+      "dutyType": "technical",
+      "effectiveFrom": "2014-02-01"
+     }
+    },
+    {
+     "title": "Add the duty: Let payers limit, verify and block direct debits and tell them of these rights",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/260/oj#art_5",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Article 5(3) and (6)",
+     "payload": {
+      "key": "obl-eu-sepa-direct-debit-payer-rights",
+      "titles": {
+       "en": "Let payers limit, verify and block direct debits and tell them of these rights"
+      },
+      "summaries": {
+       "en": "The payer's provider must let the payer cap direct debit collections by amount or frequency, check each debit against the mandate where there is no refund right, and block all direct debits or those of named payees, or allow only named payees, and must inform the payer of these rights; this does not apply where neither payer nor payee is a consumer. The payee's provider must pass the mandate information with each direct debit."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5(3) and (6)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2014-02-01"
+     }
+    },
+    {
+     "title": "Add the duty: Do not apply a multilateral interchange fee per direct debit transaction",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/260/oj#art_8",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Articles 6(3) and 8",
+     "payload": {
+      "key": "obl-eu-sepa-no-direct-debit-mif",
+      "titles": {
+       "en": "Do not apply a multilateral interchange fee per direct debit transaction"
+      },
+      "summaries": {
+       "en": "Providers must not apply a multilateral interchange fee, or any agreed remuneration with an equivalent effect, per direct debit transaction; for R-transactions a strictly cost-based fee is allowed only on the conditions set out. The ban applied to cross-border direct debits from 1 November 2012 and to national ones from 1 February 2017."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Arts. 6(3) and 8",
+      "dutyType": "conduct",
+      "effectiveFrom": "2012-11-01"
+     }
+    },
+    {
+     "title": "Add the duty: Accept euro payments to and from accounts in any Member State",
+     "source": "https://eur-lex.europa.eu/eli/reg/2012/260/oj#art_9",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012, Article 9",
+     "payload": {
+      "key": "obl-eu-sepa-payment-accessibility",
+      "titles": {
+       "en": "Accept euro payments to and from accounts in any Member State"
+      },
+      "summaries": {
+       "en": "When the firm pays by credit transfer, accepts credit transfers or collects by direct debit, it must not require the counterparty's payment account to be located in a particular Member State, provided the account is reachable under the Regulation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Instant Payments Regulation, Regulation (EU) 2024/886",
+   "source": "https://eur-lex.europa.eu/eli/reg/2024/886/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2024/886 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r0886",
+    "titles": {
+     "en": "Regulation (EU) 2024/886 of the European Parliament and of the Council of 13 March 2024 amending Regulations (EU) No 260/2012 and (EU) 2021/1230 and Directives 98/26/EC and (EU) 2015/2366 as regards instant credit transfers in euro"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Instant Payments Regulation",
+    "officialRef": "Regulation (EU) 2024/886",
+    "eliUri": "https://data.europa.eu/eli/reg/2024/886/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:payments",
+    "inForceFrom": "2024-04-08"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Offer instant credit transfers in euro to every user (providers in the euro area)",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/886/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/886, Article 1(2), inserting Article 5a into Regulation (EU) No 260/2012",
+     "payload": {
+      "key": "obl-eu-ipr-instant-transfers-euro-area",
+      "titles": {
+       "en": "Offer instant credit transfers in euro to every user (providers in the euro area)"
+      },
+      "summaries": {
+       "en": "A provider in a euro area Member State that offers credit transfers must let all its users receive instant euro credit transfers from 9 January 2025 and send them from 9 October 2025, with every account reachable around the clock, through the same channels as other credit transfers, the funds available to the payee within ten seconds, and the payer told the outcome. Users may set a daily or per-transaction limit on request; payment and e-money institutions in the euro area have until 9 April 2027."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5a(1) and (3) to (8) of Regulation (EU) No 260/2012, inserted by Art. 1(2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2025-01-09"
+     }
+    },
+    {
+     "title": "Add the duty: Offer instant credit transfers in euro to every user (providers outside the euro area)",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/886/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/886, Article 1(2), inserting Article 5a into Regulation (EU) No 260/2012",
+     "payload": {
+      "key": "obl-eu-ipr-instant-transfers-non-euro",
+      "titles": {
+       "en": "Offer instant credit transfers in euro to every user (providers outside the euro area)"
+      },
+      "summaries": {
+       "en": "A provider in a Member State whose currency is not the euro must let all its users receive instant euro credit transfers from 9 January 2027 and send them from 9 July 2027, on the same terms of ten-second execution and around-the-clock reachability; payment and e-money institutions there must receive from 9 April 2027. Until 9 June 2028 it need not offer sending from national-currency accounts during times it neither sends nor receives other euro credit transfers on them, and with its competent authority's yearly permission, based on its euro liquidity, it may cap sending from such accounts at those times at a limit the authority sets of at least EUR 25 000."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5a(1), (2) and (8) of Regulation (EU) No 260/2012, inserted by Art. 1(2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-01-09"
+     }
+    },
+    {
+     "title": "Add the duty: Charge no more for instant credit transfers than for other credit transfers (providers in the euro area)",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/886/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/886, Article 1(2), inserting Article 5b into Regulation (EU) No 260/2012",
+     "payload": {
+      "key": "obl-eu-ipr-charges-parity-euro-area",
+      "titles": {
+       "en": "Charge no more for instant credit transfers than for other credit transfers (providers in the euro area)"
+      },
+      "summaries": {
+       "en": "A provider in a euro area Member State must not charge payers or payees more for sending or receiving instant euro credit transfers than for other credit transfers of the corresponding type, from 9 January 2025, and must never charge for the verification of the payee service."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5b of Regulation (EU) No 260/2012, inserted by Art. 1(2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2025-01-09"
+     }
+    },
+    {
+     "title": "Add the duty: Charge no more for instant credit transfers than for other credit transfers (providers outside the euro area)",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/886/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/886, Article 1(2), inserting Article 5b into Regulation (EU) No 260/2012",
+     "payload": {
+      "key": "obl-eu-ipr-charges-parity-non-euro",
+      "titles": {
+       "en": "Charge no more for instant credit transfers than for other credit transfers (providers outside the euro area)"
+      },
+      "summaries": {
+       "en": "A provider in a Member State whose currency is not the euro must, from 9 January 2027, charge no more for sending or receiving instant euro credit transfers than for other credit transfers of the corresponding type, and must never charge for the verification of the payee service."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5b of Regulation (EU) No 260/2012, inserted by Art. 1(2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-01-09"
+     }
+    },
+    {
+     "title": "Add the duty: Verify the payee before the payer authorises a euro credit transfer (providers in the euro area)",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/886/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/886, Article 1(2), inserting Article 5c into Regulation (EU) No 260/2012",
+     "payload": {
+      "key": "obl-eu-ipr-verification-of-payee-euro-area",
+      "titles": {
+       "en": "Verify the payee before the payer authorises a euro credit transfer (providers in the euro area)"
+      },
+      "summaries": {
+       "en": "From 9 October 2025 a provider in a euro area Member State must, for every euro credit transfer and in every channel, check the payee's IBAN against the name (or another unambiguous identifier for a legal person) before the payer authorises it, tell the payer of a mismatch or near match and the risk of paying the wrong account, and as payee's provider answer such requests. The check must not stop the payer from authorising and non-consumers may opt out for bulk orders; if the provider's failure to verify leads to a defectively executed transfer, it must refund the payer without delay."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5c of Regulation (EU) No 260/2012, inserted by Art. 1(2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2025-10-09"
+     }
+    },
+    {
+     "title": "Add the duty: Verify the payee before the payer authorises a euro credit transfer (providers outside the euro area)",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/886/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/886, Article 1(2), inserting Article 5c into Regulation (EU) No 260/2012",
+     "payload": {
+      "key": "obl-eu-ipr-verification-of-payee-non-euro",
+      "titles": {
+       "en": "Verify the payee before the payer authorises a euro credit transfer (providers outside the euro area)"
+      },
+      "summaries": {
+       "en": "From 9 July 2027 a provider in a Member State whose currency is not the euro must offer the same verification of the payee for euro credit transfers: match the IBAN against the payee's name or identifier before authorisation, warn the payer of a mismatch, and answer requests as payee's provider. If the provider's failure to verify leads to a defectively executed transfer, it must refund the payer without delay."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5c of Regulation (EU) No 260/2012, inserted by Art. 1(2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-07-09"
+     }
+    },
+    {
+     "title": "Add the duty: Screen all users against EU targeted financial sanctions at least daily instead of per instant payment",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/886/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/886, Article 1(2), inserting Article 5d into Regulation (EU) No 260/2012",
+     "payload": {
+      "key": "obl-eu-ipr-sanctions-screening",
+      "titles": {
+       "en": "Screen all users against EU targeted financial sanctions at least daily instead of per instant payment"
+      },
+      "summaries": {
+       "en": "A provider offering instant credit transfers must check whether any of its users are subject to EU targeted financial restrictive measures immediately when new or amended measures enter into force and at least once every calendar day. It must not screen the payer or payee of an individual instant credit transfer against those measures during execution; the Article sets no later date for providers outside the euro area."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5d of Regulation (EU) No 260/2012, inserted by Art. 1(2)",
+      "dutyType": "technical",
+      "effectiveFrom": "2025-01-09"
+     }
+    },
+    {
+     "title": "Add the duty: Report charges and sanctions-related rejections to the competent authority every year",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/886/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/886, Article 1(4), replacing Article 15 of Regulation (EU) No 260/2012",
+     "payload": {
+      "key": "obl-eu-ipr-charges-reporting",
+      "titles": {
+       "en": "Report charges and sanctions-related rejections to the competent authority every year"
+      },
+      "summaries": {
+       "en": "Every 12 months the provider must report to its competent authority the level of its charges for credit transfers, instant credit transfers and payment accounts, and the share of transactions rejected because of targeted financial restrictive measures, separately for national and cross-border payments. The first report was due on 9 April 2025, covering 26 October 2022 to the end of 2024."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 15(3) of Regulation (EU) No 260/2012, replaced by Art. 1(4)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2025-04-09",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SEPA charges reporting ITS, Commission Implementing Regulation (EU) 2025/1979",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/1979/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/1979 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025r1979",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2025/1979 of 1 October 2025 laying down implementing technical standards for the application of Regulation (EU) No 260/2012 of the European Parliament and of the Council with regard to uniform reporting templates, instructions and methodology for the reporting of the level of charges for credit transfers, instant credit transfers and payment accounts, and the share of rejected transactions"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SEPA charges reporting ITS",
+    "officialRef": "Commission Implementing Regulation (EU) 2025/1979",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2025/1979/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:payments",
+    "inForceFrom": "2025-10-26"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Use the EBA templates for the annual report on charges and rejected instant credit transfers",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/1979/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/1979, Articles 1 to 3 and Annex I",
+     "payload": {
+      "key": "obl-eu-sepa-its-reporting-templates",
+      "titles": {
+       "en": "Use the EBA templates for the annual report on charges and rejected instant credit transfers"
+      },
+      "summaries": {
+       "en": "The yearly report on charges and on instant credit transfers rejected for targeted financial restrictive measures must be made on the templates in Annex I, following the instructions in Annex II and the competent authority's data formats, with annual figures up to 31 December of the previous year. Providers outside the euro area also complete the euro templates; the first harmonised report covers each year from 26 October 2022."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Arts. 1 to 3; Annexes I and II",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Payment Accounts Directive, Directive 2014/92/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2014/92/oj",
+   "sourceLabel": "EUR-Lex, Directive 2014/92/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014l0092",
+    "titles": {
+     "en": "Directive 2014/92/EU of the European Parliament and of the Council of 23 July 2014 on the comparability of fees related to payment accounts, payment account switching and access to payment accounts with basic features"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Payment Accounts Directive",
+    "officialRef": "Directive 2014/92/EU",
+    "eliUri": "https://data.europa.eu/eli/dir/2014/92/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:payments",
+    "inForceFrom": "2014-09-17"
+   },
+   "obligations": []
+  },
+  {
+   "title": "Add Fee information document ITS, Commission Implementing Regulation (EU) 2018/34",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/34/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/34 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32018r0034",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2018/34 of 28 September 2017 laying down implementing technical standards with regard to the standardised presentation format of the fee information document and its common symbol according to Directive 2014/92/EU of the European Parliament and of the Council"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Fee information document ITS",
+    "officialRef": "Commission Implementing Regulation (EU) 2018/34",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2018/34/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:payments",
+    "inForceFrom": "2018-01-31"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Present the fee information document for each consumer payment account in the EU template",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/34/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/34, Article 1",
+     "payload": {
+      "key": "obl-eu-pad-fid-format",
+      "titles": {
+       "en": "Present the fee information document for each consumer payment account in the EU template"
+      },
+      "summaries": {
+       "en": "A provider must give its fee information document in the template of the Annex without changing its order, headings or layout (A4, the common symbol, set fonts and colours, numbered pages), completed as the Regulation directs. It must produce a separate document for each payment account it offers to consumers."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 1",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Statement of fees ITS, Commission Implementing Regulation (EU) 2018/33",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/33/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/33 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32018r0033",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2018/33 of 28 September 2017 laying down implementing technical standards with regard to the standardised presentation format of the statement of fees and its common symbol according to Directive 2014/92/EU of the European Parliament and of the Council"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Statement of fees ITS",
+    "officialRef": "Commission Implementing Regulation (EU) 2018/33",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2018/33/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:payments",
+    "inForceFrom": "2018-01-31"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Present the statement of fees for consumer payment accounts in the EU template",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/33/oj",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/33, Article 1",
+     "payload": {
+      "key": "obl-eu-pad-statement-of-fees-format",
+      "titles": {
+       "en": "Present the statement of fees for consumer payment accounts in the EU template"
+      },
+      "summaries": {
+       "en": "A provider must give consumers their statement of fees in the template of the Annex, completed as the Regulation directs, without changing its order, headings or layout (A4, the common symbol, set fonts and colours, numbered pages)."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 1",
+      "dutyType": "disclosure",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Euro counterfeiting Regulation, Council Regulation (EC) No 1338/2001",
+   "source": "https://eur-lex.europa.eu/eli/reg/2001/1338/oj",
+   "sourceLabel": "EUR-Lex, Council Regulation (EC) No 1338/2001 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32001r1338",
+    "titles": {
+     "en": "Council Regulation (EC) No 1338/2001 of 28 June 2001 laying down measures necessary for the protection of the euro against counterfeiting"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Euro counterfeiting Regulation",
+    "officialRef": "Council Regulation (EC) No 1338/2001",
+    "eliUri": "https://data.europa.eu/eli/reg/2001/1338/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "council-eu",
+    "regime": "regime:payments",
+    "inForceFrom": "2001-07-04"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Check euro notes and coins for authenticity before putting them back into circulation",
+     "source": "https://eur-lex.europa.eu/eli/reg/2009/44/oj",
+     "sourceLabel": "EUR-Lex, Council Regulation (EC) No 44/2009, Article 1(4), replacing Article 6(1) of Regulation (EC) No 1338/2001",
+     "payload": {
+      "key": "obl-eu-euro-counterfeit-authenticity-check",
+      "titles": {
+       "en": "Check euro notes and coins for authenticity before putting them back into circulation"
+      },
+      "summaries": {
+       "en": "A credit institution, and a payment service provider within its payment activity, must ensure that euro notes and coins it has received and intends to recirculate are checked for authenticity and that counterfeits are detected. Euro notes are checked under the ECB's procedures; in a Member State without the euro the check is done by trained staff or by a machine on the ECB's or the Commission's list."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 6(1) and (1a), as amended by Regulation (EC) No 44/2009",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Withdraw suspected counterfeit euro notes and coins and hand them to the authorities at once",
+     "source": "https://eur-lex.europa.eu/eli/reg/2009/44/oj",
+     "sourceLabel": "EUR-Lex, Council Regulation (EC) No 44/2009, Article 1(4), replacing Article 6(1) of Regulation (EC) No 1338/2001",
+     "payload": {
+      "key": "obl-eu-euro-counterfeit-withdraw-hand-over",
+      "titles": {
+       "en": "Withdraw suspected counterfeit euro notes and coins and hand them to the authorities at once"
+      },
+      "summaries": {
+       "en": "The institution must withdraw from circulation every euro note or coin it knows or has sufficient reason to believe is counterfeit, and hand it over immediately to the competent national authorities."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 6(1), as amended by Regulation (EC) No 44/2009",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EBA fraud reporting guidelines, EBA/GL/2018/05",
+   "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/payment-services-and-electronic-money/guidelines-fraud-reporting-under-psd2",
+   "sourceLabel": "EBA, Guidelines on fraud reporting under PSD2 (EBA/GL/2018/05 as amended by EBA/GL/2020/01), status Applicable",
+   "payload": {
+    "key": "eba-gl-2018-05",
+    "titles": {
+     "en": "Guidelines on reporting requirements for fraud data under Article 96(6) PSD2"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EBA fraud reporting guidelines",
+    "officialRef": "EBA/GL/2018/05",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:payments",
+    "inForceFrom": "2019-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report payment fraud statistics to the home competent authority every six months",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+     "sourceLabel": "EBA, Guidelines EBA/GL/2018/05 on fraud reporting under PSD2 (consolidated with EBA/GL/2020/01), Guidelines 1 to 5",
+     "payload": {
+      "key": "obl-eu-eba-fraud-gl-semi-annual-report",
+      "titles": {
+       "en": "Report payment fraud statistics to the home competent authority every six months"
+      },
+      "summaries": {
+       "en": "Payment service providers other than account information service providers should report every six months, in volume and value and with the breakdowns of Annex 2, all executed unauthorised payment transactions and transactions made because the payer was manipulated by a fraudster. Data are split into domestic, cross-border within the EEA and cross-border outside the EEA, include agents' transactions and go to the home competent authority within its timelines."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guidelines 1 to 5",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report branch fraud data to the host authority and correct past fraud reports",
+     "source": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf",
+     "sourceLabel": "EBA, Guidelines EBA/GL/2018/05 on fraud reporting under PSD2 (consolidated with EBA/GL/2020/01), Guidelines 5 and 6",
+     "payload": {
+      "key": "obl-eu-eba-fraud-gl-branches-and-revisions",
+      "titles": {
+       "en": "Report branch fraud data to the host authority and correct past fraud reports"
+      },
+      "summaries": {
+       "en": "A branch established in another EEA country should report its fraud data to that host authority separately from the home report. Fraud should be reported from the time it is detected, whether or not the case is closed, and adjustments to periods up to a year back should be reported as revised figures in the next reporting window."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guidelines 5.3, 6.2 and 6.3",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/document_library//Final%20Report%20on%20EBA%20Guidelines%20on%20fraud%20reporting%20-%20Consolidated%20version.pdf"
+   }
+  },
+  {
+   "title": "Add EBA contingency exemption guidelines, EBA/GL/2018/07",
+   "source": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/payment-services-and-electronic-money/guidelines",
+   "sourceLabel": "EBA, Guidelines on the exemption from the contingency mechanism under Article 33(6) of the RTS on SCA & CSC (EBA/GL/2018/07), status Applicable",
+   "payload": {
+    "key": "eba-gl-2018-07",
+    "titles": {
+     "en": "Guidelines on the conditions to benefit from an exemption from the contingency mechanism under Article 33(6) of Regulation (EU) 2018/389 (RTS on SCA & CSC)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EBA contingency exemption guidelines",
+    "officialRef": "EBA/GL/2018/07",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:payments",
+    "inForceFrom": "2019-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set and publish availability and performance indicators for the dedicated interface",
+     "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+     "sourceLabel": "EBA, Guidelines EBA/GL/2018/07 on the exemption from the contingency mechanism, Guidelines 2 and 3",
+     "payload": {
+      "key": "obl-eu-eba-contingency-gl-interface-kpis",
+      "titles": {
+       "en": "Set and publish availability and performance indicators for the dedicated interface"
+      },
+      "summaries": {
+       "en": "A bank with a dedicated interface should set service levels and indicators for it at least as strict as for its own customer interface, measuring daily uptime and downtime and response times for account information, payment initiation and funds confirmation requests, and the error rate. It should give its competent authority a plan to publish these daily statistics quarterly, in a way that lets users compare the dedicated interface with the customer interface."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guidelines 2 and 3",
+      "dutyType": "technical",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Stress-test the dedicated interface and give the results to the competent authority",
+     "source": "https://www.eba.europa.eu/sites/default/files/2026-09/492c9b8c-de60-4dc7-ad52-f25ff95c1cdb/Final%20Report%20on%20Guidelines%20on%20the%20exemption%20to%20the%20fall%20back%20_EN.pdf",
+     "sourceLabel": "EBA, Guidelines EBA/GL/2018/07 on the exemption from the contingency mechanism, Guideline 4",
+     "payload": {
+      "key": "obl-eu-eba-contingency-gl-stress-testing",
+      "titles": {
+       "en": "Stress-test the dedicated interface and give the results to the competent authority"
+      },
+      "summaries": {
+       "en": "The bank should have processes to test how the dedicated interface performs under an extremely high number of requests, many concurrent sessions, many providers at once and large data volumes, and give its competent authority a summary of the results, assumptions and fixes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 4",
+      "dutyType": "technical",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/payment-services-and-electronic-money/guidelines"
+   }
+  },
+  {
+   "title": "Add EBA ICT and security risk management guidelines, EBA/GL/2019/04",
+   "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/internal-governance/guidelines-ict-and-security-risk-management",
+   "sourceLabel": "EBA, Guidelines on ICT and security risk management (EBA/GL/2019/04 as amended by EBA/GL/2025/02, now limited to Section 3.8), status Applicable",
+   "payload": {
+    "key": "eba-gl-2019-04",
+    "titles": {
+     "en": "Guidelines on ICT and security risk management"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EBA ICT and security risk management guidelines",
+    "officialRef": "EBA/GL/2019/04",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "eba",
+    "regime": "regime:payments",
+    "inForceFrom": "2020-06-30"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Help payment service users understand payment security risks and keep them informed",
+     "source": "https://www.eba.europa.eu/sites/default/files/2026-05/c8fb6168-0aef-42f6-8da9-114a8baf21b9/Consolidated%20version%20of%20EBA%20ameding%20Guidelines%20on%20ICT%20and%20security%20risk%20management.pdf",
+     "sourceLabel": "EBA, Guidelines EBA/GL/2019/04 on ICT and security risk management (consolidated with EBA/GL/2025/02), Section 3.8",
+     "payload": {
+      "key": "obl-eu-eba-ict-gl-psu-security-awareness",
+      "titles": {
+       "en": "Help payment service users understand payment security risks and keep them informed"
+      },
+      "summaries": {
+       "en": "Payment service providers should run processes that raise users' awareness of the security risks of payment services through assistance and guidance, update that guidance as threats change and tell users of the changes and of any update to security procedures that affects them. They should help users with every security question, support request or reported anomaly and tell them how to get that help."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Paras. 92, 93, 97 and 98 (Section 3.8)",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Let users disable payment functions, adjust spending limits and receive payment alerts",
+     "source": "https://www.eba.europa.eu/sites/default/files/2026-05/c8fb6168-0aef-42f6-8da9-114a8baf21b9/Consolidated%20version%20of%20EBA%20ameding%20Guidelines%20on%20ICT%20and%20security%20risk%20management.pdf",
+     "sourceLabel": "EBA, Guidelines EBA/GL/2019/04 on ICT and security risk management (consolidated with EBA/GL/2025/02), Section 3.8",
+     "payload": {
+      "key": "obl-eu-eba-ict-gl-psu-controls-and-alerts",
+      "titles": {
+       "en": "Let users disable payment functions, adjust spending limits and receive payment alerts"
+      },
+      "summaries": {
+       "en": "Where the product allows, users should be able to switch off specific payment functions, and a payer with an agreed spending limit should be able to adjust it up to that maximum. Users should be offered alerts on initiated or failed attempts to initiate payments so they can spot fraudulent use of their accounts."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Paras. 94 to 96 (Section 3.8)",
+      "dutyType": "technical"
+     }
+    }
+   ],
+   "fieldSources": {
+    "inForceFrom": "https://www.eba.europa.eu/sites/default/files/2026-05/c8fb6168-0aef-42f6-8da9-114a8baf21b9/Consolidated%20version%20of%20EBA%20ameding%20Guidelines%20on%20ICT%20and%20security%20risk%20management.pdf"
+   }
+  }
+ ]
+}

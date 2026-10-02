@@ -1,0 +1,2260 @@
+{
+ "tranche": "eu-investment-services",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add MiFID II, Directive 2014/65/EU",
+   "source": "https://eur-lex.europa.eu/eli/dir/2014/65/oj",
+   "sourceLabel": "EUR-Lex, Directive 2014/65/EU as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014l0065",
+    "titles": {
+     "en": "Directive 2014/65/EU of the European Parliament and of the Council of 15 May 2014 on markets in financial instruments and amending Directive 2002/92/EC and Directive 2011/61/EU (recast)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MiFID II",
+    "officialRef": "Directive 2014/65/EU",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2014-07-02",
+    "eliUri": "https://data.europa.eu/eli/dir/2014/65/oj"
+   }
+  },
+  {
+   "title": "Add MiFIR, Regulation (EU) No 600/2014",
+   "source": "https://eur-lex.europa.eu/eli/reg/2014/600/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014r0600",
+    "titles": {
+     "en": "Regulation (EU) No 600/2014 of the European Parliament and of the Council of 15 May 2014 on markets in financial instruments and amending Regulation (EU) No 648/2012"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MiFIR",
+    "officialRef": "Regulation (EU) No 600/2014",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2014-07-02",
+    "eliUri": "https://data.europa.eu/eli/reg/2014/600/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report every reportable transaction to the competent authority by the close of the next working day",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0600-20251123",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014, consolidated text of 23 November 2025, Article 26(1)",
+     "payload": {
+      "key": "obl-eu-mifir-transaction-reporting",
+      "titles": {
+       "en": "Report every reportable transaction to the competent authority by the close of the next working day"
+      },
+      "summaries": {
+       "en": "An investment firm that executes transactions in financial instruments in scope of MiFIR must send complete and accurate details of each transaction to its competent authority as quickly as possible and at the latest by the close of the following working day. It may report itself, through an approved reporting mechanism or through the trading venue."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 26(1)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:reporting",
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Pass the full transaction details on when transmitting a client order, or report the executed order yourself",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0600-20251123",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014, consolidated text of 23 November 2025, Article 26(4)",
+     "payload": {
+      "key": "obl-eu-mifir-order-transmission-details",
+      "titles": {
+       "en": "Pass the full transaction details on when transmitting a client order, or report the executed order yourself"
+      },
+      "summaries": {
+       "en": "A firm that transmits an order to another firm for execution must either include in the transmission all the details the receiving firm needs for the transaction report, or report the transmitted order itself as a transaction once it is executed, stating that it was a transmitted order."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 26(4)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Check the completeness, accuracy and timeliness of transaction reports and correct errors",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0600-20251123",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014, consolidated text of 23 November 2025, Article 26(7)",
+     "payload": {
+      "key": "obl-eu-mifir-transaction-report-accuracy",
+      "titles": {
+       "en": "Check the completeness, accuracy and timeliness of transaction reports and correct errors"
+      },
+      "summaries": {
+       "en": "The firm stays responsible for complete, accurate and timely transaction reports even when it reports through a trading venue or an approved reporting mechanism, and must take reasonable steps to verify reports sent on its behalf. Where a report contains errors or omissions, a corrected report must be submitted."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 26(7)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep the data on all orders and transactions for five years at the authority's disposal",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0600-20251123",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014, consolidated text of 23 November 2025, Article 25(1)",
+     "payload": {
+      "key": "obl-eu-mifir-order-transaction-records",
+      "titles": {
+       "en": "Keep the data on all orders and transactions for five years at the authority's disposal"
+      },
+      "summaries": {
+       "en": "The firm must keep the relevant data on every order and transaction in financial instruments it has carried out, on own account or for clients, available to the competent authority for five years. For client transactions the records must include the client's identity and the customer due diligence information required under the anti-money laundering rules."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 25(1)",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Publish the price, volume and time of trades concluded outside a trading venue through an approved publication arrangement",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0600-20251123",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014, consolidated text of 23 November 2025, Article 1(5b), 20 and 21",
+     "payload": {
+      "key": "obl-eu-mifir-post-trade-transparency",
+      "titles": {
+       "en": "Publish the price, volume and time of trades concluded outside a trading venue through an approved publication arrangement"
+      },
+      "summaries": {
+       "en": "When the firm concludes transactions other than on a trading venue, including as a systematic internaliser, on own account or for clients, in shares, ETFs and similar equity instruments traded on a trading venue, or in bonds, structured finance products and emission allowances traded on a trading venue or certain OTC derivatives, it must make the volume, price and time public through a single approved publication arrangement. Deferred publication is allowed only on the conditions the regulation sets."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 1(5b), 20 and 21",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:post_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Trade shares with an EEA ISIN only on a regulated market, MTF, systematic internaliser or equivalent venue",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0600-20251123",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014, consolidated text of 23 November 2025, Article 23(1)",
+     "payload": {
+      "key": "obl-eu-mifir-share-trading-obligation",
+      "titles": {
+       "en": "Trade shares with an EEA ISIN only on a regulated market, MTF, systematic internaliser or equivalent venue"
+      },
+      "summaries": {
+       "en": "Trades the firm undertakes in shares that have an EEA ISIN and are traded on a trading venue must take place on a regulated market, an MTF, a systematic internaliser or an equivalent third-country venue. The exceptions are trades on a third-country venue in local or non-EEA currency, and trades between eligible and professional counterparties that do not contribute to price discovery."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 23(1)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Conclude derivatives of a class under the trading obligation only on a regulated market, MTF, OTF or equivalent venue",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0600-20251123",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014, consolidated text of 23 November 2025, Article 28(1)",
+     "payload": {
+      "key": "obl-eu-mifir-derivatives-trading-obligation",
+      "titles": {
+       "en": "Conclude derivatives of a class under the trading obligation only on a regulated market, MTF, OTF or equivalent venue"
+      },
+      "summaries": {
+       "en": "Where the firm is a financial counterparty, or a non-financial counterparty subject to the EMIR clearing obligation, it must conclude transactions with other such counterparties in a class of derivatives declared subject to the trading obligation only on a regulated market, an MTF, an OTF or an equivalent third-country venue. Derivatives exempt from or outside the clearing obligation are not caught."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 28(1)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not accept payment for order flow for executing or forwarding client orders",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R0600-20251123",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014, consolidated text of 23 November 2025, Article 39a, inserted by Regulation (EU) 2024/791",
+     "payload": {
+      "key": "obl-eu-mifir-payment-for-order-flow-ban",
+      "titles": {
+       "en": "Do not accept payment for order flow for executing or forwarding client orders"
+      },
+      "summaries": {
+       "en": "A firm acting for retail clients, or for clients treated as professional on request, must not receive any fee, commission or non-monetary benefit from a third party for executing their orders on a particular venue or forwarding them to a third party for execution there. Venue rebates under a public tariff that benefit only the client remain allowed; the optional national exemption ended on 30 June 2026."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 39a",
+      "dutyType": "conduct",
+      "effectiveFrom": "2024-03-28"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MiFID II Delegated Regulation, Commission Delegated Regulation (EU) 2017/565",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2017/565/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017r0565",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2017/565 of 25 April 2016 supplementing Directive 2014/65/EU of the European Parliament and of the Council as regards organisational requirements and operating conditions for investment firms and defined terms for the purposes of that Directive"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MiFID II Delegated Regulation",
+    "officialRef": "Commission Delegated Regulation (EU) 2017/565",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2017-04-20",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2017/565/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep a permanent, independent compliance function with a risk-based monitoring programme",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 22",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-compliance-function",
+      "titles": {
+       "en": "Keep a permanent, independent compliance function with a risk-based monitoring programme"
+      },
+      "summaries": {
+       "en": "The firm must have policies and procedures to detect and minimise the risk of breaching MiFID II, and a permanent, effective and independent compliance function. The function monitors and assesses those measures under a risk-based monitoring programme, advises staff, oversees complaints handling and reports to the management body at least once a year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 22",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Handle client complaints promptly under a published, board-endorsed complaints policy",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 26",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-complaints-handling",
+      "titles": {
+       "en": "Handle client complaints promptly under a published, board-endorsed complaints policy"
+      },
+      "summaries": {
+       "en": "The firm must keep an effective and transparent complaints management policy endorsed by the management body, publish how complaints are handled, let clients complain free of charge and record each complaint and the measures taken. It must reply without undue delay in plain language, tell the client its position and options, including alternative dispute resolution, and give complaints information to the competent authority."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 26",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Prevent staff personal transactions that involve inside or confidential information or conflict with the firm's duties",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 29",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-personal-transactions",
+      "titles": {
+       "en": "Prevent staff personal transactions that involve inside or confidential information or conflict with the firm's duties"
+      },
+      "summaries": {
+       "en": "The firm must have arrangements that stop relevant persons with access to inside or confidential client information, or involved in conflicted activities, from dealing for themselves where the deal is prohibited under the Market Abuse Regulation, misuses confidential information or conflicts with the firm's MiFID II duties. They must also not advise or procure others to make such deals outside their normal work."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 29",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Keep a written conflicts of interest policy and a record of conflicts, reported to senior management at least yearly",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 34 and 35",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-conflicts-of-interest",
+      "titles": {
+       "en": "Keep a written conflicts of interest policy and a record of conflicts, reported to senior management at least yearly"
+      },
+      "summaries": {
+       "en": "The firm must maintain an effective written conflicts of interest policy suited to its size and business, which identifies the situations that may damage client interests, including those arising from its group, and sets the procedures and measures to prevent or manage them. It must also keep an up-to-date record of the services and activities in which a damaging conflict has arisen or may arise, and senior management must receive written reports on them at least once a year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 34 and 35",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Disclose aggregated costs and charges before the service and annually afterwards, with an illustration of their effect on return",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 50",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-costs-charges",
+      "titles": {
+       "en": "Disclose aggregated costs and charges before the service and annually afterwards, with an illustration of their effect on return"
+      },
+      "summaries": {
+       "en": "The firm must give clients aggregated information on all costs and charges of the service and the financial instrument before providing the service, and personalised information on the costs actually incurred at least once a year during an ongoing relationship. It must also show the cumulative effect of costs on return, both ex ante and ex post; limited application may be agreed only with professional clients and eligible counterparties in the cases the article allows."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 50",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Obtain the client information needed and recommend or trade only what is suitable, including for sustainability preferences",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 54",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-suitability-assessment",
+      "titles": {
+       "en": "Obtain the client information needed and recommend or trade only what is suitable, including for sustainability preferences"
+      },
+      "summaries": {
+       "en": "Before giving investment advice or managing a portfolio, the firm must obtain enough information on the client's knowledge and experience, financial situation and investment objectives, including risk tolerance and any sustainability preferences, to judge that each recommendation or trade is suitable. Without that information it must not recommend, it must not recommend or trade where nothing is suitable, and when advising a switch it must show that the benefits outweigh the costs."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 54(2), (8), (10) and (11)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "service_type:advice",
+       "service_type:portfolio_management",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the retail client a suitability report explaining how the advice fits them",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 54(12) and (13)",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-suitability-report",
+      "titles": {
+       "en": "Give the retail client a suitability report explaining how the advice fits them"
+      },
+      "summaries": {
+       "en": "When giving investment advice to a retail client, the firm must provide a report outlining the advice and explaining how the recommendation suits the client's objectives, investment horizon, knowledge and experience, attitude to risk, capacity for loss and sustainability preferences. The report must say whether the client is likely to need a periodic review, and a firm offering periodic assessments must review suitability at least yearly."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 54(12) and (13)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "service_type:advice",
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess appropriateness for non-advised services and record the result and any warnings",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 55 and 56",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-appropriateness",
+      "titles": {
+       "en": "Assess appropriateness for non-advised services and record the result and any warnings"
+      },
+      "summaries": {
+       "en": "For a non-advised service in scope of the appropriateness test, the firm must assess whether the client has the experience and knowledge to understand the risks of the product or service, using information on familiar services and instruments, past trading and education or profession. It must record the result, any warning given and whether the client asked to proceed, and whether the firm agreed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 55 and 56",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "service_type:non_advised"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Send portfolio management clients quarterly statements and alert them to each 10 % fall in portfolio value",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 60 and 62",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-portfolio-reporting",
+      "titles": {
+       "en": "Send portfolio management clients quarterly statements and alert them to each 10 % fall in portfolio value"
+      },
+      "summaries": {
+       "en": "A firm managing portfolios must send each client a periodic statement in a durable medium giving a fair review of the activities and performance, the valuation, and the fees and charges of the period, normally every three months. It must also tell the client when the portfolio value falls by 10 % from the start of the reporting period, and at each further 10 %, by the end of that business day."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 60 and 62(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "service_type:portfolio_management",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell clients about the order execution policy and review it at least annually",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 66",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-execution-policy",
+      "titles": {
+       "en": "Tell clients about the order execution policy and review it at least annually"
+      },
+      "summaries": {
+       "en": "The firm must give clients, in good time before the service, information on its execution policy tailored to the instrument class and service, including the relative importance of the execution factors and the venues it relies on. It must review the policy and its execution arrangements at least once a year and whenever a material change affects its ability to obtain the best possible result."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 66",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Record and allocate client orders promptly and execute comparable orders in turn",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 67",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-client-order-handling",
+      "titles": {
+       "en": "Record and allocate client orders promptly and execute comparable orders in turn"
+      },
+      "summaries": {
+       "en": "When carrying out client orders the firm must record and allocate them promptly and accurately, execute otherwise comparable orders sequentially and promptly unless impracticable or against the client's interest, and inform a retail client promptly of any material difficulty. It must not misuse information on pending client orders and must see that settled instruments and funds reach the right client account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 67",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Keep the required records in a medium the authority can use and that cannot be altered",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 72",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-record-retention",
+      "titles": {
+       "en": "Keep the required records in a medium the authority can use and that cannot be altered"
+      },
+      "summaries": {
+       "en": "The firm must keep at least the records listed in Annex I, and its written policies and procedures, in a medium that lets the competent authority access them readily and reconstruct each stage of every transaction, shows any correction and the earlier content, and prevents manipulation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 72",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Record telephone conversations and electronic communications about client orders under a written policy",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0565-20220802",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565, consolidated text of 2 August 2022, Article 76",
+     "payload": {
+      "key": "obl-eu-mifid2-dr-communications-recording",
+      "titles": {
+       "en": "Record telephone conversations and electronic communications about client orders under a written policy"
+      },
+      "summaries": {
+       "en": "The firm must have a written policy on recording telephone conversations and electronic communications relating to orders, overseen by the management body, keep a list of approved devices, train staff and monitor the records on a risk basis. It must tell clients in advance that calls are recorded and that copies are available for five years, record the relevant content of face-to-face meetings in a durable medium, and store records so they cannot be altered."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 76",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2018-01-03"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add MiFID II Delegated Directive, Commission Delegated Directive (EU) 2017/593",
+   "source": "https://eur-lex.europa.eu/eli/dir_del/2017/593/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Directive (EU) 2017/593 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017l0593",
+    "titles": {
+     "en": "Commission Delegated Directive (EU) 2017/593 of 7 April 2016 supplementing Directive 2014/65/EU of the European Parliament and of the Council with regard to safeguarding of financial instruments and funds belonging to clients, product governance obligations and the rules applicable to the provision or reception of fees, commissions or any monetary or non-monetary benefits"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MiFID II Delegated Directive",
+    "officialRef": "Commission Delegated Directive (EU) 2017/593",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2017-04-20",
+    "eliUri": "https://data.europa.eu/eli/dir_del/2017/593/oj"
+   }
+  },
+  {
+   "title": "Add MiFIR transaction reporting RTS (RTS 22), Commission Delegated Regulation (EU) 2017/590",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2017/590/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/590 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017r0590",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2017/590 of 28 July 2016 supplementing Regulation (EU) No 600/2014 of the European Parliament and of the Council with regard to regulatory technical standards for the reporting of transactions to competent authorities"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "MiFIR transaction reporting RTS (RTS 22)",
+    "officialRef": "Commission Delegated Regulation (EU) 2017/590",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2017-04-20",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2017/590/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Obtain a client's legal entity identifier before acting on a reportable transaction for it",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/590/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/590, Article 13",
+     "payload": {
+      "key": "obl-eu-mifir-rts22-client-lei",
+      "titles": {
+       "en": "Obtain a client's legal entity identifier before acting on a reportable transaction for it"
+      },
+      "summaries": {
+       "en": "The firm must not provide a service that triggers a transaction report for a client eligible for a legal entity identifier until it has obtained that client's LEI. It must make sure the code follows the ISO 17442 format, appears in the global LEI database and belongs to that client."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 13(2) and (3)",
+      "dutyType": "technical",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify natural persons in transaction reports by nationality and the prescribed national identifier",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/590/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/590, Article 6",
+     "payload": {
+      "key": "obl-eu-mifir-rts22-natural-person-id",
+      "titles": {
+       "en": "Identify natural persons in transaction reports by nationality and the prescribed national identifier"
+      },
+      "summaries": {
+       "en": "A natural person must be identified in a transaction report by the two-letter country code of their nationality followed by the national client identifier with the highest priority listed in Annex II for that nationality, following the rules for people with several nationalities."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 6",
+      "dutyType": "reporting",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Test the reporting process and reconcile front-office records against transaction reports",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/590/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/590, Article 15",
+     "payload": {
+      "key": "obl-eu-mifir-rts22-reporting-controls",
+      "titles": {
+       "en": "Test the reporting process and reconcile front-office records against transaction reports"
+      },
+      "summaries": {
+       "en": "The firm's reporting arrangements must secure and authenticate the data, allow reporting to resume after a failure and detect errors, omissions and duplicates. It must test its reporting process and regularly reconcile front-office trading records against the reports submitted, or against data samples from its competent authority, checking timeliness and each field."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 15(1), (3) and (4)",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify the competent authority promptly of errors, omissions or missing transaction reports",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/590/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/590, Article 15(2)",
+     "payload": {
+      "key": "obl-eu-mifir-rts22-error-notification",
+      "titles": {
+       "en": "Notify the competent authority promptly of errors, omissions or missing transaction reports"
+      },
+      "summaries": {
+       "en": "When the firm becomes aware of an error or omission in a submitted transaction report, a failure to report or to resubmit a rejected report, or a report of a transaction that was not reportable, it must promptly tell the competent authority."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 15(2)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Algorithmic trading RTS (RTS 6), Commission Delegated Regulation (EU) 2017/589",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2017/589/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/589 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017r0589",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2017/589 of 19 July 2016 supplementing Directive 2014/65/EU of the European Parliament and of the Council with regard to regulatory technical standards specifying the organisational requirements of investment firms engaged in algorithmic trading"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Algorithmic trading RTS (RTS 6)",
+    "officialRef": "Commission Delegated Regulation (EU) 2017/589",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2017-04-20",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2017/589/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Develop and test trading algorithms under set methodologies and approve each deployment",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/589/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/589, Article 5",
+     "payload": {
+      "key": "obl-eu-algo-rts-testing-approval",
+      "titles": {
+       "en": "Develop and test trading algorithms under set methodologies and approve each deployment"
+      },
+      "summaries": {
+       "en": "Before an algorithmic trading system, algorithm or strategy is deployed or substantially updated, a firm engaged in algorithmic trading must have clearly defined methodologies for its development and testing, covering design, performance, record keeping and approval. A person designated by senior management must authorise the deployment or update."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Carry out an annual self-assessment and validation of algorithmic trading",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/589/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/589, Article 9",
+     "payload": {
+      "key": "obl-eu-algo-rts-annual-self-assessment",
+      "titles": {
+       "en": "Carry out an annual self-assessment and validation of algorithmic trading"
+      },
+      "summaries": {
+       "en": "A firm engaged in algorithmic trading must once a year review and validate its algorithms, its governance and approval framework, its business continuity arrangements and its overall compliance with the algorithmic trading rules, including the Annex I criteria. The risk management function draws up the validation report."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Be able to cancel all unexecuted orders on any venue immediately",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/589/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/589, Article 12",
+     "payload": {
+      "key": "obl-eu-algo-rts-kill-functionality",
+      "titles": {
+       "en": "Be able to cancel all unexecuted orders on any venue immediately"
+      },
+      "summaries": {
+       "en": "As an emergency measure, a firm engaged in algorithmic trading must be able to cancel at once any or all of its unexecuted orders on any or all venues it is connected to, and must be able to tell which algorithm, trader, desk or client each order came from."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 12",
+      "dutyType": "technical",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Monitor all trading through the firm's systems for market manipulation with an automated surveillance system",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/589/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/589, Article 13",
+     "payload": {
+      "key": "obl-eu-algo-rts-manipulation-surveillance",
+      "titles": {
+       "en": "Monitor all trading through the firm's systems for market manipulation with an automated surveillance system"
+      },
+      "summaries": {
+       "en": "A firm engaged in algorithmic trading must monitor all trading through its systems, including its clients', for signs of market manipulation, using an automated surveillance system that covers all its trading and orders, generates alerts and is designed for the nature and scale of its activity."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 13",
+      "dutyType": "technical",
+      "effectiveFrom": "2018-01-03"
+     }
+    },
+    {
+     "title": "Add the duty: Apply price collars, order value, volume and message limits before orders reach a venue",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2017/589/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/589, Article 15",
+     "payload": {
+      "key": "obl-eu-algo-rts-pre-trade-controls",
+      "titles": {
+       "en": "Apply price collars, order value, volume and message limits before orders reach a venue"
+      },
+      "summaries": {
+       "en": "A firm engaged in algorithmic trading must run pre-trade controls on order entry for all financial instruments: price collars, maximum order values and volumes, and maximum message limits, together with automated execution throttles. Every order sent to a venue must count towards those limits at once."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 15",
+      "dutyType": "technical",
+      "effectiveFrom": "2018-01-03",
+      "terms": [
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Order execution policy RTS, Commission Delegated Regulation (EU) 2026/825",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2026/825/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/825 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026r0825",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2026/825 of 14 April 2026 supplementing Directive 2014/65/EU of the European Parliament and of the Council with regard to regulatory technical standards specifying the criteria to be taken into account in establishing and assessing the effectiveness of order execution policies of investment firms and repealing Commission Delegated Regulations (EU) 2017/575 and (EU) 2017/576"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Order execution policy RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2026/825",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2026-08-12",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2026/825/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set out venue selection governance in the execution policy and keep an internal list of approved venues",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/825/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/825, Article 2",
+     "payload": {
+      "key": "obl-eu-best-ex-rts-policy-content",
+      "titles": {
+       "en": "Set out venue selection governance in the execution policy and keep an internal list of approved venues"
+      },
+      "summaries": {
+       "en": "From 12 February 2028 the order execution policy must describe the internal governance for selecting execution venues and the checks that each venue is authorised. The firm must keep an internal list of selected venues showing, for each, who approved it and when, and for which instrument classes and transaction types it may be used."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 2",
+      "dutyType": "governance",
+      "effectiveFrom": "2028-02-12"
+     }
+    },
+    {
+     "title": "Add the duty: Select execution venues on client needs, order types, size, price against reference data and costs",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/825/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/825, Article 3",
+     "payload": {
+      "key": "obl-eu-best-ex-rts-venue-selection",
+      "titles": {
+       "en": "Select execution venues on client needs, order types, size, price against reference data and costs"
+      },
+      "summaries": {
+       "en": "From 12 February 2028, when choosing venues for its execution policy the firm must take account of its clients' characteristics and needs and the best execution factors, in particular available order types, typical order sizes and frequencies, execution prices compared with reference data, and the fees and costs charged to the firm."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 3",
+      "dutyType": "conduct",
+      "effectiveFrom": "2028-02-12"
+     }
+    },
+    {
+     "title": "Add the duty: Monitor execution quality against thresholds set in advance for each instrument class",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/825/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/825, Article 7",
+     "payload": {
+      "key": "obl-eu-best-ex-rts-monitoring",
+      "titles": {
+       "en": "Monitor execution quality against thresholds set in advance for each instrument class"
+      },
+      "summaries": {
+       "en": "From 12 February 2028 the firm must monitor whether client orders follow its execution policy and the quality and price obtained, and, for each class of financial instruments and on a representative sample, whether execution quality is consistent against thresholds it has set in advance for price deviation, volume and number of orders."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 7",
+      "dutyType": "governance",
+      "effectiveFrom": "2028-02-12"
+     }
+    },
+    {
+     "title": "Add the duty: Assess the effectiveness of the execution policy at least annually and after breaches or material changes",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/825/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/825, Article 8",
+     "payload": {
+      "key": "obl-eu-best-ex-rts-annual-assessment",
+      "titles": {
+       "en": "Assess the effectiveness of the execution policy at least annually and after breaches or material changes"
+      },
+      "summaries": {
+       "en": "From 12 February 2028 the firm must assess how effective its order execution policy is at least once a year, and also when monitoring shows the policy or best execution is not being met or when a material change affects its ability to obtain the best result, taking account of costs, monitoring results and market developments."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 8",
+      "dutyType": "governance",
+      "effectiveFrom": "2028-02-12"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add EU code of conduct for issuer-sponsored research, Commission Delegated Regulation (EU) 2026/1092",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2026/1092/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/1092 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32026r1092",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2026/1092 of 21 May 2026 supplementing Directive 2014/65/EU of the European Parliament and of the Council with regard to regulatory technical standards for the establishment of an EU code of conduct for issuer-sponsored research"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "EU code of conduct for issuer-sponsored research",
+    "officialRef": "Commission Delegated Regulation (EU) 2026/1092",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2026-09-07",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2026/1092/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Distribute research labelled issuer-sponsored only after checking it follows the EU code of conduct",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/1092/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/1092, Article 2",
+     "payload": {
+      "key": "obl-eu-isr-code-distribution-check",
+      "titles": {
+       "en": "Distribute research labelled issuer-sponsored only after checking it follows the EU code of conduct"
+      },
+      "summaries": {
+       "en": "Before distributing research labelled as issuer-sponsored research, the firm must obtain from the research provider the information it needs to assess whether the research was produced under the EU code of conduct. If that information is insufficient, it must not distribute the research to clients under that label; it may take account of an independent third party's assessment but stays responsible."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 2",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Produce research labelled issuer-sponsored only in line with the EU code of conduct, including its conflicts policy and register",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2026/1092/oj",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/1092, Annex, clauses 1 and 2",
+     "payload": {
+      "key": "obl-eu-isr-code-produce-under-code",
+      "titles": {
+       "en": "Produce research labelled issuer-sponsored only in line with the EU code of conduct, including its conflicts policy and register"
+      },
+      "summaries": {
+       "en": "A firm that produces research paid for in whole or part by the issuer may label it issuer-sponsored research only if it is produced in compliance with the code in the Annex. Among other things the code requires the provider to keep an effective conflicts of interest policy for such research and an up-to-date register of identified conflicts."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Annex, clauses 1 and 2",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add PRIIPs, Regulation (EU) No 1286/2014",
+   "source": "https://eur-lex.europa.eu/eli/reg/2014/1286/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 1286/2014 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32014r1286",
+    "titles": {
+     "en": "Regulation (EU) No 1286/2014 of the European Parliament and of the Council of 26 November 2014 on key information documents for packaged retail and insurance-based investment products (PRIIPs)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "PRIIPs",
+    "officialRef": "Regulation (EU) No 1286/2014",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2014-12-29",
+    "eliUri": "https://data.europa.eu/eli/reg/2014/1286/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Draw up a key information document and publish it on the website before a PRIIP is offered to retail investors",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R1286-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 1286/2014, consolidated text of 9 January 2024, Article 5(1)",
+     "payload": {
+      "key": "obl-eu-priips-kid-manufacture",
+      "titles": {
+       "en": "Draw up a key information document and publish it on the website before a PRIIP is offered to retail investors"
+      },
+      "summaries": {
+       "en": "Before a packaged retail or insurance-based investment product is made available to retail investors, the firm that manufactures it must draw up a key information document for it and publish that document on its website."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-01-01",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep the key information document accurate, fair, clear, stand-alone and within three A4 pages",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R1286-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 1286/2014, consolidated text of 9 January 2024, Article 6",
+     "payload": {
+      "key": "obl-eu-priips-kid-content",
+      "titles": {
+       "en": "Keep the key information document accurate, fair, clear, stand-alone and within three A4 pages"
+      },
+      "summaries": {
+       "en": "The key information document is pre-contractual information and must be accurate, fair, clear, not misleading and consistent with the contractual and offer documents. It must stand apart from marketing material, without cross-references to it, and be a concise document of at most three sides of A4 when printed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 6",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-01-01",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep PRIIP marketing consistent with the key information document and say where to get it",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R1286-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 1286/2014, consolidated text of 9 January 2024, Article 9",
+     "payload": {
+      "key": "obl-eu-priips-marketing-consistency",
+      "titles": {
+       "en": "Keep PRIIP marketing consistent with the key information document and say where to get it"
+      },
+      "summaries": {
+       "en": "Marketing communications with specific information about a PRIIP must not contradict the key information document or play down its importance, and must say that a key information document is available and how and where to obtain it, including the manufacturer's website."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 9",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-01-01",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Review the key information document regularly and revise it promptly where needed",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R1286-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 1286/2014, consolidated text of 9 January 2024, Article 10(1)",
+     "payload": {
+      "key": "obl-eu-priips-kid-review",
+      "titles": {
+       "en": "Review the key information document regularly and revise it promptly where needed"
+      },
+      "summaries": {
+       "en": "The PRIIP manufacturer must review the information in the key information document regularly, revise the document where the review shows a change is needed and make the revised version available promptly."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 10(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-01-01",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give retail investors the key information document in good time before they are bound",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R1286-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 1286/2014, consolidated text of 9 January 2024, Article 13",
+     "payload": {
+      "key": "obl-eu-priips-kid-delivery",
+      "titles": {
+       "en": "Give retail investors the key information document in good time before they are bound"
+      },
+      "summaries": {
+       "en": "A firm advising on or selling a PRIIP must provide the retail investor with the key information document in good time before the investor is bound by any contract or offer. Delivery after the transaction is allowed only for distance sales initiated by the investor under the strict conditions of the article."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 13(1) and (3)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-01-01",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give retail investors an effective way to complain about a PRIIP and its key information document",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02014R1286-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 1286/2014, consolidated text of 9 January 2024, Article 19",
+     "payload": {
+      "key": "obl-eu-priips-complaints",
+      "titles": {
+       "en": "Give retail investors an effective way to complain about a PRIIP and its key information document"
+      },
+      "summaries": {
+       "en": "Both the PRIIP manufacturer and the firm advising on or selling the product must have procedures so that retail investors can complain effectively, receive a substantive and timely reply on complaints about the key information document and have redress available in cross-border disputes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 19",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-01-01",
+      "terms": [
+       "client_category:retail"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add PRIIPs KID RTS, Commission Delegated Regulation (EU) 2017/653",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2017/653/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/653 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32017r0653",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2017/653 of 8 March 2017 supplementing Regulation (EU) No 1286/2014 of the European Parliament and of the Council on key information documents for packaged retail and insurance-based investment products (PRIIPs) by laying down regulatory technical standards with regard to the presentation, content, review and revision of key information documents and the conditions for fulfilling the requirement to provide such documents"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "PRIIPs KID RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2017/653",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2017-05-02",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2017/653/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Follow the prescribed key information document template, section order and titles",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0653-20230101",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/653, consolidated text of 1 January 2023, Article 1 and Annex I",
+     "payload": {
+      "key": "obl-eu-priips-rts-kid-template",
+      "titles": {
+       "en": "Follow the prescribed key information document template, section order and titles"
+      },
+      "summaries": {
+       "en": "The PRIIP manufacturer must follow the section order and titles of the template in Annex I, within an overall maximum of three sides of A4 when printed, and fill the general information section with the product name and identifier, the manufacturer's details, its competent authority and the date of the document or its latest revision."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 1 and Annex I",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-01-01",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Review the key information document at least every 12 months and on any significant change",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0653-20230101",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/653, consolidated text of 1 January 2023, Article 15",
+     "payload": {
+      "key": "obl-eu-priips-rts-kid-review-cycle",
+      "titles": {
+       "en": "Review the key information document at least every 12 months and on any significant change"
+      },
+      "summaries": {
+       "en": "The PRIIP manufacturer must review the key information document whenever a change significantly affects or is likely to affect it, and at least every 12 months after first publication, checking that it remains accurate, fair, clear and not misleading, including whether the risk class or the moderate performance scenario has moved."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 15",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-01-01",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Revise the key information document without undue delay and publish the new version",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0653-20230101",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/653, consolidated text of 1 January 2023, Article 16",
+     "payload": {
+      "key": "obl-eu-priips-rts-kid-revision",
+      "titles": {
+       "en": "Revise the key information document without undue delay and publish the new version"
+      },
+      "summaries": {
+       "en": "Where a review shows changes are needed, the PRIIP manufacturer must revise the key information document without undue delay, update every affected section and publish the revised document on its website."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 16",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-01-01",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the key information document early enough for each retail investor to consider it",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02017R0653-20230101",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/653, consolidated text of 1 January 2023, Article 17",
+     "payload": {
+      "key": "obl-eu-priips-rts-good-time",
+      "titles": {
+       "en": "Give the key information document early enough for each retail investor to consider it"
+      },
+      "summaries": {
+       "en": "The firm advising on or selling a PRIIP must provide the key information document early enough for the retail investor to consider it before being bound, judging the time needed from the investor's knowledge and experience, the product's complexity and any urgency the investor has expressed."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 17",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-01-01",
+      "terms": [
+       "client_category:retail",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SFDR, Regulation (EU) 2019/2088",
+   "source": "https://eur-lex.europa.eu/eli/reg/2019/2088/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019r2088",
+    "titles": {
+     "en": "Regulation (EU) 2019/2088 of the European Parliament and of the Council of 27 November 2019 on sustainability‐related disclosures in the financial services sector"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SFDR",
+    "officialRef": "Regulation (EU) 2019/2088",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-12-29",
+    "eliUri": "https://data.europa.eu/eli/reg/2019/2088/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Publish on the website how sustainability risks are integrated in investment decisions and advice",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2088-20260702",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088, consolidated text of 2 July 2026, Article 3 and 12",
+     "payload": {
+      "key": "obl-eu-sfdr-sustainability-risk-policy",
+      "titles": {
+       "en": "Publish on the website how sustainability risks are integrated in investment decisions and advice"
+      },
+      "summaries": {
+       "en": "A credit institution or investment firm providing portfolio management must publish on its website its policies on integrating sustainability risks into investment decisions; one providing investment advice must publish its policies on integrating them into its advice. The information must be kept up to date, with any change explained on the same website."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 3 and 12",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-03-10",
+      "terms": [
+       "service_type:portfolio_management",
+       "service_type:advice"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish a statement on principal adverse impacts of investment decisions, or explain why they are not considered",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2088-20260702",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088, consolidated text of 2 July 2026, Article 4",
+     "payload": {
+      "key": "obl-eu-sfdr-pai-statement",
+      "titles": {
+       "en": "Publish a statement on principal adverse impacts of investment decisions, or explain why they are not considered"
+      },
+      "summaries": {
+       "en": "A firm providing portfolio management must publish and maintain on its website either a statement on its due diligence policies for the principal adverse impacts of its investment decisions on sustainability factors, or clear reasons why it does not consider them. Since 30 June 2021 the statement is mandatory for firms, or parent undertakings of large groups, with more than 500 employees on average."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4(1) to (4)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-03-10",
+      "terms": [
+       "service_type:portfolio_management"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish whether investment advice considers principal adverse impacts on sustainability factors",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2088-20260702",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088, consolidated text of 2 July 2026, Article 4(5)",
+     "payload": {
+      "key": "obl-eu-sfdr-adviser-pai",
+      "titles": {
+       "en": "Publish whether investment advice considers principal adverse impacts on sustainability factors"
+      },
+      "summaries": {
+       "en": "A firm providing investment advice must publish and maintain on its website whether it considers the principal adverse impacts on sustainability factors in its advice, or why it does not and whether and when it intends to."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4(5)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-03-10",
+      "terms": [
+       "service_type:advice"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: State in the remuneration policy how it is consistent with integrating sustainability risks, and publish it",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2088-20260702",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088, consolidated text of 2 July 2026, Article 5",
+     "payload": {
+      "key": "obl-eu-sfdr-remuneration-policy",
+      "titles": {
+       "en": "State in the remuneration policy how it is consistent with integrating sustainability risks, and publish it"
+      },
+      "summaries": {
+       "en": "Firms providing portfolio management or investment advice must include in their remuneration policies information on how those policies are consistent with the integration of sustainability risks, and publish that information on their websites."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-03-10",
+      "terms": [
+       "service_type:portfolio_management",
+       "service_type:advice"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Describe in pre-contractual information how sustainability risks are integrated and their likely impact on returns",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2088-20260702",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088, consolidated text of 2 July 2026, Article 6",
+     "payload": {
+      "key": "obl-eu-sfdr-precontractual-sustainability-risk",
+      "titles": {
+       "en": "Describe in pre-contractual information how sustainability risks are integrated and their likely impact on returns"
+      },
+      "summaries": {
+       "en": "In pre-contractual disclosures the firm must describe how sustainability risks are integrated into its investment decisions or advice and the likely impact of those risks on the returns of the products concerned, or explain clearly why it deems them not relevant."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 6(1) and (2)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-03-10",
+      "terms": [
+       "service_type:portfolio_management",
+       "service_type:advice",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Explain in pre-contractual information how a product's environmental or social characteristics or sustainable objective are met",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2088-20260702",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088, consolidated text of 2 July 2026, Article 8 and 9",
+     "payload": {
+      "key": "obl-eu-sfdr-article-8-9-precontractual",
+      "titles": {
+       "en": "Explain in pre-contractual information how a product's environmental or social characteristics or sustainable objective are met"
+      },
+      "summaries": {
+       "en": "For a product that promotes environmental or social characteristics, the pre-contractual information must explain how those characteristics are met and how any designated index is consistent with them. For a product with sustainable investment as its objective it must explain how the objective is attained and, where an index is designated, how the index is aligned with it and differs from a broad market index."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 8 and 9",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-03-10",
+      "terms": [
+       "service_type:portfolio_management",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish and keep up to date the sustainability information of each Article 8 and 9 product on the website",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2088-20260702",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088, consolidated text of 2 July 2026, Article 10 and 12",
+     "payload": {
+      "key": "obl-eu-sfdr-product-website",
+      "titles": {
+       "en": "Publish and keep up to date the sustainability information of each Article 8 and 9 product on the website"
+      },
+      "summaries": {
+       "en": "For each product that promotes environmental or social characteristics or has a sustainable investment objective, the firm must publish and maintain on its website a description of the characteristics or objective, the methodologies, data sources and screening criteria used, and the pre-contractual and periodic information, and keep it up to date."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 10 and 12",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-03-10",
+      "terms": [
+       "service_type:portfolio_management"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report in periodic reports how far a product met its environmental or social characteristics or sustainable objective",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2088-20260702",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088, consolidated text of 2 July 2026, Article 11",
+     "payload": {
+      "key": "obl-eu-sfdr-periodic-reports",
+      "titles": {
+       "en": "Report in periodic reports how far a product met its environmental or social characteristics or sustainable objective"
+      },
+      "summaries": {
+       "en": "In periodic reports for a product that promotes environmental or social characteristics, the firm must describe the extent to which they were met; for a product with a sustainable investment objective, it must report the overall sustainability-related impact through relevant indicators or against the designated index and a broad market index."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 11(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2022-01-01",
+      "terms": [
+       "service_type:portfolio_management",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep marketing communications consistent with the sustainability disclosures",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2088-20260702",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088, consolidated text of 2 July 2026, Article 13(1)",
+     "payload": {
+      "key": "obl-eu-sfdr-marketing-consistency",
+      "titles": {
+       "en": "Keep marketing communications consistent with the sustainability disclosures"
+      },
+      "summaries": {
+       "en": "Firms providing portfolio management or investment advice must make sure their marketing communications do not contradict the information they disclose under the Sustainable Finance Disclosure Regulation."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 13(1)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-03-10",
+      "terms": [
+       "service_type:portfolio_management",
+       "service_type:advice"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add SFDR RTS, Commission Delegated Regulation (EU) 2022/1288",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2022/1288/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2022/1288 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32022r1288",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2022/1288 of 6 April 2022 supplementing Regulation (EU) 2019/2088 of the European Parliament and of the Council with regard to regulatory technical standards specifying the details of the content and presentation of the information in relation to the principle of ‘do no significant harm’, specifying the content, methodologies and presentation of information in relation to sustainability indicators and adverse sustainability impacts, and the content and presentation of the information in relation to the promotion of environmental or social characteristics and sustainable investment objectives in pre-contractual documents, on websites and in periodic reports"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "SFDR RTS",
+    "officialRef": "Commission Delegated Regulation (EU) 2022/1288",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:securities",
+    "inForceFrom": "2022-08-14",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2022/1288/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Publish the principal adverse impacts statement by 30 June each year in the Annex I template",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02022R1288-20230220",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2022/1288, consolidated text of 20 February 2023, Article 4",
+     "payload": {
+      "key": "obl-eu-sfdr-rts-pai-statement-template",
+      "titles": {
+       "en": "Publish the principal adverse impacts statement by 30 June each year in the Annex I template"
+      },
+      "summaries": {
+       "en": "A firm that considers principal adverse impacts, or must do so because of its size, must publish its statement by 30 June each year in a separate website section, covering the previous calendar year and following the template in Table 1 of Annex I."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 4",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2023-01-01",
+      "terms": [
+       "service_type:portfolio_management",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Attach the Annex II or Annex III template to the pre-contractual documents of Article 8 and 9 products",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02022R1288-20230220",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2022/1288, consolidated text of 20 February 2023, Article 14 and 18",
+     "payload": {
+      "key": "obl-eu-sfdr-rts-precontractual-templates",
+      "titles": {
+       "en": "Attach the Annex II or Annex III template to the pre-contractual documents of Article 8 and 9 products"
+      },
+      "summaries": {
+       "en": "For a product that promotes environmental or social characteristics the firm must present the required pre-contractual information in the Annex II template, and for a product with a sustainable investment objective in the Annex III template, attached as an annex to the pre-contractual documents, with a prominent reference to the annex in the main body."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 14 and 18",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2023-01-01",
+      "terms": [
+       "service_type:portfolio_management",
+       "lifecycle_stage:pre_trade"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish each product's sustainability information in a separate 'Sustainability-related disclosures' website section",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02022R1288-20230220",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2022/1288, consolidated text of 20 February 2023, Article 23",
+     "payload": {
+      "key": "obl-eu-sfdr-rts-website-section",
+      "titles": {
+       "en": "Publish each product's sustainability information in a separate 'Sustainability-related disclosures' website section"
+      },
+      "summaries": {
+       "en": "For each Article 8 or 9 product the firm must publish the website information in a separate section titled 'Sustainability-related disclosures', in the same part of its website as the other product information, clearly identifying the product and prominently showing its characteristics or objective."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 23",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2023-01-01",
+      "terms": [
+       "service_type:portfolio_management"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Annex the Annex IV or Annex V template to the periodic reports of Article 8 and 9 products",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02022R1288-20230220",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2022/1288, consolidated text of 20 February 2023, Article 50 and 58",
+     "payload": {
+      "key": "obl-eu-sfdr-rts-periodic-templates",
+      "titles": {
+       "en": "Annex the Annex IV or Annex V template to the periodic reports of Article 8 and 9 products"
+      },
+      "summaries": {
+       "en": "The firm must present the periodic sustainability information for a product that promotes environmental or social characteristics in the Annex IV template, and for a product with a sustainable investment objective in the Annex V template, as an annex to the periodic report with a prominent statement in its main body."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 50 and 58",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2023-01-01",
+      "terms": [
+       "service_type:portfolio_management",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Taxonomy Regulation, Regulation (EU) 2020/852",
+   "source": "https://eur-lex.europa.eu/eli/reg/2020/852/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2020/852 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32020r0852",
+    "titles": {
+     "en": "Regulation (EU) 2020/852 of the European Parliament and of the Council of 18 June 2020 on the establishment of a framework to facilitate sustainable investment, and amending Regulation (EU) 2019/2088"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Taxonomy Regulation",
+    "officialRef": "Regulation (EU) 2020/852",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2020-07-12",
+    "eliUri": "https://data.europa.eu/eli/reg/2020/852/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Disclose the environmental objectives and taxonomy-aligned share of products with a sustainable investment objective",
+     "source": "https://eur-lex.europa.eu/eli/reg/2020/852/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2020/852, Article 5",
+     "payload": {
+      "key": "obl-eu-taxonomy-sustainable-objective-products",
+      "titles": {
+       "en": "Disclose the environmental objectives and taxonomy-aligned share of products with a sustainable investment objective"
+      },
+      "summaries": {
+       "en": "For a product with sustainable investment as its objective that invests in activities contributing to an environmental objective, the pre-contractual and periodic disclosures must name the environmental objectives concerned and describe how and to what extent the investments are in taxonomy-aligned activities, stating that proportion, including enabling and transitional activities, as a percentage of all investments."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 5",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2022-01-01",
+      "terms": [
+       "service_type:portfolio_management"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the taxonomy disclosure and the prescribed 'do no significant harm' statement for products promoting environmental characteristics",
+     "source": "https://eur-lex.europa.eu/eli/reg/2020/852/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2020/852, Article 6",
+     "payload": {
+      "key": "obl-eu-taxonomy-environmental-characteristics-products",
+      "titles": {
+       "en": "Give the taxonomy disclosure and the prescribed 'do no significant harm' statement for products promoting environmental characteristics"
+      },
+      "summaries": {
+       "en": "For a product that promotes environmental characteristics, the same taxonomy disclosure applies, and the pre-contractual and periodic disclosures must carry the statement the regulation prescribes that the do no significant harm principle applies only to the investments that take the EU taxonomy criteria into account."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 6",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2022-01-01",
+      "terms": [
+       "service_type:portfolio_management"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: State for other financial products that their investments do not take the EU taxonomy criteria into account",
+     "source": "https://eur-lex.europa.eu/eli/reg/2020/852/oj",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2020/852, Article 7",
+     "payload": {
+      "key": "obl-eu-taxonomy-other-products-statement",
+      "titles": {
+       "en": "State for other financial products that their investments do not take the EU taxonomy criteria into account"
+      },
+      "summaries": {
+       "en": "For a financial product that neither promotes environmental or social characteristics nor has a sustainable investment objective, the pre-contractual and periodic disclosures must carry the prescribed statement that its underlying investments do not take into account the EU criteria for environmentally sustainable economic activities."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 7",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2022-01-01",
+      "terms": [
+       "service_type:portfolio_management"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add IFR, Regulation (EU) 2019/2033",
+   "source": "https://eur-lex.europa.eu/eli/reg/2019/2033/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2033 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019r2033",
+    "titles": {
+     "en": "Regulation (EU) 2019/2033 of the European Parliament and of the Council of 27 November 2019 on the prudential requirements of investment firms and amending Regulations (EU) No 1093/2010, (EU) No 575/2013, (EU) No 600/2014 and (EU) No 806/2014"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "IFR",
+    "officialRef": "Regulation (EU) 2019/2033",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-12-25",
+    "eliUri": "https://data.europa.eu/eli/reg/2019/2033/oj"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Hold own funds at least equal to the highest of the fixed overheads, permanent minimum capital and K-factor requirements",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2033-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2033, consolidated text of 9 January 2024, Article 11",
+     "payload": {
+      "key": "obl-eu-ifr-own-funds-requirement",
+      "titles": {
+       "en": "Hold own funds at least equal to the highest of the fixed overheads, permanent minimum capital and K-factor requirements"
+      },
+      "summaries": {
+       "en": "An investment firm must at all times hold own funds of at least the highest of its fixed overheads requirement, its permanent minimum capital requirement and its K-factor requirement; a small and non-interconnected firm uses only the first two. It must notify the competent authority as soon as it knows it no longer meets, or will no longer meet, the requirement."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 11",
+      "dutyType": "governance",
+      "effectiveFrom": "2021-06-26",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Hold liquid assets of at least one third of the fixed overheads requirement",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2033-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2033, consolidated text of 9 January 2024, Article 43(1)",
+     "payload": {
+      "key": "obl-eu-ifr-liquidity-requirement",
+      "titles": {
+       "en": "Hold liquid assets of at least one third of the fixed overheads requirement"
+      },
+      "summaries": {
+       "en": "An investment firm must hold liquid assets of the eligible kinds equal to at least one third of its fixed overheads requirement, unless its competent authority has exempted it as a small and non-interconnected firm."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 43(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2021-06-26",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Monitor and control concentration risk with sound procedures and internal controls",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2033-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2033, consolidated text of 9 January 2024, Article 35(1)",
+     "payload": {
+      "key": "obl-eu-ifr-concentration-risk",
+      "titles": {
+       "en": "Monitor and control concentration risk with sound procedures and internal controls"
+      },
+      "summaries": {
+       "en": "An investment firm must monitor and control its concentration risk by means of sound administrative and accounting procedures and robust internal control mechanisms."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 35(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2021-06-26",
+      "terms": [
+       "legal_entity:investment_firm"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report own funds, requirements, activity level, concentration risk and liquidity to the competent authority quarterly",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2033-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2033, consolidated text of 9 January 2024, Article 54(1)",
+     "payload": {
+      "key": "obl-eu-ifr-supervisory-reporting",
+      "titles": {
+       "en": "Report own funds, requirements, activity level, concentration risk and liquidity to the competent authority quarterly"
+      },
+      "summaries": {
+       "en": "An investment firm must report each quarter to its competent authority the level and composition of its own funds, its own funds requirements and their calculation, its level of activity against the small and non-interconnected thresholds, its concentration risk and its liquidity requirements; a small and non-interconnected firm reports once a year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 54(1)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2021-06-26",
+      "terms": [
+       "legal_entity:investment_firm",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish the prudential disclosures on the same date as the annual financial statements",
+     "source": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02019R2033-20240109",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2033, consolidated text of 9 January 2024, Article 46",
+     "payload": {
+      "key": "obl-eu-ifr-public-disclosure",
+      "titles": {
+       "en": "Publish the prudential disclosures on the same date as the annual financial statements"
+      },
+      "summaries": {
+       "en": "An investment firm that is not small and non-interconnected must publicly disclose the prudential information the regulation lists on the same date as it publishes its annual financial statements; a small and non-interconnected firm that issues Additional Tier 1 instruments discloses a narrower set."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Art. 46",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2021-06-26",
+      "terms": [
+       "legal_entity:investment_firm",
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add IFD, Directive (EU) 2019/2034",
+   "source": "https://eur-lex.europa.eu/eli/dir/2019/2034/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2019/2034 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32019l2034",
+    "titles": {
+     "en": "Directive (EU) 2019/2034 of the European Parliament and of the Council of 27 November 2019 on the prudential supervision of investment firms and amending Directives 2002/87/EC, 2009/65/EC, 2011/61/EU, 2013/36/EU, 2014/59/EU and 2014/65/EU"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "IFD",
+    "officialRef": "Directive (EU) 2019/2034",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-12-25",
+    "eliUri": "https://data.europa.eu/eli/dir/2019/2034/oj"
+   }
+  },
+  {
+   "title": "Add ESMA suitability guidelines, ESMA35-43-3172",
+   "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+   "sourceLabel": "ESMA website, ESMA35-43-3172, Guidelines on certain aspects of the MiFID II suitability requirements",
+   "payload": {
+    "key": "esma-35-43-3172",
+    "titles": {
+     "en": "Guidelines on certain aspects of the MiFID II suitability requirements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ESMA suitability guidelines",
+    "officialRef": "ESMA35-43-3172",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "esma",
+    "regime": "regime:securities",
+    "inForceFrom": "2023-10-03"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Explain to clients simply what the suitability assessment is for and that the firm is responsible for it",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3172 Guidelines on certain aspects of the MiFID II suitability requirements, general guideline 1",
+     "payload": {
+      "key": "obl-eu-esma-suitability-gl-explain-purpose",
+      "titles": {
+       "en": "Explain to clients simply what the suitability assessment is for and that the firm is responsible for it"
+      },
+      "summaries": {
+       "en": "Firms should tell clients clearly and simply that the suitability assessment exists to let the firm act in their best interest, that conducting it is the firm's responsibility, and why complete, accurate and up-to-date information matters."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 1, para. 11",
+      "dutyType": "disclosure",
+      "terms": [
+       "service_type:advice",
+       "service_type:portfolio_management",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Collect all necessary client information, including sustainability preferences, and check its reliability",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3172 Guidelines on certain aspects of the MiFID II suitability requirements, general guidelines 2 to 4",
+     "payload": {
+      "key": "obl-eu-esma-suitability-gl-reliable-client-information",
+      "titles": {
+       "en": "Collect all necessary client information, including sustainability preferences, and check its reliability"
+      },
+      "summaries": {
+       "en": "Firms should have policies, procedures and tools to collect, before advising or managing a portfolio, all the information needed on the client's knowledge and experience, financial situation and objectives, including each element of their sustainability preferences. They should take reasonable steps to make sure it is reliable and consistent without relying unduly on the client's self-assessment."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guidelines 2 to 4, paras. 19, 26, 33 and 44",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:advice",
+       "service_type:portfolio_management",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Define which client information is updated, how often and what happens when it changes",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3172 Guidelines on certain aspects of the MiFID II suitability requirements, general guideline 5",
+     "payload": {
+      "key": "obl-eu-esma-suitability-gl-update-information",
+      "titles": {
+       "en": "Define which client information is updated, how often and what happens when it changes"
+      },
+      "summaries": {
+       "en": "In an ongoing relationship such as ongoing advice or portfolio management, firms should have procedures setting which client information is updated and how often, how the update is done, and what the firm does when new information arrives or the client does not provide what is asked."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 5, para. 53",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:advice",
+       "service_type:portfolio_management",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Match clients with products on all relevant information and weigh cheaper or simpler equivalent products",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3172 Guidelines on certain aspects of the MiFID II suitability requirements, general guidelines 8 and 9",
+     "payload": {
+      "key": "obl-eu-esma-suitability-gl-matching-alternatives",
+      "titles": {
+       "en": "Match clients with products on all relevant information and weigh cheaper or simpler equivalent products"
+      },
+      "summaries": {
+       "en": "Firms should have policies to match clients with suitable investments taking account of all client information, including the existing portfolio, and all material product features, risks and costs. Before choosing what to recommend or invest in, they should assess equivalent alternatives, taking account of cost and complexity."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guidelines 8 and 9, paras. 76 and 91",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:advice",
+       "service_type:portfolio_management"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Keep orderly records of the whole suitability process and the reports given",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3172 Guidelines on certain aspects of the MiFID II suitability requirements, general guideline 12",
+     "payload": {
+      "key": "obl-eu-esma-suitability-gl-records",
+      "titles": {
+       "en": "Keep orderly records of the whole suitability process and the reports given"
+      },
+      "summaries": {
+       "en": "Firms should keep orderly and transparent records of the suitability assessment, including the information collected, the advice given, investments and disinvestments made and the suitability reports provided, designed so that failures such as mis-selling can be detected."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 12, para. 109",
+      "dutyType": "record_keeping",
+      "terms": [
+       "service_type:advice",
+       "service_type:portfolio_management"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ESMA product governance guidelines, ESMA35-43-3448",
+   "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+   "sourceLabel": "ESMA website, ESMA35-43-3448, Guidelines on MiFID II product governance requirements",
+   "payload": {
+    "key": "esma-35-43-3448",
+    "titles": {
+     "en": "Guidelines on MiFID II product governance requirements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ESMA product governance guidelines",
+    "officialRef": "ESMA35-43-3448",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "esma",
+    "regime": "regime:securities",
+    "inForceFrom": "2023-10-03"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: As manufacturer, define each product's potential target market on the five categories, including sustainability-related objectives",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3448 Guidelines on MiFID II product governance requirements, paragraphs 14 to 20",
+     "payload": {
+      "key": "obl-eu-esma-pg-gl-manufacturer-target-market",
+      "titles": {
+       "en": "As manufacturer, define each product's potential target market on the five categories, including sustainability-related objectives"
+      },
+      "summaries": {
+       "en": "Firms that manufacture financial instruments or structured deposits should identify the potential target market of every product using the five cumulative categories of the guidelines: client type, knowledge and experience, financial situation with a focus on bearing losses, risk tolerance and compatibility of the risk-reward profile, and objectives and needs, including any sustainability-related objectives. Quantitative criteria should be balanced with qualitative ones and the results of the scenario and charging structure analyses."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Paras. 14 to 20",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: As distributor, identify the actual target market before deciding to offer a product",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3448 Guidelines on MiFID II product governance requirements, paragraphs 34 and 35",
+     "payload": {
+      "key": "obl-eu-esma-pg-gl-distributor-target-market",
+      "titles": {
+       "en": "As distributor, identify the actual target market before deciding to offer a product"
+      },
+      "summaries": {
+       "en": "Firms that distribute products should identify the actual target market at an early, ex-ante stage, as part of deciding which products and services to offer, based on their knowledge of their own client base, and keep their range of products, services and distribution strategies consistent with the needs of the target clients."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Paras. 34 and 35",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Report every sale into the negative target market to the manufacturer and disclose it to the client",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3448 Guidelines on MiFID II product governance requirements, paragraphs 65 and 66",
+     "payload": {
+      "key": "obl-eu-esma-pg-gl-negative-target-market-sales",
+      "titles": {
+       "en": "Report every sale into the negative target market to the manufacturer and disclose it to the client"
+      },
+      "summaries": {
+       "en": "Sales into the negative target market should always be reported to the manufacturer and disclosed to the client, even when made for diversification or hedging, and should be rare. Sales outside the positive target market need not be reported when they are for diversification or hedging and remain suitable for the client's whole portfolio."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Paras. 65 and 66",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Review products regularly against the target market and share sales information with manufacturers",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3448 Guidelines on MiFID II product governance requirements, paragraphs 67 to 73",
+     "payload": {
+      "key": "obl-eu-esma-pg-gl-product-review",
+      "titles": {
+       "en": "Review products regularly against the target market and share sales information with manufacturers"
+      },
+      "summaries": {
+       "en": "Manufacturers and distributors should review their products regularly, using quantitative and qualitative criteria, to check they still meet the needs, characteristics and objectives of the target market, including sustainability-related objectives, and that the distribution strategy remains appropriate. Distributors should give manufacturers sales information and other relevant outcomes to support the manufacturer's review, and review products as long as they offer, sell or recommend them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Paras. 67 to 70 and 73",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ESMA appropriateness and execution-only guidelines, ESMA35-43-3006",
+   "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+   "sourceLabel": "ESMA website, ESMA35-43-3006, Guidelines on certain aspects of the MiFID II appropriateness and execution-only requirements",
+   "payload": {
+    "key": "esma-35-43-3006",
+    "titles": {
+     "en": "Guidelines on certain aspects of the MiFID II appropriateness and execution-only requirements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ESMA appropriateness and execution-only guidelines",
+    "officialRef": "ESMA35-43-3006",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "esma",
+    "regime": "regime:securities",
+    "inForceFrom": "2022-10-12"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Tell clients in good time what the appropriateness assessment is for, before non-advised services",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3006 Guidelines on certain aspects of the MiFID II appropriateness and execution-only requirements, guideline 1",
+     "payload": {
+      "key": "obl-eu-esma-appropriateness-gl-explain-purpose",
+      "titles": {
+       "en": "Tell clients in good time what the appropriateness assessment is for, before non-advised services"
+      },
+      "summaries": {
+       "en": "In good time before providing non-advised services, firms should explain in clear, simple language that the appropriateness assessment exists to let the firm act in the client's best interest and that carrying it out is the firm's responsibility."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 1, paras. 12 and 13",
+      "dutyType": "disclosure",
+      "terms": [
+       "service_type:non_advised",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Check that client knowledge and experience information is reliable, not just self-assessed",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3006 Guidelines on certain aspects of the MiFID II appropriateness and execution-only requirements, guideline 4",
+     "payload": {
+      "key": "obl-eu-esma-appropriateness-gl-reliable-information",
+      "titles": {
+       "en": "Check that client knowledge and experience information is reliable, not just self-assessed"
+      },
+      "summaries": {
+       "en": "Firms should take reasonable steps and use appropriate tools to make sure the knowledge and experience information clients give is reliable and consistent, without relying unduly on self-assessment; information that is not reliable counts as insufficient for the assessment."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 4, paras. 38 and 39",
+      "dutyType": "conduct",
+      "terms": [
+       "service_type:non_advised"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell apart the situations needing an appropriateness test from those needing a suitability test",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3006 Guidelines on certain aspects of the MiFID II appropriateness and execution-only requirements, guideline 12",
+     "payload": {
+      "key": "obl-eu-esma-appropriateness-gl-right-test",
+      "titles": {
+       "en": "Tell apart the situations needing an appropriateness test from those needing a suitability test"
+      },
+      "summaries": {
+       "en": "Firms should have arrangements to determine when an appropriateness assessment is needed and to avoid carrying one out where the interaction amounts to advice requiring a suitability assessment, with procedures and controls that guide and record how sales staff interact with clients."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 12, paras. 85 and 86",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:non_advised"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Monitor compliance with the appropriateness rules and check that automated tools are fit for purpose",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3006 Guidelines on certain aspects of the MiFID II appropriateness and execution-only requirements, guideline 13",
+     "payload": {
+      "key": "obl-eu-esma-appropriateness-gl-controls",
+      "titles": {
+       "en": "Monitor compliance with the appropriateness rules and check that automated tools are fit for purpose"
+      },
+      "summaries": {
+       "en": "Firms should have monitoring arrangements and controls for the appropriateness requirements, and where they rely on automated profiling tools, warnings or complexity controls, make sure these are fit for purpose and monitored periodically."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 13, paras. 91 and 92",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:non_advised"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ESMA compliance function guidelines, ESMA35-36-1952",
+   "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+   "sourceLabel": "ESMA website, ESMA35-36-1952, Guidelines on certain aspects of the MiFID II compliance function requirements",
+   "payload": {
+    "key": "esma-35-36-1952",
+    "titles": {
+     "en": "Guidelines on certain aspects of the MiFID II compliance function requirements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ESMA compliance function guidelines",
+    "officialRef": "ESMA35-36-1952",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "esma",
+    "regime": "regime:securities",
+    "inForceFrom": "2021-06-06"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Base the compliance function's work on a compliance risk assessment and a risk-based monitoring programme",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-36-1952 Guidelines on certain aspects of the MiFID II compliance function requirements, guidelines 1 and 2",
+     "payload": {
+      "key": "obl-eu-esma-compliance-gl-risk-based-monitoring",
+      "titles": {
+       "en": "Base the compliance function's work on a compliance risk assessment and a risk-based monitoring programme"
+      },
+      "summaries": {
+       "en": "The compliance function should carry out a compliance risk assessment and use it to set a risk-based monitoring programme and work plan, allocating its resources to the areas of highest risk. Monitoring should test whether the business complies with MiFID II and whether internal policies and controls remain effective; each group firm stays responsible for its own compliance risk."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guidelines 1 and 2, paras. 14, 15, 19 and 20",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Cover all business units providing investment services in the written compliance reports to management",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-36-1952 Guidelines on certain aspects of the MiFID II compliance function requirements, guideline 3",
+     "payload": {
+      "key": "obl-eu-esma-compliance-gl-management-reports",
+      "titles": {
+       "en": "Cover all business units providing investment services in the written compliance reports to management"
+      },
+      "summaries": {
+       "en": "The mandatory compliance reports to the management body should cover every business unit involved in investment services and activities, and state the reasons where any is left out, so that they secure the management's attention to compliance risk."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 3, paras. 27 and 28",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Give the compliance function enough resources, skilled staff, authority and independence",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-36-1952 Guidelines on certain aspects of the MiFID II compliance function requirements, guidelines 5, 6 and 8",
+     "payload": {
+      "key": "obl-eu-esma-compliance-gl-resources-independence",
+      "titles": {
+       "en": "Give the compliance function enough resources, skilled staff, authority and independence"
+      },
+      "summaries": {
+       "en": "Firms should give the compliance function human and other resources matching the scale and types of their investment services, staff it with people who have the skills, knowledge, expertise and integrity required, and place it in the organisation so that the compliance officer and staff act independently of senior management and business units."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guidelines 5, 6 and 8, paras. 43, 49 and 59",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ESMA remuneration guidelines, ESMA35-43-3565",
+   "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+   "sourceLabel": "ESMA website, ESMA35-43-3565, Guidelines on certain aspects of the MiFID II remuneration requirements",
+   "payload": {
+    "key": "esma-35-43-3565",
+    "titles": {
+     "en": "Guidelines on certain aspects of the MiFID II remuneration requirements"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ESMA remuneration guidelines",
+    "officialRef": "ESMA35-43-3565",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "esma",
+    "regime": "regime:securities",
+    "inForceFrom": "2023-10-03"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Design remuneration with criteria, including qualitative ones, that align staff interests with clients'",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3565 Guidelines on certain aspects of the MiFID II remuneration requirements, guideline 1",
+     "payload": {
+      "key": "obl-eu-esma-remuneration-gl-client-aligned-criteria",
+      "titles": {
+       "en": "Design remuneration with criteria, including qualitative ones, that align staff interests with clients'"
+      },
+      "summaries": {
+       "en": "When designing remuneration policies and practices, especially variable pay, firms should set criteria that align the interests of relevant persons and the firm with those of clients, including qualitative criteria that encourage staff to act in the client's best interest."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 1, paras. 16 and 17",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Review the remuneration policy on significant business changes and document its approval",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3565 Guidelines on certain aspects of the MiFID II remuneration requirements, guideline 2",
+     "payload": {
+      "key": "obl-eu-esma-remuneration-gl-policy-review",
+      "titles": {
+       "en": "Review the remuneration policy on significant business changes and document its approval"
+      },
+      "summaries": {
+       "en": "Besides the periodic review, firms should review their written remuneration policy whenever their business or structure changes significantly, amend it promptly where it does not work as intended or leaves a risk of client detriment, and keep clear documentation of the policy and of how it was approved or amended."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 2, paras. 41 and 42",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Control whether remuneration practices deliver the intended outcomes, including by checking service quality",
+     "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+     "sourceLabel": "ESMA website, ESMA35-43-3565 Guidelines on certain aspects of the MiFID II remuneration requirements, guideline 3",
+     "payload": {
+      "key": "obl-eu-esma-remuneration-gl-outcome-controls",
+      "titles": {
+       "en": "Control whether remuneration practices deliver the intended outcomes, including by checking service quality"
+      },
+      "summaries": {
+       "en": "Firms should set up periodically reviewed controls throughout the firm to assess compliance with their remuneration policies and whether they deliver the intended outcomes, including checks on the quality of service to clients such as monitoring sales calls and sampling advice and client portfolios."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Guideline 3, paras. 48 and 49",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add ESMA knowledge and competence guidelines, ESMA71-1154262120-153",
+   "source": "https://www.esma.europa.eu/sites/default/files/library/esma71-1154262120-153_guidelines_for_the_assessment_of_knowledge_and_competence_corrigendum.pdf",
+   "sourceLabel": "ESMA website, ESMA71-1154262120-153, Guidelines for the assessment of knowledge and competence",
+   "payload": {
+    "key": "esma-71-1154262120-153",
+    "titles": {
+     "en": "Guidelines for the assessment of knowledge and competence"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ESMA knowledge and competence guidelines",
+    "officialRef": "ESMA71-1154262120-153",
+    "level": "eu_guidance",
+    "jurisdiction": "eu",
+    "authority": "esma",
+    "regime": "regime:securities",
+    "inForceFrom": "2018-01-03"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make sure staff giving investment information or advice have the knowledge and competence the guidelines list",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/esma71-1154262120-153_guidelines_for_the_assessment_of_knowledge_and_competence_corrigendum.pdf",
+     "sourceLabel": "ESMA website, ESMA71-1154262120-153 Guidelines for the assessment of knowledge and competence, paragraphs 13, 17 and 18",
+     "payload": {
+      "key": "obl-eu-esma-kc-gl-staff-knowledge",
+      "titles": {
+       "en": "Make sure staff giving investment information or advice have the knowledge and competence the guidelines list"
+      },
+      "summaries": {
+       "en": "Firms should make sure that staff giving information about investment products and services, and to a higher standard staff giving investment advice, understand the products' features, risks and costs, how markets work, market abuse and anti-money laundering issues and, for advisers, the suitability requirements and portfolio management fundamentals."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Paras. 13, 17 and 18",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Require an appropriate qualification and experience, and review staff competence at least annually",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/esma71-1154262120-153_guidelines_for_the_assessment_of_knowledge_and_competence_corrigendum.pdf",
+     "sourceLabel": "ESMA website, ESMA71-1154262120-153 Guidelines for the assessment of knowledge and competence, paragraph 20",
+     "payload": {
+      "key": "obl-eu-esma-kc-gl-qualification-review",
+      "titles": {
+       "en": "Require an appropriate qualification and experience, and review staff competence at least annually"
+      },
+      "summaries": {
+       "en": "Firms should assess staff providing relevant services through an appropriate qualification and appropriate experience, review at least annually their development needs and regulatory changes, make sure they keep their knowledge up to date through continuous professional development, and give the competent authority records of staff competence on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Para. 20(a) to (c)",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Let staff without the required qualification or experience serve clients only under a competent supervisor, for at most four years",
+     "source": "https://www.esma.europa.eu/sites/default/files/library/esma71-1154262120-153_guidelines_for_the_assessment_of_knowledge_and_competence_corrigendum.pdf",
+     "sourceLabel": "ESMA website, ESMA71-1154262120-153 Guidelines for the assessment of knowledge and competence, paragraph 20",
+     "payload": {
+      "key": "obl-eu-esma-kc-gl-supervised-staff",
+      "titles": {
+       "en": "Let staff without the required qualification or experience serve clients only under a competent supervisor, for at most four years"
+      },
+      "summaries": {
+       "en": "Staff who have not yet acquired the necessary knowledge and competence may provide relevant services only under supervision by a competent supervisor who takes responsibility for the service, including signing off suitability reports, and for no more than four years or a shorter period set by the competent authority."
+      },
+      "originalLanguage": "en",
+      "refLabel": "Para. 20(d) to (h)",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  }
+ ]
+}

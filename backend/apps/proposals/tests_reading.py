@@ -45,6 +45,8 @@ from apps.library.models import (
 )
 from apps.agents import testing as agents_testing
 from apps.agents.models import AgentRun
+from apps.library import testing as library_build
+from apps.library.reading import shared_instrument_short_name
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalStatus
@@ -479,6 +481,40 @@ class QueueReads(ScenarioTestCase):
         self.assertEqual((body["diff"], body["sources"], body["scopeBefore"]), ([], [], []))
         self.assertIsNone(body["currentSummary"])
         self.assertIsNone(body["scopeAfter"], "a vocabulary proposal leaves no record's scope alone or otherwise")
+        self.assertEqual(body["instrumentShortName"], "", "only a new obligation names an instrument")
+
+    def test_the_detail_of_a_new_obligation_names_its_instrument_as_the_library_holds_it(self) -> None:
+        """The console reads no library record of its own (no platform role holds
+        `library.read`), so the detail names the shared instrument a new duty would sit
+        under, by the short name the library holds today (D-118: the baseline's duties)."""
+        tenancy.clear_tenant()
+        payload = {
+            "key": "obl-annual-review",
+            "instrument": self.instrument.stable_key,
+            "titles": {"en": "Review the criteria every year"},
+            "summaries": {"en": "The firm reviews its suitability criteria at least once a year."},
+            "originalLanguage": "en",
+            "refLabel": "9 kap. 6 §",
+            "dutyType": "conduct",
+        }
+        proposal, _ = logic.create(
+            kind="new_obligation",
+            title="Add the duty: review the criteria every year",
+            payload=payload,
+            proposer=self._editor_proposer(self.second_editor),
+            field_sources={field: SOURCE for field in ("instrument", "titles.en", "summaries.en", "refLabel", "dutyType")},
+            source_label="Finansinspektionen, FFFS 2017:2",
+            source_url=SOURCE,
+        )
+        body = self.client.get(f"{V1}/proposals/{proposal.id}", **sign_in(self.editor)).json()
+        self.assertEqual(body["instrumentShortName"], "FFFS 2017:2")
+        self.assertEqual(body["payload"]["instrument"], "fffs-2017-2")
+        # Neither a key the shared library does not hold nor a bank's own record answers.
+        tenancy.activate(self.tenant.id)
+        library_build.instrument(key="bank-own-act", regime="regime:securities", owner_tenant=self.tenant)
+        tenancy.clear_tenant()
+        self.assertEqual(shared_instrument_short_name("bank-own-act"), "")
+        self.assertEqual(shared_instrument_short_name("fffs-2099-1"), "")
 
     def test_the_detail_shows_the_correction_and_then_the_version_it_wrote(self) -> None:
         """Pinned to explicit versions, not to today: the approved proposal is read against

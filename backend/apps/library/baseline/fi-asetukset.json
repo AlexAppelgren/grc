@@ -1,0 +1,1440 @@
+{
+ "tranche": "fi-asetukset",
+ "researchedOn": "2026-10-01",
+ "instruments": [
+  {
+   "title": "Add VNa asiakkaan tuntemisesta ja riskitekijöistä, 929/2021",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2021/929",
+   "sourceLabel": "Finlex, Valtioneuvoston asetus menettelyistä asiakkaan tuntemiseksi ja riskitekijöistä rahanpesun ja terrorismin rahoittamisen estämisessä (929/2021), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2021-929",
+    "titles": {
+     "fi": "Valtioneuvoston asetus menettelyistä asiakkaan tuntemiseksi ja riskitekijöistä rahanpesun ja terrorismin rahoittamisen estämisessä",
+     "en": "Government Decree on Customer Due Diligence Procedures and Risk Factors in Preventing Money Laundering and Terrorist Financing"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VNa asiakkaan tuntemisesta ja riskitekijöistä",
+    "officialRef": "929/2021",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtioneuvosto",
+    "regime": "regime:aml",
+    "inForceFrom": "2022-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep simplified due diligence adequate to the risk and able to catch unusual transactions",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2021/929#sec_1",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus menettelyistä asiakkaan tuntemiseksi ja riskitekijöistä rahanpesun ja terrorismin rahoittamisen estämisessä (929/2021), 1 §",
+     "payload": {
+      "key": "obl-fi-cdd-decree-simplified-adequacy",
+      "titles": {
+       "en": "Keep simplified due diligence adequate to the risk and able to catch unusual transactions"
+      },
+      "summaries": {
+       "en": "When it applies simplified customer due diligence, an obliged entity may adapt the timing, frequency, amount and sources of its due diligence measures, but it must make sure they remain adequate to the risks of the service, product, delivery channel, technology, area or relationship and still detect exceptional or unusual transactions. If it uses a threshold that triggers due diligence or monitoring, its process must detect when the threshold is crossed and the threshold must be low enough for the risk."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Step up due diligence measures whenever enhanced due diligence applies",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2021/929#sec_2",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus menettelyistä asiakkaan tuntemiseksi ja riskitekijöistä rahanpesun ja terrorismin rahoittamisen estämisessä (929/2021), 2 §",
+     "payload": {
+      "key": "obl-fi-cdd-decree-enhanced-measures",
+      "titles": {
+       "en": "Step up due diligence measures whenever enhanced due diligence applies"
+      },
+      "summaries": {
+       "en": "When enhanced customer due diligence is required, an obliged entity must intensify its due diligence in timing, frequency, depth and sources: update customer information more often, obtain senior management approval to start or continue the relationship where needed, monitor the relationship more frequently, and verify the information the customer gives from one or more sources it judges reliable. Where needed it must also obtain information on the origin and destination of the funds and on the business of the beneficial owner."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 §",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess money laundering risks before launching a higher-risk product, service or delivery channel",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2021/929#sec_6",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus menettelyistä asiakkaan tuntemiseksi ja riskitekijöistä rahanpesun ja terrorismin rahoittamisen estämisessä (929/2021), 6 §",
+     "payload": {
+      "key": "obl-fi-cdd-decree-new-product-risk",
+      "titles": {
+       "en": "Assess money laundering risks before launching a higher-risk product, service or delivery channel"
+      },
+      "summaries": {
+       "en": "Products, services and delivery channels that make it harder to identify the customer or beneficial owner carry a higher risk, for example private banking, business without personal presence that does not use electronic identification under the eIDAS Regulation or equivalent safeguards, payments from unknown or unrelated third parties, and new products or new technology. The obliged entity must assess these risks before introducing such a product, service or channel and take the measures needed to manage them."
+      },
+      "originalLanguage": "en",
+      "refLabel": "6 §",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Weigh the decree's customer and geographic risk factors when choosing simplified or enhanced due diligence",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2021/929#sec_7",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus menettelyistä asiakkaan tuntemiseksi ja riskitekijöistä rahanpesun ja terrorismin rahoittamisen estämisessä (929/2021), 7–8 §, 10–11 §",
+     "payload": {
+      "key": "obl-fi-cdd-decree-risk-factors",
+      "titles": {
+       "en": "Weigh the decree's customer and geographic risk factors when choosing simplified or enhanced due diligence"
+      },
+      "summaries": {
+       "en": "The decree lists the customer and geographic factors that can point to lower risk, such as listed companies, public bodies and locations in the EU or in countries with effective anti-money laundering systems, and to higher risk, such as unusual circumstances, residence in a high-risk country, vehicles for personal assets, nominee shareholders or bearer shares, cash-intensive business, unusually complex ownership, and countries under EU or UN sanctions or supporting terrorism. These are the factors the obliged entity weighs in the risk assessment that decides whether it may simplify or must enhance customer due diligence."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7–8 §, 10–11 §",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VNa merkittävistä julkisista tehtävistä, 610/2019",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2019/610",
+   "sourceLabel": "Finlex, Valtioneuvoston asetus rahanpesun ja terrorismin rahoittamisen estämisestä annetussa laissa tarkoitetuista merkittävistä julkisista tehtävistä (610/2019), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2019-610",
+    "titles": {
+     "fi": "Valtioneuvoston asetus rahanpesun ja terrorismin rahoittamisen estämisestä annetussa laissa tarkoitetuista merkittävistä julkisista tehtävistä",
+     "en": "Government Decree on Prominent Public Functions Referred to in the Act on Preventing Money Laundering and Terrorist Financing"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VNa merkittävistä julkisista tehtävistä",
+    "officialRef": "610/2019",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtioneuvosto",
+    "regime": "regime:aml",
+    "inForceFrom": "2019-05-15",
+    "implementsNote": "AMLD5, Directive (EU) 2018/843"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Treat holders of the listed Finnish prominent public functions as politically exposed persons",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2019/610#sec_2",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus rahanpesun ja terrorismin rahoittamisen estämisestä annetussa laissa tarkoitetuista merkittävistä julkisista tehtävistä (610/2019), 2–11 a §",
+     "payload": {
+      "key": "obl-fi-pep-decree-domestic-functions",
+      "titles": {
+       "en": "Treat holders of the listed Finnish prominent public functions as politically exposed persons"
+      },
+      "summaries": {
+       "en": "The decree lists the domestic functions whose holders are politically exposed persons under the AML Act, among them the President, the Prime Minister, ministers and state secretaries, members of Parliament, chairs and members of party boards, justices of the supreme courts, the Auditor General, Bank of Finland board members, heads of diplomatic missions, generals and admirals, board members, managing directors and supervisory board members of wholly or majority state-owned companies and state enterprises, and the heads and board members of international organisations' offices in Finland. An obliged entity uses this list to identify domestic politically exposed persons."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2–11 a §",
+      "dutyType": "conduct",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus luottolaitoksen tilinpäätöksestä, 76/2018",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2018/76",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen tilinpäätöksestä, konsernitilinpäätöksestä ja toimintakertomuksesta (76/2018), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2018-76",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen tilinpäätöksestä, konsernitilinpäätöksestä ja toimintakertomuksesta",
+     "en": "Ministry of Finance Decree on the Financial Statements, Consolidated Financial Statements and Report of the Board of Directors of Credit Institutions and Investment Firms"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus luottolaitoksen tilinpäätöksestä",
+    "officialRef": "76/2018",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:banking",
+    "inForceFrom": "2018-01-24"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Draw up the income statement and balance sheet on the formats the decree prescribes",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/76#chp_2__sec_4",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen tilinpäätöksestä, konsernitilinpäätöksestä ja toimintakertomuksesta (76/2018), 4–10 §, 28–29 §, 36 §",
+     "payload": {
+      "key": "obl-fi-ci-accounts-decree-formats",
+      "titles": {
+       "en": "Draw up the income statement and balance sheet on the formats the decree prescribes"
+      },
+      "summaries": {
+       "en": "A credit institution, an investment firm and a financial institution in their consolidation group must draw up the income statement and balance sheet, and the consolidated ones, on the formats in the decree's annexes, keep the presentation consistent between years, and show items in more detail, combine them or depart from the formats only where that is needed for a true and fair view. Financial statements prepared under IFRS are bound only by the sections listed in 36 §."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4–10 §, 28–29 §, 36 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Include the cash flow statement and notes the decree requires in the financial statements",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/76#chp_4__sec_14",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen tilinpäätöksestä, konsernitilinpäätöksestä ja toimintakertomuksesta (76/2018), 13–27 §, 31–34 §",
+     "payload": {
+      "key": "obl-fi-ci-accounts-decree-notes",
+      "titles": {
+       "en": "Include the cash flow statement and notes the decree requires in the financial statements"
+      },
+      "summaries": {
+       "en": "The financial statements must include a cash flow statement and the notes the decree lists, among them the accounting and valuation principles, breakdowns of interest and fee income and expenses, expected credit loss allowances, issued debt securities, fair values, collateral given and off-balance sheet commitments, related party transactions not on normal commercial terms, pay of the managing director and board members, auditor fees by type of engagement, holdings in other undertakings and client assets held in the firm's own name. Group accounts carry the corresponding group notes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "13–27 §, 31–34 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Cover the required matters in the report of the board of directors",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/76#chp_3__sec_11",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen tilinpäätöksestä, konsernitilinpäätöksestä ja toimintakertomuksesta (76/2018), 11–12 §",
+     "payload": {
+      "key": "obl-fi-ci-accounts-decree-board-report",
+      "titles": {
+       "en": "Cover the required matters in the report of the board of directors"
+      },
+      "summaries": {
+       "en": "The report of the board of directors must give a fair review of the development, result and position of the business including its main risks and uncertainties, significant events during and after the financial year, the likely future development, research and development, and the risks of financial instruments with the objectives and policies for managing credit, market, liquidity and cash flow risk. It must also say how the firm publishes the information on its financial position required by chapter 10, section 12 of the Credit Institutions Act. These requirements also apply alongside IFRS statements."
+      },
+      "originalLanguage": "en",
+      "refLabel": "11–12 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Prepare balance sheet itemisations of assets and liabilities at year end",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/76#chp_7__sec_35",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen tilinpäätöksestä, konsernitilinpäätöksestä ja toimintakertomuksesta (76/2018), 35 §",
+     "payload": {
+      "key": "obl-fi-ci-accounts-decree-itemisations",
+      "titles": {
+       "en": "Prepare balance sheet itemisations of assets and liabilities at year end"
+      },
+      "summaries": {
+       "en": "The firm must prepare balance sheet itemisations listing in detail, by group, the tangible and intangible assets, derivatives and financial assets and liabilities measured at fair value or held for trading, other receivables and the liabilities on its balance sheet at the end of the financial year, or alternatively only the additions and disposals during the year."
+      },
+      "originalLanguage": "en",
+      "refLabel": "35 §",
+      "dutyType": "record_keeping"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus elvytyssuunnitelmista, 1286/2014",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1286",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen elvytyssuunnitelmiin sisällytettävistä tiedoista (1286/2014), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2014-1286",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen elvytyssuunnitelmiin sisällytettävistä tiedoista",
+     "en": "Ministry of Finance Decree on the Information to Be Included in Recovery Plans of Credit Institutions and Investment Firms"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus elvytyssuunnitelmista",
+    "officialRef": "1286/2014",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:banking",
+    "inForceFrom": "2015-01-01",
+    "implementsNote": "BRRD, Directive 2014/59/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set out in the recovery plan every item of information the decree lists",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1286#sec_2",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen elvytyssuunnitelmiin sisällytettävistä tiedoista (1286/2014), 2 §",
+     "payload": {
+      "key": "obl-fi-recovery-plan-decree-content",
+      "titles": {
+       "en": "Set out in the recovery plan every item of information the decree lists"
+      },
+      "summaries": {
+       "en": "A credit institution or investment firm must include in its recovery plan a summary and the material changes since the previous plan, a communication and disclosure plan, the capital and liquidity actions with the time each needs and any obstacles, its critical functions, how recovery planning is built into its governance and who prepares and implements the plan, arrangements to restore own funds, secure contingency funding and reduce risk and leverage, and the framework of indicators and thresholds that trigger the plan's measures. Since 17 January 2025 the plan must also cover the arrangements needed to keep operations running, including its network and information systems under DORA."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 §",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus kriisinratkaisusuunnitelmien tiedoista, 831/2024",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2024/831",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusuunnitelmien laatimiseksi toimitettavista ja niihin sisällytettävistä tiedoista (831/2024), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2024-831",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusuunnitelmien laatimiseksi toimitettavista ja niihin sisällytettävistä tiedoista",
+     "en": "Ministry of Finance Decree on the Information to Be Provided for and Included in Resolution Plans of Credit Institutions and Investment Firms"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus kriisinratkaisusuunnitelmien tiedoista",
+    "officialRef": "831/2024",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:banking",
+    "inForceFrom": "2025-01-17"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the Financial Stability Authority the information the decree lists for the resolution plan",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2024/831#sec_2",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusuunnitelmien laatimiseksi toimitettavista ja niihin sisällytettävistä tiedoista (831/2024), 2 §",
+     "payload": {
+      "key": "obl-fi-resolution-info-decree-provide",
+      "titles": {
+       "en": "Give the Financial Stability Authority the information the decree lists for the resolution plan"
+      },
+      "summaries": {
+       "en": "A credit institution or investment firm must be able to give the Financial Stability Authority, for drawing up and maintaining its resolution plan, at least the information the decree lists: its organisational and legal-entity structure, shareholders and their holdings and voting power, each entity's seat, licence and management, critical functions and core business lines with the related assets and liabilities, its liability structure and bail-inable liabilities, collateral given, off-balance sheet commitments, hedging, major counterparties, the trading, payment and settlement systems it uses, and its key management, risk, accounting and reporting systems with their owners and service agreements."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus uudelleenjärjestämisehdotuksesta, 1033/2018",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2018/1033",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen toiminnan uudelleenjärjestämisehdotuksen sisällölle asetettavista vaatimuksista (1033/2018), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2018-1033",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen toiminnan uudelleenjärjestämisehdotuksen sisällölle asetettavista vaatimuksista",
+     "en": "Ministry of Finance Decree on the Content Requirements for Business Reorganisation Plans of Credit Institutions and Investment Firms"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus uudelleenjärjestämisehdotuksesta",
+    "officialRef": "1033/2018",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:banking",
+    "inForceFrom": "2018-12-01",
+    "implementsNote": "BRRD, Directive 2014/59/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the business reorganisation plan after a bail-in decision the content the decree requires",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2018/1033#sec_2",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen toiminnan uudelleenjärjestämisehdotuksen sisällölle asetettavista vaatimuksista (1033/2018), 2–3 §",
+     "payload": {
+      "key": "obl-fi-reorganisation-plan-decree-content",
+      "titles": {
+       "en": "Give the business reorganisation plan after a bail-in decision the content the decree requires"
+      },
+      "summaries": {
+       "en": "When a credit institution or investment firm must submit a business reorganisation plan after a decision to write down or convert its liabilities, the plan must explain in detail the factors and problems that made it failing or likely to fail, describe the measures meant to restore its long-term viability within a reasonable time, and give their timetable, taking account of the state and expected development of financial markets. The measures, such as restructuring, changes to systems and infrastructure, exiting loss-making activities or selling assets or business lines, must rest on realistic assumptions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2–3 §",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus luottolaitoksen valmiussuunnittelusta, 71/2025",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2025/71",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen valmiussuunnittelun perusteista (71/2025), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2025-71",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus luottolaitoksen valmiussuunnittelun perusteista",
+     "en": "Ministry of Finance Decree on the Principles of Preparedness Planning of Credit Institutions"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus luottolaitoksen valmiussuunnittelusta",
+    "officialRef": "71/2025",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:banking",
+    "inForceFrom": "2025-03-17"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep a preparedness plan built on a risk assessment renewed at least every four years",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/71#sec_1",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen valmiussuunnittelun perusteista (71/2025), 1–2 §, 6 §",
+     "payload": {
+      "key": "obl-fi-preparedness-decree-plan",
+      "titles": {
+       "en": "Keep a preparedness plan built on a risk assessment renewed at least every four years"
+      },
+      "summaries": {
+       "en": "A credit institution must keep a preparedness plan covering a risk assessment, advance planning and preparation, and operations in serious disruptions and emergencies; within a group or an amalgamation of deposit banks it may be drawn up at that level. The risk assessment must be renewed at least every four years and whenever the institution or its environment changes significantly, and must cover natural and man-made threats such as political, economic and military pressure, use of military force, terrorist attacks, major power outages and disruption of communication networks. The first plan had to be in place by 31 December 2025."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1–2 §, 6 §",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-12-31",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Prepare leadership, systems, staff and suppliers for serious disruptions and emergencies",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/71#sec_3",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen valmiussuunnittelun perusteista (71/2025), 3–4 §",
+     "payload": {
+      "key": "obl-fi-preparedness-decree-arrangements",
+      "titles": {
+       "en": "Prepare leadership, systems, staff and suppliers for serious disruptions and emergencies"
+      },
+      "summaries": {
+       "en": "The plan must set out who leads preparedness and with what resources, how ICT and information management are protected, cooperation with authorities and participation in financial-sector preparedness, staff training and how the plan is kept up to date. It must also describe how the institution will run its Finnish operations in serious disruptions and emergencies, including task prioritisation, crisis management, situational awareness, staff, premises and subcontractors, critical ICT and data, telecommunications, power supply, communications and the measures taken under the Emergency Powers Act."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3–4 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Prepare to keep the listed banking services in Finland running in a crisis",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2025/71#sec_5",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen valmiussuunnittelun perusteista (71/2025), 5 §",
+     "payload": {
+      "key": "obl-fi-preparedness-decree-critical-services",
+      "titles": {
+       "en": "Prepare to keep the listed banking services in Finland running in a crisis"
+      },
+      "summaries": {
+       "en": "The plan must show how the institution has prepared to secure, in the situations its risk assessment covers, the services it normally provides in Finland: access to customer and account data, credit transfers and standing orders, card payments, cash services, interbank payments, lending, securities trading, clearing, settlement and custody, funding and use of securities holdings for the state and for companies vital to society, and strong electronic identification of customers."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus talletussuojatiedoista, 820/2015",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/saadoskokoelma/2015/820",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus talletuspankin velvollisuudesta antaa tietoja talletussuojasta (820/2015), text as published in the Statute Book (Finlex shows no amendment)",
+   "payload": {
+    "key": "fi-sd-2015-820",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus talletuspankin velvollisuudesta antaa tietoja talletussuojasta",
+     "en": "Ministry of Finance Decree on the Obligation of Deposit Banks to Provide Information on Deposit Protection"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus talletussuojatiedoista",
+    "officialRef": "820/2015",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:banking",
+    "inForceFrom": "2015-07-01",
+    "implementsNote": "DGSD, Directive 2014/49/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give depositors the deposit protection information before the account agreement",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/saadoskokoelma/2015/820",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus talletuspankin velvollisuudesta antaa tietoja talletussuojasta (820/2015), 1 §",
+     "payload": {
+      "key": "obl-fi-dgs-info-decree-before-contract",
+      "titles": {
+       "en": "Give depositors the deposit protection information before the account agreement"
+      },
+      "summaries": {
+       "en": "Before an account agreement is made, a deposit bank must give the depositor, in writing or on another durable medium, at least which deposit guarantee scheme covers the deposits and its contact details, the amount of cover, which deposits are eligible, how the cover works for several deposits in the same bank and for joint accounts, and the payout period and currency. In a distance contract where this is not possible beforehand, the information must be given without delay after the agreement; information given electronically must be given on paper on request."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Confirm depositors' eligible deposits and deposit protection at least once a year",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/saadoskokoelma/2015/820",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus talletuspankin velvollisuudesta antaa tietoja talletussuojasta (820/2015), 2–3 §",
+     "payload": {
+      "key": "obl-fi-dgs-info-decree-annual",
+      "titles": {
+       "en": "Confirm depositors' eligible deposits and deposit protection at least once a year"
+      },
+      "summaries": {
+       "en": "A deposit bank must give each depositor at least once a year, in writing or on another durable medium, information on the depositor's eligible deposits together with the deposit protection information, and give it at any time on request; it may do so electronically where the depositor uses online banking. The information is given in Finnish or Swedish unless another language was agreed before the account agreement, and a branch abroad gives it in the official language of the host country or an agreed language."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2–3 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus talletussuojarahaston lainasopimuksista, 75/2020",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/saadoskokoelma/2020/75",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus talletussuojarahaston ja talletuspankkien välisten lainasopimusten ehdoista (75/2020), text as published in the Statute Book (Finlex shows no amendment)",
+   "payload": {
+    "key": "fi-sd-2020-75",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus talletussuojarahaston ja talletuspankkien välisten lainasopimusten ehdoista",
+     "en": "Ministry of Finance Decree on the Terms of Loan Agreements between the Deposit Guarantee Fund and Deposit Banks"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus talletussuojarahaston lainasopimuksista",
+    "officialRef": "75/2020",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:banking",
+    "inForceFrom": "2020-03-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Transfer a loan to the deposit guarantee fund within four business days of the decision",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/saadoskokoelma/2020/75",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus talletussuojarahaston ja talletuspankkien välisten lainasopimusten ehdoista (75/2020), 1 §",
+     "payload": {
+      "key": "obl-fi-dgs-loan-decree-transfer",
+      "titles": {
+       "en": "Transfer a loan to the deposit guarantee fund within four business days of the decision"
+      },
+      "summaries": {
+       "en": "When the Financial Stability Authority decides that deposit banks are to lend to the deposit guarantee fund, each deposit bank must transfer its loan amount to the fund no later than the fourth business day after the decision. The loan carries the interest set in the Government's permission, has no collateral, fee or cost compensation, may not be set off against the bank's joining, deposit guarantee or extraordinary contributions, and is repaid in at least yearly instalments starting within a year after the fund reaches its minimum level."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus rakenteellisesta lisäpääomavaatimuksesta, 409/2021",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2021/409",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen rahoitusjärjestelmän rakenteellisten ominaisuuksien perusteella määrättävästä lisäpääomavaatimuksesta (409/2021), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2021-409",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen rahoitusjärjestelmän rakenteellisten ominaisuuksien perusteella määrättävästä lisäpääomavaatimuksesta",
+     "en": "Ministry of Finance Decree on the Additional Capital Requirement of Credit Institutions and Investment Firms Based on Structural Features of the Financial System"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus rakenteellisesta lisäpääomavaatimuksesta",
+    "officialRef": "409/2021",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:banking",
+    "inForceFrom": "2021-05-20"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Calculate the systemic risk buffer requirement with the decree's formula",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2021/409#sec_2",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen rahoitusjärjestelmän rakenteellisten ominaisuuksien perusteella määrättävästä lisäpääomavaatimuksesta (409/2021), 2 §",
+     "payload": {
+      "key": "obl-fi-syrb-decree-calculate",
+      "titles": {
+       "en": "Calculate the systemic risk buffer requirement with the decree's formula"
+      },
+      "summaries": {
+       "en": "A credit institution must calculate in euros its additional capital requirement based on structural features of the financial system (the systemic risk buffer) as the buffer rate applied to its total risk exposure amount plus the rates applied to any specific subsets of exposures, capped at 5 percent of its total risk exposure amount, with the exposure amounts calculated under Article 92(3) of the CRR."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 §",
+      "dutyType": "governance",
+      "terms": [
+       "legal_entity:bank",
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VNa omistusosuuden hankkimista koskevasta ilmoituksesta, 208/2014",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2014/208",
+   "sourceLabel": "Finlex, Valtioneuvoston asetus omistusosuuden hankkimista ja luovuttamista luottolaitoksessa, rahastoyhtiössä, säilytysyhteisössä, erityisessä säilytysyhteisössä, vakuutusyhtiössä, rahoitus- ja vakuutusryhmittymän omistusyhteisössä ja vaihtoehtorahastojen hoitajassa koskevasta ilmoituksesta (208/2014), consolidated text in force; title as amended by 256/2019",
+   "payload": {
+    "key": "fi-sd-2014-208",
+    "titles": {
+     "fi": "Valtioneuvoston asetus omistusosuuden hankkimista ja luovuttamista luottolaitoksessa, rahastoyhtiössä, säilytysyhteisössä, erityisessä säilytysyhteisössä, vakuutusyhtiössä, rahoitus- ja vakuutusryhmittymän omistusyhteisössä ja vaihtoehtorahastojen hoitajassa koskevasta ilmoituksesta",
+     "en": "Government Decree on the Notification of Acquisitions and Disposals of Holdings in Credit Institutions, Fund Management Companies, Depositaries, Special Depositaries, Insurance Companies, Holding Companies of Financial and Insurance Conglomerates and Alternative Investment Fund Managers"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VNa omistusosuuden hankkimista koskevasta ilmoituksesta",
+    "officialRef": "208/2014",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtioneuvosto",
+    "regime": "regime:banking",
+    "inForceFrom": "2014-03-29"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Attach the information the decree lists to a notice of acquiring or disposing of a qualifying holding",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/208#sec_2",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus omistusosuuden hankkimista ja luovuttamista luottolaitoksessa, rahastoyhtiössä, säilytysyhteisössä, erityisessä säilytysyhteisössä, vakuutusyhtiössä, rahoitus- ja vakuutusryhmittymän omistusyhteisössä ja vaihtoehtorahastojen hoitajassa koskevasta ilmoituksesta (208/2014), 1–4 §, 6 §",
+     "payload": {
+      "key": "obl-fi-holdings-decree-notification-content",
+      "titles": {
+       "en": "Attach the information the decree lists to a notice of acquiring or disposing of a qualifying holding"
+      },
+      "summaries": {
+       "en": "A notice of a planned acquisition of a qualifying holding in a credit institution, fund management company, depositary, insurer, conglomerate holding company or AIF manager, including one a bank makes, must carry the information the decree lists on the forms FIN-FSA sets: the notifier's identity, business or occupation, management and financial standing, its record of insolvencies, criminal and administrative sanctions and removals from regulated posts, the target and the holding and votes before and after the transaction, close links and other connections to the target and its owners, and how the acquisition is financed. A notice of a disposal needs only the notifier's identity or register extract, the target and the holdings before and after."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1–4 §, 6 §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Attach a business plan when the acquisition gives control of the target",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/208#sec_5",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus omistusosuuden hankkimista ja luovuttamista luottolaitoksessa, rahastoyhtiössä, säilytysyhteisössä, erityisessä säilytysyhteisössä, vakuutusyhtiössä, rahoitus- ja vakuutusryhmittymän omistusyhteisössä ja vaihtoehtorahastojen hoitajassa koskevasta ilmoituksesta (208/2014), 5 §",
+     "payload": {
+      "key": "obl-fi-holdings-decree-control-plan",
+      "titles": {
+       "en": "Attach a business plan when the acquisition gives control of the target"
+      },
+      "summaries": {
+       "en": "If the acquisition gives the notifier control of the target within the meaning of the Accounting Act, the notice must also include a business plan setting out the return and other financial targets for the holding, planned changes to the target's business, capital and funding structure, the expected synergies, and the planned effects on the target's board and senior management and its administration."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 §",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VNa ryhmittymän vakavaraisuuden laskemisesta, 1356/2015",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2015/1356",
+   "sourceLabel": "Finlex, Valtioneuvoston asetus rahoitus- ja vakuutusryhmittymän vakavaraisuuden laskemisesta (1356/2015), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2015-1356",
+    "titles": {
+     "fi": "Valtioneuvoston asetus rahoitus- ja vakuutusryhmittymän vakavaraisuuden laskemisesta",
+     "en": "Government Decree on the Calculation of the Solvency of Financial and Insurance Conglomerates"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VNa ryhmittymän vakavaraisuuden laskemisesta",
+    "officialRef": "1356/2015",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtioneuvosto",
+    "regime": "regime:banking",
+    "inForceFrom": "2016-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Calculate the conglomerate's solvency with the consolidation or deduction-and-aggregation method",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2015/1356#sec_1",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus rahoitus- ja vakuutusryhmittymän vakavaraisuuden laskemisesta (1356/2015), 1–3 §",
+     "payload": {
+      "key": "obl-fi-conglomerate-decree-solvency-method",
+      "titles": {
+       "en": "Calculate the conglomerate's solvency with the consolidation or deduction-and-aggregation method"
+      },
+      "summaries": {
+       "en": "The solvency of a financial and insurance conglomerate is calculated with the consolidation method in Annex I, the deduction and aggregation method in Annex II, or a combination of them, and the coordinating supervisor may, after hearing the entity at the head of the conglomerate, require a different one of these methods. Own funds counted towards each sector's minimum must meet that sector's rules on the amount and structure of own funds."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1–3 §",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus luottolaitostoiminnan lupahakemuksista, 871/2023",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2023/871",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus eräisiin luottolaitostoimintaa koskeviin lupahakemuksiin liitettävistä selvityksistä (871/2023), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2023-871",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus eräisiin luottolaitostoimintaa koskeviin lupahakemuksiin liitettävistä selvityksistä",
+     "en": "Ministry of Finance Decree on the Documents to Be Attached to Certain Licence Applications Concerning Credit Institution Activities"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus luottolaitostoiminnan lupahakemuksista",
+    "officialRef": "871/2023",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:banking",
+    "inForceFrom": "2023-07-18"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Attach the documents the decree lists when applying to open a branch outside the EEA",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2023/871#sec_8",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus eräisiin luottolaitostoimintaa koskeviin lupahakemuksiin liitettävistä selvityksistä (871/2023), 8 §",
+     "payload": {
+      "key": "obl-fi-licence-decree-third-country-branch",
+      "titles": {
+       "en": "Attach the documents the decree lists when applying to open a branch outside the EEA"
+      },
+      "summaries": {
+       "en": "A credit institution licensed in Finland that applies for permission to establish a branch outside the EEA must attach the decision of its competent body, any permit the host country requires, an account of the host country's banking law and supervision and of FIN-FSA's and the host supervisor's powers over the branch, the branch's business plan and organisation, fit and proper information on its management, how internal control and risk management are arranged in the branch, and how the branch reports to head office."
+      },
+      "originalLanguage": "en",
+      "refLabel": "8 §",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Attach the documents the decree lists when applying for a covered bond licence",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2023/871#sec_10",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus eräisiin luottolaitostoimintaa koskeviin lupahakemuksiin liitettävistä selvityksistä (871/2023), 10 §",
+     "payload": {
+      "key": "obl-fi-licence-decree-covered-bond",
+      "titles": {
+       "en": "Attach the documents the decree lists when applying for a covered bond licence"
+      },
+      "summaries": {
+       "en": "An applicant for a licence under the Act on Mortgage Credit Banks and Covered Bonds must attach a business plan and show that its management and staff meet the competence requirements, and how it ensures that substitution assets in the cover pool are eligible, that the cover pool value of loans other than residential and commercial property loans rests on their principal, that the collateral value limit and the overcollateralisation requirement are met continuously, and that derivatives in the cover pool meet the act's conditions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "10 §",
+      "dutyType": "reporting",
+      "terms": [
+       "legal_entity:bank"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VNa asuntoyhteisöluottojen rajoituksista, 608/2026",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2026/608",
+   "sourceLabel": "Finlex, Valtioneuvoston asetus eräistä asuntoyhteisöluottoja koskevista rajoituksista (608/2026), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2026-608",
+    "titles": {
+     "fi": "Valtioneuvoston asetus eräistä asuntoyhteisöluottoja koskevista rajoituksista",
+     "en": "Government Decree on Certain Restrictions on Housing Company Loans"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VNa asuntoyhteisöluottojen rajoituksista",
+    "officialRef": "608/2026",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtioneuvosto",
+    "regime": "regime:banking",
+    "inForceFrom": "2026-07-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Cap a housing company loan at 70 percent of the debt-free price of the shares offered for sale",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2026/608#sec_1",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus eräistä asuntoyhteisöluottoja koskevista rajoituksista (608/2026), 1 §",
+     "payload": {
+      "key": "obl-fi-housing-company-loan-decree-cap",
+      "titles": {
+       "en": "Cap a housing company loan at 70 percent of the debt-free price of the shares offered for sale"
+      },
+      "summaries": {
+       "en": "A credit institution or registered creditor may grant a housing company a loan of at most 70 percent of the debt-free price of the housing company shares offered for sale."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Limit housing company loans to 24 months without amortisation and a 40-year repayment period",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2026/608#sec_2",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus eräistä asuntoyhteisöluottoja koskevista rajoituksista (608/2026), 2–3 §",
+     "payload": {
+      "key": "obl-fi-housing-company-loan-decree-terms",
+      "titles": {
+       "en": "Limit housing company loans to 24 months without amortisation and a 40-year repayment period"
+      },
+      "summaries": {
+       "en": "A housing company loan may have an amortisation-free period, or instalments below regular amortisation, of at most 24 calendar months from the end of the construction phase, and a repayment period of at most 40 years from drawdown or, for a loan drawn in instalments, from the last instalment and at the latest from the end of the construction phase."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2–3 §",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VNa kuluttajaluoton tiedoista, 789/2010",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2010/789",
+   "sourceLabel": "Finlex, Valtioneuvoston asetus luottosopimuksesta kuluttajalle annettavista tiedoista (789/2010), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2010-789",
+    "titles": {
+     "fi": "Valtioneuvoston asetus luottosopimuksesta kuluttajalle annettavista tiedoista",
+     "en": "Government Decree on the Information to Be Given to Consumers on Credit Agreements"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VNa kuluttajaluoton tiedoista",
+    "officialRef": "789/2010",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtioneuvosto",
+    "regime": "regime:banking",
+    "inForceFrom": "2010-12-01",
+    "implementsNote": "CCD, Directive 2008/48/EC; MCD, Directive 2014/17/EU; CCD2, Directive (EU) 2023/2225 (amendments applying from 20 November 2026)"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the pre-contractual credit information on the decree's standard form",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/789#sec_1",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus luottosopimuksesta kuluttajalle annettavista tiedoista (789/2010), 1 §",
+     "payload": {
+      "key": "obl-fi-credit-info-decree-standard-form",
+      "titles": {
+       "en": "Give the pre-contractual credit information on the decree's standard form"
+      },
+      "summaries": {
+       "en": "A creditor, and a credit intermediary other than a seller acting as one only alongside its main business, must give the consumer the pre-contractual information listed in Annex 1 on the decree's standard form in good time before a consumer credit agreement, with distance-selling information added where relevant and any other information in a separate document. From 20 November 2026 the form opens, equally prominently, with the key items in Annex 1 parts I and II on at most two pages, part I on the first page, followed separately by the remaining items."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Give the European Standardised Information Sheet before a housing credit agreement",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/789#sec_2a",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus luottosopimuksesta kuluttajalle annettavista tiedoista (789/2010), 2 a §",
+     "payload": {
+      "key": "obl-fi-credit-info-decree-esis",
+      "titles": {
+       "en": "Give the European Standardised Information Sheet before a housing credit agreement"
+      },
+      "summaries": {
+       "en": "After the consumer has given information on needs, preferences and financial situation, a creditor or credit intermediary must without undue delay, and in good time before a housing credit agreement, give the information in Annex 3 part A completed according to the instructions in part B, with any other information in a separate document."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 a §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: State the particulars the decree lists in consumer credit and housing credit agreements",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/789#sec_5",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus luottosopimuksesta kuluttajalle annettavista tiedoista (789/2010), 5 §, 5 a §",
+     "payload": {
+      "key": "obl-fi-credit-info-decree-agreement-content",
+      "titles": {
+       "en": "State the particulars the decree lists in consumer credit and housing credit agreements"
+      },
+      "summaries": {
+       "en": "A consumer credit agreement must state the particulars the decree lists, among them the parties and any credit intermediary, the type, amount or limit and duration of the credit, the interest and how it is set and changed, the total amount payable and the annual percentage rate with the assumptions used, the instalments, and the fees and the conditions for changing them. A housing credit agreement has its own list, which also covers required insurance or other ancillary services, the risks of a foreign currency loan and the right of withdrawal."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 §, 5 a §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Use the prescribed borrowing-cost warning in consumer credit advertising",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2010/789#sec_7a",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus luottosopimuksesta kuluttajalle annettavista tiedoista (789/2010), 7 a §",
+     "fieldSources": {
+      "effectiveFrom": "https://www.finlex.fi/fi/lainsaadanto/saadoskokoelma/2026/163"
+     },
+     "payload": {
+      "key": "obl-fi-credit-info-decree-advert-warning",
+      "titles": {
+       "en": "Use the prescribed borrowing-cost warning in consumer credit advertising"
+      },
+      "summaries": {
+       "en": "From 20 November 2026 the warning that consumer credit advertising must carry under the Consumer Protection Act is to read \"Huomio! Luoton ottaminen maksaa.\" (Note! Taking out credit costs money.) or an equivalent warning."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 a §",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2026-11-20"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VNa asuntoluottojen ammatillisista vaatimuksista, 1031/2016",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2016/1031",
+   "sourceLabel": "Finlex, Valtioneuvoston asetus luotonantajien ja luotonvälittäjien ammatillisista vaatimuksista asunto-omaisuuteen liittyvissä kuluttajaluotoissa (1031/2016), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2016-1031",
+    "titles": {
+     "fi": "Valtioneuvoston asetus luotonantajien ja luotonvälittäjien ammatillisista vaatimuksista asunto-omaisuuteen liittyvissä kuluttajaluotoissa",
+     "en": "Government Decree on the Professional Requirements for Creditors and Credit Intermediaries in Consumer Credit Relating to Residential Property"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VNa asuntoluottojen ammatillisista vaatimuksista",
+    "officialRef": "1031/2016",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtioneuvosto",
+    "regime": "regime:banking",
+    "inForceFrom": "2017-01-01",
+    "implementsNote": "MCD, Directive 2014/17/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make sure staff dealing with housing-related consumer credit have the required competence",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2016/1031#sec_2",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus luotonantajien ja luotonvälittäjien ammatillisista vaatimuksista asunto-omaisuuteen liittyvissä kuluttajaluotoissa (1031/2016), 2 §",
+     "payload": {
+      "key": "obl-fi-mortgage-competence-decree-staff",
+      "titles": {
+       "en": "Make sure staff dealing with housing-related consumer credit have the required competence"
+      },
+      "summaries": {
+       "en": "The staff of a creditor granting consumer credit relating to residential property, and of a credit intermediary, must have the competence and knowledge their role in lending, intermediation or advisory services requires, covering the credits and related services, finance and economics and, where relevant, assessment of consumers' creditworthiness. It must be shown by a suitable degree, qualification, training or competence test, with relevant experience where applicable, and kept up to date."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 §",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VNa kuluttajaluottojen ammatillisista vaatimuksista, 164/2026",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2026/164",
+   "sourceLabel": "Finlex, Valtioneuvoston asetus luotonantajien ja luotonvälittäjien ammatillisista vaatimuksista eräissä kuluttajaluotoissa (164/2026), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2026-164",
+    "titles": {
+     "fi": "Valtioneuvoston asetus luotonantajien ja luotonvälittäjien ammatillisista vaatimuksista eräissä kuluttajaluotoissa",
+     "en": "Government Decree on the Professional Requirements for Creditors and Credit Intermediaries in Certain Consumer Credits"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VNa kuluttajaluottojen ammatillisista vaatimuksista",
+    "officialRef": "164/2026",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtioneuvosto",
+    "regime": "regime:banking",
+    "inForceFrom": "2026-11-20",
+    "implementsNote": "CCD2, Directive (EU) 2023/2225"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make sure senior management has the knowledge and competence consumer lending requires",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2026/164#sec_1",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus luotonantajien ja luotonvälittäjien ammatillisista vaatimuksista eräissä kuluttajaluotoissa (164/2026), 1 §",
+     "payload": {
+      "key": "obl-fi-credit-competence-decree-management",
+      "titles": {
+       "en": "Make sure senior management has the knowledge and competence consumer lending requires"
+      },
+      "summaries": {
+       "en": "The senior management of a creditor or credit intermediary dealing in consumer credit under chapter 7 of the Consumer Protection Act must have knowledge and competence appropriate to the nature and scale of the business in developing, offering and granting credit agreements, credit intermediation, advisory services and consumers' rights, at least on consumer credits and ancillary services, the related consumer protection and other law, the creditworthiness assessment process and the Finnish credit market. It must be shown by a suitable degree and work experience and kept up to date."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Make sure staff have the knowledge and competence their consumer lending role requires",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2026/164#sec_2",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus luotonantajien ja luotonvälittäjien ammatillisista vaatimuksista eräissä kuluttajaluotoissa (164/2026), 2 §",
+     "payload": {
+      "key": "obl-fi-credit-competence-decree-staff",
+      "titles": {
+       "en": "Make sure staff have the knowledge and competence their consumer lending role requires"
+      },
+      "summaries": {
+       "en": "The staff of a creditor granting consumer credit under chapter 7 of the Consumer Protection Act, and of a credit intermediary, must have the knowledge and competence their role in lending, peer-to-peer lending intermediation, credit intermediation or advisory services requires."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 §",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VNa positiivisen luottotietorekisterin tiedoista, 811/2022",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2022/811",
+   "sourceLabel": "Finlex, Valtioneuvoston asetus eräistä positiiviseen luottotietorekisteriin talletettavista tiedoista (811/2022), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2022-811",
+    "titles": {
+     "fi": "Valtioneuvoston asetus eräistä positiiviseen luottotietorekisteriin talletettavista tiedoista",
+     "en": "Government Decree on Certain Information to Be Stored in the Positive Credit Register"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VNa positiivisen luottotietorekisterin tiedoista",
+    "officialRef": "811/2022",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtioneuvosto",
+    "regime": "regime:banking",
+    "inForceFrom": "2022-09-15"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report repayment method, interest basis and collateral type in the register's set categories",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2022/811#sec_2",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus eräistä positiiviseen luottotietorekisteriin talletettavista tiedoista (811/2022), 2–5 §",
+     "payload": {
+      "key": "obl-fi-pcr-decree-classifications",
+      "titles": {
+       "en": "Report repayment method, interest basis and collateral type in the register's set categories"
+      },
+      "summaries": {
+       "en": "When reporting a credit to the positive credit register, the repayment method, the basis of the interest rate (also after any fixed-rate period) and the type of collateral are recorded only as one of the categories the decree lists, such as equal principal repayments, fixed instalments, annuity, a single repayment or a much larger final instalment; Euribor, the creditor's own reference rate, another variable rate, a fixed rate or interest-free; and residential property, other real estate, an item bought on instalment, other movable property, or a personal, state or other guarantee."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2–5 §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus säännöllisestä tiedonantovelvollisuudesta, 1020/2012",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1020",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus arvopaperin liikkeeseenlaskijan säännöllisestä tiedonantovelvollisuudesta (1020/2012), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2012-1020",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus arvopaperin liikkeeseenlaskijan säännöllisestä tiedonantovelvollisuudesta",
+     "en": "Ministry of Finance Decree on the Periodic Disclosure Obligation of Issuers of Securities"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus säännöllisestä tiedonantovelvollisuudesta",
+    "officialRef": "1020/2012",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-01-01",
+    "implementsNote": "Directive 2010/73/EU; board gender balance items: Directive (EU) 2022/2381"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Describe the significant events and key figures in the half-yearly report's narrative",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1020#chp_2__sec_2",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus arvopaperin liikkeeseenlaskijan säännöllisestä tiedonantovelvollisuudesta (1020/2012), 2 §",
+     "payload": {
+      "key": "obl-fi-issuer-disclosure-decree-half-year",
+      "titles": {
+       "en": "Describe the significant events and key figures in the half-yearly report's narrative"
+      },
+      "summaries": {
+       "en": "An issuer's half-yearly report must describe the significant events and transactions affecting the nature and structure of its business, acquisitions, investments and discontinued operations, key new markets and products, changes in outlook and market position, the development of results, changes in financial position and changes in its operating environment. Key figures must be presented consistently with their calculation principles explained, and the report must state the own shares held by the issuer and its subsidiaries. For a credit institution the decree applies unless the Credit Institutions Act or rules under it provide otherwise."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Add the shareholder and management holding details to the report of the board of directors",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1020#chp_2__sec_5",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus arvopaperin liikkeeseenlaskijan säännöllisestä tiedonantovelvollisuudesta (1020/2012), 5 §",
+     "payload": {
+      "key": "obl-fi-issuer-disclosure-decree-board-report",
+      "titles": {
+       "en": "Add the shareholder and management holding details to the report of the board of directors"
+      },
+      "summaries": {
+       "en": "A share issuer must add to its report of the board of directors, besides what the Accounting Act requires, the information the decree lists, such as the distribution of shareholdings by sector and size, shareholders it knows to hold at least 5 percent and its ten largest shareholders by votes and by shares, any controlling persons, shareholder agreements it knows of that may materially affect the share's value, the aggregate holdings and option rights of its board, managing director and other senior management, and the board's authorisations concerning own shares."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Publish a corporate governance statement with the content the decree requires",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1020#chp_2__sec_7",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus arvopaperin liikkeeseenlaskijan säännöllisestä tiedonantovelvollisuudesta (1020/2012), 7 §",
+     "payload": {
+      "key": "obl-fi-issuer-disclosure-decree-governance-statement",
+      "titles": {
+       "en": "Publish a corporate governance statement with the content the decree requires"
+      },
+      "summaries": {
+       "en": "An issuer must publish a corporate governance statement naming the governance code it follows and where it is available, explaining any departures from it, describing the internal control and risk management of financial reporting, the composition and work of the board, supervisory board and committees, and its board diversity policy, objectives and results. For financial years from 1 January 2025 a company within the scope of the Companies Act's board gender balance rule must also report the gender split of its board and, if the 40 percent target is not met, why and what it is doing about it. A separate statement is published together with the board of directors' report and the auditor checks that it has been given. Smaller companies and issuers of securities other than shares are exempt from some of these items."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus liputusilmoituksista, 1021/2012",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1021",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus huomattavien omistus- ja ääniosuuksien ilmoittamisesta (1021/2012), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2012-1021",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus huomattavien omistus- ja ääniosuuksien ilmoittamisesta",
+     "en": "Ministry of Finance Decree on the Notification of Major Holdings and Voting Rights"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus liputusilmoituksista",
+    "officialRef": "1021/2012",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:securities",
+    "inForceFrom": "2013-01-01",
+    "implementsNote": "Directive 2010/73/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the details the decree lists in a major holdings notification",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1021#sec_6",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus huomattavien omistus- ja ääniosuuksien ilmoittamisesta (1021/2012), 5–6 §",
+     "payload": {
+      "key": "obl-fi-flagging-decree-notification-content",
+      "titles": {
+       "en": "Give the details the decree lists in a major holdings notification"
+      },
+      "summaries": {
+       "en": "A flagging notification must state the target company, the reason for the notification, the date a threshold was reached or crossed, the exact number of shares and votes held directly and indirectly per share class (except when falling below 5 percent), the full name and registration number of the shareholder and of any holder whose shares are attributed to it with the reason, how the holding is split between them, and the chain of controlled undertakings. The holding is calculated against the total shares and votes the target has published."
+      },
+      "originalLanguage": "en",
+      "refLabel": "5–6 §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Notify FIN-FSA before relying on the exemption from aggregating a fund or investment subsidiary's holdings",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1021#sec_3",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus huomattavien omistus- ja ääniosuuksien ilmoittamisesta (1021/2012), 2–3 §",
+     "payload": {
+      "key": "obl-fi-flagging-decree-parent-exemption",
+      "titles": {
+       "en": "Notify FIN-FSA before relying on the exemption from aggregating a fund or investment subsidiary's holdings"
+      },
+      "summaries": {
+       "en": "A parent of a fund management company or investment service provider that wants to leave the subsidiary's holdings out of its own, because the subsidiary votes independently, must not instruct or otherwise influence that voting and must notify FIN-FSA without delay, naming the subsidiaries and their supervisors and confirming that the conditions are met, and must report later changes without undue delay."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2–3 §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Notify FIN-FSA when starting and stopping to use the market maker exemption",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1021#sec_4",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus huomattavien omistus- ja ääniosuuksien ilmoittamisesta (1021/2012), 4 §",
+     "payload": {
+      "key": "obl-fi-flagging-decree-market-maker",
+      "titles": {
+       "en": "Notify FIN-FSA when starting and stopping to use the market maker exemption"
+      },
+      "summaries": {
+       "en": "A market maker that intends to rely on the market maker exemption from flagging must notify FIN-FSA, separately for each target company and without undue delay, when it starts and when it stops relying on it, and must be able to separate the holdings it acquires or disposes of as a market maker from its other holdings."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 §",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Publish the major holdings notifications the company receives",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1021#sec_7",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus huomattavien omistus- ja ääniosuuksien ilmoittamisesta (1021/2012), 7 §",
+     "payload": {
+      "key": "obl-fi-flagging-decree-target-publication",
+      "titles": {
+       "en": "Publish the major holdings notifications the company receives"
+      },
+      "summaries": {
+       "en": "A company whose shares are the subject of a flagging notification must publish the information in the notification that has come to its knowledge, say if any required information is missing, and publish at the same time any further information the notification contains."
+      },
+      "originalLanguage": "en",
+      "refLabel": "7 §",
+      "dutyType": "disclosure"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus palkitsemispolitiikasta ja -raportista, 608/2019",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2019/608",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus osakkeen liikkeeseenlaskijan palkitsemispolitiikasta ja palkitsemisraportista (608/2019), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2019-608",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus osakkeen liikkeeseenlaskijan palkitsemispolitiikasta ja palkitsemisraportista",
+     "en": "Ministry of Finance Decree on the Remuneration Policy and Remuneration Report of Share Issuers"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus palkitsemispolitiikasta ja -raportista",
+    "officialRef": "608/2019",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:securities",
+    "inForceFrom": "2019-06-10",
+    "implementsNote": "SRD II, Directive (EU) 2017/828"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Give the remuneration policy for governing bodies the content the decree requires",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2019/608#sec_2",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus osakkeen liikkeeseenlaskijan palkitsemispolitiikasta ja palkitsemisraportista (608/2019), 2 §",
+     "payload": {
+      "key": "obl-fi-issuer-pay-decree-policy",
+      "titles": {
+       "en": "Give the remuneration policy for governing bodies the content the decree requires"
+      },
+      "summaries": {
+       "en": "A share issuer's remuneration policy must explain how it supports the business strategy and long-term financial success and set out the fixed and variable pay components and their proportions, the financial and non-financial criteria for variable pay, deferral and clawback, the principles for share-based pay, the terms of executives' contracts including notice periods, supplementary pensions and termination payments, and the decision-making process with the measures against conflicts of interest. Significant changes to the policy must be explained."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 §",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Publish a remuneration report with the per-person content the decree requires",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2019/608#sec_3",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus osakkeen liikkeeseenlaskijan palkitsemispolitiikasta ja palkitsemisraportista (608/2019), 3 §",
+     "payload": {
+      "key": "obl-fi-issuer-pay-decree-report",
+      "titles": {
+       "en": "Publish a remuneration report with the per-person content the decree requires"
+      },
+      "summaries": {
+       "en": "A share issuer's remuneration report must show how pay as a whole followed the remuneration policy and, per person, the total pay by type, the split between fixed and variable pay and how performance criteria were applied, the yearly change in pay compared with average employee pay and the issuer's performance over five years, pay from group companies, shares and options granted, any use of clawback, any temporary departures from the policy and how the last general meeting vote was taken into account. The auditor checks that the information has been given."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 §",
+      "dutyType": "disclosure",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VM:n asetus AIF-säilytysyhteisön velvollisuuksista, 230/2014",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2014/230",
+   "sourceLabel": "Finlex, Valtiovarainministeriön asetus vaihtoehtorahaston säilytysyhteisön velvollisuuksista (230/2014), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2014-230",
+    "titles": {
+     "fi": "Valtiovarainministeriön asetus vaihtoehtorahaston säilytysyhteisön velvollisuuksista",
+     "en": "Ministry of Finance Decree on the Obligations of the Depositary of an Alternative Investment Fund"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VM:n asetus AIF-säilytysyhteisön velvollisuuksista",
+    "officialRef": "230/2014",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtiovarainministerio",
+    "regime": "regime:securities",
+    "inForceFrom": "2014-03-29",
+    "implementsNote": "AIFMD, Directive 2011/61/EU"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep an AIF's assets in custody segregated and recorded so they can always be shown to belong to it",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/230#sec_2",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus vaihtoehtorahaston säilytysyhteisön velvollisuuksista (230/2014), 2 §",
+     "payload": {
+      "key": "obl-fi-aif-depositary-decree-segregation",
+      "titles": {
+       "en": "Keep an AIF's assets in custody segregated and recorded so they can always be shown to belong to it"
+      },
+      "summaries": {
+       "en": "A depositary of an alternative investment fund must keep and handle the fund's financial instruments in custody reliably, keep them clearly separate from its own assets, and keep records itemising each client's assets, so that it can at any time show which assets belong to which fund."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 §",
+      "dutyType": "record_keeping",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Make sure an AIF's cash is booked promptly in segregated cash accounts with eligible institutions",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/230#sec_3",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus vaihtoehtorahaston säilytysyhteisön velvollisuuksista (230/2014), 3 §",
+     "payload": {
+      "key": "obl-fi-aif-depositary-decree-cash-accounts",
+      "titles": {
+       "en": "Make sure an AIF's cash is booked promptly in segregated cash accounts with eligible institutions"
+      },
+      "summaries": {
+       "en": "The depositary must ensure that the fund's cash is promptly booked in cash accounts opened in the name of the fund, its manager or the depositary at a central bank, an EEA credit institution or, where none is available, an equivalently regulated and supervised entity, with the cash held reliably, kept apart from the account provider's own funds and recorded per client. Neither the account provider's nor the depositary's own funds may be booked to an account opened in the depositary's name for the fund."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 §",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Check at all times that a sub-custodian of AIF assets meets the decree's conditions",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2014/230#sec_4",
+     "sourceLabel": "Finlex, Valtiovarainministeriön asetus vaihtoehtorahaston säilytysyhteisön velvollisuuksista (230/2014), 4–5 §",
+     "payload": {
+      "key": "obl-fi-aif-depositary-decree-delegation",
+      "titles": {
+       "en": "Check at all times that a sub-custodian of AIF assets meets the decree's conditions"
+      },
+      "summaries": {
+       "en": "When it delegates safekeeping, the depositary must make sure at all times that the delegate has adequate structures and expertise, is subject to prudential regulation and supervision with periodic external audits, keeps the depositary's clients' assets clearly segregated, does not use them without the fund's or manager's prior consent and notice to the depositary, and follows the AIFM Act's custody rules; delegation to a third country where local law requires local custody has its own conditions."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4–5 §",
+      "dutyType": "governance",
+      "terms": [
+       "service_type:custody"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add VNa korkotulon lähdeverosta, 428/2000",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/2000/428",
+   "sourceLabel": "Finlex, Valtioneuvoston asetus korkotulon lähdeverosta (428/2000), consolidated text in force",
+   "payload": {
+    "key": "fi-sd-2000-428",
+    "titles": {
+     "fi": "Valtioneuvoston asetus korkotulon lähdeverosta",
+     "en": "Government Decree on Withholding Tax on Interest Income"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "VNa korkotulon lähdeverosta",
+    "officialRef": "428/2000",
+    "level": "government_regulation",
+    "jurisdiction": "fi",
+    "authority": "valtioneuvosto",
+    "regime": "regime:tax",
+    "inForceFrom": "2000-06-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Leave interest source tax unwithheld only for the recipients and on the evidence the decree allows",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/2000/428#sec_1",
+     "sourceLabel": "Finlex, Valtioneuvoston asetus korkotulon lähdeverosta (428/2000), 1 §",
+     "payload": {
+      "key": "obl-fi-interest-tax-decree-exemptions",
+      "titles": {
+       "en": "Leave interest source tax unwithheld only for the recipients and on the evidence the decree allows"
+      },
+      "summaries": {
+       "en": "A payer of interest such as a bank may leave the interest source tax unwithheld only when the interest is paid to the state or its institutions, a municipality, a joint municipal authority or a parish, or to an account whose holder is reliably shown to be a registered association, partnership or joint estate under the Income Tax Act. A non-resident recipient must give the payer, before payment, a source tax card or its name, date of birth, any other official identifier and home-country address."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  }
+ ]
+}

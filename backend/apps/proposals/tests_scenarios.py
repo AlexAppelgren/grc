@@ -15,8 +15,10 @@ from __future__ import annotations
 
 import json
 import re
+import tempfile
 import uuid
 from datetime import date
+from pathlib import Path
 from typing import Any
 from unittest import mock
 
@@ -1425,3 +1427,47 @@ class ProposalsScenarioTests(ScenarioTestCase):
                 self.assertEqual((answer.status_code, answer.json()["code"]), (404, "not_found"))
                 for key in (every_scope, bank_key):
                     self.assertEqual(self._post(f"/private-proposals/{proposal.id}/{verb}", body, {"HTTP_X_API_KEY": key.plain_key}).status_code, 401)
+
+    def test_pro_s16(self) -> None:
+        """PRO-S16
+
+        The library baseline arrives through the queue, instruments first (PRO-01, PRO-02,
+        INV-01, INV-03, INV-05).
+        """
+        from apps.agents.models import AgentRun
+        from apps.agents.seeds import seed_agent_definitions
+        from apps.proposals import baseline
+        from apps.proposals.tests_baseline import _duty, _instrument
+
+        seed_authorities()
+        tenancy.clear_tenant()  # the command files in no tenant's zone
+        seed_agent_definitions()
+        folder = self.enterContext(tempfile.TemporaryDirectory())
+        body = {"tranche": "pro-s16", "researchedOn": "2026-09-30", "instruments": [_instrument("pro-s16", _duty("obl-pro-s16"))]}
+        (Path(folder) / "pro-s16.json").write_text(json.dumps(body), encoding="utf-8")
+        self.enterContext(mock.patch.object(baseline, "BASELINE_DIR", Path(folder)))
+
+        first = baseline.file()
+        instrument = Proposal.objects.get(payload__key="pro-s16")
+        self.assertEqual((instrument.kind, instrument.status, getattr(instrument.proposed_by_agent, "key", None)), ("new_instrument", "open", "library-baseline"))
+        self.assertEqual(set(instrument.field_sources), set(logic.sourced_fields(logic.parsed_payload(instrument.kind, instrument.payload))))
+        self.assertEqual(first.waiting["pro-s16"], 1, "the duty waits for its instrument")
+        run = AgentRun.objects.get(pk=instrument.agent_run_id or uuid.uuid4())
+        self.assertEqual((run.agent.key, run.status, run.stats["proposalsSubmitted"], run.external_session_id), ("library-baseline", "succeeded", 1, ""))
+
+        approved = self._post(f"/proposals/{instrument.id}/approve", {}, sign_in(self.editor, step_up=True))
+        self.assertEqual((approved.status_code, approved.json()["status"]), (200, "approved"), approved.content)
+        tenancy.clear_tenant()
+        self.assertTrue(Instrument.objects.filter(stable_key="pro-s16").exists())
+
+        second = baseline.file()
+        self.assertEqual(second.filed[("pro-s16", baseline.OBLIGATION)], 1)
+        duty = Proposal.objects.get(payload__key="obl-pro-s16")
+        self.assertEqual(duty.payload["instrument"], "pro-s16")
+        approved = self._post(f"/proposals/{duty.id}/approve", {}, sign_in(self.editor, step_up=True))
+        self.assertEqual((approved.status_code, approved.json()["status"]), (200, "approved"), approved.content)
+        tenancy.clear_tenant()
+        self.assertTrue(Obligation.objects.filter(stable_key="obl-pro-s16").exists())
+
+        third = baseline.file()
+        self.assertEqual((sum(third.filed.values()), third.runs, sum(third.held.values())), (0, 0, 2))

@@ -261,3 +261,24 @@ until he exercises it on the test deployment.
 - **Owner-blocked:** clamd on Railway (D-101), the D-07 model key and EU path, the D-09
   embedding key and retrieval baseline, the test deployment and legal on standard titles;
   listed first in `docs/TODO_FOR_alex.md` ("R2 is closed").
+
+## The library baseline (`claude/library-baseline`, 2026-10-01, D-118, ADR 0065)
+
+The shared library's starting inventory, researched on 2026-09-30 and 2026-10-01 and filed
+through the proposal door, so a bank's first scope setting meets real law instead of an
+empty library (PRO-01, PRO-02, INV-01, INV-03, INV-05, WAT-01).
+
+- **Built:** 24 tranches in `backend/apps/library/baseline/` (544 instruments, 1,894 duties;
+  EU, Sweden, Denmark, Norway and Finland, market abuse and financial sanctions included),
+  every fact a row in the Verification log; `check_baseline.py` and
+  `apps/proposals/tests_baseline.py`, which files and approves the whole baseline; the
+  platform agent `library-baseline` (v1, no model), filed by the beat every
+  `LIBRARY_BASELINE_FILING_MINUTES` and by `manage.py file_library_baseline`, which also
+  registers the fifteen pages in `sources.json`; the instrument level
+  `government_regulation` and the issuers it needed; sanctions under `aml` in watch-sweeper
+  v2 and library-confirmer v3; the console queue's New instrument and New obligation filters,
+  the review screen's facts for a new record, and approving a page at once with one passkey,
+  each proposal through its own approval (PRO-S16, PRO-S17).
+- **Owner-blocked:** approving the queue (the agent that filed it cannot), publishing the two
+  new agent versions, and Digitaliseringsministeriet's successor; listed in
+  `docs/TODO_FOR_alex.md` ("The library baseline").

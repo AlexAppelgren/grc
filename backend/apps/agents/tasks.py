@@ -130,6 +130,14 @@ def open_platform_run(agent: Agent) -> AgentRun:
     )
 
 
+def open_baseline_run(agent_key: str, *, actor: Actor) -> AgentRun:
+    """Open a run of one of bleqq's agents whose runner is the calling command, in no
+    tenant's zone: the library baseline's filing (D-118, ADR 0065). Recorded like every run
+    and handed to no runner, since the command is the one doing the work."""
+    agent = Agent.objects.get(key=agent_key, scope=AgentScopeKind.PLATFORM.value)
+    return opener.open_run(pinned=_pinned(agent), trigger=RunTrigger.MANUAL, actor=actor, hand_over=False)
+
+
 def _period_start(cadence: str, now: datetime.datetime) -> datetime.datetime:
     """The start of the UTC calendar period a cadence runs once in."""
     today = now.astimezone(datetime.UTC).date()

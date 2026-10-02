@@ -560,6 +560,106 @@ test.describe('proposals journeys', () => {
   });
 });
 
+// The library baseline (D-118, ADR 0065): the two instruments the seed files as the platform
+// agent library-baseline (e2e_seed.py EXPECTED_BASELINE), copied from the market abuse
+// tranche, and the duties under them, which wait for them to be approved. The facts read
+// here are the fixture's (backend/apps/library/fixtures/e2e_baseline/e2e-baseline.json) and
+// the seeded lists' labels, never catalog copy.
+const BASELINE_INSTRUMENTS = [
+  {
+    title: "Add MAR managers' transactions ITS, Commission Implementing Regulation (EU) 2016/523",
+    shortName: "MAR managers' transactions ITS",
+    officialRef: 'Commission Implementing Regulation (EU) 2016/523',
+    eli: 'https://data.europa.eu/eli/reg_impl/2016/523/oj',
+    source: 'https://eur-lex.europa.eu/eli/reg_impl/2016/523/oj',
+  },
+  { title: 'Add SSR ITS 827/2012, Commission Implementing Regulation (EU) No 827/2012' },
+] as const;
+const BASELINE_DUTIES = [
+  "Add the duty: Notify managers' transactions on the prescribed template by secure electronic means",
+  'Add the duty: Hold a qualifying borrow agreement or locate confirmation before every short sale',
+  'Add the duty: Be able to prove delivery capacity when giving locate confirmations',
+];
+
+/** The queue's rows of one kind once the filter in the address has been read: no row of another kind is left on screen. */
+async function queueOfKind(page: Page, kind: string): Promise<void> {
+  await expect(page).toHaveURL(new RegExp(`[?&]kind=${kind}(&|$)`));
+  await expect(page.locator(`[data-proposal-rows] [data-proposal-id]:not([data-proposal-kind="${kind}"])`)).toHaveCount(0);
+  await queueSettled(page);
+}
+
+test.describe('the library baseline', () => {
+  test("PRO-S17: A library editor approves the baseline's new instruments from the queue, many at once", async ({ page, apiGuard }) => {
+    // PRO-01, PRO-02, PRO-03, AC-PRO2. Each approval is the one approve route's, behind the
+    // passkey; the server's own refusals (four eyes, a flagged proposal) are the integration
+    // tests'. Approving cannot be undone, so a retry finds the instruments under Approved and
+    // reads them there.
+    test.setTimeout(120_000);
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/api\/v1\/proposals\/[^/]+\/approve$/, 403, 'the first approval answers step_up_required, which opens the passkey prompt');
+    const [first, second] = BASELINE_INSTRUMENTS;
+    const row = (title: string) => page.locator('[data-proposal-rows] [data-proposal-id]').filter({ has: page.getByRole('heading', { level: 3, name: title, exact: true }) });
+
+    // The editor narrows the queue to new instruments; the address keeps the choice.
+    await signInAs(page, LOGINS.editor);
+    await page.goto('/console/queue');
+    await queueSettled(page);
+    await page.getByRole('combobox', { name: 'Kind' }).selectOption({ label: 'New instrument' });
+    await queueOfKind(page, 'new_instrument');
+    const waiting = (await row(first.title).count()) > 0;
+    if (!waiting) {
+      await page.getByRole('tab', { name: 'Approved' }).click();
+      await queueOfKind(page, 'new_instrument');
+    }
+
+    // One of them, opened: the facts it would add by their labels, and a source beside each field.
+    await row(first.title).click();
+    await expect(page.getByRole('heading', { level: 1, name: first.title })).toBeVisible();
+    const record = page.locator('[data-proposal-record="new_instrument"]');
+    const fact = (field: string) => record.locator(`[data-proposal-fact="${field}"]`);
+    await expect(fact('titles')).toContainText('English (original)');
+    await expect(fact('shortName')).toHaveText(first.shortName);
+    await expect(fact('officialRef')).toHaveText(first.officialRef);
+    await expect(fact('eliUri').getByRole('link')).toHaveAttribute('href', first.eli);
+    await expect(fact('level')).toHaveText('EU regulation');
+    await expect(fact('jurisdiction')).toHaveText('European Union');
+    await expect(fact('regime')).toHaveText('Securities');
+    await expect(fact('inForceFrom')).toHaveText('6 Apr 2016');
+    const sources = page.locator('[data-proposal-sources]');
+    await expect(sources.locator('dt')).toHaveText(['Title (English)', 'Short name', 'Official reference', 'ELI', 'Level', 'Jurisdiction', 'Authority', 'Regime', 'In force from']);
+    await expect(sources.locator(`dd a[href="${first.source}"]`)).toHaveCount(9);
+    await expect(page.locator('[data-proposal-correction]')).toHaveCount(0);
+
+    // Back on the filtered queue, every row on the page selected and approved behind one passkey.
+    await page.goBack();
+    await queueOfKind(page, 'new_instrument');
+    if (waiting) {
+      await expect(row(second.title)).toBeVisible();
+      await page.locator('[data-select-all]').check();
+      const selection = page.getByRole('region', { name: 'Selection' });
+      await expect(selection).toContainText('2 selected');
+      await selection.getByRole('button', { name: 'Approve 2 proposals' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Approve 2 proposals?' });
+      await dialog.getByRole('button', { name: 'Approve 2 proposals' }).click();
+      const result = page.locator('[data-approve-many-result]');
+      await completeStepUp(page, result);
+      await expect(result).toContainText('2 proposals approved.');
+      await expect(result.locator('[data-approve-many-refused]')).toHaveCount(0);
+      // Waiting holds no new instrument any more.
+      await expect(page.locator('[data-empty-state]')).toBeVisible();
+      await page.getByRole('tab', { name: 'Approved' }).click();
+      await queueOfKind(page, 'new_instrument');
+    }
+    for (const { title } of BASELINE_INSTRUMENTS) await expect(row(title)).toHaveAttribute('data-proposal-status', 'approved');
+
+    // Their duties are what the next filing adds (ADR 0065): none of them waits yet.
+    await page.goto('/console/queue?kind=new_obligation');
+    await expect(page.getByRole('combobox', { name: 'Kind' })).toHaveValue('new_obligation');
+    await queueOfKind(page, 'new_obligation');
+    for (const title of BASELINE_DUTIES) await expect(row(title)).toHaveCount(0);
+  });
+});
+
 // The bank's own queue (PRD 0.7, OWN-03). What it decides is what tenant A's own agent
 // reports into the seeded research (e2e_seed.py, EXPECTED_OWN_RECORDS): two instruments of
 // its own, as parts numbered for the attempt, so a retry never meets a proposal an earlier

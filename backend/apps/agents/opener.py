@@ -67,9 +67,12 @@ def open_run(
     budget_limit: Decimal | None = None,
     scope: dict[str, Any] | None = None,
     research_request: ResearchRequest | None = None,
+    hand_over: bool = True,
 ) -> AgentRun:
     """Record the run, then hand it to the runner. The row and its audit row are written
-    before the runner is called, in the caller's transaction."""
+    before the runner is called, in the caller's transaction. `hand_over=False` records a
+    run whose runner is the caller itself, the library baseline's command (D-118), which
+    reports its close through the runner-event path like any runner."""
     run = AgentRun.objects.create(
         agent_id=pinned.agent_id,
         agent_version_id=pinned.version_id,
@@ -102,7 +105,8 @@ def open_run(
             **({"researchRequest": str(research_request.id)} if research_request is not None else {}),
         },
     )
-    _hand_over(run, pinned, actor)
+    if hand_over:
+        _hand_over(run, pinned, actor)
     return run
 
 

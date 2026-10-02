@@ -2,8 +2,22 @@ import type { PillTone } from '@/components/ui/pill-tones';
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
 import { proposalStatusTone, slotTone } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
+import { STEP_UP_REQUIRED_CODE } from '@/shared/utils/api-client';
+import type { DatePrecision } from '@/shared/utils/format';
+import { NETWORK_PROBLEM_CODE, problemFrom } from '@/shared/utils/problem';
 
-import { TERM_KINDS, VOCABULARY_KINDS, type ObligationVersionPayload, type ProposalKind, type ProposalQueueRow, type ProposalRow, type ProposalStatus, type VocabularyProposalPayload } from './types';
+import {
+  TERM_KINDS,
+  VOCABULARY_KINDS,
+  type InstrumentPayload,
+  type NewObligationPayload,
+  type ObligationVersionPayload,
+  type ProposalKind,
+  type ProposalQueueRow,
+  type ProposalRow,
+  type ProposalStatus,
+  type VocabularyProposalPayload,
+} from './types';
 
 // Pills and derived facts for the console queue (design/screens/console-queue.html;
 // PRO-01, PRO-02, PRO-03, AC-PRO2). Tone is never chosen by a person: the kind pill
@@ -126,6 +140,29 @@ export function agentCorrectionLine(row: Decision, t: Translate): string | null 
   return agent === undefined ? null : t('console.queue.detail.correctedByAgent', { agent });
 }
 
+/**
+ * Why a waiting row cannot be approved together with others, or null when it can: it is
+ * open, one record, not the reader's own, and nothing in it was flagged. A flagged
+ * proposal is opened and read before anyone approves it (AGT-07); the reader's own needs
+ * someone else (AC-PRO2); a batch is decided row by row on its own screen (PRO-04).
+ */
+export function selectionBlock(row: Pick<ProposalQueueRow, 'status' | 'isBatch' | 'isMine' | 'riskFlags'>, t: Translate): string | null {
+  if (row.status !== 'open') return t('console.queue.select.blocked.decided');
+  if (row.isBatch === true) return t('console.queue.select.blocked.batch');
+  if (row.isMine === true) return t('console.queue.select.blocked.mine');
+  if ((row.riskFlags ?? []).length > 0) return t('console.queue.select.blocked.flagged');
+  return null;
+}
+
+/** Why the server refused one approval of many: the passkey not given, the network, or the server's own sentence (branching on `code`, never on `detail`). */
+export function refusalReason(error: unknown, t: Translate): string {
+  const problem = problemFrom(error);
+  if (problem === null) return t('problem.generic');
+  if (problem.code === STEP_UP_REQUIRED_CODE) return t('console.queue.approveMany.passkeyNotGiven');
+  if (problem.code === NETWORK_PROBLEM_CODE) return t('problem.network');
+  return problem.detail === '' ? t('problem.generic') : problem.detail;
+}
+
 export function sourceLine(row: Pick<ProposalRow, 'sourceLabel'>, t: Translate): string | null {
   return row.sourceLabel.trim() === '' ? null : t('console.queue.source', { source: row.sourceLabel });
 }
@@ -151,23 +188,109 @@ export function vocabularyPayloadOf(row: Pick<ProposalRow, 'payload'>): Vocabula
   return (row.payload ?? {}) as unknown as VocabularyProposalPayload;
 }
 
-/** The per-field source panel beside "What changes": one line per field the proposal sources, in a fixed, readable order. */
-export function fieldSourceLabel(field: string, languageName: (code: string) => string, t: Translate): string {
-  if (field === 'effectiveFrom') return t('console.queue.field.effectiveFrom');
-  if (field === 'terms') return t('console.queue.field.scope');
-  if (field.startsWith('summaries.')) return t('console.queue.field.text', { language: languageName(field.slice('summaries.'.length)) });
-  return field;
+/** A new record's payload, read by its kind; null for any other kind or a payload without its titles. */
+function newRecordPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>, kind: ProposalKind): Record<string, unknown> | null {
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+  return row.kind === kind && typeof payload.titles === 'object' && payload.titles !== null ? payload : null;
 }
 
-const FIELD_ORDER = ['summaries', 'effectiveFrom', 'terms'] as const;
+export function instrumentPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>): InstrumentPayload | null {
+  return newRecordPayloadOf(row, 'new_instrument') as InstrumentPayload | null;
+}
+
+export function newObligationPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>): NewObligationPayload | null {
+  return newRecordPayloadOf(row, 'new_obligation') as NewObligationPayload | null;
+}
+
+export interface LanguageText {
+  language: string;
+  text: string;
+  /** `original` for the language it was written in, `machine` for a machine translation (AUD-02), else `none`. */
+  mark: 'original' | 'machine' | 'none';
+}
+
+/** A text per language, the original first and then the rest alphabetically, each marked as the original or a machine translation. */
+export function languageTexts(texts: Readonly<Record<string, string>>, originalLanguage: string, isMachine = false): LanguageText[] {
+  return Object.entries(texts)
+    .map(([language, text]): LanguageText => ({ language, text, mark: language === originalLanguage ? 'original' : isMachine ? 'machine' : 'none' }))
+    .sort((a, b) => Number(b.mark === 'original') - Number(a.mark === 'original') || a.language.localeCompare(b.language));
+}
+
+const PRECISIONS: readonly DatePrecision[] = ['day', 'month', 'quarter', 'year'];
+
+/** A legal date's precision as the payload names it, `day` when it names none or one the client does not know. */
+export function precisionOf(value: string | undefined): DatePrecision {
+  return PRECISIONS.find((precision) => precision === value) ?? 'day';
+}
+
+/** The label of `key` in a list read from its own rows, or the key itself while the list is loading or holds no such row. */
+export function labelOfKey(rows: readonly { key: string; label: string }[] | undefined, key: string): string {
+  return rows?.find((row) => row.key === key)?.label ?? key;
+}
+
+/** Whether a new instrument binds: yes, no, or left to its level's default (schemas.py `ProposalInstrumentPayload.binding`). */
+export function bindingLabel(binding: boolean | null | undefined, t: Translate): string {
+  if (binding === true) return t('console.queue.detail.binding.yes');
+  if (binding === false) return t('console.queue.detail.binding.no');
+  return t('console.queue.detail.binding.levelDefault');
+}
+
+// Every field a proposal sources (backend/apps/proposals/logic.py `sourced_fields`), named in
+// words and listed in this order: where the record sits, its names and texts, how it is
+// cited, how it is classed, when it binds, its scope, and what it implements. A text field
+// is sourced per language (`titles.sv`), so its label names the language.
+const FIELD_LABEL = {
+  instrument: 'console.queue.field.instrument',
+  parent: 'console.queue.field.parent',
+  titles: 'console.queue.field.title',
+  summaries: 'console.queue.field.text',
+  texts: 'console.queue.field.legalText',
+  shortName: 'console.queue.field.shortName',
+  officialRef: 'console.queue.field.officialRef',
+  refLabel: 'console.queue.field.refLabel',
+  heading: 'console.queue.field.heading',
+  provisionKind: 'console.queue.field.provisionKind',
+  eliUri: 'console.queue.field.eliUri',
+  level: 'console.queue.field.level',
+  binding: 'console.queue.field.binding',
+  jurisdiction: 'console.queue.field.jurisdiction',
+  authority: 'console.queue.field.authority',
+  regime: 'console.queue.field.regime',
+  dutyType: 'console.queue.field.dutyType',
+  effectiveFrom: 'console.queue.field.effectiveFrom',
+  inForceFrom: 'console.queue.field.inForceFrom',
+  inForceTo: 'console.queue.field.inForceTo',
+  terms: 'console.queue.field.scope',
+  implementsNote: 'console.queue.field.implementsNote',
+} as const satisfies Record<string, MessageKey>;
+
+type SourcedField = keyof typeof FIELD_LABEL;
+
+const FIELD_ORDER = Object.keys(FIELD_LABEL);
+
+function isSourcedField(name: string): name is SourcedField {
+  return name in FIELD_LABEL;
+}
+
+/** `titles.sv` belongs to `titles`; a field with no language is its own group. */
+function groupOf(field: string): string {
+  const dot = field.indexOf('.');
+  return dot === -1 ? field : field.slice(0, dot);
+}
+
+/** The per-field source panel beside "What changes": one line per field the proposal sources, in words. */
+export function fieldSourceLabel(field: string, languageName: (code: string) => string, t: Translate): string {
+  const group = groupOf(field);
+  if (!isSourcedField(group)) return field;
+  return group === field ? t(FIELD_LABEL[group]) : t(FIELD_LABEL[group], { language: languageName(field.slice(group.length + 1)) });
+}
 
 function fieldRank(field: string): number {
-  const group = field.startsWith('summaries.') ? 'summaries' : field;
-  const index = (FIELD_ORDER as readonly string[]).indexOf(group);
+  const index = FIELD_ORDER.indexOf(groupOf(field));
   return index === -1 ? FIELD_ORDER.length : index;
 }
 
-/** `fieldSources` as ordered `{field, url}` rows: summaries first (language order), then the effective date, then scope. */
+/** `fieldSources` as ordered `{field, url}` rows in the fixed order above, a text's languages alphabetically, anything else last. */
 export function fieldSourceRows(fieldSources: Record<string, string>): { field: string; url: string }[] {
   return Object.entries(fieldSources)
     .map(([field, url]) => ({ field, url }))

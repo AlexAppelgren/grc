@@ -2576,3 +2576,30 @@ class SeededOwnRecords(SeededOnce):
         with self.assertRaises(CommandError):
             call_command("e2e_scope_findings", "no_such_regulation", stdout=StringIO())
 # --- end d89-e2e-journey --------------------------------------------------------------------------
+
+
+# --- console-new-records (PRO-S17; D-118, ADR 0065) -----------------------------------------------
+class SeededBaseline(SeededOnce):
+    """PRO-S17 approves the library baseline's waiting instruments from the console queue, all
+    of them at once, and reads that their duties are not filed yet."""
+
+    def test_the_baseline_instruments_wait_filed_by_their_agent_and_their_duties_wait_for_them(self) -> None:
+        from apps.shared.e2e_seed import EXPECTED_BASELINE as spec
+
+        tenancy.clear_tenant()
+        self.assertEqual(self.counts["baseline_proposals"], len(spec.instruments))
+        filed = Proposal.objects.filter(proposed_by_agent__key=spec.agent)
+        self.assertEqual(sorted(filed.values_list("payload__key", flat=True)), sorted(spec.instruments))
+        for proposal in filed:
+            with self.subTest(instrument=proposal.payload["key"]):
+                self.assertEqual((proposal.kind, proposal.status), ("new_instrument", ProposalStatus.OPEN.value))
+                self.assertIsNotNone(proposal.agent_run_id, "filed under a run of the agent")
+                self.assertEqual(set(proposal.field_sources), set(sourced_fields(parsed_payload(proposal.kind, proposal.payload))))
+                self.assertEqual(proposal.risk_flags, [], "the journey selects every one of them")
+        self.assertFalse(Instrument.objects.filter(stable_key__in=spec.instruments).exists(), "the sample library holds neither")
+        self.assertFalse(Obligation.objects.filter(stable_key__in=spec.duties).exists())
+
+        # A reseed files nothing: the instruments are open, and their duties still wait for them.
+        self.assertEqual(seed_e2e()["baseline_proposals"], 0)
+        self.assertEqual(Proposal.objects.filter(proposed_by_agent__key=spec.agent).count(), len(spec.instruments))
+# --- end console-new-records ----------------------------------------------------------------------

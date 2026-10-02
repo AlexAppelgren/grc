@@ -5,7 +5,9 @@ import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing
 import { tokenStore } from '@/shared/utils/api-client';
 
 import {
+  approveInTurn,
   retagInFlight,
+  useApproveMany,
   useApproveProposal,
   useCreateRetagRequest,
   useDecideProposalBatch,
@@ -47,6 +49,68 @@ describe('proposals hooks', () => {
     const approve = renderHook(() => useApproveProposal('p-1'), { wrapper });
     await approve.result.current.mutateAsync({ note: '' });
     expect(sent[0]?.path).toBe('/api/v1/proposals/p-1/approve');
+  });
+
+  it('approves many through the one approve route, one after another, each with an empty note', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { status: 'approved' } }));
+    const done: number[] = [];
+    const outcome = await approveInTurn(
+      [
+        { id: 'p-1', title: 'First' },
+        { id: 'p-2', title: 'Second' },
+      ],
+      (count) => done.push(count),
+    );
+    expect(outcome).toEqual({ approved: 2, refused: [] });
+    expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([
+      ['post', '/api/v1/proposals/p-1/approve', { note: '' }],
+      ['post', '/api/v1/proposals/p-2/approve', { note: '' }],
+    ]);
+    expect(done).toEqual([1, 2]);
+  });
+
+  it('keeps a refusal with its title and goes on to the next', async () => {
+    const sent = installAdapter((s) => (s.path.includes('p-1') ? { status: 409, data: { code: 'four_eyes_violation', detail: 'You proposed this.' } } : { status: 200, data: {} }));
+    const outcome = await approveInTurn(
+      [
+        { id: 'p-1', title: 'First' },
+        { id: 'p-2', title: 'Second' },
+      ],
+      () => undefined,
+    );
+    expect(outcome.approved).toBe(1);
+    expect(outcome.refused.map((refusal) => [refusal.id, refusal.title])).toEqual([['p-1', 'First']]);
+    expect(sent).toHaveLength(2);
+  });
+
+  it('stops when the passkey was not given, leaving the rest waiting rather than asking again for each', async () => {
+    // No step-up handler is installed, so the 403 reaches the caller as the closed prompt does.
+    const sent = installAdapter(() => ({ status: 403, data: { code: 'step_up_required', detail: 'Confirm with your passkey.' } }));
+    const outcome = await approveInTurn(
+      [
+        { id: 'p-1', title: 'First' },
+        { id: 'p-2', title: 'Second' },
+      ],
+      () => undefined,
+    );
+    expect(outcome.approved).toBe(0);
+    expect(outcome.refused.map((refusal) => refusal.id)).toEqual(['p-1']);
+    expect(sent).toHaveLength(1);
+  });
+
+  it('counts the approvals made as it goes and re-reads the queue when the run ends', async () => {
+    installAdapter(() => ({ status: 200, data: {} }));
+    const { wrapper, queryClient } = queryWrapper();
+    const invalidated: unknown[] = [];
+    const original = queryClient.invalidateQueries.bind(queryClient);
+    queryClient.invalidateQueries = (filters) => {
+      invalidated.push(filters?.queryKey);
+      return original(filters);
+    };
+    const many = renderHook(() => useApproveMany(), { wrapper });
+    await many.result.current.mutateAsync([{ id: 'p-1', title: 'First' }]);
+    await waitFor(() => expect(many.result.current.done).toBe(1));
+    expect(invalidated).toContainEqual(['proposals']);
   });
 
   it('rejecting sends the reason and the note', async () => {

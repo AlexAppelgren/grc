@@ -23020,6 +23020,13 @@ export interface components {
              */
             id: string;
             /**
+             * Instrumentshortname
+             * @description For a `new_obligation`, the short name of the shared instrument the duty would sit under, the one `payload.instrument` names by its stable key, as the library holds it now, for example "MAR". Empty for every other kind, and empty when the shared library holds no instrument under that key, in which case approving the proposal answers 422 `unknown_key` and writes nothing.
+             * @default
+             * @example MAR
+             */
+            instrumentShortName: string;
+            /**
              * Isbatch
              * @description True when the proposal is a batch: one request that changes many library records, with a row per record read through `GET /proposal-batches/{batchId}`. The queue lists a batch once, as this row. False for a proposal that changes one record or creates one.
              * @default false

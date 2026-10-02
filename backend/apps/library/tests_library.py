@@ -177,10 +177,10 @@ class LibraryLoaderTests(TestCase):
         seed_library()
         filed = AuditEvent.objects.filter(action="library.seeded", subject_type__in=("authority", "instrument", "obligation"))
         audited = filed.count()
-        self.assertEqual(audited, 11 + 18 + 18, "one audit row per authority, instrument and obligation")
+        self.assertEqual(audited, 32 + 18 + 18, "one audit row per authority, instrument and obligation")
         summaries = ObligationSummary.objects.count()
         self.assertEqual(load_library(), {"instruments": 18, "provisions": 9, "obligations": 18, "obligation_versions": 19})
-        self.assertEqual(seed_authorities(), 11)
+        self.assertEqual(seed_authorities(), 32)
         self.assertEqual(filed.count(), audited)
         self.assertEqual(ObligationSummary.objects.count(), summaries)
 

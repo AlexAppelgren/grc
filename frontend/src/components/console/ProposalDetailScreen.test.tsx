@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
@@ -73,14 +73,29 @@ function detail(overrides: Partial<ProposalDetail>): ProposalDetail {
     scopeAfter: null,
     rejectionReason: null,
     appliedVersion: null,
+    instrumentShortName: '',
     ...overrides,
   };
 }
+
+// The reads a console session makes to label a new record's keys: two library lists, the
+// jurisdictions and the terms of a dimension. Anything else is refused, as GET /authorities is.
+const READS: Readonly<Record<string, unknown>> = {
+  '/api/v1/vocab/instrument_level': { items: [{ key: 'eu_regulation', kind: null, label: 'EU regulation', labels: {}, usageNote: '', sortOrder: 0, active: true, isSystem: true, isDefault: false, usageCount: 0, extra: {} }], total: 1 },
+  '/api/v1/vocab/duty_type': { items: [{ key: 'reporting', kind: null, label: 'Reporting', labels: {}, usageNote: '', sortOrder: 0, active: true, isSystem: true, isDefault: false, usageCount: 0, extra: {} }], total: 1 },
+  '/api/v1/reference/jurisdictions': [{ key: 'eu', kind: 'supranational', label: 'European Union', parentKey: null }],
+};
 
 function renderWith(row: ProposalDetail): void {
   installAdapter((sent) => {
     if (sent.path === '/api/v1/me') return { status: 200, data: editor };
     if (sent.path === `/api/v1/proposals/${row.id}`) return { status: 200, data: row };
+    if (sent.path in READS) return { status: 200, data: READS[sent.path] };
+    if (sent.path === '/api/v1/taxonomy/terms') {
+      const dimension = (sent.params as { dimension?: string }).dimension;
+      const items = dimension === 'regime' ? [{ id: 't1', key: 'securities', label: 'Securities', dimension: 'regime' }] : [{ id: 't2', key: 'pre_trade', label: 'Before the trade', dimension: 'lifecycle_stage' }];
+      return { status: 200, data: { items, total: items.length } };
+    }
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
   });
   const { wrapper: Query } = queryWrapper();
@@ -155,6 +170,105 @@ describe('the decision panel', () => {
     expect(await screen.findByText(/reads like an instruction to an AI/)).toBeInTheDocument();
     expect(screen.getByText('Flagged')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Approve and apply' })).toBeInTheDocument();
+  });
+
+  it('shows a new instrument\'s facts by their labels, the original title first, and plain Approve and Reject', async () => {
+    renderWith(
+      detail({
+        kind: 'new_instrument',
+        title: 'Add MAR managers\' transactions ITS',
+        targetType: '',
+        targetId: null,
+        payload: {
+          key: 'celex-32016r0523',
+          titles: { sv: 'Kommissionens genomförandeförordning (EU) 2016/523', en: 'Commission Implementing Regulation (EU) 2016/523' },
+          originalLanguage: 'en',
+          isMachine: true,
+          shortName: 'MAR managers\' transactions ITS',
+          officialRef: 'Commission Implementing Regulation (EU) 2016/523',
+          eliUri: 'https://data.europa.eu/eli/reg_impl/2016/523/oj',
+          level: 'eu_regulation',
+          jurisdiction: 'eu',
+          authority: 'european-commission',
+          regime: 'regime:securities',
+          inForceFrom: '2016-04-06',
+          inForceTo: '2030-01-01',
+          inForceToPrecision: 'year',
+          implementsNote: 'Article 19 of MAR',
+        },
+        fieldSources: { 'titles.en': 'https://eur-lex.europa.eu/eli/reg_impl/2016/523/oj', shortName: 'https://eur-lex.europa.eu/eli/reg_impl/2016/523/oj' },
+      }),
+    );
+    const facts = await screen.findByRole('heading', { name: 'What it adds' });
+    const panel = facts.closest('section') as HTMLElement;
+    const fact = (field: string) => panel.querySelector(`[data-proposal-fact="${field}"]`);
+    await waitFor(() => expect(fact('level')).toHaveTextContent('EU regulation'));
+    await waitFor(() => expect(fact('jurisdiction')).toHaveTextContent('European Union'));
+    await waitFor(() => expect(fact('regime')).toHaveTextContent('Securities'));
+    const titles = within(fact('titles') as HTMLElement).getAllByText(/^(English|Swedish) \(/).map((node) => node.textContent);
+    expect(titles).toEqual(['English (original)', 'Swedish (machine translation)']);
+    expect(fact('shortName')).toHaveTextContent("MAR managers' transactions ITS");
+    expect(within(fact('eliUri') as HTMLElement).getByRole('link')).toHaveAttribute('href', 'https://data.europa.eu/eli/reg_impl/2016/523/oj');
+    expect(fact('binding')).toHaveTextContent('As its level sets it');
+    expect(fact('authority')).toHaveTextContent('european-commission');
+    expect(fact('inForceFrom')).toHaveTextContent('6 Apr 2016');
+    expect(fact('inForceTo')).toHaveTextContent('2030');
+    expect(fact('implementsNote')).toHaveTextContent('Article 19 of MAR');
+    // The source panel names each field in words, never by its payload name.
+    const sources = within(screen.getByRole('heading', { name: 'Source' }).closest('section') as HTMLElement);
+    expect(sources.getAllByRole('term').map((term) => term.textContent)).toEqual(['Title (English)', 'Short name']);
+    expect(screen.getByRole('button', { name: 'Approve and apply' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reject' })).toBeInTheDocument();
+    expect(document.querySelector('[data-proposal-correction]')).toBeNull();
+  });
+
+  it('shows a new obligation under its instrument\'s short name and key, with its texts, duty type and scope by label', async () => {
+    renderWith(
+      detail({
+        kind: 'new_obligation',
+        title: 'Add the duty: Hold a qualifying borrow agreement',
+        targetType: '',
+        targetId: null,
+        instrumentShortName: 'SSR ITS 827/2012',
+        payload: {
+          key: 'obl-eu-ssr-its-locate-arrangements',
+          instrument: 'celex-32012r0827',
+          titles: { en: 'Hold a qualifying borrow agreement or locate confirmation before every short sale' },
+          summaries: { en: 'Before short selling a share, a firm holds one of the listed arrangements.' },
+          originalLanguage: 'en',
+          refLabel: 'Art. 5-7',
+          dutyType: 'reporting',
+          effectiveFrom: '2012-11-01',
+          terms: ['lifecycle_stage:pre_trade'],
+        },
+      }),
+    );
+    const panel = (await screen.findByRole('heading', { name: 'What it adds' })).closest('section') as HTMLElement;
+    const fact = (field: string) => panel.querySelector(`[data-proposal-fact="${field}"]`);
+    expect(fact('instrument')).toHaveTextContent('SSR ITS 827/2012celex-32012r0827');
+    expect(fact('titles')).toHaveTextContent('English (original)Hold a qualifying borrow agreement');
+    expect(fact('summaries')).toHaveTextContent('Before short selling a share');
+    expect(fact('refLabel')).toHaveTextContent('Art. 5-7');
+    expect(fact('effectiveFrom')).toHaveTextContent('1 Nov 2012');
+    await waitFor(() => expect(fact('dutyType')).toHaveTextContent('Reporting'));
+    await waitFor(() => expect(fact('terms')).toHaveTextContent('Before the trade'));
+  });
+
+  it('names an obligation\'s instrument by its key alone, and says so, when the library does not hold it', async () => {
+    renderWith(
+      detail({
+        kind: 'new_obligation',
+        targetType: '',
+        targetId: null,
+        payload: { key: 'obl-x', instrument: 'celex-32099r0001', titles: { en: 'A duty' }, summaries: { en: 'A summary.' }, originalLanguage: 'en', refLabel: 'Art. 1', dutyType: 'conduct' },
+      }),
+    );
+    const panel = (await screen.findByRole('heading', { name: 'What it adds' })).closest('section') as HTMLElement;
+    expect(panel.querySelector('[data-proposal-fact="instrument"]')).toHaveTextContent('celex-32099r0001The library does not hold this instrument.');
+    expect(panel.querySelector('[data-proposal-fact="effectiveFrom"]')).toHaveTextContent('Since the duty began');
+    expect(panel.querySelector('[data-proposal-fact="terms"]')).toHaveTextContent('No scope terms');
+    // A key no read labels stays the key, rather than a guess.
+    await waitFor(() => expect(panel.querySelector('[data-proposal-fact="dutyType"]')).toHaveTextContent('conduct'));
   });
 
   it('shows no warning for a proposal the screen found nothing in', async () => {

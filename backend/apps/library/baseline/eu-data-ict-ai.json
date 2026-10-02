@@ -1,0 +1,1649 @@
+{
+ "tranche": "eu-data-ict-ai",
+ "researchedOn": "2026-09-30",
+ "instruments": [
+  {
+   "title": "Add GDPR, Regulation (EU) 2016/679",
+   "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32016r0679",
+    "titles": {
+     "en": "Regulation (EU) 2016/679 of the European Parliament and of the Council of 27 April 2016 on the protection of natural persons with regard to the processing of personal data and on the free movement of such data, and repealing Directive 95/46/EC (General Data Protection Regulation)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "GDPR",
+    "officialRef": "Regulation (EU) 2016/679",
+    "eliUri": "https://data.europa.eu/eli/reg/2016/679/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2016-05-24"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Process personal data only on a lawful basis and in line with the processing principles",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_6",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 5 and Article 6(1)",
+     "payload": {
+      "key": "obl-eu-gdpr-lawful-basis",
+      "titles": {
+       "en": "Process personal data only on a lawful basis and in line with the processing principles"
+      },
+      "summaries": {
+       "en": "Before processing personal data the firm must rely on one of the lawful bases in Article 6(1), such as the performance of a contract, a legal obligation, consent or legitimate interests, and it must respect the principles of lawfulness, purpose limitation, data minimisation, accuracy, storage limitation and security. As controller it must be able to demonstrate that it complies with those principles."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5 and Art. 6(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-05-25",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Inform data subjects about how their personal data are processed",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_13",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 13 and Article 14",
+     "payload": {
+      "key": "obl-eu-gdpr-transparency",
+      "titles": {
+       "en": "Inform data subjects about how their personal data are processed"
+      },
+      "summaries": {
+       "en": "When the firm collects personal data from a customer or other person it must, at that time, give the information Article 13 lists: who the controller is, the purposes and legal basis, recipients, transfers, retention period, the person's rights and any automated decision-making. Where the data were obtained elsewhere, Article 14 sets the information to give and when."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 13 and Art. 14",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-05-25",
+      "terms": [
+       "lifecycle_stage:onboarding"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Act on data subjects' rights requests within one month",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_12",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 12(2) to (4) and Article 15 to 21",
+     "payload": {
+      "key": "obl-eu-gdpr-data-subject-rights",
+      "titles": {
+       "en": "Act on data subjects' rights requests within one month"
+      },
+      "summaries": {
+       "en": "The firm must make it easy for people to exercise their rights of access, rectification, erasure, restriction, portability and objection, and act on a request without undue delay and at the latest within one month, which may be extended by two further months for complex or numerous requests. On an access request it gives a copy of the data, and if it does not act it must say why and point to the right to complain to a supervisory authority."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 12(2) to (4) and Art. 15 to 21",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Maintain a record of processing activities",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_30",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 30(1), (3) and (4)",
+     "payload": {
+      "key": "obl-eu-gdpr-records-of-processing",
+      "titles": {
+       "en": "Maintain a record of processing activities"
+      },
+      "summaries": {
+       "en": "The firm must keep a written record, which may be electronic, of the processing activities under its responsibility, stating among other things the purposes, the categories of data subjects, personal data and recipients, transfers to third countries, erasure time limits where possible and a description of the security measures. It must make the record available to the supervisory authority on request."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 30(1), (3) and (4)",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Assess the impact on data protection before high-risk processing",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_35",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 35(1), (2), (3) and (7)",
+     "payload": {
+      "key": "obl-eu-gdpr-dpia",
+      "titles": {
+       "en": "Assess the impact on data protection before high-risk processing"
+      },
+      "summaries": {
+       "en": "Before processing likely to result in a high risk to people's rights and freedoms, notably systematic and extensive automated evaluation such as profiling that leads to decisions with legal or similarly significant effects, or large-scale processing of special-category or criminal-offence data, the firm must carry out a data protection impact assessment. It describes the processing, assesses its necessity, proportionality and risks, sets out the measures to address them, and takes the advice of the data protection officer where one is designated."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 35(1), (2), (3) and (7)",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-05-25",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Designate a data protection officer where the core activities require one",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_37",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 37(1), (5) and (7)",
+     "payload": {
+      "key": "obl-eu-gdpr-dpo",
+      "titles": {
+       "en": "Designate a data protection officer where the core activities require one"
+      },
+      "summaries": {
+       "en": "The firm must designate a data protection officer where its core activities consist of processing that requires regular and systematic monitoring of data subjects on a large scale, or of large-scale processing of special-category or criminal-offence data. It must publish the officer's contact details and communicate them to the supervisory authority."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 37(1), (5) and (7)",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Build data protection into processing by design and by default",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_25",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 25(1) and (2)",
+     "payload": {
+      "key": "obl-eu-gdpr-privacy-by-design",
+      "titles": {
+       "en": "Build data protection into processing by design and by default"
+      },
+      "summaries": {
+       "en": "When deciding how to process personal data and while processing, the firm must implement technical and organisational measures that put the data protection principles into effect. By default only the personal data necessary for each specific purpose may be processed."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 25(1) and (2)",
+      "dutyType": "technical",
+      "effectiveFrom": "2018-05-25",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Secure personal data with measures appropriate to the risk",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_32",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 32(1)",
+     "payload": {
+      "key": "obl-eu-gdpr-security",
+      "titles": {
+       "en": "Secure personal data with measures appropriate to the risk"
+      },
+      "summaries": {
+       "en": "Taking account of the state of the art, the cost and the risks, the firm must implement technical and organisational measures that give a level of security appropriate to the risk, for example pseudonymisation and encryption, the ongoing confidentiality, integrity, availability and resilience of systems, timely restoration of data after an incident and regular testing of the measures."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 32(1)",
+      "dutyType": "technical",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Notify a personal data breach to the supervisory authority within 72 hours",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_33",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 33(1), (3) and (5)",
+     "payload": {
+      "key": "obl-eu-gdpr-breach-notification-authority",
+      "titles": {
+       "en": "Notify a personal data breach to the supervisory authority within 72 hours"
+      },
+      "summaries": {
+       "en": "The firm must notify a personal data breach to the competent supervisory authority without undue delay and, where feasible, within 72 hours of becoming aware of it, unless the breach is unlikely to result in a risk to people's rights and freedoms; a later notification must give the reasons for the delay. Every breach, its effects and the remedial action must be documented."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 33(1), (3) and (5)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2018-05-25",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell data subjects without undue delay about a high-risk personal data breach",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_34",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 34(1) to (3)",
+     "payload": {
+      "key": "obl-eu-gdpr-breach-communication-subjects",
+      "titles": {
+       "en": "Tell data subjects without undue delay about a high-risk personal data breach"
+      },
+      "summaries": {
+       "en": "Where a breach is likely to result in a high risk to people's rights and freedoms, the firm must tell the affected data subjects without undue delay, in clear and plain language, what happened, the likely consequences and the measures taken. This is not needed where the data were, for example, encrypted, later measures removed the high risk, or individual contact would take disproportionate effort, in which case a public communication is used instead."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 34(1) to (3)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Use only processors with sufficient guarantees and bind them by a written contract",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_28",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 28(1), (3) and (9)",
+     "payload": {
+      "key": "obl-eu-gdpr-processors",
+      "titles": {
+       "en": "Use only processors with sufficient guarantees and bind them by a written contract"
+      },
+      "summaries": {
+       "en": "The firm may use only processors that give sufficient guarantees of appropriate technical and organisational measures. Each processor must be bound by a written contract or other legal act covering the subject matter, duration, nature and purpose of the processing and the processor's duties, including acting only on documented instructions, confidentiality, security, conditions for sub-processors, assistance, deletion or return of the data at the end, and audits."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 28(1), (3) and (9)",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Transfer personal data to third countries only under the conditions of Chapter V",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_44",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 44, 45(1), 46(1) and 49(1)",
+     "payload": {
+      "key": "obl-eu-gdpr-international-transfers",
+      "titles": {
+       "en": "Transfer personal data to third countries only under the conditions of Chapter V"
+      },
+      "summaries": {
+       "en": "The firm may transfer personal data to a third country or an international organisation only where the Commission has decided that it ensures an adequate level of protection, or where appropriate safeguards such as standard data protection clauses or binding corporate rules are in place and data subjects have enforceable rights and effective remedies, or where one of the specific derogations in Article 49 applies."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 44, 45(1), 46(1) and 49(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2018-05-25"
+     }
+    },
+    {
+     "title": "Add the duty: Take solely automated decisions with significant effects only where permitted and with safeguards",
+     "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj#art_22",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679, Article 22(1) to (4)",
+     "payload": {
+      "key": "obl-eu-gdpr-automated-decisions",
+      "titles": {
+       "en": "Take solely automated decisions with significant effects only where permitted and with safeguards"
+      },
+      "summaries": {
+       "en": "The firm may subject a person to a decision based solely on automated processing, including profiling, that produces legal or similarly significant effects only where it is necessary for a contract with the person, authorised by law with suitable safeguards, or based on explicit consent. In the contract and consent cases it must at least let the person obtain human intervention, express a point of view and contest the decision."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 22(1) to (4)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2018-05-25"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add GDPR Procedural Regulation, Regulation (EU) 2025/2518",
+   "source": "https://eur-lex.europa.eu/eli/reg/2025/2518/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2025/2518 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025r2518",
+    "titles": {
+     "en": "Regulation (EU) 2025/2518 of the European Parliament and of the Council of 26 November 2025 laying down additional procedural rules on the enforcement of Regulation (EU) 2016/679"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "GDPR Procedural Regulation",
+    "officialRef": "Regulation (EU) 2025/2518",
+    "eliUri": "https://data.europa.eu/eli/reg/2025/2518/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2026-01-01"
+   }
+  },
+  {
+   "title": "Add ePrivacy Directive, Directive 2002/58/EC",
+   "source": "https://eur-lex.europa.eu/eli/dir/2002/58/oj",
+   "sourceLabel": "EUR-Lex, Directive 2002/58/EC as published in the Official Journal",
+   "payload": {
+    "key": "celex-32002l0058",
+    "titles": {
+     "en": "Directive 2002/58/EC of the European Parliament and of the Council of 12 July 2002 concerning the processing of personal data and the protection of privacy in the electronic communications sector (Directive on privacy and electronic communications)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "ePrivacy Directive",
+    "officialRef": "Directive 2002/58/EC",
+    "eliUri": "https://data.europa.eu/eli/dir/2002/58/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2002-07-31"
+   }
+  },
+  {
+   "title": "Add DORA, Regulation (EU) 2022/2554",
+   "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32022r2554",
+    "titles": {
+     "en": "Regulation (EU) 2022/2554 of the European Parliament and of the Council of 14 December 2022 on digital operational resilience for the financial sector and amending Regulations (EC) No 1060/2009, (EU) No 648/2012, (EU) No 600/2014, (EU) No 909/2014 and (EU) 2016/1011"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DORA",
+    "officialRef": "Regulation (EU) 2022/2554",
+    "eliUri": "https://data.europa.eu/eli/reg/2022/2554/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2023-01-16"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make the management body responsible for ICT risk management",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_5",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 5(2) and (4)",
+     "payload": {
+      "key": "obl-eu-dora-management-body",
+      "titles": {
+       "en": "Make the management body responsible for ICT risk management"
+      },
+      "summaries": {
+       "en": "The management body must define, approve, oversee and answer for the ICT risk management framework and bears ultimate responsibility for ICT risk. It approves the digital operational resilience strategy, the ICT business continuity policy, ICT audit plans, the resilience budget and the policy on ICT third-party services, and its members must keep their ICT risk knowledge current, including through regular training."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5(2) and (4)",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-01-17",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Maintain a documented ICT risk management framework with a digital operational resilience strategy",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_6",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 6(1), (4), (5), (6) and (8)",
+     "payload": {
+      "key": "obl-eu-dora-ict-risk-framework",
+      "titles": {
+       "en": "Maintain a documented ICT risk management framework with a digital operational resilience strategy"
+      },
+      "summaries": {
+       "en": "The firm must have a sound, comprehensive and documented ICT risk management framework within its overall risk management, including a digital operational resilience strategy, and give the management and oversight of ICT risk to an independent control function. The framework is reviewed at least once a year and after major ICT-related incidents, audited regularly by internal auditors with ICT expertise, and a review report is submitted to the competent authority on request."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6(1), (4), (5), (6) and (8)",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-01-17",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Identify, classify and document ICT assets, functions and dependencies",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_8",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 8(1) and (3) to (7)",
+     "payload": {
+      "key": "obl-eu-dora-ict-asset-identification",
+      "titles": {
+       "en": "Identify, classify and document ICT assets, functions and dependencies"
+      },
+      "summaries": {
+       "en": "The firm must identify, classify and document its ICT-supported business functions and the information and ICT assets that support them, map the critical ones and document processes that depend on ICT third-party service providers. It keeps these inventories up to date, assesses ICT risk on each major change and assesses legacy ICT systems at least once a year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 8(1) and (3) to (7)",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Protect ICT systems with security policies and controls",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_9",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 9(1) to (4)",
+     "payload": {
+      "key": "obl-eu-dora-protection-prevention",
+      "titles": {
+       "en": "Protect ICT systems with security policies and controls"
+      },
+      "summaries": {
+       "en": "The firm must continuously monitor and control the security and functioning of its ICT systems and put in place an information security policy, sound network and infrastructure management, access limited to what is needed, strong authentication and protection of cryptographic keys, documented ICT change management and policies for patches and updates."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 9(1) to (4)",
+      "dutyType": "technical",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Detect anomalous activities and ICT-related incidents promptly",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_10",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 10(1) to (3)",
+     "payload": {
+      "key": "obl-eu-dora-detection",
+      "titles": {
+       "en": "Detect anomalous activities and ICT-related incidents promptly"
+      },
+      "summaries": {
+       "en": "The firm must have mechanisms to promptly detect anomalous activities, including network performance issues and ICT-related incidents, and to identify material single points of failure. The mechanisms need multiple layers of control and alert thresholds, are tested regularly, and the firm must give enough resources to monitoring user activity, ICT anomalies and cyber-attacks."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 10(1) to (3)",
+      "dutyType": "technical",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Maintain and test ICT business continuity, backup and recovery arrangements",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_11",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 11(1) to (6) and Article 12(1) to (4)",
+     "payload": {
+      "key": "obl-eu-dora-business-continuity-backup",
+      "titles": {
+       "en": "Maintain and test ICT business continuity, backup and recovery arrangements"
+      },
+      "summaries": {
+       "en": "The firm must have an ICT business continuity policy with response and recovery plans, a business impact analysis, and tests of the plans at least once a year that include cyber-attack and switchover scenarios. It must also document backup policies and restoration and recovery procedures, restore on systems segregated from the source, and keep redundant ICT capacity."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 11(1) to (6) and Art. 12(1) to (4)",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Run an ICT-related incident management process that records and classifies incidents",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_17",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 17(1) to (3) and Article 18(1) and (2)",
+     "payload": {
+      "key": "obl-eu-dora-incident-management",
+      "titles": {
+       "en": "Run an ICT-related incident management process that records and classifies incidents"
+      },
+      "summaries": {
+       "en": "The firm must define and implement a process to detect, manage and notify ICT-related incidents, record all incidents and significant cyber threats, and classify incidents by the Article 18 criteria: clients and transactions affected, duration and downtime, geographical spread, data losses, criticality of the services and economic impact. At least major incidents are reported to senior management and the management body."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 17(1) to (3) and Art. 18(1) and (2)",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Report major ICT-related incidents to the competent authority",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_19",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 19(1), (4) and (5)",
+     "payload": {
+      "key": "obl-eu-dora-major-incident-reporting",
+      "titles": {
+       "en": "Report major ICT-related incidents to the competent authority"
+      },
+      "summaries": {
+       "en": "The firm must report each major ICT-related incident to its competent authority with an initial notification, an intermediate report and a final report once the root cause analysis is complete, within the time limits and with the templates set under Article 20. It may outsource the reporting but stays fully responsible for it."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 19(1), (4) and (5)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2025-01-17",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Inform clients about a major ICT-related incident that affects their financial interests",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_19",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 19(3)",
+     "payload": {
+      "key": "obl-eu-dora-client-incident-information",
+      "titles": {
+       "en": "Inform clients about a major ICT-related incident that affects their financial interests"
+      },
+      "summaries": {
+       "en": "When a major ICT-related incident affects clients' financial interests, the firm must tell those clients without undue delay once it becomes aware of it, together with the measures taken to limit the adverse effects. For a significant cyber threat it tells potentially affected clients, where applicable, about protective measures they may take."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 19(3)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Decide whether to notify a significant cyber threat to the competent authority",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_19",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 19(2)",
+     "payload": {
+      "key": "obl-eu-dora-cyber-threat-notification",
+      "titles": {
+       "en": "Decide whether to notify a significant cyber threat to the competent authority"
+      },
+      "summaries": {
+       "en": "The firm may, on a voluntary basis, notify a significant cyber threat to its competent authority when it considers the threat relevant to the financial system, service users or clients. When it does, the notification follows the content and template laid down under Article 20."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 19(2)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2025-01-17",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Run a digital operational resilience testing programme",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_24",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 24(1) to (6) and Article 25(1)",
+     "payload": {
+      "key": "obl-eu-dora-resilience-testing",
+      "titles": {
+       "en": "Run a digital operational resilience testing programme"
+      },
+      "summaries": {
+       "en": "The firm must establish, maintain and review a risk-based digital operational resilience testing programme as part of its ICT risk management framework, have tests carried out by independent internal or external parties, classify and remedy the issues found, and test all ICT systems and applications that support critical or important functions at least once a year."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 24(1) to (6) and Art. 25(1)",
+      "dutyType": "technical",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Carry out threat-led penetration testing at least every three years when identified",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_26",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 26(1), (2), (6) and (8)",
+     "payload": {
+      "key": "obl-eu-dora-tlpt",
+      "titles": {
+       "en": "Carry out threat-led penetration testing at least every three years when identified"
+      },
+      "summaries": {
+       "en": "A firm identified by its competent authority must carry out threat-led penetration testing at least every three years on live production systems supporting several or all of its critical or important functions, with a scope the authority validates. Credit institutions classified as significant may use only external testers, and at the end the firm gives the authority a summary of the findings, the remediation plans and documentation showing the test met the requirements."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 26(1), (2), (6) and (8)",
+      "dutyType": "technical",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Adopt a strategy on ICT third-party risk and assess providers before contracting",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_28",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 28(2) and (4) and Article 29(1)",
+     "payload": {
+      "key": "obl-eu-dora-third-party-strategy",
+      "titles": {
+       "en": "Adopt a strategy on ICT third-party risk and assess providers before contracting"
+      },
+      "summaries": {
+       "en": "The firm must adopt and regularly review a strategy on ICT third-party risk that includes a policy on ICT services supporting critical or important functions. Before contracting for ICT services it assesses whether the service supports a critical or important function, identifies and assesses the risks including ICT concentration risk, carries out due diligence on the provider and assesses conflicts of interest."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 28(2) and (4) and Art. 29(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Keep a register of information on all ICT third-party contractual arrangements",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_28",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 28(3)",
+     "payload": {
+      "key": "obl-eu-dora-register-of-information",
+      "titles": {
+       "en": "Keep a register of information on all ICT third-party contractual arrangements"
+      },
+      "summaries": {
+       "en": "The firm must maintain and update, at entity level and at sub-consolidated and consolidated level, a register of information on all contractual arrangements for ICT services, distinguishing those that support critical or important functions. It reports at least once a year to the competent authority on new arrangements, provides the register on request, and informs the authority in good time of planned arrangements for critical or important functions."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 28(3)",
+      "dutyType": "record_keeping",
+      "effectiveFrom": "2025-01-17",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Include the mandatory provisions in every ICT services contract",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_30",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 30(1) to (3)",
+     "payload": {
+      "key": "obl-eu-dora-contract-provisions",
+      "titles": {
+       "en": "Include the mandatory provisions in every ICT services contract"
+      },
+      "summaries": {
+       "en": "Rights and obligations with an ICT third-party service provider must be set out in one written contract containing at least the Article 30(2) elements, such as the services, the locations of services and data, data protection, access to and return of data, incident assistance, cooperation with authorities and termination rights. Contracts for services supporting critical or important functions add the Article 30(3) elements, including full service levels, contingency plans, participation in TLPT, unrestricted access, inspection and audit rights, and exit strategies with a transition period."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 30(1) to (3)",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Put in place tested exit strategies for ICT services supporting critical or important functions",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_28",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 28(7) and (8)",
+     "payload": {
+      "key": "obl-eu-dora-exit-strategies",
+      "titles": {
+       "en": "Put in place tested exit strategies for ICT services supporting critical or important functions"
+      },
+      "summaries": {
+       "en": "For ICT services that support critical or important functions the firm must have exit strategies that let it leave the arrangement without disrupting its business, limiting its regulatory compliance or harming clients' services. Exit plans are comprehensive, documented, sufficiently tested and reviewed, and contracts must be terminable in the circumstances listed in Article 28(7)."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 28(7) and (8)",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-01-17"
+     }
+    },
+    {
+     "title": "Add the duty: Notify the competent authority of joining or leaving a cyber threat information-sharing arrangement",
+     "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj#art_45",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554, Article 45(1) and (3)",
+     "payload": {
+      "key": "obl-eu-dora-information-sharing-notice",
+      "titles": {
+       "en": "Notify the competent authority of joining or leaving a cyber threat information-sharing arrangement"
+      },
+      "summaries": {
+       "en": "The firm may exchange cyber threat information and intelligence with other financial entities within trusted communities, under arrangements that protect sensitive information and respect business confidentiality, data protection and competition rules. It must notify its competent authority when its membership is validated and when it ends."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 45(1) and (3)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2025-01-17"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DORA RTS on ICT risk management, Commission Delegated Regulation (EU) 2024/1774",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1774/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1774 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r1774",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2024/1774 of 13 March 2024 supplementing Regulation (EU) 2022/2554 of the European Parliament and of the Council with regard to regulatory technical standards specifying ICT risk management tools, methods, processes, and policies and the simplified ICT risk management framework"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DORA RTS on ICT risk management",
+    "officialRef": "Commission Delegated Regulation (EU) 2024/1774",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2024/1774/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2024-07-15"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Embed approved ICT security policies with the prescribed content in the ICT risk management framework",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1774/oj#art_2",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1774, Article 2(1) and (2)",
+     "payload": {
+      "key": "obl-eu-dora-rts-ictrm-security-policies",
+      "titles": {
+       "en": "Embed approved ICT security policies with the prescribed content in the ICT risk management framework"
+      },
+      "summaries": {
+       "en": "The firm's ICT security policies, procedures, protocols and tools must be part of its ICT risk management framework and aim at secure networks, safeguards against intrusion and data misuse, and the availability, authenticity, integrity and confidentiality of data. Each policy must carry the date of its approval by the management body and set out, among other things, staff responsibilities, the documentation to keep and segregation of duties, and it is reviewed as Article 6(5) of DORA requires."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2(1) and (2)",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Run documented vulnerability and patch management, scanning critical assets at least weekly",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1774/oj#art_10",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1774, Article 10(1) to (4)",
+     "payload": {
+      "key": "obl-eu-dora-rts-ictrm-vulnerability-patch",
+      "titles": {
+       "en": "Run documented vulnerability and patch management, scanning critical assets at least weekly"
+      },
+      "summaries": {
+       "en": "The firm must develop, document and implement vulnerability management procedures, including automated vulnerability scanning of ICT assets that support critical or important functions at least weekly, tracking of third-party libraries, responsible disclosure of vulnerabilities and recording of every vulnerability found until it is resolved. It must also run patch management procedures with emergency patching, testing, deadlines and escalation."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 10(1) to (4)",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Control access to ICT assets by least privilege with regular access reviews",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1774/oj#art_21",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1774, Article 21",
+     "payload": {
+      "key": "obl-eu-dora-rts-ictrm-access-control",
+      "titles": {
+       "en": "Control access to ICT assets by least privilege with regular access reviews"
+      },
+      "summaries": {
+       "en": "The firm must develop, document and implement an access control policy that grants access rights on need-to-know, need-to-use and least-privilege principles, segregates duties, limits generic accounts, and withdraws rights without undue delay when no longer needed. Access rights are reviewed at least every six months for systems supporting critical or important functions and at least once a year for others, and strong authentication is used for remote, privileged and critical or public-facing access."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 21",
+      "dutyType": "technical"
+     }
+    },
+    {
+     "title": "Add the duty: Submit the ICT risk management framework review report in the prescribed format",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1774/oj#art_27",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1774, Article 27(1) and (2)",
+     "payload": {
+      "key": "obl-eu-dora-rts-ictrm-review-report",
+      "titles": {
+       "en": "Submit the ICT risk management framework review report in the prescribed format"
+      },
+      "summaries": {
+       "en": "When the competent authority asks for the report on the review of the ICT risk management framework under Article 6(5) of DORA, the firm must submit it in a searchable electronic format with the content Article 27 prescribes, including the date the management body approved it, the review period and the function responsible for the review."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 27(1) and (2)",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DORA RTS on incident classification, Commission Delegated Regulation (EU) 2024/1772",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1772/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1772 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r1772",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2024/1772 of 13 March 2024 supplementing Regulation (EU) 2022/2554 of the European Parliament and of the Council with regard to regulatory technical standards specifying the criteria for the classification of ICT-related incidents and cyber threats, setting out materiality thresholds and specifying the details of reports of major incidents"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DORA RTS on incident classification",
+    "officialRef": "Commission Delegated Regulation (EU) 2024/1772",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2024/1772/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2024-07-15"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Classify an ICT-related incident as major using the critical-services test and materiality thresholds",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1772/oj#art_8",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1772, Article 8(1) and Article 9",
+     "payload": {
+      "key": "obl-eu-dora-rts-classification-major-incidents",
+      "titles": {
+       "en": "Classify an ICT-related incident as major using the critical-services test and materiality thresholds"
+      },
+      "summaries": {
+       "en": "An incident is major when it has affected critical services and either involved successful, malicious and unauthorised access to network and information systems that may lead to data losses, or met two or more of the other materiality thresholds. Those thresholds include more than 10 % or more than 100 000 of the service's clients affected, a duration over 24 hours or downtime over 2 hours for ICT services supporting critical or important functions, impact in two or more Member States, and costs and losses above EUR 100 000."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 8(1) and Art. 9",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess each month whether recurring incidents together form one major incident",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1772/oj#art_8",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1772, Article 8(2)",
+     "payload": {
+      "key": "obl-eu-dora-rts-classification-recurring-incidents",
+      "titles": {
+       "en": "Assess each month whether recurring incidents together form one major incident"
+      },
+      "summaries": {
+       "en": "The firm must check every month whether incidents that are not major on their own occurred at least twice in six months with the same apparent root cause and together meet the major incident criteria; if so they are treated as one major incident."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 8(2)",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Classify a cyber threat as significant using the high materiality thresholds",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1772/oj#art_10",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1772, Article 10",
+     "payload": {
+      "key": "obl-eu-dora-rts-classification-significant-cyber-threats",
+      "titles": {
+       "en": "Classify a cyber threat as significant using the high materiality thresholds"
+      },
+      "summaries": {
+       "en": "A cyber threat is significant when it could affect critical or important functions of the firm or other financial entities, third-party providers, clients or counterparts, has a high probability of materialising, and could, if it materialised, meet the criticality-of-services criterion or the clients or geographical spread thresholds."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 10",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DORA RTS on ICT third-party policy, Commission Delegated Regulation (EU) 2024/1773",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1773/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1773 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r1773",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2024/1773 of 13 March 2024 supplementing Regulation (EU) 2022/2554 of the European Parliament and of the Council with regard to regulatory technical standards specifying the detailed content of the policy regarding contractual arrangements on the use of ICT services supporting critical or important functions provided by ICT third-party service providers"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DORA RTS on ICT third-party policy",
+    "officialRef": "Commission Delegated Regulation (EU) 2024/1773",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2024/1773/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2024-07-15"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Have the management body review the policy on ICT services supporting critical or important functions each year",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1773/oj#art_3",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1773, Article 3(1) to (8)",
+     "payload": {
+      "key": "obl-eu-dora-rts-tpp-policy-governance",
+      "titles": {
+       "en": "Have the management body review the policy on ICT services supporting critical or important functions each year"
+      },
+      "summaries": {
+       "en": "The management body must review the policy on the use of ICT services supporting critical or important functions at least once a year. The policy sets a method for deciding which ICT services support such functions, assigns internal responsibilities including a senior role that monitors the arrangements, and requires those services to be independently reviewed and included in the audit plan."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3(1) to (8)",
+      "dutyType": "governance",
+      "terms": [
+       "lifecycle_stage:ongoing"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Assess risks and carry out due diligence before contracting ICT services for critical or important functions",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1773/oj#art_5",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1773, Article 5 and Article 6",
+     "payload": {
+      "key": "obl-eu-dora-rts-tpp-risk-assessment-due-diligence",
+      "titles": {
+       "en": "Assess risks and carry out due diligence before contracting ICT services for critical or important functions"
+      },
+      "summaries": {
+       "en": "Before concluding an arrangement, the firm must define its business needs, assess the operational, legal, ICT, reputational, data protection, location and concentration risks at entity and, where applicable, group level, and run a due diligence process on the provider's resources, security standards, subcontracting, data locations and acceptance of audits."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5 and Art. 6",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Monitor ICT providers' performance and keep a tested exit plan for each arrangement",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1773/oj#art_9",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1773, Article 9 and Article 10",
+     "payload": {
+      "key": "obl-eu-dora-rts-tpp-monitoring-exit",
+      "titles": {
+       "en": "Monitor ICT providers' performance and keep a tested exit plan for each arrangement"
+      },
+      "summaries": {
+       "en": "The policy must require measures and key indicators to monitor the provider's performance on an ongoing basis, a documented assessment of performance used to update the risk assessment, and actions when shortcomings appear. It must also require a documented, realistic exit plan for each contractual arrangement that is reviewed and tested periodically."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 9 and Art. 10",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DORA RTS on incident reporting, Commission Delegated Regulation (EU) 2025/301",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2025/301/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/301 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025r0301",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2025/301 of 23 October 2024 supplementing Regulation (EU) 2022/2554 of the European Parliament and of the Council with regard to regulatory technical standards specifying the content and time limits for the initial notification of, and intermediate and final report on, major ICT-related incidents, and the content of the voluntary notification for significant cyber threats"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DORA RTS on incident reporting",
+    "officialRef": "Commission Delegated Regulation (EU) 2025/301",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2025/301/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2025-03-12"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Send the initial, intermediate and final major incident reports within the set time limits",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2025/301/oj#art_5",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/301, Article 5(1) to (5)",
+     "payload": {
+      "key": "obl-eu-dora-rts-reporting-time-limits",
+      "titles": {
+       "en": "Send the initial, intermediate and final major incident reports within the set time limits"
+      },
+      "summaries": {
+       "en": "The initial notification is due within 4 hours of classifying an incident as major and no later than 24 hours after becoming aware of it, the intermediate report within 72 hours of the initial notification, and the final report within one month of the latest intermediate report. A firm that cannot meet a deadline must tell the authority before it passes and explain why; credit institutions cannot use the weekend and bank holiday relief for the initial notification and intermediate report."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5(1) to (5)",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Include the prescribed information in major incident notifications and reports",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2025/301/oj#art_1",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/301, Article 1 to 4 and Article 6",
+     "payload": {
+      "key": "obl-eu-dora-rts-reporting-content",
+      "titles": {
+       "en": "Include the prescribed information in major incident notifications and reports"
+      },
+      "summaries": {
+       "en": "The initial notification, intermediate report and final report must contain the general information in Article 1 and the specific information for each stage in Articles 2 to 4, and a voluntary notification of a significant cyber threat must cover the information in Article 6."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1 to 4 and Art. 6",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DORA ITS on incident reporting templates, Commission Implementing Regulation (EU) 2025/302",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/302/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/302 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025r0302",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2025/302 of 23 October 2024 laying down implementing technical standards for the application of Regulation (EU) 2022/2554 of the European Parliament and of the Council with regard to the standard forms, templates, and procedures for financial entities to report a major ICT-related incident and to notify a significant cyber threat"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DORA ITS on incident reporting templates",
+    "officialRef": "Commission Implementing Regulation (EU) 2025/302",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2025/302/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2025-03-12"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report major ICT-related incidents on the prescribed template through secure channels",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/302/oj#art_1",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/302, Article 1, Article 4 and Article 8",
+     "payload": {
+      "key": "obl-eu-dora-its-reporting-template",
+      "titles": {
+       "en": "Report major ICT-related incidents on the prescribed template through secure channels"
+      },
+      "summaries": {
+       "en": "The firm must submit initial notifications, intermediate and final reports on the Annex I template, following the Annex II data glossary, with complete and accurate information and estimates where exact data are not yet available. It submits them through the secure electronic channels its competent authority provides, and uses the Annex III template when it notifies a significant cyber threat."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 1, Art. 4 and Art. 8",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Notify the authority when an incident reported as major is reclassified as non-major",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/302/oj#art_5",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/302, Article 5",
+     "payload": {
+      "key": "obl-eu-dora-its-reclassification",
+      "titles": {
+       "en": "Notify the authority when an incident reported as major is reclassified as non-major"
+      },
+      "summaries": {
+       "en": "Where further assessment shows that an incident reported as major never met the classification criteria and thresholds, the firm must notify the competent authority that it has reclassified the incident as non-major."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Tell the authority when major incident reporting is outsourced to a third party",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/302/oj#art_6",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/302, Article 6",
+     "payload": {
+      "key": "obl-eu-dora-its-outsourced-reporting",
+      "titles": {
+       "en": "Tell the authority when major incident reporting is outsourced to a third party"
+      },
+      "summaries": {
+       "en": "A firm that outsources its incident reporting must inform its competent authority once the arrangement is concluded and at the latest before the first report, giving the third party's name, contact details and identification code, and must tell the authority when the outsourcing ends."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 6",
+      "dutyType": "reporting"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DORA ITS on the register of information, Commission Implementing Regulation (EU) 2024/2956",
+   "source": "https://eur-lex.europa.eu/eli/reg_impl/2024/2956/oj",
+   "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2024/2956 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32024r2956",
+    "titles": {
+     "en": "Commission Implementing Regulation (EU) 2024/2956 of 29 November 2024 laying down implementing technical standards for the application of Regulation (EU) 2022/2554 of the European Parliament and of the Council with regard to standard templates for the register of information"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DORA ITS on the register of information",
+    "officialRef": "Commission Implementing Regulation (EU) 2024/2956",
+    "eliUri": "https://data.europa.eu/eli/reg_impl/2024/2956/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2024-12-22"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Keep the register of information on the prescribed templates, including subcontractors",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2024/2956/oj#art_3",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2024/2956, Article 2, Article 3(1) and (2) and Article 5",
+     "payload": {
+      "key": "obl-eu-dora-its-roi-templates",
+      "titles": {
+       "en": "Keep the register of information on the prescribed templates, including subcontractors"
+      },
+      "summaries": {
+       "en": "The firm must maintain and update its register of information on the templates in Annexes I to IV at entity level and, where relevant, at sub-consolidated and consolidated level, covering all ICT services from direct providers and every subcontractor that effectively underpins services supporting critical or important functions, and giving each provider a rank in the supply chain."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 2, Art. 3(1) and (2) and Art. 5",
+      "dutyType": "record_keeping"
+     }
+    },
+    {
+     "title": "Add the duty: Keep register data accurate and identify providers by LEI or EUID",
+     "source": "https://eur-lex.europa.eu/eli/reg_impl/2024/2956/oj#art_3",
+     "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2024/2956, Article 3(3) to (5)",
+     "payload": {
+      "key": "obl-eu-dora-its-roi-data-quality",
+      "titles": {
+       "en": "Keep register data accurate and identify providers by LEI or EUID"
+      },
+      "summaries": {
+       "en": "The firm must keep the register accurate, complete and consistent, review it regularly and correct errors promptly, and ensure group-level registers agree with entity-level data. It identifies every ICT third-party service provider that is a legal person by a valid LEI or EUID."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3(3) to (5)",
+      "dutyType": "record_keeping"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DORA RTS on TLPT, Commission Delegated Regulation (EU) 2025/1190",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2025/1190/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/1190 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025r1190",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2025/1190 of 13 February 2025 supplementing Regulation (EU) 2022/2554 of the European Parliament and of the Council with regard to regulatory technical standards specifying the criteria used for identifying financial entities required to perform threat-led penetration testing, the requirements and standards governing the use of internal testers, the requirements in relation to the scope, testing methodology and approach for each phase of the testing, results, closure and remediation stages and the type of supervisory and other relevant cooperation needed for the implementation of TLPT and for the facilitation of mutual recognition"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DORA RTS on TLPT",
+    "officialRef": "Commission Delegated Regulation (EU) 2025/1190",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2025/1190/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2025-07-08"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Set up a control team and secrecy arrangements for each threat-led penetration test",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2025/1190/oj#art_4",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/1190, Article 4 and Article 5",
+     "payload": {
+      "key": "obl-eu-dora-rts-tlpt-organisation",
+      "titles": {
+       "en": "Set up a control team and secrecy arrangements for each threat-led penetration test"
+      },
+      "summaries": {
+       "en": "A firm required to perform TLPT, which by default includes credit institutions identified as G-SIIs or O-SIIs or part of one, must appoint a control team lead to manage the test and limit knowledge of the test to those who need it. It must put secrecy arrangements in place for its staff, providers, testers and threat intelligence provider, and assess and manage the risks of testing live production systems."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4 and Art. 5",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Submit the TLPT summary report and remediation plan to the TLPT authority within the deadlines",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2025/1190/oj#art_12",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/1190, Article 12(7) and Article 13(1) and (2)",
+     "payload": {
+      "key": "obl-eu-dora-rts-tlpt-closure-reporting",
+      "titles": {
+       "en": "Submit the TLPT summary report and remediation plan to the TLPT authority within the deadlines"
+      },
+      "summaries": {
+       "en": "Within 8 weeks after the TLPT authority confirms that the red team and blue team reports are complete, the firm must submit a report summarising the relevant findings, and within 8 weeks of that notification the remediation plans and documentation, with for each finding the shortcoming, the remedial measures and a root cause analysis."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 12(7) and Art. 13(1) and (2)",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DORA RTS on subcontracting, Commission Delegated Regulation (EU) 2025/532",
+   "source": "https://eur-lex.europa.eu/eli/reg_del/2025/532/oj",
+   "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/532 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32025r0532",
+    "titles": {
+     "en": "Commission Delegated Regulation (EU) 2025/532 of 24 March 2025 supplementing Regulation (EU) 2022/2554 of the European Parliament and of the Council with regard to regulatory technical standards specifying the elements that a financial entity has to determine and assess when subcontracting ICT services supporting critical or important functions"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DORA RTS on subcontracting",
+    "officialRef": "Commission Delegated Regulation (EU) 2025/532",
+    "eliUri": "https://data.europa.eu/eli/reg_del/2025/532/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "european-commission",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2025-07-22"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Decide and assess before contracting whether ICT services for critical or important functions may be subcontracted",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2025/532/oj#art_3",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/532, Article 3(1) and (2)",
+     "payload": {
+      "key": "obl-eu-dora-rts-sub-due-diligence",
+      "titles": {
+       "en": "Decide and assess before contracting whether ICT services for critical or important functions may be subcontracted"
+      },
+      "summaries": {
+       "en": "Before contracting, the firm must decide whether the provider may subcontract ICT services supporting critical or important functions and may agree to it only after assessing, among other things, the provider's ability to select, monitor and flow down obligations to subcontractors, the impact of a subcontractor failing, location and concentration risks and any obstacles to audit and access rights. It repeats the risk assessment periodically."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 3(1) and (2)",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Set out in the contract which ICT services may be subcontracted and on what conditions",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2025/532/oj#art_4",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/532, Article 4(1)",
+     "payload": {
+      "key": "obl-eu-dora-rts-sub-contract-conditions",
+      "titles": {
+       "en": "Set out in the contract which ICT services may be subcontracted and on what conditions"
+      },
+      "summaries": {
+       "en": "The contract with the provider must identify the services eligible for subcontracting and the conditions, including the provider's responsibility for and monitoring of subcontractors, data locations, continuity across the chain, the same access, inspection and audit rights at subcontractor level, notice of material changes, and the firm's right to terminate."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4(1)",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Assess and, where needed, object to material changes in a provider's subcontracting",
+     "source": "https://eur-lex.europa.eu/eli/reg_del/2025/532/oj#art_5",
+     "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/532, Article 5(1) to (4)",
+     "payload": {
+      "key": "obl-eu-dora-rts-sub-material-changes",
+      "titles": {
+       "en": "Assess and, where needed, object to material changes in a provider's subcontracting"
+      },
+      "summaries": {
+       "en": "The contract must oblige the provider to announce material changes to its subcontracting in time for the firm to assess them, with a notice period to approve or object. Where a change exceeds the firm's risk tolerance, the firm must inform the provider and object before the notice period ends."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5(1) to (4)",
+      "dutyType": "governance"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add DORA Directive, Directive (EU) 2022/2556",
+   "source": "https://eur-lex.europa.eu/eli/dir/2022/2556/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2022/2556 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32022l2556",
+    "titles": {
+     "en": "Directive (EU) 2022/2556 of the European Parliament and of the Council of 14 December 2022 amending Directives 2009/65/EC, 2009/138/EC, 2011/61/EU, 2013/36/EU, 2014/59/EU, 2014/65/EU, (EU) 2015/2366 and (EU) 2016/2341 as regards digital operational resilience for the financial sector"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "DORA Directive",
+    "officialRef": "Directive (EU) 2022/2556",
+    "eliUri": "https://data.europa.eu/eli/dir/2022/2556/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2023-01-16"
+   }
+  },
+  {
+   "title": "Add NIS2, Directive (EU) 2022/2555",
+   "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+   "sourceLabel": "EUR-Lex, Directive (EU) 2022/2555 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32022l2555",
+    "titles": {
+     "en": "Directive (EU) 2022/2555 of the European Parliament and of the Council of 14 December 2022 on measures for a high common level of cybersecurity across the Union, amending Regulation (EU) No 910/2014 and Directive (EU) 2018/1972, and repealing Directive (EU) 2016/1148 (NIS 2 Directive)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "NIS2",
+    "officialRef": "Directive (EU) 2022/2555",
+    "eliUri": "https://data.europa.eu/eli/dir/2022/2555/oj",
+    "level": "eu_directive",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2023-01-16"
+   }
+  },
+  {
+   "title": "Add AI Act, Regulation (EU) 2024/1689",
+   "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689 as published in the Official Journal and as amended by Regulation (EU) 2026/1744",
+   "payload": {
+    "key": "celex-32024r1689",
+    "titles": {
+     "en": "Regulation (EU) 2024/1689 of the European Parliament and of the Council of 13 June 2024 laying down harmonised rules on artificial intelligence and amending Regulations (EC) No 300/2008, (EU) No 167/2013, (EU) No 168/2013, (EU) 2018/858, (EU) 2018/1139 and (EU) 2019/2144 and Directives 2014/90/EU, (EU) 2016/797 and (EU) 2020/1828 (Artificial Intelligence Act)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "AI Act",
+    "officialRef": "Regulation (EU) 2024/1689",
+    "eliUri": "https://data.europa.eu/eli/reg/2024/1689/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2024-08-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Do not provide or use AI systems for prohibited practices",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj#art_5",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689 as amended by Regulation (EU) 2026/1744, Article 5(1)",
+     "payload": {
+      "key": "obl-eu-aiact-prohibited-practices",
+      "titles": {
+       "en": "Do not provide or use AI systems for prohibited practices"
+      },
+      "summaries": {
+       "en": "The firm must not place on the market, put into service or use AI systems for the practices Article 5 bans, among them manipulative or deceptive techniques, exploiting vulnerabilities due to age, disability or a social or economic situation, social scoring that leads to unjustified or unrelated detrimental treatment, predicting criminal offending based solely on profiling, and inferring emotions at the workplace. Two bans added by Regulation (EU) 2026/1744, on AI-generated intimate imagery and child sexual abuse material, apply from 2 December 2026."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5(1)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2025-02-02"
+     }
+    },
+    {
+     "title": "Add the duty: Take measures to support the AI literacy of staff who operate or use AI systems",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj#art_4",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689 as amended by Regulation (EU) 2026/1744, Article 4(1)",
+     "payload": {
+      "key": "obl-eu-aiact-ai-literacy",
+      "titles": {
+       "en": "Take measures to support the AI literacy of staff who operate or use AI systems"
+      },
+      "summaries": {
+       "en": "As a provider or deployer of AI systems the firm must take measures to support the AI literacy of its staff and others operating or using AI systems on its behalf, considering their knowledge, experience and training, the context of use and the people the systems are used on. It is not required to guarantee a specific level of AI literacy for any individual."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 4(1)",
+      "dutyType": "governance",
+      "effectiveFrom": "2025-02-02"
+     }
+    },
+    {
+     "title": "Add the duty: Design AI systems that interact with people so that they know they are dealing with AI",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj#art_50",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689 as amended by Regulation (EU) 2026/1744, Article 50(1) and (5)",
+     "payload": {
+      "key": "obl-eu-aiact-interaction-disclosure",
+      "titles": {
+       "en": "Design AI systems that interact with people so that they know they are dealing with AI"
+      },
+      "summaries": {
+       "en": "Where the firm provides an AI system meant to interact directly with natural persons, such as a customer chatbot, it must design it so that people are told they are interacting with an AI system, unless that is obvious to a reasonably well-informed person. The information must be clear and given at the latest at the first interaction."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 50(1) and (5)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2026-08-02",
+      "terms": [
+       "channel:digital"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Disclose deep fakes and AI-generated public-interest text, and the use of emotion recognition",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj#art_50",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689 as amended by Regulation (EU) 2026/1744, Article 50(3) to (5)",
+     "payload": {
+      "key": "obl-eu-aiact-deployer-transparency",
+      "titles": {
+       "en": "Disclose deep fakes and AI-generated public-interest text, and the use of emotion recognition"
+      },
+      "summaries": {
+       "en": "As a deployer the firm must tell people exposed to an emotion recognition or biometric categorisation system that it is operating, disclose that image, audio or video deep fakes it produces are artificially generated or manipulated, and disclose that text published to inform the public on matters of public interest was generated by AI unless it underwent human review or editorial control under someone's editorial responsibility."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 50(3) to (5)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2026-08-02"
+     }
+    },
+    {
+     "title": "Add the duty: Meet the provider obligations for high-risk AI systems the firm develops",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj#art_16",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689 as amended by Regulation (EU) 2026/1744, Article 16, Article 17(4), Article 18(3), Article 19(2), Article 111(2) and Annex III point 5(b) and (c)",
+     "payload": {
+      "key": "obl-eu-aiact-high-risk-provider",
+      "titles": {
+       "en": "Meet the provider obligations for high-risk AI systems the firm develops"
+      },
+      "summaries": {
+       "en": "Where the firm places on the market or puts into service a high-risk AI system, such as one that evaluates the creditworthiness of natural persons or sets their credit score (fraud detection excepted) or one for risk assessment and pricing in life and health insurance, it must meet the Chapter III Section 2 requirements, run a quality management system, keep documentation and logs, complete the conformity assessment, EU declaration of conformity and CE marking, and register the system. A financial institution meets most of the quality management, documentation and log duties through its financial-services governance rules. Systems placed on the market or put into service before 2 December 2027 are caught only if their design changes significantly afterwards."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 16, Art. 17(4), Art. 18(3), Art. 19(2), Art. 111(2) and Annex III point 5(b) and (c)",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-12-02"
+     },
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2026/1744/oj"
+     }
+    },
+    {
+     "title": "Add the duty: Use high-risk AI systems according to their instructions, with human oversight and monitoring",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj#art_26",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689 as amended by Regulation (EU) 2026/1744, Article 26(1), (2) and (4) to (7) and Article 111(2)",
+     "payload": {
+      "key": "obl-eu-aiact-deployer-duties",
+      "titles": {
+       "en": "Use high-risk AI systems according to their instructions, with human oversight and monitoring"
+      },
+      "summaries": {
+       "en": "As a deployer of a high-risk AI system the firm must use it in line with the provider's instructions, assign human oversight to competent, trained persons with authority, ensure input data it controls are relevant and representative, monitor operation, suspend use and inform the provider and authority of risks and serious incidents, keep the logs it controls for at least six months, and inform workers' representatives and affected workers before workplace use. A financial institution meets the monitoring duty through its internal governance rules and keeps the logs within its financial-services documentation. Systems placed on the market or put into service before 2 December 2027 are caught only if their design changes significantly afterwards."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 26(1), (2) and (4) to (7) and Art. 111(2)",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-12-02"
+     },
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2026/1744/oj"
+     }
+    },
+    {
+     "title": "Add the duty: Tell people when a high-risk AI system is used in decisions about them",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj#art_26",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689 as amended by Regulation (EU) 2026/1744, Article 26(11)",
+     "payload": {
+      "key": "obl-eu-aiact-inform-affected-persons",
+      "titles": {
+       "en": "Tell people when a high-risk AI system is used in decisions about them"
+      },
+      "summaries": {
+       "en": "When the firm uses a high-risk AI system listed in Annex III, such as a credit scoring system, to make or help make decisions about natural persons, it must inform those persons that they are subject to the use of the system."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 26(11)",
+      "dutyType": "disclosure",
+      "effectiveFrom": "2027-12-02"
+     },
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2026/1744/oj"
+     }
+    },
+    {
+     "title": "Add the duty: Assess the impact on fundamental rights before using AI for credit scoring or life and health insurance pricing",
+     "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj#art_27",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689 as amended by Regulation (EU) 2026/1744, Article 27(1) to (4) and Article 111(2)",
+     "payload": {
+      "key": "obl-eu-aiact-fundamental-rights-impact-assessment",
+      "titles": {
+       "en": "Assess the impact on fundamental rights before using AI for credit scoring or life and health insurance pricing"
+      },
+      "summaries": {
+       "en": "Before first using a high-risk AI system to evaluate creditworthiness or credit scores of natural persons, or for risk assessment and pricing in life and health insurance, the firm must assess the impact on fundamental rights: the processes and period of use, the people affected, the specific risks of harm, human oversight and the measures if risks materialise. It notifies the market surveillance authority of the results on the template, updates the assessment when elements change, and may cross-refer to its GDPR data protection impact assessment. Systems placed on the market or put into service before 2 December 2027 are caught only if their design changes significantly afterwards."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 27(1) to (4) and Art. 111(2)",
+      "dutyType": "governance",
+      "effectiveFrom": "2027-12-02",
+      "terms": [
+       "lifecycle_stage:product_lifecycle"
+      ]
+     },
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2026/1744/oj"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Data Act, Regulation (EU) 2023/2854",
+   "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2854 as published in the Official Journal",
+   "payload": {
+    "key": "celex-32023r2854",
+    "titles": {
+     "en": "Regulation (EU) 2023/2854 of the European Parliament and of the Council of 13 December 2023 on harmonised rules on fair access to and use of data and amending Regulation (EU) 2017/2394 and Directive (EU) 2020/1828 (Data Act)"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "Data Act",
+    "officialRef": "Regulation (EU) 2023/2854",
+    "eliUri": "https://data.europa.eu/eli/reg/2023/2854/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:data_protection",
+    "inForceFrom": "2024-01-11"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make data available to public sector bodies that demonstrate an exceptional need",
+     "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj#art_14",
+     "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2854, Articles 14, 15 and 18",
+     "payload": {
+      "key": "obl-eu-data-act-exceptional-need",
+      "titles": {
+       "en": "Make data available to public sector bodies that demonstrate an exceptional need"
+      },
+      "summaries": {
+       "en": "As a data holder the firm must make data it holds available, on a duly reasoned request, to a public sector body, the Commission, the European Central Bank or a Union body that demonstrates an exceptional need, such as responding to a public emergency. It must answer without undue delay, may decline or seek changes only on the grounds Article 18(2) lists and within 5 working days in an emergency or 30 working days otherwise, and must anonymise or, if personal data are needed, pseudonymise the data."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 14, Art. 15(1) and Art. 18(1), (2) and (4)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2025-09-12"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add eIDAS Regulation, Regulation (EU) No 910/2014",
+   "source": "https://eur-lex.europa.eu/eli/reg/2014/910/oj",
+   "sourceLabel": "EUR-Lex, Regulation (EU) No 910/2014 as published in the Official Journal and as amended by Regulation (EU) 2024/1183",
+   "payload": {
+    "key": "celex-32014r0910",
+    "titles": {
+     "en": "Regulation (EU) No 910/2014 of the European Parliament and of the Council of 23 July 2014 on electronic identification and trust services for electronic transactions in the internal market and repealing Directive 1999/93/EC"
+    },
+    "originalLanguage": "en",
+    "isMachine": false,
+    "shortName": "eIDAS Regulation",
+    "officialRef": "Regulation (EU) No 910/2014",
+    "eliUri": "https://data.europa.eu/eli/reg/2014/910/oj",
+    "level": "eu_regulation",
+    "jurisdiction": "eu",
+    "authority": "eu-legislator",
+    "regime": "regime:ai_ict",
+    "inForceFrom": "2014-09-17"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Accept European Digital Identity Wallets where strong user authentication is required",
+     "source": "https://eur-lex.europa.eu/eli/reg/2014/910/oj#art_5f",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 910/2014 as amended by Regulation (EU) 2024/1183, Article 5f(2)",
+     "payload": {
+      "key": "obl-eu-eidas-accept-eudi-wallet",
+      "titles": {
+       "en": "Accept European Digital Identity Wallets where strong user authentication is required"
+      },
+      "summaries": {
+       "en": "A bank or other financial firm that is not a micro or small enterprise and must use strong user authentication for online identification must, when the user voluntarily asks, also accept European Digital Identity Wallets. The duty applies no later than 36 months after the implementing acts under Articles 5a(23) and 5c(6) entered into force, which they did on 24 December 2024."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5f(2)",
+      "dutyType": "conduct",
+      "effectiveFrom": "2027-12-24",
+      "terms": [
+       "channel:digital",
+       "lifecycle_stage:onboarding"
+      ]
+     },
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg_impl/2024/2979/oj"
+     }
+    },
+    {
+     "title": "Add the duty: Register as a wallet-relying party before relying on European Digital Identity Wallets",
+     "source": "https://eur-lex.europa.eu/eli/reg/2014/910/oj#art_5b",
+     "sourceLabel": "EUR-Lex, Regulation (EU) No 910/2014 as amended by Regulation (EU) 2024/1183, Article 5b(1) to (3)",
+     "payload": {
+      "key": "obl-eu-eidas-relying-party-registration",
+      "titles": {
+       "en": "Register as a wallet-relying party before relying on European Digital Identity Wallets"
+      },
+      "summaries": {
+       "en": "Before relying on European Digital Identity Wallets to provide its services, the firm must register as a relying party in the Member State where it is established, giving at least the information needed to authenticate to wallets, its contact details and the intended use, including the data it will request. It may not ask users for any other data."
+      },
+      "originalLanguage": "en",
+      "isMachine": false,
+      "refLabel": "Art. 5b(1) to (3)",
+      "dutyType": "reporting",
+      "effectiveFrom": "2024-05-20",
+      "terms": [
+       "channel:digital"
+      ]
+     },
+     "fieldSources": {
+      "effectiveFrom": "https://eur-lex.europa.eu/eli/reg/2024/1183/oj"
+     }
+    }
+   ]
+  }
+ ]
+}

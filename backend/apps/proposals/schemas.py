@@ -789,6 +789,16 @@ class ProposalDetail(ProposalQueueRow):
         default=None,
         description="The library version this approval wrote, by id, number and effective date. Null unless the status is `approved`.",
     )
+    instrument_short_name: str = Field(
+        default="",
+        description=(
+            "For a `new_obligation`, the short name of the shared instrument the duty would sit under, the one "
+            "`payload.instrument` names by its stable key, as the library holds it now, for example \"MAR\". "
+            "Empty for every other kind, and empty when the shared library holds no instrument under that key, "
+            "in which case approving the proposal answers 422 `unknown_key` and writes nothing."
+        ),
+        examples=["MAR"],
+    )
 
 
 class TenantProposalRow(CamelSchema):

@@ -1,0 +1,333 @@
+{
+ "tranche": "nordic-sanctions",
+ "researchedOn": "2026-10-01",
+ "instruments": [
+  {
+   "title": "Add Lag om frysning av tillgångar, SFS 2023:677",
+   "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/",
+   "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, Lag (2023:677) om frysning av tillgångar, text as amended up to SFS 2025:330",
+   "fieldSources": {
+    "inForceFrom": "https://rkrattsbaser.gov.se/sfsr?bet=2023:677"
+   },
+   "payload": {
+    "key": "sfs-2023-677",
+    "titles": {
+     "sv": "Lag (2023:677) om frysning av tillgångar",
+     "en": "Act (2023:677) on the freezing of assets"
+    },
+    "originalLanguage": "sv",
+    "isMachine": true,
+    "shortName": "Lag om frysning av tillgångar",
+    "officialRef": "SFS 2023:677",
+    "level": "act",
+    "jurisdiction": "se",
+    "authority": "riksdagen",
+    "regime": "regime:aml",
+    "inForceFrom": "2024-01-01",
+    "implementsNote": "UN Security Council resolution 1373 (2001), points 1(c) and (d), on freezing the assets of those who finance terrorist acts"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make no assets available to anyone covered by a Swedish freezing decision",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, Lag (2023:677) om frysning av tillgångar, 1 §, 3–6 §§ och 8 §",
+     "payload": {
+      "key": "obl-se-frysning-no-assets-available",
+      "titles": {
+       "en": "Make no assets available to anyone covered by a Swedish freezing decision"
+      },
+      "summaries": {
+       "en": "When a prosecutor has issued a freezing decision under the Act, no one may provide assets to the person named in it, to legal persons that person owns or controls directly or indirectly, or to persons acting in their place or on their behalf. The decisions cover people suspected or convicted of terrorist offences who are not already frozen under an EU sanctions regulation; they apply immediately and are published in Post- och Inrikes Tidningar."
+      },
+      "originalLanguage": "en",
+      "refLabel": "1 §, 3 § 2, 4–6 §§ och 8 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Respect freezing decisions that bar the named person from disposing of assets",
+     "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/",
+     "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, Lag (2023:677) om frysning av tillgångar, 3, 5 och 19 §§ (19 § as amended by SFS 2025:330)",
+     "payload": {
+      "key": "obl-se-frysning-respect-freezing-decisions",
+      "titles": {
+       "en": "Respect freezing decisions that bar the named person from disposing of assets"
+      },
+      "summaries": {
+       "en": "A freezing decision bars the person named, and legal persons they own or control or that act for them, from disposing of their assets, including the proceeds of property they own or control. Anyone who intentionally or through gross negligence breaches a freezing decision can be imprisoned for up to three years, or for two to six years if the crime is intentional and grave, and a petty breach carries a fine or up to six months; acts concerning humanitarian aid or basic human needs are not crimes."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 § 1, 5 § och 19 §",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Eksportkontrolloven, LOV nr 109 af 28/03/1984",
+   "source": "https://www.retsinformation.dk/eli/lta/2011/635",
+   "sourceLabel": "Retsinformation, LOV nr 109 af 28/03/1984 as consolidated by LBK nr 635 af 09/06/2011 (eksportkontrolloven), § 3 on entry into force",
+   "fieldSources": {
+    "officialRef": "https://www.retsinformation.dk/eli/lta/1984/109"
+   },
+   "payload": {
+    "key": "dk-lov-1984-109",
+    "titles": {
+     "da": "Lov om anvendelsen af visse af Den Europæiske Unions retsakter om økonomiske forbindelser til tredjelande m.v.",
+     "en": "Act on the application of certain legal acts of the European Union on economic relations with third countries etc."
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Eksportkontrolloven",
+    "officialRef": "LOV nr 109 af 28/03/1984",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/1984/109",
+    "level": "act",
+    "jurisdiction": "dk",
+    "authority": "folketinget",
+    "regime": "regime:aml",
+    "inForceFrom": "1984-04-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Cut sanctioned owners off from exercising control over the undertaking",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/727",
+     "sourceLabel": "Retsinformation, LOV nr 727 af 01/09/2026 § 1 (inserting §§ 1 a, 1 g and 1 i in eksportkontrolloven), in force the day after publication on 01/09/2026",
+     "payload": {
+      "key": "obl-dk-eksportkontrolloven-ring-fencing",
+      "titles": {
+       "en": "Cut sanctioned owners off from exercising control over the undertaking"
+      },
+      "summaries": {
+       "en": "A Danish undertaking that is owned or controlled, directly or indirectly, by a person or entity subject to EU restrictive measures must put in place the measures needed to cut that person off from exercising control over it. Erhvervsstyrelsen (the Danish Business Authority) approves the measures, can order them and supervises them, and can ask the court to dissolve an undertaking that ignores its order. The sanctioned owner's management and economic rights in the undertaking are suspended."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 a, stk. 1-5; § 1 g; § 1 i",
+      "dutyType": "governance",
+      "effectiveFrom": "2026-09-02"
+     }
+    },
+    {
+     "title": "Add the duty: Give Erhvervsstyrelsen the information and assistance it requires for sanctions control",
+     "source": "https://www.retsinformation.dk/eli/lta/2020/1732",
+     "sourceLabel": "Retsinformation, LOV nr 1732 af 01/12/2020 § 1 (inserting § 1 f and its penalty), as amended by LOV nr 1668 af 30/12/2024 § 4; LBK nr 635 af 09/06/2011 §§ 1 and 2, stk. 2",
+     "fieldSources": {
+      "refLabel": "https://www.retsinformation.dk/eli/lta/2024/1668"
+     },
+     "payload": {
+      "key": "obl-dk-eksportkontrolloven-information-assistance",
+      "titles": {
+       "en": "Give Erhvervsstyrelsen the information and assistance it requires for sanctions control"
+      },
+      "summaries": {
+       "en": "Erhvervsstyrelsen can demand all the information it needs, including trade documents and customer records, for its supervision and control under the Act and the EU acts the Act covers, which include the Council's restrictive measures under Article 215 TFEU. Anyone with activities covered must give it the assistance it needs, including handing over relevant information. An intentional or grossly negligent failure to assist, or a failure to give information demanded under those EU acts, is punishable by a fine."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 1 f; § 2, stk. 2 og 11",
+      "dutyType": "reporting"
+     }
+    },
+    {
+     "title": "Add the duty: Give true and complete information in applications for decisions under EU sanctions and keep to their conditions",
+     "source": "https://www.retsinformation.dk/eli/lta/2011/635",
+     "sourceLabel": "Retsinformation, LBK nr 635 af 09/06/2011 (eksportkontrolloven), §§ 1 and 2, stk. 1",
+     "payload": {
+      "key": "obl-dk-eksportkontrolloven-accurate-applications",
+      "titles": {
+       "en": "Give true and complete information in applications for decisions under EU sanctions and keep to their conditions"
+      },
+      "summaries": {
+       "en": "Anyone who gives false or misleading information, or withholds information that matters, for a decision under the EU acts the Act covers or under rules issued under the Act is punishable by a fine, unless a heavier penalty applies under the Criminal Code. Acting against the conditions attached to such a decision, or attempting to, is punished in the same way."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 2, stk. 1",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Bekendtgørelse om afskæring af sanktionerede personer, BEK nr 778 af 03/09/2026",
+   "source": "https://www.retsinformation.dk/eli/lta/2026/778",
+   "sourceLabel": "Retsinformation, BEK nr 778 af 03/09/2026, issued by the Minister for Business under § 1 a, stk. 6-7 of eksportkontrolloven, § 6 on entry into force",
+   "payload": {
+    "key": "dk-bek-2026-778",
+    "titles": {
+     "da": "Bekendtgørelse om afskæring af sanktionerede personer fra at udøve kontrol med danske virksomheder m.v.",
+     "en": "Executive Order on cutting off sanctioned persons from exercising control over Danish undertakings etc."
+    },
+    "originalLanguage": "da",
+    "isMachine": true,
+    "shortName": "Bekendtgørelse om afskæring af sanktionerede personer",
+    "officialRef": "BEK nr 778 af 03/09/2026",
+    "eliUri": "https://www.retsinformation.dk/eli/lta/2026/778",
+    "level": "government_regulation",
+    "jurisdiction": "dk",
+    "authority": "erhvervsministeriet",
+    "regime": "regime:aml",
+    "inForceFrom": "2026-09-14"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Make ring-fencing measures suitable and sufficient and document them to Erhvervsstyrelsen",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/778",
+     "sourceLabel": "Retsinformation, BEK nr 778 af 03/09/2026, issued by the Minister for Business under § 1 a, stk. 6-7 of eksportkontrolloven, §§ 1-3",
+     "payload": {
+      "key": "obl-dk-afskaering-measures-documentation",
+      "titles": {
+       "en": "Make ring-fencing measures suitable and sufficient and document them to Erhvervsstyrelsen"
+      },
+      "summaries": {
+       "en": "An undertaking that must cut off a sanctioned owner must use measures suitable and sufficient to stop that person exercising control and to prevent funds and assets being made available to them, for example suspending voting rights, powers of attorney and signing rights, blocking payment cards and cutting off access to the undertaking's bank accounts and IT systems. It must send documentation of the measures to Erhvervsstyrelsen, which can require further or adjusted measures as a condition of its approval."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 1-3",
+      "dutyType": "governance"
+     }
+    },
+    {
+     "title": "Add the duty: Send Erhvervsstyrelsen an annual statement on the ring-fencing measures",
+     "source": "https://www.retsinformation.dk/eli/lta/2026/778",
+     "sourceLabel": "Retsinformation, BEK nr 778 af 03/09/2026, issued by the Minister for Business under § 1 a, stk. 6-7 of eksportkontrolloven, §§ 4-5",
+     "payload": {
+      "key": "obl-dk-afskaering-annual-statement",
+      "titles": {
+       "en": "Send Erhvervsstyrelsen an annual statement on the ring-fencing measures"
+      },
+      "summaries": {
+       "en": "Each year from Erhvervsstyrelsen's approval, an undertaking that has introduced ring-fencing measures must send Erhvervsstyrelsen a statement on them that includes at least its own assessment of whether each measure is suitable and sufficient; Erhvervsstyrelsen can also order a statement at any time. The undertaking pays Erhvervsstyrelsen an hourly fee for its work on the case."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§ 4, stk. 3-4; § 5",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Sanksjonsloven, LOV-2021-04-16-18",
+   "source": "https://lovdata.no/dokument/NL/lov/2021-04-16-18",
+   "sourceLabel": "Lovdata, lov 16. april 2021 nr. 18 om gjennomføring av internasjonale sanksjoner (sanksjonsloven), consolidated text",
+   "fieldSources": {
+    "inForceFrom": "https://lovdata.no/dokument/LTI/forskrift/2021-04-16-1182"
+   },
+   "payload": {
+    "key": "no-lov-2021-04-16-18",
+    "titles": {
+     "nb": "Lov om gjennomføring av internasjonale sanksjoner (sanksjonsloven)",
+     "en": "Act on the Implementation of International Sanctions (Sanctions Act)"
+    },
+    "originalLanguage": "nb",
+    "isMachine": true,
+    "shortName": "Sanksjonsloven",
+    "officialRef": "LOV-2021-04-16-18",
+    "level": "act",
+    "jurisdiction": "no",
+    "authority": "stortinget",
+    "regime": "regime:aml",
+    "inForceFrom": "2021-04-16"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Comply with the sanctions regulations made under the Sanctions Act",
+     "source": "https://lovdata.no/dokument/NL/lov/2021-04-16-18/%C2%A74",
+     "sourceLabel": "Lovdata, sanksjonsloven (LOV-2021-04-16-18) §§ 1-4",
+     "payload": {
+      "key": "obl-no-sanksjonsloven-comply",
+      "titles": {
+       "en": "Comply with the sanctions regulations made under the Sanctions Act"
+      },
+      "summaries": {
+       "en": "The Act lets the King implement by regulation binding UN Security Council decisions and sanctions or restrictive measures adopted in intergovernmental organisations, including restrictions on financial transactions and economic sanctions against persons. It reaches all undertakings registered in the Register of Business Enterprises and business carried on wholly or partly in Norway. Breaching such a regulation is punishable by fines or imprisonment of up to three years or both, and a negligent breach by fines or imprisonment of up to six months or both."
+      },
+      "originalLanguage": "en",
+      "refLabel": "§§ 1-4",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Add Pakotelaki, 659/1967",
+   "source": "https://www.finlex.fi/fi/lainsaadanto/1967/659",
+   "sourceLabel": "Finlex, Laki eräiden Suomelle Yhdistyneiden Kansakuntien ja Euroopan unionin jäsenenä kuuluvien velvoitusten täyttämisestä (659/1967), consolidated text, 6 § on entry into force",
+   "payload": {
+    "key": "fi-sd-1967-659",
+    "titles": {
+     "fi": "Laki eräiden Suomelle Yhdistyneiden Kansakuntien ja Euroopan unionin jäsenenä kuuluvien velvoitusten täyttämisestä",
+     "en": "Act on the Fulfilment of Certain Obligations of Finland as a Member of the United Nations and of the European Union (Sanctions Act)"
+    },
+    "originalLanguage": "fi",
+    "isMachine": true,
+    "shortName": "Pakotelaki",
+    "officialRef": "659/1967",
+    "level": "act",
+    "jurisdiction": "fi",
+    "authority": "eduskunta",
+    "regime": "regime:aml",
+    "inForceFrom": "1968-01-01"
+   },
+   "obligations": [
+    {
+     "title": "Add the duty: Report information on designated persons to the bailiff without delay",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1967/659",
+     "sourceLabel": "Finlex, Laki eräiden Suomelle Yhdistyneiden Kansakuntien ja Euroopan unionin jäsenenä kuuluvien velvoitusten täyttämisestä (659/1967), consolidated text, 2 b §",
+     "payload": {
+      "key": "obl-fi-pakotelaki-report-to-bailiff",
+      "titles": {
+       "en": "Report information on designated persons to the bailiff without delay"
+      },
+      "summaries": {
+       "en": "An obliged entity under the Act on Preventing Money Laundering and Terrorist Financing (444/2017), such as a bank, must on its own initiative and without delay give the bailiff (ulosottomies) the information it holds, of the kind set out in chapter 3, section 66 of the Enforcement Code, on persons and entities designated in the annexes of EU sanctions regulations, notwithstanding confidentiality. The bailiff enforces the freezing of their funds on the application of the Ministry for Foreign Affairs, which is also the national competent authority for tasks under EU sanctions that no other authority holds."
+      },
+      "originalLanguage": "en",
+      "refLabel": "2 b §",
+      "dutyType": "reporting",
+      "terms": [
+       "lifecycle_stage:reporting"
+      ]
+     }
+    },
+    {
+     "title": "Add the duty: Do not perform commitments that breach or circumvent sanctions",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1967/659",
+     "sourceLabel": "Finlex, Laki eräiden Suomelle Yhdistyneiden Kansakuntien ja Euroopan unionin jäsenenä kuuluvien velvoitusten täyttämisestä (659/1967), consolidated text, 3 §",
+     "payload": {
+      "key": "obl-fi-pakotelaki-suspend-commitments",
+      "titles": {
+       "en": "Do not perform commitments that breach or circumvent sanctions"
+      },
+      "summaries": {
+       "en": "A commitment or agreement made in breach of the Act or the rules issued under it, or meant to circumvent them, must not be enforced. Where a commitment made before a sanctions decree entered into force conflicts with the decree or the rules issued under it, its performance must be suspended without delay."
+      },
+      "originalLanguage": "en",
+      "refLabel": "3 §",
+      "dutyType": "conduct"
+     }
+    },
+    {
+     "title": "Add the duty: Comply with EU sanctions regulations, whose breach is a criminal sanctions offence",
+     "source": "https://www.finlex.fi/fi/lainsaadanto/1967/659",
+     "sourceLabel": "Finlex, Laki eräiden Suomelle Yhdistyneiden Kansakuntien ja Euroopan unionin jäsenenä kuuluvien velvoitusten täyttämisestä (659/1967), consolidated text, 4 §, read with Rikoslaki (39/1889) 46 luku 3 a–3 d §",
+     "fieldSources": {
+      "summaries.en": "https://www.finlex.fi/fi/lainsaadanto/1889/39"
+     },
+     "payload": {
+      "key": "obl-fi-pakotelaki-sanctions-offences",
+      "titles": {
+       "en": "Comply with EU sanctions regulations, whose breach is a criminal sanctions offence"
+      },
+      "summaries": {
+       "en": "Breaching an EU sanctions regulation adopted under Article 215 TFEU, or a regulatory order an authority issues under the Act, is punishable under chapter 46, sections 3 a to 3 d of the Criminal Code. A sanctions offence includes making funds or economic resources available to a designated person or failing to freeze them, providing services, financing or financial assistance contrary to a restriction, and entering into or continuing to perform a prohibited contract; an aggravated offence carries four months to five years in prison, and breaching a notification, information or reporting duty in a sanctions measure is at least a sanctions violation punishable by a fine."
+      },
+      "originalLanguage": "en",
+      "refLabel": "4 §",
+      "dutyType": "conduct"
+     }
+    }
+   ]
+  }
+ ]
+}
