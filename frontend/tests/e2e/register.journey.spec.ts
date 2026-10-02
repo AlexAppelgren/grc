@@ -486,10 +486,11 @@ test.describe('register journeys', () => {
     await openPanelObligation(page, 'obl-appropriateness');
     const panel = page.locator('[data-history-panel]');
 
-    // The current reading, with its author and date.
+    // The current reading, with its author and date. The month is short, and en-GB writes
+    // September as "Sept", so it takes three or four letters.
     const current = panel.locator('[data-reading-current]');
     await expect(current).toHaveAttribute('data-reading-current', '2');
-    await expect(current.locator('[data-reading-by]')).toHaveText(/^Version 2, written by Sara Lindqvist, \d{1,2} \w{3} \d{4}$/);
+    await expect(current.locator('[data-reading-by]')).toHaveText(/^Version 2, written by Sara Lindqvist, \d{1,2} \w{3,4} \d{4}$/);
 
     // Each earlier assessment, unchanged, with who and when; newest first.
     const rows = panel.locator('[data-history] [data-assessment-id]');
