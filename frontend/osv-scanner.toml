@@ -1,0 +1,8 @@
+# Advisories accepted for frontend/package-lock.json, each with its reason and an expiry.
+# osv-scanner reads this file from the scanned lockfile's own directory; after ignoreUntil
+# the advisory fails the dependency scan again. Every entry is Alex's decision.
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2026-11-02
+reason = "braces 3.0.3 stack exhaustion on deeply nested patterns; no fixed version yet. Reached only through lint tooling (@next/eslint-plugin-next -> fast-glob -> micromatch), which globs the repo's own patterns, never user input, and is not in the shipped standalone image. Accepted by Alex 2026-10-03 for 30 days."
