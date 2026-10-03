@@ -133,6 +133,7 @@ def seed_change(
     authority: str | None = "fi",
     authority_label: str = "Finansinspektionen",
     published_on: datetime.date | None = None,
+    published_unknown: bool = False,
     published_precision: DatePrecision = DatePrecision.DAY,
     key_date_precision: DatePrecision = DatePrecision.DAY,
     source_url: str = "https://www.fi.se/",
@@ -145,7 +146,9 @@ def seed_change(
     """One reform, merged on `stableKey` exactly as a sweep's retry would merge it
     (AC-WAT1): a second run updates the seed's own row rather than writing a duplicate. Its
     type is `suggester`'s suggestion until `type_confirmer` confirms it (`curation()`), and
-    a reseed puts it back exactly so."""
+    a reseed puts it back exactly so. A change whose publication day the seed does not know
+    (`published_unknown`, the public demo's facts of the baseline) carries none rather than
+    its key date."""
     type_curation = curation(suggester, type_confirmer, confirmed_at, "change_type_")
     return write.upsert(
         RegulatoryChange,
@@ -156,7 +159,7 @@ def seed_change(
             "change_type": ChangeType.objects.get(key=change_type),
             "authority": None if authority is None else Authority.objects.get(key=authority),
             "authority_label": authority_label,
-            "published_on": published_on or key_date,
+            "published_on": None if published_unknown else (published_on or key_date),
             "published_precision": published_precision.value,
             "summary": summary,
             "so_what_draft": so_what_draft,
