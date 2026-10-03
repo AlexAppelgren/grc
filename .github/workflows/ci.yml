@@ -824,11 +824,11 @@ jobs:
             --lockfile=backend/poetry.lock
             --lockfile=frontend/package-lock.json
 
-      - name: npm audit (high and above)
+      - name: npm audit (moderate and above, less the accepted advisories in frontend/osv-scanner.toml)
         shell: bash -eo pipefail {0}
         working-directory: frontend
         run: |
-          npm audit --audit-level=moderate
+          npm run audit:gate
 
   # ---------------------------------------------------------------------------
   # Licences: no copyleft in either tree, Apache attribution for @sebgroup/*.

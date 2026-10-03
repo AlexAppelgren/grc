@@ -417,7 +417,9 @@ under coverage, global and per-module floors, ruff (E4/E7/E9, F, B, DJ, S)
 and mypy with every exclusion reasoned, compliance lint (`--all`), OpenAPI and
 TypeScript drift with normalised export, frontend lint, typecheck, unit
 coverage and build, E2E on the real stack, gitleaks on every push, osv-scanner
-on committed lockfiles plus `npm audit` under `bash -eo pipefail` and
+on committed lockfiles plus `npm audit` (through `npm run audit:gate`, which
+applies the same accepted advisories, each with a reason and an expiry, as
+`frontend/osv-scanner.toml`) under `bash -eo pipefail` and
 refusing an empty lockfile, CodeQL with its own SARIF gate (medium and above,
 acceptances per fingerprint with a reason, stale ones reported),
 requirements coverage, contract drift against `docs/inputs/openapi.yaml`,

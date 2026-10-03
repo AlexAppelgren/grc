@@ -141,7 +141,7 @@ if [ "$lock" = 1 ]; then  # ci.yml `cve` and `licences`
   gate "CVE: lockfiles committed" . git ls-files --error-unmatch backend/poetry.lock frontend/package-lock.json
   osv="$(tool osv-scanner-2.6.0 osv-scanner$x "$osv_url" "$osv_sha")"
   gate "CVE: osv-scanner" . "$osv" --lockfile=backend/poetry.lock --lockfile=frontend/package-lock.json
-  gate "CVE: npm audit" frontend npm audit --audit-level=moderate
+  gate "CVE: npm audit" frontend npm run audit:gate
   gate "Licences: self-test" . python3 scripts/check_licences.py self-test
   gate "Licences: backend" backend bash ./run.sh run python ../scripts/check_licences.py backend
   gate "Licences: frontend" . python3 scripts/check_licences.py frontend

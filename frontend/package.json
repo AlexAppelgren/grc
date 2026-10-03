@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "check:messages": "node scripts/messages-check.mjs",
     "check:copy-drift": "node scripts/copy-drift-check.mjs",
+    "audit:gate": "node scripts/audit-gate.mjs",
     "test:e2e": "playwright test",
     "demo:record": "node scripts/demo-record.mjs",
     "generate:types": "openapi-typescript ../openapi.json -o src/types/api.generated.ts"
