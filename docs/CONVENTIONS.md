@@ -403,9 +403,11 @@ inheriting wreckage (teardown on failure). Push CI runs `@smoke`; nightly
 runs everything; every chunk runs against a freshly seeded backend.
 
 **The public page's demo follows the app.** It is the real app answered from
-recordings of this stack (`design/public/README.md` "The demo"). Its journey
-fails when a screen asks for something the recordings cannot answer or an
-answer has changed shape; run `npm run demo:record` in `frontend/` and commit
+recordings of a stack of its own, the real library baseline with a made-up bank
+on top (`seed_public_demo`, `design/public/README.md` "The demo"). Its `@demo`
+journey runs on that stack in CI's `demo` job, and never on the journeys'
+`seed_e2e`, which the demo never shows. It fails when a screen asks for
+something the recordings cannot answer or an answer has changed shape; run `npm run demo:record` in `frontend/` and commit
 `src/features/demo/recordings.json`, `recorded-at.json` and the pictures in
 `public/demo/` with the change. Re-record after a visible change to Today too,
 since the page shows a picture of it.

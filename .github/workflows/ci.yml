@@ -31,6 +31,8 @@
 # Cold start (a deploy's own seeds, no fixture) A first deploy that cannot be set up:
 #                                               a missing seed, a screen that assumes
 #                                               data, a command that refuses            coldstart
+# Demo recordings (the demo's own stack: the     A public demo that no longer answers
+#   real library baseline, a made-up bank)       what its screens ask, or answers stale   demo
 # Secret scan (gitleaks, every push)            Committed secrets                        secrets
 # Dependency CVEs (osv-scanner on the committed
 #   lockfiles + npm audit; nightly regardless)  Known-vulnerable dependencies            cve
@@ -758,6 +760,110 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-coldstart-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            frontend/test-results
+            frontend/playwright-report
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # The public page's demo (design/public/README.md "The demo"): the demo
+  # person's walk on the demo's own stack — migrate, then seed_public_demo, the
+  # real library baseline through the proposal door and a made-up bank — held
+  # against the committed recordings by path template and field shape. A screen
+  # or an answer the recordings no longer match fails here with the command that
+  # fixes it (`npm run demo:record`). Its own job and database, beside `e2e`,
+  # on every push, because a stale demo is what a visitor sees first.
+  # ---------------------------------------------------------------------------
+  demo:
+    name: Demo recordings (Playwright)
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres-dev-only
+          POSTGRES_DB: compliance_watch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d compliance_watch"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      CI: "true"
+      E2E_MODE: "true"
+    defaults:
+      run:
+        shell: bash
+        working-directory: frontend
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up frontend toolchain
+        uses: ./.github/actions/setup-frontend
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      # Chromium and its system packages install while the database and the backend
+      # toolchain are set up (D-90): the apt step alone takes from 15 s to well over a
+      # minute depending on the mirror. "Chromium is installed" waits for it and fails
+      # the job with its log if it failed.
+      - name: Install Chromium (in the background)
+        run: |
+          (npx playwright install --with-deps chromium > "$RUNNER_TEMP/chromium.log" 2>&1; echo $? > "$RUNNER_TEMP/chromium.exit") &
+
+      - name: Create database roles and extensions
+        uses: ./.github/actions/init-db
+        with:
+          container-id: ${{ job.services.db.id }}
+
+      - name: Set up backend toolchain
+        uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          poetry-version: ${{ env.POETRY_VERSION }}
+
+      - name: Build design tokens
+        run: npm run build:tokens
+
+      - name: Chromium is installed
+        run: |
+          until [ -f "$RUNNER_TEMP/chromium.exit" ]; do sleep 1; done
+          cat "$RUNNER_TEMP/chromium.log"
+          exit "$(cat "$RUNNER_TEMP/chromium.exit")"
+
+      # NEXT_PUBLIC_API_URL is deliberately unset: the config points the build at
+      # the demo stack's own port, which is not the seeded suite's.
+      - name: Walk the demo's screens against its recordings
+        run: npm run test:e2e -- --grep @demo
+
+      - name: Upload screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-demo-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             frontend/test-results
             frontend/playwright-report

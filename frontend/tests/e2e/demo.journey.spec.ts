@@ -18,6 +18,11 @@ import { allowFreshContext, LOGINS, signInAs } from './support/passkeys';
 // answered. `npm run demo:record` writes them; every other run compares a
 // fresh walk with the committed recordings and fails when a screen asks for
 // something they cannot answer, or an answer has changed shape.
+//
+// The walk and the pictures are `@demo`: they run on the demo's own stack
+// (playwright.config.ts), seeded with the real library baseline and a made-up
+// bank by seed_public_demo, so the check walks exactly the data the recordings
+// were made from. CI runs them on every push, in a job of their own.
 
 const RECORDINGS = fileURLToPath(new URL('../../src/features/demo/recordings.json', import.meta.url));
 const RECORDED_AT = fileURLToPath(new URL('../../src/features/demo/recorded-at.json', import.meta.url));
@@ -185,7 +190,7 @@ function serialise(recordings: DemoRecordings): string {
 }
 
 test.describe('public page demo', () => {
-  test("the demo's recordings still answer every request its screens make @smoke", async ({ page, apiGuard }) => {
+  test("the demo's recordings still answer every request its screens make @demo", async ({ page, apiGuard }) => {
     test.setTimeout(RECORD ? 600_000 : 180_000);
     allowFreshContext(apiGuard);
     // The briefing links to the week before its first one, and the demo keeps that answer too.
@@ -258,7 +263,7 @@ test.describe('public page demo', () => {
   // The page shows a picture of the demo until a visitor asks for it. It is taken
   // of the demo itself, so `npm run demo:record` takes it in a second pass, on a
   // build that already carries the recordings the first pass wrote.
-  test('pictures of the demo for the public page, taken when it records', async ({ browser, baseURL }) => {
+  test('pictures of the demo for the public page, taken when it records @demo', async ({ browser, baseURL }) => {
     test.skip(!RECORD, 'taken by npm run demo:record');
     mkdirSync(PICTURES, { recursive: true });
     const forms = [

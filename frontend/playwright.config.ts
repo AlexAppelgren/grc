@@ -21,21 +21,30 @@ import { defineConfig, devices } from '@playwright/test';
 // and it can never reuse or recreate the seeded run's stack. Every other run
 // filters the journey out, because a seeded database would prove nothing.
 
+// The public page's demo (design/public/README.md "The demo"): `npm run test:e2e --
+// --grep @demo`, and `npm run demo:record`, walk the demo person's screens on a stack of
+// their own, seeded the way the demo's data is made — migrate, then seed_public_demo: the
+// real library baseline through the proposal door and a made-up bank on top. Its own
+// database and ports, seven above the ordinary ones and inside the slot's band of ten, so
+// it never shares the seeded run's data and the recordings never hold a fixture.
+//
 // The mode is chosen once, from the command line, and then travels in the
 // environment: a worker process loads this file again with its own argv, which
 // carries no `--grep`, and pointed the first cold-start run at the seeded
 // stack's ports. Everything the workers and the servers need is exported
 // below, and every derivation is written so that reading it back changes
 // nothing.
-const COLD_SUFFIX = '_cold';
-const coldStart = process.env.E2E_COLD_START === '1' || /(^|[\s=])@coldstart([\s]|$)/.test(process.argv.join(' '));
-const COLD_PORT_OFFSET = coldStart ? 5 : 0;
+const argv = process.argv.join(' ');
+const coldStart = process.env.E2E_COLD_START === '1' || /(^|[\s=])@coldstart([\s]|$)/.test(argv);
+const demoStack = !coldStart && (process.env.E2E_DEMO_STACK === '1' || /(^|[\s=])@demo([\s]|$)/.test(argv));
+// A stack of its own: its database suffix, its port offset and its worker log's name.
+const OWN_STACK = coldStart ? { suffix: '_cold', offset: 5, name: 'coldstart' } : demoStack ? { suffix: '_demo', offset: 7, name: 'demo' } : null;
 
 const configuredDatabase = process.env.E2E_DATABASE_NAME ?? 'compliance_watch_e2e';
-const FRONTEND_PORT = Number(process.env.E2E_FRONTEND_PORT ?? 3000) + COLD_PORT_OFFSET;
-const BACKEND_PORT = Number(process.env.E2E_BACKEND_PORT ?? 8000) + COLD_PORT_OFFSET;
-const DATABASE_NAME = coldStart && !configuredDatabase.endsWith(COLD_SUFFIX) ? `${configuredDatabase}${COLD_SUFFIX}` : configuredDatabase;
-const API_URL = coldStart ? `http://localhost:${BACKEND_PORT}` : (process.env.NEXT_PUBLIC_API_URL ?? `http://localhost:${BACKEND_PORT}`);
+const FRONTEND_PORT = Number(process.env.E2E_FRONTEND_PORT ?? 3000) + (OWN_STACK?.offset ?? 0);
+const BACKEND_PORT = Number(process.env.E2E_BACKEND_PORT ?? 8000) + (OWN_STACK?.offset ?? 0);
+const DATABASE_NAME = OWN_STACK && !configuredDatabase.endsWith(OWN_STACK.suffix) ? `${configuredDatabase}${OWN_STACK.suffix}` : configuredDatabase;
+const API_URL = OWN_STACK ? `http://localhost:${BACKEND_PORT}` : (process.env.NEXT_PUBLIC_API_URL ?? `http://localhost:${BACKEND_PORT}`);
 const WEB_URL = `http://localhost:${FRONTEND_PORT}`;
 // The same build once more with the public site and the app on hosts of their
 // own (src/proxy.ts, support/split-hosts.mjs); every other journey runs on
@@ -48,6 +57,7 @@ const SPLIT_PUBLIC_URL = `http://public.localhost:${SPLIT_PORT}`;
 // same database and the same base URL. The port variables are deliberately left
 // alone: the offset is applied to them on every load.
 if (coldStart) process.env.E2E_COLD_START = '1';
+if (demoStack) process.env.E2E_DEMO_STACK = '1';
 // support/passkeys.ts reads the mail outbox on E2E_BACKEND_URL, and the
 // cold-start journey runs its management command against E2E_DATABASE_NAME.
 process.env.E2E_BACKEND_URL = API_URL;
@@ -67,7 +77,7 @@ export default defineConfig({
   workers: isCI ? 2 : undefined,
   reporter: isCI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   timeout: 30_000,
-  ...(coldStart ? { grep: /@coldstart/ } : { grepInvert: /@coldstart/ }),
+  ...(coldStart ? { grep: /@coldstart/ } : demoStack ? { grep: /@demo/ } : { grepInvert: /@coldstart|@demo/ }),
   expect: {
     timeout: 5_000,
     toHaveScreenshot: { maxDiffPixelRatio: 0.01, animations: 'disabled' },
@@ -89,21 +99,23 @@ export default defineConfig({
           {
             command: 'bash tests/e2e/support/start-backend.sh',
             url: `http://127.0.0.1:${BACKEND_PORT}/health/`,
-            timeout: 240_000,
+            // The demo's seed files and approves the whole library baseline, about four
+            // minutes on a CI runner, before the server starts.
+            timeout: demoStack ? 900_000 : 240_000,
             reuseExistingServer: !isCI,
             stdout: 'pipe' as const,
             stderr: 'pipe' as const,
             env: {
               E2E_BACKEND_PORT: String(BACKEND_PORT),
               E2E_DATABASE_NAME: DATABASE_NAME,
-              ...(coldStart
+              ...(OWN_STACK
                 ? {
-                    E2E_COLD_START: '1',
-                    // The cold web app is on its own port, so it is its own origin.
+                    ...(coldStart ? { E2E_COLD_START: '1' } : { E2E_DEMO_STACK: '1' }),
+                    // A stack of its own is on its own port, so its web app is its own origin.
                     CORS_ALLOWED_ORIGINS: WEB_URL,
                     WEBAUTHN_ORIGINS: WEB_URL,
                     APP_BASE_URL: WEB_URL,
-                    E2E_WORKER_LOG: fileURLToPath(new URL('./test-results/e2e-worker-coldstart.log', import.meta.url)),
+                    E2E_WORKER_LOG: fileURLToPath(new URL(`./test-results/e2e-worker-${OWN_STACK.name}.log`, import.meta.url)),
                   }
                 : {
                     // The split server's app host is an origin of its own.
@@ -128,7 +140,7 @@ export default defineConfig({
       },
     },
     // Started after the entry above has built the app, since web servers start in order.
-    ...(coldStart
+    ...(OWN_STACK
       ? []
       : [
           {

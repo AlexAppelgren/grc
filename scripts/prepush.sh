@@ -241,6 +241,8 @@ if [ "$quick" = 0 ] && { [ "$be" = 1 ] || [ "$fe" = 1 ]; }; then  # ci.yml `e2e`
   # catching on a push and not only nightly. Its stack has its own database and ports, so
   # it never touches the seeded one above (frontend/playwright.config.ts).
   gate "E2E: @coldstart" frontend env CI=true E2E_MODE=true npm run test:e2e -- --grep @coldstart
+  # ci.yml `demo`: the demo's walk on its own stack, held against the committed recordings.
+  gate "E2E: @demo" frontend env CI=true E2E_MODE=true npm run test:e2e -- --grep @demo
 fi
 
 if [ "$quick" = 0 ] && { [ "$cont" = 1 ] || [ "$lock" = 1 ]; }; then  # ci.yml `container-scan`
