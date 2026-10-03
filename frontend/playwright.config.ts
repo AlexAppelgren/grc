@@ -37,8 +37,8 @@ import { defineConfig, devices } from '@playwright/test';
 const argv = process.argv.join(' ');
 const coldStart = process.env.E2E_COLD_START === '1' || /(^|[\s=])@coldstart([\s]|$)/.test(argv);
 const demoStack = !coldStart && (process.env.E2E_DEMO_STACK === '1' || /(^|[\s=])@demo([\s]|$)/.test(argv));
-// A stack of its own: its database suffix and its port offset.
-const OWN_STACK = coldStart ? { suffix: '_cold', offset: 5 } : demoStack ? { suffix: '_demo', offset: 7 } : null;
+// A stack of its own: its database suffix, its port offset and its worker log's name.
+const OWN_STACK = coldStart ? { suffix: '_cold', offset: 5, name: 'coldstart' } : demoStack ? { suffix: '_demo', offset: 7, name: 'demo' } : null;
 
 const configuredDatabase = process.env.E2E_DATABASE_NAME ?? 'compliance_watch_e2e';
 const FRONTEND_PORT = Number(process.env.E2E_FRONTEND_PORT ?? 3000) + (OWN_STACK?.offset ?? 0);
@@ -115,7 +115,7 @@ export default defineConfig({
                     CORS_ALLOWED_ORIGINS: WEB_URL,
                     WEBAUTHN_ORIGINS: WEB_URL,
                     APP_BASE_URL: WEB_URL,
-                    E2E_WORKER_LOG: fileURLToPath(new URL(`./test-results/e2e-worker${OWN_STACK.suffix}.log`, import.meta.url)),
+                    E2E_WORKER_LOG: fileURLToPath(new URL(`./test-results/e2e-worker-${OWN_STACK.name}.log`, import.meta.url)),
                   }
                 : {
                     // The split server's app host is an origin of its own.
