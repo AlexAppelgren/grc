@@ -48,6 +48,12 @@ condition = "AND"
 regexes = ['''^[a-z0-9]+(?:-[a-z0-9]+){2,}$''']
 paths = ['''^backend/apps/library/baseline/[a-z0-9-]+\.json$''']
 
+[[allowlists]]
+description = "The same stable keys in the public demo's recordings (frontend/src/features/demo/recordings.json), which since D-119 are answers of the real library baseline: lowercase slugs built from public citations, never credentials. Bound to that one file and to the slug shape, so the same shape anywhere else, and anything else in the file, is still reported."
+condition = "AND"
+regexes = ['''^[a-z0-9]+(?:-[a-z0-9]+){2,}$''']
+paths = ['''^frontend/src/features/demo/recordings\.json$''']
+
 # Connection strings carry the dev-only passwords above. Some rules extract the
 # whole URL rather than the password, so the same literals are also accepted
 # when they appear as the password segment of a local/CI Postgres URL.
