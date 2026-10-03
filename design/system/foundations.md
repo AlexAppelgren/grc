@@ -43,16 +43,19 @@ or correct (see the report of 2026-09-19).
 
 | Use | Green token | Value | Was |
 |---|---|---|---|
-| Controls: button, input, select, toggle, nav row, current tab, callout, banner | `radius-2xs` | 6 px | 999 px buttons, 8 px inputs |
+| Controls: button, input, select, toggle, nav row, callout, banner | `radius-2xs` | 6 px | 999 px buttons, 8 px inputs |
 | Cards, list rows, empty states, toast | `radius-xs` | 8 px | 16 to 20 px |
-| Dialogs, the sheet and the floating tab bar | `radius-s` | 12 px | 20 px |
+| Dialogs and the sheet | `radius-s` | 12 px | 20 px |
+| The current tab in the tab bar | `radius-m` | 16 px | 6 px (until 2026-10-03) |
+| The floating tab bar | `radius-l` | 20 px | 12 px (until 2026-10-03) |
 | Pill | `radius-max` | 999 px | unchanged |
 | Inline marks (`ins`, `del`, `mark`), meters | none (3 px, 2 px) | | 999 px bars |
 
 shadcn's own base is 10 px (`rounded-md` 8 px, `rounded-xl` 14 px on cards).
 Ours is one step tighter because Green's scale has 6 and 8, not 10 and 14,
-and a small radius reads as a tool. The tab bar is 12 px, never fully
-rounded. With its 6 px padding, the 6 px current tab sits concentric with it.
+and a small radius reads as a tool. The floating tab bar alone is rounder
+(Alex, 2026-10-03: modern, not a capsule): 20 px, never fully rounded. With its
+4 px padding, the 16 px current tab sits concentric with it.
 
 ## Spacing
 
@@ -303,7 +306,7 @@ Every text pair the design uses, lowest first. All pass 4.5:1.
 | negative text on surface (danger button, error) | 6.04 | 7.09 |
 | brand text on sand (AI label, legal margin) | 6.28 | 10.26 |
 | text on accent | 16.50 | 11.69 |
-| current tab label (text on accent) | 16.50 | 11.69 |
+| current tab label (button text on the button's fill) | 19.71 | 13.64 |
 | text on sand | 17.78 | 15.49 |
 | text on search highlight (`l3-brand-02-2`) | 14.04 | 10.72 |
 | primary button | 19.71 | 13.64 |
@@ -314,10 +317,9 @@ Every text pair the design uses, lowest first. All pass 4.5:1.
 Non-text: input border 4.15 / 7.05, focus ring 6.39 / 8.19 against surface.
 
 Non-text on the tab bar and the More sheet, 3:1 each: the tab icon on the bar
-5.60 / 7.93; the current-tab outline 4.15 / 7.05 on the bar and 3.47 / 5.03 on
-its own fill; the current-row outline on the sheet 4.15 / 7.05; the focus ring
-on the bar 6.39 / 8.19. The current tab's fill alone measures 1.19 / 1.40
-against the bar, which fails WCAG 1.4.11, so the outline carries the state.
+5.60 / 7.93; the current tab's fill (the neutral primary) on the bar 19.71 /
+12.07, which carries the state on its own; the current-row outline on the sheet
+4.15 / 7.05; the focus ring on the bar 6.39 / 8.19.
 `contrast.test.ts` names each pair for the bar or the sheet, so a later token
 change fails by name.
 

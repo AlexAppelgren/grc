@@ -126,12 +126,16 @@
 
   /* Radius by use (foundations.md "Radius"), each a Green step: controls
      (button, input, toggle, nav row, banner) 6px, cards and list rows 8px,
-     dialogs and the sheet 12px, the pill fully rounded. The larger Green
-     steps are left out so a 16px card cannot come back. shadcn's rail uses
-     `rounded-md`, remapped onto the same 6px step. */
+     dialogs and the sheet 12px, the pill fully rounded. The floating tab bar
+     alone takes 20px and its current tab 16px (Alex, 2026-10-03: modern, but
+     not a capsule), concentric over the bar's 4px padding. The other larger
+     Green steps are left out so a 16px card cannot come back. shadcn's rail
+     uses `rounded-md`, remapped onto the same 6px step. */
   --radius-control: var(--gds-sys-radius-2xs);
   --radius-card: var(--gds-sys-radius-xs);
   --radius-overlay: var(--gds-sys-radius-s);
+  --radius-tabbar: var(--gds-sys-radius-l);
+  --radius-tab: var(--gds-sys-radius-m);
   --radius-md: var(--gds-sys-radius-2xs);
   --radius-max: var(--gds-sys-radius-max);
 

@@ -1,16 +1,24 @@
 // Navigation icons keyed by destination id, plus the few controls that share
-// them (close, filters): small stroke icons on
-// currentColor, seb.io's "small icon plus a label". The first four and `more`
-// (three dots) are the prototype's own. A destination without an icon here
-// gets a quiet dot, so the collapsed rail never shows an empty square when the
-// registry adds one. 16px in a rail or sheet row, 20px over a tab's label
-// (design/system/navigation.md 5).
+// them (close, filters): small stroke icons on currentColor, seb.io's "small
+// icon plus a label". Today, Watch, Inventory and Ask were redrawn with the tab
+// bar (Alex, 2026-10-03: modern, not old school), each with a solid form the
+// current tab shows: the same shape filled in, so the state reads in the
+// icon's shape and not in colour alone (WCAG 1.4.1). A destination without an
+// icon here gets a quiet dot, so the collapsed rail never shows an empty
+// square when the registry adds one. 16px in a rail or sheet row, 20px over a
+// tab's label (design/system/navigation.md 5).
+const HOME = 'M3.5 10.2 12 3.5l8.5 6.7V19a1.5 1.5 0 0 1-1.5 1.5h-4v-5.5H9v5.5H5A1.5 1.5 0 0 1 3.5 19z';
+const EYE = 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z';
+const PUPIL = 'M12 12m-2.75 0a2.75 2.75 0 1 0 5.5 0a2.75 2.75 0 1 0-5.5 0';
+const LAYERS = ['M12 3.5 3.5 8 12 12.5 20.5 8z', 'm3.5 12 8.5 4.5 8.5-4.5', 'm3.5 16 8.5 4.5 8.5-4.5'] as const;
+const BUBBLE = 'M20.5 11.5a8 8 0 0 1-11.8 7L4 19.8l1.3-4.4A8 8 0 1 1 20.5 11.5z';
+
 const ICONS: Record<string, readonly string[]> = {
-  today: ['M4 11l8-7 8 7v9H4z'],
-  watch: ['M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0', 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z'],
-  inventory: ['M5 4h11l3 3v13H5z', 'M8 10h8M8 14h8'],
+  today: [HOME],
+  watch: [PUPIL, EYE],
+  inventory: LAYERS,
   search: ['M11 11m-6 0a6 6 0 1 0 12 0a6 6 0 1 0-12 0', 'M20 20l-4-4'],
-  ask: ['M4 5h16v11H9l-5 4z'],
+  ask: [BUBBLE],
   roadmap: ['M4 6h16v14H4z', 'M4 10h16', 'M8 3v4M16 3v4'],
   // c8-ui-gaps-risk: where the bank falls short, a warning triangle.
   gaps: ['M12 4l9 16H3z', 'M12 10v4', 'M12 17h.01'],
@@ -29,15 +37,29 @@ const ICONS: Record<string, readonly string[]> = {
   filters: ['M4 7h9M17 7h3M4 17h3M11 17h9', 'M15 7m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0', 'M9 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0'],
 };
 
+// The solid forms: [path, 'fill' | 'line']. The eye is one path, so its pupil
+// stays a hole under the even-odd rule.
+const SOLID: Record<string, readonly (readonly [string, 'fill' | 'line'])[]> = {
+  today: [[HOME, 'fill']],
+  watch: [[`${EYE} ${PUPIL}`, 'fill']],
+  inventory: [
+    [LAYERS[0], 'fill'],
+    [LAYERS[1], 'line'],
+    [LAYERS[2], 'line'],
+  ],
+  ask: [[BUBBLE, 'fill']],
+};
+
 const SIZE = { row: 'size-4', tab: 'size-5' } as const;
 
 const DOT: readonly string[] = ['M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0'];
 
-export function NavIcon({ id, size = 'row' }: { id: string; size?: keyof typeof SIZE }) {
+export function NavIcon({ id, size = 'row', solid = false }: { id: string; size?: keyof typeof SIZE; solid?: boolean }) {
+  const paths = (solid ? SOLID[id] : undefined) ?? (ICONS[id] ?? DOT).map((d) => [d, 'line'] as const);
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={`${SIZE[size]} shrink-0 fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round]`}>
-      {(ICONS[id] ?? DOT).map((d) => (
-        <path key={d} d={d} />
+      {paths.map(([d, kind]) => (
+        <path key={d} d={d} fill={kind === 'fill' ? 'currentColor' : undefined} fillRule={kind === 'fill' ? 'evenodd' : undefined} />
       ))}
     </svg>
   );

@@ -407,7 +407,7 @@ describe('at compact width: the tab bar', () => {
     const watch = within(tabBar()).getByRole('link', { name: 'Watch' });
     expect(watch).toHaveAttribute('aria-current', 'page');
     expect(watch).toHaveAttribute('data-active', 'true');
-    expect(watch).toHaveClass('rounded-control');
+    expect(watch).toHaveClass('rounded-tab');
     expect(tabBar().querySelectorAll('[aria-current]')).toHaveLength(1);
     expect(within(tabBar()).getByRole('link', { name: 'Today' })).toHaveAttribute('data-active', 'false');
     expect(moreButton()).toHaveAttribute('data-active', 'false');
@@ -547,8 +547,8 @@ describe('at compact width: the tab bar', () => {
 
   it('is shaped as a floating layer, never a pill', () => {
     renderShell({ permissions: EVERYONE_AND_ADMIN });
-    expect(tabBar()).toHaveClass('rounded-overlay', 'shadow-float', 'fixed', 'lg:hidden', 'print:hidden');
-    expect(within(tabBar()).getByRole('link', { name: 'Today' })).toHaveClass('rounded-control');
+    expect(tabBar()).toHaveClass('rounded-tabbar', 'shadow-float', 'fixed', 'lg:hidden', 'print:hidden');
+    expect(within(tabBar()).getByRole('link', { name: 'Today' })).toHaveClass('rounded-tab');
     openMore();
     expect(sheet()).toHaveClass('rounded-t-overlay');
     for (const root of [tabBar(), sheet()]) {
@@ -673,6 +673,16 @@ describe('the console surface and the helpers', () => {
     for (const link of within(mainNav()).getAllByRole('link')) {
       expect(link.querySelectorAll('svg path').length).toBeGreaterThan(0);
     }
+  });
+
+  it('fills the current tab with the neutral primary and gives it the solid icon, and only it', () => {
+    nav.pathname = '/watch/change-12';
+    renderShell({ permissions: EVERYONE_AND_ADMIN });
+    const filled = (name: string) => within(tabBar()).getByRole('link', { name }).querySelectorAll('path[fill="currentColor"]').length;
+    const watch = within(tabBar()).getByRole('link', { name: 'Watch' });
+    expect(watch).toHaveClass('data-[active=true]:bg-button', 'data-[active=true]:text-on-button');
+    expect(filled('Watch')).toBeGreaterThan(0);
+    for (const name of ['Today', 'Inventory']) expect(filled(name)).toBe(0);
   });
 
   it('draws its own icon for the console tenants destination, and none for a problem-report surface', () => {

@@ -18,15 +18,18 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 // on the server and nothing flashes; globals.css holds the short-viewport and
 // on-screen-keyboard rules and the page clearance it measures for.
 
-// Each cell is the whole hit area, 52px tall. The current tab takes the
-// rail's accent over the cell plus a 1px line-strong outline inset by 1px,
-// the indicator that reaches 3:1 (fill alone is 1.19:1); keyboard focus
-// replaces the outline with the focus ring.
+// Each cell is the whole hit area, 52px tall. The current tab is the app's
+// neutral primary: the button's fill with its text colour, under a solid icon
+// (Alex, 2026-10-03, option A). The fill is itself the indicator: 19.7:1
+// against the bar in light and 12.1:1 in dark, where the outline the old
+// tint needed for 3:1 has nothing left to do, except in forced colours, which
+// drop the fill and keep an outline in the system's colour. Keyboard focus
+// draws the focus ring outside the cell, in the bar's padding.
 const CELL = [
-  'flex min-h-13 flex-col items-center justify-center gap-1 rounded-control text-meta text-muted no-underline transition-colors',
-  'hover:hover-fill',
-  'data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground',
-  'data-[active=true]:not-focus-visible:outline data-[active=true]:not-focus-visible:-outline-offset-1 data-[active=true]:not-focus-visible:outline-line-strong',
+  'flex min-h-13 flex-col items-center justify-center gap-1 rounded-tab text-meta text-muted no-underline transition-colors',
+  'not-data-[active=true]:hover:hover-fill',
+  'data-[active=true]:bg-button data-[active=true]:font-medium data-[active=true]:text-on-button',
+  'forced-colors:data-[active=true]:outline forced-colors:data-[active=true]:-outline-offset-1',
 ].join(' ');
 
 // One or two lines, never truncated or shrunk: a long word hyphenates where
@@ -68,7 +71,7 @@ export function TabBar({ surface }: { surface: Surface }) {
       className={[
         'fixed right-[max(16px,env(safe-area-inset-right))] bottom-(--tabbar-bottom) left-[max(16px,env(safe-area-inset-left))] z-30 mx-auto w-fit',
         'max-[25rem]:right-[max(8px,env(safe-area-inset-right))] max-[25rem]:left-[max(8px,env(safe-area-inset-left))]',
-        'rounded-overlay border border-line bg-surface p-1.5 shadow-float lg:hidden print:hidden',
+        'rounded-tabbar border border-line bg-surface p-1 shadow-float lg:hidden print:hidden',
       ].join(' ')}
     >
       <ul className="grid auto-cols-[minmax(0,6rem)] grid-flow-col">
@@ -77,7 +80,7 @@ export function TabBar({ surface }: { surface: Surface }) {
           return (
             <li key={d.id} className="grid">
               <Link href={d.href} aria-current={current ? 'page' : undefined} data-active={current} className={CELL}>
-                <NavIcon id={d.id} size="tab" />
+                <NavIcon id={d.id} size="tab" solid={current} />
                 <span className={LABEL}>{t(d.shortLabelKey ?? d.labelKey)}</span>
               </Link>
             </li>
@@ -93,7 +96,7 @@ export function TabBar({ surface }: { surface: Surface }) {
               aria-label={unread > 0 ? withUnread(t('nav.more'), unread, t) : undefined}
               className={CELL}
             >
-              <BellIcon id="more" size="tab" count={unread} ring="surface" />
+              <BellIcon id="more" size="tab" count={unread} ring={inMore ? 'button' : 'surface'} />
               <span className={LABEL}>{t('nav.more')}</span>
             </button>
           </MoreSheet>

@@ -32,7 +32,7 @@ export function withUnread(label: string, count: number, t: Translate): string {
   return count > 0 ? t('collab.bell.withUnread', { label, unread: t('collab.notifications.unreadCount', { count }) }) : label;
 }
 
-const RING = { sidebar: 'ring-sidebar', surface: 'ring-surface' } as const;
+const RING = { sidebar: 'ring-sidebar', surface: 'ring-surface', button: 'ring-button' } as const;
 
 /**
  * A navigation icon with the unread dot at its top right, ringed in the fill

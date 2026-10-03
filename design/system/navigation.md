@@ -180,8 +180,8 @@ Sources: Apple HIG tab bars (a modal covering the bar, avoiding overflow tabs). 
 |---|---|---|---|---|
 | Position | `position: fixed`. `bottom: var(--tabbar-bottom)`, which is `max(16px, env(safe-area-inset-bottom))`. `left` and `right`: `max(16px, env(safe-area-inset-left))` and `-right`, dropping to `max(8px, …)` below 400 px (25rem). `margin-inline: auto` | `space-m` | The bar floats with a margin on three sides. From 400 px, the 16 px side gap equals the phone page gutter, so the bar lines up with the content. Below 400 px, the labels need the width (section 5). Safe-area insets are not margins, so they combine with `max()` | Apple HIG tab bars (the bar floats above content). WWDC25 session 356. WebKit's iPhone X notes. The 400 px step is our own value |
 | Width | `width: fit-content` (`w-fit`). The list is a grid with `grid-auto-flow: column` and `grid-auto-columns: minmax(0, 6rem)` | own value | On a tablet the bar hugs 96 px cells and sits centred. On a phone the insets decide the width, and the cells share it equally. No JS and no inline style. 96 px fits a 12-character `meta` label on one line | Own value |
-| Height | 64 px: 6 px padding, a 52 px cell, 6 px padding, with the border inside. It grows when a label wraps and never clips | `space-5xl` | About the height of iOS's floating bar (third-party measurement: about 62 pt) | learnui.design, Apple forum thread 796299 (third party) |
-| Radius | 12 px, `rounded-overlay` | `radius-s` | Foundations gives 12 px to floating layers (dialogs, the sheet), and the bar is one. The fully rounded shape stays the pill's (open question 1). With 6 px padding, the 6 px highlight on the current tab sits concentric with the bar (12 − 6 = 6) | `foundations.md` "Radius", `pills-and-labels.md`, WWDC25 session 356 |
+| Height | 62 px: a 1 px border, 4 px padding, a 52 px cell, 4 px padding and the border again. It grows when a label wraps and never clips | own value | About the height of iOS's floating bar (third-party measurement: about 62 pt) | learnui.design, Apple forum thread 796299 (third party) |
+| Radius | 20 px, `rounded-tabbar` (Alex, 2026-10-03: modern, but a capsule's "edges are a bit too round") | `radius-l` | Rounder than the other floating layers, so the bar reads as today's floating bars do, and still not a capsule: the fully rounded shape stays the pill's (open question 1). With 4 px padding, the 16 px current tab sits concentric with the bar (20 − 4 = 16) | Alex. `foundations.md` "Radius", `pills-and-labels.md`, WWDC25 session 356 |
 | Surface | `bg-surface`, solid | `l2-neutral-02` (#ffffff light, #191a1a dark) | Solid, so `contrast.test.ts` can pin every pair (it composites solid colours, not rgba). Green has no glass material | `theme.css` comment on the sidebar accent. Apple HIG materials, for what we leave out |
 | Border | 1 px `border-line` | `border-neutral-02` light, `-03` dark | Draws the bar's edge on a white page | `foundations.md` "hairline" |
 | Elevation | `shadow-float`, a new theme alias combining Green `shadow-l-01` and `shadow-l-02` | `--gds-sys-shadow-l-01`, `-l-02` | This is the only layer that sits over scrolling content. Cards stay flat ("no shadow"). Green shadows come in pairs, `-01` and `-02` | Green MCP `get_tokens shadow`. `foundations.md` "Card" |
@@ -210,7 +210,7 @@ Both rules apply only below 1024 px. They are CSS only, in `globals.css`.
 - **Icon.** `NavIcon` gets a new `size` prop:
   - `'row'` (16 px, the default) for the rail and the sheet.
   - `'tab'` (20 px) for the bar. 20 px is on the 4 px grid. The prototype's tab icons are 22 px.
-  - Paths and the 1.75 stroke stay the rail's.
+  - Paths and the 1.75 stroke are the rail's. Today, Watch, Inventory and Ask were redrawn on 2026-10-03 (Alex: modern, not old school): a house with a door, an eye, stacked layers and a speech bubble. Each has a solid form, the same shape filled in, which the current tab shows (`solid`), so the state reads in the icon's shape and not in colour alone.
 - **Label.** The `meta` role (13/18). It is the smallest role without upper case, and there is no seventh role (playbook 6.4).
   - It may use one or two lines, and wraps at spaces.
   - `hyphens: auto` comes first, then `overflow-wrap: anywhere`. A word longer than its cell therefore breaks at a hyphenation point where the browser has a dictionary, and anywhere otherwise. It is never clipped.
@@ -243,19 +243,16 @@ Both rules apply only below 1024 px. They are CSS only, in `globals.css`.
 |---|---|---|---|---|
 | Rest | None | `muted` | 400 | |
 | Hover (pointer devices) | `hover:hover-fill` (the `state-neutral-05` overlay) | `muted` | 400 | |
-| Current | `sidebar-accent` (`l3-neutral-02`) over the whole cell, 6 px `rounded-control`, **plus a 1 px `line-strong` outline inset by 1 px** | `sidebar-accent-foreground` | 500 | `aria-current="page"`, `data-active="true"` |
+| Current | `bg-button` (`l3-neutral-03`, the neutral primary) over the whole cell, 16 px `rounded-tab`. In forced colours, a 1 px outline inset by 1 px | `text-on-button`, the icon's solid form | 500 | `aria-current="page"`, `data-active="true"` |
 | More, while the current page lives in More | Same as current | Same as current | 500 | `data-active="true"`, `aria-current="true"` (section 11) |
-| Keyboard focus | As the state underneath. While the cell has keyboard focus, the 2 px `focus` ring (2 px offset) replaces the inset outline (`not-focus-visible:`) | | | The bar's 6 px padding keeps the ring inside the bar |
+| Keyboard focus | As the state underneath, with the 2 px `focus` ring at a 2 px offset | | | The bar's 4 px padding holds the ring inside the bar |
 
-**How the current tab is marked.**
-- **The outline is the indicator that reaches 3:1.**
-  - `line-strong` (`border-neutral-01`) measures 4.15 / 7.05 against the bar and 3.47 / 5.03 against the fill.
-  - The fill alone measures 1.19 / 1.40 against the bar. That fails WCAG 1.4.11, because a state fill must contrast with its adjacent colours.
-  - The pairing is the pressed Toggle's (`foundations.md` "Toggle": `l3-neutral-02` with `border-neutral-01`).
-- **Why an outline, not a border.**
-  - It takes no layout space.
-  - Forced-colours mode keeps outlines, recoloured by the system, while it drops background fills. The current tab therefore stays distinct there, with no extra rules.
-- **Fill, colour, weight and `aria-current` add to it.** Colour is never the only cue (WCAG 1.4.1).
+**How the current tab is marked** (Alex, 2026-10-03, option A of the tab bar options).
+- **The fill is the indicator.** The neutral primary measures 19.71 / 12.07 against the bar, far past WCAG 1.4.11's 3:1, so it needs no outline. Until 2026-10-03 the current tab took the rail's accent tint, which measures 1.19 / 1.40 against the bar, and a 1 px `line-strong` outline carried the state.
+- **The label** is the primary button's pair: 19.71 / 13.64.
+- **Forced colours** drop background fills and keep outlines, so the current tab takes a 1 px outline inset by 1 px there alone (`forced-colors:`), recoloured by the system.
+- **Shape, weight and `aria-current` add to it.** The solid icon is a cue in shape, not colour (WCAG 1.4.1).
+- **The unread dot** on More rings in the fill it sits on: the bar's surface, or the button's fill while More is current.
 - **The rail's current row** keeps its approved treatment in this slice (open question 5).
 
 **Tapping a tab.**
@@ -722,7 +719,7 @@ Name each pair for the bar or the sheet, even where a generic pair already cover
 
 Each takes its stated default (`docs/DECISIONS.md` rule) and is listed in `docs/TODO_FOR_alex.md`. The "Rejected" lines record critiques of this file that were considered and not taken.
 
-- Open question 1: should the bar be capsule-shaped, with a fully rounded current tab, as in iOS 26? Default: no. The bar takes the 12 px overlay radius and the current tab 6 px, because the fully rounded shape belongs to Pill alone (ADR 0020, playbook 6.7).
+- Open question 1: should the bar be capsule-shaped, with a fully rounded current tab, as in iOS 26? **Answered (Alex, 2026-10-03):** rounder and more modern, but not a capsule, whose edges are "a bit too round". The bar takes 20 px (`radius-l`) and the current tab 16 px (`radius-m`), filled with the neutral primary; the fully rounded shape stays Pill's alone.
 - Open question 2: should the More sheet close with a downward swipe? That needs the Base UI Drawer (a second headless library beside Radix) or vaul (unmaintained). Default: no swipe. Close, Escape, the scrim and any route change close it.
 - Open question 3: the 13-inch iPads in portrait (1024 and 1032 px wide) get the rail, which leaves 784 px of content. Should they get the tab bar instead? That needs a breakpoint that is not a step in Green or Tailwind. Default: the rail, from 1024.
 - Open question 4: should each tab remember where the person was in its section, as iOS does? For example, going from /watch/42 to Inventory and back would land on /watch/42. Default: no. Every tab links to its section's root, as the rail does, and the browser's back button returns to the previous place.

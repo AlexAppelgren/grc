@@ -123,7 +123,7 @@ export const PAIRS: readonly Pair[] = [
   // 16). Named for the bar or the sheet even where a generic pair covers the
   // same tokens, so a later token change fails by name.
   { name: 'tab bar: tab label on the bar', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
-  { name: 'tab bar: current tab label', fg: '--sidebar-accent-foreground', bg: '--sidebar-accent' },
+  { name: 'tab bar: current tab label', fg: '--gds-sys-color-content-neutral-03', bg: '--gds-sys-color-l3-neutral-03' },
   { name: 'more sheet: row label', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'more sheet: organisation and role line', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'more sheet: language error line', fg: '--gds-sys-color-content-negative-01', bg: '--gds-sys-color-l2-neutral-02' },
@@ -135,10 +135,8 @@ export const NON_TEXT: readonly Pair[] = [
   { name: 'focus ring on page', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l1-neutral-01' },
   { name: 'focus ring on the rail', fg: '--sidebar-ring', bg: '--sidebar' },
   { name: 'tab bar: tab icon on the bar', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
-  // The fill alone is 1.19:1 against the bar (WCAG 1.4.11 fails); the inset
-  // line-strong outline is the current tab's 3:1 indicator, against both.
-  { name: 'tab bar: current-tab outline on the bar', fg: '--gds-sys-color-border-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
-  { name: 'tab bar: current-tab outline on its fill', fg: '--gds-sys-color-border-neutral-01', bg: '--gds-sys-color-l3-neutral-02' },
+  // The current tab's fill is its indicator (the button's neutral primary).
+  { name: 'tab bar: current-tab fill on the bar', fg: '--gds-sys-color-l3-neutral-03', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'more sheet: current-row outline on the sheet', fg: '--gds-sys-color-border-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'tab bar: focus ring on the bar', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-neutral-02' },
 ];
