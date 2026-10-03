@@ -217,10 +217,11 @@ test.describe('public page demo', () => {
       if (request.frame().name() === DEMO_FRAME_NAME && request.url().includes('/api/')) fromDemo.push(request.url());
     });
     await page.goto('/welcome');
-    // Nothing of the app loads before the visitor asks for it.
-    await expect(page.locator(`iframe[name="${DEMO_FRAME_NAME}"]`)).toHaveCount(0);
-    await page.getByRole('button', { name: 'Try out our demo' }).click();
+    // On a desktop the demo runs in place without a press, and the page stays where the visitor is.
+    await expect(page.getByRole('button', { name: 'Try out our demo' })).toHaveCount(0);
     const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
+    await expect(app.locator('main')).toBeVisible();
+    expect(await page.evaluate(() => window.scrollY), 'the page scrolled to the demo on its own').toBe(0);
     await app.getByRole('link', { name: 'Watch', exact: true }).first().click();
     await expect(app.getByRole('tab', { selected: true })).toBeVisible();
     await app.getByRole('link', { name: 'Inventory', exact: true }).first().click();
@@ -235,7 +236,7 @@ test.describe('public page demo', () => {
   test.describe('on a phone', () => {
     test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
-    test('the demo opens full screen when asked, and loads nothing before', async ({ page, apiGuard }) => {
+    test('the demo opens full screen when asked, loads nothing before, and holds the page behind it still', async ({ page, apiGuard }) => {
       allowFreshContext(apiGuard);
       await page.goto('/welcome');
       await expect(page.locator(`iframe[name="${DEMO_FRAME_NAME}"]`)).toHaveCount(0);
@@ -243,6 +244,12 @@ test.describe('public page demo', () => {
       const dialog = page.getByRole('dialog', { name: 'Demo' });
       const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
       await expect(app.locator('main')).toBeVisible();
+      const before = await page.evaluate(() => window.scrollY);
+      const bar = await dialog.getByRole('button', { name: 'Start over' }).boundingBox();
+      if (bar === null) throw new Error('the demo bar has no box');
+      await page.mouse.move(bar.x - 40, bar.y + bar.height / 2);
+      await page.mouse.wheel(0, 800);
+      await expect.poll(() => page.evaluate(() => window.scrollY), { message: 'the page behind the demo scrolled' }).toBe(before);
       await dialog.getByRole('button', { name: 'Close' }).click();
       await expect(dialog).toHaveCount(0);
     });
@@ -264,7 +271,8 @@ test.describe('public page demo', () => {
         const context = await browser.newContext({ baseURL, viewport, deviceScaleFactor, colorScheme, isMobile: form === 'phone', hasTouch: form === 'phone' });
         const page = await context.newPage();
         await page.goto('/welcome');
-        await page.getByRole('button', { name: 'Try out our demo' }).click();
+        // A desktop runs the demo in place; a phone opens it with the button.
+        if (form === 'phone') await page.getByRole('button', { name: 'Try out our demo' }).click();
         const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
         await expect(app.locator('main h1').first()).toBeVisible();
         await page.frame({ name: DEMO_FRAME_NAME })?.evaluate(() => document.fonts.ready.then(() => undefined));

@@ -66,16 +66,17 @@ describe('PublicPage', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('on a wide screen swaps the picture for the live app in place, and moves focus into it', async () => {
+  it('on a wide screen runs the live app in place straight away, without taking focus', async () => {
     stubWidth(true);
-    const { container } = await renderPage();
-    expect(container.querySelector('iframe')).toBeNull();
-    const wide = screen.getAllByRole('button', { name: 'Try out our demo' }).at(-1)!;
-    fireEvent.click(wide);
+    await renderPage();
     const frame = await screen.findByTitle("Compliance Watch with a sample bank's data");
     expect(frame).toHaveAttribute('name', 'bleqq-demo');
-    expect(frame).toHaveFocus();
+    expect(frame).not.toHaveFocus();
+    // The button is the phone's alone.
+    expect(screen.getAllByRole('button', { name: 'Try out our demo' })).toHaveLength(1);
     expect(screen.getByRole('link', { name: 'Skip the demo' })).toHaveAttribute('href', '#case');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Start over' })[0]!);
+    expect(screen.getByTitle("Compliance Watch with a sample bank's data")).not.toBe(frame);
   });
 
   it('keeps Sign in as the primary of the two actions in the top bar, on the right', async () => {

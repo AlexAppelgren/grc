@@ -2,7 +2,7 @@
 
 import * as Dialog from '@radix-ui/react-dialog';
 import Image from 'next/image';
-import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, useState, useSyncExternalStore } from 'react';
 
 import { buttonVariants } from '@/components/ui/Button';
 import { DEMO_FRAME_NAME, isDemoFrame } from '@/features/demo/frame';
@@ -10,16 +10,17 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';
 
 // The public page's demo (design/public/README.md "The demo"): the app itself
-// in a frame, answered from recordings (features/demo). A visitor first sees a
-// picture of it, taken by the demo journey when it records, and one button
-// (Alex, 2026-09-27: proposal A). Nothing of the app loads until they press
-// it: on a desktop the live app replaces the picture in place, on a phone it
-// opens full screen, where a frame inside a scrolling page would trap the
-// thumb. A bar above it says it is a demo and can start it over.
+// in a frame, answered from recordings (features/demo). On a desktop it runs in
+// place straight away (Alex, 2026-10-03). On a phone a frame inside a scrolling
+// page would trap the thumb, so a picture of it, taken by the demo journey when
+// it records, and one button open it full screen, over a page that stays still;
+// nothing of the app loads before the press. A bar above it says it is a demo
+// and can start it over.
 
 const WIDE = '(min-width: 768px)';
 const TRY = cn(buttonVariants({ variant: 'primary' }), 'h-12 px-6 text-title hover:bg-[color-mix(in_srgb,var(--color-button)_88%,var(--color-page))]');
 const BAR_BUTTON = cn(buttonVariants({ variant: 'outline', size: 'small' }), 'h-11 hover:hover-fill');
+const DESKTOP_HEIGHT = 'h-[min(760px,calc(100dvh-160px))]';
 
 function subscribe(onChange: () => void): () => void {
   const query = window.matchMedia(WIDE);
@@ -56,13 +57,9 @@ function Poster({ form }: { form: 'desktop' | 'phone' }) {
   );
 }
 
-function Frame({ run, className, focus = false }: { run: number; className: string; focus?: boolean }) {
+function Frame({ run, className }: { run: number; className: string }) {
   const t = useT();
-  const frame = useRef<HTMLIFrameElement>(null);
-  useEffect(() => {
-    if (focus) frame.current?.focus();
-  }, [focus]);
-  return <iframe key={run} ref={frame} name={DEMO_FRAME_NAME} src="/" title={t('public.demo.frameTitle')} className={cn('block w-full border-0 bg-page', className)} />;
+  return <iframe key={run} name={DEMO_FRAME_NAME} src="/" title={t('public.demo.frameTitle')} className={cn('block w-full border-0 bg-page', className)} />;
 }
 
 function Bar({ onStartOver, children }: { onStartOver: () => void; children?: ReactNode }) {
@@ -82,7 +79,6 @@ function Bar({ onStartOver, children }: { onStartOver: () => void; children?: Re
 export function DemoFrame() {
   const t = useT();
   const layout = useSyncExternalStore(subscribe, layoutNow, () => 'pending');
-  const [live, setLive] = useState(false);
   const [run, setRun] = useState(0);
   const startOver = () => setRun((n) => n + 1);
 
@@ -103,6 +99,8 @@ export function DemoFrame() {
           </div>
         </div>
         <Dialog.Portal>
+          {/* Radix locks the page's scrolling from its overlay, so the page behind stays still. */}
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-page" />
           <Dialog.Content
             aria-modal="true"
             aria-describedby={undefined}
@@ -118,31 +116,20 @@ export function DemoFrame() {
       </Dialog.Root>
 
       <div className="hidden md:block">
-        {live && layout === 'wide' ? (
-          <>
-            <a href="#case" className="sr-only focus:not-sr-only focus:mb-2 focus:inline-block focus:underline">
-              {t('public.demo.skip')}
-            </a>
-            <div className="overflow-hidden rounded-card border border-line">
-              <Bar onStartOver={startOver} />
-              <Frame run={run} focus className="h-[min(760px,calc(100dvh-160px))]" />
+        <a href="#case" className="sr-only focus:not-sr-only focus:mb-2 focus:inline-block focus:underline">
+          {t('public.demo.skip')}
+        </a>
+        <div className="overflow-hidden rounded-card border border-line">
+          <Bar onStartOver={startOver} />
+          {/* Until the browser knows the width, the picture holds the frame's place. */}
+          {layout === 'wide' ? (
+            <Frame run={run} className={DESKTOP_HEIGHT} />
+          ) : (
+            <div className={cn('relative bg-subtle', DESKTOP_HEIGHT)}>
+              <Poster form="desktop" />
             </div>
-          </>
-        ) : (
-          <div className="relative h-[min(760px,calc(100dvh-120px))] overflow-hidden rounded-card border border-line bg-subtle">
-            <Poster form="desktop" />
-            {/* The button and its line sit on solid paper, so no text of the picture runs behind them. */}
-            <div className="absolute inset-0 flex items-center justify-center bg-page/60 px-6">
-              <div className="flex flex-col items-center gap-4 rounded-card border border-line bg-page px-8 py-6 text-center">
-                <button type="button" onClick={() => setLive(true)} className={TRY}>
-                  <PlayIcon />
-                  {t('public.demo.open')}
-                </button>
-                <p className="max-w-[40ch] text-title font-normal">{t('public.demo.caption')}</p>
-              </div>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </figure>
   );

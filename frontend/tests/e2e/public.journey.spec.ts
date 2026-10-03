@@ -306,7 +306,6 @@ test.describe('the public site and the app on hosts of their own', () => {
   test('the demo runs the app in its frame on the public host', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     await page.goto(`${PUBLIC}/`);
-    await page.getByRole('button', { name: 'Try out our demo' }).click();
     const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
     await app.getByRole('link', { name: 'Watch', exact: true }).first().click();
     await expect(app.getByRole('tab', { selected: true })).toBeVisible();

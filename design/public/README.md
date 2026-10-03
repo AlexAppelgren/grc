@@ -171,16 +171,18 @@ linear.app the same day); ours is the app itself.
   `npm run demo:record` in `frontend/`, then commit what it writes: the two
   recording files and the four pictures below.
 - **What a visitor sees first** (Alex, 2026-09-27, proposal A of the canvas
-  "Demo on the public page: proposals"). A picture of the demo's Today and one
-  button, "Try out our demo", with "Example Bank AB is made up, and nothing
-  you do in it is saved." Nothing of the app loads before the press. On a
-  desktop the live app then replaces the picture in place and takes focus, with
-  a "Skip the demo" link for keyboard users; on a phone it opens full screen,
-  because a frame inside a scrolling page traps the thumb. Either way a sand bar
-  above it names the demo and the bank and offers Start over (and Close, on a
-  phone), so nobody takes it for the real product.
-- **The pictures** (`frontend/public/demo/today-{desktop,phone}-{light,dark}.jpg`)
-  are taken of the demo itself by the recorder's second pass, on a build that
+  "Demo on the public page: proposals"; the desktop changed 2026-10-03). On a
+  desktop the live app runs in place straight away, with a "Skip the demo" link
+  for keyboard users, and the page does not move to it. On a phone a frame
+  inside a scrolling page traps the thumb, so a picture of the demo's Today and
+  one button, "Try out our demo", with "Example Bank AB is made up, and nothing
+  you do in it is saved.", open it full screen, and the page behind it holds
+  still; nothing of the app loads before the press. Either way a sand bar above
+  it names the demo and the bank and offers Start over (and Close, on a phone),
+  so nobody takes it for the real product.
+- **The pictures** (`frontend/public/demo/today-{desktop,phone}-{light,dark}.jpg`;
+  the desktop's holds the frame's place until the browser knows the width) are
+  taken of the demo itself by the recorder's second pass, on a build that
   already carries the new recordings, so they show the same sample bank as the
   live demo. A change to the look alone does not fail the gate, so re-record
   after a visible change to Today. The recordings are their own chunk, so the
