@@ -166,7 +166,14 @@ Two details a reviewer asks about:
   crawler, a filter's fetcher). The frame's own load (`iframe`) and the app's
   navigations inside it (`empty`) pass, marked noindex. A browser too old to
   send `Sec-Fetch-Dest` (Safari before 16.4) sees the public page in the frame
-  instead of the demo; nothing else changes for it.
+  instead of the demo; nothing else changes for it. One address therefore has
+  two answers, and a shared cache keys on the address alone (Railway's CDN,
+  which is on for the web service, keys on method, host, path and query). So
+  every answer on a public host except its files goes out `Cache-Control:
+  private, no-cache` (`src/proxy.ts`): the edge never stores it, and a browser
+  asks again each time. The app host and the build's files stay cached at the
+  edge. Without it the edge handed the frame the cached public page
+  (2026-10-03).
 - **The sign-in and enrolment pages** carry, under the passkey panel and
   rendered on the server, what the service is, the company name linking to the
   public page, and the privacy (`privacy@bleqq.com`, default taken) and

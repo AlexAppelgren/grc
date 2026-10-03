@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { hostSettingsFrom, routeByHost, type HostRequest, type HostSettings } from './hosts';
+import { hostSettingsFrom, routeByHost, variesByDest, type HostRequest, type HostSettings } from './hosts';
 
 const SPLIT: HostSettings = { publicHosts: ['bleqq.com', 'www.bleqq.com'], appHost: 'app.bleqq.com' };
 
@@ -102,5 +102,21 @@ describe('routeByHost on any other host', () => {
       expect(routeByHost(SPLIT, request('frontend-production.up.railway.app', path))).toEqual({ kind: 'pass', noindex: false });
       expect(routeByHost(SPLIT, request('', path))).toEqual({ kind: 'pass', noindex: false });
     }
+  });
+});
+
+describe('variesByDest', () => {
+  it('holds for every page on a public host, where a page load and the demo frame get different answers at one address', () => {
+    for (const host of ['bleqq.com', 'www.bleqq.com', 'BLEQQ.com']) {
+      for (const path of ['/', '/welcome', '/sign-in', '/inventory']) expect(variesByDest(SPLIT, request(host, path))).toBe(true);
+    }
+  });
+
+  it('holds for nothing else: the public files, the app host, another host, or the split unset', () => {
+    expect(variesByDest(SPLIT, request('bleqq.com', '/robots.txt'))).toBe(false);
+    expect(variesByDest(SPLIT, request('bleqq.com', '/demo/today-desktop-light.jpg'))).toBe(false);
+    expect(variesByDest(SPLIT, request('app.bleqq.com', '/'))).toBe(false);
+    expect(variesByDest(SPLIT, request('grc-front-staging.up.railway.app', '/'))).toBe(false);
+    expect(variesByDest(null, request('bleqq.com', '/'))).toBe(false);
   });
 });

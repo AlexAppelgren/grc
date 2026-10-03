@@ -305,7 +305,11 @@ test.describe('the public site and the app on hosts of their own', () => {
 
   test('the demo runs the app in its frame on the public host', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
-    await page.goto(`${PUBLIC}/`);
+    const frameLoad = page.waitForResponse((response) => response.frame().name() === DEMO_FRAME_NAME && new URL(response.url()).pathname === '/');
+    const pageLoad = await page.goto(`${PUBLIC}/`);
+    // The page and the frame get different answers at one address, so neither may sit in a shared cache.
+    expect(pageLoad?.headers()['cache-control']).toBe('private, no-cache');
+    expect((await frameLoad).headers()['cache-control']).toBe('private, no-cache');
     const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
     await app.getByRole('link', { name: 'Watch', exact: true }).first().click();
     await expect(app.getByRole('tab', { selected: true })).toBeVisible();

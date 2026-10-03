@@ -44,6 +44,10 @@ function hostOf(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function isPublicFile(path: string): boolean {
+  return PUBLIC_FILES.includes(path) || PUBLIC_FILE_DIRS.some((dir) => path.startsWith(dir));
+}
+
 /** The split, or null (today's single host) unless both variables name a host. */
 export function hostSettingsFrom(env: Readonly<Record<string, string | undefined>>): HostSettings | null {
   const [first, ...rest] = (env.PUBLIC_SITE_HOST ?? '').split(',').map(hostOf).filter((host) => host !== '');
@@ -53,8 +57,7 @@ export function hostSettingsFrom(env: Readonly<Record<string, string | undefined
 
 export function routeByHost(settings: HostSettings | null, request: HostRequest): HostRoute {
   const host = hostOf(request.host);
-  const isFile = PUBLIC_FILES.includes(request.path) || PUBLIC_FILE_DIRS.some((dir) => request.path.startsWith(dir));
-  if (settings === null || isFile) return { kind: 'pass', noindex: false };
+  if (settings === null || isPublicFile(request.path)) return { kind: 'pass', noindex: false };
   const on = (target: string, path: string) => `${request.protocol}://${target}${path}${request.search}`;
 
   if (host === settings.appHost) {
@@ -65,4 +68,15 @@ export function routeByHost(settings: HostSettings | null, request: HostRequest)
   if (request.path === '/') return { kind: 'rewrite', path: PUBLIC_HOME };
   if (request.path === PUBLIC_HOME) return { kind: 'redirect', url: on(host, '/') };
   return { kind: 'redirect', url: on(settings.appHost, request.path) };
+}
+
+/**
+ * Whether the answer turns on Sec-Fetch-Dest: every path on a public host but its
+ * files. A shared cache keys an answer on its address alone (Railway's edge: the
+ * method, host, path and query), so it must never store one of these, or the
+ * public page reaches the demo's frame and a move to the app host reaches the app
+ * inside it, which the app host may not frame.
+ */
+export function variesByDest(settings: HostSettings | null, request: Pick<HostRequest, 'host' | 'path'>): boolean {
+  return settings !== null && !isPublicFile(request.path) && settings.publicHosts.includes(hostOf(request.host));
 }
