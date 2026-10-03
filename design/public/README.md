@@ -153,18 +153,26 @@ linear.app the same day); ours is the app itself.
   cannot read or change real data even beside a signed-in session. Writes are
   refused with the screen's ordinary problem message, sign-out restarts the
   demo at Today, and the demo's clock reads the day it was recorded.
-- **Where the data comes from.** The demo journey (`tests/e2e/demo.journey.spec.ts`)
-  signs in on the real stack as the seeded reader of Example Bank AB, who reads
-  everything and changes nothing, and walks every tenant screen in the
-  navigation except administration and the person's own settings: each screen,
-  its tabs, its toggles and the records it links to. What the backend answered
-  is the recording. So the data is `seed_e2e`'s, which every chunk already
-  extends, and the demo grows with it. Two things are changed on the way in and
-  nothing else: the seed's " (E2E)" name marks are dropped, and grants that only
-  open administration are left out of the person's `/me`, so the app's own
-  rules hide Admin.
-- **How it stays current.** Every run of the journeys (it is `@smoke`, so every
-  push) walks the app again and compares the answers with the committed
+- **Where the data comes from** (Alex, 2026-10-03, D-119: "I would like it to use the
+  actual library and then the rest can be mocked"). The library is the real one: the whole
+  baseline in `backend/apps/library/baseline/`, filed through the proposal door by
+  `library-baseline` and approved by `library-confirmer`, an agent of another definition and
+  key, so every record reads machine-confirmed as it will in production. Only Example Bank AB
+  is made up: its organisation, register, cases, comments, evidence and briefing, built on
+  real stable keys. Its regulatory changes are facts of the baseline itself, the days an
+  instrument's duties start to apply, with that instrument's own authority and page, so no
+  authority is said to have published anything it did not. `seed_public_demo`
+  (`backend/apps/shared/demo_seed.py`) seeds it on a stack of the demo's own (its own
+  database and ports, `E2E_DEMO_STACK` in `playwright.config.ts`), never the journeys'
+  `seed_e2e`. The demo journey (`tests/e2e/demo.journey.spec.ts`, `@demo`) signs in there
+  as the bank's reader, who reads everything and changes nothing, and walks every tenant
+  screen in the navigation except administration and the person's own settings: each
+  screen, its tabs, its toggles and the records it links to. What the backend answered is
+  the recording, with grants that only open administration left out of the person's `/me`,
+  so the app's own rules hide Admin. The bank's register sits on the duties that sort first
+  in its inventory, because the walk follows at most twenty records a route.
+- **How it stays current.** CI's `demo` job, on every push, boots the demo's stack and
+  walks the app again and compares the answers with the committed
   recordings by API path template and field shape, never by value. A screen
   asking for something unrecorded, or an answer that gained, lost or retyped a
   field, fails the journey with the command that fixes it:

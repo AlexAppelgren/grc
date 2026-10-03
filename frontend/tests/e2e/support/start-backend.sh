@@ -17,9 +17,15 @@
 #   start-backend.sh manage run one management command against this same database as
 #     <command> [args...]   cw_app and exit, the way a person runs one on the api shell.
 #
-# Both keep E2E_MODE and the mock adapters, so the emailed code stays deterministic and
-# no mail or model call leaves the machine. The Playwright config gives the cold-start
-# run its own database name and its own ports, so it can never touch the seeded run.
+#   E2E_DEMO_STACK=1        the public page's demo (design/public/README.md "The demo"):
+#                           migrate, then seed_public_demo as cw_app — the real library
+#                           baseline through the proposal door and a made-up bank on top.
+#                           The agent definitions are backend/agents/ as they ship.
+#
+# Each keeps E2E_MODE and the mock adapters, so the emailed code stays deterministic and
+# no mail or model call leaves the machine. The Playwright config gives the cold-start and
+# the demo runs their own database names and their own ports, so neither can touch the
+# seeded run.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -96,17 +102,19 @@ fi
 # publishes from the console, one per attempt (the seed publishes v1 and v2). A fixture is
 # v1's definition under the new number with a prompt of its own. backend/agents/ itself is
 # never touched; config/settings.py reads AGENT_DEFINITIONS_DIR only under E2E_MODE.
-AGENTS_COPY="${TMPDIR:-/tmp}/cw-e2e-agents-$PORT"
-rm -rf "$AGENTS_COPY"
-cp -R "$BACKEND/agents" "$AGENTS_COPY"
-sed "s/^status: draft /status: active /" "$BACKEND/agents/watch-sweeper/v1/definition.yaml" >"$AGENTS_COPY/watch-sweeper/v1/definition.yaml"
-for version in 3 4 5; do
-  folder="$AGENTS_COPY/watch-sweeper/v$version"
-  mkdir -p "$folder"
-  sed "s/^version: .*/version: $version/" "$BACKEND/agents/watch-sweeper/v1/definition.yaml" >"$folder/definition.yaml"
-  printf 'E2E fixture, version %s: sweep the registered sources and read the new FFFS index page first.\n' "$version" >"$folder/prompt.md"
-done
-export AGENT_DEFINITIONS_DIR="$AGENTS_COPY"
+if [ "${E2E_DEMO_STACK:-0}" != "1" ]; then
+  AGENTS_COPY="${TMPDIR:-/tmp}/cw-e2e-agents-$PORT"
+  rm -rf "$AGENTS_COPY"
+  cp -R "$BACKEND/agents" "$AGENTS_COPY"
+  sed "s/^status: draft /status: active /" "$BACKEND/agents/watch-sweeper/v1/definition.yaml" >"$AGENTS_COPY/watch-sweeper/v1/definition.yaml"
+  for version in 3 4 5; do
+    folder="$AGENTS_COPY/watch-sweeper/v$version"
+    mkdir -p "$folder"
+    sed "s/^version: .*/version: $version/" "$BACKEND/agents/watch-sweeper/v1/definition.yaml" >"$folder/definition.yaml"
+    printf 'E2E fixture, version %s: sweep the registered sources and read the new FFFS index page first.\n' "$version" >"$folder/prompt.md"
+  done
+  export AGENT_DEFINITIONS_DIR="$AGENTS_COPY"
+fi
 
 echo "start-backend: recreating $E2E_DB and migrating from zero (as cw_migrator)"
 DATABASE_URL="$MIGRATOR_URL" "$PY" manage.py migrate_from_zero --name "$E2E_DB" --keep
@@ -116,6 +124,10 @@ if [ "${E2E_COLD_START:-0}" = "1" ]; then
   # cw_app, then serve. Everything the cold-start journey needs, a first deploy has too.
   echo "start-backend: cold start, seeding reference data only (as cw_app)"
   DATABASE_URL="$APP_E2E_URL" "$PY" manage.py seed_reference
+elif [ "${E2E_DEMO_STACK:-0}" = "1" ]; then
+  # As the app role, so the database's own door guard (ADR 0058) watches every library write.
+  echo "start-backend: seeding the public demo (as cw_app)"
+  DATABASE_URL="$APP_E2E_URL" "$PY" manage.py seed_public_demo
 else
   # The seed and the journeys each anchor to the tenant-local day, so a run that crosses a
   # tenant's midnight fails every date-anchored journey a day apart (H114). The seed refuses
