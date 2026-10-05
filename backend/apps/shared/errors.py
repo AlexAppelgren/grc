@@ -48,6 +48,9 @@ STATUS_BY_CODE: dict[str, int] = {
     # The person or team already takes part in the record (COL-04, D-18): a conflict with
     # what the record holds, and a 409 because a 2xx write must leave an audit row.
     "already_participant": 409,
+    # A lookup in the public registers applied before it succeeded (TEN-07): the job's state
+    # does not allow the move yet, so a conflict and not a field to fix.
+    "lookup_not_done": 409,
 }
 
 

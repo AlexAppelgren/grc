@@ -11,7 +11,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, override_settings
 
 from apps.shared import storage
-from apps.shared.adapters import agent_runner, embedder, llm, mailer
+from apps.shared.adapters import agent_runner, embedder, llm, mailer, registers
 
 
 class LlmAdapter(SimpleTestCase):
@@ -104,6 +104,31 @@ class MailerAdapter(SimpleTestCase):
     def test_unknown_provider_is_refused(self) -> None:
         with self.assertRaises(ValueError):
             mailer.get_mailer()
+
+
+class RegistersAdapter(SimpleTestCase):
+    """What each provider reads is apps/shared/tests_registers_adapter.py's subject."""
+
+    def test_mock_is_the_provider_off_a_deployed_environment(self) -> None:
+        self.assertIsInstance(registers.get_registers(), registers.MockRegisters)
+
+    @override_settings(REGISTERS_PROVIDER="live")
+    def test_live_is_the_provider_the_setting_names(self) -> None:
+        self.assertIsInstance(registers.get_registers(), registers.LiveRegisters)
+
+    @override_settings(REGISTERS_PROVIDER="bolagsverket")
+    def test_unknown_provider_is_refused(self) -> None:
+        with self.assertRaises(ValueError):
+            registers.get_registers()
+
+    @override_settings(REGISTERS_PROVIDER="mock", IS_DEPLOYED_ENVIRONMENT=True, ENVIRONMENT="prod")
+    def test_mock_is_refused_deployed(self) -> None:
+        with self.assertRaises(ImproperlyConfigured):
+            registers.get_registers()
+
+    @override_settings(REGISTERS_PROVIDER="mock", IS_DEPLOYED_ENVIRONMENT=True, ENVIRONMENT="test")
+    def test_mock_runs_on_the_deployed_test_environment(self) -> None:
+        self.assertIsInstance(registers.get_registers(), registers.MockRegisters)
 
 
 class StorageSeam(SimpleTestCase):

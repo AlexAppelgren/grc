@@ -800,3 +800,10 @@ class RegisterScenarioTests(TestCase):
         for path in (f"/api/v1/obligations/{duty.id}", f"/api/v1/obligations/{duty.id}/register", f"/api/v1/obligations/{duty.id}/internal-links"):
             refused = self.client.get(path, **sign_in(other.officer, tenant=other.tenant))
             self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"), path)
+
+    @skip("pending: REG-S18 (FP-05, public-registers scope)")
+    def test_reg_s18(self) -> None:
+        """REG-S18
+
+        A rule outside a company's licences is not offered for that company (FP-05, REG-01).
+        """

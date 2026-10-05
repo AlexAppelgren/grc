@@ -39,7 +39,9 @@ UNITS = f"{V1}/tenant/org-units"
 # at once and the count. The licences read replaces a `GET .../licences` per legal entity,
 # about thirteen queries each (perf-frontend-requests). Two fewer since perf-tenant-in-token
 # (2026-09-28, ADR 0064): the session is read in one statement under the bank its token signs.
-LIST_QUERIES = 9
+# One more since public-registers (2026-10-05, TEN-07): the legal entities' register facts
+# for the whole page, one query whatever the page holds.
+LIST_QUERIES = 10
 
 
 class OrganisationCase(ScenarioTestCase):

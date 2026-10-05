@@ -65,6 +65,8 @@ PRODUCT_BODY = {"name": "Custody", "status": "live"}
 PRODUCT_PATCH = {"status": "retired"}
 REMOVE_BODY = {"owners": [{"kind": "register_entry", "teamKey": "compliance"}]}
 SUPPORT_BODY = {"purpose": "The bank reports that its watch feed stopped updating on Monday.", "hours": 2}
+LOOKUP_BODY = {"query": "556000-0001"}
+APPLY_BODY = {"leis": ["549300EXAMPLEBANK001"]}
 
 
 class Records:
@@ -78,6 +80,7 @@ class Records:
         self.team = factories.team_key(tenant=tenant)
         self.grant = factories.support_access(tenant=tenant)
         self.licence = factories.licence(tenant=tenant)
+        self.lookup = factories.register_lookup(tenant=tenant)
 
     def routes(self) -> list[tuple[str, str, str, Any, str | None, bool]]:
         """(operationId, method, url, body, permission or None for any member, step-up)."""
@@ -102,6 +105,9 @@ class Records:
             ("approveSupportAccess", "post", f"/api/v1/tenant/support-access/{grant}/approve", None, perms.SECURITY_MANAGE, True),
             ("declineSupportAccess", "post", f"/api/v1/tenant/support-access/{grant}/decline", None, perms.SECURITY_MANAGE, False),
             ("revokeSupportAccess", "post", f"/api/v1/tenant/support-access/{grant}/revoke", None, perms.SECURITY_MANAGE, False),
+            ("startRegisterLookup", "post", "/api/v1/tenant/register-lookups", LOOKUP_BODY, perms.VOCAB_MANAGE, False),
+            ("getRegisterLookup", "get", f"/api/v1/tenant/register-lookups/{self.lookup.id}", None, perms.VOCAB_MANAGE, False),
+            ("applyRegisterLookup", "post", f"/api/v1/tenant/register-lookups/{self.lookup.id}/apply", APPLY_BODY, perms.VOCAB_MANAGE, False),
         ]
 
     def console_routes(self) -> list[tuple[str, str, str, Any, str | None, bool]]:
@@ -245,7 +251,12 @@ class TenantsRouteGates(TenantsContractCase):
     def test_bad_input_is_422_before_the_stub(self) -> None:
         unit = self.records.org_unit.id
         member = self.records.member.id
+        lookup = self.records.lookup.id
         cases: list[tuple[str, str, str, Any]] = [
+            ("startRegisterLookup", "post", "/api/v1/tenant/register-lookups", {"query": ""}),
+            ("startRegisterLookup", "post", "/api/v1/tenant/register-lookups", {"query": "5" * 41}),
+            ("applyRegisterLookup", "post", f"/api/v1/tenant/register-lookups/{lookup}/apply", {"leis": []}),
+            ("applyRegisterLookup", "post", f"/api/v1/tenant/register-lookups/{lookup}/apply", {"leis": ["5" * 21]}),
             ("createOrgUnit", "post", "/api/v1/tenant/org-units", {**ORG_UNIT_BODY, "kind": "department"}),
             ("createOrgUnit", "post", "/api/v1/tenant/org-units", {**ORG_UNIT_BODY, "name": "Retail\nBanking"}),
             ("createOrgUnit", "post", "/api/v1/tenant/org-units", {**ORG_UNIT_BODY, "name": "‮gniknaB"}),
@@ -314,13 +325,13 @@ class TenantsRoutesHideAnotherBanksRecords(TenantsContractCase):
         self.assertEqual(response.json()["code"], "not_found")
 
     def test_every_tenant_id_route_but_the_licence_create_is_in_the_isolation_registry(self) -> None:
-        """`tests_tenant_isolation` sends `{}`, which the licence create refuses before the
-        load; this class proves that one instead."""
+        """`tests_tenant_isolation` sends `{}`, which the licence create and a lookup's apply
+        refuse before the load; this class proves those two instead."""
         registered = {(method, path) for method, path, _label, _factory in TENANT_SCOPED_ROUTES}
         by_id = {op.operation_id: (op.method, op.path) for op in iter_operations(api)}
         for name, _method, _url, _body, _permission, _step_up in self.records.routes():
             method, path = by_id[name]
-            if "{" not in path or name == "createLicence":
+            if "{" not in path or name in ("createLicence", "applyRegisterLookup"):
                 continue
             with self.subTest(operation=name):
                 self.assertIn((method, path), registered)
@@ -356,6 +367,8 @@ class TenantsRouteStubs(TenantsContractCase):
     }
     # c8-ten-reassignment: built, and proven in tests_reassignment.py.
     BUILT |= {"getMemberOpenWork", "removeMember"}
+    # public-registers (TEN-07): built, and proven in tests_scenarios.py (TEN-S13) and tests_registers.py.
+    BUILT |= {"startRegisterLookup", "getRegisterLookup", "applyRegisterLookup"}
 
     def test_an_if_match_that_is_not_a_version_is_422_on_every_versioned_write(self) -> None:
         with stub_session(self.everything()):

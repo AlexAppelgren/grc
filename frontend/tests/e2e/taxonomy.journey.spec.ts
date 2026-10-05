@@ -1398,3 +1398,11 @@ test.describe('regulatory scope, markets and standards', () => {
   });
 
 });
+
+// PRD 0.9: the regulatory scope suggested from the register facts (FP-05). Stays
+// test.fixme until the regulatory scope's suggestions panel lands.
+test.describe('scope from the public registers', () => {
+  test.fixme("FP-S20: The regulatory scope suggested from the register facts, approved by a second person", async () => {
+    // pending: FP-S20 (FP-05, FP-02, AC-FP4, J-13)
+  });
+});

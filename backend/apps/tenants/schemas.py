@@ -13,9 +13,11 @@ import uuid
 from datetime import date, datetime
 from typing import Annotated, Literal
 
+from django.conf import settings
 from pydantic import ConfigDict, Field, JsonValue, model_validator
 
 from apps.identity.schemas import RoleRef
+from apps.reports.schemas import JobStatusValue
 from apps.shared.models import (
     ESCALATE_AFTER_DAYS_MAX,
     LEAD_DAYS_MAX,
@@ -937,13 +939,340 @@ class TenantLicence(CamelSchema):
     version: int = Field(description="The licence's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.")
 
 
-_EXAMPLE_ORG_UNIT_ROW: dict[str, JsonValue] = {**_EXAMPLE_ORG_UNIT, "licences": [_EXAMPLE_LICENCE]}
+# ---------------------------------------------------------------------------------------
+# public-registers (TEN-07, TEN-08, PUBLIC_REGISTERS.md 5): a lookup in the public registers,
+# what it found, and the register facts a legal entity keeps. Everything in a register fact
+# is public data a supervisor or GLEIF publishes, read as it was published and never
+# edited by the bank; the examples are the E2E seed's made-up group, never a real bank.
+# ---------------------------------------------------------------------------------------
+LookupErrorValue = Literal["lookup_not_found", "lookup_ambiguous", "register_unavailable"]
+
+_REGISTER_TEXT = "public register data, read as the register published it and never edited by the bank"
+_JURISDICTION_KEY = (
+    "a key of the jurisdiction vocabulary, which the platform seeds and its library editors "
+    "relabel, retire and restore by proposal (an admin of a bank cannot extend it); read "
+    "`GET /reference/jurisdictions` for the live set"
+)
+_EXAMPLE_REGISTER_FACTS: dict[str, JsonValue] = {
+    "name": "Example Bank AB",
+    "registrationNumber": "556000-0001",
+    "lei": "549300EXAMPLEBANK001",
+    "mainBusiness": "Bankaktiebolag",
+    "otherBusinesses": ["Värdepappersbolag", "Försäkringsdistribution", "Medelstort institut"],
+    "licences": [
+        {"text": "Tillstånd att driva bankrörelse, enligt lag 2004:297 om bank- och finansieringsrörelse", "grantedOn": "1995-03-01"},
+        {"text": "IM_MR_SA", "grantedOn": "2016-06-26"},
+    ],
+    "branches": [{"name": "Example Bank AB, filial i Danmark", "countryName": "Danmark", "jurisdiction": "dk"}],
+    "listed": True,
+}
+_EXAMPLE_SOURCE_URL = "https://www.fi.se/sv/vara-register/foretagsregistret/index?query=556000-0001&format=csv"
+_EXAMPLE_LOOKUP_ENTITY: dict[str, JsonValue] = {
+    "lei": "549300EXAMPLEFOND002",
+    "name": "Example Fonder AB",
+    "registrationNumber": "556000-0003",
+    "country": "SE",
+    "parentLei": "549300EXAMPLEBANK001",
+    "leiStatus": "ISSUED",
+    "authority": "fi",
+    "facts": {
+        **_EXAMPLE_REGISTER_FACTS,
+        "name": "Example Fonder AB",
+        "registrationNumber": "556000-0003",
+        "lei": "549300EXAMPLEFOND002",
+        "mainBusiness": "Fondbolag",
+        "otherBusinesses": ["Auktoriserad AIF-förvaltare"],
+        "licences": [{"text": "Tillstånd att förvalta alternativa investeringsfonder", "grantedOn": "2014-07-22"}],
+        "branches": [],
+    },
+    "sourceUrl": "https://www.fi.se/sv/vara-register/foretagsregistret/index?query=556000-0003&format=csv",
+    "existingOrgUnitId": None,
+    "preselected": True,
+    "unmapped": [],
+    "entityType": {"key": "fund_company", "kind": None, "label": "Fund company"},
+}
+_EXAMPLE_LOOKUP: dict[str, JsonValue] = {
+    "id": "6d1f3a5c-7e9b-4c2d-8f0a-1b3c5d7e9f21",
+    "query": "556000-0001",
+    "status": "succeeded",
+    "error": None,
+    "createdAt": "2026-10-05T08:00:00Z",
+    "completedAt": "2026-10-05T08:00:04Z",
+    "entities": [_EXAMPLE_LOOKUP_ENTITY],
+}
+_EXAMPLE_REGISTER_ENTRY: dict[str, JsonValue] = {
+    "authority": {"key": "fi", "name": "Finansinspektionen"},
+    "facts": _EXAMPLE_REGISTER_FACTS,
+    "sourceUrl": _EXAMPLE_SOURCE_URL,
+    "readAt": "2026-10-05T03:17:00Z",
+    "changedAt": "2026-10-05T08:00:04Z",
+    "unmapped": ["IM_MR_SA"],
+}
+
+
+class RegisterFactsLicence(CamelSchema):
+    """One licence line of a company in a supervisor's register."""
+
+    text: str = Field(
+        description=(
+            "The licence as the register words it, its legal basis included, such as `Tillstånd att "
+            f"driva fondverksamhet, enligt lagen (2004:46) om värdepappersfonder`: {_REGISTER_TEXT}. "
+            "At most 1000 characters are kept; a capital or model approval reads as its code, such as `IM_MR_SA`."
+        )
+    )
+    granted_on: date | None = Field(
+        description="The date the register says the licence was granted, a plain date, or null when the register gives none."
+    )
+
+
+class RegisterFactsBranch(CamelSchema):
+    """A branch abroad as a supervisor's register lists it."""
+
+    name: str = Field(description=f"The branch's name as the register writes it, such as `Example Bank AB, filial i Danmark`: {_REGISTER_TEXT}.")
+    country_name: str = Field(
+        description=f"The branch's country as the register writes it, in the register's own language, such as `Danmark`; empty when its page names none: {_REGISTER_TEXT}."
+    )
+    jurisdiction: str | None = Field(
+        description=(
+            f"The country as {_JURISDICTION_KEY}, such as `dk`, when the library covers it, "
+            "matched on the jurisdiction's labels when the register was read; null for a country the library does not cover."
+        )
+    )
+
+
+class RegisterFacts(CamelSchema):
+    """What a supervisor's register says about one company (TEN-07): its business, its
+    licences and its branches abroad, as read. Public register data, never typed by the bank;
+    the licences are shown from here and never copied into the bank's licence rows."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_REGISTER_FACTS]})
+
+    name: str = Field(description=f"The company's name as the register writes it, at most 200 characters: {_REGISTER_TEXT}.")
+    registration_number: str = Field(description="The company's registration number as the register writes it, such as `556000-0001`.")
+    lei: str = Field(description="The company's legal entity identifier (ISO 17442) as the register writes it; empty when the register gives none.")
+    main_business: str = Field(
+        description=(
+            "The company's main business as the register names it, such as `Bankaktiebolag` or `Fondbolag`. "
+            "The company's type in the organisation comes from it when the mapping knows the name."
+        )
+    )
+    other_businesses: list[str] = Field(
+        description=(
+            "The company's other businesses, one name each, in the register's order, such as "
+            "`Värdepappersbolag`. A name may hold a comma itself (`Riksbolag, livförsäkringar`); "
+            "an empty list when there are none."
+        )
+    )
+    licences: list[RegisterFactsLicence] = Field(
+        description="Every licence the register lists for the company, in the register's order; an empty list when there are none or the company is no longer listed."
+    )
+    branches: list[RegisterFactsBranch] = Field(
+        description="The company's branches abroad as the register lists them; an empty list when it has none or is no longer listed."
+    )
+    listed: bool = Field(
+        description=(
+            "True while the register lists the company. False when a later read found it gone: its "
+            "licences and branches are then empty, and nothing in the organisation or the scope changed because of it."
+        )
+    )
+
+
+class RegisterLookupCompany(CamelSchema):
+    """One company a lookup found: GLEIF's record and, for a company in a country whose
+    supervisor publishes a register bleqq reads, that register's facts."""
+
+    lei: str = Field(description="The company's legal entity identifier (ISO 17442), 20 letters and digits, as GLEIF records it.")
+    name: str = Field(description=f"The company's legal name as GLEIF records it, at most 200 characters: {_REGISTER_TEXT}.")
+    registration_number: str = Field(
+        description="The company's national registration number as GLEIF records it, such as `556000-0003`; empty when GLEIF has none."
+    )
+    country: str = Field(
+        description="The two-letter ISO 3166 country the company is registered in, such as `SE`, from GLEIF; empty when GLEIF names none."
+    )
+    parent_lei: str | None = Field(
+        description="The LEI of the company it was found under in GLEIF's tree, or null for the company the lookup started from."
+    )
+    lei_status: str = Field(
+        description=(
+            "The LEI's registration status as GLEIF publishes it: `ISSUED` (kept current), `LAPSED` "
+            "(not renewed), `RETIRED`, `MERGED`, `ANNULLED` or another status GLEIF adds. A lapsed LEI "
+            "says the record may be out of date, not that the company is gone."
+        )
+    )
+    authority: str | None = Field(
+        description=(
+            "The key of the library authority whose register the facts were read from, such as `fi` "
+            "for Finansinspektionen, or null when no register bleqq reads covers the company's country. "
+            "Authorities are rows of the shared library, which an administrator may extend only through "
+            "an approved proposal; read `GET /authorities` for the live set."
+        )
+    )
+    facts: RegisterFacts | None = Field(
+        description="What the authority's register says about the company, or null when its country has no register bleqq reads or the register has no such company."
+    )
+    source_url: str | None = Field(
+        description="The address the facts were read from, to cite with the date read; null when there are no facts."
+    )
+
+
+class RegisterLookupResult(CamelSchema):
+    """What a lookup found, as the job stores it: every company of the group, parents first."""
+
+    entities: list[RegisterLookupCompany] = Field(
+        description="Every company found, the one the lookup started from first and each company after the one it was found under."
+    )
+
+
+class RegisterLookupEntity(RegisterLookupCompany):
+    """One company a lookup found, with what the bank's organisation already says about it."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_LOOKUP_ENTITY]})
+
+    existing_org_unit_id: uuid.UUID | None = Field(
+        description=(
+            "The identifier of the bank's active legal entity that is this company, a UUID, when it "
+            "has one: the same LEI, or the same registration number (digits compared) in the same "
+            "country or with no country recorded. Applying it links that unit rather than adding a "
+            "second one. Computed when read; null when the bank has none."
+        )
+    )
+    preselected: bool = Field(
+        description=(
+            "True when the register holds facts on the company, so the screen ticks it; false for a "
+            "holding company or a company abroad, listed unticked. A suggestion only: the person chooses."
+        )
+    )
+    unmapped: list[str] = Field(
+        description=(
+            "The business names and licence lines of the company's facts that bleqq's mapping does not "
+            "turn into a scope term, in the register's order, shown as not used for the scope; an empty list when every line maps."
+        )
+    )
+    entity_type: TermRef | None = Field(
+        description=(
+            "The legal-entity type the company's main business gives it, a term of the shared library's "
+            "`legal_entity` dimension: a vocabulary an administrator may extend only through an approved "
+            "proposal; read `GET /taxonomy/terms` for the live set. Null when the main business maps to no "
+            "type the taxonomy holds."
+        )
+    )
+
+
+class RegisterLookupBody(WriteBody):
+    """A lookup in the public registers. A field the schema does not name is refused."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"query": "556000-0001"}]})
+
+    query: str = Field(
+        min_length=1,
+        max_length=40,
+        description=(
+            "The company's registration number as it is written, such as `556000-0001`, or its LEI "
+            "(20 letters and digits ending in two digits), at least 1 and at most 40 characters. "
+            "Anything else answers 422 `invalid_query`. Only this number leaves the bank, to GLEIF and Finansinspektionen."
+        ),
+    )
+
+
+class RegisterLookupOut(CamelSchema):
+    """A lookup in the public registers and, once it succeeded, the companies it found.
+    Nothing in the organisation changes until a person applies it."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_LOOKUP]})
+
+    id: uuid.UUID = Field(description="The lookup's identifier, a UUID, to poll and to apply.")
+    query: str = Field(description="The registration number or LEI the person typed, as it was typed once trimmed.")
+    status: JobStatusValue = Field(
+        description=(
+            "Where the job is. One of: `queued` — accepted and waiting for the worker; `running` — the "
+            "worker is reading the registers; `succeeded` — `entities` holds what was found; `failed` — "
+            "nothing was found or a register could not be read, and `error` says which. Poll until it is "
+            "`succeeded` or `failed`; neither changes again."
+        )
+    )
+    error: LookupErrorValue | None = Field(
+        description=(
+            "Why a failed lookup failed, null otherwise. One of: `lookup_not_found` — no company carries "
+            "that number or LEI; `lookup_ambiguous` — more than one does, so type the LEI; "
+            "`register_unavailable` — a register could not be read or its format changed, so try again later."
+        )
+    )
+    created_at: datetime = Field(description="When the person started the lookup, as a UTC timestamp.")
+    completed_at: datetime | None = Field(
+        description="When the worker finished, as a UTC timestamp, which is also the date the facts were read; null while queued or running."
+    )
+    entities: list[RegisterLookupEntity] = Field(
+        description="The companies found, parents first; an empty list until the lookup succeeds, and on a failed one."
+    )
+
+
+class RegisterApplyBody(WriteBody):
+    """The companies of a lookup to add to the organisation or link. A field the schema does
+    not name is refused."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"leis": ["549300EXAMPLEBANK001", "549300EXAMPLEFOND002"]}]})
+
+    leis: list[Annotated[str, Field(max_length=20)]] = Field(
+        min_length=1,
+        max_length=settings.REGISTERS_MAX_ENTITIES,
+        description=(
+            f"The LEIs of the companies to add or link, each at most 20 characters, at least 1 and at most "
+            f"{settings.REGISTERS_MAX_ENTITIES} of them, every one a company the lookup found; any other answers 422 `unknown_lei`."
+        ),
+    )
+
+
+class RegisterApplyOut(CamelSchema):
+    """What applying a lookup did to the organisation."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"created": 2, "linked": 1, "orgUnits": [_EXAMPLE_ORG_UNIT]}]})
+
+    created: int = Field(description="How many legal entities were added to the organisation.")
+    linked: int = Field(description="How many chosen companies the organisation already had, linked and left as they were.")
+    org_units: list[TenantOrgUnit] = Field(
+        description="The legal entities added or linked, parents first, each as `GET /tenant/org-units` lists a unit."
+    )
+
+
+class TenantRegisterAuthority(CamelSchema):
+    """The supervisor whose register the facts were read from."""
+
+    key: str = Field(
+        description=(
+            "The authority's key, such as `fi`. Authorities are rows of the shared library, which an "
+            "administrator may extend only through an approved proposal; read `GET /authorities` for the live set."
+        )
+    )
+    name: str = Field(description="The authority's name, such as `Finansinspektionen`, for display and for citing the source.")
+
+
+class TenantRegisterEntry(CamelSchema):
+    """What one supervisor's register says about one of the bank's legal entities (TEN-07,
+    TEN-08), with where and when it was read. Written only by applying a lookup and by the
+    nightly re-read, each write audited; never by a person."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_REGISTER_ENTRY]})
+
+    authority: TenantRegisterAuthority = Field(description="The supervisor whose register the facts come from, to name with the date read.")
+    facts: RegisterFacts = Field(description="The company's business, licences and branches as last read from the register.")
+    source_url: str = Field(description="The address the facts were read from, to cite with the date read.")
+    read_at: datetime = Field(description="When the register was last read for the company, as a UTC timestamp, whether or not anything had changed.")
+    changed_at: datetime = Field(description="When a read last found the facts different, as a UTC timestamp, or when they were first stored.")
+    unmapped: list[str] = Field(
+        description=(
+            "The business names and licence lines bleqq's mapping does not turn into a scope term, in "
+            "the register's order, shown as not used for the scope; an empty list when every line maps."
+        )
+    )
+
+
+_EXAMPLE_ORG_UNIT_ROW: dict[str, JsonValue] = {**_EXAMPLE_ORG_UNIT, "licences": [_EXAMPLE_LICENCE], "registerEntry": _EXAMPLE_REGISTER_ENTRY}
 
 
 class TenantOrgUnitRow(TenantOrgUnit):
     """One unit as `GET /tenant/org-units` lists it: the unit, and on a legal entity the
-    licences and certificates it holds, so the organisation screen reads them with the list
-    and never once per entity."""
+    licences and certificates it holds and its register facts, so the organisation screen
+    reads them with the list and never once per entity."""
 
     model_config = ConfigDict(json_schema_extra={"examples": [_EXAMPLE_ORG_UNIT_ROW]})
 
@@ -952,6 +1281,13 @@ class TenantOrgUnitRow(TenantOrgUnit):
             "Every licence and certificate the legal entity holds, withdrawn ones included and "
             "marked, by grant date: the same rows `GET /tenant/org-units/{orgUnitId}/licences` "
             "pages. Always empty for a group or a department, which hold none."
+        )
+    )
+    register_entry: TenantRegisterEntry | None = Field(
+        description=(
+            "What a supervisor's register says about the legal entity, with the date read, once a "
+            "lookup in the public registers was applied to it; null for a unit with no register "
+            "facts, and always null for a group or a department."
         )
     )
 

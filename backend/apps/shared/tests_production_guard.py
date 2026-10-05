@@ -47,6 +47,7 @@ SETTING_NAMES = (
     "RERANKER_PROVIDER",
     "AGENT_RUNNER",
     "MAIL_PROVIDER",
+    "REGISTERS_PROVIDER",
     "STORAGE_BACKEND",
     "STORAGE_S3_BUCKET",
     "DATABASE_URL",
@@ -240,6 +241,13 @@ class ProductionGuard(TestCase):
                 "rule 5",
             ),
             Case(
+                "prod refuses the mock registers",
+                self._good_deployed("prod", REGISTERS_PROVIDER="mock"),
+                False,
+                "REGISTERS_PROVIDER",
+                "rule 5",
+            ),
+            Case(
                 "deployed test allows mocks",
                 self._good_deployed(
                     "test",
@@ -249,6 +257,7 @@ class ProductionGuard(TestCase):
                     RERANKER_PROVIDER="mock",
                     AGENT_RUNNER="mock",
                     MAIL_PROVIDER="mock",
+                    REGISTERS_PROVIDER="mock",
                 ),
                 True,
             ),

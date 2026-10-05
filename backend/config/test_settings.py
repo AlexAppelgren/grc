@@ -85,6 +85,7 @@ LLM_PROVIDER = "mock"
 EMBEDDER_PROVIDER = "mock"
 AGENT_RUNNER = "mock"
 MAIL_PROVIDER = "mock"
+REGISTERS_PROVIDER = "mock"
 
 # (9) Stripped middleware: no CORS, no CSP, no HTTPS redirect. The security middleware is
 #     unit-tested directly in tests_middleware.py; the request ID and Server-Timing

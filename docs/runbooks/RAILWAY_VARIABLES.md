@@ -46,6 +46,14 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `SCANNER_HOST` | api, worker | `localhost` | `localhost` | the clamd service's private host (`clamav.railway.internal`) | Private network only; clamd has no authentication |
 | `SCANNER_PORT` | api, worker | `3310` | `3310` | `3310` | clamd's TCP port in the official image |
 | `SCANNER_TIMEOUT_SECONDS` | api, worker | `60.0` | `60.0` | `60.0` | Per connect and send, and for the scan with its whole reply; a timeout is a failed scan, never a clean one |
+| `REGISTERS_PROVIDER` | api, worker | `mock` | `mock` | unset (`live`) | `live` or `mock` (TEN-07, TEN-08). Unset, it is `live` when deployed and `mock` elsewhere, so no deployed variable is needed; `mock` is refused deployed outside `test` (rule 5) |
+| `REGISTERS_GLEIF_URL` | worker | `https://api.gleif.org/api/v1` | same | same | GLEIF's API; must be https. The adapter reads only this host and the next one's |
+| `REGISTERS_FI_URL` | worker | `https://www.fi.se/sv/vara-register/foretagsregistret` | same | same | Finansinspektionen's company register; must be https |
+| `REGISTERS_TIMEOUT_SECONDS` | worker | `10` | `10` | `10` | Per socket operation of one register read, 1 to 120; a timeout fails the lookup with `register_unavailable` |
+| `REGISTERS_MAX_BYTES` | worker | `2000000` | `2000000` | `2000000` | The most one register read keeps, 10000 to 50000000; more fails the read |
+| `REGISTERS_MAX_ENTITIES` | worker | `100` | `100` | `100` | The most companies one lookup walks in GLEIF's tree, 1 to 500 |
+| `REGISTERS_MAX_BRANCHES` | worker | `40` | `40` | `40` | The most branches read from FI per company, 0 to 200 |
+| `REGISTERS_RECHECK_HOUR` | beat | `3` | `3` | `3` | The hour, UTC, of the nightly re-read of every bank's register facts (TEN-08), 0 to 23 |
 | `EVIDENCE_ALLOWED_TYPES` | api | the eight types | the eight types | the eight types | Comma-separated MIME types evidence may be (CAS-05): PDF, DOCX, XLSX, PPTX, PNG, JPEG, TXT and CSV. The header, the extension and the bytes must agree; anything else is refused with 422 before it is stored |
 | `EVIDENCE_MAX_BYTES` | api | `26214400` | `26214400` | `26214400` | The largest evidence file in bytes, 25 MB (CAS-05); a larger one is refused with 422 before it is stored |
 | `EVIDENCE_SCAN_RETRIES` | worker | `2` | `2` | `2` | How many more times a failed malware scan is tried before the file stays `error` and cannot be downloaded (CAS-05) |

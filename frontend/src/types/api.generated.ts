@@ -8745,6 +8745,111 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenant/register-lookups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Look your companies up in the public registers
+         * @description Starts a lookup of an organisation number or an LEI in the public registers and answers
+         *     202 at once with the queued job; the registers are read by the worker, never inside this
+         *     request. Poll `GET /tenant/register-lookups/{lookupId}` until the status is `succeeded` or
+         *     `failed`. The job finds the company in GLEIF, walks the companies under it, and reads each
+         *     Swedish company's businesses, licences and branches from Finansinspektionen's register.
+         *     Only the number typed leaves the bank, to GLEIF and Finansinspektionen, and nothing reaches a model.
+         *
+         *     Needs `vocab.manage`, the business-configuration permission. No step-up: nothing in the
+         *     organisation changes until the result is applied. Recorded in the audit log as
+         *     `register_lookup.started` with the number typed, and as `register_lookup.finished` with
+         *     the outcome and the number of companies when the worker is done.
+         *
+         *     Errors: `invalid_query` (422) for a query that is neither a registration number nor an
+         *     LEI; `validation_error` (422) for a body the schema refuses; `permission_denied` (403)
+         *     without `vocab.manage`, naming it in `requiredPermission`; `unauthenticated` (401) without
+         *     a session; `not_found` (404) for a session that belongs to no bank. A lookup that finds
+         *     nothing still answers 202: the job then fails with `lookup_not_found`, `lookup_ambiguous`
+         *     or `register_unavailable`, which `GET` reports in `error`.
+         */
+        post: operations["startRegisterLookup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/register-lookups/{lookup_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what a lookup in the public registers found
+         * @description Where a lookup in the public registers stands and, once it succeeded, every company it
+         *     found, parents first: GLEIF's record, the register's facts where a register bleqq reads
+         *     covers the company's country, whether the bank's organisation already has it, whether the
+         *     screen should tick it, its legal-entity type and the register lines that map to no scope
+         *     term. What the organisation already has is computed when read. Poll it after starting a
+         *     lookup until the status is `succeeded` or `failed`; a failed one names its reason in `error`.
+         *
+         *     Needs `vocab.manage`. It changes nothing and writes no audit event.
+         *
+         *     Errors: `not_found` (404) for a lookup that is not the bank's own; `permission_denied`
+         *     (403) without `vocab.manage`; `unauthenticated` (401) without a session.
+         */
+        get: operations["getRegisterLookup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/register-lookups/{lookup_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add the chosen companies from the public registers to your organisation
+         * @description Adds the companies the body names, by LEI, from a lookup that succeeded, parents first.
+         *     A company the organisation already has (the same LEI, or the same registration number in
+         *     the same country) is linked and left as it is; any other is added as a legal entity with
+         *     its name, registration number, LEI, country and the type its main business gives it,
+         *     under the nearest chosen company above it in GLEIF's tree, else under the bank's group.
+         *     Each company with register facts gets them stored with the source address and the date
+         *     read. No licence row and no regulatory scope term is written: the licences are shown from
+         *     the register facts, and the scope changes only through a request a second person approves.
+         *     Applying the same lookup again links rather than adds.
+         *
+         *     Needs `vocab.manage`. No step-up. Recorded in the audit log as `org_unit.created` for each
+         *     company added, `register_entry.created` or `register_entry.changed` for each company's
+         *     facts, and `register_lookup.applied` with the counts, in the same transaction.
+         *
+         *     Errors: `lookup_not_done` (409) for a lookup that has not succeeded; `unknown_lei` (422)
+         *     for an LEI the lookup did not find; `validation_error` (422) for a body the schema
+         *     refuses, such as an empty list; `not_found` (404) for a lookup that is not the bank's
+         *     own; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
+         *     session.
+         */
+        post: operations["applyRegisterLookup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tenant/roles": {
         parameters: {
             query?: never;
@@ -24259,6 +24364,71 @@ export interface components {
             unitId?: string | null;
         };
         /**
+         * RegisterApplyBody
+         * @description The companies of a lookup to add to the organisation or link. A field the schema does
+         *     not name is refused.
+         * @example {
+         *       "leis": [
+         *         "549300EXAMPLEBANK001",
+         *         "549300EXAMPLEFOND002"
+         *       ]
+         *     }
+         */
+        RegisterApplyBody: {
+            /**
+             * Leis
+             * @description The LEIs of the companies to add or link, each at most 20 characters, at least 1 and at most 100 of them, every one a company the lookup found; any other answers 422 `unknown_lei`.
+             */
+            leis: string[];
+        };
+        /**
+         * RegisterApplyOut
+         * @description What applying a lookup did to the organisation.
+         * @example {
+         *       "created": 2,
+         *       "linked": 1,
+         *       "orgUnits": [
+         *         {
+         *           "active": true,
+         *           "countryCode": "SE",
+         *           "entityTerm": {
+         *             "key": "bank",
+         *             "kind": null,
+         *             "label": "Bank"
+         *           },
+         *           "head": {
+         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
+         *             "name": "Karin Holm"
+         *           },
+         *           "id": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
+         *           "kind": "legal_entity",
+         *           "lei": "5493000EXAMPLE000000",
+         *           "name": "Example Bank AB",
+         *           "orgNumber": "556000-0000",
+         *           "parentId": null,
+         *           "version": 3
+         *         }
+         *       ]
+         *     }
+         */
+        RegisterApplyOut: {
+            /**
+             * Created
+             * @description How many legal entities were added to the organisation.
+             */
+            created: number;
+            /**
+             * Linked
+             * @description How many chosen companies the organisation already had, linked and left as they were.
+             */
+            linked: number;
+            /**
+             * Orgunits
+             * @description The legal entities added or linked, parents first, each as `GET /tenant/org-units` lists a unit.
+             */
+            orgUnits: components["schemas"]["TenantOrgUnit"][];
+        };
+        /**
          * RegisterAssessment
          * @description One status assessment, kept unchanged for ever (append-only).
          * @example {
@@ -25428,6 +25598,120 @@ export interface components {
             version: number;
         };
         /**
+         * RegisterFacts
+         * @description What a supervisor's register says about one company (TEN-07): its business, its
+         *     licences and its branches abroad, as read. Public register data, never typed by the bank;
+         *     the licences are shown from here and never copied into the bank's licence rows.
+         * @example {
+         *       "branches": [
+         *         {
+         *           "countryName": "Danmark",
+         *           "jurisdiction": "dk",
+         *           "name": "Example Bank AB, filial i Danmark"
+         *         }
+         *       ],
+         *       "lei": "549300EXAMPLEBANK001",
+         *       "licences": [
+         *         {
+         *           "grantedOn": "1995-03-01",
+         *           "text": "Tillstånd att driva bankrörelse, enligt lag 2004:297 om bank- och finansieringsrörelse"
+         *         },
+         *         {
+         *           "grantedOn": "2016-06-26",
+         *           "text": "IM_MR_SA"
+         *         }
+         *       ],
+         *       "listed": true,
+         *       "mainBusiness": "Bankaktiebolag",
+         *       "name": "Example Bank AB",
+         *       "otherBusinesses": [
+         *         "Värdepappersbolag",
+         *         "Försäkringsdistribution",
+         *         "Medelstort institut"
+         *       ],
+         *       "registrationNumber": "556000-0001"
+         *     }
+         */
+        RegisterFacts: {
+            /**
+             * Branches
+             * @description The company's branches abroad as the register lists them; an empty list when it has none or is no longer listed.
+             */
+            branches: components["schemas"]["RegisterFactsBranch"][];
+            /**
+             * Lei
+             * @description The company's legal entity identifier (ISO 17442) as the register writes it; empty when the register gives none.
+             */
+            lei: string;
+            /**
+             * Licences
+             * @description Every licence the register lists for the company, in the register's order; an empty list when there are none or the company is no longer listed.
+             */
+            licences: components["schemas"]["RegisterFactsLicence"][];
+            /**
+             * Listed
+             * @description True while the register lists the company. False when a later read found it gone: its licences and branches are then empty, and nothing in the organisation or the scope changed because of it.
+             */
+            listed: boolean;
+            /**
+             * Mainbusiness
+             * @description The company's main business as the register names it, such as `Bankaktiebolag` or `Fondbolag`. The company's type in the organisation comes from it when the mapping knows the name.
+             */
+            mainBusiness: string;
+            /**
+             * Name
+             * @description The company's name as the register writes it, at most 200 characters: public register data, read as the register published it and never edited by the bank.
+             */
+            name: string;
+            /**
+             * Otherbusinesses
+             * @description The company's other businesses, one name each, in the register's order, such as `Värdepappersbolag`. A name may hold a comma itself (`Riksbolag, livförsäkringar`); an empty list when there are none.
+             */
+            otherBusinesses: string[];
+            /**
+             * Registrationnumber
+             * @description The company's registration number as the register writes it, such as `556000-0001`.
+             */
+            registrationNumber: string;
+        };
+        /**
+         * RegisterFactsBranch
+         * @description A branch abroad as a supervisor's register lists it.
+         */
+        RegisterFactsBranch: {
+            /**
+             * Countryname
+             * @description The branch's country as the register writes it, in the register's own language, such as `Danmark`; empty when its page names none: public register data, read as the register published it and never edited by the bank.
+             */
+            countryName: string;
+            /**
+             * Jurisdiction
+             * @description The country as a key of the jurisdiction vocabulary, which the platform seeds and its library editors relabel, retire and restore by proposal (an admin of a bank cannot extend it); read `GET /reference/jurisdictions` for the live set, such as `dk`, when the library covers it, matched on the jurisdiction's labels when the register was read; null for a country the library does not cover.
+             */
+            jurisdiction: string | null;
+            /**
+             * Name
+             * @description The branch's name as the register writes it, such as `Example Bank AB, filial i Danmark`: public register data, read as the register published it and never edited by the bank.
+             */
+            name: string;
+        };
+        /**
+         * RegisterFactsLicence
+         * @description One licence line of a company in a supervisor's register.
+         */
+        RegisterFactsLicence: {
+            /**
+             * Grantedon
+             * @description The date the register says the licence was granted, a plain date, or null when the register gives none.
+             */
+            grantedOn: string | null;
+            /**
+             * Text
+             * @description The licence as the register words it, its legal basis included, such as `Tillstånd att driva fondverksamhet, enligt lagen (2004:46) om värdepappersfonder`: public register data, read as the register published it and never edited by the bank. At most 1000 characters are kept; a capital or model approval reads as its code, such as `IM_MR_SA`.
+             */
+            text: string;
+        };
+        /**
          * RegisterGap
          * @description A gap: how the bank falls short of an obligation, with an owner, a severity, a target
          *     date and a plan (REG-03). A fact about how the bank complies, never about whether the rule
@@ -26111,6 +26395,210 @@ export interface components {
              * @description The UTC timestamp at which this version was written, set by the server.
              */
             writtenAt: string;
+        };
+        /**
+         * RegisterLookupBody
+         * @description A lookup in the public registers. A field the schema does not name is refused.
+         * @example {
+         *       "query": "556000-0001"
+         *     }
+         */
+        RegisterLookupBody: {
+            /**
+             * Query
+             * @description The company's registration number as it is written, such as `556000-0001`, or its LEI (20 letters and digits ending in two digits), at least 1 and at most 40 characters. Anything else answers 422 `invalid_query`. Only this number leaves the bank, to GLEIF and Finansinspektionen.
+             */
+            query: string;
+        };
+        /**
+         * RegisterLookupEntity
+         * @description One company a lookup found, with what the bank's organisation already says about it.
+         * @example {
+         *       "authority": "fi",
+         *       "country": "SE",
+         *       "entityType": {
+         *         "key": "fund_company",
+         *         "kind": null,
+         *         "label": "Fund company"
+         *       },
+         *       "existingOrgUnitId": null,
+         *       "facts": {
+         *         "branches": [],
+         *         "lei": "549300EXAMPLEFOND002",
+         *         "licences": [
+         *           {
+         *             "grantedOn": "2014-07-22",
+         *             "text": "Tillstånd att förvalta alternativa investeringsfonder"
+         *           }
+         *         ],
+         *         "listed": true,
+         *         "mainBusiness": "Fondbolag",
+         *         "name": "Example Fonder AB",
+         *         "otherBusinesses": [
+         *           "Auktoriserad AIF-förvaltare"
+         *         ],
+         *         "registrationNumber": "556000-0003"
+         *       },
+         *       "lei": "549300EXAMPLEFOND002",
+         *       "leiStatus": "ISSUED",
+         *       "name": "Example Fonder AB",
+         *       "parentLei": "549300EXAMPLEBANK001",
+         *       "preselected": true,
+         *       "registrationNumber": "556000-0003",
+         *       "sourceUrl": "https://www.fi.se/sv/vara-register/foretagsregistret/index?query=556000-0003&format=csv",
+         *       "unmapped": []
+         *     }
+         */
+        RegisterLookupEntity: {
+            /**
+             * Authority
+             * @description The key of the library authority whose register the facts were read from, such as `fi` for Finansinspektionen, or null when no register bleqq reads covers the company's country. Authorities are rows of the shared library, which an administrator may extend only through an approved proposal; read `GET /authorities` for the live set.
+             */
+            authority: string | null;
+            /**
+             * Country
+             * @description The two-letter ISO 3166 country the company is registered in, such as `SE`, from GLEIF; empty when GLEIF names none.
+             */
+            country: string;
+            /** @description The legal-entity type the company's main business gives it, a term of the shared library's `legal_entity` dimension: a vocabulary an administrator may extend only through an approved proposal; read `GET /taxonomy/terms` for the live set. Null when the main business maps to no type the taxonomy holds. */
+            entityType: components["schemas"]["TermRef"] | null;
+            /**
+             * Existingorgunitid
+             * @description The identifier of the bank's active legal entity that is this company, a UUID, when it has one: the same LEI, or the same registration number (digits compared) in the same country or with no country recorded. Applying it links that unit rather than adding a second one. Computed when read; null when the bank has none.
+             */
+            existingOrgUnitId: string | null;
+            /** @description What the authority's register says about the company, or null when its country has no register bleqq reads or the register has no such company. */
+            facts: components["schemas"]["RegisterFacts"] | null;
+            /**
+             * Lei
+             * @description The company's legal entity identifier (ISO 17442), 20 letters and digits, as GLEIF records it.
+             */
+            lei: string;
+            /**
+             * Leistatus
+             * @description The LEI's registration status as GLEIF publishes it: `ISSUED` (kept current), `LAPSED` (not renewed), `RETIRED`, `MERGED`, `ANNULLED` or another status GLEIF adds. A lapsed LEI says the record may be out of date, not that the company is gone.
+             */
+            leiStatus: string;
+            /**
+             * Name
+             * @description The company's legal name as GLEIF records it, at most 200 characters: public register data, read as the register published it and never edited by the bank.
+             */
+            name: string;
+            /**
+             * Parentlei
+             * @description The LEI of the company it was found under in GLEIF's tree, or null for the company the lookup started from.
+             */
+            parentLei: string | null;
+            /**
+             * Preselected
+             * @description True when the register holds facts on the company, so the screen ticks it; false for a holding company or a company abroad, listed unticked. A suggestion only: the person chooses.
+             */
+            preselected: boolean;
+            /**
+             * Registrationnumber
+             * @description The company's national registration number as GLEIF records it, such as `556000-0003`; empty when GLEIF has none.
+             */
+            registrationNumber: string;
+            /**
+             * Sourceurl
+             * @description The address the facts were read from, to cite with the date read; null when there are no facts.
+             */
+            sourceUrl: string | null;
+            /**
+             * Unmapped
+             * @description The business names and licence lines of the company's facts that bleqq's mapping does not turn into a scope term, in the register's order, shown as not used for the scope; an empty list when every line maps.
+             */
+            unmapped: string[];
+        };
+        /**
+         * RegisterLookupOut
+         * @description A lookup in the public registers and, once it succeeded, the companies it found.
+         *     Nothing in the organisation changes until a person applies it.
+         * @example {
+         *       "completedAt": "2026-10-05T08:00:04Z",
+         *       "createdAt": "2026-10-05T08:00:00Z",
+         *       "entities": [
+         *         {
+         *           "authority": "fi",
+         *           "country": "SE",
+         *           "entityType": {
+         *             "key": "fund_company",
+         *             "kind": null,
+         *             "label": "Fund company"
+         *           },
+         *           "existingOrgUnitId": null,
+         *           "facts": {
+         *             "branches": [],
+         *             "lei": "549300EXAMPLEFOND002",
+         *             "licences": [
+         *               {
+         *                 "grantedOn": "2014-07-22",
+         *                 "text": "Tillstånd att förvalta alternativa investeringsfonder"
+         *               }
+         *             ],
+         *             "listed": true,
+         *             "mainBusiness": "Fondbolag",
+         *             "name": "Example Fonder AB",
+         *             "otherBusinesses": [
+         *               "Auktoriserad AIF-förvaltare"
+         *             ],
+         *             "registrationNumber": "556000-0003"
+         *           },
+         *           "lei": "549300EXAMPLEFOND002",
+         *           "leiStatus": "ISSUED",
+         *           "name": "Example Fonder AB",
+         *           "parentLei": "549300EXAMPLEBANK001",
+         *           "preselected": true,
+         *           "registrationNumber": "556000-0003",
+         *           "sourceUrl": "https://www.fi.se/sv/vara-register/foretagsregistret/index?query=556000-0003&format=csv",
+         *           "unmapped": []
+         *         }
+         *       ],
+         *       "error": null,
+         *       "id": "6d1f3a5c-7e9b-4c2d-8f0a-1b3c5d7e9f21",
+         *       "query": "556000-0001",
+         *       "status": "succeeded"
+         *     }
+         */
+        RegisterLookupOut: {
+            /**
+             * Completedat
+             * @description When the worker finished, as a UTC timestamp, which is also the date the facts were read; null while queued or running.
+             */
+            completedAt: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             * @description When the person started the lookup, as a UTC timestamp.
+             */
+            createdAt: string;
+            /**
+             * Entities
+             * @description The companies found, parents first; an empty list until the lookup succeeds, and on a failed one.
+             */
+            entities: components["schemas"]["RegisterLookupEntity"][];
+            /**
+             * Error
+             * @description Why a failed lookup failed, null otherwise. One of: `lookup_not_found` — no company carries that number or LEI; `lookup_ambiguous` — more than one does, so type the LEI; `register_unavailable` — a register could not be read or its format changed, so try again later.
+             */
+            error: ("lookup_not_found" | "lookup_ambiguous" | "register_unavailable") | null;
+            /**
+             * Id
+             * Format: uuid
+             * @description The lookup's identifier, a UUID, to poll and to apply.
+             */
+            id: string;
+            /**
+             * Query
+             * @description The registration number or LEI the person typed, as it was typed once trimmed.
+             */
+            query: string;
+            /**
+             * Status
+             * @description Where the job is. One of: `queued` — accepted and waiting for the worker; `running` — the worker is reading the registers; `succeeded` — `entities` holds what was found; `failed` — nothing was found or a register could not be read, and `error` says which. Poll until it is `succeeded` or `failed`; neither changes again.
+             * @enum {string}
+             */
+            status: "queued" | "running" | "succeeded" | "failed";
         };
         /**
          * RegisterPanelUnits
@@ -29641,6 +30129,47 @@ export interface components {
          *           "name": "Example Bank AB",
          *           "orgNumber": "556000-0000",
          *           "parentId": null,
+         *           "registerEntry": {
+         *             "authority": {
+         *               "key": "fi",
+         *               "name": "Finansinspektionen"
+         *             },
+         *             "changedAt": "2026-10-05T08:00:04Z",
+         *             "facts": {
+         *               "branches": [
+         *                 {
+         *                   "countryName": "Danmark",
+         *                   "jurisdiction": "dk",
+         *                   "name": "Example Bank AB, filial i Danmark"
+         *                 }
+         *               ],
+         *               "lei": "549300EXAMPLEBANK001",
+         *               "licences": [
+         *                 {
+         *                   "grantedOn": "1995-03-01",
+         *                   "text": "Tillstånd att driva bankrörelse, enligt lag 2004:297 om bank- och finansieringsrörelse"
+         *                 },
+         *                 {
+         *                   "grantedOn": "2016-06-26",
+         *                   "text": "IM_MR_SA"
+         *                 }
+         *               ],
+         *               "listed": true,
+         *               "mainBusiness": "Bankaktiebolag",
+         *               "name": "Example Bank AB",
+         *               "otherBusinesses": [
+         *                 "Värdepappersbolag",
+         *                 "Försäkringsdistribution",
+         *                 "Medelstort institut"
+         *               ],
+         *               "registrationNumber": "556000-0001"
+         *             },
+         *             "readAt": "2026-10-05T03:17:00Z",
+         *             "sourceUrl": "https://www.fi.se/sv/vara-register/foretagsregistret/index?query=556000-0001&format=csv",
+         *             "unmapped": [
+         *               "IM_MR_SA"
+         *             ]
+         *           },
          *           "version": 3
          *         }
          *       ],
@@ -29712,8 +30241,8 @@ export interface components {
         /**
          * TenantOrgUnitRow
          * @description One unit as `GET /tenant/org-units` lists it: the unit, and on a legal entity the
-         *     licences and certificates it holds, so the organisation screen reads them with the list
-         *     and never once per entity.
+         *     licences and certificates it holds and its register facts, so the organisation screen
+         *     reads them with the list and never once per entity.
          * @example {
          *       "active": true,
          *       "countryCode": "SE",
@@ -29759,6 +30288,47 @@ export interface components {
          *       "name": "Example Bank AB",
          *       "orgNumber": "556000-0000",
          *       "parentId": null,
+         *       "registerEntry": {
+         *         "authority": {
+         *           "key": "fi",
+         *           "name": "Finansinspektionen"
+         *         },
+         *         "changedAt": "2026-10-05T08:00:04Z",
+         *         "facts": {
+         *           "branches": [
+         *             {
+         *               "countryName": "Danmark",
+         *               "jurisdiction": "dk",
+         *               "name": "Example Bank AB, filial i Danmark"
+         *             }
+         *           ],
+         *           "lei": "549300EXAMPLEBANK001",
+         *           "licences": [
+         *             {
+         *               "grantedOn": "1995-03-01",
+         *               "text": "Tillstånd att driva bankrörelse, enligt lag 2004:297 om bank- och finansieringsrörelse"
+         *             },
+         *             {
+         *               "grantedOn": "2016-06-26",
+         *               "text": "IM_MR_SA"
+         *             }
+         *           ],
+         *           "listed": true,
+         *           "mainBusiness": "Bankaktiebolag",
+         *           "name": "Example Bank AB",
+         *           "otherBusinesses": [
+         *             "Värdepappersbolag",
+         *             "Försäkringsdistribution",
+         *             "Medelstort institut"
+         *           ],
+         *           "registrationNumber": "556000-0001"
+         *         },
+         *         "readAt": "2026-10-05T03:17:00Z",
+         *         "sourceUrl": "https://www.fi.se/sv/vara-register/foretagsregistret/index?query=556000-0001&format=csv",
+         *         "unmapped": [
+         *           "IM_MR_SA"
+         *         ]
+         *       },
          *       "version": 3
          *     }
          */
@@ -29814,6 +30384,8 @@ export interface components {
              * @description The identifier of the unit this one sits under, a UUID of the same bank, or null at the top of the tree.
              */
             parentId: string | null;
+            /** @description What a supervisor's register says about the legal entity, with the date read, once a lookup in the public registers was applied to it; null for a unit with no register facts, and always null for a group or a department. */
+            registerEntry: components["schemas"]["TenantRegisterEntry"] | null;
             /**
              * Version
              * @description The unit's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.
@@ -30411,6 +30983,97 @@ export interface components {
             enabled: boolean;
             /** @description The request waiting for a second person, or null when none waits. */
             pending?: components["schemas"]["TenantReachRequestRow"] | null;
+        };
+        /**
+         * TenantRegisterAuthority
+         * @description The supervisor whose register the facts were read from.
+         */
+        TenantRegisterAuthority: {
+            /**
+             * Key
+             * @description The authority's key, such as `fi`. Authorities are rows of the shared library, which an administrator may extend only through an approved proposal; read `GET /authorities` for the live set.
+             */
+            key: string;
+            /**
+             * Name
+             * @description The authority's name, such as `Finansinspektionen`, for display and for citing the source.
+             */
+            name: string;
+        };
+        /**
+         * TenantRegisterEntry
+         * @description What one supervisor's register says about one of the bank's legal entities (TEN-07,
+         *     TEN-08), with where and when it was read. Written only by applying a lookup and by the
+         *     nightly re-read, each write audited; never by a person.
+         * @example {
+         *       "authority": {
+         *         "key": "fi",
+         *         "name": "Finansinspektionen"
+         *       },
+         *       "changedAt": "2026-10-05T08:00:04Z",
+         *       "facts": {
+         *         "branches": [
+         *           {
+         *             "countryName": "Danmark",
+         *             "jurisdiction": "dk",
+         *             "name": "Example Bank AB, filial i Danmark"
+         *           }
+         *         ],
+         *         "lei": "549300EXAMPLEBANK001",
+         *         "licences": [
+         *           {
+         *             "grantedOn": "1995-03-01",
+         *             "text": "Tillstånd att driva bankrörelse, enligt lag 2004:297 om bank- och finansieringsrörelse"
+         *           },
+         *           {
+         *             "grantedOn": "2016-06-26",
+         *             "text": "IM_MR_SA"
+         *           }
+         *         ],
+         *         "listed": true,
+         *         "mainBusiness": "Bankaktiebolag",
+         *         "name": "Example Bank AB",
+         *         "otherBusinesses": [
+         *           "Värdepappersbolag",
+         *           "Försäkringsdistribution",
+         *           "Medelstort institut"
+         *         ],
+         *         "registrationNumber": "556000-0001"
+         *       },
+         *       "readAt": "2026-10-05T03:17:00Z",
+         *       "sourceUrl": "https://www.fi.se/sv/vara-register/foretagsregistret/index?query=556000-0001&format=csv",
+         *       "unmapped": [
+         *         "IM_MR_SA"
+         *       ]
+         *     }
+         */
+        TenantRegisterEntry: {
+            /** @description The supervisor whose register the facts come from, to name with the date read. */
+            authority: components["schemas"]["TenantRegisterAuthority"];
+            /**
+             * Changedat
+             * Format: date-time
+             * @description When a read last found the facts different, as a UTC timestamp, or when they were first stored.
+             */
+            changedAt: string;
+            /** @description The company's business, licences and branches as last read from the register. */
+            facts: components["schemas"]["RegisterFacts"];
+            /**
+             * Readat
+             * Format: date-time
+             * @description When the register was last read for the company, as a UTC timestamp, whether or not anything had changed.
+             */
+            readAt: string;
+            /**
+             * Sourceurl
+             * @description The address the facts were read from, to cite with the date read.
+             */
+            sourceUrl: string;
+            /**
+             * Unmapped
+             * @description The business names and licence lines bleqq's mapping does not turn into a scope term, in the register's order, shown as not used for the scope; an empty list when every line maps.
+             */
+            unmapped: string[];
         };
         /**
          * TenantRemovalOwner
@@ -42860,6 +43523,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TenantReachRequestRow"];
+                };
+            };
+        };
+    };
+    startRegisterLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterLookupBody"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterLookupOut"];
+                };
+            };
+        };
+    };
+    getRegisterLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The lookup in the public registers, as a UUID. Another bank's lookup answers 404, never 403. */
+                lookup_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterLookupOut"];
+                };
+            };
+        };
+    };
+    applyRegisterLookup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The lookup in the public registers, as a UUID. Another bank's lookup answers 404, never 403. */
+                lookup_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterApplyBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterApplyOut"];
                 };
             };
         };

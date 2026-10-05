@@ -65,7 +65,7 @@ from apps.register.models import Applicability, DutyOccurrence, SoaUnit, TenantO
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType
 from apps.shared.models import Tenant, TenantContentLanguage
-from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, SupportAccess, TeamMember, TenantProduct
+from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, RegisterLookup, SupportAccess, TeamMember, TenantProduct
 from apps.tenants.testing import entity_term, licence_type_term
 
 _counter = itertools.count(1)
@@ -317,6 +317,14 @@ def support_access(tenant: Tenant) -> SupportAccess:
         return SupportAccess.objects.create(
             tenant=tenant, platform_user=requester, reason="The bank's watch feed stopped updating.", started_at=timezone.now()
         )
+
+
+def register_lookup(tenant: Tenant) -> RegisterLookup:
+    """A lookup in the public registers a member of `tenant` started (TEN-07), still queued."""
+    person = member_user(tenant, roles=("admin",))
+    with transaction.atomic():
+        tenancy.activate(tenant.id)
+        return RegisterLookup.objects.create(tenant=tenant, query="556000-0001", requested_by=person)
 
 
 def member_personal_token(tenant: Tenant) -> SimpleNamespace:

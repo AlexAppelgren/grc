@@ -2051,3 +2051,27 @@ both, on purpose not in the designed shape, so they move here from the pending l
   the new item's `reference`, `externalSystem`, owner or owning team and the rest; it answers
   409 `already_linked` for a second live link to the same item. Removal stays `DELETE /internal-links/{linkId}`,
   which stamps `removed_at` and `removed_by`.
+
+## public-registers. A lookup in the public registers and a legal entity's register facts (2026-10-05, tenants 0006, TEN-07, TEN-08)
+
+Schema v0.3 and the designed contract have neither: PRD 0.9's TEN-07 and TEN-08 fill the
+legal entities in from GLEIF and Finansinspektionen's register and re-read the register
+nightly (PUBLIC_REGISTERS.md, D-121, ADR 0066). Tenants 0006 adds two tenant tables under
+forced row-level security:
+
+- `register_lookup`: `query`, `status` (the `job_status` kind), `requested_by_id`,
+  `created_at`, `completed_at`, `error` (the problem code a failed lookup ended with) and
+  `result` (schema `RegisterLookupResult`). The requester is a composite key into
+  `membership (tenant_id, user_id)`.
+- `register_entry`: `org_unit_id`, `authority_id` (a library authority, a plain key), `facts`
+  (schema `RegisterFacts`), `source_url`, `read_at`, `changed_at`, `version`; unique per
+  `(org_unit_id, authority_id)`. The unit is a composite key into `org_unit (tenant_id, id)`,
+  and the trigger `register_entry_legal_entity_guard` refuses a unit that is not a legal
+  entity. Written only by applying a lookup and by the nightly re-read, each write audited.
+
+Three routes the designed contract does not name, session only under `vocab.manage`:
+`POST /tenant/register-lookups` (`startRegisterLookup`, 202 with the job), `GET
+/tenant/register-lookups/{lookupId}` (`getRegisterLookup`) and `POST
+/tenant/register-lookups/{lookupId}/apply` (`applyRegisterLookup`, 409 `lookup_not_done`
+before the job succeeded). `GET /tenant/org-units` gains `registerEntry` on each row.
+

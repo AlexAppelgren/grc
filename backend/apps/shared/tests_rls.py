@@ -278,6 +278,11 @@ TENANT_ONLY_TABLES = [
     # (apps/taxonomy/tests_scope_item_models.py proves the database refuses another bank's).
     "scope_item",
     "footprint_change_scope_item",
+    # public-registers (tenants 0006, TEN-07, TEN-08): a lookup in the public registers and a
+    # legal entity's register facts. The person and the unit are composite keys
+    # (apps/tenants/tests_registers.py proves the database refuses another bank's).
+    "register_lookup",
+    "register_entry",
 ]
 
 # The proposal door's library-zone tables (PRO-01, PRO-04): no tenant column, because the

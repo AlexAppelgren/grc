@@ -2168,6 +2168,20 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(bank.scope(back_office).empty_reason, entry_scope.EMPTY_SCOPE)
         self.assertEqual(reads(back_office), set())
 
+    @skip("pending: FP-S20 (FP-05, public-registers scope)")
+    def test_fp_s20(self) -> None:
+        """FP-S20
+
+        The regulatory scope suggested from the register facts, approved by a second person (FP-05, FP-02, AC-FP4, J-13).
+        """
+
+    @skip("pending: FP-S21 (FP-05, public-registers scope)")
+    def test_fp_s21(self) -> None:
+        """FP-S21
+
+        A company's exclusions are checked and kept apart from the bank's view (FP-05, FP-01).
+        """
+
 
 class HeldStandardInScope(ScenarioTestCase):
     """FP-S16's integration half. The seed files ISO/IEC 27001 active

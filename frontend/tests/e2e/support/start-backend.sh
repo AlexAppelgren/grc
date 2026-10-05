@@ -72,6 +72,7 @@ export LLM_PROVIDER=mock
 export EMBEDDER_PROVIDER=mock
 export AGENT_RUNNER=mock
 export MAIL_PROVIDER=mock
+export REGISTERS_PROVIDER=mock
 export STORAGE_BACKEND=local
 # No persistent connections under runserver: it starts a thread per request, and each
 # thread's connection outlives it, so with a max age every request leaks one until

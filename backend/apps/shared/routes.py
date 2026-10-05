@@ -71,6 +71,10 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/decline", "tenants.SupportAccess", "support_access"),
     ("POST", "/tenant/support-access/{grant_id}/revoke", "tenants.SupportAccess", "support_access"),
+    # public-registers (TEN-07): a lookup in the public registers. Its apply needs a body the
+    # guard's empty one fails before the load, so apps/tenants/tests_scenarios.py (TEN-S13)
+    # proves that route's 404.
+    ("GET", "/tenant/register-lookups/{lookup_id}", "tenants.RegisterLookup", "register_lookup"),
     # c9-case-contract: the workflow routes whose request an empty body satisfies. Each
     # loads the case under row-level security before its stub answers 501, so another
     # bank's case, action or evidence is a 404 now and stays one when the logic lands. The

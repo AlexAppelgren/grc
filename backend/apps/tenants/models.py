@@ -20,7 +20,12 @@ Chunk 8's teams model (TEN-03, tenants 0003) adds `TeamMember`, a person in one 
 teams (the `team` tenant list, taxonomy 0009), and lets a team own a licence or an internal
 item in place of a person, so the ownership survives the person leaving. Both keys of a team
 member are composite as above; the key to `membership` makes the person a member of the same
-bank. A team member has no lead flag: a department's head sits on its org unit (D-21)."""
+bank. A team member has no lead flag: a department's head sits on its org unit (D-21).
+
+The public registers (TEN-07, TEN-08, tenants 0006, PUBLIC_REGISTERS.md 5.1) add a lookup job
+and a legal entity's register facts. Both hold public register data only; a register entry
+belongs to a legal entity (a trigger refuses any other unit) and is written by the apply and
+the nightly re-read alone, each write audited."""
 
 from __future__ import annotations
 
@@ -31,6 +36,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
+from apps.reports.models import JobStatus
 from apps.shared.tenancy import TenantModel
 
 
@@ -348,3 +354,45 @@ class TeamMember(TenantModel):
 
     def __str__(self) -> str:
         return f"{self.user_id}@{self.team_id}"
+
+
+class RegisterLookup(TenantModel):
+    """One lookup in the public registers a person started (TEN-07): the number or LEI typed,
+    where the job stands, and, once it succeeded, the companies found with their register
+    facts. `error` is the problem code a failed lookup ended with. Nothing in the
+    organisation changes until a person applies the result."""
+
+    query = models.CharField(max_length=40)
+    status = models.CharField(max_length=16, choices=_choices(JobStatus), default=JobStatus.QUEUED.value)
+    requested_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    error = models.CharField(max_length=40, blank=True)
+    result = models.JSONField(default=dict, blank=True)  # schema: RegisterLookupResult
+
+    class Meta:
+        db_table = "register_lookup"
+        ordering = ["-created_at", "id"]
+
+
+class RegisterEntry(TenantModel):
+    """What one authority's register says about one of the bank's legal entities (TEN-07,
+    TEN-08): its businesses, licences and branches as read, where and when. The licences are
+    shown from here and never copied into licence rows, so they cannot drift from the
+    source; `changed_at` moves only when a read found something different."""
+
+    org_unit = models.ForeignKey(OrgUnit, on_delete=models.PROTECT, related_name="register_entries")
+    authority = models.ForeignKey("library.Authority", on_delete=models.PROTECT, related_name="+")
+    facts = models.JSONField()  # schema: RegisterFacts
+    source_url = models.URLField(max_length=500)
+    read_at = models.DateTimeField()
+    changed_at = models.DateTimeField()
+    version = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        db_table = "register_entry"
+        ordering = ["org_unit", "authority", "id"]
+        constraints = [models.UniqueConstraint(fields=["org_unit", "authority"], name="register_entry_unique")]
+
+    def __str__(self) -> str:
+        return f"{self.authority_id}@{self.org_unit_id}"

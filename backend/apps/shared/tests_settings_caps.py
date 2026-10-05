@@ -25,6 +25,15 @@ class OutOfRangeCapsRefuseToBoot(SimpleTestCase):
             "AGENT_RUNS_PER_BEAT": ["0"],
             "AGENT_RECENT_RUNS": ["0", "101"],
             "AGENT_RUN_BUDGET_LIMIT": ["0", "NaN", "five"],
+            # public-registers (TEN-07, TEN-08)
+            "REGISTERS_PROVIDER": ["gleif"],
+            "REGISTERS_GLEIF_URL": ["http://api.gleif.org/api/v1"],
+            "REGISTERS_FI_URL": ["ftp://www.fi.se/"],
+            "REGISTERS_TIMEOUT_SECONDS": ["0", "121"],
+            "REGISTERS_MAX_BYTES": ["9999", "50000001"],
+            "REGISTERS_MAX_ENTITIES": ["0", "501"],
+            "REGISTERS_MAX_BRANCHES": ["-1", "201"],
+            "REGISTERS_RECHECK_HOUR": ["-1", "24"],
         }
         for name, values in cases.items():
             for value in values:

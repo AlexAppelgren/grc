@@ -1044,6 +1044,14 @@ test.describe('departments, teams and certificates', () => {
   });
 });
 
+// PRD 0.9: the legal entities filled in from the public registers (TEN-07). Stays
+// test.fixme until the organisation screen's register lookup lands.
+test.describe('public registers', () => {
+  test.fixme("TEN-S13: The legal entities filled in from the public registers", async () => {
+    // pending: TEN-S13 (TEN-07, AC-TEN2, J-13)
+  });
+});
+
 /** TEN-S5's teardown: the E2E-only `manage.py e2e_restore_leaver` puts the removed member back as seeded. */
 function restoreLeaver(): void {
   // Forward slashes: bash opens the script by this path, and a Windows checkout hands path.join backslashes.

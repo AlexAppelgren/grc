@@ -381,7 +381,7 @@ MAIL_SMTP_PASSWORD = env_str("MAIL_SMTP_PASSWORD", "")
 # state until a model is chosen, and leaves the fused order as the answer.
 RERANKER_PROVIDER = env_str("RERANKER_PROVIDER", "mock")  # mock | none | <chosen per D-09>
 RERANKER_TOP_K = env_int("RERANKER_TOP_K", 50)
-MOCK_ADAPTER_SETTINGS = ("LLM_PROVIDER", "EMBEDDER_PROVIDER", "RERANKER_PROVIDER", "AGENT_RUNNER", "MAIL_PROVIDER")
+MOCK_ADAPTER_SETTINGS = ("LLM_PROVIDER", "EMBEDDER_PROVIDER", "RERANKER_PROVIDER", "AGENT_RUNNER", "MAIL_PROVIDER", "REGISTERS_PROVIDER")
 
 # ===== E3: the Anthropic provider behind the LLM adapter (chunks 5 and 7, D-07) =========
 # The key is read from the environment only (ANTHROPIC_API_KEY above); everything the
@@ -896,6 +896,42 @@ SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the officia
 # stream before it answers, so this must cover scanning the largest evidence file.
 SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
 
+# --- public-registers (TEN-07, TEN-08, FP-05) --------------------------------------------
+# Where a bank's companies, licences and branches are read (apps/shared/adapters/registers.py,
+# PUBLIC_REGISTERS.md 5.3). `live` reads GLEIF and Finansinspektionen's register over https
+# and nothing else; `mock` answers the E2E group offline and is refused deployed outside
+# ENVIRONMENT=test (rule 5), so a deployed environment defaults to `live` and needs no
+# variable. Each read waits at most REGISTERS_TIMEOUT_SECONDS per socket operation and keeps
+# at most REGISTERS_MAX_BYTES; a lookup walks at most REGISTERS_MAX_ENTITIES companies and
+# reads at most REGISTERS_MAX_BRANCHES branches per company. The nightly re-read starts at
+# REGISTERS_RECHECK_HOUR, UTC.
+REGISTERS_PROVIDER = env_str("REGISTERS_PROVIDER", "live" if IS_DEPLOYED_ENVIRONMENT else "mock")  # live | mock
+REGISTERS_GLEIF_URL = env_str("REGISTERS_GLEIF_URL", "https://api.gleif.org/api/v1")
+REGISTERS_FI_URL = env_str("REGISTERS_FI_URL", "https://www.fi.se/sv/vara-register/foretagsregistret")
+REGISTERS_TIMEOUT_SECONDS = env_int("REGISTERS_TIMEOUT_SECONDS", 10)
+REGISTERS_MAX_BYTES = env_int("REGISTERS_MAX_BYTES", 2_000_000)
+REGISTERS_MAX_ENTITIES = env_int("REGISTERS_MAX_ENTITIES", 100)
+REGISTERS_MAX_BRANCHES = env_int("REGISTERS_MAX_BRANCHES", 40)
+REGISTERS_RECHECK_HOUR = env_int("REGISTERS_RECHECK_HOUR", 3)
+if REGISTERS_PROVIDER not in ("live", "mock"):
+    raise ImproperlyConfigured(f"REGISTERS_PROVIDER must be live or mock, got {REGISTERS_PROVIDER!r}")
+if not (REGISTERS_GLEIF_URL.startswith("https://") and REGISTERS_FI_URL.startswith("https://")):
+    raise ImproperlyConfigured("REGISTERS_GLEIF_URL and REGISTERS_FI_URL must be https addresses")
+if not 1 <= REGISTERS_TIMEOUT_SECONDS <= 120:
+    raise ImproperlyConfigured("REGISTERS_TIMEOUT_SECONDS must be between 1 and 120")
+if not 10_000 <= REGISTERS_MAX_BYTES <= 50_000_000:
+    raise ImproperlyConfigured("REGISTERS_MAX_BYTES must be between 10000 and 50000000")
+if not 1 <= REGISTERS_MAX_ENTITIES <= 500:
+    raise ImproperlyConfigured("REGISTERS_MAX_ENTITIES must be between 1 and 500")
+if not 0 <= REGISTERS_MAX_BRANCHES <= 200:
+    raise ImproperlyConfigured("REGISTERS_MAX_BRANCHES must be between 0 and 200")
+if not 0 <= REGISTERS_RECHECK_HOUR <= 23:
+    raise ImproperlyConfigured("REGISTERS_RECHECK_HOUR must be an hour from 0 to 23")
+CELERY_BEAT_SCHEDULE["registers-recheck"] = {
+    "task": "apps.tenants.tasks.recheck_registers",
+    "schedule": crontab(minute="17", hour=str(REGISTERS_RECHECK_HOUR)),
+}
+
 # ===== CAS-05 evidence on a case (apps/cases/evidence.py, tasks.py, c9-evidence) =========
 # A file is refused with 422 before a byte is stored when its type is outside this list or
 # it is larger than the cap (parallel plan §7.2). The type is what the header claims, the
@@ -1206,9 +1242,10 @@ if SENTRY_DSN:
 #     every deployed environment whatever DEBUG says.
 #  4. E2E_MODE makes the enrolment code deterministic. That is fine on a laptop or a CI
 #     runner and catastrophic anywhere reachable from the internet (PRD ID-02, ID-03).
-#  5. A mock LLM, embedder, agent runner or mailer on a deployed environment other than
-#     the one named `test` means silent no-ops: emails that never send, agent runs that
-#     never happen, embeddings that are zeros. `test` may run mocks and shows a banner.
+#  5. A mock LLM, embedder, agent runner, mailer or register reader on a deployed
+#     environment other than the one named `test` means silent no-ops: emails that never
+#     send, agent runs that never happen, embeddings that are zeros, a made-up group in place
+#     of the bank's own. `test` may run mocks and shows a banner.
 #  6. The local file backend is a container's ephemeral disk. Evidence written there is
 #     lost on the next deploy (playbook 4.6), so deployed environments must use s3.
 #  7. The database role: checked at boot against the live connection by

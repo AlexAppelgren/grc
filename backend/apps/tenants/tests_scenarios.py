@@ -9,13 +9,14 @@ Operations exercised (the audit-on-write guard reads these names): updateTenant,
 setTenantAi (its branches in tests_organisation.py),
 consoleReissueEnrolment (proven in identity ID-S13), requestConsoleSupportAccess,
 approveSupportAccess, declineSupportAccess, revokeSupportAccess, enterConsoleSupportAccess, putMyOutOfOffice (TEN-S4, its
-refusals in tests_out_of_office.py).
+refusals in tests_out_of_office.py), startRegisterLookup and applyRegisterLookup (TEN-S13).
 
 Prefixes hosted: ADM, TEN.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import datetime
 from datetime import timedelta
 from typing import Any
@@ -34,11 +35,13 @@ from apps.library.models import Obligation
 from apps.cases import tests_signoff as signoff_build
 from apps.collab import reminders
 from apps.collab.models import Notification
+from apps.library import testing as library_build
 from apps.library.reading import today_for
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.register.models import TenantObligation
 from apps.shared import factories, permissions as perms
 from apps.shared.adapters.mailer import MockMailer
+from apps.shared.adapters.registers import MockRegisters, RegisterLicence, RegisterUnavailable
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
@@ -46,8 +49,8 @@ from apps.taxonomy import tenant_lists_logic
 from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, TermDimensionKind
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
-from apps.tenants import reassignment
-from apps.tenants.models import SupportAccess, TeamMember
+from apps.tenants import reassignment, tasks
+from apps.tenants.models import Licence, OrgUnit, OrgUnitKind, RegisterEntry, SupportAccess, TeamMember
 from apps.tenants.tests_reassignment import owned_work
 from apps.watch import testing as watch_build
 
@@ -699,3 +702,207 @@ class TenantsScenarioTests(ScenarioTestCase):
 
         A closing tenant refuses writes and still lets people sign in and export (REP-04).
         """
+
+    # --- public-registers (TEN-07, TEN-08) ----------------------------------------------
+    LOOKUPS = "/api/v1/tenant/register-lookups"
+    BANK_LEI = "549300EXAMPLEBANK001"
+    FONDER_LEI = "549300EXAMPLEFOND002"
+    LIV_LEI = "549300EXAMPLELIVF003"
+
+    def _register_world(self) -> OrgUnit:
+        """The library's jurisdictions, terms and Finansinspektionen, and a bank that already
+        has its group and Example Bank AB, with the org number and nothing else, as the E2E
+        seed has it."""
+        self._seed_terms()
+        library_build.authority(key="fi", short_name="Finansinspektionen")
+        self.addCleanup(MockRegisters.reset)
+        self.activate(self.tenant)
+        group = OrgUnit.objects.create(tenant=self.tenant, kind=OrgUnitKind.GROUP.value, name="Example Group")
+        return OrgUnit.objects.create(
+            tenant=self.tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name="Example Bank AB", org_number="556000-0001", parent=group
+        )
+
+    def _look_up(self, headers: dict[str, Any], query: str) -> dict[str, Any]:
+        """Start a lookup, check it answers queued before the worker runs, run the worker's
+        hand-off, and read the job back."""
+        with self.captureOnCommitCallbacks(execute=False) as queued:
+            started = self.client.post(self.LOOKUPS, data={"query": query}, content_type="application/json", **headers)
+        self.assertEqual(started.status_code, 202, started.content)
+        self.assertEqual((started.json()["status"], started.json()["entities"]), ("queued", []))
+        self.assertEqual(len(queued), 1)
+        queued[0]()
+        read = self.client.get(f"{self.LOOKUPS}/{started.json()['id']}", **headers)
+        self.assertEqual(read.status_code, 200, read.content)
+        return dict(read.json())
+
+    def _apply(self, headers: dict[str, Any], lookup_id: str, leis: list[str]) -> Any:
+        return self.client.post(f"{self.LOOKUPS}/{lookup_id}/apply", data={"leis": leis}, content_type="application/json", **headers)
+
+    def test_ten_s13(self) -> None:
+        """TEN-S13
+
+        The legal entities filled in from the public registers (TEN-07, AC-TEN2, J-13).
+        Operations: `startRegisterLookup`, `getRegisterLookup`, `applyRegisterLookup`.
+
+        With the mock register, the E2E seed's Example Group: GLEIF lists the bank, its fund
+        company, its life insurer, a holding company FI does not list and an Estonian bank.
+        """
+        bank = self._register_world()
+        headers = self._member_with(perms.VOCAB_MANAGE)
+        lookup = self._look_up(headers, "556000-0001")
+        self.assertEqual((lookup["status"], lookup["error"]), ("succeeded", None))
+        self.assertIsNotNone(lookup["completedAt"])
+        found = {entity["name"]: entity for entity in lookup["entities"]}
+        self.assertEqual(
+            [entity["name"] for entity in lookup["entities"]],
+            ["Example Bank AB", "Example Fonder AB", "Example Liv Försäkring AB", "Example Holding AB", "Example Pank AS"],
+        )
+        # The licensed companies ticked, the holding company and the foreign bank not, and the
+        # bank the organisation already has marked as already in it.
+        self.assertEqual(
+            {name: (entity["preselected"], entity["existingOrgUnitId"]) for name, entity in found.items()},
+            {
+                "Example Bank AB": (True, str(bank.id)),
+                "Example Fonder AB": (True, None),
+                "Example Liv Försäkring AB": (True, None),
+                "Example Holding AB": (False, None),
+                "Example Pank AS": (False, None),
+            },
+        )
+        self.assertEqual((found["Example Holding AB"]["authority"], found["Example Holding AB"]["facts"]), ("fi", None))
+        self.assertEqual((found["Example Pank AS"]["authority"], found["Example Pank AS"]["country"]), (None, "EE"))
+        # Each Swedish company carries its business, licences and branches from FI.
+        facts = found["Example Bank AB"]["facts"]
+        self.assertEqual(facts["mainBusiness"], "Bankaktiebolag")
+        self.assertEqual(len(facts["licences"]), 5)
+        self.assertEqual([(branch["countryName"], branch["jurisdiction"]) for branch in facts["branches"]], [("Danmark", "dk"), ("Norge", "no")])
+        self.assertEqual(found["Example Bank AB"]["unmapped"], ["IM_MR_SA"])
+        self.assertEqual(found["Example Fonder AB"]["entityType"]["key"], "fund_company")
+        self.assertEqual(found["Example Liv Försäkring AB"]["entityType"]["key"], "insurer")
+        self.assertIsNone(found["Example Holding AB"]["entityType"])
+
+        # Adding the ticked companies.
+        self.activate(self.tenant)
+        units_before, licences_before = OrgUnit.objects.count(), Licence.objects.count()
+        applied = self._apply(headers, lookup["id"], [self.BANK_LEI, self.FONDER_LEI, self.LIV_LEI])
+        self.assertEqual(applied.status_code, 200, applied.content)
+        self.assertEqual((applied.json()["created"], applied.json()["linked"]), (2, 1))
+        self.assertEqual([unit["name"] for unit in applied.json()["orgUnits"]], ["Example Bank AB", "Example Fonder AB", "Example Liv Försäkring AB"])
+        self.activate(self.tenant)
+        self.assertEqual(OrgUnit.objects.count(), units_before + 2)
+        fonder = OrgUnit.objects.select_related("entity_term").get(lei=self.FONDER_LEI)
+        liv = OrgUnit.objects.select_related("entity_term").get(lei=self.LIV_LEI)
+        self.assertEqual(
+            (fonder.kind, fonder.org_number, fonder.country_code, fonder.parent_id, fonder.entity_term.key if fonder.entity_term else None),
+            (OrgUnitKind.LEGAL_ENTITY.value, "556000-0003", "SE", bank.id, "fund_company"),
+        )
+        self.assertEqual((liv.parent_id, liv.entity_term.key if liv.entity_term else None), (bank.id, "insurer"))
+        # Linked, not added twice, and left as it was.
+        bank.refresh_from_db()
+        self.assertEqual((bank.lei, bank.country_code, bank.version), ("", "", 1))
+        entries = RegisterEntry.objects.select_related("authority").order_by("org_unit__name")
+        self.assertEqual([(entry.org_unit_id, entry.authority.key) for entry in entries], [(bank.id, "fi"), (fonder.id, "fi"), (liv.id, "fi")])
+        self.assertEqual(entries[0].facts["licences"][0]["grantedOn"], "1995-03-01")
+        # No licence row and no regulatory scope term, and each write has its audit event.
+        self.assertEqual(Licence.objects.count(), licences_before)
+        self.assertFalse(FootprintTerm.objects.exists())
+        actions = list(AuditEvent.objects.filter(tenant_id=self.tenant.id).values_list("action", flat=True))
+        for action, count in (
+            ("register_lookup.started", 1),
+            ("register_lookup.finished", 1),
+            ("org_unit.created", 2),
+            ("register_entry.created", 3),
+            ("register_lookup.applied", 1),
+        ):
+            self.assertEqual(actions.count(action), count, action)
+        # The organisation shows each entity's facts with the date read.
+        rows = {row["name"]: row for row in self.client.get("/api/v1/tenant/org-units", **headers).json()["items"]}
+        self.assertEqual(rows["Example Bank AB"]["registerEntry"]["authority"], {"key": "fi", "name": "Finansinspektionen"})
+        self.assertEqual(rows["Example Bank AB"]["registerEntry"]["readAt"], lookup["completedAt"])
+        self.assertEqual(rows["Example Bank AB"]["registerEntry"]["unmapped"], ["IM_MR_SA"])
+        self.assertIsNone(rows["Example Group"]["registerEntry"])
+        # Applying again links every company and adds nothing.
+        again = self._apply(headers, lookup["id"], [self.BANK_LEI, self.FONDER_LEI, self.LIV_LEI])
+        self.assertEqual((again.json()["created"], again.json()["linked"]), (0, 3))
+        self.activate(self.tenant)
+        self.assertEqual((OrgUnit.objects.count(), RegisterEntry.objects.count()), (units_before + 2, 3))
+        # An LEI the lookup did not find.
+        unknown = self._apply(headers, lookup["id"], ["549300EXAMPLEGONE010"])
+        self.assertEqual((unknown.status_code, unknown.json()["code"]), (422, "unknown_lei"))
+
+        # A number no company carries, a number two carry, and a register that cannot be read.
+        for query, code in (("556000-0000", "lookup_not_found"), ("556000-9999", "lookup_ambiguous"), ("556000-0666", "register_unavailable")):
+            with self.subTest(query=query):
+                failed = self._look_up(headers, query)
+                self.assertEqual((failed["status"], failed["error"], failed["entities"]), ("failed", code, []))
+                refused = self._apply(headers, failed["id"], [self.BANK_LEI])
+                self.assertEqual((refused.status_code, refused.json()["code"]), (409, "lookup_not_done"))
+        typed = self.client.post(self.LOOKUPS, data={"query": "Example Bank!"}, content_type="application/json", **headers)
+        self.assertEqual((typed.status_code, typed.json()["code"]), (422, "invalid_query"))
+
+        # A member without vocab.manage, and another bank.
+        reader = sign_in(factories.member(self.tenant, roles=("reader",)).user, tenant=self.tenant)
+        for denied in (
+            self.client.post(self.LOOKUPS, data={"query": "556000-0001"}, content_type="application/json", **reader),
+            self.client.get(f"{self.LOOKUPS}/{lookup['id']}", **reader),
+            self._apply(reader, lookup["id"], [self.BANK_LEI]),
+        ):
+            self.assertEqual((denied.status_code, denied.json()["requiredPermission"]), (403, perms.VOCAB_MANAGE))
+        other = factories.tenant(slug="other-bank")
+        theirs = sign_in(factories.member(other, roles=("admin",)).user, tenant=other)
+        self.assertEqual(self.client.get(f"{self.LOOKUPS}/{lookup['id']}", **theirs).status_code, 404)
+        stolen = self._apply(theirs, lookup["id"], [self.BANK_LEI])
+        self.assertEqual((stolen.status_code, stolen.json()["code"]), (404, "not_found"))
+
+    def test_ten_s14(self) -> None:
+        """TEN-S14
+
+        The nightly re-read refreshes the register facts and nothing else (TEN-08).
+        """
+        bank = self._register_world()
+        headers = self._member_with(perms.VOCAB_MANAGE)
+        lookup = self._look_up(headers, "556000-0001")
+        self.assertEqual(self._apply(headers, lookup["id"], [self.BANK_LEI]).status_code, 200)
+        self.activate(self.tenant)
+        yesterday = timezone.now() - timedelta(days=1)
+        RegisterEntry.objects.filter(org_unit=bank).update(read_at=yesterday, changed_at=yesterday)
+        units = list(OrgUnit.objects.order_by("id").values_list("id", "version", "name", "lei"))
+
+        def entry() -> RegisterEntry:
+            self.activate(self.tenant)
+            return RegisterEntry.objects.get(org_unit=bank)
+
+        def recheck() -> None:
+            tasks.recheck_tenant_registers(str(self.tenant.id))
+
+        # A new licence in FI's register.
+        read = MockRegisters().licence_facts("fi", "556000-0001")
+        assert read is not None
+        granted = RegisterLicence("Tillstånd att ge ut elektroniska pengar, enligt lagen (2011:755) om elektroniska pengar", datetime.date(2026, 10, 1))
+        MockRegisters.override("556000-0001", dataclasses.replace(read, licences=(*read.licences, granted)))
+        recheck()
+        changed = entry()
+        self.assertEqual(changed.facts["licences"][-1], {"text": granted.text, "grantedOn": "2026-10-01"})
+        self.assertGreater(changed.read_at, yesterday)
+        self.assertEqual((changed.changed_at, changed.version), (changed.read_at, 2))
+        event = AuditEvent.objects.filter(tenant_id=self.tenant.id, action="register_entry.changed").get()
+        self.assertEqual((event.subject_id, event.actor_type, event.after["licencesAdded"]), (changed.id, "system", [granted.text]))
+        self.assertEqual((event.after["licencesRemoved"], event.after["branchesAdded"]), ([], []))
+        # No organisation row, licence row or regulatory scope term changes.
+        self.assertEqual(list(OrgUnit.objects.order_by("id").values_list("id", "version", "name", "lei")), units)
+        self.assertFalse(Licence.objects.exists())
+        self.assertFalse(FootprintTerm.objects.exists())
+
+        # The next night nothing changed: the read date moves and nothing else.
+        recheck()
+        unchanged = entry()
+        self.assertGreater(unchanged.read_at, changed.read_at)
+        self.assertEqual((unchanged.changed_at, unchanged.version, unchanged.facts), (changed.changed_at, 2, changed.facts))
+        self.assertEqual(AuditEvent.objects.filter(tenant_id=self.tenant.id, action="register_entry.read").count(), 1)
+
+        # A register that cannot be reached leaves the stored facts as they were.
+        MockRegisters.override("556000-0001", RegisterUnavailable("down"))
+        events = AuditEvent.objects.count()
+        recheck()
+        self.assertEqual((entry().read_at, entry().facts, entry().version), (unchanged.read_at, unchanged.facts, 2))
+        self.assertEqual(AuditEvent.objects.count(), events)

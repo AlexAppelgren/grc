@@ -32,6 +32,7 @@ from apps.tenants import (
     people,
     products,
     reassignment,
+    registers_jobs,
     security_policy,
     support_access,
     teams,
@@ -46,6 +47,10 @@ from apps.tenants.schemas import (
     ConsoleTenantRow,
     MeOutOfOffice,
     MeOutOfOfficeBody,
+    RegisterApplyBody,
+    RegisterApplyOut,
+    RegisterLookupBody,
+    RegisterLookupOut,
     SecurityPolicyBody,
     SecurityPolicyOut,
     SupportAccessGrant,
@@ -624,6 +629,114 @@ def update_licence(
         licence_id=licence_id,
         body=body,
         expected_version=if_match(request),
+    )
+
+
+# ---------------------------------------------------------------------------------------
+# public-registers (TEN-07, PUBLIC_REGISTERS.md 3.1, 5.2): the organisation filled in from
+# GLEIF and Finansinspektionen's register. Session only, under `vocab.manage`; the lookup is
+# a job, and nothing in the organisation changes until a person applies it.
+# ---------------------------------------------------------------------------------------
+_LOOKUP_ID = "The lookup in the public registers, as a UUID. Another bank's lookup answers 404, never 403."
+
+
+@router.post(
+    "/tenant/register-lookups",
+    response={202: RegisterLookupOut},
+    auth=SessionAuth(),
+    operation_id="startRegisterLookup",
+    by_alias=True,
+    summary="Look your companies up in the public registers",
+)
+@requires_permission(perms.VOCAB_MANAGE)
+def start_register_lookup(request: HttpRequest, body: RegisterLookupBody) -> Any:
+    """Starts a lookup of an organisation number or an LEI in the public registers and answers
+    202 at once with the queued job; the registers are read by the worker, never inside this
+    request. Poll `GET /tenant/register-lookups/{lookupId}` until the status is `succeeded` or
+    `failed`. The job finds the company in GLEIF, walks the companies under it, and reads each
+    Swedish company's businesses, licences and branches from Finansinspektionen's register.
+    Only the number typed leaves the bank, to GLEIF and Finansinspektionen, and nothing reaches a model.
+
+    Needs `vocab.manage`, the business-configuration permission. No step-up: nothing in the
+    organisation changes until the result is applied. Recorded in the audit log as
+    `register_lookup.started` with the number typed, and as `register_lookup.finished` with
+    the outcome and the number of companies when the worker is done.
+
+    Errors: `invalid_query` (422) for a query that is neither a registration number nor an
+    LEI; `validation_error` (422) for a body the schema refuses; `permission_denied` (403)
+    without `vocab.manage`, naming it in `requiredPermission`; `unauthenticated` (401) without
+    a session; `not_found` (404) for a session that belongs to no bank. A lookup that finds
+    nothing still answers 202: the job then fails with `lookup_not_found`, `lookup_ambiguous`
+    or `register_unavailable`, which `GET` reports in `error`.
+    """
+    tenant = caller_tenant(request)
+    user = caller_user(request)
+    lookup = registers_jobs.start_lookup(tenant=tenant, actor=actor_for(request, user), user=user, query=body.query)
+    return 202, registers_jobs.lookup_out(tenant=tenant, lookup=lookup, order=language_order(request, tenant=tenant))
+
+
+@router.get(
+    "/tenant/register-lookups/{lookup_id}",
+    response=RegisterLookupOut,
+    auth=SessionAuth(),
+    operation_id="getRegisterLookup",
+    by_alias=True,
+    summary="See what a lookup in the public registers found",
+)
+@requires_permission(perms.VOCAB_MANAGE)
+def get_register_lookup(request: HttpRequest, lookup_id: uuid.UUID = Path(..., description=_LOOKUP_ID)) -> Any:
+    """Where a lookup in the public registers stands and, once it succeeded, every company it
+    found, parents first: GLEIF's record, the register's facts where a register bleqq reads
+    covers the company's country, whether the bank's organisation already has it, whether the
+    screen should tick it, its legal-entity type and the register lines that map to no scope
+    term. What the organisation already has is computed when read. Poll it after starting a
+    lookup until the status is `succeeded` or `failed`; a failed one names its reason in `error`.
+
+    Needs `vocab.manage`. It changes nothing and writes no audit event.
+
+    Errors: `not_found` (404) for a lookup that is not the bank's own; `permission_denied`
+    (403) without `vocab.manage`; `unauthenticated` (401) without a session.
+    """
+    tenant = caller_tenant(request)
+    lookup = registers_jobs.lookup_of(tenant, lookup_id)
+    return registers_jobs.lookup_out(tenant=tenant, lookup=lookup, order=language_order(request, tenant=tenant))
+
+
+@router.post(
+    "/tenant/register-lookups/{lookup_id}/apply",
+    response=RegisterApplyOut,
+    auth=SessionAuth(),
+    operation_id="applyRegisterLookup",
+    by_alias=True,
+    summary="Add the chosen companies from the public registers to your organisation",
+)
+@requires_permission(perms.VOCAB_MANAGE)
+def apply_register_lookup(
+    request: HttpRequest, body: RegisterApplyBody, lookup_id: uuid.UUID = Path(..., description=_LOOKUP_ID)
+) -> Any:
+    """Adds the companies the body names, by LEI, from a lookup that succeeded, parents first.
+    A company the organisation already has (the same LEI, or the same registration number in
+    the same country) is linked and left as it is; any other is added as a legal entity with
+    its name, registration number, LEI, country and the type its main business gives it,
+    under the nearest chosen company above it in GLEIF's tree, else under the bank's group.
+    Each company with register facts gets them stored with the source address and the date
+    read. No licence row and no regulatory scope term is written: the licences are shown from
+    the register facts, and the scope changes only through a request a second person approves.
+    Applying the same lookup again links rather than adds.
+
+    Needs `vocab.manage`. No step-up. Recorded in the audit log as `org_unit.created` for each
+    company added, `register_entry.created` or `register_entry.changed` for each company's
+    facts, and `register_lookup.applied` with the counts, in the same transaction.
+
+    Errors: `lookup_not_done` (409) for a lookup that has not succeeded; `unknown_lei` (422)
+    for an LEI the lookup did not find; `validation_error` (422) for a body the schema
+    refuses, such as an empty list; `not_found` (404) for a lookup that is not the bank's
+    own; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
+    session.
+    """
+    tenant = caller_tenant(request)
+    return registers_jobs.apply_lookup(
+        tenant=tenant, actor=actor_for(request), order=language_order(request, tenant=tenant), lookup_id=lookup_id, leis=body.leis
     )
 
 

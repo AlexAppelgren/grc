@@ -140,6 +140,32 @@ class AgentSchedules(TestCase):
         self.assertEqual(list(inspect.signature(tasks.run_due_tenant_agents.run).parameters)[0], "tenant_id")
 
 
+class RegistersSchedules(TestCase):
+    """public-registers (TEN-07, TEN-08): the nightly re-read is one beat at
+    REGISTERS_RECHECK_HOUR, UTC, which hands each bank to a wrapped tenant task, and a lookup
+    runs as a wrapped tenant task as well."""
+
+    def test_the_recheck_entry_runs_nightly_and_names_a_task_that_exists(self) -> None:
+        from django.conf import settings
+
+        from apps.tenants import tasks  # noqa: F401  registers the module's tasks
+
+        entry = (celery_app.conf.beat_schedule or {})["registers-recheck"]
+        self.assertEqual(entry["task"], "apps.tenants.tasks.recheck_registers")
+        self.assertIn(entry["task"], celery_app.tasks)
+        self.assertEqual((entry["schedule"].minute, entry["schedule"].hour), ({17}, {settings.REGISTERS_RECHECK_HOUR}))
+
+    def test_the_beat_is_not_a_tenant_task_and_the_bank_tasks_are(self) -> None:
+        from apps.tenants import tasks
+
+        self.assertFalse(is_tenant_task(tasks.recheck_registers.run))
+        for task in (tasks.recheck_tenant_registers, tasks.run_register_lookup):
+            with self.subTest(task.name):
+                self.assertIn(task.name, celery_app.tasks)
+                self.assertTrue(is_tenant_task(task.run))
+                self.assertEqual(list(inspect.signature(task.run).parameters)[0], "tenant_id")
+
+
 class TenantTaskDecorator(TestCase):
     def test_tenant_task_activates_inside_its_own_transaction(self) -> None:
         tenant = factories.tenant()
