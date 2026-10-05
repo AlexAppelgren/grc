@@ -79,3 +79,6 @@ tmp/
 .claude/worktrees/
 .claude/launch.json
 .claude/settings.local.json
+
+# Redis writes its snapshot into the directory it was started from.
+dump.rdb

@@ -282,3 +282,22 @@ empty library (PRO-01, PRO-02, INV-01, INV-03, INV-05, WAT-01).
 - **Owner-blocked:** approving the queue (the agent that filed it cannot), publishing the two
   new agent versions, and Digitaliseringsministeriet's successor; listed in
   `docs/TODO_FOR_alex.md` ("The library baseline").
+
+## Public registers (`main`, 2026-10-05, PRD 0.9, D-121, ADR 0066)
+
+A bank's organisation and regulatory scope from GLEIF and Finansinspektionen's register, on
+Alex's word ("go ahead, write the brief and build all steps"), built ahead of the rest of R3
+(`docs/plans/briefs/PUBLIC_REGISTERS.md`; TEN-07, TEN-08, FP-05, AC-TEN2, AC-FP4, J-13).
+
+- **Built (backend):** the registers adapter (live GLEIF and FI, mock for tests and E2E; the live
+  one run against the real registers for SEB: 17 subsidiaries, 42 licences, 11 branches); the
+  lookup job, its apply and the stored register facts (tenants 0006, TEN-S13); the nightly
+  re-read (TEN-S14); the licence-to-term mapping (`register_terms.json`); company lines on the
+  regulatory scope request with `entity_scope_exclusion` and their history (taxonomy 0013,
+  FP-S21); the scope suggestions (FP-S20); the register's span honouring a company's
+  exclusions (REG-S18); a total time limit on a lookup's and a re-read's register reads.
+- **In progress:** the Organisation and Regulatory scope screens and J-13.
+- **Left, deliberately:** the entity switcher and a membership's entity scope (D-96), markets
+  from cross-border services, the Danish, Norwegian and Finnish licence registers, a Today
+  row for a suggestion. Three questions with defaults are in `docs/TODO_FOR_alex.md`
+  ("public-registers").
