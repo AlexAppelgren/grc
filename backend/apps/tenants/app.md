@@ -47,8 +47,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | built |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | built |
 | TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | built |
-| TEN-07 | Fill in the legal entities from public registers: an organisation number or LEI, the group from GLEIF, each Swedish company's business, licences and branches from Finansinspektionen; a person picks what to add; licences are shown from the register facts, never typed (`docs/plans/briefs/PUBLIC_REGISTERS.md`) | S | R3 | in_progress |
-| TEN-08 | The register facts are re-read nightly, each change audited; a change edits neither the organisation nor the scope, it shows as a suggestion (FP-05) | S | R3 | in_progress |
+| TEN-07 | Fill in the legal entities from public registers: an organisation number or LEI, the group from GLEIF, each Swedish company's business, licences and branches from Finansinspektionen; a person picks what to add; licences are shown from the register facts, never typed (`docs/plans/briefs/PUBLIC_REGISTERS.md`) | S | R3 | built |
+| TEN-08 | The register facts are re-read nightly, each change audited; a change edits neither the organisation nor the scope, it shows as a suggestion (FP-05) | S | R3 | built |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
 

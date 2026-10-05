@@ -296,7 +296,10 @@ Alex's word ("go ahead, write the brief and build all steps"), built ahead of th
   regulatory scope request with `entity_scope_exclusion` and their history (taxonomy 0013,
   FP-S21); the scope suggestions (FP-S20); the register's span honouring a company's
   exclusions (REG-S18); a total time limit on a lookup's and a re-read's register reads.
-- **In progress:** the Organisation and Regulatory scope screens and J-13.
+- **Built (screens):** "Fill in from public registers" on Organisation with the register facts on
+  each legal entity, and "Suggested from your licences" on Regulatory scope with the company
+  lines in the pending banner, the approve dialog and the history; J-13 inside the serial
+  "operating markets" block (TEN-S13, FP-S20).
 - **Left, deliberately:** the entity switcher and a membership's entity scope (D-96), markets
   from cross-border services, the Danish, Norwegian and Finnish licence registers, a Today
   row for a suggestion. Three questions with defaults are in `docs/TODO_FOR_alex.md`
