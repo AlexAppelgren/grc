@@ -618,6 +618,126 @@ describe('FootprintScreen: deciding', () => {
   });
 });
 
+describe('FootprintScreen: suggested from your licences (FP-05, FP-S20)', () => {
+  const SUGGESTIONS_PATH = `${FOOTPRINT}/suggestions`;
+  const bankUnit = { id: 'u-bank', name: 'Example Bank AB' };
+  const fonder = { id: 'u-fonder', name: 'Example Fonder AB' };
+  const banking = { dimension: 'regime', key: 'banking', kind: null, label: 'Banking' };
+  const insurance = { dimension: 'regime', key: 'insurance', kind: null, label: 'Insurance' };
+  const SUGGESTIONS = {
+    adds: [
+      { term: { dimension: 'legal_entity', key: 'investment_firm', kind: null, label: 'Investment firm' }, reasons: [{ orgUnit: bankUnit, registerLine: 'Värdepappersbolag' }] },
+      { term: { dimension: 'jurisdiction', key: 'dk', kind: null, label: 'Denmark' }, reasons: [{ orgUnit: bankUnit, registerLine: 'Example Bank AB, filial i Danmark' }] },
+    ],
+    removes: [],
+    entityExclusions: [{ orgUnit: fonder, mainBusiness: 'Fondbolag', terms: [banking, insurance] }],
+    entityInclusions: [],
+    readAt: '2026-10-05T03:17:00Z',
+  };
+  const companyRequest = (requestedBy = SARA) => ({
+    ...waiting(requestedBy),
+    adds: [SUGGESTIONS.adds[1]!.term],
+    removes: [],
+    entityExclusions: [
+      { orgUnit: fonder, term: banking },
+      { orgUnit: fonder, term: insurance },
+    ],
+  });
+
+  /** The suggestions as the registers give them; a send stores a request with the company lines as waiting. */
+  const registers: Mutation = (s, server) => {
+    if (s.path === SUGGESTIONS_PATH) return { status: 200, data: server.pending === null ? SUGGESTIONS : { readAt: null } };
+    if (s.method === 'post' && s.path === REQUESTS) {
+      server.pending = companyRequest();
+      return { status: 201, data: server.pending };
+    }
+    return { status: 500 };
+  };
+
+  const panel = () => document.querySelector<HTMLElement>('[data-scope-suggestions]');
+
+  it('lists every line ticked with the register behind it, and files the ticked ones as one request', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    const { sent } = serve(me, null, registers);
+    open(me);
+    await waitFor(() => expect(panel()).not.toBeNull());
+    const suggestions = panel()!;
+    expect(within(suggestions).getByRole('heading', { level: 2, name: 'Suggested from your licences' })).toBeVisible();
+    expect(within(suggestions).getByText(`Read from the public registers on ${formatDate(SUGGESTIONS.readAt, defaultFormatContext)}.`)).toBeVisible();
+    const denmark = within(suggestions).getByRole('checkbox', { name: /^Add Denmark/ });
+    expect(denmark).toBeChecked();
+    expect(denmark.closest('label')).toHaveTextContent('Add DenmarkExample Bank AB: Example Bank AB, filial i Danmark');
+    const company = within(suggestions).getByRole('checkbox', { name: /^Example Fonder AB: outside its scope: Banking, Insurance/ });
+    expect(company).toBeChecked();
+    expect(company.closest('label')).toHaveTextContent('Example Fonder AB: outside its scope: Banking, InsuranceFondbolag');
+    expect(suggestions.querySelector('[data-suggestion="exclude:u-fonder"]')).toContainElement(company);
+    // Above the groups, and gone while a change is being drafted.
+    expect(suggestions.compareDocumentPosition(document.querySelector('[data-footprint-dimensions]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.click(within(suggestions).getByRole('checkbox', { name: /^Add Investment firm/ }));
+    fireEvent.click(within(suggestions).getByRole('button', { name: 'Request approval' }));
+    await waitFor(() => expect(document.activeElement).toBe(statusLine()));
+    expect(statusLine()).toHaveTextContent('Sent for approval.');
+    expect(sent.find((s) => s.method === 'post' && s.path === REQUESTS)?.body).toEqual({
+      adds: [{ dimension: 'jurisdiction', key: 'dk' }],
+      removes: [],
+      entityExclusions: [
+        { orgUnitId: 'u-fonder', dimension: 'regime', key: 'banking' },
+        { orgUnitId: 'u-fonder', dimension: 'regime', key: 'insurance' },
+      ],
+      entityInclusions: [],
+    });
+    const banner = await findBanner();
+    expect(within(banner).getByText('Add Denmark')).toBeVisible();
+    expect(within(banner).getByText('Example Fonder AB: outside its scope: Banking, Insurance')).toBeVisible();
+    expect(panel()).toBeNull();
+  });
+
+  it('cannot send with nothing ticked, hides while a change is drafted, and says so when another request got in first', async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    serve(me, null, (s, server) => {
+      if (s.path === SUGGESTIONS_PATH) return { status: 200, data: SUGGESTIONS };
+      if (s.method === 'post' && s.path === REQUESTS) {
+        server.pending = waiting(ERIK);
+        return { status: 409, data: { code: 'request_pending', detail: 'A request is already waiting.' } };
+      }
+      return { status: 500 };
+    });
+    open(me);
+    await waitFor(() => expect(panel()).not.toBeNull());
+    const send = within(panel()!).getByRole('button', { name: 'Request approval' });
+    for (const box of within(panel()!).getAllByRole('checkbox')) fireEvent.click(box);
+    expect(send).toBeDisabled();
+    fireEvent.click(within(panel()!).getByRole('checkbox', { name: /^Add Denmark/ }));
+    expect(send).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Propose a change' }));
+    await waitFor(() => expect(panel()).toBeNull());
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(panel()).not.toBeNull());
+
+    fireEvent.click(within(panel()!).getByRole('button', { name: 'Request approval' }));
+    const banner = await findBanner();
+    expect(within(banner).getByText(/^Requested by Erik Holm/)).toBeVisible();
+    expect(await screen.findByText('Someone else proposed a change first, so yours was not sent.')).toBeVisible();
+    expect(panel()).toBeNull();
+  });
+
+  it('is not offered to someone who can only approve, who sees the company lines in the banner and the approve dialog', async () => {
+    const me = meOf(MARIA, ['footprint.approve']);
+    const { sent } = serve(me, { ...companyRequest(), adds: [] }, registers);
+    open(me);
+    const banner = await findBanner();
+    expect(within(banner).getByText("Change each company's own scope")).toBeVisible();
+    expect(within(banner).getByText('Example Fonder AB: outside its scope: Banking, Insurance')).toBeVisible();
+    fireEvent.click(within(banner).getByRole('button', { name: 'Approve' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Approve "Change each company\'s own scope"?' });
+    expect(within(dialog).getByText('Example Fonder AB: outside its scope: Banking, Insurance')).toBeVisible();
+    expect(panel()).toBeNull();
+    expect(sent.some((s) => s.path === SUGGESTIONS_PATH)).toBe(false);
+  });
+});
+
 describe('FootprintScreen: markets we watch', () => {
   const panel = () => document.querySelector<HTMLElement>('[data-markets]')!;
   const market = (key: string) => panel().querySelector<HTMLElement>(`[data-market="${key}"]`)!;

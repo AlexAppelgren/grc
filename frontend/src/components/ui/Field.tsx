@@ -48,10 +48,10 @@ export function Select({ className, children, ...rest }: SelectHTMLAttributes<HT
 }
 
 // Prototype `.check`: a checkbox row with an optional second line.
-export function CheckRow({ id, label, hint, checked, disabled, onChange }: { id: string; label: string; hint?: string; checked: boolean; disabled?: boolean; onChange?: (checked: boolean) => void }) {
+export function CheckRow({ id, label, hint, checked, disabled, onChange }: { id: string; label: string; hint?: ReactNode; checked: boolean; disabled?: boolean; onChange?: (checked: boolean) => void }) {
   return (
     <label htmlFor={id} className="flex items-start gap-2.5 border-b border-line py-2 last:border-b-0">
-      <input id={id} type="checkbox" className="mt-0.5 size-4 accent-button" checked={checked} disabled={disabled} onChange={(e) => onChange?.(e.target.checked)} />
+      <input id={id} type="checkbox" className="mt-0.5 size-4 flex-none accent-button" checked={checked} disabled={disabled} onChange={(e) => onChange?.(e.target.checked)} />
       <span>
         {label}
         {hint !== undefined ? <small className="block text-meta text-muted">{hint}</small> : null}

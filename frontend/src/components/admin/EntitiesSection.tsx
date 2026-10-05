@@ -1,29 +1,54 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { useState, type FormEvent } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
-import { Field, Select, TextArea, TextInput } from '@/components/ui/Field';
+import { CheckRow, Field, Select, TextArea, TextInput } from '@/components/ui/Field';
+import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { FOOTPRINT_REQUEST } from '@/features/footprint/footprint-presentation';
 import { useFormatContext } from '@/features/identity/hooks';
 import { DialogForm, PersonSelect, TermPicker, TermSelect } from '@/features/tenant-admin/organisation/fields';
-import { useCanEditOrganisation, useCreateLicence, useCreateOrgUnit, useOrgUnits, useScopeTermGroups, useUpdateLicence, useUpdateOrgUnit } from '@/features/tenant-admin/organisation/hooks';
 import {
+  useApplyRegisterLookup,
+  useAuthorities,
+  useCanEditOrganisation,
+  useCreateLicence,
+  useCreateOrgUnit,
+  useOrgUnits,
+  useRegisterLookup,
+  useScopeTermGroups,
+  useStartRegisterLookup,
+  useUpdateLicence,
+  useUpdateOrgUnit,
+} from '@/features/tenant-admin/organisation/hooks';
+import {
+  appliedMessage,
+  applyLabel,
+  branchesLine,
+  businessLine,
   changedFields,
   entityTree,
   fieldErrorsOf,
   isCertificate,
+  isChosen,
   isWithdrawn,
   legalEntities,
+  lookupChoice,
+  lookupError,
+  lookupReadLine,
+  lookupStatus,
   orNull,
   presentEntity,
   presentServices,
 } from '@/features/tenant-admin/organisation/organisation-presentation';
-import type { Licence, OrgUnit, OrgUnitRow } from '@/features/tenant-admin/organisation/types';
+import type { Licence, OrgUnit, OrgUnitRow, RegisterLookupEntity } from '@/features/tenant-admin/organisation/types';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate, type FormatContext } from '@/shared/utils/format';
 
 // Legal entities, and the licences and certificates each one holds
@@ -32,6 +57,10 @@ import { formatDate, type FormatContext } from '@/shared/utils/format';
 // checks again. No step-up and no second person: none of this grants access.
 // A unit is deactivated and a licence withdrawn, never deleted, and a
 // certificate carries no term, so it changes no obligation.
+// "Fill in from public registers" (TEN-07, TEN-S13, PUBLIC_REGISTERS.md 3.1) needs
+// vocab.manage too and no step-up: the number starts a job, the dialog polls it, and nothing
+// is written until the person adds the ticked companies. An entity read from a register
+// shows the register's facts as the register writes them, with the date of the last read.
 
 // The shared library's legal-entity dimension: the one an entity is scoped with.
 const ENTITY_DIMENSION = 'legal_entity';
@@ -53,13 +82,37 @@ export function EntitiesSection() {
   const ctx = useFormatContext();
   const units = useOrgUnits();
   const canEdit = useCanEditOrganisation();
+  const canSeeScope = (usePermissions() ?? []).includes(FOOTPRINT_REQUEST);
   const [editing, setEditing] = useState<OrgUnit | 'new' | null>(null);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [applied, setApplied] = useState<string | null>(null);
 
   const rows = entityTree(units.data ?? []);
+  const actions = (className?: string) =>
+    canEdit ? (
+      <ButtonBar className={className}>
+        <Button variant="ghost" size="small" onClick={() => setLookingUp(true)}>
+          {t('admin.org.registers.title')}
+        </Button>
+        <Button size="small" onClick={() => setEditing('new')}>
+          {t('admin.org.entities.add')}
+        </Button>
+      </ButtonBar>
+    ) : null;
   return (
     <>
       <Panel title={t('admin.org.entities.title')} data-org-section="entities">
         <p className="mb-3 text-muted">{t('admin.org.entities.lede')}</p>
+        {applied !== null ? (
+          <StatusLine tone="positive">
+            {applied}{' '}
+            {canSeeScope ? (
+              <Link href="/admin/footprint" className="underline">
+                {t('admin.org.registers.scopeLink')}
+              </Link>
+            ) : null}
+          </StatusLine>
+        ) : null}
         {units.isPending ? (
           <LoadingState />
         ) : units.isError ? (
@@ -68,6 +121,7 @@ export function EntitiesSection() {
           <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-empty-state="">
             <h3 className="text-fg">{t('admin.org.entities.emptyTitle')}</h3>
             <p className="mx-auto mt-2 max-w-[60ch]">{t('admin.org.entities.emptyBody')}</p>
+            {actions('justify-center')}
           </div>
         ) : (
           <Rows>
@@ -86,6 +140,7 @@ export function EntitiesSection() {
                     <div className="mt-1.5">
                       <PillRow pills={presentEntity(unit)} />
                     </div>
+                    <RegisterFacts unit={unit} />
                   </div>
                   {canEdit ? (
                     <Button variant="ghost" size="small" onClick={() => setEditing(unit)} aria-label={t('admin.org.editNamed', { name: unit.name })}>
@@ -97,17 +152,194 @@ export function EntitiesSection() {
             ))}
           </Rows>
         )}
-        {canEdit ? (
-          <ButtonBar>
-            <Button size="small" onClick={() => setEditing('new')}>
-              {t('admin.org.entities.add')}
-            </Button>
-          </ButtonBar>
-        ) : null}
+        {rows.length > 0 ? actions() : null}
       </Panel>
       <LicencesPanel entities={legalEntities(units.data ?? [])} canEdit={canEdit} />
       {editing !== null ? <EntityForm unit={editing === 'new' ? null : editing} units={units.data ?? []} onClose={() => setEditing(null)} /> : null}
+      {lookingUp ? (
+        <RegisterLookupDialog
+          onClose={() => setLookingUp(false)}
+          onApplied={(message) => {
+            setLookingUp(false);
+            setApplied(message);
+          }}
+        />
+      ) : null}
     </>
+  );
+}
+
+/** What the register says about an entity (state "register-facts"): its businesses, its licences behind a disclosure, its branches, what the scope does not use, and the exclusions an approved scope request gave it. */
+function RegisterFacts({ unit }: { unit: OrgUnitRow }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const [licencesShown, setLicencesShown] = useState(false);
+  const entry = unit.registerEntry;
+  const outside = unit.scopeExclusions ?? [];
+  if (entry === null && outside.length === 0) return null;
+  const facts = entry?.facts;
+  const licencesId = `register-licences-${unit.id}`;
+  return (
+    <>
+      <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-meta" data-register-facts="">
+        {facts !== undefined && businessLine(facts) !== '' ? <Detail term={t('admin.org.registers.business')}>{businessLine(facts)}</Detail> : null}
+        {facts !== undefined && facts.licences.length > 0 ? (
+          <Detail term={t('admin.org.registers.licences')}>
+            <Button variant="ghost" size="small" aria-expanded={licencesShown} aria-controls={licencesId} onClick={() => setLicencesShown((shown) => !shown)}>
+              {licencesShown ? t('admin.org.registers.hideLicences') : t('admin.org.registers.showLicences', { count: facts.licences.length })}
+            </Button>
+            <ul id={licencesId} hidden={!licencesShown} className="m-0 mt-1 grid list-none gap-1 p-0">
+              {facts.licences.map((licence, i) => (
+                <li key={`${i}:${licence.text}`}>
+                  {licence.text}
+                  {licence.grantedOn !== null ? <span className="ml-2 text-muted">{formatDate(licence.grantedOn, ctx)}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </Detail>
+        ) : null}
+        {facts !== undefined && facts.branches.length > 0 ? <Detail term={t('admin.org.registers.branches')}>{branchesLine(facts.branches, t)}</Detail> : null}
+        {entry !== null && entry.unmapped.length > 0 ? (
+          <Detail term={t('admin.org.registers.unmapped')}>
+            <span className="font-mono">{entry.unmapped.join(' · ')}</span>
+          </Detail>
+        ) : null}
+        {outside.length > 0 ? <Detail term={t('admin.org.registers.outside')}>{outside.map((term) => term.label).join(', ')}</Detail> : null}
+      </dl>
+      {entry !== null ? <p className="mt-1 text-meta text-muted">{t('admin.org.registers.readAt', { authority: entry.authority.name, date: formatDate(entry.readAt, ctx) })}</p> : null}
+    </>
+  );
+}
+
+/** One company found, its facts as the register writes them; the bank's own is ticked and cannot be unticked. */
+function LookupCompany({ entity, authorityName, chosen, disabled, onToggle }: { entity: RegisterLookupEntity; authorityName: string; chosen: boolean; disabled: boolean; onToggle: () => void }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const status = lookupStatus(entity, authorityName, t);
+  return (
+    // The wrapper carries the row's rule, since each row is the last child of its own wrapper.
+    <div data-lookup-company={entity.name} className="border-b border-line last:border-b-0">
+      <CheckRow
+        id={`lookup-${entity.lei}`}
+        label={entity.name}
+        checked={chosen}
+        disabled={disabled || entity.existingOrgUnitId !== null}
+        onChange={onToggle}
+        hint={
+          <span className="flex flex-wrap gap-x-2">
+            {entity.registrationNumber !== '' ? <span className="font-mono">{entity.registrationNumber}</span> : null}
+            {entity.country !== '' ? <span>{countryName(entity.country, ctx)}</span> : null}
+            {entity.facts !== null ? <span>{entity.facts.mainBusiness}</span> : null}
+            {entity.facts !== null ? <span>{t('admin.org.registers.licenceCount', { count: entity.facts.licences.length })}</span> : null}
+            {status !== null ? <span>{status}</span> : null}
+          </span>
+        }
+      />
+    </div>
+  );
+}
+
+const LOOKUP_QUERY = 'register-query';
+
+/**
+ * The number, then "Reading the registers…" while the job runs, then the companies as a
+ * checklist (design/screens/admin-organisation.html). A failed job says why in the screen's
+ * own words, by its code, and the number can be typed again.
+ */
+function RegisterLookupDialog({ onClose, onApplied }: { onClose: () => void; onApplied: (message: string) => void }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const start = useStartRegisterLookup();
+  const [lookupId, setLookupId] = useState<string | null>(null);
+  const job = useRegisterLookup(lookupId);
+  const apply = useApplyRegisterLookup();
+  const authorities = useAuthorities();
+  const [query, setQuery] = useState('');
+  // The companies the person ticked or unticked against what the register suggests.
+  const [flipped, setFlipped] = useState<ReadonlySet<string>>(new Set());
+
+  const lookup = job.data ?? start.data ?? null;
+  const running = lookup !== null && (lookup.status === 'queued' || lookup.status === 'running');
+  const found = lookup?.status === 'succeeded' && lookup.entities.length > 0 ? lookup : null;
+  const authorityName = (key: string) => authorities.data?.find((authority) => authority.key === key)?.name ?? key;
+
+  const lookUp = (event: FormEvent) => {
+    event.preventDefault();
+    start.mutate(query.trim(), {
+      onSuccess: (created) => {
+        setFlipped(new Set());
+        setLookupId(created.id);
+      },
+    });
+  };
+
+  if (found !== null) {
+    const choice = lookupChoice(found.entities, flipped);
+    const flip = (lei: string) =>
+      setFlipped((current) => {
+        const next = new Set(current);
+        if (!next.delete(lei)) next.add(lei);
+        return next;
+      });
+    const submit = (event: FormEvent) => {
+      event.preventDefault();
+      apply.mutate({ lookupId: found.id, leis: choice.leis }, { onSuccess: (done) => onApplied(appliedMessage(done, t)) });
+    };
+    const readLine = lookupReadLine(found, authorityName, t, ctx);
+    return (
+      <Modal open onOpenChange={(open) => !open && !apply.isPending && onClose()} title={t('admin.org.registers.groupTitle', { name: found.entities[0]?.name ?? '' })}>
+        <form onSubmit={submit} noValidate aria-busy={apply.isPending} data-lookup-result="">
+          <div className="grid">
+            {found.entities.map((entity) => (
+              <LookupCompany
+                key={entity.lei}
+                entity={entity}
+                authorityName={entity.authority === null ? '' : authorityName(entity.authority)}
+                chosen={isChosen(entity, flipped)}
+                disabled={apply.isPending}
+                onToggle={() => flip(entity.lei)}
+              />
+            ))}
+          </div>
+          {readLine !== null ? <p className="mt-2 text-meta text-muted">{readLine}</p> : null}
+          {apply.isError ? <ProblemAlert error={apply.error} /> : null}
+          <ButtonBar>
+            <Button variant="outline" onClick={onClose} disabled={apply.isPending}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" disabled={choice.leis.length === 0 || apply.isPending}>
+              {applyLabel(choice, t)}
+            </Button>
+          </ButtonBar>
+        </form>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal open onOpenChange={(open) => !open && onClose()} title={t('admin.org.registers.title')}>
+      <form onSubmit={lookUp} noValidate aria-busy={running || start.isPending}>
+        <Field id={LOOKUP_QUERY} label={t('admin.org.registers.query')} hint={t('admin.org.registers.queryHint')}>
+          <TextInput id={LOOKUP_QUERY} className="font-mono" placeholder={t('admin.org.registers.queryPlaceholder')} value={query} aria-describedby={`${LOOKUP_QUERY}-hint`} onChange={(e) => setQuery(e.target.value)} />
+        </Field>
+        {running ? <StatusLine>{t('admin.org.registers.reading')}</StatusLine> : null}
+        {lookup?.status === 'failed' && lookup.error !== null ? (
+          <p role="alert" className="mt-2.5 text-meta text-negative" data-lookup-error={lookup.error}>
+            {lookupError(lookup.error, t)}
+          </p>
+        ) : null}
+        {start.isError ? <ProblemAlert error={start.error} /> : null}
+        {job.isError ? <ProblemAlert error={job.error} /> : null}
+        <ButtonBar>
+          <Button variant="outline" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" disabled={query.trim() === '' || running || start.isPending}>
+            {t('admin.org.registers.lookUp')}
+          </Button>
+        </ButtonBar>
+      </form>
+    </Modal>
   );
 }
 

@@ -1,4 +1,19 @@
-import type { Licence, LicenceBody, LicencePatch, OrgUnit, OrgUnitBody, OrgUnitPatch, OrgUnitRow, PersonRef, Product, ProductBody, ProductPatch } from '@/features/tenant-admin/organisation/types';
+import type {
+  Authority,
+  Licence,
+  LicenceBody,
+  LicencePatch,
+  OrgUnit,
+  OrgUnitBody,
+  OrgUnitPatch,
+  OrgUnitRow,
+  PersonRef,
+  Product,
+  ProductBody,
+  ProductPatch,
+  RegisterApply,
+  RegisterLookup,
+} from '@/features/tenant-admin/organisation/types';
 import type { Page } from '@/features/tenant-admin/types';
 import { api } from '@/shared/utils/api-client';
 
@@ -48,4 +63,23 @@ export async function updateProduct(productId: string, body: ProductPatch, versi
 /** The bank's active members as ids and names: every owner and head picker reads it. */
 export async function listPeople(): Promise<PersonRef[]> {
   return (await api.get<PersonRef[]>('/api/v1/reference/people')).data;
+}
+
+/** Starts a lookup in the public registers (202): only the number or LEI leaves the bank. */
+export async function startRegisterLookup(query: string): Promise<RegisterLookup> {
+  return (await api.post<RegisterLookup>(`${TENANT}/register-lookups`, { query })).data;
+}
+
+export async function getRegisterLookup(lookupId: string): Promise<RegisterLookup> {
+  return (await api.get<RegisterLookup>(`${TENANT}/register-lookups/${id(lookupId)}`)).data;
+}
+
+/** Adds the chosen companies, by LEI, and links the ones the bank already has. */
+export async function applyRegisterLookup(lookupId: string, leis: readonly string[]): Promise<RegisterApply> {
+  return (await api.post<RegisterApply>(`${TENANT}/register-lookups/${id(lookupId)}/apply`, { leis })).data;
+}
+
+/** The library's authorities, for the name of the register each company was looked up in. */
+export async function listAuthorities(): Promise<Authority[]> {
+  return (await api.get<Authority[]>('/api/v1/authorities')).data;
 }

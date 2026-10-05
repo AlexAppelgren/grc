@@ -6,11 +6,14 @@ import type { FormatContext } from '@/shared/utils/format';
 import { formatDateTime } from '@/shared/utils/format';
 
 import type {
+  EntityTermLine,
   FootprintChangeRequest,
   FootprintDimension,
   FootprintPreview,
   FootprintPreviewCount,
+  FootprintRequestCreate,
   FootprintRequestStatus,
+  FootprintSuggestions,
   JurisdictionRef,
   Market,
   MarketLevel,
@@ -109,10 +112,12 @@ function labels(terms: readonly Pick<TermRef, 'label'>[], t: Translate): string 
   return joined(terms.map((term) => term.label), t);
 }
 
-/** What a title is built from: the terms, and the names of the scope items a request adds and removes. */
+/** What a title is built from: the terms, the names of the scope items a request adds and removes, and its company lines. */
 export type TitleParts = Pick<FootprintChangeRequest, 'adds' | 'removes'> & {
   scopeItemAdds?: readonly Pick<ScopeItem, 'name'>[];
   scopeItemRemoves?: readonly Pick<ScopeItem, 'name'>[];
+  entityExclusions?: readonly unknown[];
+  entityInclusions?: readonly unknown[];
 };
 
 function termTitle(adds: string, removes: string, t: Translate): string {
@@ -122,7 +127,8 @@ function termTitle(adds: string, removes: string, t: Translate): string {
 }
 
 /** "Remove Advice", "Add Fund company", "Add the regulation Betaltjänstlagen", or several joined:
- * the request's title, built from its terms and its scope items. */
+ * the request's title, built from its terms and its scope items. Company lines stay out of it
+ * (they are listed under it), so a request of company lines alone has a title of its own. */
 export function requestTitle(request: TitleParts, t: Translate): string {
   const adds = labels(request.adds, t);
   const removes = labels(request.removes, t);
@@ -133,7 +139,8 @@ export function requestTitle(request: TitleParts, t: Translate): string {
     ...(itemAdds.length > 0 ? [t('footprint.change.addItem', { name: itemAdds })] : []),
     ...(itemRemoves.length > 0 ? [t('footprint.change.removeItem', { name: itemRemoves })] : []),
   ];
-  return parts.length === 0 ? termTitle('', '', t) : parts.join(t('footprint.request.separator'));
+  if (parts.length > 0) return parts.join(t('footprint.request.separator'));
+  return (request.entityExclusions?.length ?? 0) + (request.entityInclusions?.length ?? 0) > 0 ? t('footprint.request.companiesOnly') : termTitle('', '', t);
 }
 
 export interface PreviewLine {
@@ -253,9 +260,12 @@ export function historyLine(request: FootprintChangeRequest, t: Translate, ctx: 
   const requester = request.requestedBy.name;
   const who = request.decidedBy?.name ?? requester;
   const when = formatDateTime(request.decidedAt ?? request.requestedAt, ctx);
+  const companies = joined([...new Set([...request.entityExclusions, ...request.entityInclusions].map((line) => line.orgUnit.name))], t);
   const text =
     request.status === 'approved'
-      ? t('footprint.history.approved', { title, requester })
+      ? companies.length > 0
+        ? t('footprint.history.approvedWithCompanies', { title, requester, companies })
+        : t('footprint.history.approved', { title, requester })
       : request.status === 'rejected'
         ? t('footprint.history.rejected', { title, requester, note: request.decisionNote })
         : request.status === 'withdrawn'
@@ -340,4 +350,83 @@ export function scopeItemConsequence(request: Pick<FootprintChangeRequest, 'scop
 export function approvedMessage(request: Pick<FootprintChangeRequest, 'adds' | 'removes' | 'scopeItemAdds' | 'scopeItemRemoves'>, t: Translate): string {
   const onlyItemAdds = request.adds.length + request.removes.length + request.scopeItemRemoves.length === 0 && request.scopeItemAdds.length > 0;
   return onlyItemAdds ? t('footprint.items.approved', { name: joined(request.scopeItemAdds.map((item) => item.name), t) }) : t('footprint.approvedDone');
+}
+
+// ——— company lines and the registers' suggestions (FP-05; PUBLIC_REGISTERS.md 3.2) —————————
+
+/** "Example Fonder AB: outside its scope: Banking, Insurance": one company's terms in one direction. */
+function companyLine(direction: 'exclude' | 'include', company: string, terms: readonly Pick<TermRef, 'label'>[], t: Translate): string {
+  const labels = terms.map((term) => term.label).join(', ');
+  return direction === 'exclude' ? t('footprint.entity.outside', { company, labels }) : t('footprint.entity.back', { company, labels });
+}
+
+function perCompany(lines: readonly EntityTermLine[]): { name: string; terms: TaxonomyTerm[] }[] {
+  const byUnit = new Map<string, { name: string; terms: TaxonomyTerm[] }>();
+  for (const line of lines) {
+    const company = byUnit.get(line.orgUnit.id) ?? { name: line.orgUnit.name, terms: [] };
+    company.terms.push(line.term);
+    byUnit.set(line.orgUnit.id, company);
+  }
+  return [...byUnit.values()];
+}
+
+/** A request's company lines, one per company and direction, exclusions first: listed under the title in the banner and the approve dialog. */
+export function companyLines(request: Pick<FootprintChangeRequest, 'entityExclusions' | 'entityInclusions'>, t: Translate): string[] {
+  return [
+    ...perCompany(request.entityExclusions).map((company) => companyLine('exclude', company.name, company.terms, t)),
+    ...perCompany(request.entityInclusions).map((company) => companyLine('include', company.name, company.terms, t)),
+  ];
+}
+
+export function hasSuggestions(suggestions: FootprintSuggestions): boolean {
+  return [suggestions.adds, suggestions.removes, suggestions.entityExclusions, suggestions.entityInclusions].some((lines) => (lines?.length ?? 0) > 0);
+}
+
+/** One line of the suggestions panel: a checkbox, its words and the register behind it. */
+export interface SuggestionCheck {
+  id: string;
+  label: string;
+  meta: string;
+}
+
+type SuggestionLine = NonNullable<FootprintSuggestions['adds']>[number];
+type EntitySuggestion = NonNullable<FootprintSuggestions['entityExclusions']>[number];
+
+const termLineId = (direction: 'add' | 'remove', line: SuggestionLine) => `${direction}:${line.term.dimension}:${line.term.key}`;
+const companyLineId = (direction: 'exclude' | 'include', entity: EntitySuggestion) => `${direction}:${entity.orgUnit.id}`;
+
+/** The panel's lines: one per term for the bank's scope, with the companies and register lines behind it
+ * (a company's own country has no line, so its name stands alone), and one per company and direction
+ * with its main business. Register wording and names are data, shown as the register writes them. */
+export function suggestionChecks(suggestions: FootprintSuggestions, t: Translate): { group: SuggestionCheck[]; company: SuggestionCheck[] } {
+  const reasons = (line: SuggestionLine) =>
+    [...new Set((line.reasons ?? []).map((reason) => (reason.registerLine == null ? reason.orgUnit.name : t('footprint.suggestions.reason', { company: reason.orgUnit.name, line: reason.registerLine }))))].join(' · ');
+  const terms = (direction: 'add' | 'remove', lines: readonly SuggestionLine[]) =>
+    lines.map((line) => ({
+      id: termLineId(direction, line),
+      label: direction === 'add' ? t('footprint.request.add', { adds: line.term.label }) : t('footprint.request.remove', { removes: line.term.label }),
+      meta: reasons(line),
+    }));
+  const companies = (direction: 'exclude' | 'include', entities: readonly EntitySuggestion[]) =>
+    entities.map((entity) => ({ id: companyLineId(direction, entity), label: companyLine(direction, entity.orgUnit.name, entity.terms, t), meta: entity.mainBusiness }));
+  return {
+    group: [...terms('add', suggestions.adds ?? []), ...terms('remove', suggestions.removes ?? [])],
+    company: [...companies('exclude', suggestions.entityExclusions ?? []), ...companies('include', suggestions.entityInclusions ?? [])],
+  };
+}
+
+/** The ticked lines as one ordinary request: terms by dimension and key, and each company line one row per term. */
+export function suggestionRequest(suggestions: FootprintSuggestions, unticked: ReadonlySet<string>): FootprintRequestCreate {
+  const terms = (direction: 'add' | 'remove', lines: readonly SuggestionLine[]) =>
+    lines.filter((line) => !unticked.has(termLineId(direction, line))).map((line) => ({ dimension: line.term.dimension, key: line.term.key }));
+  const rows = (direction: 'exclude' | 'include', entities: readonly EntitySuggestion[]) =>
+    entities
+      .filter((entity) => !unticked.has(companyLineId(direction, entity)))
+      .flatMap((entity) => entity.terms.map((term) => ({ orgUnitId: entity.orgUnit.id, dimension: term.dimension, key: term.key })));
+  return {
+    adds: terms('add', suggestions.adds ?? []),
+    removes: terms('remove', suggestions.removes ?? []),
+    entityExclusions: rows('exclude', suggestions.entityExclusions ?? []),
+    entityInclusions: rows('include', suggestions.entityInclusions ?? []),
+  };
 }

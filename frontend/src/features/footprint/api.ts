@@ -3,12 +3,14 @@ import type { components } from '@/types/api.generated';
 import { api } from '@/shared/utils/api-client';
 
 import type {
+  EntityTermLine,
   Footprint,
   FootprintChangeRequest,
   FootprintPreview,
   FootprintRejectBody,
   FootprintRequestCreate,
   FootprintRequestStatus,
+  FootprintSuggestions,
   JurisdictionRef,
   Market,
   Page,
@@ -79,6 +81,10 @@ export function scopeItemOf(raw: Schemas['ScopeItemRow']): ScopeItem {
   };
 }
 
+function entityLineOf(line: Schemas['FootprintEntityTermRef']): EntityTermLine {
+  return { orgUnit: line.orgUnit, term: termOf(line.term) };
+}
+
 /** A person the server no longer names (a removed member) reads as nobody, never as the viewer. */
 const NOBODY: PersonRef = { id: '', name: '' };
 
@@ -92,6 +98,8 @@ export function requestOf(raw: Schemas['FootprintRequestRow']): FootprintChangeR
     removes: (raw.removes ?? []).map(termOf),
     scopeItemAdds: (raw.scopeItemAdds ?? []).map(scopeItemOf),
     scopeItemRemoves: (raw.scopeItemRemoves ?? []).map(scopeItemOf),
+    entityExclusions: (raw.entityExclusions ?? []).map(entityLineOf),
+    entityInclusions: (raw.entityInclusions ?? []).map(entityLineOf),
     preview: previewOf(raw.preview),
     decidedBy: raw.decidedBy ?? null,
     decidedAt: raw.decidedAt ?? null,
@@ -155,6 +163,11 @@ export async function rejectFootprintRequest(requestId: string, body: FootprintR
 
 export async function withdrawFootprintRequest(requestId: string, version?: number): Promise<FootprintChangeRequest> {
   return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${id(requestId)}/withdraw`, {}, version === undefined ? {} : { version })).data);
+}
+
+/** What the public registers suggest (FP-05): a read, nothing changes until a request is approved. */
+export async function getFootprintSuggestions(): Promise<FootprintSuggestions> {
+  return (await api.get<FootprintSuggestions>(`${FOOTPRINT}/suggestions`)).data;
 }
 
 export async function watchMarket(key: string): Promise<Market> {

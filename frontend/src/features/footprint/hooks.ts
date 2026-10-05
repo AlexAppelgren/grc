@@ -12,6 +12,7 @@ import type {
   FootprintPreview,
   FootprintRejectBody,
   FootprintRequestCreate,
+  FootprintSuggestions,
   JurisdictionRef,
   Market,
   Page,
@@ -29,6 +30,7 @@ import type {
 export const footprintKeys = {
   footprint: ['tenant', 'footprint'] as const,
   requests: ['tenant', 'footprint', 'requests'] as const,
+  suggestions: ['tenant', 'footprint', 'suggestions'] as const,
   terms: (dimension?: string) => ['taxonomy', 'terms', dimension ?? 'all'] as const,
   dimensions: ['taxonomy', 'dimensions'] as const,
   jurisdictions: ['reference', 'jurisdictions'] as const,
@@ -70,6 +72,11 @@ export function useTerms(dimension?: string, enabled = true): UseQueryResult<Tax
 
 export function useDimensions(): UseQueryResult<TaxonomyDimension[]> {
   return useQuery({ queryKey: footprintKeys.dimensions, queryFn: footprint.listDimensions, staleTime: 5 * 60_000 });
+}
+
+/** The suggestions from the registers, for holders of footprint.request only; under the footprint's key, so every decision refreshes them. */
+export function useFootprintSuggestions(enabled: boolean): UseQueryResult<FootprintSuggestions> {
+  return useQuery({ queryKey: footprintKeys.suggestions, queryFn: footprint.getFootprintSuggestions, enabled });
 }
 
 export function useJurisdictions(): UseQueryResult<JurisdictionRef[]> {

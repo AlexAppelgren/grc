@@ -24,6 +24,15 @@ export type ProductPatch = Schemas['TenantProductPatch'];
 
 export type PersonRef = Schemas['PersonRef'];
 
+/** A lookup in the public registers (TEN-07): a job, and once it succeeded the companies it found. */
+export type RegisterLookup = Schemas['RegisterLookupOut'];
+export type RegisterLookupEntity = Schemas['RegisterLookupEntity'];
+export type RegisterApply = Schemas['RegisterApplyOut'];
+/** What a supervisor's register says about one legal entity, with where and when it was read. */
+export type RegisterEntry = Schemas['TenantRegisterEntry'];
+/** A library authority, for the name of the register a company was looked up in. */
+export type Authority = Schemas['LibraryAuthority'];
+
 /** A write that changes an existing row carries the version it was read at (If-Match). */
 export interface VersionedPatch<T> {
   id: string;

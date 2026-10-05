@@ -20,9 +20,11 @@ import {
   approvedMessage,
   canApprove,
   canWithdraw,
+  companyLines,
   diffFootprint,
   draftAfter,
   draftOf,
+  hasSuggestions,
   hidesSomething,
   historyLine,
   marketLevelLabel,
@@ -39,8 +41,11 @@ import {
   scopeGroups,
   scopeItemConsequence,
   scopeItemLines,
+  suggestionChecks,
+  suggestionRequest,
   toggleTerm,
   type FootprintDraft,
+  type SuggestionCheck,
   type PreviewLine,
   type ScopeGroup,
   type ScopeItemLine,
@@ -50,6 +55,7 @@ import {
   useCreateFootprintRequest,
   useFootprint,
   useFootprintRequests,
+  useFootprintSuggestions,
   useJurisdictions,
   usePreviewFootprintRequest,
   useRejectFootprintRequest,
@@ -63,6 +69,7 @@ import type {
   FootprintDimension,
   FootprintPreview,
   FootprintRequestCreate,
+  FootprintSuggestions,
   JurisdictionRef,
   Market,
   ScopeItem,
@@ -93,6 +100,10 @@ import { hasProblemCode } from '@/shared/utils/problem';
 // draft "Propose a change" opens, so one request waits at a time and a second person
 // approves it with a passkey. Each item shows its research status as the server computes it;
 // nothing here lets an agent add, change or remove one.
+// "Suggested from your licences" (states 30 to 32; FP-05, FP-S20, PUBLIC_REGISTERS.md 3.2) shows
+// what the companies' register facts suggest, every line ticked, while nothing waits; Request
+// approval files the ticked lines as one ordinary request. A company line changes only which
+// rules the register offers that company, so the preview never counts it.
 
 type ApproveMutation = ReturnType<typeof useApproveFootprintRequest>;
 type RejectMutation = ReturnType<typeof useRejectFootprintRequest>;
@@ -506,7 +517,66 @@ function ScopeItemsPanel({
   );
 }
 
+// ——— suggested from your licences ——————————————————————————————————————
+
+function SuggestionsPanel({ suggestions, create, onSent, onRequestPending }: { suggestions: FootprintSuggestions; create: CreateMutation; onSent: () => void; onRequestPending: () => void }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const [unticked, setUnticked] = useState<ReadonlySet<string>>(new Set());
+  const checks = suggestionChecks(suggestions, t);
+  const toggle = (id: string) =>
+    setUnticked((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  const line = (check: SuggestionCheck) => (
+    // The wrapper carries the row's rule, since each row is the last child of its own wrapper.
+    <div key={check.id} data-suggestion={check.id} className="border-b border-line last:border-b-0">
+      <CheckRow id={`suggestion-${check.id}`} label={check.label} hint={check.meta === '' ? undefined : check.meta} checked={!unticked.has(check.id)} disabled={create.isPending} onChange={() => toggle(check.id)} />
+    </div>
+  );
+  const nothing = [...checks.group, ...checks.company].every((check) => unticked.has(check.id));
+  return (
+    <Panel title={t('footprint.suggestions.title')} data-scope-suggestions="">
+      {suggestions.readAt == null ? null : <p className="mb-2 text-meta text-muted">{t('footprint.suggestions.readAt', { date: formatDate(suggestions.readAt, ctx) })}</p>}
+      {checks.group.length > 0 ? <CheckGroup legend={t('footprint.suggestions.group')}>{checks.group.map(line)}</CheckGroup> : null}
+      {checks.company.length > 0 ? <CheckGroup legend={t('footprint.suggestions.companies')}>{checks.company.map(line)}</CheckGroup> : null}
+      {create.isError ? <ProblemAlert error={create.error} codes={{ [REQUEST_PENDING_CODE]: t('footprint.requestPending') }} /> : null}
+      <ButtonBar>
+        <Button
+          disabled={nothing || create.isPending}
+          onClick={() =>
+            create.mutate(suggestionRequest(suggestions, unticked), {
+              onSuccess: onSent,
+              onError: (error) => {
+                if (hasProblemCode(error, REQUEST_PENDING_CODE)) onRequestPending();
+              },
+            })
+          }
+        >
+          {t('footprint.preview.send')}
+        </Button>
+      </ButtonBar>
+    </Panel>
+  );
+}
+
 // ——— the waiting request ————————————————————————————————————————————
+
+/** The company lines under a request's title: each company's own scope, which the title never names. */
+function CompanyLines({ request }: { request: FootprintChangeRequest }) {
+  const t = useT();
+  const lines = companyLines(request, t);
+  if (lines.length === 0) return null;
+  return (
+    <ul className="m-0 list-disc pl-5" data-company-lines="">
+      {lines.map((line) => (
+        <li key={line}>{line}</li>
+      ))}
+    </ul>
+  );
+}
 
 function PendingBanner({
   request,
@@ -546,6 +616,7 @@ function PendingBanner({
           <b>{requestTitle(request, t)}</b>
         </p>
         <p>{mine ? t('footprint.banner.youRequested', { date }) : [t('footprint.banner.requestedBy', { name: request.requestedBy.name, date }), previewSummary(request.preview, t), scopeItemConsequence(request, t)].filter((part) => part.length > 0).join(' ')}</p>
+        <CompanyLines request={request} />
         {permissions.includes(FOOTPRINT_REQUEST) ? <p>{t('footprint.banner.blocks')}</p> : null}
         <Button variant="ghost" size="small" className="justify-self-start" aria-expanded={previewShown} aria-controls={previewId} onClick={onTogglePreview}>
           {t('footprint.banner.seePreview')}
@@ -597,6 +668,7 @@ function ApproveDialog({
       title={t('footprint.approve.title', { title: requestTitle(request, t) })}
       description={[previewSummary(request.preview, t), scopeItemConsequence(request, t)].filter((part) => part.length > 0).join(' ')}
     >
+      <CompanyLines request={request} />
       {narrowed.length > 0 || hidesSomething(request.preview) ? <ConsequenceNotice narrowed={narrowed} /> : null}
       {fourEyes ? (
         <Notice tone="bad" className="mt-4 mb-0" data-four-eyes="">
@@ -813,6 +885,7 @@ export function FootprintScreen() {
   const regimes = useMemo(() => (terms.data ?? []).filter((term) => term.dimension === REGIME_DIMENSION && term.active !== false), [terms.data]);
   const pending = footprint.data?.pendingRequest ?? null;
   const canRequest = permissions.includes(FOOTPRINT_REQUEST);
+  const suggestions = useFootprintSuggestions(canRequest);
   // A request that starts waiting, or a scope that changed under the draft, ends the edit
   // for good: kept, the old snapshot would come back later proposing to undo someone
   // else's approved change. Cleared during render, so no frame shows the stale draft.
@@ -921,6 +994,10 @@ export function FootprintScreen() {
         <Panel id={previewId} hidden={!previewShown} data-pending-preview="">
           <PreviewColumns preview={pending.preview} pending={false} />
         </Panel>
+      ) : null}
+
+      {pending === null && editing === null && suggestions.data !== undefined && hasSuggestions(suggestions.data) ? (
+        <SuggestionsPanel suggestions={suggestions.data} create={create} onSent={() => announce(t('footprint.sent'))} onRequestPending={() => void footprint.refetch()} />
       ) : null}
 
       <Panel data-footprint-dimensions="">

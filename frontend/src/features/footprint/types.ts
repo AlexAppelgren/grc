@@ -5,6 +5,7 @@
 // side, a term names its dimension by reference, a requester may be gone).
 
 import type { Page, PageQuery } from '@/features/tenant-admin/types';
+import type { components } from '@/types/api.generated';
 
 export type { Page, PageQuery };
 
@@ -89,6 +90,12 @@ export interface ScopeItemInput {
   sourceUrl: string;
 }
 
+/** One company line of a change (FP-05): a licence-bound term taken out of, or put back into, one legal entity's own scope. */
+export interface EntityTermLine {
+  orgUnit: { id: string; name: string };
+  term: TaxonomyTerm;
+}
+
 export interface FootprintChangeRequest {
   id: string;
   status: FootprintRequestStatus;
@@ -98,6 +105,8 @@ export interface FootprintChangeRequest {
   removes: TaxonomyTerm[];
   scopeItemAdds: ScopeItem[];
   scopeItemRemoves: ScopeItem[];
+  entityExclusions: EntityTermLine[];
+  entityInclusions: EntityTermLine[];
   preview: FootprintPreview;
   decidedBy: PersonRef | null;
   decidedAt: string | null;
@@ -132,7 +141,15 @@ export interface FootprintRequestCreate {
   scopeItemAdds?: ScopeItemInput[];
   /** The keys of scope items in scope now. */
   scopeItemRemoves?: string[];
+  entityExclusions?: EntityTermSelector[];
+  entityInclusions?: EntityTermSelector[];
 }
+
+/** A company line as a request sends it: the legal entity by id, the term by dimension and key. */
+export type EntityTermSelector = components['schemas']['FootprintEntityTermSelector'];
+
+/** What the public registers suggest for the scope and each company's own scope (FP-05), as the server sends it. */
+export type FootprintSuggestions = components['schemas']['FootprintSuggestions'];
 
 export interface FootprintRejectBody {
   note: string;

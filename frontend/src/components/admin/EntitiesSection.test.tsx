@@ -14,7 +14,7 @@ import { REFRESH_PATH } from '@/shared/utils/api-client';
 const UNITS = '/api/v1/tenant/org-units';
 const bankLicences = `${UNITS}/bank/licences`;
 
-const group = { id: 'group', kind: 'group', name: 'Example Group', parentId: null, orgNumber: '', lei: '', countryCode: '', entityTerm: null, head: null, active: true, version: 1 };
+const group = { id: 'group', kind: 'group', name: 'Example Group', parentId: null, orgNumber: '', lei: '', countryCode: '', entityTerm: null, head: null, active: true, version: 1, registerEntry: null };
 const bank = { ...group, id: 'bank', kind: 'legal_entity', name: 'Example Bank AB', parentId: 'group', orgNumber: '556000-0001', countryCode: 'SE', entityTerm: { key: 'bank', kind: null, label: 'Bank' } };
 const retail = { ...group, id: 'retail', kind: 'business_area', name: 'Retail Banking', parentId: 'bank' };
 
@@ -170,5 +170,145 @@ describe('changing a licence', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
     await within(dialog).findByText('Someone changed this while you were editing. Close it and open it again to see their change.');
     expect(sent.find((s) => s.method === 'patch')).toMatchObject({ path: '/api/v1/tenant/licences/l1', body: { withdrawnOn: '2026-09-30' } });
+  });
+});
+
+describe('filling in from the public registers (TEN-07, TEN-S13)', () => {
+  const LOOKUPS = '/api/v1/tenant/register-lookups';
+  const facts = (name: string, mainBusiness: string, licences: number) => ({
+    name,
+    registrationNumber: '',
+    lei: '',
+    mainBusiness,
+    otherBusinesses: [],
+    licences: Array.from({ length: licences }, (_, i) => ({ text: `Licence ${i + 1}`, grantedOn: null })),
+    branches: [],
+    listed: true,
+  });
+  const found = (lei: string, name: string, overrides: Record<string, unknown>) => ({
+    lei,
+    name,
+    registrationNumber: '556000-0001',
+    country: 'SE',
+    parentLei: null,
+    leiStatus: 'ISSUED',
+    authority: 'fi',
+    facts: null,
+    existingOrgUnitId: null,
+    preselected: false,
+    unmapped: [],
+    entityType: null,
+    sourceUrl: null,
+    ...overrides,
+  });
+  const job = (status: string, extra: Record<string, unknown> = {}) => ({ id: 'job-1', query: '556000-0001', status, error: null, createdAt: '2026-10-05T08:00:00Z', completedAt: null, entities: [], ...extra });
+  const succeeded = job('succeeded', {
+    completedAt: '2026-10-05T08:00:04Z',
+    entities: [
+      found('BANK', 'Example Bank AB', { existingOrgUnitId: 'bank', preselected: true, facts: facts('Example Bank AB', 'Bankaktiebolag', 5) }),
+      found('FONDER', 'Example Fonder AB', { registrationNumber: '556000-0003', preselected: true, facts: facts('Example Fonder AB', 'Fondbolag', 3) }),
+      found('HOLDING', 'Example Holding AB', { registrationNumber: '556000-0004' }),
+      found('PANK', 'Example Pank AS', { registrationNumber: '10000005', country: 'EE', authority: null }),
+    ],
+  });
+
+  /** The lookup's job reads queued once, then as `outcome`; applying adds one and links one. */
+  function registers(outcome: unknown, units: unknown[] = [{ ...bank, licences: [banking] }]): Sent[] {
+    let reads = 0;
+    return installAdapter((sent) => {
+      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
+      if (sent.method === 'get' && sent.path === UNITS) return { status: 200, data: { items: units, total: units.length } };
+      if (sent.path === '/api/v1/authorities') return { status: 200, data: [{ id: 'a1', key: 'fi', name: 'Finansinspektionen', shortName: 'FI', url: '', jurisdiction: { key: 'se', label: 'Sweden' } }] };
+      if (sent.method === 'post' && sent.path === LOOKUPS) return { status: 202, data: job('queued') };
+      if (sent.path === `${LOOKUPS}/job-1`) return { status: 200, data: (reads += 1) === 1 ? job('running') : outcome };
+      if (sent.path === `${LOOKUPS}/job-1/apply`) return { status: 200, data: { created: 1, linked: 1, orgUnits: [] } };
+      return { status: 404, data: { code: 'not_found', detail: 'Not for this test.' } };
+    });
+  }
+
+  async function lookUp(): Promise<HTMLElement> {
+    fireEvent.click(screen.getByRole('button', { name: 'Fill in from public registers' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Fill in from public registers' });
+    expect(within(dialog).getByText('The group comes from GLEIF, and each Swedish company\'s licences and branches from Finansinspektionen\'s register.')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Look up' })).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText('Organisation number or LEI'), { target: { value: ' 556000-0001 ' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Look up' }));
+    expect(await within(dialog).findByText('Reading the registers…')).toBeInTheDocument();
+    return dialog;
+  }
+
+  it('lists the group with the licensed companies ticked, the bank\'s own linked, and says what it did', async () => {
+    const sent = registers(succeeded);
+    await renderSection(['vocab.manage', 'footprint.request', 'library.read']);
+    await lookUp();
+    const dialog = await screen.findByRole('dialog', { name: "Companies in Example Bank AB's group" }, { timeout: 4000 });
+    const row = (name: string) => dialog.querySelector<HTMLElement>(`[data-lookup-company="${name}"]`)!;
+    const box = (name: string) => within(row(name)).getByRole('checkbox');
+    expect(box('Example Bank AB')).toBeChecked();
+    expect(box('Example Bank AB')).toBeDisabled();
+    expect(row('Example Bank AB')).toHaveTextContent('Bankaktiebolag5 licencesAlready in your organisation');
+    expect(box('Example Fonder AB')).toBeChecked();
+    expect(within(row('Example Fonder AB')).getByText('556000-0003')).toHaveClass('font-mono');
+    expect(box('Example Holding AB')).not.toBeChecked();
+    expect(await within(row('Example Holding AB')).findByText("Not in Finansinspektionen's register")).toBeInTheDocument();
+    expect(within(row('Example Pank AS')).getByText('No register we read for this country')).toBeInTheDocument();
+    expect(within(dialog).getByText(/^Read from GLEIF and Finansinspektionen's register on /)).toBeInTheDocument();
+
+    fireEvent.click(box('Example Fonder AB'));
+    expect(within(dialog).getByRole('button', { name: 'Link 1 company' })).toBeEnabled();
+    fireEvent.click(box('Example Fonder AB'));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add 1 company and link 1' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(sent.find((s) => s.path === `${LOOKUPS}/job-1/apply`)?.body).toEqual({ leis: ['BANK', 'FONDER'] });
+    expect(sent.find((s) => s.method === 'post' && s.path === LOOKUPS)?.body).toEqual({ query: '556000-0001' });
+    expect(screen.getByRole('status')).toHaveTextContent('Added 1 company from the public registers. Linked 1 company you already had.');
+    expect(screen.getByRole('link', { name: 'See what they suggest for the regulatory scope' })).toHaveAttribute('href', '/admin/footprint');
+  });
+
+  it('says why a lookup failed, by its code, and offers the number again', async () => {
+    registers(job('failed', { error: 'lookup_ambiguous', completedAt: '2026-10-05T08:00:04Z' }), []);
+    const { wrapper: Query } = queryWrapper();
+    render(
+      <Query>
+        <PermissionsProvider permissions={['vocab.manage']}>
+          <EntitiesSection />
+        </PermissionsProvider>
+      </Query>,
+    );
+    const empty = await screen.findByText('No legal entities yet');
+    expect(within(empty.closest('[data-empty-state]') as HTMLElement).getByRole('button', { name: 'Add a legal entity' })).toBeInTheDocument();
+    const dialog = await lookUp();
+    expect(await within(dialog).findByText('More than one company has that number. Type the LEI instead.', {}, { timeout: 4000 })).toHaveAttribute('role', 'alert');
+    expect(within(dialog).getByRole('button', { name: 'Look up' })).toBeEnabled();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it("shows what the register says about an entity, its licences behind a disclosure, and what is outside its own scope", async () => {
+    const entry = {
+      authority: { key: 'fi', name: 'Finansinspektionen' },
+      facts: {
+        ...facts('Example Bank AB', 'Bankaktiebolag', 0),
+        otherBusinesses: ['Värdepappersbolag'],
+        licences: [{ text: 'Tillstånd att driva bankrörelse', grantedOn: '1995-03-01' }, { text: 'IM_MR_SA', grantedOn: null }],
+        branches: [{ name: 'Example Bank AB, filial i Danmark', countryName: 'Danmark', jurisdiction: 'dk' }],
+      },
+      sourceUrl: 'https://www.fi.se/',
+      readAt: '2026-10-05T03:17:00Z',
+      changedAt: '2026-10-05T03:17:00Z',
+      unmapped: ['IM_MR_SA'],
+    };
+    registers(null, [{ ...bank, licences: [banking], registerEntry: entry, scopeExclusions: [{ key: 'insurance', kind: null, label: 'Insurance' }, { key: 'advice', kind: null, label: 'Advice' }] }]);
+    await renderSection([]);
+    const block = document.querySelector<HTMLElement>('[data-register-facts]')!;
+    expect(block).toHaveTextContent('BusinessBankaktiebolag · Värdepappersbolag');
+    expect(block).toHaveTextContent('BranchesExample Bank AB, filial i Danmark (Danmark)');
+    expect(block).toHaveTextContent('Not used for the scopeIM_MR_SA');
+    expect(block).toHaveTextContent("Outside this company's scopeInsurance, Advice");
+    expect(screen.getByText(/^Read from Finansinspektionen's register on /)).toBeInTheDocument();
+    const show = within(block).getByRole('button', { name: 'Show 2 licences' });
+    expect(within(block).getByText('Tillstånd att driva bankrörelse')).not.toBeVisible();
+    fireEvent.click(show);
+    expect(within(block).getByText('Tillstånd att driva bankrörelse')).toBeVisible();
+    expect(within(block).getByRole('button', { name: 'Hide licences' })).toHaveAttribute('aria-expanded', 'true');
   });
 });

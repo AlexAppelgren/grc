@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient, type UseMutationResult, type Use
 import { useDimensions, useTerms } from '@/features/footprint/hooks';
 import * as org from '@/features/tenant-admin/organisation/api';
 import type {
+  Authority,
   Licence,
   LicenceBody,
   LicencePatch,
@@ -16,6 +17,8 @@ import type {
   Product,
   ProductBody,
   ProductPatch,
+  RegisterApply,
+  RegisterLookup,
   VersionedPatch,
 } from '@/features/tenant-admin/organisation/types';
 import { scopeTermGroups, type TermGroup } from '@/features/tenant-admin/organisation/organisation-presentation';
@@ -29,7 +32,12 @@ export const orgKeys = {
   units: ['tenant', 'org-units'] as const,
   products: ['tenant', 'products'] as const,
   people: ['reference', 'people'] as const,
+  lookup: (lookupId: string) => ['tenant', 'register-lookups', lookupId] as const,
+  authorities: ['library', 'authorities'] as const,
 };
+
+/** How often a running lookup is asked about, as the export job is. */
+export const LOOKUP_POLL_MS = 2000;
 
 /** Every unit, each legal entity with its licences: one read for the whole screen. */
 export function useOrgUnits(): UseQueryResult<OrgUnitRow[]> {
@@ -81,4 +89,28 @@ export function useScopeTermGroups(only?: string): TermGroup[] {
   const dimensions = useDimensions();
   const terms = useTerms();
   return scopeTermGroups(dimensions.data ?? [], terms.data ?? [], only);
+}
+
+export function useStartRegisterLookup(): UseMutationResult<RegisterLookup, unknown, string> {
+  return useMutation({ mutationFn: (query) => org.startRegisterLookup(query) });
+}
+
+/** The lookup's job, asked about until it succeeded or failed; neither changes again. */
+export function useRegisterLookup(lookupId: string | null): UseQueryResult<RegisterLookup> {
+  return useQuery({
+    queryKey: orgKeys.lookup(lookupId ?? ''),
+    queryFn: ({ queryKey }) => org.getRegisterLookup(queryKey[2]),
+    enabled: lookupId !== null,
+    refetchInterval: (query) => (query.state.data?.status === 'succeeded' || query.state.data?.status === 'failed' ? false : LOOKUP_POLL_MS),
+  });
+}
+
+export function useApplyRegisterLookup(): UseMutationResult<RegisterApply, unknown, { lookupId: string; leis: readonly string[] }> {
+  return useWrite(({ lookupId, leis }) => org.applyRegisterLookup(lookupId, leis), () => orgKeys.units);
+}
+
+/** The authorities' names, read only by someone who may read the library; the key stands in otherwise. */
+export function useAuthorities(): UseQueryResult<Authority[]> {
+  const canRead = (usePermissions() ?? []).includes('library.read');
+  return useQuery({ queryKey: orgKeys.authorities, queryFn: org.listAuthorities, enabled: canRead, staleTime: 5 * 60_000 });
 }
