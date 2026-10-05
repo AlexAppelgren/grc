@@ -72,6 +72,7 @@ if behaviour changes. Numbering never reuses a number.
 | [0063](0063-one-statement-per-audit-write.md) | One statement per audit write, and a savepoint only across the zones | perf audit finding 3 | accepted (owner approval, 2026-09-28) |
 | [0064](0064-the-access-token-signs-the-sessions-bank.md) | The access token signs the session's bank, and a request resolves in it | amends D-06 | accepted (owner approval, perf-tenant-in-token) |
 | [0065](0065-the-library-baseline-arrives-by-proposal.md) | The library's starting inventory arrives by proposal, as a researched baseline | D-118 | accepted (Alex, 2026-09-30) |
+| [0066](0066-the-organisation-and-scope-come-from-public-registers.md) | The organisation and the regulatory scope come from public registers, through the existing request | D-121 | accepted (Alex, 2026-10-05) |
 
 Still to write, when the playbook's Appendix C says so:
 the switch from one branch to `staging` and `main` (supersedes 0015), the

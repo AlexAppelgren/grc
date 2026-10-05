@@ -19,7 +19,7 @@ stop between chunks unless a product invariant is at stake.
 | 9 | Case workflow | Triage to sign-off with evidence and the case file, with participants on cases | CAS-02 to CAS-08, COL-04 (cases), J-2, J-3 | R2 |
 | 10 | Collaboration | Comments, mentions, notifications, reminders, escalation, digest, delegation, and comments and mentions on My work | COL-01, COL-02, HOM-05 (comments and mentions), VOC-03, VOC-08, TEN-04 (D-95, pending Alex) | R2 |
 | 11 | Tenant-controlled agents, and agent access | Definitions, tenant settings, schedules, requests, budgets, the runner adapter, re-tag batches, and a default scope from the markets. Then agent access: a bank registers the agents it runs itself, narrows each to the departments and products it serves, issues a service key or mints a personal access token, and reads what applies through an MCP server over the same API | AGT-03 to AGT-06 (including AGT-04's default market scope), PRO-04, ID-07, ID-08, then ACC-01 to ACC-09, J-11 | R2 |
-| 12 | Reports, exports, import, exit | Dashboard, committee pack, exports, spreadsheet import, full tenant export and deletion | REP-01 to REP-04, AUD-04, VOC-09 | R3 |
+| 12 | Reports, exports, import, exit | Dashboard, committee pack, exports, spreadsheet import, full tenant export and deletion | REP-01 to REP-04, AUD-04, VOC-09, TEN-07, TEN-08, FP-05 (built ahead, PRD 0.9) | R3 |
 | 13 | Integrations and enterprise access | Webhooks, tickets, SIEM stream, SSO and SCIM, IP allow-list, saved searches, attestations, waivers, private sources, remaining UI languages, and agent access write-back: the map of which application touches which register entry | INT-01 to INT-03, ID-12, ID-13, SRC-04, REG-06, WAT-06, INV-07, COL-03, I18N-02, ACC-10 | R3 |
 | 14 | Hardening and assurance | OWASP review until findings converge, performance pass, `docs/assurance/`, runbooks, billing | NFR-02, NFR-04, NFR-05 | R3 |
 
@@ -46,6 +46,8 @@ nothing else in chunk 11 changes. ACC-10 is R3 either way. `CHUNK11_TASKS.md` an
 tasks are planned from the brief before chunk 11 starts.
 
 **PRD 0.7 (D-89, 2026-09-25).** Chunk 11 gains group OWN, the bank's own regulations (OWN-01 to OWN-05, INV-07 moved from chunk 13, J-12; D-91, ADR 0059, `docs/plans/briefs/SCOPE_ITEMS.md`); its register half follows chunk 8, and private sources (WAT-06) stay in chunk 13.
+
+**PRD 0.9 (D-121, 2026-10-05).** Chunk 12 gains the organisation and the regulatory scope from public registers (TEN-07, TEN-08, FP-05, J-13; ADR 0066, `docs/plans/briefs/PUBLIC_REGISTERS.md`), built ahead of the rest of R3 on Alex's word; it also builds the per-company exclusions D-96 planned, derived from register facts.
 
 **R2 starts (2026-09-25).** Every R2 package reads
 `docs/plans/briefs/R2_CROSS_CUTTING.md` first: the shared-file rules, the migration and

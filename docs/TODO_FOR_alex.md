@@ -2,6 +2,22 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## public-registers: the organisation and scope from GLEIF and FI (2026-10-05, TEN-07, TEN-08, FP-05, D-121, ADR 0066)
+
+Built on the defaults in `docs/plans/briefs/PUBLIC_REGISTERS.md`; nothing waits on you to use it.
+
+- [ ] **A compliance person should read `backend/apps/tenants/register_terms.json`.** It turns
+      Finansinspektionen's business names and licence wording into scope terms, and a company's
+      exclusions follow from it. Default: the mapping as written, from FI's own wording across 21
+      categories; a licence it does not know is shown to the bank and not mapped.
+- [ ] **FI publishes no documented API for its register.** The lookup reads the CSV export
+      behind FI's search and the branch list on its HTML pages, so a layout change at FI fails a
+      lookup with "the register could not be read" until the parser is updated. Default: as built.
+      The alternative is to ask FI (finansinspektionen@fi.se) for a machine-readable extract.
+- [ ] **Deployed environments read the live registers** (`REGISTERS_PROVIDER` defaults to `live`
+      when deployed), so the test environment calls GLEIF and FI. Default: as built; set
+      `REGISTERS_PROVIDER=mock` on the test environment if it should not.
+
 ## The library baseline: what waits for you (2026-10-01, D-118, ADR 0065)
 
 The library's starting inventory is researched and files itself: on every deploy with a

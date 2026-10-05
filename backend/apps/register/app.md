@@ -363,3 +363,12 @@ Then the request answers 404
 > `apps/register/agent_read.py`; `tests_agent_read.py` holds the rule branches. Beside the
 > private record, an obligation under a standard is left out too (REG-08, AC-REG2), and an
 > obligation in scope nobody decided on reads as `under_assessment` (D-110, acc-register-read).
+
+### REG-S18 — A rule outside a company's licences is not offered for that company `@integration` (FP-05, REG-01)
+```gherkin
+Given Example Fonder AB's own scope excludes banking, insurance and payments after an approved request
+When the register lists the entities an obligation spans
+Then an obligation tagged only payments spans Example Bank AB and not Example Fonder AB
+And an obligation tagged payments and securities spans both
+And an AML obligation spans every entity, and an entity with no exclusions is spanned as before
+```

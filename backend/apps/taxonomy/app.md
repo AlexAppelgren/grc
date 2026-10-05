@@ -1,7 +1,7 @@
 # taxonomy — Vocabularies, footprint and languages
 
 > **App spec.** Source: `PRD.md` Module VOC (VOC-01–VOC-09, AC-VOC1–AC-VOC3),
-> Module FP (FP-01–FP-04, AC-FP1–AC-FP3), I18N-01, journeys J-5 and J-6, playbook 15 and 17,
+> Module FP (FP-01–FP-05, AC-FP1–AC-FP4), I18N-01, journeys J-5 and J-6, playbook 15 and 17,
 > `docs/inputs/INPUT_DELTAS.md` §1 and §3.
 > The PRD is the source of truth; on any conflict the PRD wins. Update this
 > file whenever the PRD version bumps or a feature lands.
@@ -74,6 +74,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term | M | R1 | built |
 | FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it. R1 covers the feed, inventory, roadmap, briefing and search; reports apply it in chunk 12 | M | R1 | built |
 | FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
+| FP-05 | The regulatory scope suggested from the register facts: the terms the companies' businesses, licences and branches give the group, and each company's licence-bound exclusions; filed as an ordinary change request and approved by a second person with step-up; exclusions narrow only what the register offers for that company (`docs/plans/briefs/PUBLIC_REGISTERS.md`) | S | R3 | in_progress |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
 | OWN-01 | A scope item (name, jurisdiction and regime terms, official reference, public source addresses) is added through the regulatory scope request: `footprint.request` asks, a different person with `footprint.approve` approves with a passkey; no API key reaches it, approving widens no term, and no agent ever writes one (D-89, D-91) | M | R2 | built |
 | ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | built |
@@ -97,6 +98,13 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
   obligations or changes, and its case for such a change is created with
   `footprintMatch` false. After an approved change adding the standard it sees
   them. A law's obligation or change never carries a standard term.
+- **AC-FP4** Once Example Bank AB's companies are read from the registers, the
+  regulatory scope suggests the legal-entity types they hold, Sweden, Denmark and Norway as
+  markets from their countries and the bank's branches, and for Example Fonder AB the
+  exclusion of banking, insurance and payments; a dimension in which they hold every
+  licence-bound term stays open. Filing it waits for a second person with step-up; once approved, a rule tagged
+  only payments is offered in the register for Example Bank AB and not for Example Fonder AB,
+  an AML rule for both. A re-read that finds a new licence changes no term until approved.
 - **On screen this section is "Regulatory scope"** (PRD glossary). In the code, the
   API paths, the permission keys and the route the word stays `footprint`.
 - **Playbook 15 rules:** retire, never delete, showing the usage count first;
@@ -651,4 +659,28 @@ When the entry names a product whose term is outside the tenant footprint
 Then that term is not in the effective scope: the intersection is taken from the footprint table
 When the entry names no department and no product
 Then its effective scope is the tenant footprint exactly, through the same code path
+```
+
+### FP-S20 — The regulatory scope suggested from the register facts, approved by a second person `@integration` `@e2e` (FP-05, FP-02, AC-FP4, J-13)
+```gherkin
+Given Example Bank AB, Example Fonder AB and Example Liv Försäkring AB carry register facts and the scope names no legal-entity type, regime, service type or market
+When an officer holding footprint.request reads the suggestions
+Then they add the legal-entity types the companies hold and the markets of the companies' countries and branches, each line naming the company and the register line behind it
+And a dimension in which the companies hold every licence-bound term is left open, while one they hold only part of gains the held terms with the cross-cutting ones
+And they exclude banking, insurance and payments from Example Fonder AB's own scope, and suggest nothing for a company without register facts
+When the officer files them as one request
+Then it waits like any change: one waiting request per bank, the preview counted, the company lines listed
+And the officer cannot approve it, and an approver holding footprint.approve approves it with a passkey
+Then the group terms and the company exclusions are written with one history row and one audit event each, and the suggestions are empty
+```
+
+### FP-S21 — A company's exclusions are checked and kept apart from the bank's view `@integration` (FP-05, FP-01)
+```gherkin
+Given an officer files a request with a company line
+When the line names a unit that is not an active legal entity, or a term in a dimension that is not licence-bound
+Then it answers 422 "not_a_legal_entity" or "dimension_not_narrowable" and nothing is stored
+When an approved request excludes insurance from Example Fonder AB
+Then the bank's regulatory scope, its inventory and its preview counts are unchanged
+And a later request lifting it puts the term back in the company's scope, with its history row
+And when the register facts lose a licence, the suggestions list the new exclusion and no term changes until it is approved
 ```

@@ -47,6 +47,8 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | TEN-04 | Out-of-office with a delegate for approvals and reminders | S | R2 | built |
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | built |
 | TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | built |
+| TEN-07 | Fill in the legal entities from public registers: an organisation number or LEI, the group from GLEIF, each Swedish company's business, licences and branches from Finansinspektionen; a person picks what to add; licences are shown from the register facts, never typed (`docs/plans/briefs/PUBLIC_REGISTERS.md`) | S | R3 | in_progress |
+| TEN-08 | The register facts are re-read nightly, each change audited; a change edits neither the organisation nor the scope, it shows as a suggestion (FP-05) | S | R3 | in_progress |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
 
@@ -87,6 +89,11 @@ the PRD rows and the playbook rules read as tests:
   "Our deadline" with its owner, disappear once it is withdrawn, and never
   appear in the calendar feed. The certificate sits on the entity's licence
   row, carries no term and decides no span.
+- **AC-TEN2** Typing 556000-0001 lists Example Bank AB's group from GLEIF with each
+  Swedish company's business, licences and branches from Finansinspektionen, the licensed
+  companies ticked and the holding company not. Adding them creates the legal entities with
+  org number, LEI, country and type, links a company the bank already had, and writes no
+  licence row and no scope term. A number no company carries answers "not found".
 - The tenant profile holds timezone (default `Europe/Stockholm`, storage UTC)
   and a content language order; deadlines and digests convert through it.
 - Entities and products carry the same taxonomy terms obligations are scoped
@@ -351,4 +358,25 @@ When a member signs in, refreshes, steps up, revokes a session or downloads the 
 Then each still succeeds
 When a holder of security.manage cancels the exit with a step-up before the delay passes
 Then the tenant is active again and writes succeed
+```
+
+### TEN-S13 — The legal entities filled in from the public registers `@integration` `@e2e` (TEN-07, AC-TEN2, J-13)
+```gherkin
+Given an admin holding vocab.manage at a bank that already has "Example Bank AB" with org number 556000-0001
+When they look up "556000-0001" in the public registers
+Then a job answers 202 and, once done, lists the group from GLEIF with Example Fonder AB and Example Liv Försäkring AB ticked, the holding company unticked and Example Bank AB marked as already in the organisation
+And each Swedish company carries its business, licences and branches from Finansinspektionen with the date read
+When they add the ticked companies
+Then two legal entities are created with org number, LEI, country, type and parent, Example Bank AB is linked and not added twice, and each gets its register facts
+And no licence row and no regulatory scope term is written, and each write has its audit event
+And a number no company carries fails the job with "lookup_not_found", and a member without vocab.manage gets 403
+```
+
+### TEN-S14 — The nightly re-read refreshes the register facts and nothing else `@integration` (TEN-08)
+```gherkin
+Given Example Bank AB has register facts read yesterday
+When the nightly re-read finds a new licence in Finansinspektionen's register
+Then the stored facts carry the licence and the read date, with one audit event naming the change
+And no organisation row, licence row or regulatory scope term changes
+And a register that cannot be reached leaves the stored facts as they were
 ```

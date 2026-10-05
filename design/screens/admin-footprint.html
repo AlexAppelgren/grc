@@ -788,6 +788,52 @@ fieldset.field{display:grid;gap:8px}
   </div>
 </div>
 
+<h2 class="k">30 · Suggested from your licences — a compliance officer (footprint request), nothing waiting</h2>
+<div class="panel" data-scope-suggestions>
+  <h2>Suggested from your licences</h2>
+  <p class="meta" style="margin:0 0 8px">Read from Finansinspektionen's register on 5 Oct 2026.</p>
+  <h3>Regulatory scope</h3>
+  <label class="check" for="s-if"><input type="checkbox" id="s-if" checked><span>Add Investment firm <span class="meta">Example Bank AB: Värdepappersbolag</span></span></label>
+  <label class="check" for="s-dk"><input type="checkbox" id="s-dk" checked><span>Add Denmark <span class="meta">Example Bank AB, filial i Danmark</span></span></label>
+  <label class="check" for="s-no"><input type="checkbox" id="s-no" checked><span>Add Norway <span class="meta">Example Bank AB, filial i Norge</span></span></label>
+  <h3 style="margin-top:12px">Each company's scope</h3>
+  <label class="check" for="s-fo"><input type="checkbox" id="s-fo" checked><span>Example Fonder AB: outside its scope: Banking, Insurance, Payments, Advice, Custody, Insurance distribution, Card issuing, Card acquiring <span class="meta">Fondbolag</span></span></label>
+  <label class="check" for="s-li"><input type="checkbox" id="s-li" checked><span>Example Liv Försäkring AB: outside its scope: Banking, Payments, Securities, Advice, Custody, Portfolio management, Card issuing, Card acquiring <span class="meta">Riksbolag, livförsäkringar</span></span></label>
+  <div class="bar"><button class="btn">Request approval</button></div>
+</div>
+
+<h2 class="k">31 · Waiting — the approver's view of a request with company lines</h2>
+<div class="notice warn" data-pending-request>
+  <p><span class="pill warning">Waiting for approval</span> <b>Add Investment firm, Denmark and Norway</b></p>
+  <p>Erik Holm requested this on 5 Oct 2026.</p>
+  <ul style="margin:0 0 8px">
+    <li>Example Fonder AB: outside its scope: Banking, Insurance, Payments, Advice, Custody, Insurance distribution, Card issuing, Card acquiring</li>
+    <li>Example Liv Försäkring AB: outside its scope: Banking, Payments, Securities, Advice, Custody, Portfolio management, Card issuing, Card acquiring</li>
+  </ul>
+  <button class="btn ghost small disclose" aria-expanded="false">See the preview</button>
+  <div class="bar"><button class="btn outline">Reject</button><button class="btn">Approve</button></div>
+</div>
+
+<h2 class="k">32 · History, with a company line</h2>
+<div class="panel log" data-footprint-history>
+  <h2>History</h2>
+  <div><time>5 Oct 2026 15:12</time><b>Maria Ek</b> approved "Add Investment firm, Denmark and Norway" requested by Erik Holm, with Example Fonder AB and Example Liv Försäkring AB's own scope.</div>
+</div>
+
+<p class="note">Suggested from your licences (states 30 to 32; FP-05, AC-FP4, FP-S20, J-13;
+PUBLIC_REGISTERS.md, D-121, ADR 0066). The panel shows to holders of footprint request
+while nothing waits and the suggestion is not empty; it sits above the groups. Each group
+line is one term, ticked by default, with the company and the register line behind it as
+meta text in the register's own words; each company line is all of one company's exclusions
+or lifts at once ("back in its scope: …" for a lift), with its main business as meta text.
+Request approval files the ticked lines as one ordinary request (state 7 onwards): the same
+preview, which company lines do not change, the same second person and passkey. Unticking
+everything disables the button. The pending banner, the approve dialog and the history list
+the company lines under the title; the title still names only the group change, or "Change
+each company's own scope" when there is none. Nothing here changes what members see: a
+company's exclusions decide only which rules the register offers for that company. Company
+names and register lines are data, never strings.</p>
+
 <p class="note">Regulatory scope card (/admin/footprint). The page is restricted to
 holders of footprint request or footprint approve; everyone else gets state 16, and
 FP-03 shows the scope to other members only where lists offer "Show outside our
