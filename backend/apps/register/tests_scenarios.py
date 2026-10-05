@@ -801,9 +801,48 @@ class RegisterScenarioTests(TestCase):
             refused = self.client.get(path, **sign_in(other.officer, tenant=other.tenant))
             self.assertEqual((refused.status_code, refused.json()["code"]), (404, "not_found"), path)
 
-    @skip("pending: REG-S18 (FP-05, public-registers scope)")
     def test_reg_s18(self) -> None:
         """REG-S18
 
         A rule outside a company's licences is not offered for that company (FP-05, REG-01).
+        Operations: `createFootprintRequest`, `approveFootprintRequest`.
         """
+        seed_library()
+        a = Bank("reg-s18")
+        approver = factories.member(a.tenant, roles=("approver",)).user
+        payments_law = library_build.instrument(key="lob", short_name="LOB", regime="regime:payments")
+        aml_law = library_build.instrument(key="pvml", short_name="PVML", regime="regime:aml")
+        payments_only = library_build.obligation(payments_law, key="lob-safeguarding", terms=("regime:payments",))
+        payments_and_securities = library_build.obligation(payments_law, key="lob-client-money", terms=("regime:payments", "regime:securities"))
+        aml = library_build.obligation(aml_law, key="pvml-kyc", terms=("regime:aml",))
+        excluded = [{"orgUnitId": str(a.fonder.id), "dimension": "regime", "key": key} for key in ("banking", "insurance", "payments")]
+        created = self.client.post(
+            "/api/v1/tenant/footprint/requests",
+            data={"entityExclusions": excluded},
+            content_type="application/json",
+            **sign_in(a.officer, tenant=a.tenant),
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        approved = self.client.post(
+            f"/api/v1/tenant/footprint/requests/{created.json()['id']}/approve",
+            data={},
+            content_type="application/json",
+            **sign_in(approver, tenant=a.tenant, step_up=True),
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        tenancy.activate(a.tenant.id)
+        spanned = {
+            key: {entity.name for entity in entities}
+            for key, entities in (
+                (row.stable_key, entities_spanned([row.id])[row.id]) for row in (payments_only, payments_and_securities, aml)
+            )
+        }
+        everyone = {"Example Bank AB", "Example Fonder AB", "Example Liv Försäkring AB"}
+        self.assertEqual(spanned["lob-safeguarding"], everyone - {"Example Fonder AB"})
+        self.assertEqual(spanned["lob-client-money"], everyone, "securities is still in Fonder's scope")
+        self.assertEqual(spanned["pvml-kyc"], everyone, "a cross-cutting term is never excluded")
+        # The bank's own scope and every other bank are untouched.
+        self.assertFalse(FootprintTerm.objects.exists())
+        b = Bank("reg-s18-b")
+        tenancy.activate(b.tenant.id)
+        self.assertEqual({entity.name for entity in entities_spanned([payments_only.id])[payments_only.id]}, everyone)

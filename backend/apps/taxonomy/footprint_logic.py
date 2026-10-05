@@ -25,6 +25,12 @@ the preview and FP-01's matching never reads it. Its approval writes a history r
 `scope_item.added` or `scope_item.removed` audit and outbox row carrying ids and keys only,
 which is what the research worker listens for; the name and description a person typed stay
 on the item row (R2_CROSS_CUTTING rule m).
+
+A request may also carry company lines (FP-05, PUBLIC_REGISTERS.md, D-121): a licence-bound
+term taken out of one legal entity's own scope or put back into it, usually as the public
+registers suggest. They ride on the same request, so the same second person and passkey
+decide them, and they never touch the bank's scope or move the preview: an approved line
+writes `entity_scope_exclusion`, which only the register's span reads (REG-S18).
 """
 
 from __future__ import annotations
@@ -47,8 +53,10 @@ from apps.shared.models import Tenant
 from apps.taxonomy import markets_logic, matching, terms_logic
 from apps.taxonomy.models import (
     ApprovalStatus,
+    EntityScopeExclusion,
     FootprintAction,
     FootprintChangeAdd,
+    FootprintChangeEntityTerm,
     FootprintChangeRemove,
     FootprintChangeRequest,
     FootprintChangeScopeItem,
@@ -61,9 +69,13 @@ from apps.taxonomy.models import (
     validate_scope_item_description,
 )
 from apps.taxonomy.reading import Labels, label_of
+from apps.tenants.models import OrgUnit, OrgUnitKind
 from apps.taxonomy.schemas import (
     FootprintDimension,
     FootprintDryRun,
+    FootprintEntityTermRef,
+    FootprintEntityTermSelector,
+    FootprintOrgUnitRef,
     FootprintPreview,
     FootprintPreviewCount,
     FootprintRequestRow,
@@ -83,6 +95,13 @@ SCOPE_ITEM_KEY_MAX_CHARS = 80
 # How a scope item's research stands (OWN-02). Until the bank's own agent opens research
 # on an item (d89-agent-research), an item in scope waits for it.
 WAITING_FOR_AGENT = "waiting_for_agent"
+ENTITY_SUBJECT_TYPE = "org_unit"
+# The dimensions a company's own scope narrows: the licence-bound ones, whose terms a register
+# can say a company holds or not (PUBLIC_REGISTERS.md 4.3). A legal entity's type stays its
+# `entity_term`, and the cross-cutting terms in these dimensions are simply never excluded.
+ENTITY_SCOPE_DIMENSIONS = ("regime", "service_type", "licensed_activity")
+# One company line: the legal entity and the term.
+EntityLine = tuple[OrgUnit, Any]
 
 
 # ---------------------------------------------------------------------------------------
@@ -161,6 +180,16 @@ def request_rows(requests: list[FootprintChangeRequest], order: list[str]) -> li
     item_changes = _scope_item_changes_of(requests)
     items = {item.id: item for adds, removes in item_changes for item in (*adds, *removes)}
     item_rows = dict(zip(items, scope_item_rows(list(items.values()), order), strict=True))
+    entity_changes = _entity_changes_of(requests)
+    entity_terms = {term.id: term for included, excluded in entity_changes for _, term in (*included, *excluded)}
+    entity_labels = dict(zip(entity_terms, terms_logic.labelled_term_refs(list(entity_terms.values()), order), strict=True))
+
+    def lines(found: list[EntityLine]) -> list[FootprintEntityTermRef]:
+        return [
+            FootprintEntityTermRef(org_unit=FootprintOrgUnitRef(id=unit.id, name=unit.name), term=entity_labels[term.id])
+            for unit, term in found
+        ]
+
     return [
         FootprintRequestRow(
             id=request.id,
@@ -171,13 +200,17 @@ def request_rows(requests: list[FootprintChangeRequest], order: list[str]) -> li
             removes=[labelled[term.id] for term in removes],
             scope_item_adds=[item_rows[item.id] for item in item_adds],
             scope_item_removes=[item_rows[item.id] for item in item_removes],
+            entity_exclusions=lines(excluded),
+            entity_inclusions=lines(included),
             preview=_preview_now(request, adds, removes),
             decided_by=_person(request.decided_by),
             decided_at=request.decided_at,
             decision_note=request.decision_note,
             version=request.version,
         )
-        for request, (adds, removes), (item_adds, item_removes) in zip(requests, changes, item_changes, strict=True)
+        for request, (adds, removes), (item_adds, item_removes), (included, excluded) in zip(
+            requests, changes, item_changes, entity_changes, strict=True
+        )
     ]
 
 
@@ -334,6 +367,131 @@ def scope_items_in_scope(tenant_id: uuid.UUID, keys: list[str]) -> list[ScopeIte
 
 
 # ---------------------------------------------------------------------------------------
+# Company lines (FP-05, D-121)
+# ---------------------------------------------------------------------------------------
+def entity_lines(tenant_id: uuid.UUID, selectors: Sequence[FootprintEntityTermSelector], *, exclude: bool) -> list[EntityLine]:
+    """The company lines a request would carry, validated in the order given: each names an
+    active legal entity of this bank (422 `not_a_legal_entity`), a term of a licence-bound
+    dimension (422 `dimension_not_narrowable`, or `unknown_key` for a term that is not an active
+    one), and a change that changes something: an exclusion of a term inside the company's
+    scope, an inclusion of one outside it (422 `validation_error`)."""
+    if not selectors:
+        return []
+    units = {
+        unit.id: unit
+        for unit in OrgUnit.objects.filter(
+            tenant_id=tenant_id,
+            id__in={line.org_unit_id for line in selectors},
+            kind=OrgUnitKind.LEGAL_ENTITY.value,
+            active=True,
+        )
+    }
+    outside = set(
+        EntityScopeExclusion.objects.filter(tenant_id=tenant_id, org_unit_id__in=units).values_list("org_unit_id", "term_id")
+    )
+    found: list[EntityLine] = []
+    for line in selectors:
+        unit = units.get(line.org_unit_id)
+        if unit is None:
+            raise ValidationError("orgUnitId: name an active legal entity of this organisation.", code="not_a_legal_entity")
+        if line.dimension not in ENTITY_SCOPE_DIMENSIONS:
+            raise ValidationError(
+                f"{line.dimension!r} is not a dimension a company's own scope narrows. "
+                f"Valid dimensions: {', '.join(ENTITY_SCOPE_DIMENSIONS)}.",
+                code="dimension_not_narrowable",
+            )
+        term = terms_logic.term_by_ref(line.dimension, line.key)
+        if ((unit.id, term.id) in outside) is exclude:
+            where = "already outside" if exclude else "not outside"
+            raise ValidationError(f"{line.dimension}:{line.key} is {where} {unit.name}'s own scope.", code="validation_error")
+        found.append((unit, term))
+    if len({(unit.id, term.id) for unit, term in found}) < len(found):
+        raise ValidationError("Name each company line once in a change.", code="validation_error")
+    return found
+
+
+def _entity_changes_of(requests: list[FootprintChangeRequest]) -> list[tuple[list[EntityLine], list[EntityLine]]]:
+    """The company lines each request puts back and takes out, in one query for any number of
+    requests: (inclusions, exclusions)."""
+    prefetch_related_objects(
+        requests,
+        Prefetch(
+            "entity_links",
+            FootprintChangeEntityTerm.objects.select_related("org_unit", "term__dimension").order_by(
+                "org_unit__name", "term__dimension__sort_order", "term__sort_order", "term__key"
+            ),
+        ),
+    )
+    changes = []
+    for request in requests:
+        links = list(request.entity_links.all())
+        changes.append(
+            (
+                [(link.org_unit, link.term) for link in links if link.action == FootprintAction.ADDED.value],
+                [(link.org_unit, link.term) for link in links if link.action == FootprintAction.REMOVED.value],
+            )
+        )
+    return changes
+
+
+def _entity_state(unit: OrgUnit, term: Any, request: FootprintChangeRequest | None) -> dict[str, str]:
+    state = {"orgUnitId": str(unit.id), "dimension": term.dimension.key, "term": term.key}
+    if request is not None:
+        state["request"] = str(request.id)
+    return state
+
+
+def _switch_entities(
+    *,
+    tenant: Tenant,
+    actor: Actor,
+    lines: list[EntityLine],
+    action: FootprintAction,
+    request: FootprintChangeRequest,
+    step_up_assertion_id: uuid.UUID,
+    changed_by: Any,
+) -> None:
+    """An approved request's company lines: an exclusion row written or deleted, one history
+    row naming the company and one `footprint.entity_term_excluded` or
+    `footprint.entity_term_included` audit event each, with the step-up that authorised it."""
+    excluded = action is FootprintAction.REMOVED
+    for unit, term in lines:
+        if excluded:
+            _, created = EntityScopeExclusion.objects.get_or_create(
+                tenant=tenant, org_unit=unit, term=term, defaults={"request": request, "added_by": changed_by}
+            )
+            if not created:
+                continue
+        elif not EntityScopeExclusion.objects.filter(tenant=tenant, org_unit=unit, term=term).delete()[0]:
+            continue
+        FootprintHistory.objects.create(
+            tenant=tenant,
+            term=term,
+            org_unit=unit,
+            action=action.value,
+            request=request,
+            changed_by=changed_by,
+            step_up_assertion_id=step_up_assertion_id,
+        )
+        state = _entity_state(unit, term, request)
+        record(
+            action=f"footprint.entity_term_{'excluded' if excluded else 'included'}",
+            actor=actor,
+            subject_type=ENTITY_SUBJECT_TYPE,
+            subject_id=unit.id,
+            subject_title=unit.name,
+            summary=(
+                f"{'Took' if excluded else 'Put'} {term.dimension.key}:{term.key} "
+                f"{'out of' if excluded else 'back into'} {unit.name}'s own scope."
+            ),
+            tenant_id=tenant.id,
+            after=state if not excluded else None,
+            before=state if excluded else None,
+            step_up_assertion_id=step_up_assertion_id,
+        )
+
+
+# ---------------------------------------------------------------------------------------
 # The preview (AC-FP1)
 # ---------------------------------------------------------------------------------------
 def _after(now: dict[str, set[str]], adds: list[Any], removes: list[Any]) -> dict[str, set[str]]:
@@ -413,25 +571,45 @@ def dry_run(
     *,
     item_adds: Sequence[ScopeItem] = (),
     item_removes: Sequence[ScopeItem] = (),
+    entity_excludes: Sequence[EntityLine] = (),
+    entity_includes: Sequence[EntityLine] = (),
 ) -> FootprintDryRun:
     """The requester's preview before sending (playbook 15: dry run, preview, commit). The
     same validation as a real request, the same preview, and nothing written: no request
     row, no scope item, no audit event, no approval started. A preview is a read that needs
     a body. Scope items move no count: they are researched, never matched."""
-    _validate_change(adds, removes, item_adds, item_removes)
+    _validate_change(adds, removes, item_adds, item_removes, entity_excludes, entity_includes)
+    entity_terms = [term for _, term in (*entity_excludes, *entity_includes)]
+    entity_labels = dict(zip((term.id for term in entity_terms), terms_logic.labelled_term_refs(entity_terms, order), strict=True))
+
+    def lines(found: Sequence[EntityLine]) -> list[FootprintEntityTermRef]:
+        return [
+            FootprintEntityTermRef(org_unit=FootprintOrgUnitRef(id=unit.id, name=unit.name), term=entity_labels[term.id])
+            for unit, term in found
+        ]
+
     return FootprintDryRun(
         adds=terms_logic.labelled_term_refs(adds, order),
         removes=terms_logic.labelled_term_refs(removes, order),
         scope_item_adds=scope_item_rows(list(item_adds), order),
         scope_item_removes=scope_item_rows(list(item_removes), order),
+        entity_exclusions=lines(entity_excludes),
+        entity_inclusions=lines(entity_includes),
         preview=preview_of(tenant_id, adds, removes),
         dry_run=True,
     )
 
 
-def _validate_change(adds: list[Any], removes: list[Any], item_adds: Sequence[ScopeItem], item_removes: Sequence[ScopeItem]) -> None:
-    if not adds and not removes and not item_adds and not item_removes:
-        raise ValidationError("Choose at least one term or scope item to add or remove.", code="validation_error")
+def _validate_change(
+    adds: list[Any],
+    removes: list[Any],
+    item_adds: Sequence[ScopeItem],
+    item_removes: Sequence[ScopeItem],
+    entity_excludes: Sequence[EntityLine] = (),
+    entity_includes: Sequence[EntityLine] = (),
+) -> None:
+    if not adds and not removes and not item_adds and not item_removes and not entity_excludes and not entity_includes:
+        raise ValidationError("Choose at least one term, scope item or company line to change.", code="validation_error")
     if len({term.id for term in adds}) < len(adds) or len({term.id for term in removes}) < len(removes):
         raise ValidationError("Name each term once in a change.", code="validation_error")
     both = {term.id for term in adds} & {term.id for term in removes}
@@ -554,14 +732,17 @@ def create_request(
     removes: list[Any],
     item_adds: Sequence[ScopeItem] = (),
     item_removes: Sequence[ScopeItem] = (),
+    entity_excludes: Sequence[EntityLine] = (),
+    entity_includes: Sequence[EntityLine] = (),
 ) -> FootprintChangeRequest:
     """One pending request at a time (409 `request_pending`): two people editing the same
     footprint from two previews would each approve a change the other's preview never
     counted. The partial unique constraint `footprint_change_request_one_pending` decides,
     so two requests sent at the same moment cannot both wait; the savepoint keeps the
     caller's transaction usable after the refusal. The scope items it adds are stored with
-    it as `requested`, so the approver decides on exactly what was asked (D-91)."""
-    _validate_change(adds, removes, item_adds, item_removes)
+    it as `requested`, so the approver decides on exactly what was asked (D-91). Company lines
+    are stored as they were asked for (FP-05)."""
+    _validate_change(adds, removes, item_adds, item_removes, entity_excludes, entity_includes)
     try:
         with transaction.atomic():
             request = FootprintChangeRequest.objects.create(
@@ -588,6 +769,9 @@ def create_request(
         FootprintChangeScopeItem.objects.create(tenant=tenant, request=request, scope_item=item, action=FootprintAction.ADDED.value)
     for item in item_removes:
         FootprintChangeScopeItem.objects.create(tenant=tenant, request=request, scope_item=item, action=FootprintAction.REMOVED.value)
+    for lines, action in ((entity_excludes, FootprintAction.REMOVED), (entity_includes, FootprintAction.ADDED)):
+        for unit, term in lines:
+            FootprintChangeEntityTerm.objects.create(tenant=tenant, request=request, org_unit=unit, term=term, action=action.value)
     # Keys and ids only: the name and description a person typed stay on the item row.
     record(
         action="footprint.change_requested",
@@ -602,6 +786,8 @@ def create_request(
             "removes": [f"{term.dimension.key}:{term.key}" for term in removes],
             "scopeItemAdds": [_item_state(item, None) for item in item_adds],
             "scopeItemRemoves": [_item_state(item, None) for item in item_removes],
+            "entityExclusions": [_entity_state(unit, term, None) for unit, term in entity_excludes],
+            "entityInclusions": [_entity_state(unit, term, None) for unit, term in entity_includes],
         },
     )
     return request
@@ -698,11 +884,15 @@ def approve(
         )
     adds, removes = _changes(request)
     item_adds, item_removes = _scope_item_changes_of([request])[0]
+    entity_includes, entity_excludes = _entity_changes_of([request])[0]
     # A term retired while the request waited is not the library's any more: nobody may
     # switch it on, so the approver rejects the change and the requester asks again. The
-    # same holds for a scope item's jurisdiction or regime term.
-    if any(not term.active or not term.dimension.active for term in adds) or any(
-        not item.jurisdiction.active or not item.regime_term.active for item in item_adds
+    # same holds for a scope item's jurisdiction or regime term, and for a company line
+    # whose company was deactivated meanwhile.
+    if (
+        any(not term.active or not term.dimension.active for term in adds)
+        or any(not item.jurisdiction.active or not item.regime_term.active for item in item_adds)
+        or any(not unit.active or not term.active for unit, term in (*entity_excludes, *entity_includes))
     ):
         raise ValidationError(
             "A term in this change was retired after it was asked for. Reject the change so it can be asked for again.",
@@ -731,6 +921,16 @@ def approve(
             tenant=tenant,
             actor=actor,
             items=items,
+            action=action,
+            request=request,
+            step_up_assertion_id=step_up_assertion_id,
+            changed_by=decider,
+        )
+    for lines, action in ((entity_excludes, FootprintAction.REMOVED), (entity_includes, FootprintAction.ADDED)):
+        _switch_entities(
+            tenant=tenant,
+            actor=actor,
+            lines=lines,
             action=action,
             request=request,
             step_up_assertion_id=step_up_assertion_id,

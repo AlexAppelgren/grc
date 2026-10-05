@@ -40,8 +40,9 @@ UNITS = f"{V1}/tenant/org-units"
 # about thirteen queries each (perf-frontend-requests). Two fewer since perf-tenant-in-token
 # (2026-09-28, ADR 0064): the session is read in one statement under the bank its token signs.
 # One more since public-registers (2026-10-05, TEN-07): the legal entities' register facts
-# for the whole page, one query whatever the page holds.
-LIST_QUERIES = 10
+# for the whole page, one query whatever the page holds; and one more for the legal entities'
+# exclusions from their own scope (FP-05), again one query for the whole page.
+LIST_QUERIES = 11
 
 
 class OrganisationCase(ScenarioTestCase):

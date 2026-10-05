@@ -1290,6 +1290,17 @@ class TenantOrgUnitRow(TenantOrgUnit):
             "facts, and always null for a group or a department."
         )
     )
+    scope_exclusions: list[TermRef] = Field(
+        default_factory=list,
+        description=(
+            "The licence-bound terms outside this legal entity's own scope (FP-05), each with its key, "
+            "label and dimension (`regime`, `service_type` or `licensed_activity`): the register offers "
+            "the entity no rule whose terms in a dimension are all among these. They change only through "
+            "an approved regulatory scope request (`entityExclusions` of `POST /tenant/footprint/requests`). "
+            "Empty by default, and always empty for a group or a department. Terms are rows of the shared "
+            "library's taxonomy vocabulary, which an administrator may extend through an approved proposal."
+        ),
+    )
 
 
 class TenantOrgUnitPage(CamelSchema):

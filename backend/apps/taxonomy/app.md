@@ -672,6 +672,8 @@ When the officer files them as one request
 Then it waits like any change: one waiting request per bank, the preview counted, the company lines listed
 And the officer cannot approve it, and an approver holding footprint.approve approves it with a passkey
 Then the group terms and the company exclusions are written with one history row and one audit event each, and the suggestions are empty
+When a re-read finds a new licence for Example Fonder AB
+Then the suggestions put the term it gives back into Example Fonder AB's scope, and nothing changes until a request is approved
 ```
 
 ### FP-S21 — A company's exclusions are checked and kept apart from the bank's view `@integration` (FP-05, FP-01)
@@ -682,5 +684,4 @@ Then it answers 422 "not_a_legal_entity" or "dimension_not_narrowable" and nothi
 When an approved request excludes insurance from Example Fonder AB
 Then the bank's regulatory scope, its inventory and its preview counts are unchanged
 And a later request lifting it puts the term back in the company's scope, with its history row
-And when the register facts lose a licence, the suggestions list the new exclusion and no term changes until it is approved
 ```

@@ -1483,6 +1483,7 @@ class FootprintTermRef(TermRef):
 # and no agent reaches any of these shapes.
 # ---------------------------------------------------------------------------------------
 _MAX_TERMS = settings.FOOTPRINT_CHANGE_MAX_TERMS
+_MAX_ENTITY_LINES = settings.FOOTPRINT_ENTITY_CHANGE_MAX
 _SCOPE_ITEM_DESCRIPTION_MAX = settings.SCOPE_ITEM_DESCRIPTION_MAX_CHARS
 # H24: the note on a decision is capped at a fixed width, stated in its description.
 FOOTPRINT_NOTE_MAX_CHARS = 2000
@@ -1681,6 +1682,170 @@ class ScopeItemInput(WriteBody):
     )
 
 
+class FootprintOrgUnitRef(CamelSchema):
+    """A legal entity of the organisation, by id and name, as a company line names it."""
+
+    id: UUID = Field(
+        description="The legal entity's identifier, a UUID that never changes (`GET /tenant/org-units`).",
+        examples=["3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53"],
+    )
+    name: str = Field(
+        description="The legal entity's name as the organisation recorded it; the organisation's own data.",
+        examples=["Example Fonder AB"],
+    )
+
+
+class FootprintEntityTermRef(CamelSchema):
+    """One company line of a regulatory scope change (FP-05): a licence-bound term taken out of
+    one legal entity's own scope, or put back into it. It narrows only which rules the register
+    offers for that company, never what the organisation's members see."""
+
+    org_unit: FootprintOrgUnitRef = Field(description="The legal entity whose own scope the line changes.")
+    term: FootprintTermRef = Field(
+        description=(
+            "The term, with its label and dimension: one of the licence-bound dimensions `regime`, "
+            "`service_type` and `licensed_activity`. Terms are rows of the shared library's taxonomy "
+            "vocabulary, which an administrator may extend through an approved proposal."
+        )
+    )
+
+
+class FootprintSuggestionReason(CamelSchema):
+    """Why the public registers suggest a line: a legal entity and the register's own line
+    behind it."""
+
+    org_unit: FootprintOrgUnitRef = Field(description="The legal entity whose register facts give the term.")
+    register_line: str | None = Field(
+        default=None,
+        description=(
+            "The line in the register that gives the term, in the register's own words and language: a "
+            "business name (`Värdepappersbolag`), a licence with its legal basis, or a branch's name. Public "
+            "data, at most 1,000 characters. Null when the reason is the company's own country, or for a term "
+            "no licence answers that is added only so the change hides nothing outside the licences."
+        ),
+        examples=["Investeringsrådgivning till kund beträffande finansiella instrument, enligt 2 kap. 1 § 5 p. lagen [2007:528] om värdepappersmarknaden"],
+    )
+
+
+class FootprintSuggestionLine(CamelSchema):
+    """One term the public registers suggest putting into, or taking out of, the
+    organisation's regulatory scope."""
+
+    term: FootprintTermRef = Field(
+        description=(
+            "The term, with its label and dimension. Terms are rows of the shared library's taxonomy "
+            "vocabulary, which an administrator may extend through an approved proposal."
+        )
+    )
+    reasons: list[FootprintSuggestionReason] = Field(
+        default_factory=list,
+        description=(
+            "The legal entities and register lines behind the suggestion; empty for a removal (no company's "
+            "facts give the term any more) and for a term added only because no licence answers it."
+        ),
+    )
+
+
+class FootprintEntitySuggestion(CamelSchema):
+    """The terms the public registers suggest taking out of, or putting back into, one legal
+    entity's own scope (FP-05)."""
+
+    org_unit: FootprintOrgUnitRef = Field(description="The legal entity of the organisation whose own scope the line would change.")
+    main_business: str = Field(
+        description=(
+            "The legal entity's main business as the register writes it (`Fondbolag`), which decides what "
+            "its licences allow; public data."
+        ),
+        examples=["Fondbolag"],
+    )
+    terms: list[FootprintTermRef] = Field(
+        description=(
+            "The licence-bound terms (dimensions `regime`, `service_type`, `licensed_activity`) to take out "
+            "or put back, each with its label and dimension. Terms are rows of the shared library's taxonomy "
+            "vocabulary, which an administrator may extend through an approved proposal."
+        )
+    )
+
+
+class FootprintSuggestions(CamelSchema):
+    """`GET /tenant/footprint/suggestions`: what the public registers suggest for the
+    organisation's regulatory scope and for each legal entity's own scope (FP-05). A
+    suggestion, never a change: a person files it as an ordinary request
+    (`POST /tenant/footprint/requests`) and a second person approves it with a passkey."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "adds": [
+                        {
+                            "term": {"key": "dk", "kind": None, "label": "Denmark", "dimension": "jurisdiction"},
+                            "reasons": [
+                                {
+                                    "orgUnit": {"id": "6d1f0a2b-7c3e-4b58-9a21-0e4f8b7c6d55", "name": "Example Bank AB"},
+                                    "registerLine": "Example Bank AB, filial i Danmark",
+                                }
+                            ],
+                        }
+                    ],
+                    "removes": [],
+                    "entityExclusions": [
+                        {
+                            "orgUnit": {"id": "3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53", "name": "Example Fonder AB"},
+                            "mainBusiness": "Fondbolag",
+                            "terms": [{"key": "banking", "kind": None, "label": "Banking", "dimension": "regime"}],
+                        }
+                    ],
+                    "entityInclusions": [],
+                    "readAt": "2026-10-05T03:17:00Z",
+                }
+            ]
+        }
+    )
+
+    adds: list[FootprintSuggestionLine] = Field(
+        default_factory=list,
+        description=(
+            "Terms to put into the regulatory scope: the legal-entity types, regimes, service types and "
+            "licensed activities the companies' register facts give, and the markets of their countries and "
+            "branches that the library covers. Empty by default."
+        ),
+    )
+    removes: list[FootprintSuggestionLine] = Field(
+        default_factory=list,
+        description=(
+            "Licence-bound terms in the regulatory scope that no company's register facts give any more; never "
+            "one whose removal would leave its dimension empty, since an empty dimension restricts nothing. "
+            "Empty by default."
+        ),
+    )
+    entity_exclusions: list[FootprintEntitySuggestion] = Field(
+        default_factory=list,
+        description=(
+            "Per legal entity, the licence-bound terms its register facts do not give it, to take out of its own "
+            "scope. Only for a company whose main business the mapping knows; empty by default."
+        ),
+    )
+    entity_inclusions: list[FootprintEntitySuggestion] = Field(
+        default_factory=list,
+        description="Per legal entity, terms outside its own scope that its register facts now give it, to put back. Empty by default.",
+    )
+    read_at: datetime | None = Field(
+        default=None,
+        description=(
+            "When the register facts behind the suggestion were last read, a UTC timestamp (the latest of the "
+            "companies'); null when no legal entity has register facts."
+        ),
+        examples=["2026-10-05T03:17:00Z"],
+    )
+
+
+_ENTITY_LINE_EXAMPLE: dict[str, Any] = {
+    "orgUnit": {"id": "3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53", "name": "Example Fonder AB"},
+    "term": {"key": "banking", "kind": None, "label": "Banking", "dimension": "regime"},
+}
+
+
 _FOOTPRINT_REQUEST_EXAMPLE: dict[str, Any] = {
     "id": "5b0c7e1a-3f2d-4c8e-9a61-2d7f0e4b9c13",
     "status": "pending",
@@ -1690,6 +1855,8 @@ _FOOTPRINT_REQUEST_EXAMPLE: dict[str, Any] = {
     "removes": [{"key": "advice", "kind": None, "label": "Advice", "dimension": "service_type"}],
     "scopeItemAdds": [{**_SCOPE_ITEM_EXAMPLE, "status": "requested", "research": None}],
     "scopeItemRemoves": [],
+    "entityExclusions": [_ENTITY_LINE_EXAMPLE],
+    "entityInclusions": [],
     "preview": {"obligations": {"hidden": 2, "revealed": 2, "available": True}, "cases": {"hidden": 0, "revealed": 1, "available": True}},
     "decidedBy": None,
     "decidedAt": None,
@@ -1765,6 +1932,22 @@ class FootprintRequestRow(CamelSchema):
             "The scope items the change takes out of the regulatory scope; empty by default. Each stays "
             "`in_scope` until the change is approved and reads `removed` after; its research stops, and what "
             "its agent already filed stays in the organisation's own queue and library."
+        ),
+    )
+    entity_exclusions: list[FootprintEntityTermRef] = Field(
+        default_factory=list,
+        description=(
+            "Company lines that take a licence-bound term out of one legal entity's own scope (FP-05); empty "
+            "by default. Once approved, the register no longer offers that company a rule whose terms in that "
+            "dimension are all outside its scope. They never hide anything from the organisation's members "
+            "and never move `preview`."
+        ),
+    )
+    entity_inclusions: list[FootprintEntityTermRef] = Field(
+        default_factory=list,
+        description=(
+            "Company lines that put a term back into one legal entity's own scope, undoing an earlier "
+            "exclusion; empty by default. They never move `preview`."
         ),
     )
     preview: FootprintPreview = Field(
@@ -2022,6 +2205,35 @@ class FootprintTermSelector(CamelSchema):
     )
 
 
+class FootprintEntityTermSelector(CamelSchema):
+    """One company line as a scope change sends it: a legal entity by id and a licence-bound term
+    by its dimension and key (FP-05)."""
+
+    org_unit_id: UUID = Field(
+        description=(
+            "The legal entity whose own scope the line changes, by its UUID: an active org unit of kind "
+            "`legal_entity` in the caller's organisation (`GET /tenant/org-units`). Any other answers 422 "
+            "`not_a_legal_entity`."
+        ),
+        examples=["3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53"],
+    )
+    dimension: str = Field(
+        description=(
+            "The key of the term's dimension: one of the licence-bound dimensions `regime`, `service_type` "
+            "and `licensed_activity`. Any other dimension answers 422 `dimension_not_narrowable`."
+        ),
+        examples=["regime"],
+    )
+    key: str = Field(
+        description=(
+            "The key of the term within that dimension, such as `banking`. Terms are rows of the shared "
+            "library's taxonomy vocabulary, which an administrator may extend through an approved proposal; "
+            "an unknown or retired term answers 422 `unknown_key` with the valid keys."
+        ),
+        examples=["banking"],
+    )
+
+
 class FootprintRequestBody(WriteBody):
     """`POST /tenant/footprint/requests`: the terms and the scope items to put into and take
     out of the organisation's regulatory scope, previewed with `dryRun=true` or sent for
@@ -2090,6 +2302,29 @@ class FootprintRequestBody(WriteBody):
         ),
         examples=[["local_crypto_asset_rules"]],
     )
+    entity_exclusions: list[FootprintEntityTermSelector] = Field(
+        default_factory=list,
+        max_length=_MAX_ENTITY_LINES,
+        description=(
+            f"Company lines taking a licence-bound term out of one legal entity's own scope, at most "
+            f"{_MAX_ENTITY_LINES} (a setting); empty by default. A term already outside that company's scope "
+            "answers 422 `validation_error`. Once approved, the register no longer offers that company a rule "
+            "whose terms in that dimension are all outside its scope; nothing changes for the organisation's "
+            "members and the preview does not move. `GET /tenant/footprint/suggestions` lists the lines the "
+            "public registers suggest."
+        ),
+        examples=[[{"orgUnitId": "3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53", "dimension": "regime", "key": "banking"}]],
+    )
+    entity_inclusions: list[FootprintEntityTermSelector] = Field(
+        default_factory=list,
+        max_length=_MAX_ENTITY_LINES,
+        description=(
+            f"Company lines putting a term back into one legal entity's own scope, at most {_MAX_ENTITY_LINES} "
+            "(a setting); empty by default. Each must be outside that company's scope now; otherwise 422 "
+            "`validation_error`."
+        ),
+        examples=[[]],
+    )
 
 
 class FootprintDecisionBody(WriteBody):
@@ -2157,6 +2392,22 @@ class FootprintDryRun(CamelSchema):
     scope_item_removes: list[ScopeItemRow] = Field(
         default_factory=list,
         description="The scope items in scope now that the change would take out, as they stand; empty by default.",
+    )
+    entity_exclusions: list[FootprintEntityTermRef] = Field(
+        default_factory=list,
+        description=(
+            "Company lines that take a licence-bound term out of one legal entity's own scope (FP-05); empty "
+            "by default. Once approved, the register no longer offers that company a rule whose terms in that "
+            "dimension are all outside its scope. They never hide anything from the organisation's members "
+            "and never move `preview`."
+        ),
+    )
+    entity_inclusions: list[FootprintEntityTermRef] = Field(
+        default_factory=list,
+        description=(
+            "Company lines that put a term back into one legal entity's own scope, undoing an earlier "
+            "exclusion; empty by default. They never move `preview`."
+        ),
     )
     preview: FootprintPreview = Field(
         description=(

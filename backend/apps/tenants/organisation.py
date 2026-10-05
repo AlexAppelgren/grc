@@ -25,6 +25,7 @@ from apps.identity.models import Membership, User
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
+from apps.taxonomy.models import EntityScopeExclusion
 from apps.taxonomy.schemas import PersonRef, TermRef
 from apps.taxonomy.terms_logic import term_by_ref
 from apps.tenants import registers_logic
@@ -226,12 +227,29 @@ def list_org_units(*, tenant: Tenant, order: list[str], limit: int, offset: int)
     entities = [unit.id for unit in units if unit.kind == OrgUnitKind.LEGAL_ENTITY.value]
     licences = list(_licences(tenant).filter(org_unit_id__in=entities).order_by("granted_on", "id")) if entities else []
     registered = _register_entries(tenant, entities) if entities else {}
-    refs = term_refs([*_unit_terms(units), *_licence_terms(licences)], order)
+    outside = (
+        list(
+            EntityScopeExclusion.objects.filter(tenant=tenant, org_unit_id__in=entities)
+            .select_related("term__dimension")
+            .order_by("term__dimension__sort_order", "term__sort_order", "term__key")
+        )
+        if entities
+        else []
+    )
+    refs = term_refs([*_unit_terms(units), *_licence_terms(licences), *(row.term for row in outside)], order)
     held: dict[uuid.UUID, list[TenantLicence]] = {}
     for licence in _licences_out(licences, order, refs):
         held.setdefault(licence.org_unit_id, []).append(licence)
+    excluded: dict[uuid.UUID, list[TermRef]] = {}
+    for row in outside:
+        excluded.setdefault(row.org_unit_id, []).append(refs[row.term_id])
     rows = [
-        TenantOrgUnitRow(**unit.model_dump(), licences=held.get(unit.id, []), register_entry=registered.get(unit.id))
+        TenantOrgUnitRow(
+            **unit.model_dump(),
+            licences=held.get(unit.id, []),
+            register_entry=registered.get(unit.id),
+            scope_exclusions=excluded.get(unit.id, []),
+        )
         for unit in _units_out(units, order, refs)
     ]
     return TenantOrgUnitPage(items=rows, total=queryset.count())

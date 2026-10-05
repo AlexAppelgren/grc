@@ -7713,8 +7713,17 @@ export interface paths {
          *     event naming every term and every scope item (by id and key) added and removed. An
          *     organisation has one pending request at a time; withdraw or decide it first.
          *
-         *     Each of the four lists holds at most the configured number of entries
-         *     (`FOOTPRINT_CHANGE_MAX_TERMS`, 50 by default); a longer one is refused with 422.
+         *     Company lines (`entityExclusions`, `entityInclusions`; FP-05) take a licence-bound term (a
+         *     regime, a service type or a licensed activity) out of one legal entity's own scope or put
+         *     it back. They ride on the same request and are
+         *     decided with it, never change what the organisation's members see and never move the
+         *     preview; once approved, the register stops (or starts again) offering that company the
+         *     rules whose terms in that dimension are all outside its scope.
+         *     `GET /tenant/footprint/suggestions` lists the lines the public registers suggest.
+         *
+         *     Each of the four term and scope item lists holds at most the configured number of entries
+         *     (`FOOTPRINT_CHANGE_MAX_TERMS`, 50 by default), and each company line list at most
+         *     `FOOTPRINT_ENTITY_CHANGE_MAX` (200 by default); a longer one is refused with 422.
          *
          *     Needs `footprint.request` in the caller's organisation and a person's session; an API
          *     key is refused. No passkey step-up: the approval carries it.
@@ -7723,9 +7732,12 @@ export interface paths {
          *     `unknown_key` (422) for a dimension, term, jurisdiction or regime term that is not an
          *     active one, or a scope item to remove that is not in scope, with the valid keys in
          *     `detail`; `source_not_public` (422) for a scope item's address that is not a public https
-         *     page; `validation_error` (422) for a change with nothing in it, a term both added and
-         *     removed, a term or scope item named twice, a list over its cap, or a body the schema
-         *     refuses; `permission_denied` (403) without `footprint.request`; `unauthenticated` (401)
+         *     page; `not_a_legal_entity` (422) for a company line naming anything but an active legal
+         *     entity of the organisation; `dimension_not_narrowable` (422) for a company line in any
+         *     dimension but the three licence-bound ones named above; `validation_error`
+         *     (422) for a change with nothing in it, a term both added and removed, a term, scope item
+         *     or company line named twice, an exclusion of a term already outside that company's scope
+         *     or an inclusion of one inside it, a list over its cap, or a body the schema refuses; `permission_denied` (403) without `footprint.request`; `unauthenticated` (401)
          *     without a session; `not_found` (404) for a principal in no organisation.
          */
         post: operations["createFootprintRequest"];
@@ -7876,6 +7888,44 @@ export interface paths {
          *     not an id; `unauthenticated` (401) without a session.
          */
         get: operations["getScopeItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/footprint/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See what the public registers suggest for our regulatory scope
+         * @description What the register facts of the organisation's legal entities, read from the public
+         *     registers (`POST /tenant/register-lookups`, then every night), suggest for its regulatory
+         *     scope and for each legal entity's own scope (FP-05): the terms their businesses, licences
+         *     and branches give, the markets of their countries and branches, the licence-bound terms a
+         *     company's facts do not give it, and terms no company holds any more. Each line names the
+         *     companies and the register lines behind it.
+         *
+         *     A read: nothing changes and no audit event is written. To act on it, file the lines as an
+         *     ordinary request with `POST /tenant/footprint/requests` (`adds`, `removes`,
+         *     `entityExclusions`, `entityInclusions`); a second person approves it with a passkey. The
+         *     answer is empty, never an error, when no legal entity has register facts or nothing
+         *     differs, and it is computed on every read, so it is never stale against the scope.
+         *
+         *     Needs `footprint.request` in the caller's organisation and a person's session; an API key
+         *     is refused.
+         *
+         *     Errors to branch on: `permission_denied` (403) without `footprint.request`;
+         *     `unauthenticated` (401) without a session; `not_found` (404) for a principal in no
+         *     organisation.
+         */
+        get: operations["getFootprintSuggestions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15476,6 +15526,16 @@ export interface components {
              * @example true
              */
             dryRun: boolean;
+            /**
+             * Entityexclusions
+             * @description Company lines that take a licence-bound term out of one legal entity's own scope (FP-05); empty by default. Once approved, the register no longer offers that company a rule whose terms in that dimension are all outside its scope. They never hide anything from the organisation's members and never move `preview`.
+             */
+            entityExclusions?: components["schemas"]["FootprintEntityTermRef"][];
+            /**
+             * Entityinclusions
+             * @description Company lines that put a term back into one legal entity's own scope, undoing an earlier exclusion; empty by default. They never move `preview`.
+             */
+            entityInclusions?: components["schemas"]["FootprintEntityTermRef"][];
             /** @description What the change would hide and reveal if it were approved now, counted by the server with the same rule every list uses. Nothing is stored; a request sent afterwards is counted again. */
             preview: components["schemas"]["FootprintPreview"];
             /**
@@ -15493,6 +15553,83 @@ export interface components {
              * @description The scope items in scope now that the change would take out, as they stand; empty by default.
              */
             scopeItemRemoves?: components["schemas"]["ScopeItemRow"][];
+        };
+        /**
+         * FootprintEntitySuggestion
+         * @description The terms the public registers suggest taking out of, or putting back into, one legal
+         *     entity's own scope (FP-05).
+         */
+        FootprintEntitySuggestion: {
+            /**
+             * Mainbusiness
+             * @description The legal entity's main business as the register writes it (`Fondbolag`), which decides what its licences allow; public data.
+             * @example Fondbolag
+             */
+            mainBusiness: string;
+            /** @description The legal entity of the organisation whose own scope the line would change. */
+            orgUnit: components["schemas"]["FootprintOrgUnitRef"];
+            /**
+             * Terms
+             * @description The licence-bound terms (dimensions `regime`, `service_type`, `licensed_activity`) to take out or put back, each with its label and dimension. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.
+             */
+            terms: components["schemas"]["FootprintTermRef"][];
+        };
+        /**
+         * FootprintEntityTermRef
+         * @description One company line of a regulatory scope change (FP-05): a licence-bound term taken out of
+         *     one legal entity's own scope, or put back into it. It narrows only which rules the register
+         *     offers for that company, never what the organisation's members see.
+         */
+        FootprintEntityTermRef: {
+            /** @description The legal entity whose own scope the line changes. */
+            orgUnit: components["schemas"]["FootprintOrgUnitRef"];
+            /** @description The term, with its label and dimension: one of the licence-bound dimensions `regime`, `service_type` and `licensed_activity`. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal. */
+            term: components["schemas"]["FootprintTermRef"];
+        };
+        /**
+         * FootprintEntityTermSelector
+         * @description One company line as a scope change sends it: a legal entity by id and a licence-bound term
+         *     by its dimension and key (FP-05).
+         */
+        FootprintEntityTermSelector: {
+            /**
+             * Dimension
+             * @description The key of the term's dimension: one of the licence-bound dimensions `regime`, `service_type` and `licensed_activity`. Any other dimension answers 422 `dimension_not_narrowable`.
+             * @example regime
+             */
+            dimension: string;
+            /**
+             * Key
+             * @description The key of the term within that dimension, such as `banking`. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal; an unknown or retired term answers 422 `unknown_key` with the valid keys.
+             * @example banking
+             */
+            key: string;
+            /**
+             * Orgunitid
+             * Format: uuid
+             * @description The legal entity whose own scope the line changes, by its UUID: an active org unit of kind `legal_entity` in the caller's organisation (`GET /tenant/org-units`). Any other answers 422 `not_a_legal_entity`.
+             * @example 3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53
+             */
+            orgUnitId: string;
+        };
+        /**
+         * FootprintOrgUnitRef
+         * @description A legal entity of the organisation, by id and name, as a company line names it.
+         */
+        FootprintOrgUnitRef: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The legal entity's identifier, a UUID that never changes (`GET /tenant/org-units`).
+             * @example 3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53
+             */
+            id: string;
+            /**
+             * Name
+             * @description The legal entity's name as the organisation recorded it; the organisation's own data.
+             * @example Example Fonder AB
+             */
+            name: string;
         };
         /**
          * FootprintPreview
@@ -15566,6 +15703,24 @@ export interface components {
              * @description The terms to put into the regulatory scope, at most 50 (a setting); empty by default. A term already in the scope changes nothing when approved. With the other lists, at least one term or scope item in all, and no term in both `adds` and `removes`; otherwise 422 `validation_error`.
              */
             adds?: components["schemas"]["FootprintTermSelector"][];
+            /**
+             * Entityexclusions
+             * @description Company lines taking a licence-bound term out of one legal entity's own scope, at most 200 (a setting); empty by default. A term already outside that company's scope answers 422 `validation_error`. Once approved, the register no longer offers that company a rule whose terms in that dimension are all outside its scope; nothing changes for the organisation's members and the preview does not move. `GET /tenant/footprint/suggestions` lists the lines the public registers suggest.
+             * @example [
+             *       {
+             *         "dimension": "regime",
+             *         "key": "banking",
+             *         "orgUnitId": "3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53"
+             *       }
+             *     ]
+             */
+            entityExclusions?: components["schemas"]["FootprintEntityTermSelector"][];
+            /**
+             * Entityinclusions
+             * @description Company lines putting a term back into one legal entity's own scope, at most 200 (a setting); empty by default. Each must be outside that company's scope now; otherwise 422 `validation_error`.
+             * @example []
+             */
+            entityInclusions?: components["schemas"]["FootprintEntityTermSelector"][];
             /**
              * Removes
              * @description The terms to take out of the regulatory scope, at most 50 (a setting); empty by default. A term not in the scope changes nothing when approved. With the other lists, at least one term or scope item in all, and no term in both `adds` and `removes`; otherwise 422 `validation_error`.
@@ -15717,6 +15872,21 @@ export interface components {
          *       "decidedAt": null,
          *       "decidedBy": null,
          *       "decisionNote": "",
+         *       "entityExclusions": [
+         *         {
+         *           "orgUnit": {
+         *             "id": "3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53",
+         *             "name": "Example Fonder AB"
+         *           },
+         *           "term": {
+         *             "dimension": "regime",
+         *             "key": "banking",
+         *             "kind": null,
+         *             "label": "Banking"
+         *           }
+         *         }
+         *       ],
+         *       "entityInclusions": [],
          *       "id": "5b0c7e1a-3f2d-4c8e-9a61-2d7f0e4b9c13",
          *       "preview": {
          *         "cases": {
@@ -15793,6 +15963,16 @@ export interface components {
              */
             decisionNote: string;
             /**
+             * Entityexclusions
+             * @description Company lines that take a licence-bound term out of one legal entity's own scope (FP-05); empty by default. Once approved, the register no longer offers that company a rule whose terms in that dimension are all outside its scope. They never hide anything from the organisation's members and never move `preview`.
+             */
+            entityExclusions?: components["schemas"]["FootprintEntityTermRef"][];
+            /**
+             * Entityinclusions
+             * @description Company lines that put a term back into one legal entity's own scope, undoing an earlier exclusion; empty by default. They never move `preview`.
+             */
+            entityInclusions?: components["schemas"]["FootprintEntityTermRef"][];
+            /**
              * Id
              * Format: uuid
              * @description The request's identifier, a UUID that never changes; the approve, reject and withdraw calls take it in their path.
@@ -15838,6 +16018,111 @@ export interface components {
              * @example 1
              */
             version: number;
+        };
+        /**
+         * FootprintSuggestionLine
+         * @description One term the public registers suggest putting into, or taking out of, the
+         *     organisation's regulatory scope.
+         */
+        FootprintSuggestionLine: {
+            /**
+             * Reasons
+             * @description The legal entities and register lines behind the suggestion; empty for a removal (no company's facts give the term any more) and for a term added only because no licence answers it.
+             */
+            reasons?: components["schemas"]["FootprintSuggestionReason"][];
+            /** @description The term, with its label and dimension. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal. */
+            term: components["schemas"]["FootprintTermRef"];
+        };
+        /**
+         * FootprintSuggestionReason
+         * @description Why the public registers suggest a line: a legal entity and the register's own line
+         *     behind it.
+         */
+        FootprintSuggestionReason: {
+            /** @description The legal entity whose register facts give the term. */
+            orgUnit: components["schemas"]["FootprintOrgUnitRef"];
+            /**
+             * Registerline
+             * @description The line in the register that gives the term, in the register's own words and language: a business name (`Värdepappersbolag`), a licence with its legal basis, or a branch's name. Public data, at most 1,000 characters. Null when the reason is the company's own country, or for a term no licence answers that is added only so the change hides nothing outside the licences.
+             * @example Investeringsrådgivning till kund beträffande finansiella instrument, enligt 2 kap. 1 § 5 p. lagen [2007:528] om värdepappersmarknaden
+             */
+            registerLine?: string | null;
+        };
+        /**
+         * FootprintSuggestions
+         * @description `GET /tenant/footprint/suggestions`: what the public registers suggest for the
+         *     organisation's regulatory scope and for each legal entity's own scope (FP-05). A
+         *     suggestion, never a change: a person files it as an ordinary request
+         *     (`POST /tenant/footprint/requests`) and a second person approves it with a passkey.
+         * @example {
+         *       "adds": [
+         *         {
+         *           "reasons": [
+         *             {
+         *               "orgUnit": {
+         *                 "id": "6d1f0a2b-7c3e-4b58-9a21-0e4f8b7c6d55",
+         *                 "name": "Example Bank AB"
+         *               },
+         *               "registerLine": "Example Bank AB, filial i Danmark"
+         *             }
+         *           ],
+         *           "term": {
+         *             "dimension": "jurisdiction",
+         *             "key": "dk",
+         *             "kind": null,
+         *             "label": "Denmark"
+         *           }
+         *         }
+         *       ],
+         *       "entityExclusions": [
+         *         {
+         *           "mainBusiness": "Fondbolag",
+         *           "orgUnit": {
+         *             "id": "3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53",
+         *             "name": "Example Fonder AB"
+         *           },
+         *           "terms": [
+         *             {
+         *               "dimension": "regime",
+         *               "key": "banking",
+         *               "kind": null,
+         *               "label": "Banking"
+         *             }
+         *           ]
+         *         }
+         *       ],
+         *       "entityInclusions": [],
+         *       "readAt": "2026-10-05T03:17:00Z",
+         *       "removes": []
+         *     }
+         */
+        FootprintSuggestions: {
+            /**
+             * Adds
+             * @description Terms to put into the regulatory scope: the legal-entity types, regimes, service types and licensed activities the companies' register facts give, and the markets of their countries and branches that the library covers. Empty by default.
+             */
+            adds?: components["schemas"]["FootprintSuggestionLine"][];
+            /**
+             * Entityexclusions
+             * @description Per legal entity, the licence-bound terms its register facts do not give it, to take out of its own scope. Only for a company whose main business the mapping knows; empty by default.
+             */
+            entityExclusions?: components["schemas"]["FootprintEntitySuggestion"][];
+            /**
+             * Entityinclusions
+             * @description Per legal entity, terms outside its own scope that its register facts now give it, to put back. Empty by default.
+             */
+            entityInclusions?: components["schemas"]["FootprintEntitySuggestion"][];
+            /**
+             * Readat
+             * @description When the register facts behind the suggestion were last read, a UTC timestamp (the latest of the companies'); null when no legal entity has register facts.
+             * @example 2026-10-05T03:17:00Z
+             */
+            readAt?: string | null;
+            /**
+             * Removes
+             * @description Licence-bound terms in the regulatory scope that no company's register facts give any more; never one whose removal would leave its dimension empty, since an empty dimension restricts nothing. Empty by default.
+             */
+            removes?: components["schemas"]["FootprintSuggestionLine"][];
         };
         /**
          * FootprintTermRef
@@ -15957,6 +16242,21 @@ export interface components {
          *         "decidedAt": null,
          *         "decidedBy": null,
          *         "decisionNote": "",
+         *         "entityExclusions": [
+         *           {
+         *             "orgUnit": {
+         *               "id": "3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53",
+         *               "name": "Example Fonder AB"
+         *             },
+         *             "term": {
+         *               "dimension": "regime",
+         *               "key": "banking",
+         *               "kind": null,
+         *               "label": "Banking"
+         *             }
+         *           }
+         *         ],
+         *         "entityInclusions": [],
          *         "id": "5b0c7e1a-3f2d-4c8e-9a61-2d7f0e4b9c13",
          *         "preview": {
          *           "cases": {
@@ -30387,6 +30687,11 @@ export interface components {
             /** @description What a supervisor's register says about the legal entity, with the date read, once a lookup in the public registers was applied to it; null for a unit with no register facts, and always null for a group or a department. */
             registerEntry: components["schemas"]["TenantRegisterEntry"] | null;
             /**
+             * Scopeexclusions
+             * @description The licence-bound terms outside this legal entity's own scope (FP-05), each with its key, label and dimension (`regime`, `service_type` or `licensed_activity`): the register offers the entity no rule whose terms in a dimension are all among these. They change only through an approved regulatory scope request (`entityExclusions` of `POST /tenant/footprint/requests`). Empty by default, and always empty for a group or a department. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.
+             */
+            scopeExclusions?: components["schemas"]["TermRef"][];
+            /**
              * Version
              * @description The unit's version; send it back in `If-Match` on a change, and a stale one is refused with `stale_write`.
              */
@@ -42708,6 +43013,26 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["ScopeItemRow"];
+                };
+            };
+        };
+    };
+    getFootprintSuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FootprintSuggestions"];
                 };
             };
         };

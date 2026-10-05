@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from collections import defaultdict
 from collections.abc import Collection, Iterable
 from typing import NamedTuple
 
@@ -49,7 +50,7 @@ from apps.register.schemas import (
 from apps.shared.audit import Actor, batched, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
-from apps.taxonomy.models import ComplianceStatus
+from apps.taxonomy.models import ComplianceStatus, EntityScopeExclusion
 from apps.tenants.models import OrgUnit, OrgUnitKind
 
 APPLICABILITY_SET = "register.applicability_set"
@@ -105,26 +106,42 @@ def set_applicability_many(
 
 def entities_spanned(obligation_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, list[OrgUnit]]:
     """The legal entities each obligation spans, in the organisation's order: a read that
-    writes nothing (D-42). Six queries however many obligations."""
+    writes nothing (D-42). Seven queries however many obligations."""
     entities = list(
         OrgUnit.objects.filter(kind=OrgUnitKind.LEGAL_ENTITY.value, active=True).select_related("entity_term__dimension")
     )
+    outside = _outside_scope(entities)
     carried = {
         obligation_id: {dimension: {term.id for term in terms} for dimension, terms in scope.items()}
         for obligation_id, scope in obligation_scopes(obligation_ids).items()
     }
     return {
-        obligation_id: [entity for entity in entities if _spans(carried.get(obligation_id, {}), entity)]
+        obligation_id: [entity for entity in entities if _spans(carried.get(obligation_id, {}), entity, outside.get(entity.id, {}))]
         for obligation_id in obligation_ids
     }
 
 
-def _spans(carried: dict[str, set[uuid.UUID]], entity: OrgUnit) -> bool:
+def _outside_scope(entities: list[OrgUnit]) -> dict[uuid.UUID, dict[str, set[uuid.UUID]]]:
+    """Each entity's exclusions (FP-05), by dimension key, in one query."""
+    found: dict[uuid.UUID, dict[str, set[uuid.UUID]]] = defaultdict(lambda: defaultdict(set))
+    for org_unit_id, dimension, term_id in EntityScopeExclusion.objects.filter(org_unit__in=entities).values_list(
+        "org_unit_id", "term__dimension__key", "term_id"
+    ):
+        found[org_unit_id][dimension].add(term_id)
+    return found
+
+
+def _spans(carried: dict[str, set[uuid.UUID]], entity: OrgUnit, outside: dict[str, set[uuid.UUID]]) -> bool:
+    """An obligation spans an entity unless the entity's type is not among the types it
+    carries, or (FP-05, REG-S18) every term it carries in some dimension is outside the
+    entity's own scope. One check per dimension: an obligation tagged insurance and securities
+    still reaches a company outside insurance only (BANKING_GROUPS.md 4.1)."""
     term = entity.entity_term
-    if term is None:
-        return True
-    ids = carried.get(term.dimension.key)
-    return not ids or term.id in ids
+    if term is not None:
+        ids = carried.get(term.dimension.key)
+        if ids and term.id not in ids:
+            return False
+    return all(not carried.get(dimension) or carried[dimension] - excluded for dimension, excluded in outside.items())
 
 
 def _locked_units(answers: list[_Answer]) -> dict[uuid.UUID, SoaUnit]:

@@ -173,12 +173,14 @@ insurance only. A cross-cutting term is never excluded, so an AML rule reaches e
 | `register_lookup` (`tenants`) | `query`, `status` (`JobStatus`), `requested_by`, `created_at`, `completed_at`, `error`, `result` (`# schema: RegisterLookupResult`) | One job per lookup; the result holds public register data only |
 | `register_entry` (`tenants`) | `org_unit` (a legal entity), `authority` (library), `facts` (`# schema: RegisterFacts`), `source_url`, `read_at`, `changed_at`, `version` | Unique per `(org_unit, authority)`; written by apply and the re-check only, each write audited |
 | `entity_scope_exclusion` (`taxonomy`) | `org_unit`, `term`, `request`, `added_by`, `added_at` | The name `BANKING_GROUPS.md` 4.2 gave it; written only by an approved request |
-| `footprint_change_add`, `footprint_change_remove` | + nullable `org_unit` | A row with a company is a lift (add) or an exclusion (remove) for it; uniqueness becomes `(request, term, org_unit)` with nulls not distinct |
-| `footprint_history` | + nullable `org_unit` | The history says which company a line was for |
+| `footprint_change_entity_term` (`taxonomy`) | `request`, `org_unit`, `term`, `action` (`removed` excludes, `added` puts back), `created_at` | A request's company lines, beside its terms and scope items; unique per `(request, org_unit, term)` |
+| `footprint_history` | + nullable `org_unit` | The history says which company a line was for; a row without one is the bank's |
 
 Departure from `BANKING_GROUPS.md` 4.2: the company sits on each request line, not on the
 request, so one request can carry the group's change and every company's exclusions, and one
-waiting request per bank stays the rule.
+waiting request per bank stays the rule. The lines have a table of their own, like scope
+items, so nothing that reads a request's terms (the preview, the title, the history) can
+mistake a company line for the bank's.
 
 ### 5.2 Routes
 

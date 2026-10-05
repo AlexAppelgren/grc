@@ -1155,6 +1155,12 @@ if min(WHAT_APPLIES_SUMMARY_DEADLINE_MS, WHAT_APPLIES_SUMMARY_FACTS, WHAT_APPLIE
 FOOTPRINT_CHANGE_MAX_TERMS = env_int("FOOTPRINT_CHANGE_MAX_TERMS", 50)
 if FOOTPRINT_CHANGE_MAX_TERMS < 1:
     raise ImproperlyConfigured("Refusing to boot: FOOTPRINT_CHANGE_MAX_TERMS must be at least 1.")
+# How many company lines (a term out of or back into one legal entity's own scope, FP-05) one
+# request may carry in each direction: a group of ten companies with eight licence-bound terms
+# each fits, with room (PUBLIC_REGISTERS.md 5.4).
+FOOTPRINT_ENTITY_CHANGE_MAX = env_int("FOOTPRINT_ENTITY_CHANGE_MAX", 200)
+if FOOTPRINT_ENTITY_CHANGE_MAX < 1:
+    raise ImproperlyConfigured("Refusing to boot: FOOTPRINT_ENTITY_CHANGE_MAX must be at least 1.")
 
 # ---------------------------------------------------------------------------------------
 # ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========
