@@ -3,8 +3,30 @@ import { describe, expect, it } from 'vitest';
 
 import type { TaxonomyDimension, TaxonomyTerm } from '@/features/footprint/types';
 
-import { changedFields, entityTree, fieldErrorsOf, isCertificate, isWithdrawn, presentEntity, presentProductScope, presentServices, scopeTermGroups } from './organisation-presentation';
-import type { Licence, OrgUnit } from './types';
+import { createT } from '@/shared/i18n';
+import { defaultFormatContext, formatDate } from '@/shared/utils/format';
+
+import {
+  appliedMessage,
+  applyLabel,
+  branchesLine,
+  businessLine,
+  changedFields,
+  entityTree,
+  fieldErrorsOf,
+  isCertificate,
+  isChosen,
+  isWithdrawn,
+  lookupChoice,
+  lookupError,
+  lookupReadLine,
+  lookupStatus,
+  presentEntity,
+  presentProductScope,
+  presentServices,
+  scopeTermGroups,
+} from './organisation-presentation';
+import type { Licence, OrgUnit, RegisterLookupEntity } from './types';
 
 // The organisation screen's presentation (TEN-02): the entity tree, the one
 // pill slot (brand, the scope block), which fields a refused write names, and
@@ -139,5 +161,90 @@ describe('a change', () => {
       terms: ['custody', 'isk'],
     });
     expect(changedFields({ name: 'Custody', description: 'Old', launchDate: '2012-03-01', ownerUserId: 'u1', terms: ['custody'] }, before)).toEqual({});
+  });
+});
+
+describe('the public registers (TEN-07)', () => {
+  const t = createT('en');
+  const sv = createT('sv');
+  const facts = {
+    name: 'Example Bank AB',
+    registrationNumber: '556000-0001',
+    lei: '549300EXAMPLEBANK001',
+    mainBusiness: 'Bankaktiebolag',
+    otherBusinesses: ['Värdepappersbolag', 'Försäkringsdistribution'],
+    licences: [{ text: 'Tillstånd att driva bankrörelse', grantedOn: '1995-03-01' }],
+    branches: [
+      { name: 'Example Bank AB, filial i Danmark', countryName: 'Danmark', jurisdiction: 'dk' },
+      { name: 'Example Bank AB, filial i Ukraina', countryName: '', jurisdiction: null },
+    ],
+    listed: true,
+  };
+  const company = (lei: string, overrides: Partial<RegisterLookupEntity> = {}): RegisterLookupEntity => ({
+    lei,
+    name: lei,
+    registrationNumber: '',
+    country: 'SE',
+    parentLei: null,
+    leiStatus: 'ISSUED',
+    authority: 'fi',
+    facts,
+    existingOrgUnitId: null,
+    preselected: true,
+    unmapped: [],
+    entityType: null,
+    sourceUrl: null,
+    ...overrides,
+  });
+  const bank = company('bank', { existingOrgUnitId: 'u-bank' });
+  const fonder = company('fonder');
+  const holding = company('holding', { facts: null, preselected: false });
+  const pank = company('pank', { authority: null, facts: null, preselected: false, country: 'EE' });
+
+  it('ticks what the register licenses and what the bank has, lets a person flip the rest, and never unticks the bank\'s own', () => {
+    const none = new Set<string>();
+    expect([bank, fonder, holding, pank].map((entity) => isChosen(entity, none))).toEqual([true, true, false, false]);
+    const flipped = new Set(['bank', 'fonder', 'holding']);
+    expect([bank, fonder, holding, pank].map((entity) => isChosen(entity, flipped))).toEqual([true, false, true, false]);
+    expect(lookupChoice([bank, fonder, holding, pank], none)).toEqual({ leis: ['bank', 'fonder'], created: 1, linked: 1 });
+    expect(lookupChoice([bank, fonder, holding, pank], new Set(['fonder', 'holding']))).toEqual({ leis: ['bank', 'holding'], created: 1, linked: 1 });
+  });
+
+  it('says what applying adds and links, and what it did', () => {
+    expect(applyLabel({ created: 2, linked: 1 }, t)).toBe('Add 2 companies and link 1');
+    expect(applyLabel({ created: 1, linked: 0 }, t)).toBe('Add 1 company');
+    expect(applyLabel({ created: 0, linked: 2 }, t)).toBe('Link 2 companies');
+    expect(applyLabel({ created: 3, linked: 0 }, sv)).toBe('Lägg till 3 bolag');
+    expect(appliedMessage({ created: 2, linked: 1 }, t)).toBe('Added 2 companies from the public registers. Linked 1 company you already had.');
+    expect(appliedMessage({ created: 1, linked: 0 }, t)).toBe('Added 1 company from the public registers.');
+    expect(appliedMessage({ created: 0, linked: 2 }, t)).toBe('Linked 2 companies you already had.');
+  });
+
+  it('says why a company has no facts, or that the bank has it already', () => {
+    expect(lookupStatus(bank, 'Finansinspektionen', t)).toBe('Already in your organisation');
+    expect(lookupStatus(fonder, 'Finansinspektionen', t)).toBeNull();
+    expect(lookupStatus(holding, 'Finansinspektionen', t)).toBe("Not in Finansinspektionen's register");
+    expect(lookupStatus(pank, '', t)).toBe('No register we read for this country');
+    expect(lookupStatus(holding, 'Finansinspektionen', sv)).toBe('Finns inte i registret hos Finansinspektionen');
+  });
+
+  it('says a failed lookup in the screen\'s own words, by its code', () => {
+    expect(lookupError('lookup_not_found', t)).toBe('No company has that number. Check it, or type the LEI.');
+    expect(lookupError('lookup_ambiguous', t)).toBe('More than one company has that number. Type the LEI instead.');
+    expect(lookupError('register_unavailable', t)).toBe('The register could not be read. Try again later.');
+  });
+
+  it('names the registers read and the day, once each', () => {
+    const name = (key: string) => (key === 'fi' ? 'Finansinspektionen' : key);
+    const done = { completedAt: '2026-10-05T08:00:04Z', entities: [bank, fonder, holding, pank] };
+    expect(lookupReadLine(done, name, t, defaultFormatContext)).toBe(`Read from GLEIF and Finansinspektionen's register on ${formatDate(done.completedAt, defaultFormatContext)}.`);
+    expect(lookupReadLine({ ...done, entities: [holding, pank] }, name, t, defaultFormatContext)).toBe(`Read from GLEIF on ${formatDate(done.completedAt, defaultFormatContext)}.`);
+    expect(lookupReadLine({ ...done, completedAt: null }, name, t, defaultFormatContext)).toBeNull();
+  });
+
+  it('writes the register\'s businesses and branches as the register does', () => {
+    expect(businessLine(facts)).toBe('Bankaktiebolag · Värdepappersbolag · Försäkringsdistribution');
+    expect(businessLine({ mainBusiness: '', otherBusinesses: ['Fondbolag'] })).toBe('Fondbolag');
+    expect(branchesLine(facts.branches, t)).toBe('Example Bank AB, filial i Danmark (Danmark) · Example Bank AB, filial i Ukraina');
   });
 });

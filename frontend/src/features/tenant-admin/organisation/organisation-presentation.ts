@@ -1,6 +1,8 @@
 import type { TaxonomyDimension, TaxonomyTerm } from '@/features/footprint/types';
-import type { Licence, OrgUnit, Product } from '@/features/tenant-admin/organisation/types';
+import type { Licence, OrgUnit, Product, RegisterEntry, RegisterLookup, RegisterLookupEntity } from '@/features/tenant-admin/organisation/types';
 import type { PresentedPill } from '@/features/shared/presentation-types';
+import type { MessageKey, Translate } from '@/shared/i18n';
+import { formatDate, type FormatContext } from '@/shared/utils/format';
 import { problemFrom } from '@/shared/utils/problem';
 
 // Presentation for the organisation screen (design/screens/admin-organisation.html,
@@ -22,21 +24,21 @@ export const isDepartment = (unit: Pick<OrgUnit, 'kind'>): boolean => (DEPARTMEN
 export const teamDepartments = (units: readonly OrgUnit[], current: string | null): OrgUnit[] =>
   units.filter((unit) => isDepartment(unit) && (unit.active || unit.id === current));
 
-export interface TreeRow {
-  unit: OrgUnit;
+export interface TreeRow<U extends OrgUnit = OrgUnit> {
+  unit: U;
   depth: number;
 }
 
 /** The group and its legal entities as a tree, flattened in drawing order. A unit whose parent is not in the tree starts one of its own. */
-export function entityTree(units: readonly OrgUnit[]): TreeRow[] {
+export function entityTree<U extends OrgUnit>(units: readonly U[]): TreeRow<U>[] {
   const entities = units.filter((unit) => ENTITY_KINDS.has(unit.kind));
   const ids = new Set(entities.map((unit) => unit.id));
-  const children = new Map<string | null, OrgUnit[]>();
+  const children = new Map<string | null, U[]>();
   for (const unit of entities) {
     const parent = unit.parentId !== null && ids.has(unit.parentId) ? unit.parentId : null;
     children.set(parent, [...(children.get(parent) ?? []), unit]);
   }
-  const rows: TreeRow[] = [];
+  const rows: TreeRow<U>[] = [];
   const walk = (parent: string | null, depth: number) => {
     for (const unit of children.get(parent) ?? []) {
       rows.push({ unit, depth });
@@ -138,4 +140,67 @@ export function changedFields<T extends Record<string, Draftable>>(draft: T, ori
 /** A draft's blank strings become the nulls a create leaves out. */
 export function orNull(value: string): string | null {
   return value === '' ? null : value;
+}
+
+// ——— the public registers (TEN-07; PUBLIC_REGISTERS.md 3.1) ——————————————————————————
+// Register wording, names and numbers are data: shown as the register writes them, never
+// translated and never kept in a catalog. Only the words around them are ours.
+
+/** A company is ticked when the register licenses it, unless the person flipped it; one the bank already has is always ticked, and is linked rather than added. */
+export function isChosen(entity: Pick<RegisterLookupEntity, 'lei' | 'preselected' | 'existingOrgUnitId'>, flipped: ReadonlySet<string>): boolean {
+  return entity.existingOrgUnitId !== null || entity.preselected !== flipped.has(entity.lei);
+}
+
+/** What applying sends, and what it will do: the chosen LEIs, how many are new and how many the bank already has. */
+export function lookupChoice(entities: readonly RegisterLookupEntity[], flipped: ReadonlySet<string>): { leis: string[]; created: number; linked: number } {
+  const chosen = entities.filter((entity) => isChosen(entity, flipped));
+  const linked = chosen.filter((entity) => entity.existingOrgUnitId !== null).length;
+  return { leis: chosen.map((entity) => entity.lei), created: chosen.length - linked, linked };
+}
+
+/** The apply button: "Add 2 companies and link 1", "Add 3 companies" or "Link 2 companies". */
+export function applyLabel({ created, linked }: { created: number; linked: number }, t: Translate): string {
+  if (linked === 0) return t('admin.org.registers.add', { count: created });
+  return created === 0 ? t('admin.org.registers.link', { count: linked }) : t('admin.org.registers.addAndLink', { count: created, linked });
+}
+
+/** The status line once applied: what was added and what was linked. */
+export function appliedMessage({ created, linked }: { created: number; linked: number }, t: Translate): string {
+  return [created > 0 ? t('admin.org.registers.added', { count: created }) : '', linked > 0 ? t('admin.org.registers.linked', { count: linked }) : ''].filter((part) => part !== '').join(' ');
+}
+
+/** Why a company found has no facts of its own, or that the bank has it already; null for a company the register lists that is new to the bank. */
+export function lookupStatus(entity: Pick<RegisterLookupEntity, 'existingOrgUnitId' | 'authority' | 'facts'>, authorityName: string, t: Translate): string | null {
+  if (entity.existingOrgUnitId !== null) return t('admin.org.registers.existing');
+  if (entity.authority === null) return t('admin.org.registers.noRegister');
+  return entity.facts === null ? t('admin.org.registers.notInRegister', { authority: authorityName }) : null;
+}
+
+/** "Read from GLEIF and Finansinspektionen's register on 5 Oct 2026.": every register the companies' facts came from, and the day the job read them. */
+export function lookupReadLine(lookup: Pick<RegisterLookup, 'completedAt' | 'entities'>, authorityName: (key: string) => string, t: Translate, ctx: FormatContext): string | null {
+  if (lookup.completedAt === null) return null;
+  const date = formatDate(lookup.completedAt, ctx);
+  const registers = [...new Set(lookup.entities.flatMap((entity) => (entity.facts !== null && entity.authority !== null ? [authorityName(entity.authority)] : [])))];
+  return registers.length === 0 ? t('admin.org.registers.readFromGleif', { date }) : t('admin.org.registers.readFrom', { authority: registers.join(', '), date });
+}
+
+const LOOKUP_ERROR = {
+  lookup_not_found: 'admin.org.registers.notFound',
+  lookup_ambiguous: 'admin.org.registers.ambiguous',
+  register_unavailable: 'admin.org.registers.unavailable',
+} as const satisfies Record<NonNullable<RegisterLookup['error']>, MessageKey>;
+
+/** A failed lookup in the screen's own words, by the job's code. */
+export function lookupError(code: NonNullable<RegisterLookup['error']>, t: Translate): string {
+  return t(LOOKUP_ERROR[code]);
+}
+
+/** "Bankaktiebolag · Värdepappersbolag": the register's business names, the main one first. */
+export function businessLine(facts: Pick<RegisterEntry['facts'], 'mainBusiness' | 'otherBusinesses'>): string {
+  return [facts.mainBusiness, ...facts.otherBusinesses].filter((name) => name !== '').join(' · ');
+}
+
+/** "Example Bank AB, filial i Danmark (Danmark)": each branch with its country, as the register names them. */
+export function branchesLine(branches: RegisterEntry['facts']['branches'], t: Translate): string {
+  return branches.map((branch) => (branch.countryName === '' ? branch.name : t('admin.org.registers.branch', { name: branch.name, country: branch.countryName }))).join(' · ');
 }

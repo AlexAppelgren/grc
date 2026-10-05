@@ -33,6 +33,8 @@ describe('footprint api', () => {
     removes: [{ dimension: 'service_type', key: 'advice', kind: null, label: 'Advice' }],
     scopeItemAdds: [],
     scopeItemRemoves: [],
+    entityExclusions: [],
+    entityInclusions: [],
     preview: {
       hidden: { obligations: { count: 4, available: true }, cases: { count: 0, available: false } },
       revealed: { obligations: { count: 0, available: true }, cases: { count: 0, available: false } },
@@ -210,6 +212,24 @@ describe('footprint api', () => {
     expect(request.scopeItemAdds).toEqual([item]);
     expect(request.scopeItemRemoves).toEqual([{ ...item, id: 'i1', status: 'in_scope', research: 'waiting_for_agent' }]);
     expect(footprint.footprintOf({ dimensions: [], scopeItems: [row] }).scopeItems).toEqual([item]);
+  });
+
+  it('reads a request\'s company lines, each with its legal entity and its term', () => {
+    const fonder = { id: 'u-fonder', name: 'Example Fonder AB' };
+    const request = footprint.requestOf({
+      ...serverRequest,
+      entityExclusions: [{ orgUnit: fonder, term: { dimension: 'regime', key: 'banking', label: 'Banking' } }],
+      entityInclusions: [{ orgUnit: fonder, term: { dimension: 'service_type', key: 'custody', kind: null, label: 'Custody' } }],
+    });
+    expect(request.entityExclusions).toEqual([{ orgUnit: fonder, term: { dimension: 'regime', key: 'banking', kind: null, label: 'Banking' } }]);
+    expect(request.entityInclusions).toEqual([{ orgUnit: fonder, term: { dimension: 'service_type', key: 'custody', kind: null, label: 'Custody' } }]);
+  });
+
+  it('reads the suggestions from the registers as the server sends them', async () => {
+    const suggestions = { adds: [], removes: [], entityExclusions: [], entityInclusions: [], readAt: '2026-10-05T03:17:00Z' };
+    const sent = installAdapter(() => ({ status: 200, data: suggestions }));
+    expect(await footprint.getFootprintSuggestions()).toEqual(suggestions);
+    expect(sent.map((s) => [s.method, s.path])).toEqual([['get', '/api/v1/tenant/footprint/suggestions']]);
   });
 
   it('sends scope items with the request, the removals by key', async () => {

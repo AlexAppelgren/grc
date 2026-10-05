@@ -1044,13 +1044,9 @@ test.describe('departments, teams and certificates', () => {
   });
 });
 
-// PRD 0.9: the legal entities filled in from the public registers (TEN-07). Stays
-// test.fixme until the organisation screen's register lookup lands.
-test.describe('public registers', () => {
-  test.fixme("TEN-S13: The legal entities filled in from the public registers", async () => {
-    // pending: TEN-S13 (TEN-07, AC-TEN2, J-13)
-  });
-});
+// PRD 0.9: the legal entities filled in from the public registers (TEN-07, TEN-S13) are the
+// first half of J-13, in taxonomy.journey.spec.ts's "operating markets" block: the journey
+// files a regulatory scope request on tenant B, and only one request waits per bank.
 
 /** TEN-S5's teardown: the E2E-only `manage.py e2e_restore_leaver` puts the removed member back as seeded. */
 function restoreLeaver(): void {

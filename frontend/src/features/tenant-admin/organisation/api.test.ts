@@ -68,6 +68,20 @@ describe('organisation api', () => {
     expect(calls[3]?.body).toEqual({ withdrawnOn: '2026-12-31' });
   });
 
+  it('starts a lookup, reads it and applies it by LEI, and reads the authorities', async () => {
+    const calls = server({ id: 'job-1' });
+    await org.startRegisterLookup('556000-0001');
+    await org.getRegisterLookup('job-1');
+    await org.applyRegisterLookup('job-1', ['549300EXAMPLEFOND002']);
+    await org.listAuthorities();
+    expect(calls.map((c) => [c.method, c.path, c.body])).toEqual([
+      ['post', '/api/v1/tenant/register-lookups', { query: '556000-0001' }],
+      ['get', '/api/v1/tenant/register-lookups/job-1', null],
+      ['post', '/api/v1/tenant/register-lookups/job-1/apply', { leis: ['549300EXAMPLEFOND002'] }],
+      ['get', '/api/v1/authorities', null],
+    ]);
+  });
+
   it('reads the people picker', async () => {
     const calls = server([{ id: 'u1', name: 'Karin Holm' }]);
     expect(await org.listPeople()).toEqual([{ id: 'u1', name: 'Karin Holm' }]);
