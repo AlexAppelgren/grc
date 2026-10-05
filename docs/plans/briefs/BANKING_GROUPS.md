@@ -10,7 +10,7 @@
 > **2026-10-05 (D-121, ADR 0066, `PUBLIC_REGISTERS.md`).** Section 4's narrowing is built for
 > the licence-bound dimensions (regime, service type, licensed activity), with the exclusions
 > derived from each company's register facts instead of filed by hand: `entity_scope_exclusion`
-> as 4.2 names it, carried on request lines rather than on the request, so one request holds
+> as 4.2 names it, carried on request lines (`footprint_change_entity_term`) rather than on the request, so one request holds
 > the group's change and every company's and one waiting request per bank stays the rule. It
 > narrows the register's span only (4.4 of that brief). Sections 6 to 9 (a membership's entity
 > scope, the readers, the switcher, agent access) are still unbuilt.

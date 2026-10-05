@@ -52,6 +52,7 @@ from apps.taxonomy import tenant_lists_logic
 from apps.taxonomy.models import (
     ApprovalStatus,
     CaseStatusCategory,
+    EntityScopeExclusion,
     FootprintChangeRequest,
     FootprintHistory,
     FootprintTerm,
@@ -2168,6 +2169,76 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(bank.scope(back_office).empty_reason, entry_scope.EMPTY_SCOPE)
         self.assertEqual(reads(back_office), set())
 
+
+    def test_fp_s21(self) -> None:
+        """FP-S21
+
+        A company's exclusions are checked and kept apart from the bank's view (FP-05, FP-01).
+        Operations: `createFootprintRequest`, `approveFootprintRequest`.
+        """
+        from apps.tenants.models import OrgUnit, OrgUnitKind
+
+        self.activate(self.tenant)
+        fonder = OrgUnit.objects.create(tenant=self.tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name="Example Fonder AB")
+        department = OrgUnit.objects.create(tenant=self.tenant, kind=OrgUnitKind.BUSINESS_AREA.value, name="Retail Banking")
+        officer = sign_in(self.officer, tenant=self.tenant)
+        approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
+
+        def line(unit: OrgUnit, dimension: str, key: str) -> dict[str, str]:
+            return {"orgUnitId": str(unit.id), "dimension": dimension, "key": key}
+
+        # Refused lines store nothing.
+        stored = (FootprintChangeRequest.objects.count(), AuditEvent.objects.count())
+        for body, code in (
+            ({"entityExclusions": [line(department, "regime", "insurance")]}, "not_a_legal_entity"),
+            ({"entityExclusions": [line(fonder, "legal_entity", "bank")]}, "dimension_not_narrowable"),
+            ({"entityInclusions": [line(fonder, "regime", "insurance")]}, "validation_error"),
+            ({"entityExclusions": [line(fonder, "regime", "insurance"), line(fonder, "regime", "insurance")]}, "validation_error"),
+        ):
+            refused = self._post("/tenant/footprint/requests", body, officer)
+            self.assertEqual((refused.status_code, refused.json()["code"]), (422, code), body)
+        self.activate(self.tenant)
+        self.assertEqual((FootprintChangeRequest.objects.count(), AuditEvent.objects.count()), stored)
+
+        # An approved exclusion changes nothing the bank sees.
+        scope_before = self._footprint(officer)["dimensions"]
+        dry = self._preview("/tenant/footprint/requests?dryRun=true", {"entityExclusions": [line(fonder, "regime", "insurance")]}, officer)
+        self.assertEqual(dry.status_code, 200, dry.content)
+        self.assertEqual([entry["term"]["key"] for entry in dry.json()["entityExclusions"]], ["insurance"])
+        created = self._post("/tenant/footprint/requests", {"entityExclusions": [line(fonder, "regime", "insurance")]}, officer)
+        self.assertEqual(created.status_code, 201, created.content)
+        request = created.json()
+        [excluded] = request["entityExclusions"]
+        self.assertEqual((excluded["orgUnit"]["name"], excluded["term"]["dimension"], excluded["term"]["key"]), ("Example Fonder AB", "regime", "insurance"))
+        approve = f"/tenant/footprint/requests/{request['id']}/approve"
+        own = self._post(approve, {}, sign_in(self.officer, tenant=self.tenant, step_up=True))
+        self.assertEqual((own.status_code, own.json()["code"]), (409, "four_eyes_violation"))
+        approved = self._post(approve, {}, approver)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        nothing = {"hidden": 0, "revealed": 0, "available": True}
+        self.assertEqual((approved.json()["preview"]["obligations"], approved.json()["preview"]["cases"]), (nothing, nothing))
+        self.assertEqual(self._footprint(officer)["dimensions"], scope_before)
+        self.activate(self.tenant)
+        self.assertEqual(
+            list(EntityScopeExclusion.objects.values_list("org_unit__name", "term__key")), [("Example Fonder AB", "insurance")]
+        )
+        [history] = FootprintHistory.objects.filter(org_unit=fonder).values_list("action", "term__key", "changed_by_id")
+        self.assertEqual(history, ("removed", "insurance", self.approver.id))
+        [event] = AuditEvent.objects.filter(tenant=self.tenant, action="footprint.entity_term_excluded")
+        self.assertEqual((event.subject_id, event.before["term"]), (fonder.id, "insurance"))
+        self.assertIsNotNone(event.step_up_assertion_id)
+
+        # A later request puts it back, with its own history row.
+        lifted = self._post("/tenant/footprint/requests", {"entityInclusions": [line(fonder, "regime", "insurance")]}, officer)
+        self.assertEqual(lifted.status_code, 201, lifted.content)
+        back = self._post(f"/tenant/footprint/requests/{lifted.json()['id']}/approve", {}, approver)
+        self.assertEqual(back.status_code, 200, back.content)
+        self.activate(self.tenant)
+        self.assertFalse(EntityScopeExclusion.objects.exists())
+        self.assertEqual(
+            list(FootprintHistory.objects.filter(org_unit=fonder).order_by("id").values_list("action", flat=True)), ["removed", "added"]
+        )
+        self.assertTrue(AuditEvent.objects.filter(tenant=self.tenant, action="footprint.entity_term_included", subject_id=fonder.id).exists())
 
 class HeldStandardInScope(ScenarioTestCase):
     """FP-S16's integration half. The seed files ISO/IEC 27001 active

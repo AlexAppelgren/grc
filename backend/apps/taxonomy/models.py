@@ -828,6 +828,10 @@ class FootprintHistory(AppendOnlyModel, TenantModel):
     id = models.BigAutoField(primary_key=True)  # type: ignore[assignment]  # TenantModel's uuid id, replaced on purpose
     term = models.ForeignKey(TaxonomyTerm, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     scope_item = models.ForeignKey("taxonomy.ScopeItem", null=True, blank=True, on_delete=models.PROTECT, related_name="history")
+    # A term row with a company is that company's own scope, not the bank's (FP-05): `removed`
+    # takes the term out of the company's scope and `added` puts it back. Replaying the bank's
+    # scope reads only the rows without one.
+    org_unit = models.ForeignKey("tenants.OrgUnit", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     action = models.CharField(max_length=16, choices=_choices(FootprintAction))
     request = models.ForeignKey(FootprintChangeRequest, null=True, blank=True, on_delete=models.PROTECT, related_name="history")
     changed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
@@ -942,6 +946,51 @@ class FootprintChangeScopeItem(TenantModel):
 
     def __str__(self) -> str:
         return f"{self.action} {self.scope_item_id}"
+
+
+class FootprintChangeEntityTerm(TenantModel):
+    """One company line on a regulatory scope request (FP-05, PUBLIC_REGISTERS.md 5.1): a
+    licence-bound term taken out of one legal entity's own scope (`removed`) or put back
+    (`added`). It rides on the request like a scope item, so the same one-waiting rule,
+    four-eyes check and passkey decide it, and one request can carry the bank's change and
+    every company's."""
+
+    request = models.ForeignKey(FootprintChangeRequest, on_delete=models.CASCADE, related_name="entity_links")
+    org_unit = models.ForeignKey("tenants.OrgUnit", on_delete=models.PROTECT, related_name="+")
+    term = models.ForeignKey(TaxonomyTerm, on_delete=models.PROTECT, related_name="+")
+    action = models.CharField(max_length=16, choices=_choices(FootprintAction))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "footprint_change_entity_term"
+        ordering = ["created_at", "id"]
+        constraints = [
+            models.UniqueConstraint(fields=["request", "org_unit", "term"], name="footprint_change_entity_term_unique")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.action} {self.org_unit_id}:{self.term_id}"
+
+
+class EntityScopeExclusion(TenantModel):
+    """A licence-bound term outside one legal entity's own scope (FP-05, BANKING_GROUPS.md
+    4.2, D-121): written only when a second person approves the request line that asked for
+    it. It narrows which rules the register offers for that company (REG-S18) and nothing the
+    bank sees: the bank's scope is `FootprintTerm`'s."""
+
+    org_unit = models.ForeignKey("tenants.OrgUnit", on_delete=models.PROTECT, related_name="scope_exclusions")
+    term = models.ForeignKey(TaxonomyTerm, on_delete=models.PROTECT, related_name="+")
+    request = models.ForeignKey(FootprintChangeRequest, on_delete=models.PROTECT, related_name="+")
+    added_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "entity_scope_exclusion"
+        ordering = ["org_unit", "term", "id"]
+        constraints = [models.UniqueConstraint(fields=["org_unit", "term"], name="entity_scope_exclusion_unique")]
+
+    def __str__(self) -> str:
+        return f"{self.org_unit_id}:-{self.term_id}"
 
 
 # ---------------------------------------------------------------------------------------
