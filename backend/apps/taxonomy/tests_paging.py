@@ -51,8 +51,10 @@ from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 #   library, one request at most because the partial unique constraint lets only one wait
 #   (5 in this fixture: the footprint, the restricting dimensions, the obligations' scopes
 #   and their instruments, and the scopes of the bank's open cases); and the scope items
-#   every request on the page adds and removes, in one read (1, d89-scope-items-logic).
-FOOTPRINT_REQUESTS_QUERIES = 5 + 2 + 3 + 5 + 1
+#   every request on the page adds and removes, in one read (1, d89-scope-items-logic); and
+#   the company lines every request on the page carries, with their companies and terms, in
+#   one read (1, public-registers, FP-05).
+FOOTPRINT_REQUESTS_QUERIES = 5 + 2 + 3 + 5 + 1 + 1
 # - the suggestion inbox: the page with each suggester (1) and its total (1). A suggestion
 #   carries its labels as typed, so no label order is read.
 SUGGESTIONS_QUERIES = 5 + 2

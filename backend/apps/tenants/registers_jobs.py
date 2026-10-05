@@ -21,6 +21,7 @@ re-read logs the entry's id.
 from __future__ import annotations
 
 import logging
+import time
 import uuid
 from typing import Any, cast
 
@@ -93,6 +94,11 @@ def lookup_of(tenant: Tenant, lookup_id: uuid.UUID, *, lock: bool = False) -> Re
     if lookup is None:
         raise ProblemError(status=404, code="not_found", detail="Not found.")
     return lookup
+
+
+def _clock() -> float:
+    """The clock REGISTERS_JOB_SECONDS is measured on, so a test can move it."""
+    return time.monotonic()
 
 
 def _group(registers: RegistersAdapter, root: LeiCompany) -> list[LeiCompany]:
@@ -168,8 +174,13 @@ def run_lookup(tenant_id: uuid.UUID, lookup_id: str) -> None:
         if len(found) > 1:
             _finish(lookup, code="lookup_ambiguous", companies=[])
             return
+        deadline = _clock() + settings.REGISTERS_JOB_SECONDS
         covered: dict[str, Any] = {}
-        companies = [_with_facts(registers, company, covered) for company in _group(registers, found[0])]
+        companies = []
+        for company in _group(registers, found[0]):
+            if _clock() > deadline:
+                raise RegisterUnavailable("the registers took longer than REGISTERS_JOB_SECONDS")
+            companies.append(_with_facts(registers, company, covered))
     except RegisterUnavailable:
         _finish(lookup, code="register_unavailable", companies=[])
         return
@@ -392,8 +403,13 @@ def recheck(tenant_id: uuid.UUID) -> None:
         return
     registers = get_registers()
     actor = Actor.system("register re-read")
+    deadline = _clock() + settings.REGISTERS_JOB_SECONDS
     with batched():
         for entry in entries:
+            if _clock() > deadline:
+                # The rest keep their facts and read date, and are read again tomorrow.
+                logger.warning("register re-read stopped at its time limit", extra={"register_entry_id": str(entry.id)})
+                break
             stored = RegisterFacts.model_validate(entry.facts)
             now = timezone.now()
             try:

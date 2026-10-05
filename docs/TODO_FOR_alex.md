@@ -9,7 +9,14 @@ Built on the defaults in `docs/plans/briefs/PUBLIC_REGISTERS.md`; nothing waits 
 - [ ] **A compliance person should read `backend/apps/tenants/register_terms.json`.** It turns
       Finansinspektionen's business names and licence wording into scope terms, and a company's
       exclusions follow from it. Default: the mapping as written, from FI's own wording across 21
-      categories; a licence it does not know is shown to the bank and not mapped.
+      categories; a licence it does not know is shown to the bank and not mapped. Two calls in it
+      err on purpose towards fewer exclusions, so a rule is offered rather than hidden: the
+      occupational pension categories (`Tjänstepensionsaktiebolag` and the two others) derive
+      insurance distribution although they are IORP II institutions, and FI's one card licence
+      ("Ge ut betalningsinstrument/lösa in transaktionsbelopp") derives both card issuing and
+      acquiring, because the register does not say which. Bostadskreditinstitut and
+      konsumentkreditinstitut derive banking and no legal-entity type, since neither is a credit
+      market company.
 - [ ] **FI publishes no documented API for its register.** The lookup reads the CSV export
       behind FI's search and the branch list on its HTML pages, so a layout change at FI fails a
       lookup with "the register could not be read" until the parser is updated. Default: as built.

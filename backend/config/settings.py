@@ -903,7 +903,10 @@ SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
 # ENVIRONMENT=test (rule 5), so a deployed environment defaults to `live` and needs no
 # variable. Each read waits at most REGISTERS_TIMEOUT_SECONDS per socket operation and keeps
 # at most REGISTERS_MAX_BYTES; a lookup walks at most REGISTERS_MAX_ENTITIES companies and
-# reads at most REGISTERS_MAX_BRANCHES branches per company. The nightly re-read starts at
+# reads at most REGISTERS_MAX_BRANCHES branches per company. A lookup and one bank's nightly
+# re-read run inside the bank's transaction, so each gets at most REGISTERS_JOB_SECONDS of
+# register reads in all: a lookup that needs longer fails as `register_unavailable`, and a
+# re-read leaves the rest for the next night. The nightly re-read starts at
 # REGISTERS_RECHECK_HOUR, UTC.
 REGISTERS_PROVIDER = env_str("REGISTERS_PROVIDER", "live" if IS_DEPLOYED_ENVIRONMENT else "mock")  # live | mock
 REGISTERS_GLEIF_URL = env_str("REGISTERS_GLEIF_URL", "https://api.gleif.org/api/v1")
@@ -913,6 +916,7 @@ REGISTERS_MAX_BYTES = env_int("REGISTERS_MAX_BYTES", 2_000_000)
 REGISTERS_MAX_ENTITIES = env_int("REGISTERS_MAX_ENTITIES", 100)
 REGISTERS_MAX_BRANCHES = env_int("REGISTERS_MAX_BRANCHES", 40)
 REGISTERS_RECHECK_HOUR = env_int("REGISTERS_RECHECK_HOUR", 3)
+REGISTERS_JOB_SECONDS = env_int("REGISTERS_JOB_SECONDS", 300)
 if REGISTERS_PROVIDER not in ("live", "mock"):
     raise ImproperlyConfigured(f"REGISTERS_PROVIDER must be live or mock, got {REGISTERS_PROVIDER!r}")
 if not (REGISTERS_GLEIF_URL.startswith("https://") and REGISTERS_FI_URL.startswith("https://")):
@@ -927,6 +931,8 @@ if not 0 <= REGISTERS_MAX_BRANCHES <= 200:
     raise ImproperlyConfigured("REGISTERS_MAX_BRANCHES must be between 0 and 200")
 if not 0 <= REGISTERS_RECHECK_HOUR <= 23:
     raise ImproperlyConfigured("REGISTERS_RECHECK_HOUR must be an hour from 0 to 23")
+if not 30 <= REGISTERS_JOB_SECONDS <= 3600:
+    raise ImproperlyConfigured("REGISTERS_JOB_SECONDS must be between 30 and 3600")
 CELERY_BEAT_SCHEDULE["registers-recheck"] = {
     "task": "apps.tenants.tasks.recheck_registers",
     "schedule": crontab(minute="17", hour=str(REGISTERS_RECHECK_HOUR)),

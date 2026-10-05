@@ -54,6 +54,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `REGISTERS_MAX_ENTITIES` | worker | `100` | `100` | `100` | The most companies one lookup walks in GLEIF's tree, 1 to 500 |
 | `REGISTERS_MAX_BRANCHES` | worker | `40` | `40` | `40` | The most branches read from FI per company, 0 to 200 |
 | `REGISTERS_RECHECK_HOUR` | beat | `3` | `3` | `3` | The hour, UTC, of the nightly re-read of every bank's register facts (TEN-08), 0 to 23 |
+| `REGISTERS_JOB_SECONDS` | worker | `300` | `300` | `300` | The seconds of register reads one lookup or one bank's nightly re-read may take in all, inside its transaction: a lookup that needs longer fails as "the register could not be read", a re-read leaves the rest for the next night (TEN-07, TEN-08), 30 to 3600 |
 | `EVIDENCE_ALLOWED_TYPES` | api | the eight types | the eight types | the eight types | Comma-separated MIME types evidence may be (CAS-05): PDF, DOCX, XLSX, PPTX, PNG, JPEG, TXT and CSV. The header, the extension and the bytes must agree; anything else is refused with 422 before it is stored |
 | `EVIDENCE_MAX_BYTES` | api | `26214400` | `26214400` | `26214400` | The largest evidence file in bytes, 25 MB (CAS-05); a larger one is refused with 422 before it is stored |
 | `EVIDENCE_SCAN_RETRIES` | worker | `2` | `2` | `2` | How many more times a failed malware scan is tried before the file stays `error` and cannot be downloaded (CAS-05) |

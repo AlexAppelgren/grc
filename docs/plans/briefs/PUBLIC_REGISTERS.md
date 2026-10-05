@@ -218,7 +218,9 @@ reaches a URL. It returns facts, never HTML: a page that does not parse raises
 
 `REGISTERS_PROVIDER`, `REGISTERS_GLEIF_URL`, `REGISTERS_FI_URL`, `REGISTERS_TIMEOUT_SECONDS`
 (10), `REGISTERS_MAX_BYTES` (2 000 000), `REGISTERS_MAX_ENTITIES` (100),
-`REGISTERS_MAX_BRANCHES` (40), `REGISTERS_RECHECK_HOUR` (3), `FOOTPRINT_ENTITY_CHANGE_MAX` (200).
+`REGISTERS_MAX_BRANCHES` (40), `REGISTERS_RECHECK_HOUR` (3), `REGISTERS_JOB_SECONDS` (300: the register
+reads one lookup or one bank's re-read may take in all, since both run inside the bank's
+transaction), `FOOTPRINT_ENTITY_CHANGE_MAX` (200).
 
 ## 6. What never happens
 

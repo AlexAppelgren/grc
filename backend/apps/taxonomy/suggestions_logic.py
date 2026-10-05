@@ -72,12 +72,12 @@ def _companies(tenant_id: uuid.UUID) -> tuple[list[_Company], dict[str, set[str]
         facts = RegisterFacts.model_validate(entry.facts)
         authority = entry.authority.key
         for dimension, keys in registers_logic.derivable_terms(authority).items():
-            derivable[dimension] |= keys
+            derivable[dimension] = derivable[dimension] | keys
         if not facts.listed:
             continue
         company = companies.setdefault(entry.org_unit_id, _Company(unit=entry.org_unit))
         for dimension, keys in registers_logic.derived_terms(authority, facts).items():
-            company.derived.setdefault(dimension, set()).update(keys)
+            company.derived[dimension] = company.derived.get(dimension, set()) | keys
         for key, lines in registers_logic.term_sources(authority, facts).items():
             company.sources.setdefault(key, []).extend(lines)
         if registers_logic.knows_main_business(authority, facts):

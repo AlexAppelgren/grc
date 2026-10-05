@@ -5,6 +5,7 @@ the re-read of a company gone from the register, and the nightly fan-out."""
 from __future__ import annotations
 
 import dataclasses
+import itertools
 import uuid
 from datetime import timedelta
 from typing import Any
@@ -98,6 +99,13 @@ class TheWorker(RegistersCase):
         lookup.refresh_from_db()
         self.assertEqual(lookup.completed_at, finished)
 
+    def test_a_lookup_past_its_time_limit_fails_whole(self) -> None:
+        # REGISTERS_JOB_SECONDS bounds the reads inside the bank's transaction: the clock is
+        # moved past it after GLEIF answered, so no company is read from FI.
+        with mock.patch.object(registers_jobs, "_clock", side_effect=itertools.chain([0.0], itertools.repeat(10_000.0))):
+            lookup = self.lookup()
+        self.assertEqual((lookup.status, lookup.error, lookup.result.get("entities", [])), (JobStatus.FAILED.value, "register_unavailable", []))
+
     @override_settings(REGISTERS_MAX_ENTITIES=2)
     def test_the_walk_stops_at_the_cap(self) -> None:
         names = [entity["name"] for entity in self.lookup().result["entities"]]
@@ -161,6 +169,14 @@ class TheReRead(RegistersCase):
             tasks.recheck_tenant_registers(str(self.tenant.id))
             tasks.recheck_tenant_registers(str(factories.tenant(slug="registers-d").id))
         read.assert_not_called()
+
+    def test_a_re_read_past_its_time_limit_leaves_the_rest_for_tomorrow(self) -> None:
+        self.apply(self.lookup(), [BANK_LEI])
+        with mock.patch.object(registers_jobs, "_clock", side_effect=itertools.chain([0.0], itertools.repeat(10_000.0))):
+            tasks.recheck_tenant_registers(str(self.tenant.id))
+        tenancy.activate(self.tenant.id)
+        self.assertEqual(RegisterEntry.objects.get().version, 1)
+        self.assertFalse(AuditEvent.objects.filter(action__in=("register_entry.read", "register_entry.changed")).exists())
 
     def test_the_beat_hands_each_active_bank_to_its_own_task(self) -> None:
         resting = factories.tenant(slug="registers-e")

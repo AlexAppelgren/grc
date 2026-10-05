@@ -28,10 +28,11 @@ from apps.watch import testing as watch_build
 
 # The whole read on the standard with one row in every part, the same with three rows in
 # each: the test client's audit count (1), the request's own savepoint, tenant and caller
-# (6), the entry with its reading, scopes and labels (6), the entities spanned (6), the
+# (6), the entry with its reading, scopes and labels (6), the entities spanned with their
+# exclusions from their own scope (7, FP-05), the
 # gaps (5), the assessments (3), the links (3), the units (4), the participants (5), the
 # problem reports (4), the related changes (11) and the comments (5).
-PANEL_QUERIES = 59
+PANEL_QUERIES = 60
 EVERY_PANEL = frozenset(
     {
         perms.REGISTER_READ,

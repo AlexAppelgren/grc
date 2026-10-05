@@ -34,6 +34,7 @@ class OutOfRangeCapsRefuseToBoot(SimpleTestCase):
             "REGISTERS_MAX_ENTITIES": ["0", "501"],
             "REGISTERS_MAX_BRANCHES": ["-1", "201"],
             "REGISTERS_RECHECK_HOUR": ["-1", "24"],
+            "REGISTERS_JOB_SECONDS": ["29", "3601"],
         }
         for name, values in cases.items():
             for value in values:

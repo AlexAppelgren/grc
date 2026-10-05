@@ -426,11 +426,11 @@ class SettingManyAnswers(ApplicabilityTestCase):
 # and reason, and its audit event joins the call's batch below.
 ROW_QUERIES = 0
 # Once per call, whatever its length: the obligations and their titles (2), the legal
-# entities (1) and the scope rule (5), the locking reads of the entries and the scope rows
+# entities and their exclusions from their own scope (2, FP-05) and the scope rule (5), the locking reads of the entries and the scope rows
 # (2), one UPDATE per kind of row, answer and reason (1 here), and every audit event of the
 # call (`audit.batched()`: one statement for the audit and outbox rows, ADR 0063). Pinned
 # so a lookup or a write that turns per-row shows up here.
-BATCH_QUERIES = 12
+BATCH_QUERIES = 13
 # What a call adds when it creates rows, however many: the default compliance status (1), one
 # INSERT of the missing entries and its locking re-read (2), and one INSERT of the missing
 # scope rows and its locking re-read (2), less the locking read of existing scope rows, which
