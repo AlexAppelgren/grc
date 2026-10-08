@@ -16,7 +16,7 @@ test.describe('app shell', () => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('img', { name: 'bleqq, pronounced blek' }).first()).toBeVisible();
+    await expect(page.getByRole('img', { name: 'bleqq, pronounced bläck' }).first()).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'What is coming, and where we stand' })).toBeVisible();
     await expect(page.locator('#main')).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Main' }).first()).toBeVisible();
@@ -28,7 +28,7 @@ test.describe('app shell', () => {
     allowFreshContext(apiGuard);
     await page.goto('/watch');
     await expect(page).toHaveURL(/\/welcome$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'A register of record for everything regulation asks of your bank.' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Compliance, written in ink.' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0);
   });
 });

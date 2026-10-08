@@ -5,7 +5,7 @@ import { DEMO_FRAME_NAME } from '@/features/demo/frame';
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, LOGINS, signInAs, signOut } from './support/passkeys';
 
-const PLATE = 'A register of record for everything regulation asks of your bank.';
+const PLATE = 'Compliance, written in ink.';
 
 // The public page (design/public/): what a visitor who is not signed in sees at
 // the front door, and the way from it into the passkey sign-in flow. The page
@@ -18,7 +18,7 @@ test.describe('public page', () => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/welcome$/);
     await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
-    await expect(page.getByRole('img', { name: 'bleqq, pronounced blek' }).first()).toBeVisible();
+    await expect(page.getByRole('img', { name: 'bleqq, pronounced bläck' }).first()).toBeVisible();
   });
 
   test('the sign-in page has a way back to the public page', async ({ page, apiGuard }) => {
