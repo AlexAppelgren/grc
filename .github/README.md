@@ -114,7 +114,7 @@ Dependabot's github-actions group keeps them moving.
 | `aquasecurity/trivy-action` | v0.36.0 | `ed142fd0673e97e23eac54620cfb913e5ce36c25` |
 | `docker/setup-buildx-action` | v4.4.1 | `f87e5991a6d7451dcb8d9637bfbc97413f497069` |
 | `docker/build-push-action` | v7.4.0 | `c3c9e263c25d99ce0380d002d59b67737d91b0dc` |
-| `github/codeql-action` | v4.38.1 | `1c5b675653bb5c22dbe9b12b556ec555138e09fd` |
+| `github/codeql-action` | v4.38.2 | `2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2` |
 
 ## Running the gates locally
 

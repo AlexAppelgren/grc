@@ -61,6 +61,10 @@ updates:
       # Tailwind 4 changed the PostCSS integration; the two move together.
       - dependency-name: "@tailwindcss/postcss"
         update-types: ["version-update:semver-major"]
+      # @types/node follows the Node major the images and CI run (22): typings for
+      # a newer runtime admit APIs that do not exist at run time (ADR 0025).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /

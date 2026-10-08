@@ -31,13 +31,13 @@ dependencies = [
 package-mode = false
 
 [tool.poetry.group.dev.dependencies]
-ruff = "0.16.8"
-mypy = "2.3.1"
+ruff = "0.16.10"
+mypy = "2.4.0"
 django-stubs = "6.1.1"
 # django-stubs and django-stubs-ext must share a line: mixing 5.2 stubs with the 6.x ext
 # crashed mypy ("Cannot find component 'db'") on 2026-09-19, so both are pinned together.
 django-stubs-ext = "6.1.1"
-coverage = "7.16.1"
+coverage = "7.16.2"
 # PyYAML reads docs/inputs/openapi.yaml in scripts/contract_drift.py. Not in the brief's
 # pin list; newest at resolve time, recorded in the Phase 0 report.
 pyyaml = "6.0.3"
@@ -47,7 +47,7 @@ types-pyyaml = "6.0.12.20260906"
 # with "cannot pickle 'traceback' object" and no test name, so `--parallel` would trade a
 # readable gate for a fast one (measured 2026-09-21). Not in the brief's pin list; newest
 # at resolve time.
-tblib = "3.2.0"
+tblib = "3.2.2"
 
 # ---------------------------------------------------------------------------------------
 # ruff: correctness classes only (playbook 9). Every excluded rule names its reason below.
