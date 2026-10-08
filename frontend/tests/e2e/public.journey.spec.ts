@@ -220,7 +220,8 @@ test.describe('the public site and the app on hosts of their own', () => {
     const home = await crawl(request, `${PUBLIC}/`);
     expect(home.status()).toBe(200);
     const html = await home.text();
-    expect(html).toContain(PLATE);
+    // The headline renders one sentence a line, each in its own element.
+    for (const sentence of PLATE.split(/(?<=\.) /)) expect(html).toContain(sentence);
     expect(html).toMatch(/<meta name="robots" content="index, follow"/);
     expect(home.headers()['x-robots-tag']).toBeUndefined();
 
