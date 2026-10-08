@@ -34,7 +34,7 @@ describe('PublicPage', () => {
   it('leads with the plate headline and sends every Sign in to the passkey sign-in flow', async () => {
     await renderPage();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Compliance, written in ink.');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Agents watch the regulators. You make the decisions.');
     const signIns = screen.getAllByRole('link', { name: 'Sign in' });
     expect(signIns.length).toBeGreaterThanOrEqual(3);
     for (const link of signIns) expect(link).toHaveAttribute('href', '/sign-in');
@@ -43,7 +43,7 @@ describe('PublicPage', () => {
 
   it('gives the first screen one thing to read: the headline, with no actions competing beside it', async () => {
     await renderPage();
-    const hero = screen.getByRole('region', { name: 'Compliance, written in ink.' });
+    const hero = screen.getByRole('region', { name: 'Agents watch the regulators. You make the decisions.' });
     expect(within(hero).queryAllByRole('link')).toHaveLength(0);
     expect(within(hero).queryAllByRole('button')).toHaveLength(0);
     expect(within(hero).queryByRole('article')).toBeNull();

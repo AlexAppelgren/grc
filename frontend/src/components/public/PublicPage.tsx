@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 
 import { DemoFrame } from '@/components/public/DemoFrame';
 import { ThemeSwitch } from '@/components/public/ThemeSwitch';
@@ -19,6 +19,11 @@ import { cn } from '@/shared/utils/cn';
 // faces are loaded by the (public) layout.
 
 const t = createT(defaultLocale);
+
+// The headline starts each sentence on a new line, so a wrap never strands the
+// first word of the second one (Alex, 2026-10-08). The space after each line
+// keeps the heading's accessible name one sentence after another.
+const HERO_LINES = t('public.hero.title').split(/(?<=\.) /);
 
 // The page gutter, as AppShell writes it: 16 px, then 32 px from md, each the
 // larger of that step and the safe-area inset (foundations.md "Spacing").
@@ -180,7 +185,11 @@ export function PublicPage() {
               nothing drew the eye). The demo follows it, the product itself. */}
           <section aria-labelledby="public-title" className="pt-14 pb-10 md:pt-24 md:pb-14">
             <h1 id="public-title" className="max-w-[20ch] font-serif-display text-hero text-balance">
-              {t('public.hero.title')}
+              {HERO_LINES.map((line) => (
+                <Fragment key={line}>
+                  <span className="block">{line}</span>{' '}
+                </Fragment>
+              ))}
             </h1>
             <p className="mt-6 max-w-[52ch] text-title font-normal">{t('public.hero.deck')}</p>
           </section>

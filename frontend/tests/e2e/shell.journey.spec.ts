@@ -28,7 +28,7 @@ test.describe('app shell', () => {
     allowFreshContext(apiGuard);
     await page.goto('/watch');
     await expect(page).toHaveURL(/\/welcome$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Compliance, written in ink.' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Agents watch the regulators. You make the decisions.' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Main' })).toHaveCount(0);
   });
 });
