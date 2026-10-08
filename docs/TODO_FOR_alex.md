@@ -8,7 +8,8 @@ Built on the defaults in `docs/plans/briefs/PUBLIC_REGISTERS.md`; nothing waits 
 
 - [ ] **A compliance person should read `backend/apps/tenants/register_terms.json`.** It turns
       Finansinspektionen's business names and licence wording into scope terms, and a company's
-      exclusions follow from it. Default: the mapping as written, from FI's own wording across 21
+      exclusions follow from it. Since 2026-10-08 (D-122) what it derives applies to the scope by
+      itself with no approval, so this read matters more than it did. Default: the mapping as written, from FI's own wording across 21
       categories; a licence it does not know is shown to the bank and not mapped. Two calls in it
       err on purpose towards fewer exclusions, so a rule is offered rather than hidden: the
       occupational pension categories (`Tjänstepensionsaktiebolag` and the two others) derive

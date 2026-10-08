@@ -135,7 +135,10 @@ def _spans(carried: dict[str, set[uuid.UUID]], entity: OrgUnit, outside: dict[st
     """An obligation spans an entity unless the entity's type is not among the types it
     carries, or (FP-05, REG-S18) every term it carries in some dimension is outside the
     entity's own scope. One check per dimension: an obligation tagged insurance and securities
-    still reaches a company outside insurance only (BANKING_GROUPS.md 4.1)."""
+    still reaches a company outside insurance only (BANKING_GROUPS.md 4.1). The countries are
+    one of those dimensions (REG-S19, D-122): a Danish rule carries Denmark only, so it does not
+    reach a Swedish company without a Danish branch, while an EU rule carries the EU and every
+    country it reaches, so it reaches them all."""
     term = entity.entity_term
     if term is not None:
         ids = carried.get(term.dimension.key)

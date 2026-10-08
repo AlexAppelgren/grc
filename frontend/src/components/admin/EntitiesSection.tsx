@@ -169,7 +169,7 @@ export function EntitiesSection() {
   );
 }
 
-/** What the register says about an entity (state "register-facts"): its businesses, its licences behind a disclosure, its branches, what the scope does not use, and the exclusions an approved scope request gave it. */
+/** What the register says about an entity (state "register-facts"): its businesses, its licences behind a disclosure, its branches, what the scope does not use, and what is outside its own scope, from the organisation or from a person's approved change. */
 function RegisterFacts({ unit }: { unit: OrgUnitRow }) {
   const t = useT();
   const ctx = useFormatContext();

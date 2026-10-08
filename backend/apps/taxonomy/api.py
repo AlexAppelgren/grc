@@ -24,7 +24,7 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy import footprint_logic, library_lists_logic, markets_logic, reading, suggestions_logic, tagging_logic, terms_logic
+from apps.taxonomy import footprint_logic, library_lists_logic, markets_logic, reading, tagging_logic, terms_logic
 from apps.taxonomy import tenant_lists_logic as lists
 from apps.taxonomy.http import (
     actor_for,
@@ -80,7 +80,6 @@ from apps.taxonomy.schemas import (
     VocabularySuggestBody,
     VocabularySuggestionPage,
     VocabularySuggestionRow,
-    FootprintSuggestions,
 )
 
 router = Router(tags=["Taxonomy"])
@@ -995,12 +994,17 @@ def create_footprint_request(request: HttpRequest, body: FootprintRequestBody, q
     organisation has one pending request at a time; withdraw or decide it first.
 
     Company lines (`entityExclusions`, `entityInclusions`; FP-05) take a licence-bound term (a
-    regime, a service type or a licensed activity) out of one legal entity's own scope or put
-    it back. They ride on the same request and are
+    regime, a service type or a licensed activity) or a country of the jurisdiction dimension
+    out of one legal entity's own scope or put it back. They ride on the same request and are
     decided with it, never change what the organisation's members see and never move the
     preview; once approved, the register stops (or starts again) offering that company the
     rules whose terms in that dimension are all outside its scope.
-    `GET /tenant/footprint/suggestions` lists the lines the public registers suggest.
+
+    This is the way to change the scope by hand. What the organisation's legal entities and
+    their register facts give the scope (each company's country and branches as markets, the
+    licence-bound terms their licences allow, each company's own licence-bound terms and
+    countries) applies by itself with no request (D-122), and it never undoes a term or a
+    company line whose last change was an approved request.
 
     Each of the four term and scope item lists holds at most the configured number of entries
     (`FOOTPRINT_CHANGE_MAX_TERMS`, 50 by default), and each company line list at most
@@ -1015,7 +1019,8 @@ def create_footprint_request(request: HttpRequest, body: FootprintRequestBody, q
     `detail`; `source_not_public` (422) for a scope item's address that is not a public https
     page; `not_a_legal_entity` (422) for a company line naming anything but an active legal
     entity of the organisation; `dimension_not_narrowable` (422) for a company line in any
-    dimension but the three licence-bound ones named above; `validation_error`
+    dimension but the three licence-bound ones and the jurisdiction dimension, or naming a
+    jurisdiction that is not a country, such as the EU, whose rules reach every company; `validation_error`
     (422) for a change with nothing in it, a term both added and removed, a term, scope item
     or company line named twice, an exclusion of a term already outside that company's scope
     or an inclusion of one inside it, a list over its cap, or a body the schema refuses; `permission_denied` (403) without `footprint.request`; `unauthenticated` (401)
@@ -1053,40 +1058,6 @@ def create_footprint_request(request: HttpRequest, body: FootprintRequestBody, q
         entity_includes=entity_includes,
     )
     return 201, footprint_logic.request_row(created, order)
-
-
-@router.get(
-    "/tenant/footprint/suggestions",
-    response=FootprintSuggestions,
-    auth=SESSION,
-    operation_id="getFootprintSuggestions",
-    by_alias=True,
-    summary="See what the public registers suggest for our regulatory scope",
-)
-@requires_permission(perms.FOOTPRINT_REQUEST)
-def footprint_suggestions(request: HttpRequest) -> Any:
-    """What the register facts of the organisation's legal entities, read from the public
-    registers (`POST /tenant/register-lookups`, then every night), suggest for its regulatory
-    scope and for each legal entity's own scope (FP-05): the terms their businesses, licences
-    and branches give, the markets of their countries and branches, the licence-bound terms a
-    company's facts do not give it, and terms no company holds any more. Each line names the
-    companies and the register lines behind it.
-
-    A read: nothing changes and no audit event is written. To act on it, file the lines as an
-    ordinary request with `POST /tenant/footprint/requests` (`adds`, `removes`,
-    `entityExclusions`, `entityInclusions`); a second person approves it with a passkey. The
-    answer is empty, never an error, when no legal entity has register facts or nothing
-    differs, and it is computed on every read, so it is never stale against the scope.
-
-    Needs `footprint.request` in the caller's organisation and a person's session; an API key
-    is refused.
-
-    Errors to branch on: `permission_denied` (403) without `footprint.request`;
-    `unauthenticated` (401) without a session; `not_found` (404) for a principal in no
-    organisation.
-    """
-    tenant = caller_tenant(request)
-    return suggestions_logic.suggestions_of(tenant.id, reading.language_order(request, tenant=tenant))
 
 
 def _footprint_request(tenant: Any, request_id: str) -> FootprintChangeRequest:

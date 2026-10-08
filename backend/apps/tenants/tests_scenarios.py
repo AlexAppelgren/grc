@@ -46,7 +46,7 @@ from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy import tenant_lists_logic
-from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, TermDimensionKind
+from apps.taxonomy.models import FootprintChangeRequest, FootprintTerm, TaxonomyTerm, TermDimensionKind
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.tenants import reassignment, tasks
@@ -803,9 +803,11 @@ class TenantsScenarioTests(ScenarioTestCase):
         entries = RegisterEntry.objects.select_related("authority").order_by("org_unit__name")
         self.assertEqual([(entry.org_unit_id, entry.authority.key) for entry in entries], [(bank.id, "fi"), (fonder.id, "fi"), (liv.id, "fi")])
         self.assertEqual(entries[0].facts["licences"][0]["grantedOn"], "1995-03-01")
-        # No licence row and no regulatory scope term, and each write has its audit event.
+        # No licence row, and each write has its audit event. The scope follows the companies by
+        # itself (D-122, FP-S20 has its terms), with no request: nobody asked for it.
         self.assertEqual(Licence.objects.count(), licences_before)
-        self.assertFalse(FootprintTerm.objects.exists())
+        self.assertTrue(FootprintTerm.objects.exists())
+        self.assertFalse(FootprintChangeRequest.objects.exists())
         actions = list(AuditEvent.objects.filter(tenant_id=self.tenant.id).values_list("action", flat=True))
         for action, count in (
             ("register_lookup.started", 1),
@@ -857,7 +859,7 @@ class TenantsScenarioTests(ScenarioTestCase):
     def test_ten_s14(self) -> None:
         """TEN-S14
 
-        The nightly re-read refreshes the register facts and nothing else (TEN-08).
+        The nightly re-read refreshes the register facts, and the scope follows them (TEN-08, D-122).
         """
         bank = self._register_world()
         headers = self._member_with(perms.VOCAB_MANAGE)
@@ -867,6 +869,9 @@ class TenantsScenarioTests(ScenarioTestCase):
         yesterday = timezone.now() - timedelta(days=1)
         RegisterEntry.objects.filter(org_unit=bank).update(read_at=yesterday, changed_at=yesterday)
         units = list(OrgUnit.objects.order_by("id").values_list("id", "version", "name", "lei"))
+        # The scope already follows the bank's facts (D-122); a licence that gives no new term moves none.
+        scope = set(FootprintTerm.objects.values_list("term_id", flat=True))
+        self.assertTrue(scope)
 
         def entry() -> RegisterEntry:
             self.activate(self.tenant)
@@ -888,10 +893,11 @@ class TenantsScenarioTests(ScenarioTestCase):
         event = AuditEvent.objects.filter(tenant_id=self.tenant.id, action="register_entry.changed").get()
         self.assertEqual((event.subject_id, event.actor_type, event.after["licencesAdded"]), (changed.id, "system", [granted.text]))
         self.assertEqual((event.after["licencesRemoved"], event.after["branchesAdded"]), ([], []))
-        # No organisation row, licence row or regulatory scope term changes.
+        # No organisation row or licence row changes, and a bank's licence already allows every
+        # licence-bound term, so the scope the facts give it is the same.
         self.assertEqual(list(OrgUnit.objects.order_by("id").values_list("id", "version", "name", "lei")), units)
         self.assertFalse(Licence.objects.exists())
-        self.assertFalse(FootprintTerm.objects.exists())
+        self.assertEqual(set(FootprintTerm.objects.values_list("term_id", flat=True)), scope)
 
         # The next night nothing changed: the read date moves and nothing else.
         recheck()

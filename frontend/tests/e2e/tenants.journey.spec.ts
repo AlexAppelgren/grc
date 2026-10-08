@@ -7,6 +7,7 @@ import { expect, test, type ApiGuard } from './support/api-guard';
 import { openCase } from './support/cases-signoff';
 import { allowRegisterEntryPending } from './support/obligation-page';
 import { allowFreshContext, BACKEND_URL, LOGINS, mailOutbox, mailsTo, restrictedScreen, signInAs, signOut } from './support/passkeys';
+import { lockTenantAScope, unlockTenantAScope } from './support/tenant-scope';
 
 // tenants: the @e2e scenarios from backend/apps/tenants/app.md (playbook Appendix B).
 // Each stays test.fixme until its chunk builds the journey; the scenario ID in
@@ -730,20 +731,27 @@ test.describe('tenants journeys', () => {
     await expect(idle).toBeVisible();
     await expect(idle).not.toHaveValue(A_ONLY.idleMinutes);
 
-    // B's regulatory scope: Denmark, which A watches, is not watched here (FP-S8 may be
-    // operating it in B right now, so only "watching" is ruled out); none of A's terms is
-    // held; A's pending request and A's people appear nowhere on the page.
-    await page.goto('/admin/footprint');
-    await expect(page.locator('[data-footprint-dimensions]')).toBeVisible();
-    const denmark = page.locator('[data-markets] [data-market="dk"]');
-    await expect(denmark).toBeVisible();
-    await expect(denmark.getByRole('button', { pressed: true })).toHaveCount(0);
-    for (const [dimension, term] of A_ONLY_TERMS) {
-      await expect(page.locator(`[data-dimension="${dimension}"] [data-term="${term}"]`)).toContainText('Not in our scope');
+    // B's regulatory scope: Denmark, which A watches, is not watched here (only "watching" is
+    // ruled out, since FP-S8 operates it in B while it runs); none of A's terms is held; A's
+    // pending request and A's people appear nowhere on the page. FP-S8 and J-13 change B's
+    // scope while they run, J-13 by adding companies that B's scope follows by itself (D-122),
+    // Insurance and Advice included, so this look waits for the scope lock both hold.
+    await lockTenantAScope();
+    try {
+      await page.goto('/admin/footprint');
+      await expect(page.locator('[data-footprint-dimensions]')).toBeVisible();
+      const denmark = page.locator('[data-markets] [data-market="dk"]');
+      await expect(denmark).toBeVisible();
+      await expect(denmark.getByRole('button', { pressed: true })).toHaveCount(0);
+      for (const [dimension, term] of A_ONLY_TERMS) {
+        await expect(page.locator(`[data-dimension="${dimension}"] [data-term="${term}"]`)).toContainText('Not in our scope');
+      }
+      await expect(page.locator('[data-footprint-history]')).toBeVisible();
+      await expect(page.locator('main')).not.toContainText(A_REQUESTER);
+      await expect(page.locator('[data-pending-request]').filter({ hasText: 'Remove Advice' })).toHaveCount(0);
+    } finally {
+      unlockTenantAScope();
     }
-    await expect(page.locator('[data-footprint-history]')).toBeVisible();
-    await expect(page.locator('main')).not.toContainText(A_REQUESTER);
-    await expect(page.locator('[data-pending-request]').filter({ hasText: 'Remove Advice' })).toHaveCount(0);
 
     // B's roles and vocabulary rows are B's own.
     await page.goto('/admin/roles');

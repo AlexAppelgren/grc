@@ -48,7 +48,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | TEN-05 | Removing a member who owns open work offers bulk reassignment | M | R2 | built |
 | TEN-06 | Support access grants: requested by the platform, approved by a tenant admin with a passkey, read-only, visible to the tenant, time-boxed, revocable and logged in the bank (D-49) | M | R2 | built |
 | TEN-07 | Fill in the legal entities from public registers: an organisation number or LEI, the group from GLEIF, each Swedish company's business, licences and branches from Finansinspektionen; a person picks what to add; licences are shown from the register facts, never typed (`docs/plans/briefs/PUBLIC_REGISTERS.md`) | S | R3 | built |
-| TEN-08 | The register facts are re-read nightly, each change audited; a change edits neither the organisation nor the scope, it shows as a suggestion (FP-05) | S | R3 | built |
+| TEN-08 | The register facts are re-read nightly, each change audited; a change never edits the organisation, and the scope follows it by itself (FP-05, D-122) | S | R3 | built |
 | ADM-01 | Tenant admin: organisation with departments and teams, members and invitations with team membership, passkey re-enrolment, sessions, roles, footprint with markets, vocabularies, workflow policy, agents, integrations, security policy, data, audit log | M | R1 to R3 | in_progress |
 | ADM-03 | Admin duties are separate permissions | M | R1 | built |
 
@@ -368,15 +368,15 @@ Then a job answers 202 and, once done, lists the group from GLEIF with Example F
 And each Swedish company carries its business, licences and branches from Finansinspektionen with the date read
 When they add the ticked companies
 Then two legal entities are created with org number, LEI, country, type and parent, Example Bank AB is linked and not added twice, and each gets its register facts
-And no licence row and no regulatory scope term is written, and each write has its audit event
+And no licence row is written, the scope follows the companies by itself with no request, and each write has its audit event
 And a number no company carries fails the job with "lookup_not_found", and a member without vocab.manage gets 403
 ```
 
-### TEN-S14 — The nightly re-read refreshes the register facts and nothing else `@integration` (TEN-08)
+### TEN-S14 — The nightly re-read refreshes the register facts, and the scope follows them `@integration` (TEN-08, D-122)
 ```gherkin
 Given Example Bank AB has register facts read yesterday
 When the nightly re-read finds a new licence in Finansinspektionen's register
 Then the stored facts carry the licence and the read date, with one audit event naming the change
-And no organisation row, licence row or regulatory scope term changes
+And no organisation row or licence row changes, and a licence that gives no new term moves no scope term
 And a register that cannot be reached leaves the stored facts as they were
 ```

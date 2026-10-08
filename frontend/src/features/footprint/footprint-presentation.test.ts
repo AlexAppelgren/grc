@@ -11,7 +11,6 @@ import {
   diffFootprint,
   draftAfter,
   draftOf,
-  hasSuggestions,
   hidesSomething,
   historyLine,
   isRequester,
@@ -29,11 +28,9 @@ import {
   scopeGroups,
   scopeItemConsequence,
   scopeItemLines,
-  suggestionChecks,
-  suggestionRequest,
   toggleTerm,
 } from './footprint-presentation';
-import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, FootprintSuggestions, JurisdictionRef, Market, ScopeItem, TaxonomyTerm } from './types';
+import type { FootprintChangeRequest, FootprintDimension, FootprintPreview, JurisdictionRef, Market, ScopeItem, TaxonomyTerm } from './types';
 
 const t = createT('en');
 const sv = createT('sv');
@@ -390,7 +387,7 @@ describe('scope items', () => {
   });
 });
 
-describe('company lines and the suggestions from the registers (FP-05)', () => {
+describe('company lines (FP-05)', () => {
   const fonder = { id: 'u-fonder', name: 'Example Fonder AB' };
   const liv = { id: 'u-liv', name: 'Example Liv Försäkring AB' };
   const banking = { key: 'banking', kind: null, label: 'Banking', dimension: 'regime' };
@@ -414,6 +411,9 @@ describe('company lines and the suggestions from the registers (FP-05)', () => {
       'Example Fonder AB: back in its scope: Custody',
     ]);
     expect(companyLines(request(), t)).toEqual([]);
+    // A company line in the countries reads the same way: Denmark is outside a Swedish company with no Danish branch.
+    const denmark = { key: 'dk', kind: null, label: 'Danmark', dimension: 'jurisdiction' };
+    expect(companyLines({ entityExclusions: [{ orgUnit: fonder, term: denmark }], entityInclusions: [] }, sv)).toEqual(['Example Fonder AB: utanför dess omfattning: Danmark']);
     expect(requestTitle(companies, t)).toBe('Add Denmark');
     const onlyCompanies = { ...companies, adds: [] };
     expect(requestTitle(onlyCompanies, t)).toBe("Change each company's own scope");
@@ -424,71 +424,5 @@ describe('company lines and the suggestions from the registers (FP-05)', () => {
     const approved = { ...companies, status: 'approved' as const, decidedBy: { id: 'u4', name: 'Maria Ek' }, decidedAt: '2026-10-05T13:12:00Z' };
     expect(historyLine(approved, t, defaultFormatContext).text).toBe('approved "Add Denmark" requested by Sara Lindqvist, with Example Fonder AB and Example Liv Försäkring AB\'s own scope.');
     expect(historyLine({ ...approved, status: 'withdrawn' }, t, defaultFormatContext).text).toBe('withdrew "Add Denmark".');
-  });
-
-  const suggestions: FootprintSuggestions = {
-    adds: [
-      { term: { dimension: 'legal_entity', key: 'investment_firm', kind: null, label: 'Investment firm' }, reasons: [{ orgUnit: { id: 'u-bank', name: 'Example Bank AB' }, registerLine: 'Värdepappersbolag' }] },
-      {
-        term: { dimension: 'jurisdiction', key: 'se', kind: null, label: 'Sweden' },
-        reasons: [
-          { orgUnit: { id: 'u-bank', name: 'Example Bank AB' }, registerLine: null },
-          { orgUnit: fonder, registerLine: null },
-          { orgUnit: fonder },
-        ],
-      },
-    ],
-    removes: [{ term: { dimension: 'regime', key: 'insurance', kind: null, label: 'Insurance' } }],
-    entityExclusions: [{ orgUnit: fonder, mainBusiness: 'Fondbolag', terms: [banking, insurance] }],
-    entityInclusions: [{ orgUnit: liv, mainBusiness: 'Riksbolag, livförsäkringar', terms: [custody] }],
-    readAt: '2026-10-05T03:17:00Z',
-  };
-
-  it('says whether there is anything to suggest', () => {
-    expect(hasSuggestions(suggestions)).toBe(true);
-    expect(hasSuggestions({ readAt: null })).toBe(false);
-    expect(hasSuggestions({ adds: [], removes: [], entityExclusions: [], entityInclusions: [{ orgUnit: liv, mainBusiness: '', terms: [custody] }] })).toBe(true);
-  });
-
-  it('gives every line its words and the register behind it, the company alone where the register has no line', () => {
-    expect(suggestionChecks(suggestions, t)).toEqual({
-      group: [
-        { id: 'add:legal_entity:investment_firm', label: 'Add Investment firm', meta: 'Example Bank AB: Värdepappersbolag' },
-        { id: 'add:jurisdiction:se', label: 'Add Sweden', meta: 'Example Bank AB · Example Fonder AB' },
-        { id: 'remove:regime:insurance', label: 'Remove Insurance', meta: '' },
-      ],
-      company: [
-        { id: 'exclude:u-fonder', label: 'Example Fonder AB: outside its scope: Banking, Insurance', meta: 'Fondbolag' },
-        { id: 'include:u-liv', label: 'Example Liv Försäkring AB: back in its scope: Custody', meta: 'Riksbolag, livförsäkringar' },
-      ],
-    });
-    expect(suggestionChecks({}, sv)).toEqual({ group: [], company: [] });
-    expect(suggestionChecks({ entityExclusions: suggestions.entityExclusions }, sv).company[0]?.label).toBe('Example Fonder AB: utanför dess omfattning: Banking, Insurance');
-  });
-
-  it('files the ticked lines as one request, each company line one row per term', () => {
-    expect(suggestionRequest(suggestions, new Set())).toEqual({
-      adds: [
-        { dimension: 'legal_entity', key: 'investment_firm' },
-        { dimension: 'jurisdiction', key: 'se' },
-      ],
-      removes: [{ dimension: 'regime', key: 'insurance' }],
-      entityExclusions: [
-        { orgUnitId: 'u-fonder', dimension: 'regime', key: 'banking' },
-        { orgUnitId: 'u-fonder', dimension: 'regime', key: 'insurance' },
-      ],
-      entityInclusions: [{ orgUnitId: 'u-liv', dimension: 'service_type', key: 'custody' }],
-    });
-    const unticked = new Set(['add:legal_entity:investment_firm', 'remove:regime:insurance', 'include:u-liv']);
-    expect(suggestionRequest(suggestions, unticked)).toEqual({
-      adds: [{ dimension: 'jurisdiction', key: 'se' }],
-      removes: [],
-      entityExclusions: [
-        { orgUnitId: 'u-fonder', dimension: 'regime', key: 'banking' },
-        { orgUnitId: 'u-fonder', dimension: 'regime', key: 'insurance' },
-      ],
-      entityInclusions: [],
-    });
-    expect(suggestionRequest({}, new Set())).toEqual({ adds: [], removes: [], entityExclusions: [], entityInclusions: [] });
   });
 });

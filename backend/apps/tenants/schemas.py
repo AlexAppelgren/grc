@@ -1293,12 +1293,16 @@ class TenantOrgUnitRow(TenantOrgUnit):
     scope_exclusions: list[TermRef] = Field(
         default_factory=list,
         description=(
-            "The licence-bound terms outside this legal entity's own scope (FP-05), each with its key, "
-            "label and dimension (`regime`, `service_type` or `licensed_activity`): the register offers "
-            "the entity no rule whose terms in a dimension are all among these. They change only through "
-            "an approved regulatory scope request (`entityExclusions` of `POST /tenant/footprint/requests`). "
-            "Empty by default, and always empty for a group or a department. Terms are rows of the shared "
-            "library's taxonomy vocabulary, which an administrator may extend through an approved proposal."
+            "The terms outside this legal entity's own scope (FP-05), each with its key, kind and label: "
+            "licence-bound terms (a regime, a service type or a licensed activity) and countries the library "
+            "covers. The register offers the entity no rule whose terms in a dimension are all among these, so "
+            "an entity outside Denmark is not offered a Danish rule, while an EU rule, which carries every "
+            "country it reaches, is offered to every entity. The organisation writes them by itself from the "
+            "entity's register facts and country (D-122), and a person changes them by hand through an approved "
+            "regulatory scope request (`entityExclusions` and `entityInclusions` of `POST "
+            "/tenant/footprint/requests`). Empty by default, and always empty for a group or a department. "
+            "Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend "
+            "through an approved proposal."
         ),
     )
 

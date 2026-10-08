@@ -1164,14 +1164,16 @@ test.describe('regulatory scope, markets and standards', () => {
     await officer.context().close();
   });
 
-  // --- tax-market-journeys (FP-S8, FP-S10) ---------------------------------------------
+  // --- tax-market-journeys (FP-S8, FP-S10) and J-13 ----------------------------------------
   // FP-S8 narrows tenant B's scope to Denmark while it waits, hiding every Swedish
   // obligation of that bank, so it runs alone and restores the scope on failure too. No
-  // other journey reads tenant B's inventory; J-8 (TEN-S7) reads B's scope screen and
-  // asserts only what holds either way. The obligations are the seed's
+  // other journey reads tenant B's inventory; J-8 (TEN-S7) reads B's scope screen under the
+  // same scope lock this block holds. The obligations are the seed's
   // (backend/apps/shared/e2e_seed.py, EXPECTED_MARKET_JOURNEY), each inside B's scope.
-  // J-13 (TEN-S13, FP-S20) files a request on tenant B too, and one request waits per bank,
-  // so it runs after FP-S8 in this serial block and restores B's scope the same way.
+  // J-13 (TEN-S13, FP-S20) adds companies to tenant B, and B's scope follows them by itself
+  // (D-122), so it shares this serial block and restores B's scope the same way. It runs
+  // first: a term a person changed by hand is never moved by the organisation again, and
+  // FP-S8 adds and takes out Denmark by hand.
   test.describe('operating markets', () => {
     test.describe.configure({ mode: 'serial' });
 
@@ -1179,6 +1181,9 @@ test.describe('regulatory scope, markets and standards', () => {
     const HOME_OBLIGATION = 'obl-appropriateness';
     const COUNTRY_OBLIGATION = 'obl-dk-csd-registration';
     const JURISDICTIONS = '[data-dimension="jurisdiction"]';
+    // Tenant B's scope as seeded (backend/apps/shared/e2e_seed.py, EXPECTED_FOOTPRINTS["second-bank"]):
+    // no market, so every market's rules reach it.
+    const SECOND_BANK_SCOPE = ['regime:securities', 'regime:aml', 'account_type:depa', 'legal_entity:bank', 'service_type:execution_only', 'service_type:custody', 'client_category:retail'];
 
     async function approveScopeChange(approver: Page): Promise<void> {
       await approver.goto('/admin/footprint');
@@ -1192,7 +1197,45 @@ test.describe('regulatory scope, markets and standards', () => {
       await expect(done).toBeVisible();
     }
 
-    /** Tenant B's scope as seeded: no request of the admin's waiting, no jurisdiction held and no company's own scope narrowed. */
+    /** A read in the admin's own API session: the UI's refresh cookie gives the bearer, as in the restore below. */
+    async function readAsAdmin<T>(page: Page, path: string): Promise<{ data: T; headers: Record<string, string> }> {
+      const refreshed = await page.request.post(`${BACKEND_URL}/api/v1/auth/refresh`);
+      expect(refreshed.status(), 'the session the UI opened refreshes').toBe(200);
+      const headers = { Authorization: `Bearer ${((await refreshed.json()) as { accessToken: string }).accessToken}` };
+      const answer = await page.request.get(`${BACKEND_URL}/api/v1${path}`, { headers });
+      expect(answer.status(), path).toBe(200);
+      return { data: (await answer.json()) as T, headers };
+    }
+
+    type TermLine = { dimension: string; key: string };
+    type CompanyLine = { orgUnit: { name: string } };
+    type ScopeRequest = { status: string; adds?: TermLine[]; removes?: TermLine[]; entityExclusions?: CompanyLine[]; entityInclusions?: CompanyLine[] };
+
+    /**
+     * What people changed by hand on tenant B: each term's last approved add or remove, and the companies
+     * whose own scope an approved request changed. The organisation never moves what a person changed
+     * (D-122), and the restore below is such a change, so a retry of this block (CI retries it once)
+     * finds the restore's state where the first attempt found the organisation's.
+     */
+    async function changedByHand(page: Page): Promise<{ terms: Map<string, 'added' | 'removed'>; companies: Set<string>; requests: number }> {
+      const { data } = await readAsAdmin<{ items: ScopeRequest[]; total: number }>(page, '/tenant/footprint/requests?limit=100');
+      expect(data.total, "one page holds every request of tenant B's").toBeLessThanOrEqual(100);
+      const terms = new Map<string, 'added' | 'removed'>();
+      const companies = new Set<string>();
+      // Newest first, one waiting at a time: the first request naming a term made its last change.
+      for (const request of data.items.filter((row) => row.status === 'approved')) {
+        for (const [lines, change] of [
+          [request.adds ?? [], 'added'],
+          [request.removes ?? [], 'removed'],
+        ] as const) {
+          for (const line of lines) if (!terms.has(`${line.dimension}:${line.key}`)) terms.set(`${line.dimension}:${line.key}`, change);
+        }
+        for (const line of [...(request.entityExclusions ?? []), ...(request.entityInclusions ?? [])]) companies.add(line.orgUnit.name);
+      }
+      return { terms, companies, requests: data.total };
+    }
+
+    /** Tenant B's scope as seeded: no request of the admin's waiting, the seeded terms only and no company's own scope narrowed. */
     async function restoreSecondBank(page: Page, approver: Page): Promise<void> {
       await page.goto('/admin/footprint');
       const mine = page.locator('[data-pending-request]').filter({ hasText: /You requested this on/ });
@@ -1201,12 +1244,27 @@ test.describe('regulatory scope, markets and standards', () => {
         await mine.getByRole('button', { name: 'Withdraw' }).click();
         await expect(page.getByText('Withdrawn.', { exact: true })).toBeFocused();
       }
-      // Case-sensitive on purpose: "Not in our scope" must not count as held.
-      if ((await page.locator(`${JURISDICTIONS} [data-term]`).filter({ hasText: /In our scope/ }).count()) > 0) {
-        await page.getByRole('button', { name: 'Propose a change' }).click();
-        const held = page.locator(JURISDICTIONS).getByRole('checkbox', { checked: true });
-        while ((await held.count()) > 0) await held.first().uncheck();
-        await page.locator('[data-draft-preview]').getByRole('button', { name: 'Request approval' }).click();
+      // Every box the seed did not tick is unticked and every one it did is ticked: the markets FP-S8
+      // adds, and whatever the organisation gave B's scope in J-13.
+      await page.getByRole('button', { name: 'Propose a change' }).click();
+      const boxes = page.locator('[data-footprint-dimensions] [data-dimension] input[type="checkbox"]');
+      await expect(boxes.first()).toBeVisible();
+      const differing = await boxes.evaluateAll(
+        (inputs, seeded) =>
+          inputs
+            .filter((input) => {
+              const dimension = input.closest('[data-dimension]')?.getAttribute('data-dimension') ?? '';
+              return (input as HTMLInputElement).checked !== seeded.includes(`${dimension}:${input.id.slice(`scope-${dimension}-`.length)}`);
+            })
+            .map((input) => input.id),
+        SECOND_BANK_SCOPE,
+      );
+      for (const id of differing) await page.locator(`[id="${id}"]`).click();
+      const draft = page.locator('[data-draft-preview]');
+      if (differing.length === 0) {
+        await draft.getByRole('button', { name: 'Cancel' }).click();
+      } else {
+        await draft.getByRole('button', { name: 'Request approval' }).click();
         await expect(page.getByText('Sent for approval.', { exact: true })).toBeFocused();
         await approveScopeChange(approver);
         await page.reload();
@@ -1216,22 +1274,20 @@ test.describe('regulatory scope, markets and standards', () => {
     }
 
     /**
-     * Every company of tenant B back in its own scope (J-13 excludes terms from Example Fonder AB).
-     * No screen puts back a term the registers still leave out, so the inclusions are filed through
-     * the API in the admin's own session, and the second person approves them on the page with a passkey.
+     * Every company of tenant B back in its own scope (the organisation leaves the countries and the
+     * licence-bound terms each company does not hold outside it). No screen puts back what the registers
+     * still leave out, so the inclusions are filed through the API in the admin's own session, and the
+     * second person approves them on the page with a passkey.
      */
     async function restoreCompanyScopes(page: Page, approver: Page): Promise<void> {
-      const refreshed = await page.request.post(`${BACKEND_URL}/api/v1/auth/refresh`);
-      expect(refreshed.status(), 'the session the UI opened refreshes').toBe(200);
-      const headers = { Authorization: `Bearer ${((await refreshed.json()) as { accessToken: string }).accessToken}` };
-      const read = async <T>(path: string): Promise<T> => (await (await page.request.get(`${BACKEND_URL}/api/v1${path}`, { headers })).json()) as T;
-      const units = (await read<{ items: { id: string; scopeExclusions?: { key: string }[] }[] }>('/tenant/org-units?limit=100')).items;
-      const excluded = units.flatMap((unit) => (unit.scopeExclusions ?? []).map((term) => ({ orgUnitId: unit.id, key: term.key })));
+      const { data, headers } = await readAsAdmin<{ items: { id: string; scopeExclusions?: { key: string }[] }[] }>(page, '/tenant/org-units?limit=100');
+      const excluded = data.items.flatMap((unit) => (unit.scopeExclusions ?? []).map((term) => ({ orgUnitId: unit.id, key: term.key })));
       if (excluded.length === 0) return;
-      // An exclusion names its term by key; a request names its dimension too, one of the three licence-bound ones.
+      // An exclusion names its term by key; a request names its dimension too: a licence-bound one, or the countries.
       const dimensionOf = new Map<string, string>();
-      for (const dimension of ['regime', 'service_type', 'licensed_activity']) {
-        for (const term of (await read<{ items: { key: string }[] }>(`/taxonomy/terms?dimension=${dimension}&limit=100`)).items) dimensionOf.set(term.key, dimension);
+      for (const dimension of ['regime', 'service_type', 'licensed_activity', 'jurisdiction']) {
+        const terms = await page.request.get(`${BACKEND_URL}/api/v1/taxonomy/terms?dimension=${dimension}&limit=100`, { headers });
+        for (const term of ((await terms.json()) as { items: { key: string }[] }).items) dimensionOf.set(term.key, dimension);
       }
       const filed = await page.request.post(`${BACKEND_URL}/api/v1/tenant/footprint/requests`, {
         headers,
@@ -1240,6 +1296,128 @@ test.describe('regulatory scope, markets and standards', () => {
       expect(filed.status(), 'the inclusions are filed').toBe(201);
       await approveScopeChange(approver);
     }
+
+    // J-13 on tenant B, whose only seeded legal entity is Second Bank A/S in Denmark and whose scope
+    // names no market. The mock registers (backend/apps/shared/adapters/registers.py, MOCK_COMPANIES)
+    // answer 556000-0001 with Example Bank AB's group: Example Bank AB with branches in Denmark and
+    // Norway, Example Fonder AB and Example Liv Försäkring AB licensed, Example Holding AB and Example
+    // Pank AS not. Liv is left out, because J-8 proves that tenant A's Example Liv Försäkring AB is not
+    // on B's organisation page. A legal entity is never deleted, so the companies stay once added: a
+    // retry finds them and links them. Adding them writes B's scope by itself, with no request: Sweden,
+    // Denmark and Norway are operating markets, the fund company's type joins the scope, and each
+    // company is outside what its licences and branches do not give it. restoreSecondBank takes all of
+    // it out again by hand, which the organisation then leaves alone, and the journey reads it that way.
+    test("TEN-S13 FP-S20 J-13: an admin fills in the organisation from the public registers, and the regulatory scope follows it by itself", async ({ page, browser, apiGuard }, testInfo) => {
+      test.slow();
+      allowFreshContext(apiGuard);
+      apiGuard.allow(/\/api\/v1\/tenant\/footprint\/requests\/[^/]+\/approve$/, 403, 'the first attempt answers step_up_required and opens the prompt');
+      await signInAs(page, LOGINS.secondBankAdmin);
+      const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.secondBankApprover);
+      try {
+        await restoreSecondBank(page, approver);
+        const before = await changedByHand(page);
+
+        // TEN-S13: a number no company carries fails the lookup, said in the screen's own words.
+        await page.goto('/admin/organisation');
+        const entities = page.locator('[data-org-section="entities"]');
+        await expect(entities.locator('[data-org-unit="Second Bank A/S"]')).toBeVisible();
+        const fresh = (await entities.locator('[data-org-unit="Example Fonder AB"]').count()) === 0;
+        await entities.getByRole('button', { name: 'Fill in from public registers' }).click();
+        const lookup = page.getByRole('dialog', { name: 'Fill in from public registers' });
+        await lookup.getByLabel('Organisation number or LEI').fill('556000-0000');
+        await lookup.getByRole('button', { name: 'Look up' }).click();
+        await expect(lookup.getByText('No company has that number. Check it, or type the LEI.')).toBeVisible();
+
+        // The group: the licensed companies ticked with their business and licences, the rest
+        // unticked with the reason, and the date the registers were read.
+        await lookup.getByLabel('Organisation number or LEI').fill('556000-0001');
+        await lookup.getByRole('button', { name: 'Look up' }).click();
+        const found = page.getByRole('dialog', { name: "Companies in Example Bank AB's group" });
+        const company = (name: string) => found.locator(`[data-lookup-company="${name}"]`);
+        await expect(company('Example Bank AB')).toContainText('Bankaktiebolag');
+        await expect(company('Example Bank AB')).toContainText('5 licences');
+        await expect(company('Example Fonder AB').getByRole('checkbox')).toBeChecked();
+        await expect(company('Example Liv Försäkring AB').getByRole('checkbox')).toBeChecked();
+        await expect(company('Example Holding AB').getByRole('checkbox')).not.toBeChecked();
+        await expect(company('Example Holding AB').getByText("Not in Finansinspektionen's register", { exact: true })).toBeVisible();
+        await expect(company('Example Pank AS').getByRole('checkbox')).not.toBeChecked();
+        await expect(company('Example Pank AS').getByText('No register we read for this country', { exact: true })).toBeVisible();
+        await expect(found.getByText(/^Read from GLEIF and Finansinspektionen's register on /)).toBeVisible();
+        await company('Example Liv Försäkring AB').getByRole('checkbox').uncheck();
+        const apply = fresh ? found.getByRole('button', { name: 'Add 2 companies' }) : found.getByRole('button', { name: 'Link 2 companies' });
+        await apply.click();
+        await expect(found).toBeHidden();
+
+        // Each company carries what the register says, and no licence row was written.
+        const fonder = entities.locator('[data-org-unit="Example Fonder AB"]');
+        await expect(fonder.locator('[data-register-facts]')).toContainText('Fondbolag · Auktoriserad AIF-förvaltare');
+        await expect(fonder.getByText(/^Read from Finansinspektionen's register on /)).toBeVisible();
+        const bank = entities.locator('[data-org-unit="Example Bank AB"]');
+        await expect(bank.locator('[data-register-facts]')).toContainText('Example Bank AB, filial i Danmark (Danmark)');
+        await bank.getByRole('button', { name: 'Show 5 licences' }).click();
+        await expect(bank.locator('[data-register-facts]')).toContainText('Tillstånd att driva bankrörelse');
+        await expect(page.locator('[data-licences-of="Example Fonder AB"]').getByText('No licences or certificates recorded.')).toBeVisible();
+        await expect(entities.locator('[data-org-unit="Example Liv Försäkring AB"]')).toHaveCount(0);
+
+        // Each company's own scope, from its licences and its branches: the fund company outside every
+        // licence-bound term its licences do not give it and every country it has no branch in, the
+        // bank outside Finland, and Second Bank A/S, with no register facts, outside the countries but
+        // Denmark. A company whose lines the restore put back by hand keeps them back.
+        const hand = await changedByHand(page);
+        const outside = (name: string) => entities.locator(`[data-org-unit="${name}"] [data-register-facts] dt`).filter({ hasText: "Outside this company's scope" });
+        for (const [name, terms] of [
+          ['Example Fonder AB', 'Insurance, Banking, Payments, Advice, Custody, Insurance distribution, Denmark, Norway, Finland, Card issuing, Card acquiring'],
+          ['Example Bank AB', 'Finland'],
+          ['Second Bank A/S', 'Sweden, Norway, Finland'],
+        ] as const) {
+          if (hand.companies.has(name)) await expect(outside(name)).toHaveCount(0);
+          else await expect(outside(name).locator('xpath=following-sibling::dd[1]')).toHaveText(terms);
+        }
+
+        // Looked up again, both are already in the organisation: linked, never added twice.
+        await entities.getByRole('button', { name: 'Fill in from public registers' }).click();
+        await lookup.getByLabel('Organisation number or LEI').fill('556000-0001');
+        await lookup.getByRole('button', { name: 'Look up' }).click();
+        for (const name of ['Example Bank AB', 'Example Fonder AB']) {
+          await expect(company(name).getByText('Already in your organisation', { exact: true })).toBeVisible();
+          await expect(company(name).getByRole('checkbox')).toBeDisabled();
+        }
+        await found.getByRole('button', { name: 'Cancel' }).click();
+        await expect(found).toBeHidden();
+
+        // FP-S20: the scope followed the companies by itself, said above the groups with the date the
+        // registers were read, and nothing was requested or approved.
+        await page.goto('/admin/footprint');
+        const follows = page.locator('[data-scope-follows]');
+        await expect(follows.getByText('Your scope follows your organisation', { exact: true })).toBeVisible();
+        await expect(follows.getByText(/^Public registers read \d{1,2} [A-Z][a-z]{2} \d{4}\.$/)).toBeVisible();
+        await expect(follows.getByRole('link', { name: 'Open Organisation' })).toHaveAttribute('href', '/admin/organisation');
+        await expect(page.locator('[data-pending-request]')).toHaveCount(0);
+        expect((await changedByHand(page)).requests, 'no request was filed').toBe(before.requests);
+
+        // The markets the companies give are operating and in the scope, and the fund company's type
+        // joins it; Finland, where no company is, stays out. What a person took out by hand stays out.
+        for (const term of ['jurisdiction:se', 'jurisdiction:dk', 'jurisdiction:no', 'legal_entity:fund_company']) {
+          const [dimension, key] = term.split(':');
+          const held = page.locator(`[data-dimension="${dimension}"] [data-term="${key}"]`).filter({ hasText: / In our scope$/ });
+          const market = page.locator(`[data-markets] [data-market="${key}"]`);
+          if (hand.terms.get(term) === 'removed') {
+            await expect(held).toHaveCount(0);
+            if (dimension === 'jurisdiction') await expect(market).not.toContainText('Operating');
+          } else {
+            await expect(held).toHaveCount(1);
+            if (dimension === 'jurisdiction') await expect(market).toContainText('Operating');
+          }
+        }
+        await expect(page.locator(`${JURISDICTIONS} [data-term="fi"]`).filter({ hasText: / In our scope$/ })).toHaveCount(0);
+        await expect(page.locator('[data-markets] [data-market="fi"]')).not.toContainText('Operating');
+        // A change by hand is still offered, and it is still the request a second person approves.
+        await expect(page.getByRole('button', { name: 'Propose a change' })).toBeVisible();
+      } finally {
+        await restoreSecondBank(page, approver);
+        await approver.context().close();
+      }
+    });
 
     test("FP-S8: Turning on a country brings the EU rules that reach it", async ({ page, browser, apiGuard }, testInfo) => {
       allowFreshContext(apiGuard);
@@ -1286,120 +1464,6 @@ test.describe('regulatory scope, markets and standards', () => {
         await expect(page.locator(`[data-obligation="${HOME_OBLIGATION}"]`)).toHaveCount(0);
         await page.getByRole('button', { name: 'Show all items' }).click();
         await expect(page.locator(`[data-obligation="${HOME_OBLIGATION}"]`)).toHaveAttribute('data-outside-footprint', '');
-      } finally {
-        await restoreSecondBank(page, approver);
-        await approver.context().close();
-      }
-    });
-
-    // J-13 on tenant B, whose only legal entity is Second Bank A/S. The mock registers
-    // (backend/apps/shared/adapters/registers.py, MOCK_COMPANIES) answer 556000-0001 with Example
-    // Bank AB's group: Example Fonder AB and Example Liv Försäkring AB licensed, Example Holding
-    // AB and Example Pank AS not. Liv is left out, because J-8 proves that tenant A's Example Liv
-    // Försäkring AB is not on B's organisation page. A legal entity is never deleted, so the
-    // companies stay once added: a retry finds them and links them. The scope half keeps the
-    // markets and the company line and unticks the rest, which J-8 reads as not in B's scope;
-    // restoreSecondBank takes the markets and Example Fonder AB's exclusions out again.
-    test("TEN-S13 FP-S20 J-13: an admin fills in the organisation from the public registers and files the scope they suggest, which a second person approves", async ({ page, browser, apiGuard }, testInfo) => {
-      test.slow();
-      allowFreshContext(apiGuard);
-      apiGuard.allow(/\/api\/v1\/tenant\/footprint\/requests\/[^/]+\/approve$/, 403, 'the first attempt answers step_up_required and opens the prompt');
-      await signInAs(page, LOGINS.secondBankAdmin);
-      const approver = await secondPerson(browser, apiGuard, testInfo, LOGINS.secondBankApprover);
-      try {
-        await restoreSecondBank(page, approver);
-
-        // TEN-S13: a number no company carries fails the lookup, said in the screen's own words.
-        await page.goto('/admin/organisation');
-        const entities = page.locator('[data-org-section="entities"]');
-        await expect(entities.locator('[data-org-unit="Second Bank A/S"]')).toBeVisible();
-        const fresh = (await entities.locator('[data-org-unit="Example Fonder AB"]').count()) === 0;
-        await entities.getByRole('button', { name: 'Fill in from public registers' }).click();
-        const lookup = page.getByRole('dialog', { name: 'Fill in from public registers' });
-        await lookup.getByLabel('Organisation number or LEI').fill('556000-0000');
-        await lookup.getByRole('button', { name: 'Look up' }).click();
-        await expect(lookup.getByText('No company has that number. Check it, or type the LEI.')).toBeVisible();
-
-        // The group: the licensed companies ticked with their business and licences, the rest
-        // unticked with the reason, and the date the registers were read.
-        await lookup.getByLabel('Organisation number or LEI').fill('556000-0001');
-        await lookup.getByRole('button', { name: 'Look up' }).click();
-        const found = page.getByRole('dialog', { name: "Companies in Example Bank AB's group" });
-        const company = (name: string) => found.locator(`[data-lookup-company="${name}"]`);
-        await expect(company('Example Bank AB')).toContainText('Bankaktiebolag');
-        await expect(company('Example Bank AB')).toContainText('5 licences');
-        await expect(company('Example Fonder AB').getByRole('checkbox')).toBeChecked();
-        await expect(company('Example Liv Försäkring AB').getByRole('checkbox')).toBeChecked();
-        await expect(company('Example Holding AB').getByRole('checkbox')).not.toBeChecked();
-        await expect(company('Example Holding AB').getByText("Not in Finansinspektionen's register", { exact: true })).toBeVisible();
-        await expect(company('Example Pank AS').getByRole('checkbox')).not.toBeChecked();
-        await expect(company('Example Pank AS').getByText('No register we read for this country', { exact: true })).toBeVisible();
-        await expect(found.getByText(/^Read from GLEIF and Finansinspektionen's register on /)).toBeVisible();
-        await company('Example Liv Försäkring AB').getByRole('checkbox').uncheck();
-        const apply = fresh ? found.getByRole('button', { name: 'Add 2 companies' }) : found.getByRole('button', { name: 'Link 2 companies' });
-        await apply.click();
-        await expect(found).toBeHidden();
-
-        // Each company carries what the register says, and no licence row was written.
-        const fonder = entities.locator('[data-org-unit="Example Fonder AB"]');
-        await expect(fonder.locator('[data-register-facts]')).toContainText('Fondbolag · Auktoriserad AIF-förvaltare');
-        await expect(fonder.getByText(/^Read from Finansinspektionen's register on /)).toBeVisible();
-        const bank = entities.locator('[data-org-unit="Example Bank AB"]');
-        await expect(bank.locator('[data-register-facts]')).toContainText('Example Bank AB, filial i Danmark (Danmark)');
-        await bank.getByRole('button', { name: 'Show 5 licences' }).click();
-        await expect(bank.locator('[data-register-facts]')).toContainText('Tillstånd att driva bankrörelse');
-        await expect(page.locator('[data-licences-of="Example Fonder AB"]').getByText('No licences or certificates recorded.')).toBeVisible();
-        await expect(entities.locator('[data-org-unit="Example Liv Försäkring AB"]')).toHaveCount(0);
-
-        // Looked up again, both are already in the organisation: linked, never added twice.
-        await entities.getByRole('button', { name: 'Fill in from public registers' }).click();
-        await lookup.getByLabel('Organisation number or LEI').fill('556000-0001');
-        await lookup.getByRole('button', { name: 'Look up' }).click();
-        for (const name of ['Example Bank AB', 'Example Fonder AB']) {
-          await expect(company(name).getByText('Already in your organisation', { exact: true })).toBeVisible();
-          await expect(company(name).getByRole('checkbox')).toBeDisabled();
-        }
-        await found.getByRole('button', { name: 'Cancel' }).click();
-        await expect(found).toBeHidden();
-
-        // FP-S20: the scope the register facts suggest, each line with the company and the register line behind it.
-        await page.getByRole('link', { name: 'See what they suggest for the regulatory scope' }).click();
-        await expect(page).toHaveURL(/\/admin\/footprint$/);
-        const suggestions = page.locator('[data-scope-suggestions]');
-        await expect(suggestions.locator('[data-suggestion="add:legal_entity:fund_company"]')).toContainText('Example Fonder AB: Fondbolag');
-        await expect(suggestions.locator('[data-suggestion="add:jurisdiction:dk"]')).toContainText('Example Bank AB: Example Bank AB, filial i Danmark');
-        // Every licence-bound activity is held, so that dimension stays open.
-        await expect(suggestions.locator('[data-suggestion^="add:licensed_activity:"]')).toHaveCount(0);
-        // The fund company is suggested out of every licence-bound term its licences do not give it,
-        // in the taxonomy's order; Second Bank A/S has no register facts and gets no line.
-        const fonderOutside = 'Example Fonder AB: outside its scope: Insurance, Banking, Payments, Advice, Custody, Insurance distribution, Card issuing, Card acquiring';
-        const companyLines = suggestions.locator('[data-suggestion^="exclude:"]');
-        await expect(companyLines).toHaveCount(1);
-        await expect(companyLines).toContainText(fonderOutside);
-        await expect(companyLines).toContainText('Fondbolag');
-        await expect(suggestions).not.toContainText('Second Bank A/S');
-
-        // Keep the markets and the company line; every other line would change what B's members see.
-        for (const line of await suggestions.locator('[data-suggestion]:not([data-suggestion^="add:jurisdiction:"]):not([data-suggestion^="exclude:"])').all()) {
-          await line.getByRole('checkbox').uncheck();
-        }
-        await suggestions.getByRole('button', { name: 'Request approval' }).click();
-        await expect(page.getByText('Sent for approval.', { exact: true })).toBeFocused();
-        const banner = page.locator('[data-pending-request]');
-        await expect(banner.locator('[data-company-lines]')).toHaveText(fonderOutside);
-        await expect(page.locator(`${JURISDICTIONS} [data-term="dk"]`).getByText('Added when approved')).toBeVisible();
-        await expect(suggestions).toHaveCount(0);
-        // Four eyes: the requester may withdraw, never approve.
-        await expect(banner.getByRole('button', { name: 'Approve' })).toHaveCount(0);
-
-        // The second person approves with a passkey; the history names the company whose own scope changed.
-        await approveScopeChange(approver);
-        await expect(approver.locator('[data-history-entry="approved"]').first()).toContainText("with Example Fonder AB's own scope.");
-        await page.reload();
-        await expect(page.locator('[data-markets] [data-market="dk"]')).toContainText('Operating');
-        await expect(suggestions.locator('[data-suggestion^="exclude:"]')).toHaveCount(0);
-        await page.goto('/admin/organisation');
-        await expect(fonder.locator('[data-register-facts]')).toContainText("Outside this company's scope");
       } finally {
         await restoreSecondBank(page, approver);
         await approver.context().close();
@@ -1543,5 +1607,5 @@ test.describe('regulatory scope, markets and standards', () => {
 
 });
 
-// PRD 0.9: the regulatory scope suggested from the register facts (FP-05, FP-S20) is the
-// second half of J-13, in the "operating markets" block above with TEN-S13.
+// PRD 0.9 and D-122: the regulatory scope following the register facts by itself (FP-05,
+// FP-S20) is the second half of J-13, in the "operating markets" block above with TEN-S13.

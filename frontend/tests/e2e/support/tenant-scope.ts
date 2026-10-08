@@ -7,7 +7,9 @@ import { test } from './api-guard';
 // Tenant A's regulatory scope is one record every worker shares. The journeys that change it
 // (FP-S2, FP-S5 and FP-S16's requests, WAT-S10's and REG-S15's E2E switch, J-10's request)
 // and the ones that read what it hides or reveals (FP-S13's watched-market view, INV-S11's
-// outside view of the standard) take turns through this lock, one directory per E2E stack:
+// outside view of the standard) take turns through this lock, one directory per E2E stack.
+// Tenant B's scope shares it: FP-S8 and J-13 change it under the lock their describe block
+// takes, and J-8 takes it around its look at B's scope, which J-13 widens while it runs:
 // `mkdir` either creates it or fails, so exactly one journey holds it. A describe block takes
 // it with `test.beforeEach(lockTenantAScope)` and gives it back with
 // `test.afterEach(unlockTenantAScope)`, which runs on failure too. The time spent waiting is

@@ -77,8 +77,10 @@ Weakening any of these is a stop: ask the owner (Alex) first.
   after two people approved the exit with a passkey and the final export was
   taken.
 - Four eyes, enforced by a check constraint, with a passkey step-up on
-  approvals, sign-off, footprint changes, exports, key creation, role and
-  security changes, re-enrolment.
+  approvals, sign-off, footprint changes made by hand, exports, key creation,
+  role and security changes, re-enrolment. What the organisation and the public
+  registers give the scope applies by itself, audited, and never undoes a change
+  made by hand (D-122, Alex, 2026-10-08).
 - No passwords, ever. The emailed code works once, for enrolment, and stops
   working the moment the first passkey exists. No self-service fallback.
 - "Applies" and "we comply" are separate facts. Stable keys never change.

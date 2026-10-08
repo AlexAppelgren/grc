@@ -262,7 +262,7 @@ describe('filling in from the public registers (TEN-07, TEN-S13)', () => {
     expect(sent.find((s) => s.path === `${LOOKUPS}/job-1/apply`)?.body).toEqual({ leis: ['BANK', 'FONDER'] });
     expect(sent.find((s) => s.method === 'post' && s.path === LOOKUPS)?.body).toEqual({ query: '556000-0001' });
     expect(screen.getByRole('status')).toHaveTextContent('Added 1 company from the public registers. Linked 1 company you already had.');
-    expect(screen.getByRole('link', { name: 'See what they suggest for the regulatory scope' })).toHaveAttribute('href', '/admin/footprint');
+    expect(screen.getByRole('link', { name: 'See the regulatory scope they set' })).toHaveAttribute('href', '/admin/footprint');
   });
 
   it('says why a lookup failed, by its code, and offers the number again', async () => {

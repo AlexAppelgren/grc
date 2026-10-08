@@ -144,6 +144,11 @@ test.describe('cold start', () => {
     // ——— step 11: the footprint, requested by one person and approved by the other ———
     await admin.goto('/admin/footprint');
     await expect(admin.getByRole('heading', { level: 1, name: 'Regulatory scope' })).toBeVisible();
+    // No company yet for the scope to follow by itself (D-122): the notice says it will, once
+    // there are some on Organisation, and that a change by hand waits for someone else.
+    const follows = admin.locator('[data-scope-follows]');
+    await expect(follows.getByText('Once your companies are on Organisation, your scope follows them by itself.')).toBeVisible();
+    await expect(follows.getByRole('link', { name: 'Open Organisation' })).toHaveAttribute('href', '/admin/organisation');
     // A bank that has just been created holds no terms, so every group reads as unrestricted
     // and the first scope is an addition. Found by dimension key, never by a label: terms are rows.
     const regime = admin.locator('[data-dimension="regime"]');

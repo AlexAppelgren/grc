@@ -6,12 +6,13 @@ each company's facts from the register of its country, then stores what it found
 whole (`lookup_not_found`, `lookup_ambiguous`, `register_unavailable`), never with a partial
 result. Nothing in the organisation changes until a person applies it: `apply_lookup` adds or
 links the chosen companies through the organisation's own write path and stores their register
-facts. It writes no licence row and no scope term.
+facts. It writes no licence row, and the scope then follows the organisation by itself, once
+for all the companies (apps/taxonomy/organisation_scope.py, D-122).
 
 `recheck` is the nightly re-read: for every register entry of an active legal entity it reads
-the register again and stores what changed, with an audit event naming the change. It edits
-neither the organisation nor the scope, and a register that cannot be reached leaves the stored
-facts as they are.
+the register again and stores what changed, with an audit event naming the change. It never
+edits the organisation; what changed reaches the scope by itself the same way, and a register
+that cannot be reached leaves the stored facts as they are.
 
 The functions here write the bank's rows and name no library model; the register reads and the
 mapping are apps/tenants/registers_logic.py's. Nothing here logs a number or a name: a skipped
@@ -37,6 +38,7 @@ from apps.shared.adapters.registers import LEI, REGISTRATION_NUMBER, LeiCompany,
 from apps.shared.audit import Actor, batched, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
+from apps.taxonomy import organisation_scope
 from apps.tenants import organisation, registers_logic
 from apps.tenants.models import OrgUnit, OrgUnitKind, RegisterEntry, RegisterLookup
 from apps.tenants.schemas import (
@@ -292,7 +294,7 @@ def apply_lookup(*, tenant: Tenant, actor: Actor, order: list[str], lookup_id: u
                 country_code=company.country,
                 entity_term=entity_key if entity_key in refs else None,
             )
-            placed[company.lei] = organisation.create_org_unit(tenant=tenant, actor=actor, order=order, body=body).id
+            placed[company.lei] = organisation.create_org_unit(tenant=tenant, actor=actor, order=order, body=body, follow=False).id
             created += 1
         authority = authorities.get(company.authority or "")
         if company.facts is not None and authority is not None and lookup.completed_at is not None:
@@ -307,6 +309,8 @@ def apply_lookup(*, tenant: Tenant, actor: Actor, order: list[str], lookup_id: u
         tenant_id=tenant.id,
         after={"created": created, "linked": len(chosen) - created},
     )
+    # Once for every company added, after their facts are stored (D-122).
+    organisation_scope.follow(tenant=tenant)
     units_out = organisation.org_units_out(tenant, [placed[company.lei] for company in chosen], order)
     return RegisterApplyOut(created=created, linked=len(chosen) - created, org_units=units_out)
 
@@ -392,7 +396,8 @@ def _change(entry: RegisterEntry, facts: RegisterFacts, source_url: str, read_at
 def recheck(tenant_id: uuid.UUID) -> None:
     """Read the register again for every register entry of the bank's active legal entities,
     inside the bank's own transaction: a change is stored with its audit event, an unchanged
-    read moves the read date, and a register that cannot be read is skipped until tomorrow."""
+    read moves the read date, and a register that cannot be read is skipped until tomorrow.
+    Then the scope follows the organisation (D-122)."""
     entries = list(
         RegisterEntry.objects.select_for_update(of=("self",))
         .select_related("authority")
@@ -438,3 +443,5 @@ def recheck(tenant_id: uuid.UUID) -> None:
                 tenant_id=entry.tenant_id,
                 after={"readAt": now.isoformat()},
             )
+        # What changed reaches the scope by itself (D-122); a register that could not be read changed nothing.
+        organisation_scope.follow(tenant=Tenant.objects.get(pk=tenant_id))

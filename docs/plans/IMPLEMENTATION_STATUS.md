@@ -304,3 +304,26 @@ Alex's word ("go ahead, write the brief and build all steps"), built ahead of th
   from cross-border services, the Danish, Norwegian and Finnish licence registers, a Today
   row for a suggestion. Three questions with defaults are in `docs/TODO_FOR_alex.md`
   ("public-registers").
+
+## The scope follows the organisation (`claude/entity-markets`, 2026-10-08, PRD 0.10, D-122, ADR 0067)
+
+On Alex's word ("make it simple for the user so they ideally don't have to manage the overall
+surface at all, and eu banks should get eu rules of course"; "Yes, build it that way"), the
+regulatory scope the organisation and the registers give applies by itself (FP-02, FP-04, FP-05,
+TEN-08).
+
+- **Built (backend):** `apps/taxonomy/organisation_scope.follow()`, run when a legal entity is
+  added or its country or state changes, once after a register lookup is applied and after each
+  nightly re-read: markets from every company's country and branches, the licence-bound terms
+  and each company's exclusions from the register facts, and each company outside the covered
+  countries other than its own and its branches', all written by the system with one audit event
+  per term (taxonomy 0014: an exclusion may carry no request). A term or company line a person
+  changed by hand is left alone. Company lines may name a country, never the EU. `GET
+  /tenant/footprint/suggestions` is removed; `GET /tenant/footprint` gains `companies` and
+  `registersReadAt`. FP-S20 and TEN-S13/TEN-S14 rewritten, FP-S21 extended, FP-S22 and REG-S19
+  new.
+- **Built (screens):** Regulatory scope says that it follows the organisation in place of the
+  suggestions panel; J-13 proves the scope set with no request.
+- **Left, deliberately:** cross-border services without a branch (by hand), the euro area for the
+  banking union's duties and EEA incorporation per act (D-28 stands), licences typed by hand,
+  which give the scope nothing, and the per-term reasons the suggestions showed.
