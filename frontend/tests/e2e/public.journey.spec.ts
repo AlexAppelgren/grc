@@ -5,7 +5,7 @@ import { DEMO_FRAME_NAME } from '@/features/demo/frame';
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, LOGINS, signInAs, signOut } from './support/passkeys';
 
-const PLATE = 'Compliance, written in ink.';
+const PLATE = 'Agents watch the regulators. You make the decisions.';
 
 // The public page (design/public/): what a visitor who is not signed in sees at
 // the front door, and the way from it into the passkey sign-in flow. The page
