@@ -2511,7 +2511,7 @@ the rules and why. Do the steps in this order; each check tells you the step wor
       re-enrolment for platform staff, and an agent builds it.
 - [ ] **6. Check from outside** (or ask an agent to):
       `curl -sI https://bleqq.com/` → 200 and no `x-robots-tag`;
-      `curl -s https://bleqq.com/ | grep -c "A register of record"` → at least 1 (the whole page
+      `curl -s https://bleqq.com/ | grep -c "written in ink"` → at least 1 (the whole page
       without JavaScript); `curl -sI https://bleqq.com/sign-in` → 301 to
       `https://app.bleqq.com/sign-in`; `curl -sI https://bleqq.com/welcome` → 301 to
       `https://bleqq.com/`; `curl -sI https://app.bleqq.com/sign-in` → 200 with

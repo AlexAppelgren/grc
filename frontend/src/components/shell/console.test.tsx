@@ -187,7 +187,7 @@ describe('the console landing', () => {
     expect(who).toHaveTextContent('Ida Holm');
     expect(who).toHaveTextContent('Library editor');
     expect(within(rail()).getByText('Platform console')).toHaveClass('microlabel');
-    for (const logo of screen.getAllByRole('img', { name: 'bleqq, pronounced blek' })) {
+    for (const logo of screen.getAllByRole('img', { name: 'bleqq, pronounced bläck' })) {
       expect(logo.closest('a')).toHaveAttribute('href', '/console');
     }
     const header = document.querySelector('[data-mobile-header]') as HTMLElement;
@@ -221,7 +221,7 @@ describe('the surface follows the principal', () => {
     expect(within(railNav()).getByRole('link', { name: 'Today' })).toHaveAttribute('href', '/');
     expect(within(railNav()).queryByRole('link', { name: 'Vocabularies' })).toBeNull();
     expect(screen.queryByText('Platform console')).toBeNull();
-    for (const logo of screen.getAllByRole('img', { name: 'bleqq, pronounced blek' })) {
+    for (const logo of screen.getAllByRole('img', { name: 'bleqq, pronounced bläck' })) {
       expect(logo.closest('a')).toHaveAttribute('href', '/');
     }
   });

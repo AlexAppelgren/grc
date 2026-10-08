@@ -195,7 +195,7 @@ describe('the rail on desktop', () => {
 
   it('shows the phonetic wordmark, and a small icon on every row', () => {
     renderShell();
-    expect(screen.getAllByRole('img', { name: 'bleqq, pronounced blek' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('img', { name: 'bleqq, pronounced bläck' }).length).toBeGreaterThan(0);
     for (const link of within(mainNav()).getAllByRole('link')) {
       expect(link.querySelector('svg[aria-hidden="true"]')).toHaveClass('size-4');
     }
@@ -630,7 +630,7 @@ describe('at compact width: the tab bar', () => {
     const header = document.querySelector('[data-mobile-header]') as HTMLElement;
     expect(header).toHaveClass('lg:hidden');
     expect(within(header).getByRole('link')).toHaveAttribute('href', '/');
-    expect(within(header).getByRole('img', { name: 'bleqq, pronounced blek' })).toBeInTheDocument();
+    expect(within(header).getByRole('img', { name: 'bleqq, pronounced bläck' })).toBeInTheDocument();
     expect(within(header).queryByRole('button')).toBeNull();
     expect(document.querySelector('[data-sidebar="trigger"]')).toBeNull();
   });

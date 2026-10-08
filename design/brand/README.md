@@ -4,7 +4,7 @@
 weight 500 with 0.04 em tracking, so it needs no font. `logo-phonetic.svg`
 uses `currentColor`. The green and sand files are for places that cannot set
 a colour (email, the favicon's neighbours). Accessible name: "bleqq,
-pronounced blek". Keep clear space of one bracket width around it.
+pronounced bläck". Keep clear space of one bracket width around it.
 `favicon.svg` is the open e on a rounded square.
 
 **Brand layer.** The prototype's green (`#003824`) and its brass pair

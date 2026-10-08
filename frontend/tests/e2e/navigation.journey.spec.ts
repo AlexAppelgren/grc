@@ -77,7 +77,7 @@ test.describe('navigation on a phone, 375 × 812', () => {
     await expect(nav.getByRole('link', { name: 'Today', exact: true })).toHaveAttribute('aria-current', 'page');
     await expect(nav.getByRole('button', { name: 'More' })).toBeVisible();
     await expect(rail(page)).toBeHidden();
-    await expect(page.locator('[data-mobile-header]').getByRole('img', { name: 'bleqq, pronounced blek' })).toBeVisible();
+    await expect(page.locator('[data-mobile-header]').getByRole('img', { name: 'bleqq, pronounced bläck' })).toBeVisible();
     await noHorizontalScroll(page);
   });
 
