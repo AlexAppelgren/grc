@@ -28,7 +28,10 @@ ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 # node:alpine bundles carries its own dependency tree (tar, brace-expansion, pacote and
 # friends) whose advisories failed the first container scan (2026-09-19) although no
 # code of ours ever runs it. Removing it takes the findings and the attack surface away.
-RUN rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg
+# Alpine's security updates come first: the base tag lags them (zlib 1.3.2-r1 for
+# CVE-2026-85091, 2026-10-08), as the backend image already does.
+RUN apk upgrade --no-cache \
+    && rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /opt/yarn* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 # `output: 'standalone'` emits a self-contained server.js; it is what
 # `next start` becomes for a standalone build (Next.js deployment docs), so the
 # image runs it directly instead of shipping the whole node_modules tree.
