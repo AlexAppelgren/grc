@@ -8842,38 +8842,6 @@
         "title": "FootprintDryRun",
         "type": "object"
       },
-      "FootprintEntitySuggestion": {
-        "description": "The terms the public registers suggest taking out of, or putting back into, one legal\nentity's own scope (FP-05).",
-        "properties": {
-          "mainBusiness": {
-            "description": "The legal entity's main business as the register writes it (`Fondbolag`), which decides what its licences allow; public data.",
-            "examples": [
-              "Fondbolag"
-            ],
-            "title": "Mainbusiness",
-            "type": "string"
-          },
-          "orgUnit": {
-            "$ref": "#/components/schemas/FootprintOrgUnitRef",
-            "description": "The legal entity of the organisation whose own scope the line would change."
-          },
-          "terms": {
-            "description": "The licence-bound terms (dimensions `regime`, `service_type`, `licensed_activity`) to take out or put back, each with its label and dimension. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.",
-            "items": {
-              "$ref": "#/components/schemas/FootprintTermRef"
-            },
-            "title": "Terms",
-            "type": "array"
-          }
-        },
-        "required": [
-          "orgUnit",
-          "mainBusiness",
-          "terms"
-        ],
-        "title": "FootprintEntitySuggestion",
-        "type": "object"
-      },
       "FootprintEntityTermRef": {
         "description": "One company line of a regulatory scope change (FP-05): a licence-bound term taken out of\none legal entity's own scope, or put back into it. It narrows only which rules the register\noffers for that company, never what the organisation's members see.",
         "properties": {
@@ -8883,7 +8851,7 @@
           },
           "term": {
             "$ref": "#/components/schemas/FootprintTermRef",
-            "description": "The term, with its label and dimension: one of the licence-bound dimensions `regime`, `service_type` and `licensed_activity`. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal."
+            "description": "The term, with its label and dimension: one of the licence-bound dimensions `regime`, `service_type` and `licensed_activity`, or a country of `jurisdiction`. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal."
           }
         },
         "required": [
@@ -8897,7 +8865,7 @@
         "description": "One company line as a scope change sends it: a legal entity by id and a licence-bound term\nby its dimension and key (FP-05).",
         "properties": {
           "dimension": {
-            "description": "The key of the term's dimension: one of the licence-bound dimensions `regime`, `service_type` and `licensed_activity`. Any other dimension answers 422 `dimension_not_narrowable`.",
+            "description": "The key of the term's dimension: one of the licence-bound dimensions `regime`, `service_type` and `licensed_activity`, or `jurisdiction` for a country. Any other dimension, or a jurisdiction that is not a country such as the EU, answers 422 `dimension_not_narrowable`.",
             "examples": [
               "regime"
             ],
@@ -9048,7 +9016,7 @@
             "type": "array"
           },
           "entityExclusions": {
-            "description": "Company lines taking a licence-bound term out of one legal entity's own scope, at most 200 (a setting); empty by default. A term already outside that company's scope answers 422 `validation_error`. Once approved, the register no longer offers that company a rule whose terms in that dimension are all outside its scope; nothing changes for the organisation's members and the preview does not move. `GET /tenant/footprint/suggestions` lists the lines the public registers suggest.",
+            "description": "Company lines taking a licence-bound term or a country out of one legal entity's own scope, at most 200 (a setting); empty by default. A term already outside that company's scope answers 422 `validation_error`. Once approved, the register no longer offers that company a rule whose terms in that dimension are all outside its scope; nothing changes for the organisation's members and the preview does not move. What a company's register facts and country give its own scope applies by itself, so a line here is a change by hand.",
             "examples": [
               [
                 {
@@ -9471,155 +9439,6 @@
         "title": "FootprintRequestRow",
         "type": "object"
       },
-      "FootprintSuggestionLine": {
-        "description": "One term the public registers suggest putting into, or taking out of, the\norganisation's regulatory scope.",
-        "properties": {
-          "reasons": {
-            "description": "The legal entities and register lines behind the suggestion; empty for a removal (no company's facts give the term any more) and for a term added only because no licence answers it.",
-            "items": {
-              "$ref": "#/components/schemas/FootprintSuggestionReason"
-            },
-            "title": "Reasons",
-            "type": "array"
-          },
-          "term": {
-            "$ref": "#/components/schemas/FootprintTermRef",
-            "description": "The term, with its label and dimension. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal."
-          }
-        },
-        "required": [
-          "term"
-        ],
-        "title": "FootprintSuggestionLine",
-        "type": "object"
-      },
-      "FootprintSuggestionReason": {
-        "description": "Why the public registers suggest a line: a legal entity and the register's own line\nbehind it.",
-        "properties": {
-          "orgUnit": {
-            "$ref": "#/components/schemas/FootprintOrgUnitRef",
-            "description": "The legal entity whose register facts give the term."
-          },
-          "registerLine": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The line in the register that gives the term, in the register's own words and language: a business name (`V\u00e4rdepappersbolag`), a licence with its legal basis, or a branch's name. Public data, at most 1,000 characters. Null when the reason is the company's own country, or for a term no licence answers that is added only so the change hides nothing outside the licences.",
-            "examples": [
-              "Investeringsr\u00e5dgivning till kund betr\u00e4ffande finansiella instrument, enligt 2 kap. 1 \u00a7 5 p. lagen [2007:528] om v\u00e4rdepappersmarknaden"
-            ],
-            "title": "Registerline"
-          }
-        },
-        "required": [
-          "orgUnit"
-        ],
-        "title": "FootprintSuggestionReason",
-        "type": "object"
-      },
-      "FootprintSuggestions": {
-        "description": "`GET /tenant/footprint/suggestions`: what the public registers suggest for the\norganisation's regulatory scope and for each legal entity's own scope (FP-05). A\nsuggestion, never a change: a person files it as an ordinary request\n(`POST /tenant/footprint/requests`) and a second person approves it with a passkey.",
-        "examples": [
-          {
-            "adds": [
-              {
-                "reasons": [
-                  {
-                    "orgUnit": {
-                      "id": "6d1f0a2b-7c3e-4b58-9a21-0e4f8b7c6d55",
-                      "name": "Example Bank AB"
-                    },
-                    "registerLine": "Example Bank AB, filial i Danmark"
-                  }
-                ],
-                "term": {
-                  "dimension": "jurisdiction",
-                  "key": "dk",
-                  "kind": null,
-                  "label": "Denmark"
-                }
-              }
-            ],
-            "entityExclusions": [
-              {
-                "mainBusiness": "Fondbolag",
-                "orgUnit": {
-                  "id": "3f6c2a9e-1b7d-4e25-8c40-6a2b9d1e7f53",
-                  "name": "Example Fonder AB"
-                },
-                "terms": [
-                  {
-                    "dimension": "regime",
-                    "key": "banking",
-                    "kind": null,
-                    "label": "Banking"
-                  }
-                ]
-              }
-            ],
-            "entityInclusions": [],
-            "readAt": "2026-10-05T03:17:00Z",
-            "removes": []
-          }
-        ],
-        "properties": {
-          "adds": {
-            "description": "Terms to put into the regulatory scope: the legal-entity types, regimes, service types and licensed activities the companies' register facts give, and the markets of their countries and branches that the library covers. Empty by default.",
-            "items": {
-              "$ref": "#/components/schemas/FootprintSuggestionLine"
-            },
-            "title": "Adds",
-            "type": "array"
-          },
-          "entityExclusions": {
-            "description": "Per legal entity, the licence-bound terms its register facts do not give it, to take out of its own scope. Only for a company whose main business the mapping knows; empty by default.",
-            "items": {
-              "$ref": "#/components/schemas/FootprintEntitySuggestion"
-            },
-            "title": "Entityexclusions",
-            "type": "array"
-          },
-          "entityInclusions": {
-            "description": "Per legal entity, terms outside its own scope that its register facts now give it, to put back. Empty by default.",
-            "items": {
-              "$ref": "#/components/schemas/FootprintEntitySuggestion"
-            },
-            "title": "Entityinclusions",
-            "type": "array"
-          },
-          "readAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "When the register facts behind the suggestion were last read, a UTC timestamp (the latest of the companies'); null when no legal entity has register facts.",
-            "examples": [
-              "2026-10-05T03:17:00Z"
-            ],
-            "title": "Readat"
-          },
-          "removes": {
-            "description": "Licence-bound terms in the regulatory scope that no company's register facts give any more; never one whose removal would leave its dimension empty, since an empty dimension restricts nothing. Empty by default.",
-            "items": {
-              "$ref": "#/components/schemas/FootprintSuggestionLine"
-            },
-            "title": "Removes",
-            "type": "array"
-          }
-        },
-        "title": "FootprintSuggestions",
-        "type": "object"
-      },
       "FootprintTermRef": {
         "description": "A taxonomy term in a regulatory scope change: the term as a reference, plus the key of\nthe dimension it belongs to, since a term key is unique only within its dimension.",
         "properties": {
@@ -9702,6 +9521,7 @@
         "description": "`GET /tenant/footprint`: the organisation's regulatory scope, group by group, the\nchange waiting for a second person, and the markets it operates in and watches (FP-01,\nFP-04).",
         "examples": [
           {
+            "companies": 3,
             "dimensions": [
               {
                 "allSelected": false,
@@ -9833,6 +9653,7 @@
               "status": "pending",
               "version": 1
             },
+            "registersReadAt": "2026-10-05T02:00:00Z",
             "scopeItems": [
               {
                 "description": "Finansinspektionen's rules for crypto-asset service providers, before MiCA's library entry.",
@@ -9859,6 +9680,15 @@
           }
         ],
         "properties": {
+          "companies": {
+            "default": 0,
+            "description": "How many active legal entities the organisation has, 0 by default: the scope follows them by itself (D-122). Each one's country and its branches' countries are operating markets, and what their licences in the public registers allow sets the licence-bound terms, with no request and no approval. 0 means there is no company for the scope to follow yet.",
+            "examples": [
+              3
+            ],
+            "title": "Companies",
+            "type": "integer"
+          },
           "dimensions": {
             "description": "One group per active taxonomy dimension, in picker order, each with the terms this organisation has chosen in it. Every active dimension is here, also one with no term chosen, which reads as no restriction, or as none followed for an opt-in dimension.",
             "items": {
@@ -9885,6 +9715,22 @@
               }
             ],
             "description": "The change to the scope waiting for a second person, with a preview counted against today's library; null by default, when none waits. There is at most one at a time, and the scope above does not include it until it is approved."
+          },
+          "registersReadAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When a public register was last read for one of these companies, as an ISO 8601 timestamp in UTC; null by default, when no company has register facts. The registers are read again every night.",
+            "examples": [
+              "2026-10-05T02:00:00Z"
+            ],
+            "title": "Registersreadat"
           },
           "scopeItems": {
             "description": "The scope items in the organisation's regulatory scope, oldest first, each with how its research stands: the regulations the shared library does not cover that a second person approved. Empty by default. An item asked for and still waiting is in `pendingRequest`, not here. Items narrow and widen nothing above: they are researched, never matched.",
@@ -32227,7 +32073,7 @@
             "description": "What a supervisor's register says about the legal entity, with the date read, once a lookup in the public registers was applied to it; null for a unit with no register facts, and always null for a group or a department."
           },
           "scopeExclusions": {
-            "description": "The licence-bound terms outside this legal entity's own scope (FP-05), each with its key, label and dimension (`regime`, `service_type` or `licensed_activity`): the register offers the entity no rule whose terms in a dimension are all among these. They change only through an approved regulatory scope request (`entityExclusions` of `POST /tenant/footprint/requests`). Empty by default, and always empty for a group or a department. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.",
+            "description": "The terms outside this legal entity's own scope (FP-05), each with its key, kind and label: licence-bound terms (a regime, a service type or a licensed activity) and countries the library covers. The register offers the entity no rule whose terms in a dimension are all among these, so an entity outside Denmark is not offered a Danish rule, while an EU rule, which carries every country it reaches, is offered to every entity. The organisation writes them by itself from the entity's register facts and country (D-122), and a person changes them by hand through an approved regulatory scope request (`entityExclusions` and `entityInclusions` of `POST /tenant/footprint/requests`). Empty by default, and always empty for a group or a department. Terms are rows of the shared library's taxonomy vocabulary, which an administrator may extend through an approved proposal.",
             "items": {
               "$ref": "#/components/schemas/TermRef"
             },
@@ -54520,7 +54366,7 @@
         ]
       },
       "post": {
-        "description": "Ask for terms, and scope items, to be put into or taken out of the organisation's\nregulatory scope. Nothing in the scope changes here: the change waits for a second\nperson, who approves it with a passkey (`POST /tenant/footprint/requests/{requestId}/approve`)\nor rejects it.\n\nA scope item is a regulation the shared library does not cover yet: a name, a\ndescription, a jurisdiction, a regime term, an official reference where one exists and a\npublic https page, for the organisation's own agent to research once it is approved. It\nis stored with the request as `requested`, with a key derived from its name; it changes\nno term and moves no count in the preview. Only a person asks for, approves or removes\none: no API key and no agent reaches it.\n\nWith `dryRun=true` it only previews: a 200 with what the change would hide and reveal\namong the obligations and the open cases, and the scope items as they would be stored,\nwith nothing stored, no audit event and no approval started. Without it, a 201 with the\nnew pending request, its preview counted now, and one `footprint.change_requested` audit\nevent naming every term and every scope item (by id and key) added and removed. An\norganisation has one pending request at a time; withdraw or decide it first.\n\nCompany lines (`entityExclusions`, `entityInclusions`; FP-05) take a licence-bound term (a\nregime, a service type or a licensed activity) out of one legal entity's own scope or put\nit back. They ride on the same request and are\ndecided with it, never change what the organisation's members see and never move the\npreview; once approved, the register stops (or starts again) offering that company the\nrules whose terms in that dimension are all outside its scope.\n`GET /tenant/footprint/suggestions` lists the lines the public registers suggest.\n\nEach of the four term and scope item lists holds at most the configured number of entries\n(`FOOTPRINT_CHANGE_MAX_TERMS`, 50 by default), and each company line list at most\n`FOOTPRINT_ENTITY_CHANGE_MAX` (200 by default); a longer one is refused with 422.\n\nNeeds `footprint.request` in the caller's organisation and a person's session; an API\nkey is refused. No passkey step-up: the approval carries it.\n\nErrors to branch on: `request_pending` (409) when a change already waits for a decision;\n`unknown_key` (422) for a dimension, term, jurisdiction or regime term that is not an\nactive one, or a scope item to remove that is not in scope, with the valid keys in\n`detail`; `source_not_public` (422) for a scope item's address that is not a public https\npage; `not_a_legal_entity` (422) for a company line naming anything but an active legal\nentity of the organisation; `dimension_not_narrowable` (422) for a company line in any\ndimension but the three licence-bound ones named above; `validation_error`\n(422) for a change with nothing in it, a term both added and removed, a term, scope item\nor company line named twice, an exclusion of a term already outside that company's scope\nor an inclusion of one inside it, a list over its cap, or a body the schema refuses; `permission_denied` (403) without `footprint.request`; `unauthenticated` (401)\nwithout a session; `not_found` (404) for a principal in no organisation.",
+        "description": "Ask for terms, and scope items, to be put into or taken out of the organisation's\nregulatory scope. Nothing in the scope changes here: the change waits for a second\nperson, who approves it with a passkey (`POST /tenant/footprint/requests/{requestId}/approve`)\nor rejects it.\n\nA scope item is a regulation the shared library does not cover yet: a name, a\ndescription, a jurisdiction, a regime term, an official reference where one exists and a\npublic https page, for the organisation's own agent to research once it is approved. It\nis stored with the request as `requested`, with a key derived from its name; it changes\nno term and moves no count in the preview. Only a person asks for, approves or removes\none: no API key and no agent reaches it.\n\nWith `dryRun=true` it only previews: a 200 with what the change would hide and reveal\namong the obligations and the open cases, and the scope items as they would be stored,\nwith nothing stored, no audit event and no approval started. Without it, a 201 with the\nnew pending request, its preview counted now, and one `footprint.change_requested` audit\nevent naming every term and every scope item (by id and key) added and removed. An\norganisation has one pending request at a time; withdraw or decide it first.\n\nCompany lines (`entityExclusions`, `entityInclusions`; FP-05) take a licence-bound term (a\nregime, a service type or a licensed activity) or a country of the jurisdiction dimension\nout of one legal entity's own scope or put it back. They ride on the same request and are\ndecided with it, never change what the organisation's members see and never move the\npreview; once approved, the register stops (or starts again) offering that company the\nrules whose terms in that dimension are all outside its scope.\n\nThis is the way to change the scope by hand. What the organisation's legal entities and\ntheir register facts give the scope (each company's country and branches as markets, the\nlicence-bound terms their licences allow, each company's own licence-bound terms and\ncountries) applies by itself with no request (D-122), and it never undoes a term or a\ncompany line whose last change was an approved request.\n\nEach of the four term and scope item lists holds at most the configured number of entries\n(`FOOTPRINT_CHANGE_MAX_TERMS`, 50 by default), and each company line list at most\n`FOOTPRINT_ENTITY_CHANGE_MAX` (200 by default); a longer one is refused with 422.\n\nNeeds `footprint.request` in the caller's organisation and a person's session; an API\nkey is refused. No passkey step-up: the approval carries it.\n\nErrors to branch on: `request_pending` (409) when a change already waits for a decision;\n`unknown_key` (422) for a dimension, term, jurisdiction or regime term that is not an\nactive one, or a scope item to remove that is not in scope, with the valid keys in\n`detail`; `source_not_public` (422) for a scope item's address that is not a public https\npage; `not_a_legal_entity` (422) for a company line naming anything but an active legal\nentity of the organisation; `dimension_not_narrowable` (422) for a company line in any\ndimension but the three licence-bound ones and the jurisdiction dimension, or naming a\njurisdiction that is not a country, such as the EU, whose rules reach every company; `validation_error`\n(422) for a change with nothing in it, a term both added and removed, a term, scope item\nor company line named twice, an exclusion of a term already outside that company's scope\nor an inclusion of one inside it, a list over its cap, or a body the schema refuses; `permission_denied` (403) without `footprint.request`; `unauthenticated` (401)\nwithout a session; `not_found` (404) for a principal in no organisation.",
         "operationId": "createFootprintRequest",
         "parameters": [
           {
@@ -54775,34 +54621,6 @@
           }
         ],
         "summary": "See one regulation we added to our regulatory scope",
-        "tags": [
-          "Taxonomy"
-        ]
-      }
-    },
-    "/api/v1/tenant/footprint/suggestions": {
-      "get": {
-        "description": "What the register facts of the organisation's legal entities, read from the public\nregisters (`POST /tenant/register-lookups`, then every night), suggest for its regulatory\nscope and for each legal entity's own scope (FP-05): the terms their businesses, licences\nand branches give, the markets of their countries and branches, the licence-bound terms a\ncompany's facts do not give it, and terms no company holds any more. Each line names the\ncompanies and the register lines behind it.\n\nA read: nothing changes and no audit event is written. To act on it, file the lines as an\nordinary request with `POST /tenant/footprint/requests` (`adds`, `removes`,\n`entityExclusions`, `entityInclusions`); a second person approves it with a passkey. The\nanswer is empty, never an error, when no legal entity has register facts or nothing\ndiffers, and it is computed on every read, so it is never stale against the scope.\n\nNeeds `footprint.request` in the caller's organisation and a person's session; an API key\nis refused.\n\nErrors to branch on: `permission_denied` (403) without `footprint.request`;\n`unauthenticated` (401) without a session; `not_found` (404) for a principal in no\norganisation.",
-        "operationId": "getFootprintSuggestions",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FootprintSuggestions"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "security": [
-          {
-            "SessionAuth": []
-          }
-        ],
-        "summary": "See what the public registers suggest for our regulatory scope",
         "tags": [
           "Taxonomy"
         ]

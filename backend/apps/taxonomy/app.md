@@ -71,10 +71,10 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | VOC-08 | Bulk tagging from list views with preview and one audit entry | S | R2 | built |
 | VOC-09 | Tenant configuration is versioned, exportable and importable | S | R3 | pending |
 | FP-01 | Footprint across all dimensions; a record matches when every dimension it carries has a term in the footprint; an empty dimension does not restrict, except an opt-in dimension (standards), which matches only what the scope names; an obligation also needs its instrument's regime | M | R1 | built |
-| FP-02 | A footprint change previews what it hides and reveals, needs a second person and step-up, one audit event per term | M | R1 | built |
+| FP-02 | A footprint change by hand previews what it hides and reveals, needs a second person and step-up, one audit event per term; what the organisation gives the scope applies by itself and never undoes a change by hand (D-122) | M | R1 | built |
 | FP-03 | Feed, inventory, roadmap, briefing and reports respect the footprint, with a visible way to look outside it. R1 covers the feed, inventory, roadmap, briefing and search; reports apply it in chunk 12 | M | R1 | built |
-| FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
-| FP-05 | The regulatory scope suggested from the register facts: the terms the companies' businesses, licences and branches give the group, and each company's licence-bound exclusions; filed as an ordinary change request and approved by a second person with step-up; exclusions narrow only what the register offers for that company (`docs/plans/briefs/PUBLIC_REGISTERS.md`) | S | R3 | built |
+| FP-04 | Markets: each covered country is operating, watching or not followed; operating markets are the footprint's jurisdictions, each legal entity's country and its branches' countries by themselves and the organisation never removing one; a record's jurisdiction comes from its instrument or authority and EU rules reach every member country and Norway; watching hides nothing and adds a view | M | R1 | built |
+| FP-05 | The regulatory scope follows the organisation and the register facts by itself: the terms the companies' businesses, licences and branches give the group, the markets of their countries and branches, and each company's exclusions, licence-bound and the covered countries other than its own and its branches'; written by the system, one audit event per term, with no request and no approval, never undoing a change by hand; exclusions narrow only what the register offers for that company, never the EU (`docs/plans/briefs/PUBLIC_REGISTERS.md`, D-122) | S | R3 | built |
 | I18N-01 | Content in `en`, `sv`, `da`, `nb`, `fi` as translation rows; jurisdictions EU, SE, DK, NO, FI as data | M | R1 | built |
 | OWN-01 | A scope item (name, jurisdiction and regime terms, official reference, public source addresses) is added through the regulatory scope request: `footprint.request` asks, a different person with `footprint.approve` approves with a passkey; no API key reaches it, approving widens no term, and no agent ever writes one (D-89, D-91) | M | R2 | built |
 | ACC-02 | An agent access entry's scope is the terms of its departments and products intersected with the tenant footprint, computed per request. It can only narrow; an empty dimension does not restrict; a record outside it answers 404, never a filtered result | M | R2 | built |
@@ -99,12 +99,14 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
   `footprintMatch` false. After an approved change adding the standard it sees
   them. A law's obligation or change never carries a standard term.
 - **AC-FP4** Once Example Bank AB's companies are read from the registers, the
-  regulatory scope suggests the legal-entity types they hold, Sweden, Denmark and Norway as
-  markets from their countries and the bank's branches, and for Example Fonder AB the
-  exclusion of banking, insurance and payments; a dimension in which they hold every
-  licence-bound term stays open. Filing it waits for a second person with step-up; once approved, a rule tagged
+  regulatory scope holds, with no request and no approval, the legal-entity types they hold
+  and Sweden, Denmark and Norway as markets from their countries and the bank's branches;
+  Example Fonder AB is outside banking, insurance and payments and outside Denmark, Norway and
+  Finland; a dimension in which they hold every licence-bound term stays open. A rule tagged
   only payments is offered in the register for Example Bank AB and not for Example Fonder AB,
-  an AML rule for both. A re-read that finds a new licence changes no term until approved.
+  an AML rule for both, a Danish rule for Example Bank AB, which has a Danish branch, and an EU
+  rule for every company. A re-read that finds a new licence puts its term back by itself, and
+  a term a second person changed by hand stays as they left it (D-122).
 - **On screen this section is "Regulatory scope"** (PRD glossary). In the code, the
   API paths, the permission keys and the route the word stays `footprint`.
 - **Playbook 15 rules:** retire, never delete, showing the usage count first;
@@ -661,27 +663,40 @@ When the entry names no department and no product
 Then its effective scope is the tenant footprint exactly, through the same code path
 ```
 
-### FP-S20 — The regulatory scope suggested from the register facts, approved by a second person `@integration` `@e2e` (FP-05, FP-02, AC-FP4, J-13)
+### FP-S20 — The regulatory scope follows the register facts by itself, and a change by hand stays `@integration` `@e2e` (FP-05, FP-04, FP-02, AC-FP4, J-13)
 ```gherkin
-Given Example Bank AB, Example Fonder AB and Example Liv Försäkring AB carry register facts and the scope names no legal-entity type, regime, service type or market
-When an officer holding footprint.request reads the suggestions
-Then they add the legal-entity types the companies hold and the markets of the companies' countries and branches, each line naming the company and the register line behind it
-And a dimension in which the companies hold every licence-bound term is left open, while one they hold only part of gains the held terms with the cross-cutting ones
-And they exclude banking, insurance and payments from Example Fonder AB's own scope, and suggest nothing for a company without register facts
-When the officer files them as one request
-Then it waits like any change: one waiting request per bank, the preview counted, the company lines listed
-And the officer cannot approve it, and an approver holding footprint.approve approves it with a passkey
-Then the group terms and the company exclusions are written with one history row and one audit event each, and the suggestions are empty
+Given the scope names no legal-entity type, regime, service type or market
+When an admin adds Example Bank AB, Example Fonder AB and Example Liv Försäkring AB from the public registers
+Then the scope holds the legal-entity types the companies hold and Sweden, Denmark and Norway as markets, from the companies' countries and the bank's branches, with no request and no approval
+And a dimension in which the companies hold every licence-bound term is left open
+And Example Fonder AB is outside banking, insurance and payments and outside Denmark, Norway and Finland, and Example Bank AB outside Finland only
+And each term and company line has one history row with no request and one audit event written by the system
+And the scope page counts the companies it follows and says when the registers were read
 When a re-read finds a new licence for Example Fonder AB
-Then the suggestions put the term it gives back into Example Fonder AB's scope, and nothing changes until a request is approved
+Then the term it gives is back in Example Fonder AB's scope by itself
+When a second person approves a change by hand that takes Norway out and puts banking back into Example Fonder AB
+Then the next re-read leaves both as the person left them
 ```
 
 ### FP-S21 — A company's exclusions are checked and kept apart from the bank's view `@integration` (FP-05, FP-01)
 ```gherkin
 Given an officer files a request with a company line
-When the line names a unit that is not an active legal entity, or a term in a dimension that is not licence-bound
+When the line names a unit that is not an active legal entity, a term in a dimension that is neither licence-bound nor the jurisdictions, or the EU
 Then it answers 422 "not_a_legal_entity" or "dimension_not_narrowable" and nothing is stored
 When an approved request excludes insurance from Example Fonder AB
 Then the bank's regulatory scope, its inventory and its preview counts are unchanged
 And a later request lifting it puts the term back in the company's scope, with its history row
+```
+
+### FP-S22 — The scope follows the companies a person adds and changes, and never drops a market `@integration` (FP-04, FP-05, D-122)
+```gherkin
+Given a bank with no legal entity and an open scope
+When an admin adds Example Bank AB in Sweden
+Then Sweden is an operating market and Example Bank AB is outside Denmark, Norway and Finland, never the EU
+When the admin adds a Danish company
+Then Denmark joins the markets and the Danish company is outside Sweden, Norway and Finland
+And a company in a country the library does not cover narrows nothing
+When the Danish company moves to Norway and is then deactivated
+Then Norway joins the markets, the company's own countries move with it, and no market is dropped
+And every change is the system's, with no request, and another bank's scope is untouched
 ```

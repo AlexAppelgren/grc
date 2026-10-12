@@ -7,6 +7,16 @@ regulatory scope request (FP-01, FP-02, FP-04) and the register's span (REG-01),
 builds the per-entity half of `BANKING_GROUPS.md` (D-96) from register facts instead of
 hand-filed exclusions.
 
+**Amended 2026-10-08 (D-122, ADR 0067, PRD 0.10).** Alex: "make it simple for the user so they
+ideally don't have to manage the overall surface at all, and eu banks should get eu rules of
+course", then "Yes, build it that way". What section 4 works out is no longer suggested and
+filed: it applies by itself, written by the system with one audit event per term and no
+request (`apps/taxonomy/organisation_scope.py`). Every legal entity's country counts, not only
+those with register facts, and each company is also outside the covered countries other than
+its own and its branches' (FP-S22, REG-S19). A change by hand still goes through the request a
+second person approves, and the organisation never undoes it. `GET
+/tenant/footprint/suggestions` is removed. Sections 3.2, 3.4, 5.2, 6, 7 and 8 below say how.
+
 ## 1. What Alex decided
 
 "Since data from Finansinspektionen is public, bleqq [should] load that when an organisation
@@ -68,30 +78,31 @@ change in FI's layout fails the lookup loudly rather than guessing (section 6).
    2026"), so nobody types them and they cannot drift from the source. A bank still records
    certificates and other authorities' licences by hand, as TEN-02 does today.
 
-### 3.2 The scope suggested from the register (FP-05, FP-S20)
+### 3.2 The scope from the register (FP-05, FP-S20; D-122)
 
-On Regulatory scope, a person holding `footprint.request` sees "Suggested from your
-licences" whenever the register facts and the scope disagree (`GET
-/tenant/footprint/suggestions`). It lists each suggested change with the company and the
-register line behind it, every line ticked. "Request approval" files the ticked lines as one
-ordinary change request (`POST /tenant/footprint/requests`): the same preview, one waiting
-request per bank, a second person holding `footprint.approve` approving with a passkey, one
-audit event and one history row per term. Nothing in the scope changes until then.
+Once the companies are added, the scope holds what section 4 works out, written by the system
+with one audit event and one history row per term and no request (`follow()` in
+`apps/taxonomy/organisation_scope.py`). Regulatory scope says that it follows the organisation,
+how many companies, and when the registers were last read (`companies`, `registersReadAt` on
+`GET /tenant/footprint`). A person changes it by hand only for what the registers cannot know,
+through the ordinary request a second person approves with a passkey, and `follow()` never
+moves a term or a company line whose last change was such a request.
 
 ### 3.3 Each company's scope from its own licences (FP-05, FP-S21, REG-S18)
 
-The same request carries each company's exclusions: the licence-bound terms its register facts
-do not give it. Once approved, the register does not offer that company a rule whose terms in
-a dimension are all excluded for it (REG-S18). The bank's view of the inventory, feed and
+Each company's exclusions follow the same way: the licence-bound terms its register facts do not
+give it, and the covered countries other than its own and its branches' (D-122). The register
+does not offer that company a rule whose terms in a dimension are all excluded for it (REG-S18,
+REG-S19); the EU is never excluded, so an EU rule reaches every company. The bank's view of the inventory, feed and
 roadmap does not change: exclusions narrow which per-entity rows the register offers, the way
 the company's type already does.
 
 ### 3.4 The re-check (TEN-08, TEN-S14)
 
 Every night (`REGISTERS_RECHECK_HOUR`, UTC) the worker re-reads FI for every company with
-register facts and stores what changed, with an audit event. It never edits the organisation
-or the scope: a new or withdrawn licence simply makes the suggestion in 3.2 non-empty, and the
-company's facts on Organisation show the date of the last read. A register that cannot be
+register facts and stores what changed, with an audit event. It never edits the organisation;
+the scope then follows the facts by itself (3.2), and the company's facts on Organisation show
+the date of the last read. A register that cannot be
 reached leaves the stored facts as they are and is tried again the next night.
 
 ## 4. The rule
@@ -190,7 +201,7 @@ mistake a company line for the bank's.
 | `GET /tenant/register-lookups/{id}` | `vocab.manage` | The job's status and, once done, the companies found |
 | `POST /tenant/register-lookups/{id}/apply` | `vocab.manage` | Adds or links the chosen companies (by LEI) and stores their register facts |
 | `GET /tenant/org-units` | (as today) | Each legal entity also carries its register facts and its exclusions |
-| `GET /tenant/footprint/suggestions` | `footprint.request` | The suggested group and company changes, each with its reason |
+| `GET /tenant/footprint` | (as today) | Also `companies` and `registersReadAt`: what the scope follows by itself (D-122; the suggestions route is removed) |
 | `POST /tenant/footprint/requests` | `footprint.request` | Also takes `entityExclusions` and `entityInclusions`: `{orgUnitId, dimension, key}` |
 | `POST …/requests/{id}/approve` | `footprint.approve` + step-up | Also writes the company lines, with history and audit |
 
@@ -224,9 +235,9 @@ transaction), `FOOTPRINT_ENTITY_CHANGE_MAX` (200).
 
 ## 6. What never happens
 
-- No register read changes the scope. Every scope change, a company's exclusions included, is a
-  request a second person approves with a passkey (FP-02, D-89). The re-check only refreshes
-  facts.
+- No register read changes the scope by hand. What the facts give the scope applies by itself,
+  audited (D-122); every change by hand, a company's lines included, is a request a second
+  person approves with a passkey (FP-02, D-89), and the facts never undo one.
 - No agent and no API key reaches any of it: the routes are session-only.
 - Nothing is guessed: an unknown category or licence is shown and not mapped; a register whose
   format changed fails the job with `register_unavailable`; a company with unknown main business
@@ -244,8 +255,8 @@ transaction), `FOOTPRINT_ENTITY_CHANGE_MAX` (200).
   register facts shows its categories, licences (collapsed), branches, "Read from
   Finansinspektionen's register on {date}" and, when it has any, "Outside this company's scope:
   {terms}".
-- **Regulatory scope** (`design/screens/admin-footprint.html`): the "Suggested from your
-  licences" panel above the groups, for holders of `footprint.request` while nothing waits; the
+- **Regulatory scope** (`design/screens/admin-footprint.html`): a notice above the groups that
+  the scope follows the organisation, with the date the registers were read (D-122); the
   pending banner, the approve dialog and the history list company lines as "{company}: outside
   its scope: {term}" and "{company}: back in its scope: {term}".
 
@@ -257,9 +268,8 @@ transaction), `FOOTPRINT_ENTITY_CHANGE_MAX` (200).
   vocabulary with a proposal kind. A bank never edits it.
 - Exclusions sit on request lines; one waiting request per bank (5.1).
 - A company's type stays one term; the other legal-entity terms its other businesses give feed
-  the group's suggestion only.
-- The re-check runs nightly; the suggestion is computed on read, so it is never stale against
-  the scope.
+  the group's scope only.
+- The re-check runs nightly, and the scope follows it in the same transaction.
 - Only FI's register is read for licences. Another supervisor is another entry in the adapter
   and the mapping file.
 
@@ -268,10 +278,10 @@ transaction), `FOOTPRINT_ENTITY_CHANGE_MAX` (200).
 - The entity switcher, a membership's entity scope and entity-scoped inventory views
   (`BANKING_GROUPS.md` sections 6 to 9) stay as D-96 planned.
 - Markets from cross-border services without a branch (FI lists them per company); only home
-  countries and branches are suggested.
+  countries and branches count, and a person adds the rest by hand.
 - Danish, Norwegian and Finnish licence registers (Norway has an open API,
   `api.finanstilsynet.no/registry/`).
-- A Today row for a non-empty suggestion.
+- A Today row when the scope changed by itself.
 
 ## Sources
 

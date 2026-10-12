@@ -846,3 +846,88 @@ class RegisterScenarioTests(TestCase):
         b = Bank("reg-s18-b")
         tenancy.activate(b.tenant.id)
         self.assertEqual({entity.name for entity in entities_spanned([payments_only.id])[payments_only.id]}, everyone)
+
+    def test_reg_s19(self) -> None:
+        """REG-S19
+
+        A company is offered the EU's rules, its own country's and its branch countries', and no other country's (FP-04, FP-05, REG-01, D-122).
+        Operations: `updateOrgUnit`, `createFootprintRequest`, `approveFootprintRequest`.
+        """
+        from apps.tenants.models import RegisterEntry
+        from apps.tenants.schemas import RegisterFacts, RegisterFactsBranch
+
+        seed_library()
+        a = Bank("reg-s19")
+        admin = sign_in(factories.member(a.tenant, roles=("admin",)).user, tenant=a.tenant)
+        approver = sign_in(factories.member(a.tenant, roles=("approver",)).user, tenant=a.tenant, step_up=True)
+        duties = {
+            country: library_build.obligation(library_build.instrument(key=f"law-{country}", jurisdiction=country, regime="regime:securities"), key=f"duty-{country}")
+            for country in ("eu", "se", "dk", "no")
+        }
+
+        def place(unit: OrgUnit, country: str) -> None:
+            tenancy.activate(a.tenant.id)
+            unit.refresh_from_db()
+            moved = self.client.patch(
+                f"/api/v1/tenant/org-units/{unit.id}", data={"countryCode": country}, content_type="application/json", HTTP_IF_MATCH=str(unit.version), **admin
+            )
+            self.assertEqual(moved.status_code, 200, moved.content)
+
+        def spans() -> dict[str, set[str]]:
+            tenancy.activate(a.tenant.id)
+            found = entities_spanned([duty.id for duty in duties.values()])
+            return {country: {entity.name for entity in found[duty.id]} for country, duty in duties.items()}
+
+        # Example Bank AB has a Norwegian branch in its register facts.
+        tenancy.activate(a.tenant.id)
+        facts = RegisterFacts(
+            name="Example Bank AB",
+            registration_number="556000-0001",
+            lei="",
+            main_business="",
+            other_businesses=[],
+            licences=[],
+            branches=[RegisterFactsBranch(name="Example Bank AB, filial i Norge", country_name="Norge", jurisdiction="no")],
+            listed=True,
+        )
+        RegisterEntry.objects.create(
+            tenant=a.tenant,
+            org_unit=a.bank_ab,
+            authority=library_build.authority(key="fi", short_name="Finansinspektionen"),
+            facts=facts.model_dump(mode="json", by_alias=True),
+            source_url="https://www.fi.se/sv/vara-register/foretagsregistret/",
+            read_at=timezone.now(),
+            changed_at=timezone.now(),
+        )
+        place(a.bank_ab, "SE")
+        place(a.fonder, "DK")
+        place(a.liv, "EE")
+        everyone = {"Example Bank AB", "Example Fonder AB", "Example Liv Försäkring AB"}
+        self.assertEqual(
+            spans(),
+            {
+                "eu": everyone,
+                "se": {"Example Bank AB", "Example Liv Försäkring AB"},
+                "dk": {"Example Fonder AB", "Example Liv Försäkring AB"},
+                "no": {"Example Bank AB", "Example Liv Försäkring AB"},
+            },
+            "EU rules reach every company; a country's rules its companies, its branches' companies and a company in a country the library does not cover",
+        )
+
+        # Putting Sweden back into Example Fonder AB's own scope is a change by hand, and it stays.
+        created = self.client.post(
+            "/api/v1/tenant/footprint/requests",
+            data={"entityInclusions": [{"orgUnitId": str(a.fonder.id), "dimension": "jurisdiction", "key": "se"}]},
+            content_type="application/json",
+            **sign_in(a.officer, tenant=a.tenant),
+        )
+        self.assertEqual(created.status_code, 201, created.content)
+        approved = self.client.post(
+            f"/api/v1/tenant/footprint/requests/{created.json()['id']}/approve", data={}, content_type="application/json", **approver
+        )
+        self.assertEqual(approved.status_code, 200, approved.content)
+        place(a.liv, "FI")
+        found = spans()
+        self.assertEqual(found["se"], {"Example Bank AB", "Example Fonder AB"})
+        self.assertEqual(found["dk"], {"Example Fonder AB"})
+        self.assertEqual(found["eu"], everyone)

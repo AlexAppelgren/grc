@@ -305,7 +305,7 @@
   "admin.org.registers.addAndLink": "{count, plural, one {Lägg till # bolag och koppla {linked}} other {Lägg till # bolag och koppla {linked}}}",
   "admin.org.registers.added": "{count, plural, one {La till # bolag från de offentliga registren.} other {La till # bolag från de offentliga registren.}}",
   "admin.org.registers.linked": "{count, plural, one {Kopplade # bolag som ni redan hade.} other {Kopplade # bolag som ni redan hade.}}",
-  "admin.org.registers.scopeLink": "Se vad de föreslår för den regulatoriska omfattningen",
+  "admin.org.registers.scopeLink": "Se den regulatoriska omfattning de ger",
   "admin.org.registers.business": "Verksamhet",
   "admin.org.registers.licences": "Tillstånd",
   "admin.org.registers.showLicences": "{count, plural, one {Visa # tillstånd} other {Visa # tillstånd}}",

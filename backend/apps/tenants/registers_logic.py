@@ -132,23 +132,6 @@ def derived_terms(authority_key: str, facts: RegisterFacts) -> dict[str, set[str
     return _grouped(terms)
 
 
-def term_sources(authority_key: str, facts: RegisterFacts) -> dict[tuple[str, str], list[str]]:
-    """(dimension key, term key) -> the register lines that give the term, in the register's
-    order: business names and licence texts, as the scope suggestion names its reasons (FP-05).
-    Empty for a company the register no longer lists."""
-    if not facts.listed:
-        return {}
-    mapping = _mapping(authority_key)
-    sources: dict[tuple[str, str], list[str]] = {}
-    for name in (facts.main_business, *facts.other_businesses):
-        for term in mapping.categories.get(name, ()):
-            sources.setdefault(term, []).append(name)
-    for licence in facts.licences:
-        for term in _licence_terms(mapping, licence.text) or ():
-            sources.setdefault(term, []).append(licence.text)
-    return sources
-
-
 def derivable_terms(authority_key: str) -> dict[str, set[str]]:
     """Dimension key -> every term key the authority's mapping can produce: `D(d)` of
     PUBLIC_REGISTERS.md 4.1. A term outside it is a choice no licence answers."""

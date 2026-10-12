@@ -133,6 +133,10 @@ export interface Footprint {
   pendingRequest: FootprintChangeRequest | null;
   markets: Market[];
   scopeItems: ScopeItem[];
+  /** The active legal entities the scope follows by itself (D-122); 0 when there are none yet. */
+  companies: number;
+  /** When a public register was last read for one of them, as a UTC timestamp; null when none has register facts. */
+  registersReadAt: string | null;
 }
 
 export interface FootprintRequestCreate {
@@ -147,9 +151,6 @@ export interface FootprintRequestCreate {
 
 /** A company line as a request sends it: the legal entity by id, the term by dimension and key. */
 export type EntityTermSelector = components['schemas']['FootprintEntityTermSelector'];
-
-/** What the public registers suggest for the scope and each company's own scope (FP-05), as the server sends it. */
-export type FootprintSuggestions = components['schemas']['FootprintSuggestions'];
 
 export interface FootprintRejectBody {
   note: string;

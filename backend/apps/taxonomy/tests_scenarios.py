@@ -95,8 +95,9 @@ URGENCY_READ_QUERIES = 5 + 2
 #   four more however many countries there are: the jurisdictions whose mirrored term is in
 #   the footprint, read through the term's link (1), the watch rows (1), the countries (1)
 #   and their labels (1). And the scope items in scope (1, d89-scope-items-logic), whose
-#   labels are read only when there is one.
-FOOTPRINT_READ_QUERIES = 5 + 5 + 4 + 1
+#   labels are read only when there is one. And what the scope follows by itself (1, D-122):
+#   the legal entities and their latest register read, in one aggregate.
+FOOTPRINT_READ_QUERIES = 5 + 5 + 4 + 1 + 1
 
 
 def _seed_library() -> None:
@@ -2172,8 +2173,8 @@ class TaxonomyScenarioTests(ScenarioTestCase):
     def test_fp_s20(self) -> None:
         """FP-S20
 
-        The regulatory scope suggested from the register facts, approved by a second person (FP-05, FP-02, AC-FP4, J-13).
-        Operations: `startRegisterLookup`, `applyRegisterLookup`, `createFootprintRequest`, `approveFootprintRequest`.
+        The regulatory scope follows the register facts by itself, and a change by hand stays (FP-05, FP-04, FP-02, AC-FP4, J-13).
+        Operations: `startRegisterLookup`, `applyRegisterLookup`, `getFootprint`, `createFootprintRequest`, `approveFootprintRequest`.
         """
         from dataclasses import replace
 
@@ -2193,16 +2194,19 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual(applied.status_code, 200, applied.content)
         self.activate(self.tenant)
         units = {unit.name: unit for unit in OrgUnit.objects.filter(kind=OrgUnitKind.LEGAL_ENTITY.value)}
-        # A company the bank typed itself has no register facts and is never suggested anything.
-        OrgUnit.objects.create(tenant=self.tenant, kind=OrgUnitKind.LEGAL_ENTITY.value, name="Example Kort AB", country_code="FI")
+        fonder = units["Example Fonder AB"]
 
-        officer = sign_in(self.officer, tenant=self.tenant)
-        suggested = self._get("/tenant/footprint/suggestions", officer)
-        self.assertEqual(suggested.status_code, 200, suggested.content)
-        body = suggested.json()
-        adds = {(line["term"]["dimension"], line["term"]["key"]) for line in body["adds"]}
+        def held() -> set[tuple[str, str]]:
+            self.activate(self.tenant)
+            return set(FootprintTerm.objects.values_list("term__dimension__key", "term__key"))
+
+        def outside(unit: OrgUnit) -> set[tuple[str, str]]:
+            self.activate(self.tenant)
+            return set(EntityScopeExclusion.objects.filter(org_unit=unit).values_list("term__dimension__key", "term__key"))
+
+        # The scope holds what the companies give it, with no request and no approval.
         self.assertEqual(
-            adds,
+            held(),
             {
                 ("legal_entity", "bank"),
                 ("legal_entity", "investment_firm"),
@@ -2212,72 +2216,54 @@ class TaxonomyScenarioTests(ScenarioTestCase):
                 ("jurisdiction", "dk"),
                 ("jurisdiction", "no"),
             },
-            "every regime, service type and licensed activity is held by a company, so those stay open; Finland is no company's",
+            "every regime, service type and licensed activity is held by a company, so those stay open; the bank's branches bring Denmark and Norway",
         )
-        denmark = next(line for line in body["adds"] if line["term"]["key"] == "dk")
-        self.assertEqual(
-            [(reason["orgUnit"]["name"], reason["registerLine"]) for reason in denmark["reasons"]],
-            [("Example Bank AB", "Example Bank AB, filial i Danmark")],
-        )
-        firm = next(line for line in body["adds"] if line["term"]["key"] == "investment_firm")
-        self.assertEqual([reason["registerLine"] for reason in firm["reasons"]], ["Värdepappersbolag"])
-        self.assertEqual(body["removes"], [])
-        excluded = {line["orgUnit"]["name"]: {(term["dimension"], term["key"]) for term in line["terms"]} for line in body["entityExclusions"]}
         cards = {("licensed_activity", "card_issuing"), ("licensed_activity", "card_acquiring")}
+        abroad = {("jurisdiction", "dk"), ("jurisdiction", "no"), ("jurisdiction", "fi")}
         self.assertEqual(
-            excluded,
-            {
-                "Example Fonder AB": {("regime", "banking"), ("regime", "insurance"), ("regime", "payments"), ("service_type", "advice"), ("service_type", "custody"), ("service_type", "insurance_distribution"), *cards},
-                "Example Liv Försäkring AB": {("regime", "banking"), ("regime", "payments"), ("regime", "securities"), ("service_type", "advice"), ("service_type", "custody"), ("service_type", "portfolio_management"), *cards},
-            },
-            "a bank's licence allows every licence-bound term, and a company without facts is left alone",
+            outside(fonder),
+            {("regime", "banking"), ("regime", "insurance"), ("regime", "payments"), ("service_type", "advice"), ("service_type", "custody"), ("service_type", "insurance_distribution"), *cards, *abroad},
         )
-        self.assertEqual(body["entityInclusions"], [])
-        self.assertIsNotNone(body["readAt"])
+        self.assertEqual(
+            outside(units["Example Liv Försäkring AB"]),
+            {("regime", "banking"), ("regime", "payments"), ("regime", "securities"), ("service_type", "advice"), ("service_type", "custody"), ("service_type", "portfolio_management"), *cards, *abroad},
+        )
+        self.assertEqual(outside(units["Example Bank AB"]), {("jurisdiction", "fi")}, "a bank's licence allows every licence-bound term, and its branches keep Denmark and Norway")
+        # Written by the organisation itself: one history row and one audit event per term, the system's.
+        self.assertFalse(FootprintChangeRequest.objects.exists())
+        self.assertEqual(FootprintHistory.objects.filter(request__isnull=True, changed_by__isnull=True, step_up_assertion_id__isnull=True).count(), 7 + 23)
+        events = AuditEvent.objects.filter(tenant=self.tenant, action__in=("footprint.term_added", "footprint.entity_term_excluded"))
+        self.assertEqual((events.count(), set(events.values_list("actor_type", flat=True))), (7 + 23, {"system"}))
+        officer = sign_in(self.officer, tenant=self.tenant)
+        view = self._footprint(officer)
+        self.assertEqual(view["companies"], 3)
+        self.assertIsNotNone(view["registersReadAt"])
+        self.assertIsNone(view["pendingRequest"])
 
-        # Filed as one ordinary request, decided by a second person with a passkey.
-        request_body = {
-            "adds": [{"dimension": dimension, "key": key} for dimension, key in sorted(adds)],
-            "entityExclusions": [
-                {"orgUnitId": line["orgUnit"]["id"], "dimension": term["dimension"], "key": term["key"]}
-                for line in body["entityExclusions"]
-                for term in line["terms"]
-            ],
-        }
-        created = self._post("/tenant/footprint/requests", request_body, officer)
-        self.assertEqual(created.status_code, 201, created.content)
-        self.assertEqual(len(created.json()["entityExclusions"]), 16)
-        second = self._post("/tenant/footprint/requests", {"adds": [{"dimension": "regime", "key": "aml"}]}, officer)
-        self.assertEqual((second.status_code, second.json()["code"]), (409, "request_pending"))
-        approve = f"/tenant/footprint/requests/{created.json()['id']}/approve"
-        own = self._post(approve, {}, sign_in(self.officer, tenant=self.tenant, step_up=True))
-        self.assertEqual((own.status_code, own.json()["code"]), (409, "four_eyes_violation"))
-        approved = self._post(approve, {}, sign_in(self.approver, tenant=self.tenant, step_up=True))
-        self.assertEqual(approved.status_code, 200, approved.content)
-        self.activate(self.tenant)
-        self.assertEqual(FootprintTerm.objects.count(), 7)
-        self.assertEqual(EntityScopeExclusion.objects.count(), 16)
-        self.assertEqual(AuditEvent.objects.filter(tenant=self.tenant, action="footprint.term_added").count(), 7)
-        self.assertEqual(AuditEvent.objects.filter(tenant=self.tenant, action="footprint.entity_term_excluded").count(), 16)
-        after = self._get("/tenant/footprint/suggestions", officer).json()
-        self.assertEqual((after["adds"], after["removes"], after["entityExclusions"], after["entityInclusions"]), ([], [], [], []))
-
-        # A re-read that finds a new licence suggests putting its term back, and changes nothing.
-        fonder = units["Example Fonder AB"]
+        # A re-read that finds a new licence puts the term it gives back into Example Fonder AB's scope.
         current = MockRegisters().licence_facts("fi", "556000-0003")
         assert current is not None
         advice = RegisterLicence(text="Investeringsrådgivning till kund beträffande finansiella instrument", granted_on=None)
         MockRegisters.override("556000-0003", replace(current, licences=(*current.licences, advice)))
         tenant_tasks.recheck_tenant_registers(self.tenant.id)
+        self.assertNotIn(("service_type", "advice"), outside(fonder))
+        self.assertEqual(len(outside(fonder)), 10)
         self.activate(self.tenant)
-        reread = self._get("/tenant/footprint/suggestions", officer).json()
-        self.assertEqual(
-            [(line["orgUnit"]["name"], [term["key"] for term in line["terms"]]) for line in reread["entityInclusions"]],
-            [("Example Fonder AB", ["advice"])],
-        )
-        self.assertEqual((reread["adds"], reread["entityExclusions"]), ([], []))
-        self.activate(self.tenant)
-        self.assertEqual((FootprintTerm.objects.count(), EntityScopeExclusion.objects.filter(org_unit=fonder).count()), (7, 8))
+        self.assertEqual(AuditEvent.objects.filter(tenant=self.tenant, action="footprint.entity_term_included").count(), 1)
+
+        # A person's change wins: what a second person approved by hand stays through the next read.
+        approver = sign_in(self.approver, tenant=self.tenant, step_up=True)
+        change = {
+            "removes": [{"dimension": "jurisdiction", "key": "no"}],
+            "entityInclusions": [{"orgUnitId": str(fonder.id), "dimension": "regime", "key": "banking"}],
+        }
+        created = self._post("/tenant/footprint/requests", change, officer)
+        self.assertEqual(created.status_code, 201, created.content)
+        approved = self._post(f"/tenant/footprint/requests/{created.json()['id']}/approve", {}, approver)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        tenant_tasks.recheck_tenant_registers(self.tenant.id)
+        self.assertNotIn(("jurisdiction", "no"), held(), "a market a person took out stays out")
+        self.assertNotIn(("regime", "banking"), outside(fonder), "a term a person put back stays in")
 
     def test_fp_s21(self) -> None:
         """FP-S21
@@ -2301,6 +2287,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         for body, code in (
             ({"entityExclusions": [line(department, "regime", "insurance")]}, "not_a_legal_entity"),
             ({"entityExclusions": [line(fonder, "legal_entity", "bank")]}, "dimension_not_narrowable"),
+            ({"entityExclusions": [line(fonder, "jurisdiction", "eu")]}, "dimension_not_narrowable"),
             ({"entityInclusions": [line(fonder, "regime", "insurance")]}, "validation_error"),
             ({"entityExclusions": [line(fonder, "regime", "insurance"), line(fonder, "regime", "insurance")]}, "validation_error"),
         ):
@@ -2348,6 +2335,59 @@ class TaxonomyScenarioTests(ScenarioTestCase):
             list(FootprintHistory.objects.filter(org_unit=fonder).order_by("id").values_list("action", flat=True)), ["removed", "added"]
         )
         self.assertTrue(AuditEvent.objects.filter(tenant=self.tenant, action="footprint.entity_term_included", subject_id=fonder.id).exists())
+
+    def test_fp_s22(self) -> None:
+        """FP-S22
+
+        The scope follows the companies a person adds and changes, and never drops a market (FP-04, D-122).
+        Operations: `createOrgUnit`, `updateOrgUnit`, `getFootprint`.
+        """
+        from apps.tenants.models import OrgUnit
+
+        admin = sign_in(self.admin, tenant=self.tenant)
+        other = factories.tenant(slug="other-bank")
+
+        def company(name: str, country: str) -> dict[str, Any]:
+            created = self._post("/tenant/org-units", {"kind": "legal_entity", "name": name, "countryCode": country}, admin)
+            self.assertEqual(created.status_code, 201, created.content)
+            return dict(created.json())
+
+        def markets() -> set[str]:
+            self.activate(self.tenant)
+            return set(FootprintTerm.objects.filter(term__dimension__key="jurisdiction").values_list("term__key", flat=True))
+
+        def outside(unit_id: str) -> set[str]:
+            self.activate(self.tenant)
+            return set(EntityScopeExclusion.objects.filter(org_unit_id=uuid.UUID(unit_id)).values_list("term__key", flat=True))
+
+        # A Swedish company: Sweden is a market, and the company is offered no other country's rules.
+        bank = company("Example Bank AB", "SE")
+        self.assertEqual(markets(), {"se"})
+        self.assertEqual(outside(bank["id"]), {"dk", "no", "fi"}, "the EU is never outside a company's scope")
+        # A Danish one: Denmark joins, and each company keeps to its own country.
+        danish = company("Example Bank Danmark A/S", "DK")
+        self.assertEqual(markets(), {"se", "dk"})
+        self.assertEqual(outside(danish["id"]), {"se", "no", "fi"})
+        # A company in a country the library does not cover, or with none, narrows nothing.
+        self.assertEqual(outside(company("Example Pank AS", "EE")["id"]), set())
+        self.assertEqual(markets(), {"se", "dk"})
+        # Moving a company moves its own countries; deactivating one never drops a market.
+        moved = self._patch(f"/tenant/org-units/{danish['id']}", {"countryCode": "NO"}, admin, HTTP_IF_MATCH=str(danish["version"]))
+        self.assertEqual(moved.status_code, 200, moved.content)
+        self.assertEqual(markets(), {"se", "dk", "no"})
+        self.assertEqual(outside(danish["id"]), {"se", "dk", "fi"})
+        closed = self._patch(f"/tenant/org-units/{danish['id']}", {"active": False}, admin, HTTP_IF_MATCH=str(moved.json()["version"]))
+        self.assertEqual(closed.status_code, 200, closed.content)
+        self.assertEqual(markets(), {"se", "dk", "no"})
+        # The system wrote it, one audit event per term, and the scope page counts the companies it follows.
+        self.activate(self.tenant)
+        self.assertEqual(set(AuditEvent.objects.filter(tenant=self.tenant, action__startswith="footprint.").values_list("actor_type", flat=True)), {"system"})
+        self.assertFalse(FootprintChangeRequest.objects.exists())
+        self.assertEqual(self._footprint(sign_in(self.officer, tenant=self.tenant))["companies"], 2)
+        # Another bank's scope is its own.
+        tenancy.activate(other.id)
+        self.assertFalse(FootprintTerm.objects.exists())
+        self.assertFalse(OrgUnit.objects.exists())
 
 class HeldStandardInScope(ScenarioTestCase):
     """FP-S16's integration half. The seed files ISO/IEC 27001 active

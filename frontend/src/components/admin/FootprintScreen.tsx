@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
@@ -24,7 +25,6 @@ import {
   diffFootprint,
   draftAfter,
   draftOf,
-  hasSuggestions,
   hidesSomething,
   historyLine,
   marketLevelLabel,
@@ -41,11 +41,8 @@ import {
   scopeGroups,
   scopeItemConsequence,
   scopeItemLines,
-  suggestionChecks,
-  suggestionRequest,
   toggleTerm,
   type FootprintDraft,
-  type SuggestionCheck,
   type PreviewLine,
   type ScopeGroup,
   type ScopeItemLine,
@@ -55,7 +52,6 @@ import {
   useCreateFootprintRequest,
   useFootprint,
   useFootprintRequests,
-  useFootprintSuggestions,
   useJurisdictions,
   usePreviewFootprintRequest,
   useRejectFootprintRequest,
@@ -69,7 +65,6 @@ import type {
   FootprintDimension,
   FootprintPreview,
   FootprintRequestCreate,
-  FootprintSuggestions,
   JurisdictionRef,
   Market,
   ScopeItem,
@@ -100,10 +95,14 @@ import { hasProblemCode } from '@/shared/utils/problem';
 // draft "Propose a change" opens, so one request waits at a time and a second person
 // approves it with a passkey. Each item shows its research status as the server computes it;
 // nothing here lets an agent add, change or remove one.
-// "Suggested from your licences" (states 30 to 32; FP-05, FP-S20, PUBLIC_REGISTERS.md 3.2) shows
-// what the companies' register facts suggest, every line ticked, while nothing waits; Request
-// approval files the ticked lines as one ordinary request. A company line changes only which
-// rules the register offers that company, so the preview never counts it.
+// The scope follows the organisation by itself (states 30 to 32; FP-04, FP-05, D-122): each
+// company's country and branches are operating markets and its licences in the public registers
+// set the licence-bound terms, written by the server with no request and no approval whenever a
+// company is added or changes, or a register is read again. The notice in the rule's place says
+// so, with the date the registers were last read. A change by hand is still the request above,
+// and once a person changed a term the organisation leaves it as they left it. A request's
+// company lines change only which rules the register offers that company, so the preview never
+// counts them.
 
 type ApproveMutation = ReturnType<typeof useApproveFootprintRequest>;
 type RejectMutation = ReturnType<typeof useRejectFootprintRequest>;
@@ -517,48 +516,43 @@ function ScopeItemsPanel({
   );
 }
 
-// ——— suggested from your licences ——————————————————————————————————————
+// ——— where the scope comes from ————————————————————————————————————————
 
-function SuggestionsPanel({ suggestions, create, onSent, onRequestPending }: { suggestions: FootprintSuggestions; create: CreateMutation; onSent: () => void; onRequestPending: () => void }) {
+/** In the rule's place while nothing waits: the scope follows the companies on Organisation, or will once there are some. */
+function FollowsOrganisation({ companies, registersReadAt }: { companies: number; registersReadAt: string | null }) {
   const t = useT();
   const ctx = useFormatContext();
-  const [unticked, setUnticked] = useState<ReadonlySet<string>>(new Set());
-  const checks = suggestionChecks(suggestions, t);
-  const toggle = (id: string) =>
-    setUnticked((current) => {
-      const next = new Set(current);
-      if (!next.delete(id)) next.add(id);
-      return next;
-    });
-  const line = (check: SuggestionCheck) => (
-    // The wrapper carries the row's rule, since each row is the last child of its own wrapper.
-    <div key={check.id} data-suggestion={check.id} className="border-b border-line last:border-b-0">
-      <CheckRow id={`suggestion-${check.id}`} label={check.label} hint={check.meta === '' ? undefined : check.meta} checked={!unticked.has(check.id)} disabled={create.isPending} onChange={() => toggle(check.id)} />
-    </div>
+  const link = (
+    <Link href="/admin/organisation" className="font-semibold underline">
+      {t('footprint.follows.link')}
+    </Link>
   );
-  const nothing = [...checks.group, ...checks.company].every((check) => unticked.has(check.id));
+  if (companies === 0) {
+    return (
+      <Notice className="grid gap-1" data-scope-follows="">
+        <p>
+          {t('footprint.follows.none')}{' '}
+          {link}
+        </p>
+        <p>{t('footprint.rule')}</p>
+      </Notice>
+    );
+  }
   return (
-    <Panel title={t('footprint.suggestions.title')} data-scope-suggestions="">
-      {suggestions.readAt == null ? null : <p className="mb-2 text-meta text-muted">{t('footprint.suggestions.readAt', { date: formatDate(suggestions.readAt, ctx) })}</p>}
-      {checks.group.length > 0 ? <CheckGroup legend={t('footprint.suggestions.group')}>{checks.group.map(line)}</CheckGroup> : null}
-      {checks.company.length > 0 ? <CheckGroup legend={t('footprint.suggestions.companies')}>{checks.company.map(line)}</CheckGroup> : null}
-      {create.isError ? <ProblemAlert error={create.error} codes={{ [REQUEST_PENDING_CODE]: t('footprint.requestPending') }} /> : null}
-      <ButtonBar>
-        <Button
-          disabled={nothing || create.isPending}
-          onClick={() =>
-            create.mutate(suggestionRequest(suggestions, unticked), {
-              onSuccess: onSent,
-              onError: (error) => {
-                if (hasProblemCode(error, REQUEST_PENDING_CODE)) onRequestPending();
-              },
-            })
-          }
-        >
-          {t('footprint.preview.send')}
-        </Button>
-      </ButtonBar>
-    </Panel>
+    <Notice className="grid gap-1" data-scope-follows="">
+      <p>
+        <b>{t('footprint.follows.title')}</b>
+      </p>
+      <p>{t('footprint.follows.body')}</p>
+      <p className="text-meta">
+        {registersReadAt === null ? null : (
+          <>
+            <span data-registers-read="">{t('footprint.follows.readAt', { date: formatDate(registersReadAt, ctx) })}</span>{' '}
+          </>
+        )}
+        {link}
+      </p>
+    </Notice>
   );
 }
 
@@ -885,7 +879,6 @@ export function FootprintScreen() {
   const regimes = useMemo(() => (terms.data ?? []).filter((term) => term.dimension === REGIME_DIMENSION && term.active !== false), [terms.data]);
   const pending = footprint.data?.pendingRequest ?? null;
   const canRequest = permissions.includes(FOOTPRINT_REQUEST);
-  const suggestions = useFootprintSuggestions(canRequest);
   // A request that starts waiting, or a scope that changed under the draft, ends the edit
   // for good: kept, the old snapshot would come back later proposing to undo someone
   // else's approved change. Cleared during render, so no frame shows the stale draft.
@@ -964,7 +957,7 @@ export function FootprintScreen() {
       </p>
 
       {pending === null ? (
-        <Notice>{t('footprint.rule')}</Notice>
+        <FollowsOrganisation companies={footprint.data.companies} registersReadAt={footprint.data.registersReadAt} />
       ) : (
         <PendingBanner
           request={pending}
@@ -994,10 +987,6 @@ export function FootprintScreen() {
         <Panel id={previewId} hidden={!previewShown} data-pending-preview="">
           <PreviewColumns preview={pending.preview} pending={false} />
         </Panel>
-      ) : null}
-
-      {pending === null && editing === null && suggestions.data !== undefined && hasSuggestions(suggestions.data) ? (
-        <SuggestionsPanel suggestions={suggestions.data} create={create} onSent={() => announce(t('footprint.sent'))} onRequestPending={() => void footprint.refetch()} />
       ) : null}
 
       <Panel data-footprint-dimensions="">

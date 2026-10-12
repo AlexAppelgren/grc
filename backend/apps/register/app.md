@@ -372,3 +372,13 @@ Then an obligation tagged only payments spans Example Bank AB and not Example Fo
 And an obligation tagged payments and securities spans both
 And an AML obligation spans every entity, and an entity with no exclusions is spanned as before
 ```
+
+### REG-S19 — A company is offered the EU's rules, its own country's and its branch countries', and no other country's `@integration` (FP-04, FP-05, REG-01, D-122)
+```gherkin
+Given Example Bank AB is in Sweden with a Norwegian branch, Example Fonder AB in Denmark and Example Liv Försäkring AB in a country the library does not cover
+When the register lists the entities an EU, a Swedish, a Danish and a Norwegian rule span
+Then the EU rule spans every company
+And the Swedish rule spans Example Bank AB and Example Liv Försäkring AB, the Danish rule Example Fonder AB and Example Liv Försäkring AB, and the Norwegian rule Example Bank AB and Example Liv Försäkring AB
+When a second person approves putting Sweden back into Example Fonder AB's own scope by hand, and Example Liv Försäkring AB then moves to Finland
+Then the Swedish rule spans Example Bank AB and Example Fonder AB, and the hand change stays
+```

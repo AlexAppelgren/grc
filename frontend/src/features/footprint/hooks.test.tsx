@@ -13,7 +13,6 @@ import {
   useDimensions,
   useFootprint,
   useFootprintRequests,
-  useFootprintSuggestions,
   useRejectFootprintRequest,
   useSuggestTerm,
   useJurisdictions,
@@ -33,10 +32,10 @@ describe('footprint hooks', () => {
   });
 
   it('reads the footprint, the requests, the terms and the dimensions', async () => {
-    const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/footprint') ? { dimensions: [], pendingRequest: null } : s.path.endsWith('/jurisdictions') ? [] : { items: [], total: 0 } }));
+    const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/footprint') ? { dimensions: [], pendingRequest: null, companies: 2, registersReadAt: null } : s.path.endsWith('/jurisdictions') ? [] : { items: [], total: 0 } }));
     const { wrapper } = queryWrapper();
     const fp = renderHook(() => useFootprint(), { wrapper });
-    await waitFor(() => expect(fp.result.current.data).toEqual({ dimensions: [], pendingRequest: null, markets: [], scopeItems: [] }));
+    await waitFor(() => expect(fp.result.current.data).toEqual({ dimensions: [], pendingRequest: null, markets: [], scopeItems: [], companies: 2, registersReadAt: null }));
     const requests = renderHook(() => useFootprintRequests(), { wrapper });
     await waitFor(() => expect(requests.result.current.data?.pages).toEqual([{ items: [], total: 0 }]));
     expect(requests.result.current.hasNextPage).toBe(false);
@@ -67,17 +66,6 @@ describe('footprint hooks', () => {
     expect(both.result.current[0].data?.[0]).toMatchObject({ dimension: 'regime', key: 'securities', label: 'Securities' });
     expect(both.result.current[1].data).toEqual([{ id: 'term-1', key: 'securities', label: 'Securities' }]);
     expect(sent.filter((s) => s.path === '/api/v1/taxonomy/terms')).toHaveLength(1);
-  });
-
-  it('reads the suggestions only for someone who may request a change, and again with the footprint', async () => {
-    const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/suggestions') ? { readAt: null } : { dimensions: [], pendingRequest: null } }));
-    const off = renderHook(() => useFootprintSuggestions(false), { wrapper: queryWrapper().wrapper });
-    expect(off.result.current.fetchStatus).toBe('idle');
-    const { wrapper, queryClient } = queryWrapper();
-    const on = renderHook(() => useFootprintSuggestions(true), { wrapper });
-    await waitFor(() => expect(on.result.current.data).toEqual({ readAt: null }));
-    await queryClient.invalidateQueries({ queryKey: footprintKeys.footprint });
-    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/tenant/footprint/suggestions')).toHaveLength(2));
   });
 
   it('pages the request history: the next page starts where the pages read so far end, and stops at the total', async () => {

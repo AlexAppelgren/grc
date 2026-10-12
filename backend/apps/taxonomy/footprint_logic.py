@@ -1,7 +1,7 @@
 """The footprint and its change requests (FP-01, FP-02, AC-FP1, J-6).
 
 A footprint change has a wide blast radius: every feed, inventory, roadmap, briefing and
-report is filtered by it (FP-03). So it is never a direct write. A requester creates a
+report is filtered by it (FP-03). So a person's change is never a direct write. A requester creates a
 `FootprintChangeRequest` with a preview of what the change would hide and reveal; a second
 person approves it with a fresh passkey assertion; the approval switches the terms, writes
 one audit event and one `footprint_history` row per term, in one transaction.
@@ -27,10 +27,15 @@ which is what the research worker listens for; the name and description a person
 on the item row (R2_CROSS_CUTTING rule m).
 
 A request may also carry company lines (FP-05, PUBLIC_REGISTERS.md, D-121): a licence-bound
-term taken out of one legal entity's own scope or put back into it, usually as the public
-registers suggest. They ride on the same request, so the same second person and passkey
-decide them, and they never touch the bank's scope or move the preview: an approved line
-writes `entity_scope_exclusion`, which only the register's span reads (REG-S18).
+term or a country taken out of one legal entity's own scope or put back into it. They ride on
+the same request, so the same second person and passkey decide them, and they never touch the
+bank's scope or move the preview: an approved line writes `entity_scope_exclusion`, which only
+the register's span reads (REG-S18, REG-S19).
+
+What the organisation and the public registers give the scope is not asked for: it applies by
+itself through the same switches, with no request and no step-up, because nobody chooses it
+(apps/taxonomy/organisation_scope.py, D-122). A request is a person's change by hand, and the
+organisation never undoes one.
 """
 
 from __future__ import annotations
@@ -41,13 +46,13 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Prefetch, prefetch_related_objects
+from django.db.models import Count, Max, Prefetch, prefetch_related_objects
 from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.cases import reading as case_reading
 from apps.library import reading
-from apps.library.models import Jurisdiction, JurisdictionLabel
+from apps.library.models import Jurisdiction, JurisdictionKind, JurisdictionLabel
 from apps.shared.audit import Actor, batched, record
 from apps.shared.models import Tenant
 from apps.taxonomy import markets_logic, matching, terms_logic
@@ -100,6 +105,9 @@ ENTITY_SUBJECT_TYPE = "org_unit"
 # can say a company holds or not (PUBLIC_REGISTERS.md 4.3). A legal entity's type stays its
 # `entity_term`, and the cross-cutting terms in these dimensions are simply never excluded.
 ENTITY_SCOPE_DIMENSIONS = ("regime", "service_type", "licensed_activity")
+# The markets dimension: its terms mirror the jurisdictions. A company line may name one of its
+# countries too (D-122): the register then does not offer that country's rules for the company.
+MARKET_DIMENSION = "jurisdiction"
 # One company line: the legal entity and the term.
 EntityLine = tuple[OrgUnit, Any]
 
@@ -135,7 +143,17 @@ def view(tenant_id: uuid.UUID, order: list[str]) -> FootprintView:
             list(_scope_items().filter(tenant_id=tenant_id, status=ScopeItemStatus.IN_SCOPE.value).order_by("created_at", "id")),
             order,
         ),
+        **_followed(tenant_id),
     )
+
+
+def _followed(tenant_id: uuid.UUID) -> dict[str, Any]:
+    """What the scope follows by itself (D-122): the active legal entities, and when a register
+    was last read for one of them. One query."""
+    found = OrgUnit.objects.filter(tenant_id=tenant_id, kind=OrgUnitKind.LEGAL_ENTITY.value, active=True).aggregate(
+        companies=Count("id", distinct=True), registers_read_at=Max("register_entries__read_at")
+    )
+    return {"companies": found["companies"], "registers_read_at": found["registers_read_at"]}
 
 
 def pending(tenant_id: uuid.UUID) -> FootprintChangeRequest | None:
@@ -372,9 +390,10 @@ def scope_items_in_scope(tenant_id: uuid.UUID, keys: list[str]) -> list[ScopeIte
 def entity_lines(tenant_id: uuid.UUID, selectors: Sequence[FootprintEntityTermSelector], *, exclude: bool) -> list[EntityLine]:
     """The company lines a request would carry, validated in the order given: each names an
     active legal entity of this bank (422 `not_a_legal_entity`), a term of a licence-bound
-    dimension (422 `dimension_not_narrowable`, or `unknown_key` for a term that is not an active
-    one), and a change that changes something: an exclusion of a term inside the company's
-    scope, an inclusion of one outside it (422 `validation_error`)."""
+    dimension or a country of the markets dimension (422 `dimension_not_narrowable`, or
+    `unknown_key` for a term that is not an active one), and a change that changes something:
+    an exclusion of a term inside the company's scope, an inclusion of one outside it (422
+    `validation_error`). The EU is no country: its rules reach every company (D-122)."""
     if not selectors:
         return []
     units = {
@@ -394,13 +413,19 @@ def entity_lines(tenant_id: uuid.UUID, selectors: Sequence[FootprintEntityTermSe
         unit = units.get(line.org_unit_id)
         if unit is None:
             raise ValidationError("orgUnitId: name an active legal entity of this organisation.", code="not_a_legal_entity")
-        if line.dimension not in ENTITY_SCOPE_DIMENSIONS:
+        narrowable = (*ENTITY_SCOPE_DIMENSIONS, MARKET_DIMENSION)
+        if line.dimension not in narrowable:
             raise ValidationError(
                 f"{line.dimension!r} is not a dimension a company's own scope narrows. "
-                f"Valid dimensions: {', '.join(ENTITY_SCOPE_DIMENSIONS)}.",
+                f"Valid dimensions: {', '.join(narrowable)}.",
                 code="dimension_not_narrowable",
             )
         term = terms_logic.term_by_ref(line.dimension, line.key)
+        if line.dimension == MARKET_DIMENSION and (term.jurisdiction is None or term.jurisdiction.kind != JurisdictionKind.COUNTRY.value):
+            raise ValidationError(
+                f"{line.key!r} is not a country. A company's own scope narrows countries only: the EU's rules reach every company.",
+                code="dimension_not_narrowable",
+            )
         if ((unit.id, term.id) in outside) is exclude:
             where = "already outside" if exclude else "not outside"
             raise ValidationError(f"{line.dimension}:{line.key} is {where} {unit.name}'s own scope.", code="validation_error")
@@ -441,19 +466,20 @@ def _entity_state(unit: OrgUnit, term: Any, request: FootprintChangeRequest | No
     return state
 
 
-def _switch_entities(
+def switch_entities(
     *,
     tenant: Tenant,
     actor: Actor,
     lines: list[EntityLine],
     action: FootprintAction,
-    request: FootprintChangeRequest,
-    step_up_assertion_id: uuid.UUID,
+    request: FootprintChangeRequest | None,
+    step_up_assertion_id: uuid.UUID | None,
     changed_by: Any,
 ) -> None:
-    """An approved request's company lines: an exclusion row written or deleted, one history
-    row naming the company and one `footprint.entity_term_excluded` or
-    `footprint.entity_term_included` audit event each, with the step-up that authorised it."""
+    """Company lines: an exclusion row written or deleted, one history row naming the company
+    and one `footprint.entity_term_excluded` or `footprint.entity_term_included` audit event
+    each. An approved request's carry the request and the step-up that authorised it; the
+    organisation's carry neither (apps/taxonomy/organisation_scope.py, D-122)."""
     excluded = action is FootprintAction.REMOVED
     for unit, term in lines:
         if excluded:
@@ -629,7 +655,7 @@ def _term_state(term: Any, request: FootprintChangeRequest | None) -> dict[str, 
     return state
 
 
-def _switch_on(
+def switch_on(
     *,
     tenant: Tenant,
     actor: Actor,
@@ -640,7 +666,8 @@ def _switch_on(
 ) -> int:
     """Add terms to the footprint: one `footprint_term` row, one history row and one audit
     event per term (FP-02: "one audit event per term", so the log reads as decisions about
-    one term each rather than a blob nobody can diff)."""
+    one term each rather than a blob nobody can diff). An approved request's carry it and
+    its step-up; the seed's and the organisation's (D-122) carry neither."""
     count = 0
     for term in terms:
         row, created = FootprintTerm.objects.get_or_create(
@@ -671,7 +698,7 @@ def _switch_on(
     return count
 
 
-def _switch_off(
+def switch_off(
     *,
     tenant: Tenant,
     actor: Actor,
@@ -713,14 +740,14 @@ def seed_terms(*, tenant: Tenant, actor: Actor, terms: list[Any]) -> int:
     """The E2E seed's way in (playbook 8.3): the same writes an approval makes, with a
     system actor and no step-up assertion, so a seeded footprint has the same history rows
     as one a person built and the "as of" reconstruction never has a hole."""
-    return _switch_on(tenant=tenant, actor=actor, terms=terms, request=None, step_up_assertion_id=None)
+    return switch_on(tenant=tenant, actor=actor, terms=terms, request=None, step_up_assertion_id=None)
 
 
 def unseed_terms(*, tenant: Tenant, actor: Actor, terms: list[Any]) -> int:
     """`seed_terms` undone, for an E2E journey that restores the seeded footprint it
     changed (watch-standards, WAT-S10): the same writes a removal makes, history and audit
     included."""
-    return _switch_off(tenant=tenant, actor=actor, terms=terms, request=None, step_up_assertion_id=None)
+    return switch_off(tenant=tenant, actor=actor, terms=terms, request=None, step_up_assertion_id=None)
 
 
 def create_request(
@@ -900,7 +927,7 @@ def approve(
         )
     # Counted before the switch, against the footprint the approver was looking at.
     counted = preview_of(tenant.id, adds, removes)
-    _switch_on(
+    switch_on(
         tenant=tenant,
         actor=actor,
         terms=adds,
@@ -908,7 +935,7 @@ def approve(
         step_up_assertion_id=step_up_assertion_id,
         added_by=decider,
     )
-    _switch_off(
+    switch_off(
         tenant=tenant,
         actor=actor,
         terms=removes,
@@ -927,7 +954,7 @@ def approve(
             changed_by=decider,
         )
     for lines, action in ((entity_excludes, FootprintAction.REMOVED), (entity_includes, FootprintAction.ADDED)):
-        _switch_entities(
+        switch_entities(
             tenant=tenant,
             actor=actor,
             lines=lines,

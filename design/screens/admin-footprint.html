@@ -28,8 +28,9 @@
    to 29 are the scope items (OWN-01, FP-02, AC-OWN2, FP-S18; D-89, D-91, ADR 0059): a
    regulation the shared library does not cover, added and removed through the same
    request, second person and passkey, with its research status. No control on this card
-   lets an agent add or change one. The notes at the foot list every new string with its
-   catalog key. */
+   lets an agent add or change one. States 30 to 32 are the notice that the scope follows the
+   organisation by itself (D-122) and a request's company lines. The notes at the foot list every
+   new string with its catalog key. */
 :root{
   --page:#ffffff;--surface:#ffffff;--subtle:#f4f5f5;--accent:#eaebeb;--hover:rgba(0,0,0,.06);
   --line:#dfe1e1;--line-control:#dfe1e1;--line-strong:#777e7c;--text:#0a0b0b;--muted:#636967;
@@ -96,6 +97,9 @@ main{padding:24px max(32px,env(safe-area-inset-right)) 64px max(32px,env(safe-ar
 .notice.bad{background:var(--negative-soft)}
 .notice p:last-child{margin-bottom:0}
 .notice .bar{margin-top:12px}
+/* The scope notice's last line (state 30): meta size in the text colour, the link underlined. */
+.notice .meta-in-notice{font-size:13px;line-height:18px}
+.notice a{color:var(--text);font-weight:600;text-underline-offset:3px}
 
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
 .panel>h2{margin-bottom:12px}
@@ -231,7 +235,11 @@ fieldset.field{display:grid;gap:8px}
   <div class="acts"><button class="btn danger">Propose a change</button></div>
 </div>
 <p class="status" role="status" tabindex="-1"></p>
-<div class="notice">Changes apply to every member once someone else approves them with a passkey.</div>
+<div class="notice" data-scope-follows>
+  <p><b>Your scope follows your organisation</b></p>
+  <p>Your companies' countries and branches are its markets, and what their licences allow sets the rest. It updates by itself when the companies or the public registers change; a change by hand, for what the registers cannot know, applies once someone else approves it.</p>
+  <p class="meta-in-notice">Public registers read 5 Oct 2026. <a href="/admin/organisation">Open Organisation</a></p>
+</div>
 <div class="panel">
   <div class="groups">
     <div class="group" data-dimension="regime">
@@ -295,14 +303,13 @@ fieldset.field{display:grid;gap:8px}
 </div>
 
 <h2 class="k">2 · Read — someone who can only approve (no "Propose a change")</h2>
-<p class="cap">The groups read exactly as above. Only the page head differs.</p>
+<p class="cap">The groups and the notice read exactly as above. Only the page head differs.</p>
 <div class="head">
   <div>
     <h1>Regulatory scope</h1>
     <p class="lede">Which rules apply to us, what we do and for whom</p>
   </div>
 </div>
-<div class="notice">Changes apply to every member once someone else approves them with a passkey.</div>
 
 <h2 class="k">3 · Editing, after "Propose a change" (focus on the first checkbox)</h2>
 <p class="cap">Three columns from 1280px, two from 768px, one below. The hint sits under the legend; a group the draft leaves empty says what empty means.</p>
@@ -788,51 +795,70 @@ fieldset.field{display:grid;gap:8px}
   </div>
 </div>
 
-<h2 class="k">30 · Suggested from your licences — a compliance officer (footprint request), nothing waiting</h2>
-<div class="panel" data-scope-suggestions>
-  <h2>Suggested from your licences</h2>
-  <p class="meta" style="margin:0 0 8px">Read from Finansinspektionen's register on 5 Oct 2026.</p>
-  <h3>Regulatory scope</h3>
-  <label class="check" for="s-if"><input type="checkbox" id="s-if" checked><span>Add Investment firm <span class="meta">Example Bank AB: Värdepappersbolag</span></span></label>
-  <label class="check" for="s-dk"><input type="checkbox" id="s-dk" checked><span>Add Denmark <span class="meta">Example Bank AB, filial i Danmark</span></span></label>
-  <label class="check" for="s-no"><input type="checkbox" id="s-no" checked><span>Add Norway <span class="meta">Example Bank AB, filial i Norge</span></span></label>
-  <h3 style="margin-top:12px">Each company's scope</h3>
-  <label class="check" for="s-fo"><input type="checkbox" id="s-fo" checked><span>Example Fonder AB: outside its scope: Banking, Insurance, Payments, Advice, Custody, Insurance distribution, Card issuing, Card acquiring <span class="meta">Fondbolag</span></span></label>
-  <label class="check" for="s-li"><input type="checkbox" id="s-li" checked><span>Example Liv Försäkring AB: outside its scope: Banking, Payments, Securities, Advice, Custody, Portfolio management, Card issuing, Card acquiring <span class="meta">Riksbolag, livförsäkringar</span></span></label>
-  <div class="bar"><button class="btn">Request approval</button></div>
+<h2 class="k">30 · The scope follows the organisation — companies on Organisation, read from the public registers, nothing waiting</h2>
+<p class="cap">In the rule's place above the groups, for everyone who can open the page. The date is the last read of any company's register; without one the line holds the link alone.</p>
+<div class="notice" data-scope-follows>
+  <p><b>Your scope follows your organisation</b></p>
+  <p>Your companies' countries and branches are its markets, and what their licences allow sets the rest. It updates by itself when the companies or the public registers change; a change by hand, for what the registers cannot know, applies once someone else approves it.</p>
+  <p class="meta-in-notice">Public registers read 5 Oct 2026. <a href="/admin/organisation">Open Organisation</a></p>
 </div>
 
-<h2 class="k">31 · Waiting — the approver's view of a request with company lines</h2>
+<h2 class="k">31 · No company yet — the notice says the scope follows them once they are there, beside the rule; then state 30 in Swedish, 375 px wide</h2>
+<div class="notice" data-scope-follows>
+  <p>Once your companies are on Organisation, your scope follows them by itself. <a href="/admin/organisation">Open Organisation</a></p>
+  <p>Changes apply to every member once someone else approves them with a passkey.</p>
+</div>
+<div class="phone" lang="sv">
+  <div class="notice" data-scope-follows>
+    <p><b>Er omfattning följer er organisation</b></p>
+    <p>Era bolags länder och filialer är dess marknader, och det deras tillstånd tillåter avgör resten. Den uppdateras av sig själv när bolagen eller de offentliga registren ändras; en ändring för hand, för det registren inte kan veta, gäller när någon annan har godkänt den.</p>
+    <p class="meta-in-notice">De offentliga registren lästes 5 okt. 2026. <a href="/admin/organisation">Öppna Organisation</a></p>
+  </div>
+</div>
+
+<h2 class="k">32 · A change by hand with company lines — waiting in the approver's view, then in the history</h2>
+<p class="cap">A request that puts a company's terms back carries company lines; the banner, the approve dialog and the history name them, and the notice of state 30 gives way to the banner while it waits.</p>
 <div class="notice warn" data-pending-request>
-  <p><span class="pill warning">Waiting for approval</span> <b>Add Investment firm, Denmark and Norway</b></p>
-  <p>Erik Holm requested this on 5 Oct 2026.</p>
+  <p><span class="pill warning">Waiting for approval</span> <b>Remove Norway</b></p>
+  <p>Erik Holm requested this on 8 Oct 2026.</p>
   <ul style="margin:0 0 8px">
-    <li>Example Fonder AB: outside its scope: Banking, Insurance, Payments, Advice, Custody, Insurance distribution, Card issuing, Card acquiring</li>
-    <li>Example Liv Försäkring AB: outside its scope: Banking, Payments, Securities, Advice, Custody, Portfolio management, Card issuing, Card acquiring</li>
+    <li>Example Fonder AB: back in its scope: Banking, Denmark</li>
   </ul>
   <button class="btn ghost small disclose" aria-expanded="false">See the preview</button>
   <div class="bar"><button class="btn outline">Reject</button><button class="btn">Approve</button></div>
 </div>
-
-<h2 class="k">32 · History, with a company line</h2>
 <div class="panel log" data-footprint-history>
   <h2>History</h2>
-  <div><time>5 Oct 2026 15:12</time><b>Maria Ek</b> approved "Add Investment firm, Denmark and Norway" requested by Erik Holm, with Example Fonder AB and Example Liv Försäkring AB's own scope.</div>
+  <div><time>8 Oct 2026 15:12</time><b>Maria Ek</b> approved "Remove Norway" requested by Erik Holm, with Example Fonder AB's own scope.</div>
 </div>
 
-<p class="note">Suggested from your licences (states 30 to 32; FP-05, AC-FP4, FP-S20, J-13;
-PUBLIC_REGISTERS.md, D-121, ADR 0066). The panel shows to holders of footprint request
-while nothing waits and the suggestion is not empty; it sits above the groups. Each group
-line is one term, ticked by default, with the company and the register line behind it as
-meta text in the register's own words; each company line is all of one company's exclusions
-or lifts at once ("back in its scope: …" for a lift), with its main business as meta text.
-Request approval files the ticked lines as one ordinary request (state 7 onwards): the same
-preview, which company lines do not change, the same second person and passkey. Unticking
-everything disables the button. The pending banner, the approve dialog and the history list
-the company lines under the title; the title still names only the group change, or "Change
-each company's own scope" when there is none. Nothing here changes what members see: a
-company's exclusions decide only which rules the register offers for that company. Company
-names and register lines are data, never strings.</p>
+<p class="note">The scope follows the organisation (states 30 to 32; FP-04, FP-05, AC-FP4, FP-S20,
+J-13; D-121, D-122, ADR 0066). Nobody manages the overall scope by hand any more: each active legal
+entity's country and each branch's country the library covers is an operating market, and what the
+companies' licences in the public registers allow sets the licence-bound terms, the bank's and each
+company's own. The server writes it whenever a legal entity is added or its country or state
+changes, after a register lookup's companies are added and after each nightly re-read, as the
+system, with one history row and one audit event per term and no request, no second person and
+no passkey; the History panel lists requests, so these writes are not in it. The notice says so in
+the rule's place above the groups whenever nothing waits, for everyone who can open the page, with
+the date of the last register read and a link to Organisation; for a bank with no company yet it
+says the scope follows them once they are there, beside the rule. A change by hand, for what the
+registers cannot know, is still "Propose a change", the same request, second person and passkey
+(states 3 to 13), and once a person changed a term or a company line the organisation leaves it as
+they left it. A company line comes back from the server in a request's banner, the approve dialog
+and the history (state 32) as "{company}: outside its scope: {terms}" or "{company}: back in its
+scope: {terms}"; the title names only the bank's change, or "Change each company's own scope" when
+there is none, and the preview never counts a company line, because it changes only which rules the
+register offers that company. Company names are data, never strings. Strings and their catalog keys:
+<b>footprint.follows.title</b> "Your scope follows your organisation" (sv "Er omfattning följer er
+organisation"); <b>footprint.follows.body</b> "Your companies' countries and branches are its markets,
+and what their licences allow sets the rest. It updates by itself when the companies or the public
+registers change; a change by hand, for what the registers cannot know, applies once someone else
+approves it."; <b>footprint.follows.readAt</b> "Public registers read {date}." (sv "De offentliga
+registren lästes {date}."); <b>footprint.follows.none</b> "Once your companies are on Organisation,
+your scope follows them by itself."; <b>footprint.follows.link</b> "Open Organisation" (sv "Öppna
+Organisation"). The suggestions panel these states held until 8 Oct 2026, and its strings, are
+gone.</p>
 
 <p class="note">Regulatory scope card (/admin/footprint). The page is restricted to
 holders of footprint request or footprint approve; everyone else gets state 16, and

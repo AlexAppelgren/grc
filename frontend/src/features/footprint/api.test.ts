@@ -53,6 +53,8 @@ describe('footprint api', () => {
         { jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' }, level: 'operating' },
         { jurisdiction: { key: 'no', label: 'Norway' }, level: 'watching' },
       ],
+      companies: 3,
+      registersReadAt: '2026-10-05T02:00:00Z',
     };
     const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/requests') ? { items: [serverRequest], total: 1 } : view }));
     expect(await footprint.getFootprint()).toEqual({
@@ -63,6 +65,8 @@ describe('footprint api', () => {
         { jurisdiction: { key: 'no', kind: null, label: 'Norway' }, level: 'watching' },
       ],
       scopeItems: [],
+      companies: 3,
+      registersReadAt: '2026-10-05T02:00:00Z',
     });
     expect(await footprint.listFootprintRequests({ limit: 20, offset: 0 })).toEqual({ items: [screenRequest], total: 1 });
     expect(await footprint.listFootprintRequests()).toEqual({ items: [screenRequest], total: 1 });
@@ -73,14 +77,16 @@ describe('footprint api', () => {
     ]);
   });
 
-  it('reads a footprint with no pending request and dimensions with no terms', () => {
-    expect(footprint.footprintOf({ dimensions: [{ dimension: { key: 'channel', label: 'Channels' }, restrictsFootprint: true, allSelected: true }], pendingRequest: null })).toEqual({
+  it('reads a footprint with no pending request, dimensions with no terms and no company to follow yet', () => {
+    expect(footprint.footprintOf({ dimensions: [{ dimension: { key: 'channel', label: 'Channels' }, restrictsFootprint: true, allSelected: true }], pendingRequest: null, companies: 0 })).toEqual({
       dimensions: [{ dimension: { key: 'channel', kind: null, label: 'Channels' }, restrictsFootprint: true, terms: [], allSelected: true }],
       pendingRequest: null,
       markets: [],
       scopeItems: [],
+      companies: 0,
+      registersReadAt: null,
     });
-    expect(footprint.footprintOf({ dimensions: [] }).pendingRequest).toBeNull();
+    expect(footprint.footprintOf({ dimensions: [], companies: 0 }).pendingRequest).toBeNull();
   });
 
   it('never mistakes a request whose requester is gone for the viewer, and reads an unknown status as waiting', () => {
@@ -211,7 +217,7 @@ describe('footprint api', () => {
     const request = footprint.requestOf({ ...serverRequest, scopeItemAdds: [row], scopeItemRemoves: [{ ...row, id: 'i1', status: 'in_scope', research: 'waiting_for_agent' }] });
     expect(request.scopeItemAdds).toEqual([item]);
     expect(request.scopeItemRemoves).toEqual([{ ...item, id: 'i1', status: 'in_scope', research: 'waiting_for_agent' }]);
-    expect(footprint.footprintOf({ dimensions: [], scopeItems: [row] }).scopeItems).toEqual([item]);
+    expect(footprint.footprintOf({ dimensions: [], scopeItems: [row], companies: 0 }).scopeItems).toEqual([item]);
   });
 
   it('reads a request\'s company lines, each with its legal entity and its term', () => {
@@ -223,13 +229,6 @@ describe('footprint api', () => {
     });
     expect(request.entityExclusions).toEqual([{ orgUnit: fonder, term: { dimension: 'regime', key: 'banking', kind: null, label: 'Banking' } }]);
     expect(request.entityInclusions).toEqual([{ orgUnit: fonder, term: { dimension: 'service_type', key: 'custody', kind: null, label: 'Custody' } }]);
-  });
-
-  it('reads the suggestions from the registers as the server sends them', async () => {
-    const suggestions = { adds: [], removes: [], entityExclusions: [], entityInclusions: [], readAt: '2026-10-05T03:17:00Z' };
-    const sent = installAdapter(() => ({ status: 200, data: suggestions }));
-    expect(await footprint.getFootprintSuggestions()).toEqual(suggestions);
-    expect(sent.map((s) => [s.method, s.path])).toEqual([['get', '/api/v1/tenant/footprint/suggestions']]);
   });
 
   it('sends scope items with the request, the removals by key', async () => {

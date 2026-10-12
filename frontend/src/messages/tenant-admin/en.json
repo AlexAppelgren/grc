@@ -305,7 +305,7 @@
   "admin.org.registers.addAndLink": "{count, plural, one {Add # company and link {linked}} other {Add # companies and link {linked}}}",
   "admin.org.registers.added": "{count, plural, one {Added # company from the public registers.} other {Added # companies from the public registers.}}",
   "admin.org.registers.linked": "{count, plural, one {Linked # company you already had.} other {Linked # companies you already had.}}",
-  "admin.org.registers.scopeLink": "See what they suggest for the regulatory scope",
+  "admin.org.registers.scopeLink": "See the regulatory scope they set",
   "admin.org.registers.business": "Business",
   "admin.org.registers.licences": "Licences",
   "admin.org.registers.showLicences": "{count, plural, one {Show # licence} other {Show # licences}}",

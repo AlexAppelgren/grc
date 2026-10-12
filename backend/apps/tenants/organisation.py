@@ -25,6 +25,7 @@ from apps.identity.models import Membership, User
 from apps.shared.audit import Actor, record
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
+from apps.taxonomy import organisation_scope
 from apps.taxonomy.models import EntityScopeExclusion
 from apps.taxonomy.schemas import PersonRef, TermRef
 from apps.taxonomy.terms_logic import term_by_ref
@@ -261,8 +262,10 @@ def org_units_out(tenant: Tenant, unit_ids: list[uuid.UUID], order: list[str]) -
     return _units_out([units[unit_id] for unit_id in unit_ids], order)
 
 
-def create_org_unit(*, tenant: Tenant, actor: Actor, order: list[str], body: TenantOrgUnitBody) -> TenantOrgUnit:
-    """`POST /tenant/org-units`."""
+def create_org_unit(*, tenant: Tenant, actor: Actor, order: list[str], body: TenantOrgUnitBody, follow: bool = True) -> TenantOrgUnit:
+    """`POST /tenant/org-units`. A new legal entity reaches the regulatory scope by itself
+    (D-122) unless the caller follows the organisation once for many, as a register lookup's
+    apply does."""
     unit = OrgUnit(tenant=tenant, kind=body.kind)
     _apply_unit_fields(tenant, unit, body.model_dump())
     unit.save()
@@ -276,6 +279,8 @@ def create_org_unit(*, tenant: Tenant, actor: Actor, order: list[str], body: Ten
         tenant_id=tenant.id,
         after=_unit_snapshot(unit),
     )
+    if follow and unit.kind == OrgUnitKind.LEGAL_ENTITY.value:
+        organisation_scope.follow(tenant=tenant)
     return _unit_out(tenant, unit.id, order)
 
 
@@ -289,7 +294,8 @@ def update_org_unit(
     expected_version: int | None,
 ) -> TenantOrgUnit:
     """`PATCH /tenant/org-units/{orgUnitId}`: the kind never changes; `active: false`
-    deactivates, and nothing deletes."""
+    deactivates, and nothing deletes. A legal entity's new country or state reaches the
+    regulatory scope by itself (D-122)."""
     unit: OrgUnit = locked(OrgUnit, tenant, org_unit_id, expected_version)
     before = _unit_snapshot(unit)
     _apply_unit_fields(tenant, unit, body.model_dump())
@@ -307,6 +313,8 @@ def update_org_unit(
         before=before_changed,
         after=after_changed,
     )
+    if unit.kind == OrgUnitKind.LEGAL_ENTITY.value and {"countryCode", "active"} & after_changed.keys():
+        organisation_scope.follow(tenant=tenant)
     return _unit_out(tenant, unit.id, order)
 
 

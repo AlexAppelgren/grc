@@ -1,6 +1,6 @@
 # ADR 0066 — The organisation and the regulatory scope come from public registers, through the existing request
 
-**Date:** 2026-10-05 · **Status:** accepted (Alex, 2026-10-05: "go ahead, write the brief and build all steps"; D-121, PRD 0.9 TEN-07, TEN-08, FP-05; follows D-89, D-96, ADR 0059)
+**Date:** 2026-10-05 · **Status:** accepted (Alex, 2026-10-05: "go ahead, write the brief and build all steps"; D-121, PRD 0.9 TEN-07, TEN-08, FP-05; follows D-89, D-96, ADR 0059); the suggestion and its request are superseded by ADR 0067 (2026-10-08)
 
 ## Context
 

@@ -973,14 +973,16 @@ class FootprintChangeEntityTerm(TenantModel):
 
 
 class EntityScopeExclusion(TenantModel):
-    """A licence-bound term outside one legal entity's own scope (FP-05, BANKING_GROUPS.md
-    4.2, D-121): written only when a second person approves the request line that asked for
-    it. It narrows which rules the register offers for that company (REG-S18) and nothing the
-    bank sees: the bank's scope is `FootprintTerm`'s."""
+    """A licence-bound term or a country outside one legal entity's own scope (FP-05,
+    BANKING_GROUPS.md 4.2, D-121, D-122): written when a second person approves the request
+    line that asked for it, or by the organisation itself from the company's register facts
+    and country, with no request (apps/taxonomy/organisation_scope.py). It narrows which rules
+    the register offers for that company (REG-S18, REG-S19) and nothing the bank sees: the
+    bank's scope is `FootprintTerm`'s."""
 
     org_unit = models.ForeignKey("tenants.OrgUnit", on_delete=models.PROTECT, related_name="scope_exclusions")
     term = models.ForeignKey(TaxonomyTerm, on_delete=models.PROTECT, related_name="+")
-    request = models.ForeignKey(FootprintChangeRequest, on_delete=models.PROTECT, related_name="+")
+    request = models.ForeignKey(FootprintChangeRequest, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     added_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     added_at = models.DateTimeField(auto_now_add=True)
 

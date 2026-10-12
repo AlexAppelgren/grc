@@ -10,7 +10,6 @@ import type {
   FootprintRejectBody,
   FootprintRequestCreate,
   FootprintRequestStatus,
-  FootprintSuggestions,
   JurisdictionRef,
   Market,
   Page,
@@ -123,6 +122,8 @@ export function footprintOf(raw: Schemas['FootprintView']): Footprint {
     pendingRequest: raw.pendingRequest === null || raw.pendingRequest === undefined ? null : requestOf(raw.pendingRequest),
     markets: (raw.markets ?? []).map(marketOf),
     scopeItems: (raw.scopeItems ?? []).map(scopeItemOf),
+    companies: raw.companies,
+    registersReadAt: raw.registersReadAt ?? null,
   };
 }
 
@@ -163,11 +164,6 @@ export async function rejectFootprintRequest(requestId: string, body: FootprintR
 
 export async function withdrawFootprintRequest(requestId: string, version?: number): Promise<FootprintChangeRequest> {
   return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${id(requestId)}/withdraw`, {}, version === undefined ? {} : { version })).data);
-}
-
-/** What the public registers suggest (FP-05): a read, nothing changes until a request is approved. */
-export async function getFootprintSuggestions(): Promise<FootprintSuggestions> {
-  return (await api.get<FootprintSuggestions>(`${FOOTPRINT}/suggestions`)).data;
 }
 
 export async function watchMarket(key: string): Promise<Market> {
