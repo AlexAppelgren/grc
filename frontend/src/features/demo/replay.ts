@@ -50,19 +50,29 @@ function answerFor(config: InternalAxiosRequestConfig, byKey: ReadonlyMap<string
   return isWrite(method) ? problem(409, DEMO_READ_ONLY_CODE, t('public.demo.readOnly')) : problem(404, DEMO_NOT_RECORDED_CODE, t('public.demo.notRecorded'));
 }
 
-/** An axios adapter that answers from the recordings, loaded once on the first request. */
+/**
+ * An axios adapter that answers from the recordings, loaded on the first
+ * request. A load that failed is not kept: the connection dropped the
+ * recordings' chunk, so the next request, the screen's "Try again", loads it again.
+ */
 export function createReplayAdapter(load: () => Promise<DemoRecordings>): AxiosAdapter {
   let index: Promise<Map<string, DemoRecording>> | null = null;
   return async (config) => {
-    index ??= load().then((recordings) => {
-      const byKey = new Map<string, DemoRecording>();
-      for (const entry of recordings.entries) {
-        byKey.set(entry.key, entry);
-        // A GET also answers its own path with any query the recorder never tried.
-        if (entry.key.startsWith('GET ') && !byKey.has(withoutQuery(entry.key))) byKey.set(withoutQuery(entry.key), entry);
-      }
-      return byKey;
-    });
+    index ??= load().then(
+      (recordings) => {
+        const byKey = new Map<string, DemoRecording>();
+        for (const entry of recordings.entries) {
+          byKey.set(entry.key, entry);
+          // A GET also answers its own path with any query the recorder never tried.
+          if (entry.key.startsWith('GET ') && !byKey.has(withoutQuery(entry.key))) byKey.set(withoutQuery(entry.key), entry);
+        }
+        return byKey;
+      },
+      (error: unknown) => {
+        index = null;
+        throw error;
+      },
+    );
     const answer = answerFor(config, await index);
     const streamed = config.responseType === 'stream' && typeof answer.body === 'string';
     const response: AxiosResponse = {

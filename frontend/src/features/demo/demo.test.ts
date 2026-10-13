@@ -133,6 +133,21 @@ describe('the demo replay', () => {
     expect(new TextDecoder().decode(value)).toBe('event: done\ndata: {}\n\n');
   });
 
+  it('loads the recordings again after a load that failed, so "Try again" recovers', async () => {
+    let loads = 0;
+    const api = axios.create({
+      adapter: createReplayAdapter(async () => {
+        loads += 1;
+        if (loads === 1) throw new Error('Failed to load chunk');
+        return recorded;
+      }),
+    });
+    await expect(api.post('/api/v1/auth/refresh')).rejects.toThrow('Failed to load chunk');
+    expect((await api.post('/api/v1/auth/refresh')).data).toEqual({ accessToken: DEMO_ACCESS_TOKEN });
+    await api.get('/api/v1/changes?limit=20&tab=new');
+    expect(loads).toBe(2);
+  });
+
   it('hands out copies, so a screen cannot change the recording under the next one', async () => {
     const api = client(recorded);
     const first = await api.get<{ items: { id: string }[] }>('/api/v1/changes?limit=20&tab=new');
