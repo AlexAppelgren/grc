@@ -31,12 +31,12 @@ dependencies = [
 package-mode = false
 
 [tool.poetry.group.dev.dependencies]
-ruff = "0.16.10"
+ruff = "0.17.1"
 mypy = "2.4.0"
-django-stubs = "6.1.1"
+django-stubs = "6.1.2"
 # django-stubs and django-stubs-ext must share a line: mixing 5.2 stubs with the 6.x ext
 # crashed mypy ("Cannot find component 'db'") on 2026-09-19, so both are pinned together.
-django-stubs-ext = "6.1.1"
+django-stubs-ext = "6.1.2"
 coverage = "7.16.2"
 # PyYAML reads docs/inputs/openapi.yaml in scripts/contract_drift.py. Not in the brief's
 # pin list; newest at resolve time, recorded in the Phase 0 report.
