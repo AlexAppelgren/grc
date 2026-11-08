@@ -26,15 +26,17 @@ import secrets
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from io import StringIO
 from unittest import mock, skip
 
 from django.conf import settings
+from django.core.management import call_command
 from django.core.cache import cache
 from django.db import DatabaseError, connection, transaction
 from django.test import RequestFactory, override_settings
 from django.utils import timezone
 
-from apps.identity import api_keys_logic, roles_logic, tokens
+from apps.identity import api_keys_logic, invitation_logic, roles_logic, tokens
 from apps.identity.models import (
     ApiKey,
     Invitation,
@@ -1192,6 +1194,36 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(refused.json()["code"], "not_found")
         self.activate(self.tenant)
         self.assertEqual(AuditEvent.objects.filter(action="member.visited").count(), 1)
+
+    def test_id_s33(self) -> None:
+        """ID-S33
+
+        Platform staff re-enrol through the owner's shell (ID-05).
+        """
+        MockMailer.reset()
+        user = factories.platform_user(roles=("platform_admin", "library_editor"), email="root@bleqq.test")
+        factories.passkey(user)
+        factories.passkey(user, nickname="Phone")
+        sign_in(user, tenant=None)
+        out = StringIO()
+        call_command("bootstrap_platform", "--admin-email", "Root@Bleqq.test", "--reenrol", stdout=out)
+        user.refresh_from_db()
+        self.assertEqual(user.status, "invited")
+        self.assertFalse(invitation_logic.has_live_passkey(user), "the emailed code works again only with no live passkey")
+        self.assertFalse(UserSession.objects.filter(user=user, revoked_at__isnull=True).exists())
+        self.assertEqual(sorted(PlatformRoleAssignment.objects.filter(user=user).values_list("role__key", flat=True)), ["library_editor", "platform_admin"])
+        invitation = Invitation.objects.get(email="root@bleqq.test", accepted_at__isnull=True, revoked_at__isnull=True)
+        self.assertIsNone(invitation.tenant_id)
+        self.assertEqual(invitation.kind, InvitationKind.REENROLMENT.value)
+        self.assertEqual(MockMailer.sent[-1].to, "root@bleqq.test")
+        row = AuditEvent.objects.get(action="platform_staff.enrolment_reissued", subject_id=user.id)
+        self.assertIsNone(row.tenant_id)
+        self.assertEqual(row.actor_type, "system")
+        self.assertEqual((row.after["sessionsRevoked"], row.after["passkeysRetired"]), (1, 2))
+        self.assertTrue(LoginEvent.objects.filter(user=user, event="reenrolment_issued", success=True).exists())
+        self.assertIn("2 passkey(s) retired", out.getvalue())
+        self.assertIn("platform roles: library_editor, platform_admin\n", out.getvalue())
+        self.assertIn("/invite#", out.getvalue())
 
     # --- ACC: agent access credentials (acc-personal-grants) -------------------------------
     def _mint_token(self, user: User, body: dict[str, Any]) -> Any:

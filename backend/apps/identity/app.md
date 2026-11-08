@@ -431,6 +431,18 @@ When a platform session records a visit
 Then the answer is 404 and nothing is written
 ```
 
+### ID-S33 — Platform staff re-enrol through the owner's shell `@integration` (ID-05)
+```gherkin
+Given a platform admin whose passkeys no longer work, with a live session
+When the owner runs bootstrap_platform with --reenrol for their address
+Then every session is revoked, every passkey retired and the account awaits enrolment
+And a platform re-enrolment invitation is emailed, and their platform roles stay
+And the security log and an audit event without a tenant record how many were revoked and retired
+Given an address that holds no platform role, a bank member's included
+When the owner runs the same command for it
+Then it is refused and nothing is written
+```
+
 ### ACC-S3 — A service key acts as the entry and a personal token acts as the person `@integration` `@e2e` (ACC-03)
 ```gherkin
 Given an agent access entry and a member holding tokens.create

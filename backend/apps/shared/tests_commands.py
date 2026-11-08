@@ -2,7 +2,8 @@
 its "what breaks without it" line), migrate_from_zero (the subprocess it spawns and the
 scratch database it drops), export_openapi (writes the normalised document), and
 bootstrap_platform's --role option (which platform role it grants, the audit row the
-grant leaves, its refusal of anyone a bank knows, and --add-role for a second role)."""
+grant leaves, its refusal of anyone a bank knows, and --add-role for a second role), and
+its --reenrol option (platform staff's own recovery, ID-05)."""
 
 from __future__ import annotations
 
@@ -15,7 +16,7 @@ from django.core.management import CommandError, call_command
 from django.test import SimpleTestCase, TestCase, override_settings
 
 from apps.identity import invitation_logic
-from apps.identity.models import Invitation, PlatformRoleAssignment, User
+from apps.identity.models import Invitation, PlatformRoleAssignment, User, WebAuthnCredential
 from apps.shared import factories
 from apps.shared.management.commands import migrate_from_zero, seed_reference
 from apps.shared.models import AuditEvent
@@ -282,3 +283,21 @@ class BootstrapPlatformRole(TestCase):
         self.assertEqual(self._granted("editor@bleqq.test"), ["library_editor", "platform_admin"])
         self.assertEqual([row.after["role"] for row in self._assigned_rows("editor@bleqq.test")], ["library_editor", "platform_admin"])
         self.assertIn("platform roles: library_editor, platform_admin\n", out.getvalue())
+
+
+class BootstrapPlatformReenrol(TestCase):
+    """`bootstrap_platform --reenrol` (ID-05) re-enrols platform staff only; the re-enrolment
+    itself is ID-S33 in apps/identity/tests_scenarios.py."""
+
+    def test_an_address_without_a_platform_role_is_refused_and_nothing_is_written(self) -> None:
+        bank = factories.tenant()
+        member = factories.member(bank, user_row=factories.user(email="anna@bank.test")).user
+        factories.passkey(member)
+        audit_rows = AuditEvent.objects.count()
+        for email in ("nobody@bleqq.test", "anna@bank.test"):
+            with self.subTest(email=email):
+                with self.assertRaisesMessage(CommandError, "holds no platform role"):
+                    call_command("bootstrap_platform", "--admin-email", email, "--reenrol", stdout=StringIO())
+        self.assertFalse(User.objects.filter(email="nobody@bleqq.test").exists())
+        self.assertTrue(WebAuthnCredential.objects.filter(user=member, retired_at__isnull=True).exists())
+        self.assertEqual(AuditEvent.objects.count(), audit_rows)
