@@ -40,6 +40,8 @@ from apps.identity.schemas import (
     ContextSwitchBody,
     Empty,
     ENROLMENT_SESSION_EXAMPLE,
+    InvitationAcceptBody,
+    InvitationAccepted,
     InvitationCodeVerifyBody,
     InvitationOpenBody,
     InvitationOut,
@@ -746,6 +748,49 @@ def switch_context(request: HttpRequest, body: ContextSwitchBody, response: Http
         request=request,
     )
     return _session_response(bundle, response)
+
+
+@router.post(
+    "/me/invitations/accept",
+    response=InvitationAccepted,
+    auth=SessionAuth(),
+    operation_id="acceptInvitation",
+    by_alias=True,
+    summary="Join a bank that invited you, with the passkey you already hold",
+)
+@requires_step_up
+@_quoting_settings
+def accept_invitation(request: HttpRequest, body: InvitationAcceptBody) -> InvitationAccepted:
+    """For a person who already holds a passkey, such as platform staff or a member of another
+    bank, and has been invited into a bank: the emailed code is only for enrolling a first
+    passkey and is never sent to them, so they sign in and send the token from the link
+    (`/invite#<token>`) here instead. It makes them a member of the inviting bank with the
+    roles the invitation names and answers with that bank. The session stays where it is:
+    to start working in the bank, call `POST /me/context` with the answered `tenantId`,
+    which the same passkey confirmation covers while it is fresh.
+
+    Self-service: it needs a full session, no permission, and a passkey confirmation on this
+    session younger than $step_up_minutes minutes. Only an invitation to the signed-in
+    person's own email address is accepted. In the joined bank it writes an "enrolled" entry
+    with the reason "invitation_accepted" to the security log and the audit event
+    `invitation.accepted`, carrying the step-up. The invitation then stops working.
+
+    Errors: `step_up_required` (403) without a fresh passkey assertion on this session;
+    `invitation_expired` (410) when the token is unknown, already used, past its
+    $invitation_hours hours, revoked or replaced, a re-enrolment, or sent to another address,
+    one answer for all of them, and nothing is written; `validation_error` (422) for a
+    missing token or one over 128 characters; `unauthenticated` (401) without a live session;
+    `enrolment_only` (403) from an enrolment session; `support_read_only` (403) from a
+    support session.
+    """
+    # Ungated by design: self. The caller joins with their own address's invitation alone.
+    tenant = invitation_logic.accept_signed_in(
+        user=_actor_user(request),
+        token=body.token,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        request=request,
+    )
+    return InvitationAccepted(tenant_id=tenant.id, tenant_name=tenant.name)
 
 
 _PASSKEY_ID = Path(

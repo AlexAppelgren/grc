@@ -9,7 +9,8 @@ passkeyAuthenticateOptions, passkeyAuthenticateVerify, stepUpOptions, stepUpVeri
 refreshSession, signOut, updateMe, renameMyPasskey, removeMyPasskey, revokeMySession,
 inviteMember, updateMember, deactivateMember, revokeMemberSessions, reissueEnrolment,
 resendInvitation, revokeInvitation, createRole, updateRole, retireRole, createApiKey,
-revokeApiKey, markVisit, createAgentAccessKey, createMyToken, revokeMyToken, switchContext.
+revokeApiKey, markVisit, createAgentAccessKey, createMyToken, revokeMyToken, switchContext,
+acceptInvitation.
 
 The ceremonies run for real against py_webauthn through the software authenticator in
 tests_webauthn_support.py; the emailed link and code are read from the mock mailer.
@@ -1477,6 +1478,92 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(own.json()["code"], "four_eyes_violation")
         tenancy.clear_tenant()
         self.assertEqual(Proposal.objects.get(pk=filed.json()["id"]).status, ProposalStatus.OPEN.value)
+
+    def test_id_s39(self) -> None:
+        """ID-S39
+
+        A person who already holds a passkey joins a bank that invited them (ID-01, ID-03, ID-06, AC-ID1, D-122).
+        """
+        from apps.shared.audit import Actor
+
+        staff = factories.platform_user(roles=("platform_admin",), email="alex@platform.example")
+        authenticator = self._admin_with_passkey(staff)
+        _, token = self._invite(staff.email, roles=("reader",))
+
+        # The code path stays shut: opening the link and asking for a code send nothing.
+        MockMailer.reset()
+        self.assertEqual(self._post("/auth/invitations/open", {"token": token}).status_code, 202)
+        self.assertEqual(self._post("/auth/code/request", {"email": staff.email}).status_code, 202)
+        self.assertEqual(MockMailer.sent, [])
+        self.activate(self.tenant)
+        self.assertTrue(LoginEvent.objects.filter(user=staff, tenant=self.tenant, event="code_refused_enrolled").exists())
+
+        # Signed in with the passkey, the session is the console's; joining needs a step-up.
+        tenancy.clear_tenant()  # a sign-in starts in no bank, as a request does
+        signed_in = self._sign_in(authenticator)
+        self.assertEqual(signed_in.status_code, 200, signed_in.content)
+        console_token = signed_in.json()["accessToken"]
+        refused = self._post("/me/invitations/accept", {"token": token}, **self._bearer(console_token))
+        self.assertEqual(refused.status_code, 403, refused.content)
+        self.assertEqual(refused.json()["code"], "step_up_required")
+
+        # Someone signed in as another address is told the link is gone, as for a token that
+        # names nothing, so the answer never says whether the token exists.
+        self.assertEqual(self._step_up(console_token, authenticator).status_code, 200)
+        for headers, sent in ((sign_in(self.second_admin, tenant=self.tenant, step_up=True), token), (self._bearer(console_token), "no-such-token")):
+            with self.subTest(sent=sent):
+                other = self._post("/me/invitations/accept", {"token": sent}, **headers)
+                self.assertEqual(other.status_code, 410, other.content)
+                self.assertEqual(other.json()["code"], "invitation_expired")
+        self.activate(self.tenant)
+        self.assertIsNone(Invitation.objects.get(email=staff.email, tenant=self.tenant).accepted_at)
+        self.assertFalse(Membership.objects.filter(tenant=self.tenant, user=staff).exists())
+
+        # Stepped up, the person joins with the invitation's roles, and the bank records it.
+        joined = self._post("/me/invitations/accept", {"token": token}, **self._bearer(console_token))
+        self.assertEqual(joined.status_code, 200, joined.content)
+        self.assertEqual(joined.json(), {"tenantId": str(self.tenant.id), "tenantName": self.tenant.name})
+        self.activate(self.tenant)
+        invitation = Invitation.objects.get(email=staff.email, tenant=self.tenant)
+        self.assertEqual(invitation.accepted_user_id, staff.id)
+        membership = Membership.objects.get(tenant=self.tenant, user=staff, deactivated_at__isnull=True)
+        self.assertEqual(list(membership.roles.values_list("key", flat=True)), ["reader"])
+        self.assertTrue(LoginEvent.objects.filter(user=staff, tenant=self.tenant, event="enrolled", failure_reason="invitation_accepted").exists())
+        accepted_row = AuditEvent.objects.get(action="invitation.accepted", subject_id=invitation.id)
+        self.assertEqual(accepted_row.tenant_id, self.tenant.id)
+        self.assertIsNotNone(accepted_row.step_up_assertion_id)
+
+        # The same step-up moves the session into the bank, which holds the reader's grants alone.
+        switched = self._switch(console_token, self.tenant.id)
+        self.assertEqual(switched.status_code, 200, switched.content)
+        me = self.client.get("/api/v1/me", **self._bearer(switched.json()["accessToken"])).json()
+        self.assertEqual(me["tenant"]["id"], str(self.tenant.id))
+        self.assertEqual(me["platformRoles"], [])
+        self.assertEqual(set(me["permissions"]), roles_logic.permissions_of(membership.roles.all()) & perms.TENANT_PERMISSIONS)
+
+        # An accepted, expired or revoked invitation, and a re-enrolment, are refused alike.
+        bank_token = switched.json()["accessToken"]
+        self.assertEqual(self._step_up(bank_token, authenticator).status_code, 200)
+        closed: dict[str, tuple[Any, str]] = {"accepted": (self.tenant, token)}
+        for name in ("expired", "revoked", "reenrolment"):
+            bank = factories.tenant(slug=f"id-s39-{name}")
+            self.activate(bank)
+            kind = InvitationKind.REENROLMENT if name == "reenrolment" else InvitationKind.INVITE
+            issued = invitation_logic.create_invitation(
+                tenant=bank, email=staff.email, roles=[], title="", invited_by=None, actor=Actor.system("test"), kind=kind
+            )
+            if name == "expired":
+                Invitation.objects.filter(pk=issued.invitation.pk).update(expires_at=timezone.now() - timedelta(minutes=1))
+            if name == "revoked":
+                Invitation.objects.filter(pk=issued.invitation.pk).update(revoked_at=timezone.now())
+            closed[name] = (bank, issued.token)
+        for name, (bank, sent) in closed.items():
+            with self.subTest(name):
+                gone = self._post("/me/invitations/accept", {"token": sent}, **self._bearer(bank_token))
+                self.assertEqual(gone.status_code, 410, gone.content)
+                self.assertEqual(gone.json()["code"], "invitation_expired")
+                self.activate(bank)
+                self.assertEqual(Membership.objects.filter(user=staff).count(), 1 if bank == self.tenant else 0)
 
     # --- ACC: agent access credentials (acc-personal-grants) -------------------------------
     def _mint_token(self, user: User, body: dict[str, Any]) -> Any:

@@ -31,7 +31,9 @@ One account may be a bank's member and platform staff (D-122, ADR 0067, Alex
 zone and holds that zone's grants only; signing in lands in the oldest membership, and
 moving to the console or another bank is a new session behind a fresh passkey step-up
 (`POST /me/context`), listed in `GET /me` as `contexts`. The bank sees it: its member
-list marks platform staff, and a platform grant is audited in each of their banks.
+list marks platform staff, and a platform grant is audited in each of their banks. A
+person who already holds a passkey and is invited into a bank joins it signed in, behind a
+step-up (`POST /me/invitations/accept`), since the emailed code never opens for them.
 
 Deliberately simplified for R1: no self-service recovery of any kind (an admin
 re-issues enrolment), no SSO or SCIM (R3, and they never add a password), and
@@ -507,6 +509,23 @@ When it asks for support access to its own bank from the console and approves th
 Then the approval answers 409 "four_eyes_violation" and the request stays pending
 When it files a library proposal from its bank session and approves it from the console
 Then the approval answers 409 "four_eyes_violation" and the proposal stays open
+```
+
+### ID-S39 — A person who already holds a passkey joins a bank that invited them `@integration` `@e2e` (ID-01, ID-03, ID-06, AC-ID1, D-122)
+```gherkin
+Given a platform admin who holds a passkey and no bank, invited into a bank as a reader
+When the invitation link is opened, or a code is asked for the address
+Then the answer is the usual one and nothing is sent: the code stays shut to an enrolled account
+And the invitation page looks the same to anyone not signed in, offering a code or a passkey sign-in
+When they sign in with the passkey and accept the invitation without a fresh step-up
+Then the answer is 403 "step_up_required"
+When someone signed in as another address sends the same token, or anyone sends a token that names nothing
+Then each answers 410 "invitation_expired" and nothing is written
+When they step up and accept
+Then they are a member with the invitation's roles, the bank's security log records "enrolled" with the reason "invitation_accepted", and its audit trail invitation.accepted with the step-up
+And the same step-up moves their session into the bank, which holds the reader's grants alone
+When they send an accepted, expired or revoked invitation, or a re-enrolment
+Then each answers 410 "invitation_expired"
 ```
 
 ### ACC-S3 — A service key acts as the entry and a personal token acts as the person `@integration` `@e2e` (ACC-03)

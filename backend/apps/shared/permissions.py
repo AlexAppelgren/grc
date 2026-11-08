@@ -494,6 +494,9 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("POST", "/me/visit"): Ungated(UngatedReason.SELF, _SELF_ME),
     # D-122: a person moves their own session to a bank or the console they already hold.
     ("POST", "/me/context"): Ungated(UngatedReason.SELF, _SELF_ME),
+    # D-122: an enrolled person joins a bank through an invitation to their own address,
+    # behind a step-up on their own session.
+    ("POST", "/me/invitations/accept"): Ungated(UngatedReason.SELF, _SELF_ME),
 
     # The two library reads chunk 5 adds (c5-contract-api-screens). Both serve a person's
     # session and an agent's key, which one decorator cannot express, so they take the same

@@ -286,6 +286,41 @@ class ContextSwitchBody(CamelSchema):
     )
 
 
+class InvitationAcceptBody(CamelSchema):
+    """Joining a bank as a person who already holds a passkey (D-122). The token rides in the
+    body, never a path, as on every other invitation route."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"}]})
+
+    token: str = Field(
+        max_length=128,
+        description=(
+            "The invitation token, at most 128 characters: the part after `#` in the emailed "
+            "link (`/invite#<token>`). It works once, only for the signed-in person's own email "
+            f"address, and stops working {settings.INVITATION_TTL_HOURS} hours after it was sent "
+            "(a setting) or when an administrator revokes or resends the invitation; the server "
+            "keeps only its hash."
+        ),
+    )
+
+
+class InvitationAccepted(CamelSchema):
+    """The bank the person has just joined. Their session is still where it was: move there
+    with `POST /me/context`."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"tenantId": "00000000-0000-4000-8000-00000000000a", "tenantName": "Example Bank AB"}]}
+    )
+
+    tenant_id: uuid.UUID = Field(
+        description=(
+            "The joined bank's permanent identifier, a UUID. Send it as `tenantId` to "
+            "`POST /me/context` to start working there; it is also listed in `contexts` in `GET /me`."
+        )
+    )
+    tenant_name: str = Field(description="The joined bank's own name, such as `Example Bank AB`, for display.")
+
+
 class SessionTokens(CamelSchema):
     """A session has just started. The access token is in the body; the refresh token is
     set as an `HttpOnly` cookie by the same response and never appears in a body."""
@@ -2637,7 +2672,8 @@ class SecurityEventOut(CamelSchema):
             "`code_refused_enrolled`: a code was asked for an address that already holds a "
             "passkey, and none was sent. `code_failed`: a code did not verify. `code_locked`: too "
             "many wrong codes, so the code stopped working. `enrolled`: a person registered their "
-            "first passkey. `signin` and `signin_failed`: a passkey sign-in succeeded or failed. "
+            "first passkey, or, with the reason `invitation_accepted`, a person who already held "
+            "one joined the bank through its invitation. `signin` and `signin_failed`: a passkey sign-in succeeded or failed. "
             "`step_up` and `step_up_failed`: a passkey confirmation of a protected action "
             "succeeded or failed. `refresh_replay`: a used refresh token was presented again, so "
             "the session was ended as possibly stolen. `session_revoked`: a session ended before "
@@ -2667,7 +2703,8 @@ class SecurityEventOut(CamelSchema):
             "`session_revoked` it says why the session ended: `sign_out`, `idle`, "
             "`revoked_by_user`, `revoked_by_admin`, `member_deactivated`, `reenrolment`, "
             "`enrolment_completed`, `refresh_replay` or `tenant_claim_mismatch`. On "
-            "`access_token_refused` it is `tenant_claim_mismatch`. On `key_scopes_withheld` it lists the "
+            "`access_token_refused` it is `tenant_claim_mismatch`. On `enrolled` it is empty, or "
+            "`invitation_accepted` when an enrolled person joined. On `key_scopes_withheld` it lists the "
             "scopes that were withheld, comma-separated."
         )
     )

@@ -231,17 +231,88 @@ def open_invitation(token: str, request: HttpRequest | None) -> Invitation:
     if invitation.tenant_id is not None:
         tenancy.activate(invitation.tenant_id)
     user = get_or_create_user(invitation.email)
-    code_logic.issue_code(user=user, tenant_id=invitation.tenant_id, request=request)
+    if has_live_passkey(user):
+        # An address that holds a passkey is sent nothing, as on the code request (AC-ID1):
+        # since D-122 a bank may invite one, and it joins with its passkey through
+        # `accept_signed_in`. The answer and the hashing work are the same either way.
+        tokens.hash_code(tokens.new_code(), tokens.new_salt())
+        log_event(
+            event=LoginEventKind.CODE_REFUSED_ENROLLED,
+            method=LoginMethod.EMAIL_CODE,
+            success=False,
+            request=request,
+            user=user,
+            tenant_id=invitation.tenant_id,
+            failure_reason="passkey_enrolled",
+        )
+        summary = "Invitation opened; no code: the account holds a passkey."
+    else:
+        code_logic.issue_code(user=user, tenant_id=invitation.tenant_id, request=request)
+        summary = "Invitation opened; a code was sent."
     record(
         action="invitation.opened",
         actor=Actor.system("invitee"),
         subject_type="invitation",
         subject_id=invitation.id,
         subject_title=user.name,
-        summary="Invitation opened; a code was sent.",
+        summary=summary,
         tenant_id=invitation.tenant_id,
     )
     return invitation
+
+
+INVITATION_ACCEPTED = "invitation_accepted"
+
+
+def accept_signed_in(*, user: User, token: str, step_up_assertion_id: uuid.UUID, request: HttpRequest) -> Tenant:
+    """A person who already holds a passkey joins the bank that invited them (D-122): the
+    emailed code is refused to an enrolled account, so their own full session, stepped up
+    with that passkey, is the proof instead. Only an open bank invitation to the signed-in
+    person's own address is accepted; an unknown, closed or re-enrolment token and one sent
+    to anyone else all answer 410 `invitation_expired` alike, so the answer never says
+    whether a token exists for someone else. The session stays where it is; the caller
+    moves with `switch_context`."""
+    invitation = find_by_token(token)
+    if (
+        invitation is None
+        or invitation.tenant_id is None
+        or invitation.kind != InvitationKind.INVITE.value
+        or invitation.email != normalise_email(user.email)
+        or not is_open(invitation)
+    ):
+        raise InvitationExpired("This invitation link has expired or was already used.", code="invitation_expired")
+    tenancy.activate(invitation.tenant_id)
+    # Locked and read again inside the bank, so two accepts in flight make one membership.
+    invitation = Invitation.objects.select_for_update(of=("self",)).select_related("tenant").get(pk=invitation.pk)
+    if not is_open(invitation):
+        raise InvitationExpired("This invitation link has expired or was already used.", code="invitation_expired")
+    membership = accept_invitation(invitation, user, timezone.now())
+    assert membership is not None and invitation.tenant is not None  # a bank invitation always makes one
+    log_event(
+        event=LoginEventKind.ENROLLED,
+        method=LoginMethod.PASSKEY,
+        success=True,
+        request=request,
+        user=user,
+        tenant_id=invitation.tenant_id,
+        failure_reason=INVITATION_ACCEPTED,
+    )
+    record(
+        action="invitation.accepted",
+        actor=session_logic.actor_of(user),
+        subject_type="invitation",
+        subject_id=invitation.id,
+        subject_title=user.name,
+        summary="Invitation accepted with a passkey; joined the bank.",
+        tenant_id=invitation.tenant_id,
+        after={
+            "userId": str(user.id),
+            "membershipId": str(membership.id),
+            "roles": sorted(membership.roles.values_list("key", flat=True)),
+        },
+        step_up_assertion_id=step_up_assertion_id,
+    )
+    return invitation.tenant
 
 
 def accept_invitation(invitation: Invitation, user: User, now: datetime) -> Membership | None:

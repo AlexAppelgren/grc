@@ -4545,6 +4545,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/invitations/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Join a bank that invited you, with the passkey you already hold
+         * @description For a person who already holds a passkey, such as platform staff or a member of another
+         *     bank, and has been invited into a bank: the emailed code is only for enrolling a first
+         *     passkey and is never sent to them, so they sign in and send the token from the link
+         *     (`/invite#<token>`) here instead. It makes them a member of the inviting bank with the
+         *     roles the invitation names and answers with that bank. The session stays where it is:
+         *     to start working in the bank, call `POST /me/context` with the answered `tenantId`,
+         *     which the same passkey confirmation covers while it is fresh.
+         *
+         *     Self-service: it needs a full session, no permission, and a passkey confirmation on this
+         *     session younger than 5 minutes. Only an invitation to the signed-in
+         *     person's own email address is accepted. In the joined bank it writes an "enrolled" entry
+         *     with the reason "invitation_accepted" to the security log and the audit event
+         *     `invitation.accepted`, carrying the step-up. The invitation then stops working.
+         *
+         *     Errors: `step_up_required` (403) without a fresh passkey assertion on this session;
+         *     `invitation_expired` (410) when the token is unknown, already used, past its
+         *     72 hours, revoked or replaced, a re-enrolment, or sent to another address,
+         *     one answer for all of them, and nothing is written; `validation_error` (422) for a
+         *     missing token or one over 128 characters; `unauthenticated` (401) without a live session;
+         *     `enrolment_only` (403) from an enrolment session; `support_read_only` (403) from a
+         *     support session.
+         */
+        post: operations["acceptInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/me/out-of-office": {
         parameters: {
             query?: never;
@@ -18424,6 +18464,43 @@ export interface components {
             stableKey: string;
         };
         /**
+         * InvitationAcceptBody
+         * @description Joining a bank as a person who already holds a passkey (D-122). The token rides in the
+         *     body, never a path, as on every other invitation route.
+         * @example {
+         *       "token": "Tq3xExampleInvitationToken0fTheEmailedLinkA"
+         *     }
+         */
+        InvitationAcceptBody: {
+            /**
+             * Token
+             * @description The invitation token, at most 128 characters: the part after `#` in the emailed link (`/invite#<token>`). It works once, only for the signed-in person's own email address, and stops working 72 hours after it was sent (a setting) or when an administrator revokes or resends the invitation; the server keeps only its hash.
+             */
+            token: string;
+        };
+        /**
+         * InvitationAccepted
+         * @description The bank the person has just joined. Their session is still where it was: move there
+         *     with `POST /me/context`.
+         * @example {
+         *       "tenantId": "00000000-0000-4000-8000-00000000000a",
+         *       "tenantName": "Example Bank AB"
+         *     }
+         */
+        InvitationAccepted: {
+            /**
+             * Tenantid
+             * Format: uuid
+             * @description The joined bank's permanent identifier, a UUID. Send it as `tenantId` to `POST /me/context` to start working there; it is also listed in `contexts` in `GET /me`.
+             */
+            tenantId: string;
+            /**
+             * Tenantname
+             * @description The joined bank's own name, such as `Example Bank AB`, for display.
+             */
+            tenantName: string;
+        };
+        /**
          * InvitationCodeVerifyBody
          * @description The invitation path: the link's token names the account, so no address travels.
          *     The token rides in the body, never the path, so no access log holds it.
@@ -28617,12 +28694,12 @@ export interface components {
             email: string;
             /**
              * Event
-             * @description What happened, one of these values. `code_sent`: an enrolment code was emailed. `code_refused_enrolled`: a code was asked for an address that already holds a passkey, and none was sent. `code_failed`: a code did not verify. `code_locked`: too many wrong codes, so the code stopped working. `enrolled`: a person registered their first passkey. `signin` and `signin_failed`: a passkey sign-in succeeded or failed. `step_up` and `step_up_failed`: a passkey confirmation of a protected action succeeded or failed. `refresh_replay`: a used refresh token was presented again, so the session was ended as possibly stolen. `session_revoked`: a session ended before its time. `reenrolment_issued`: an administrator re-issued a member's enrolment. `key_used`: an API key authenticated a call, logged at most once every 60 seconds per key by default (a setting). `key_revoked`: an API key was revoked. `key_created`: a platform agent key was created, which never appears in a bank's log. `key_scopes_withheld`: a key created before the platform-only scopes rule presented one and worked without it. `feed_used`: a calendar client fetched a person's subscribed feed. `access_token_refused`: a correctly signed access token named another bank than its session's, so it was refused and the session ended. A new release may add events, so treat an unfamiliar value as new data and not an error.
+             * @description What happened, one of these values. `code_sent`: an enrolment code was emailed. `code_refused_enrolled`: a code was asked for an address that already holds a passkey, and none was sent. `code_failed`: a code did not verify. `code_locked`: too many wrong codes, so the code stopped working. `enrolled`: a person registered their first passkey, or, with the reason `invitation_accepted`, a person who already held one joined the bank through its invitation. `signin` and `signin_failed`: a passkey sign-in succeeded or failed. `step_up` and `step_up_failed`: a passkey confirmation of a protected action succeeded or failed. `refresh_replay`: a used refresh token was presented again, so the session was ended as possibly stolen. `session_revoked`: a session ended before its time. `reenrolment_issued`: an administrator re-issued a member's enrolment. `key_used`: an API key authenticated a call, logged at most once every 60 seconds per key by default (a setting). `key_revoked`: an API key was revoked. `key_created`: a platform agent key was created, which never appears in a bank's log. `key_scopes_withheld`: a key created before the platform-only scopes rule presented one and worked without it. `feed_used`: a calendar client fetched a person's subscribed feed. `access_token_refused`: a correctly signed access token named another bank than its session's, so it was refused and the session ended. A new release may add events, so treat an unfamiliar value as new data and not an error.
              */
             event: string;
             /**
              * Failurereason
-             * @description A short snake_case reason, empty when there is none. On a failure it says why, such as `wrong_code`, `too_many_attempts`, `no_open_code`, `already_consumed`, `no_open_invitation`, `unknown_credential` or `passkey_enrolled`. On `session_revoked` it says why the session ended: `sign_out`, `idle`, `revoked_by_user`, `revoked_by_admin`, `member_deactivated`, `reenrolment`, `enrolment_completed`, `refresh_replay` or `tenant_claim_mismatch`. On `access_token_refused` it is `tenant_claim_mismatch`. On `key_scopes_withheld` it lists the scopes that were withheld, comma-separated.
+             * @description A short snake_case reason, empty when there is none. On a failure it says why, such as `wrong_code`, `too_many_attempts`, `no_open_code`, `already_consumed`, `no_open_invitation`, `unknown_credential` or `passkey_enrolled`. On `session_revoked` it says why the session ended: `sign_out`, `idle`, `revoked_by_user`, `revoked_by_admin`, `member_deactivated`, `reenrolment`, `enrolment_completed`, `refresh_replay` or `tenant_claim_mismatch`. On `access_token_refused` it is `tenant_claim_mismatch`. On `enrolled` it is empty, or `invitation_accepted` when an enrolled person joined. On `key_scopes_withheld` it lists the scopes that were withheld, comma-separated.
              */
             failureReason: string;
             /**
@@ -40134,6 +40211,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionTokens"];
+                };
+            };
+        };
+    };
+    acceptInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationAcceptBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationAccepted"];
                 };
             };
         };
