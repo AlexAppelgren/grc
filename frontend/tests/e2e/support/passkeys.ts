@@ -113,6 +113,8 @@ export async function installAuthenticator(context: BrowserContext): Promise<voi
   // the browser's own method with an aborted signal: the conversion runs, nothing is
   // shown, and a TypeError fails the ceremony as it would for a person.
   await context.addInitScript(() => {
+    // A new tab's about:blank is not a secure context and has no WebAuthn to check.
+    if (typeof CredentialsContainer === 'undefined' || !navigator.credentials) return;
     const container = navigator.credentials;
     const native = { get: CredentialsContainer.prototype.get, create: CredentialsContainer.prototype.create };
     for (const kind of ['get', 'create'] as const) {
