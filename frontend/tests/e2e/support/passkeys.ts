@@ -101,8 +101,32 @@ export const ANNA_INVITE_TOKEN = 'e2e-invite-anna';
 export const JOINER_INVITE_TOKEN = 'e2e-invite-joiner';
 export const E2E_FIXED_CODE = '123456';
 
+const strictContexts = new WeakSet<BrowserContext>();
+
 export async function installAuthenticator(context: BrowserContext): Promise<void> {
   await context.credentials.install();
+  if (strictContexts.has(context)) return;
+  strictContexts.add(context);
+  // Playwright's authenticator is a script in place of `navigator.credentials`, so it
+  // takes options a real browser refuses: a browser converts them through WebIDL first
+  // (a descriptor's `transports: null` is a TypeError). Each ceremony is first handed to
+  // the browser's own method with an aborted signal: the conversion runs, nothing is
+  // shown, and a TypeError fails the ceremony as it would for a person.
+  await context.addInitScript(() => {
+    const container = navigator.credentials;
+    const native = { get: CredentialsContainer.prototype.get, create: CredentialsContainer.prototype.create };
+    for (const kind of ['get', 'create'] as const) {
+      const scripted = container[kind].bind(container);
+      container[kind] = async (options?: CredentialRequestOptions & CredentialCreationOptions) => {
+        try {
+          await native[kind].call(container, { ...options, signal: AbortSignal.abort() });
+        } catch (error) {
+          if (error instanceof TypeError) throw error;
+        }
+        return scripted(options);
+      };
+    }
+  });
 }
 
 export async function seedPasskey(context: BrowserContext, passkey: SeededPasskey, rpId: string = E2E_RP_ID): Promise<void> {

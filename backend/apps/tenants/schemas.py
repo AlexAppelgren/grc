@@ -626,7 +626,8 @@ class ConsoleTenantPage(CamelSchema):
 
 class ConsoleTenantCreateBody(CamelSchema):
     """Create a bank and invite its first administrator in one action (ADM-02, ID-01).
-    The address must be the administrator's own: platform staff are separate accounts.
+    The address must be the administrator's own; it may be a platform staff member's, who then
+    switches between the console and the bank with one account (D-122).
     The timezone, default language and content languages are not asked here (D-68): the
     bank sets them itself on its Organisation profile screen, which already carries this
     write under `security.manage`; a short name is derived from the name, never typed."""

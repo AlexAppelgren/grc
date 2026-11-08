@@ -90,6 +90,13 @@ describe('parseRequestOptions', () => {
     expect(options.allowCredentials?.[0]?.transports).toEqual(['usb']);
     expect(new Uint8Array(options.allowCredentials?.[0]?.id as ArrayBuffer)).toEqual(bytes(1, 2, 3));
   });
+
+  it('leaves out transports sent as null, which a browser refuses', () => {
+    const request = parseRequestOptions({ challenge: 'Y2g', allowCredentials: [{ type: 'public-key', id: 'AQID', transports: null }] });
+    expect(request.allowCredentials?.[0]).not.toHaveProperty('transports');
+    const creation = parseCreationOptions({ ...creationJson, excludeCredentials: [{ type: 'public-key', id: 'AQID', transports: null }] });
+    expect(creation.excludeCredentials?.[0]).not.toHaveProperty('transports');
+  });
 });
 
 function fakeRegistration(overrides: Partial<{ attachment: string | null; transports: string[] | undefined }> = {}) {

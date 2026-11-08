@@ -29,7 +29,7 @@ type B64 = string;
 interface DescriptorJson {
   type: string;
   id: B64;
-  transports?: string[];
+  transports?: string[] | null;
 }
 
 export interface CreationOptionsJson {
@@ -69,7 +69,8 @@ function descriptor(json: DescriptorJson): PublicKeyCredentialDescriptor {
   return {
     type: json.type as PublicKeyCredentialType,
     id: fromBase64Url(json.id),
-    transports: json.transports as AuthenticatorTransport[] | undefined,
+    // A browser refuses `transports: null` (not a sequence); JSON's null means not given.
+    ...(json.transports == null ? {} : { transports: json.transports as AuthenticatorTransport[] }),
   };
 }
 

@@ -11,7 +11,7 @@
   "console.tenants.namePlaceholder": "Example Bank AB",
   "console.tenants.nameRequired": "Give the tenant a name.",
   "console.tenants.adminEmail": "First administrator's email",
-  "console.tenants.adminEmailHint": "Their own work address. Platform staff sign in with separate accounts.",
+  "console.tenants.adminEmailHint": "Their own work address. Platform staff can use theirs and switch between the console and the bank.",
   "console.tenants.adminEmailPlaceholder": "administrator@example-bank.test",
   "console.tenants.adminEmailRequired": "Give the first administrator's address.",
   "console.tenants.adminTitle": "Their title",

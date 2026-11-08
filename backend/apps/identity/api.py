@@ -320,6 +320,7 @@ def verify_code(request: HttpRequest, body: CodeVerifyBody, response: HttpRespon
     auth=[SessionAuth(), EnrolmentAuth()],
     operation_id="passkeyRegisterOptions",
     by_alias=True,
+    exclude_none=True,
     summary="Start registering a passkey",
 )
 @_quoting_settings
@@ -408,6 +409,7 @@ def passkey_register_verify(request: HttpRequest, body: PasskeyRegisterBody, res
     auth=None,
     operation_id="passkeyAuthenticateOptions",
     by_alias=True,
+    exclude_none=True,
     summary="Start signing in with a passkey",
 )
 @_quoting_settings
@@ -476,6 +478,7 @@ def passkey_authenticate_verify(request: HttpRequest, body: PasskeyAssertBody, r
     auth=SessionAuth(),
     operation_id="stepUpOptions",
     by_alias=True,
+    exclude_none=True,
     summary="Start confirming a sensitive action with your passkey",
     openapi_extra=_example(200, STEP_UP_OPTIONS_EXAMPLE),
 )

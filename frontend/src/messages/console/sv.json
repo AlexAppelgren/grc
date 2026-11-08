@@ -11,7 +11,7 @@
   "console.tenants.namePlaceholder": "Example Bank AB",
   "console.tenants.nameRequired": "Ge organisationen ett namn.",
   "console.tenants.adminEmail": "Första administratörens e-postadress",
-  "console.tenants.adminEmailHint": "Deras egen arbetsadress. Plattformspersonal loggar in med separata konton.",
+  "console.tenants.adminEmailHint": "Deras egen arbetsadress. Plattformspersonal kan använda sin och växla mellan konsolen och banken.",
   "console.tenants.adminEmailPlaceholder": "administrator@example-bank.test",
   "console.tenants.adminEmailRequired": "Ange första administratörens adress.",
   "console.tenants.adminTitle": "Deras titel",
