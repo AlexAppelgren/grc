@@ -29,7 +29,7 @@ from apps.library.models import Obligation
 from apps.proposals import batch as proposal_batch
 from apps.proposals.models import Proposal, ProposalBatchRow, ProposalStatus
 from apps.shared import tenancy
-from apps.shared.e2e_seed import EXPECTED_CHUNK11, TENANT_A, TENANT_B, c11_run_starts, seed_chunk11_agents, seed_e2e
+from apps.shared.e2e_seed import C11_PLATFORM_RUNS, C11_TENANT_RUNS, EXPECTED_CHUNK11, TENANT_A, TENANT_B, c11_run_starts, seed_chunk11_agents, seed_e2e
 from apps.shared.models import AuditEvent, Tenant
 
 ZONE = ZoneInfo(TENANT_A.timezone)
@@ -167,6 +167,8 @@ class ChunkElevenSeed(TestCase):
         for day, hour in (
             (datetime.date(2026, 10, 31), 23),  # the last hour of a month, in the bank's zone
             (datetime.date(2026, 11, 1), 0),  # the first, when UTC is still in October
+            (datetime.date(2026, 10, 25), 2),  # summer time ends: 02:30 happens twice
+            (datetime.date(2027, 3, 28), 2),  # summer time starts: 02:30 never happens
             (datetime.date(2026, 11, 15), 12),
             (datetime.date(2027, 1, 1), 0),
             (datetime.date(2027, 3, 1), 0),
@@ -175,8 +177,18 @@ class ChunkElevenSeed(TestCase):
             with self.subTest(now=now):
                 seed_chunk11_agents(tenants, now=now)
                 self.assertEqual(_spend(self.tenant_a, now), MONTH_SPEND)
+                # Only the runs this seed dates from `now`: the rest of seed_e2e ran on the real
+                # clock in setUpTestData (the scope researcher's run starts then), which is after
+                # any of these instants once the calendar passes it.
+                tenancy.clear_tenant()
+                platform = AgentRun.objects.filter(pk__in=C11_PLATFORM_RUNS)
+                self.assertEqual(platform.count(), len(C11_PLATFORM_RUNS))
+                self.assertFalse(platform.filter(started_at__gt=now).exists(), "no platform run starts after now")
                 tenancy.activate(self.tenant_a.id)
-                self.assertFalse(AgentRun.objects.filter(tenant=self.tenant_a, started_at__gt=now).exists(), "no run starts after now")
+                own = AgentRun.objects.filter(tenant=self.tenant_a, pk__in=C11_TENANT_RUNS)
+                self.assertEqual(own.count(), len(C11_TENANT_RUNS))
+                self.assertFalse(own.filter(started_at__gt=now).exists(), "no run starts after now")
+                self.assertFalse(own.filter(finished_at__gt=now).exists(), "no run finishes after now")
 
     def test_this_months_runs_stay_in_the_month_and_the_earlier_ones_before_it(self) -> None:
         for day in (datetime.date(2026, 11, 1), datetime.date(2026, 11, 8), datetime.date(2026, 11, 30), datetime.date(2028, 2, 29)):
