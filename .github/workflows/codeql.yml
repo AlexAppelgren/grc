@@ -132,9 +132,27 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # init downloads its bundle once, with no retry: on 2026-11-08 one 504 from GitHub's
+      # release storage failed the check on main and Railway skipped the deploy. Fetch the
+      # bundle here with retries and hand init the file. It is the bundle the pinned action
+      # names in src/defaults.json and scripts/prepush.sh verifies locally, with the same
+      # SHA-256, so CI and the pre-push check run one CodeQL (Verification_Log, 2026-11-08).
+      - name: Fetch the CodeQL bundle
+        shell: bash
+        env:
+          BUNDLE_URL: https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.27.1/codeql-bundle-linux64.tar.gz
+          BUNDLE_SHA256: 1d380f79896ededc654c7b21fafb3360136f1aeb678ad4df4df9af3910c6b815
+        run: |
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/codeql-bundle-linux64.tar.gz"
+          curl --fail --location --silent --show-error --retry 10 --retry-all-errors --retry-max-time 600 \
+            --output "$bundle" "$BUNDLE_URL"
+          echo "$BUNDLE_SHA256  $bundle" | sha256sum --check --strict
+
       - name: Initialise CodeQL
         uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
         with:
+          tools: ${{ runner.temp }}/codeql-bundle-linux64.tar.gz
           languages: ${{ matrix.language }}
           build-mode: none
           queries: security-extended
