@@ -2,6 +2,7 @@ import type {
   AssertionVerifyBody,
   CodeRequestBody,
   CodeVerifyBody,
+  InvitationAccepted,
   InvitationCodeVerifyBody,
   Me,
   MeUpdate,
@@ -84,6 +85,13 @@ export async function updateMe(body: MeUpdate): Promise<Me> {
 // for a passkey step-up, which the api client answers with the prompt and a retry.
 export async function switchContext(tenantId: string | null): Promise<TokenResponse> {
   return (await api.post<TokenResponse>(`${ME}/context`, { tenantId })).data;
+}
+
+// D-122: a person who already holds a passkey joins the bank that invited them.
+// The route asks for a step-up, which the api client answers with the prompt
+// and a retry; the token rides in the body, as on every invitation route.
+export async function acceptInvitation(token: string): Promise<InvitationAccepted> {
+  return (await api.post<InvitationAccepted>(`${ME}/invitations/accept`, { token })).data;
 }
 
 export async function listPasskeys(): Promise<Passkey[]> {

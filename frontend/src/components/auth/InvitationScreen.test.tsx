@@ -7,6 +7,8 @@ import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH } from '@/shared/utils/api-client';
 
+import { heldInvitation, holdInvitation } from '@/features/identity/held-invitation';
+
 import { EnrolScreen, INVITATION_ENROL_PATH } from './EnrolScreen';
 import { InvitationScreen, replaceWithEnrol, takeTokenFromHash } from './InvitationScreen';
 
@@ -19,7 +21,8 @@ import { InvitationScreen, replaceWithEnrol, takeTokenFromHash } from './Invitat
 // token lives in React state only, never in the address, storage or a log
 // (chunk 1 review F28), and never leaves through a Referer header.
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
+const router = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: ComponentProps<'a'> & { href: string }) => (
     <a href={href} {...props}>
@@ -283,5 +286,77 @@ describe('the sign-in path ("First time here?")', () => {
     typeCode('123456');
     expect(screen.getByText('Enter your email address and the six-digit code.')).toBeVisible();
     expect(sent.some((s) => s.path.endsWith('/verify'))).toBe(false);
+  });
+});
+
+// D-122: an address that already holds a passkey is sent no code. Every visitor
+// who is not signed in sees the same code step, with a way to sign in and join;
+// a signed-in visitor joins with a passkey confirmation and moves into the bank.
+describe('joining with a passkey', () => {
+  const ME = { enrolmentPending: false, tenant: null, user: { locale: 'en' } };
+
+  beforeEach(() => {
+    resetApiForTests();
+    window.history.replaceState(null, '', `/invite#${TOKEN}`);
+    window.sessionStorage.clear();
+    router.push.mockClear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function signedIn(accept: () => Answer = () => ({ status: 200, data: { tenantId: 'bank-b', tenantName: 'Second Bank A/S' } })) {
+    return installAdapter((sent) => {
+      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok', me: ME } };
+      if (sent.path === '/api/v1/me') return { status: 200, data: ME };
+      if (sent.path.endsWith('/invitations/accept')) return accept();
+      if (sent.path.endsWith('/me/context')) return { status: 200, data: { accessToken: 'bank', sessionKind: 'full', expiresIn: 300 } };
+      return { status: 202, data: {} };
+    });
+  }
+
+  it('offers every visitor who is not signed in the same way to sign in, holding the token in this tab only', async () => {
+    server();
+    renderIn(<InvitationScreen />);
+    await screen.findByRole('heading', { level: 1, name: 'Enter your code' });
+    fireEvent.click(screen.getByRole('button', { name: 'Already have a passkey? Sign in and join' }));
+    expect(heldInvitation()).toBe(TOKEN);
+    expect(window.localStorage.length).toBe(0);
+    expect(window.location.href).not.toContain(TOKEN);
+    expect(router.push).toHaveBeenCalledWith('/sign-in');
+  });
+
+  it('lets a signed-in person join without a code, then moves them into the bank', async () => {
+    holdInvitation(TOKEN);
+    const sent = signedIn();
+    renderIn(<InvitationScreen />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Join with your passkey' }));
+    // The browser then loads the bank's home, which jsdom does not navigate to.
+    await waitFor(() => expect(heldInvitation()).toBeNull());
+    expect(sent.some((s) => s.path === '/api/v1/auth/invitations/open')).toBe(false);
+    expect(sent.find((s) => s.path === '/api/v1/me/invitations/accept')?.body).toEqual({ token: TOKEN });
+    expect(sent.find((s) => s.path === '/api/v1/me/context')?.body).toEqual({ tenantId: 'bank-b' });
+  });
+
+  it('says a closed invitation, or one sent to another address, is no longer valid, and lets go of it', async () => {
+    holdInvitation(TOKEN);
+    signedIn(() => ({ status: 410, data: { code: 'invitation_expired', detail: 'Gone.' } }));
+    renderIn(<InvitationScreen />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Join with your passkey' }));
+    await screen.findByText('This invitation is no longer valid, or it was sent to another address. Ask your administrator to send a new one.');
+    expect(screen.getByRole('button', { name: 'Join with your passkey' })).toBeDisabled();
+    expect(heldInvitation()).toBeNull();
+  });
+
+  it('shows nothing more when the passkey confirmation is cancelled, and other failures as problems', async () => {
+    let answer: Answer = { status: 403, data: { code: 'step_up_required', detail: 'Confirm with your passkey.' } };
+    signedIn(() => answer);
+    renderIn(<InvitationScreen />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Join with your passkey' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Join with your passkey' })).toBeEnabled());
+    expect(screen.queryByRole('alert')).toBeNull();
+    answer = { status: 500, data: { detail: 'Boom.' } };
+    fireEvent.click(screen.getByRole('button', { name: 'Join with your passkey' }));
+    await waitFor(() => expect(screen.getAllByRole('alert').length).toBeGreaterThan(0));
   });
 });

@@ -27,6 +27,8 @@ export type TokenResponse = Omit<Schemas['SessionTokens'], 'sessionKind'> & { se
 export type CodeRequestBody = Schemas['CodeRequestBody'];
 export type CodeVerifyBody = Schemas['CodeVerifyBody'];
 export type InvitationCodeVerifyBody = Schemas['InvitationCodeVerifyBody'];
+/** The bank an enrolled person has just joined through its invitation (D-122). */
+export type InvitationAccepted = Schemas['InvitationAccepted'];
 
 // Local: the backend types the device type as a plain string; the fixed kind list (synced or device-bound) lives here.
 export type PasskeyDeviceType = 'single_device' | 'multi_device';

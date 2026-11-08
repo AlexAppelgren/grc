@@ -7,6 +7,7 @@ import { REFRESH_PATH, tokenStore } from '@/shared/utils/api-client';
 import {
   sessionStatusOf,
   signOutKey,
+  useAcceptInvitation,
   useAddPasskey,
   useFormatContext,
   useOpenInvitation,
@@ -233,6 +234,25 @@ describe('identity hooks', () => {
     expect(sent.map((s) => [s.path, s.body])).toEqual([['/api/v1/me/context', { tenantId: null }]]);
     expect(tokenStore.get()).toBe('new');
     expect(then).toHaveBeenCalledExactlyOnceWith(null);
+  });
+
+  it('useAcceptInvitation joins with the token, moves into the joined bank and hands on with its id', async () => {
+    tokenStore.set('old');
+    const sent = installAdapter((request) =>
+      request.path.endsWith('/accept')
+        ? { status: 200, data: { tenantId: 'bank-b', tenantName: 'Second Bank A/S' } }
+        : { status: 200, data: { accessToken: 'new', sessionKind: 'full', expiresIn: 300 } },
+    );
+    const { wrapper } = queryWrapper();
+    const then = vi.fn();
+    const { result } = renderHook(() => useAcceptInvitation(then), { wrapper });
+    await result.current.mutateAsync('the-token');
+    expect(sent.map((s) => [s.path, s.body])).toEqual([
+      ['/api/v1/me/invitations/accept', { token: 'the-token' }],
+      ['/api/v1/me/context', { tenantId: 'bank-b' }],
+    ]);
+    expect(tokenStore.get()).toBe('new');
+    expect(then).toHaveBeenCalledExactlyOnceWith('bank-b');
   });
 
   it('useSignOut hands on when the server refused the sign-out too', async () => {

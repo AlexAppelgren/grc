@@ -210,6 +210,20 @@ export function useSwitchContext(then: (tenantId: string | null) => void): UseMu
   });
 }
 
+// D-122: join the bank that invited an enrolled person, then move there. One
+// passkey confirmation covers both calls while it is fresh: the accept asks for
+// it, and the switch that follows rides on it. `then` gets the bank's id.
+export function useAcceptInvitation(then: (tenantId: string) => void): UseMutationResult<string, unknown, string> {
+  return useMutation({
+    mutationFn: async (token) => {
+      const joined = await identity.acceptInvitation(token);
+      tokenStore.set((await identity.switchContext(joined.tenantId)).accessToken);
+      return joined.tenantId;
+    },
+    onSuccess: (tenantId) => then(tenantId),
+  });
+}
+
 export function usePasskeys(enabled = true): UseQueryResult<Passkey[]> {
   return useQuery({ queryKey: identityKeys.passkeys, queryFn: identity.listPasskeys, enabled });
 }

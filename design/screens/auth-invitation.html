@@ -68,6 +68,23 @@ p{margin:0 0 .75rem}
       <div class="bar"><button class="btn ghost">Go to sign in</button><button class="btn">Try again</button></div>
     </section>
 
+    <h2>Signed in already (D-122: join with a passkey)</h2>
+    <section class="panel">
+      <h1>Your invitation</h1>
+      <p class="lede">You already have a passkey. Confirm with it to join the organisation that invited you.</p>
+      <div class="bar"><button class="btn">Join with your passkey</button></div>
+    </section>
+
+    <h2>Join refused (410: closed, or sent to another address)</h2>
+    <section class="panel">
+      <h1>Your invitation</h1>
+      <p class="lede">You already have a passkey. Confirm with it to join the organisation that invited you.</p>
+      <p class="err" role="alert">This invitation is no longer valid, or it was sent to another address. Ask your administrator to send a new one.</p>
+      <div class="bar"><button class="btn" disabled>Join with your passkey</button></div>
+    </section>
+
+    <p class="note">Joining with a passkey (D-122). An address that already holds a passkey is sent no code, so the code card shows one more link under its buttons, "Already have a passkey? Sign in and join", to every visitor alike: the page never says whether the address holds a passkey. The link keeps the token in this tab's sessionStorage, never a URL, and goes to sign in, which comes back here. A signed-in visitor sees the join panel instead of a code: the button asks for the passkey (the step-up dialog), joins, and moves into the bank's home.</p>
+
     <p class="note">Invitation card. The emailed link is /invite#token: the token rides in the fragment, which no browser sends to a server, and the page clears it from the address before asking for anything. Opening the link asks the server to send the code, then the code card (auth-code.html) follows in place at /enrol?via=invitation, asking for the code alone: the token names the account. The page never shows the address or the code. The 410 state is the same for expired and consumed links. Two buttons share one row on phones, primary on the right.</p>
   </div>
 </div>

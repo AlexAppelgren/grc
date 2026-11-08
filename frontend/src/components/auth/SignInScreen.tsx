@@ -7,6 +7,7 @@ import { BackLink } from '@/components/admin/AdminGate';
 import { AuthPanel } from '@/components/auth/AuthFrame';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { ProblemAlert, StatusLine } from '@/components/ui/States';
+import { heldInvitation } from '@/features/identity/held-invitation';
 import { useSession, useSignIn } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { homeOf, PUBLIC_HOME } from '@/shared/navigation/registry';
@@ -52,7 +53,8 @@ export function SignInScreen() {
   const supported = useSyncExternalStore(subscribeNever, isWebAuthnAvailable, () => true);
 
   useEffect(() => {
-    if (session.status === 'signed-in') router.replace(homeOf(session.me));
+    // Back to the invitation it came from (D-122), else the person's own home.
+    if (session.status === 'signed-in') router.replace(heldInvitation() === null ? homeOf(session.me) : '/invite');
     if (session.status === 'enrolment') router.replace('/enrol');
   }, [session.status, session.me, router]);
 

@@ -9,6 +9,7 @@ import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, TextInput } from '@/components/ui/Field';
 import { InputOtp, OTP_LENGTH } from '@/components/ui/input-otp';
 import { ProblemAlert, StatusLine } from '@/components/ui/States';
+import { holdInvitation } from '@/features/identity/held-invitation';
 import { useOpenInvitation, useRegisterPasskey, useRequestCode, useSession, useVerifyCode, useVerifyInvitationCode } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { tokenStore } from '@/shared/utils/api-client';
@@ -66,6 +67,7 @@ function ReopenLink() {
 // asked for too, and a new code is requested neutrally (AC-ID1).
 function CodeStep({ invitationToken, onVerified }: { invitationToken: string | null; onVerified: () => void }) {
   const t = useT();
+  const router = useRouter();
   const requestCode = useRequestCode();
   const reopen = useOpenInvitation();
   const verifyByEmail = useVerifyCode();
@@ -157,6 +159,21 @@ function CodeStep({ invitationToken, onVerified }: { invitationToken: string | n
             {t('auth.code.continue')}
           </Button>
         </ButtonBar>
+        {/* D-122: an address that holds a passkey is sent no code; the same page offers the way in for it, so it says nothing about the address. */}
+        {invitationToken !== null ? (
+          <div className="mt-5 border-t border-line pt-4 text-meta">
+            <button
+              type="button"
+              className="text-left font-semibold underline"
+              onClick={() => {
+                holdInvitation(invitationToken);
+                router.push('/sign-in');
+              }}
+            >
+              {t('auth.code.signInToJoin')}
+            </button>
+          </div>
+        ) : null}
       </AuthPanel>
     </form>
   );
