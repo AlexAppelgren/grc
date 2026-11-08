@@ -82,7 +82,7 @@ from apps.shared import outbox, tenancy
 from apps.shared import permissions as perms
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.audit import Actor, ActorType, record
-from apps.shared.e2e_logins import E2E_INVITATION_TOKEN_ANNA, NO_RECORD_READ_ROLE, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
+from apps.shared.e2e_logins import NO_RECORD_READ_ROLE, SEED_LOGINS, TENANT_A_SLUG, TENANT_B_SLUG, SeedLogin
 from apps.shared.e2e_passkeys import E2E_PASSKEYS
 from apps.shared.schemas import AgentDecision
 from apps.taxonomy.models import CaseStatusCategory
@@ -390,10 +390,10 @@ def _seed_passkey(user: User, login: SeedLogin) -> None:
 
 
 def _seed_invitation(tenant: Tenant, user: User, login: SeedLogin) -> None:
-    """The one open invitation. Idempotent: an existing open one is kept (and its token
+    """A login's open invitation. Idempotent: an existing open one is kept (and its token
     re-pinned under E2E_MODE); anything else is superseded."""
     open_invitation = invitation_logic.find_open_for_email(user.email)
-    token = E2E_INVITATION_TOKEN_ANNA if settings.E2E_MODE else tokens.new_token(32)
+    token = login.invitation_token if settings.E2E_MODE else tokens.new_token(32)
     if open_invitation is not None and open_invitation.tenant_id == tenant.id:
         if settings.E2E_MODE and open_invitation.token_hash != tokens.hash_token(token):
             open_invitation.token_hash = tokens.hash_token(token)
@@ -418,7 +418,7 @@ def seed_logins(tenants: list[Tenant]) -> int:
         tenant = by_slug[login.tenant_slug] if login.tenant_slug else None
         if tenant is not None:
             tenancy.activate(tenant.id)
-            if login.awaiting_enrolment:
+            if login.invitation_token:
                 _seed_invitation(tenant, user, login)
             else:
                 _seed_membership(tenant, user, login)

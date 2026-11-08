@@ -49,6 +49,7 @@ from apps.shared import tenancy
 from apps.shared.adapters.mailer import MockMailer, OutgoingMail
 from apps.shared.e2e_logins import (
     E2E_INVITATION_TOKEN_ANNA,
+    E2E_INVITATION_TOKEN_JOINER,
     LIBRARY_EDITOR_ROLE,
     REISSUE_LOGIN_EMAIL,
     NO_RECORD_READ_ROLE,
@@ -228,6 +229,10 @@ class SeededTenantsAndLogins(SeededOnce):
         tenants = {t.slug: t for t in Tenant.objects.all()}
         awaiting = [login for login in SEED_LOGINS if login.awaiting_enrolment]
         self.assertEqual(len(awaiting), 1, "exactly one seeded user awaits enrolment (J-1)")
+        self.assertEqual(awaiting[0].invitation_token, E2E_INVITATION_TOKEN_ANNA)
+        # D-122: the one invited login who already holds a passkey joins signed in (ID-S39).
+        joiners = [login for login in SEED_LOGINS if login.invitation_token and login.has_passkey]
+        self.assertEqual([(j.email, j.invitation_token, j.reserved_for) for j in joiners], [("joiner@second-bank.test", E2E_INVITATION_TOKEN_JOINER, ("ID-S39",))])
         for login in SEED_LOGINS:
             with self.subTest(login=login.email):
                 user = User.objects.get(email=login.email)
@@ -239,10 +244,10 @@ class SeededTenantsAndLogins(SeededOnce):
                 self.assertEqual(user.locale.key, login.locale)
                 if login.tenant_slug:
                     tenancy.activate(tenants[login.tenant_slug].id)
-                    if login.awaiting_enrolment:
+                    if login.invitation_token:
                         self.assertFalse(Membership.objects.filter(user=user).exists())
                         invitation = Invitation.objects.get(email=login.email, accepted_at__isnull=True, revoked_at__isnull=True)
-                        self.assertEqual(invitation.token_hash, tokens.hash_token(E2E_INVITATION_TOKEN_ANNA))
+                        self.assertEqual(invitation.token_hash, tokens.hash_token(login.invitation_token))
                         self.assertEqual(sorted(invitation.role_links.values_list("role__key", flat=True)), sorted(login.tenant_roles))
                     else:
                         membership = Membership.objects.get(user=user, tenant=tenants[login.tenant_slug])
@@ -283,12 +288,13 @@ class SeededTenantsAndLogins(SeededOnce):
                 self.assertFalse(set(login.reserved_for) - known, "reserved for a scenario no app.md names")
                 self.assertTrue(login.has_passkey, "it must hold a passkey for re-issue to retire")
                 self.assertFalse(login.awaiting_enrolment)
-                assert login.tenant_slug is not None, "a reserved login is a bank's member"
+                assert login.tenant_slug is not None, "a reserved login is a bank's member, or invited into one"
                 tenancy.activate(tenants[login.tenant_slug].id)
                 user = User.objects.get(email=login.email)
                 self.assertEqual(user.status, UserStatus.ACTIVE.value)
                 self.assertEqual(WebAuthnCredential.objects.filter(user=user, retired_at__isnull=True).get().credential_id, E2E_PASSKEYS[login.email].credential_id)
-                self.assertTrue(Membership.objects.filter(user=user, tenant=tenants[login.tenant_slug]).exists())
+                # An invited login (ID-S39) becomes a member only when its journey joins.
+                self.assertEqual(Membership.objects.filter(user=user, tenant=tenants[login.tenant_slug]).exists(), not login.invitation_token)
         # ADM-S2 grants Reader and then proves the row shows it, so the seed must not, and its
         # login holds no role a shared login stands for.
         reissue = by_email[REISSUE_LOGIN_EMAIL]
@@ -1071,7 +1077,8 @@ class ReseedTenantsAndScope(SeededOnce):
         self.assertEqual(AuditEvent.objects.filter(action="tenant.seeded").count(), 2)
         self.assertEqual((User.objects.count(), Membership.objects.count(), WebAuthnCredential.objects.count()), (users, memberships, credentials))
         with tenancy.identity_lookup():
-            self.assertEqual(Invitation.objects.filter(accepted_at__isnull=True, revoked_at__isnull=True).count(), 1)
+            invited = sum(1 for login in SEED_LOGINS if login.invitation_token)
+            self.assertEqual(Invitation.objects.filter(accepted_at__isnull=True, revoked_at__isnull=True).count(), invited)
         # Each tenant's own list rows are recorded as this seed's work, not as a deploy's.
         for tenant in Tenant.objects.all():
             tenancy.activate(tenant.id)

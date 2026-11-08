@@ -333,6 +333,12 @@ condition = "AND"
 regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgYhK7iLgUTGaQPRiaaIDBuqFENxXFBOJWddKZuY31muKhRANCAAQOoni0kAj1APoc7bXNM7mXUE1Ee2mPy5_azHtCE92JiT8lUhicsCG97h4xuXWRPVqTFi7qoB7hqCCw2Zu6NVQf$''']
 paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
 
+[[allowlists]]
+description = "E2E passkey private key for the seeded user joiner@second-bank.test: E2E virtual authenticator test keys, playbook 8.3. Test fixture only: its public key is written by seed_e2e, which refuses to run when deployed, and Playwright's virtual authenticator is the only consumer."
+condition = "AND"
+regexes = ['''^MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg7-UZVd79l94AH_Tf-oQmUwtEblto6uuce0lAS3oAi3-hRANCAAQn5wgUYWJ1ySfwxT5ih7nXcC7hG5q-MTzUYWjctYJFe5dTSpjOByuUS94kobBBjJLMMMAxG7GlEfQ8tLu4wnUA$''']
+paths = ['''^frontend/tests/e2e/support/e2e-passkeys\.generated\.ts$''']
+
 # --- r2 waves 5 to 7 integration: the API keys screen test's made-up key, which the screen shows
 # and copies once. It names no key the product ever minted.
 [[allowlists]]

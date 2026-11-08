@@ -21,6 +21,9 @@ class SeedLogin:
     title: str = ""
     has_passkey: bool = True
     awaiting_enrolment: bool = False
+    # Under E2E_MODE, the plain token of an open invitation into `tenant_slug` that the seed
+    # writes in place of a membership (hashed in the row). Empty: a member as seeded.
+    invitation_token: str = ""
     locale: str = "en"  # the UI language every journey runs in (playbook 8.3: one pinned language)
     # The scenario IDs that alone may use this login, because they spend it (playbook 8.3
     # rule 4: what cannot be restored in a teardown gets a dedicated login). Empty: shared.
@@ -34,6 +37,9 @@ def _id(n: int) -> uuid.UUID:
 # E2E_MODE makes this the plain invitation token of the one awaiting user (hashed in the
 # row). It opens the emailed-code path only; the mock mailer holds the code.
 E2E_INVITATION_TOKEN_ANNA = "e2e-invite-anna"  # noqa: S105 an E2E fixture, not a credential
+# D-122: the plain token of the bank invitation sent to a platform admin who already holds a
+# passkey (ID-S39). The emailed code never opens for them; they join signed in.
+E2E_INVITATION_TOKEN_JOINER = "e2e-invite-joiner"  # noqa: S105 an E2E fixture, not a credential
 
 TENANT_A_SLUG = "example-bank"
 TENANT_B_SLUG = "second-bank"
@@ -55,6 +61,7 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
         title="Compliance officer",
         has_passkey=False,
         awaiting_enrolment=True,
+        invitation_token=E2E_INVITATION_TOKEN_ANNA,
     ),
     SeedLogin(_id(9), "admin@second-bank.test", "Mette Jensen", TENANT_B_SLUG, ("admin",), title="Administrator"),
     SeedLogin(_id(10), "editor@bleqq.test", "Ida Holm", None, (), platform_roles=("library_editor",)),
@@ -170,6 +177,20 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
         platform_roles=("platform_admin",),
         title="Product specialist and platform administrator",
         reserved_for=("ID-S34", "ID-S37"),
+    ),
+    # D-122: a platform admin with a passkey and no bank, invited into tenant B as a reader.
+    # ID-S39 proves the code sends nothing, then signs in, joins with a step-up and switches
+    # into tenant B. Reserved, because joining makes them a member for the rest of the run.
+    SeedLogin(
+        _id(30),
+        "joiner@second-bank.test",
+        "Nora Falk",
+        TENANT_B_SLUG,
+        ("reader",),
+        platform_roles=("platform_admin",),
+        title="Platform administrator",
+        invitation_token=E2E_INVITATION_TOKEN_JOINER,
+        reserved_for=("ID-S39",),
     ),
 )
 

@@ -11,10 +11,12 @@ import {
   installAuthenticator,
   inviteLink,
   inviteLinkFrom,
+  JOINER_INVITE_TOKEN,
   LOGINS,
   mailOutbox,
   mailsTo,
   restrictedScreen,
+  seedPasskeyFor,
   signInAs,
   signOut,
 } from './support/passkeys';
@@ -372,6 +374,62 @@ test.describe('identity journeys', () => {
     const dual = page.locator('[data-member-id]', { hasText: LOGINS.dual });
     await expect(dual.getByText('Platform staff', { exact: true })).toBeVisible();
     await expect(page.locator('[data-member-id]', { hasText: LOGINS.contributor }).getByText('Platform staff', { exact: true })).toHaveCount(0);
+  });
+
+  test.describe('Nora joins a bank with her passkey', () => {
+    // Joining makes her a member of tenant B for the rest of the run, which no teardown
+    // through the UI can undo; a retry would find the invitation spent. Like Anna's chain,
+    // the first failure is the real one.
+    test.describe.configure({ retries: 0 });
+
+    test("ID-S39: A person who already holds a passkey joins a bank that invited them", async ({ page, apiGuard, browser, request }) => {
+      test.setTimeout(60_000);
+      allowFreshContext(apiGuard);
+      apiGuard.allow(/\/me\/invitations\/accept$/, 403, 'the join answers step_up_required first and opens the passkey prompt');
+      apiGuard.allow(/\/me\/invitations\/accept$/, 410, 'someone signed in as another address is told the invitation is not open');
+
+      // Someone signed in as another address opens her link: no code, and the join is refused.
+      const other = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+      try {
+        const otherPage = await other.newPage();
+        apiGuard.watch(otherPage);
+        await signInAs(otherPage, LOGINS.editor);
+        await otherPage.goto(inviteLink(JOINER_INVITE_TOKEN));
+        await otherPage.getByRole('button', { name: 'Join with your passkey' }).click();
+        const otherPrompt = otherPage.getByRole('dialog', { name: 'Confirm with your passkey' });
+        await expect(otherPrompt).toBeVisible();
+        await otherPrompt.getByRole('button', { name: 'Use passkey' }).click();
+        await expect(otherPage.getByText('This invitation is no longer valid, or it was sent to another address. Ask your administrator to send a new one.')).toBeVisible();
+      } finally {
+        await other.close();
+      }
+
+      // Not signed in, her link shows the code step every invitee sees, and no code is sent:
+      // neither by opening it nor from the sign-in page (AC-ID1).
+      const before = mailsTo(await mailOutbox(request), LOGINS.joiner).length;
+      await requestCodeNeutrally(page, LOGINS.joiner);
+      await seedPasskeyFor(page.context(), LOGINS.joiner);
+      await page.goto(inviteLink(JOINER_INVITE_TOKEN));
+      await expect(page.getByRole('heading', { level: 1, name: 'Enter your code' })).toBeVisible();
+      await expect(page.getByLabel('Code', { exact: true })).toBeVisible();
+      expect(mailsTo(await mailOutbox(request), LOGINS.joiner)).toHaveLength(before);
+
+      // She signs in with her passkey, comes back to the invitation, and joins behind a step-up.
+      await page.getByRole('button', { name: 'Already have a passkey? Sign in and join' }).click();
+      await page.getByRole('button', { name: 'Sign in with a passkey' }).click();
+      await page.getByRole('button', { name: 'Join with your passkey' }).click();
+      const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
+      await expect(prompt).toBeVisible();
+      await prompt.getByRole('button', { name: 'Use passkey' }).click();
+
+      // She lands in the bank, holding its reader's grants and nothing of the console.
+      await expect(page).toHaveURL(/:\d+\/$/, { timeout: 15_000 });
+      await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+      await expect(page.locator('[data-who-panel]')).toContainText('Second Bank A/S');
+      await page.goto('/admin/members');
+      await expect(restrictedScreen(page)).toBeVisible();
+      expect(mailsTo(await mailOutbox(request), LOGINS.joiner)).toHaveLength(before);
+    });
   });
 
   test("ID-S18: Permissions are code and roles are rows", async ({ page, apiGuard }) => {

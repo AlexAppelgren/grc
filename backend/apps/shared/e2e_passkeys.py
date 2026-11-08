@@ -48,4 +48,5 @@ E2E_PASSKEYS: dict[str, E2EPasskey] = {
     "library-only@example-bank.test": E2EPasskey(credential_id="TsqBifXIUEx-DjxvHwaawQ", public_key_cose="pQECAyYgASFYINx_CHDLBeCbqKvMRI8_iL6Yu0GKWb0MKBovEcI93141Ilgg6qwm_KQmnQjwFPY6lAzpN3WDIqt4cIsKxPKMyYv8O0A", aaguid=E2E_AAGUID),
     "compliance_officer@second-bank.test": E2EPasskey(credential_id="K0xrK7A1QCcMtSusB8Yt2w", public_key_cose="pQECAyYgASFYIASx1ul1anUAad5sPIiFGh8dO3MgmAAs2Nbuo1sCvZrXIlgg9gHScHY_tEf9w9QfgW7NUa_vLkGVj3NFEjTrdtMlEzs", aaguid=E2E_AAGUID),
     "dual@example-bank.test": E2EPasskey(credential_id="GdbXy1QRVH4LiJPK6Twiag", public_key_cose="pQECAyYgASFYIA6ieLSQCPUA-hzttc0zuZdQTUR7aY_Ln9rMe0IT3YmJIlggPyVSGJywIb3uHjG5dZE9WpMWLuqgHuGoILDZm7o1VB8", aaguid=E2E_AAGUID),
+    "joiner@second-bank.test": E2EPasskey(credential_id="Gx77DXRxIrPga0RrvqrHKw", public_key_cose="pQECAyYgASFYICfnCBRhYnXJJ_DFPmKHuddwLuEbmr4xPNRhaNy1gkV7Ilggl1NKmM4HK5RL3iShsEGMkswwwDEbsaUR9Dy0u7jCdQA", aaguid=E2E_AAGUID),
 }

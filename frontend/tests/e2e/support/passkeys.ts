@@ -92,9 +92,13 @@ export const LOGINS = {
   secondBankComplianceOfficer: 'compliance_officer@second-bank.test',
   /** Reserved for ID-S34 and ID-S37 (D-122): a member of tenant A who is a platform admin too. */
   dual: 'dual@example-bank.test',
+  /** Reserved for ID-S39 (D-122): a platform admin with a passkey, invited into tenant B; joining makes them a member. */
+  joiner: 'joiner@second-bank.test',
 } as const;
 
 export const ANNA_INVITE_TOKEN = 'e2e-invite-anna';
+/** The bank invitation of `LOGINS.joiner`, who already holds a passkey (apps/shared/e2e_logins.py). */
+export const JOINER_INVITE_TOKEN = 'e2e-invite-joiner';
 export const E2E_FIXED_CODE = '123456';
 
 export async function installAuthenticator(context: BrowserContext): Promise<void> {

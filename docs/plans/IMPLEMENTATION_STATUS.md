@@ -323,3 +323,13 @@ toggle between the two. It supersedes hardening H13's separate accounts.
 - **Left, deliberately:** no console screen to grant a platform role (the owner's shell stays
   the only door), and no remembered "last place" at sign-in: sign-in still lands in the oldest
   membership.
+- **Built afterwards (2026-11-08, ID-S39):** a person who already holds a passkey joins a bank
+  that invited them. Opening the link sends them no code (the same 202, `code_refused_enrolled`
+  in the bank's log); `POST /me/invitations/accept` takes the token from a full session behind
+  a step-up, refuses an unknown, closed, re-enrolment or someone else's token alike (410
+  `invitation_expired`), and writes `invitation.accepted` and an `enrolled` row with the reason
+  `invitation_accepted`; the same step-up then switches into the bank. On screen the code step
+  offers "Already have a passkey? Sign in and join" to every visitor, the token waits in the
+  tab's sessionStorage across sign-in, and a signed-in visitor gets "Join with your passkey"
+  (`joiner@second-bank.test` in `seed_e2e`). Not done: the join panel does not name the bank before
+  joining, since nothing tells the page which bank a token belongs to until it is accepted.
