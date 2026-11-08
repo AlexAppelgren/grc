@@ -1310,6 +1310,36 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(console_session.revoked_reason, "context_switched")
         self.assertEqual(self.client.get("/api/v1/me", **self._bearer(console_token)).status_code, 401)
 
+        # From one bank to another: the request runs in the first bank's zone, and the new
+        # session lands in the second with the second's grants alone.
+        second = factories.tenant(slug="second-bank")
+        factories.member(second, roles=("reader",), user_row=user)
+        bank_token = back.json()["accessToken"]
+        self.assertEqual(self._step_up(bank_token, authenticator).status_code, 200)
+        self.activate(self.tenant)
+        first_session = UserSession.objects.get(user=user, tenant=self.tenant, revoked_at__isnull=True)
+        self.activate(second)  # the audit-asserting client counts in the zone the switch enters
+        moved = self._switch(bank_token, second.id)
+        self.assertEqual(moved.status_code, 200, moved.content)
+        moved_me = self.client.get("/api/v1/me", **self._bearer(moved.json()["accessToken"])).json()
+        self.assertEqual(moved_me["tenant"]["id"], str(second.id))
+        self.assertEqual([role["key"] for role in moved_me["roles"]], ["reader"])
+        self.assertNotIn(perms.MEMBERS_MANAGE, moved_me["permissions"])
+        self.assertFalse(set(moved_me["permissions"]) & perms.PLATFORM_PERMISSIONS)
+        self.assertEqual([row["current"] for row in moved_me["contexts"]], [False, True, False])
+        self.activate(second)
+        second_session = UserSession.objects.get(user=user, tenant=second, revoked_at__isnull=True)
+        switch_row = AuditEvent.objects.get(action="session.context_switched", subject_id=second_session.id)
+        self.assertEqual(switch_row.tenant_id, second.id)
+        self.assertNotIn(str(self.tenant.id), str(switch_row.before) + str(switch_row.after) + switch_row.summary)
+        self.activate(self.tenant)
+        first_session.refresh_from_db()
+        self.assertEqual(first_session.revoked_reason, "context_switched")
+        revoked_row = AuditEvent.objects.get(action="session.revoked", subject_id=first_session.id)
+        self.assertEqual(revoked_row.tenant_id, self.tenant.id)
+        self.assertNotIn(str(second.id), str(revoked_row.before) + str(revoked_row.after) + revoked_row.summary)
+        self.assertEqual(self.client.get("/api/v1/me", **self._bearer(bank_token)).status_code, 401)
+
     def test_id_s35(self) -> None:
         """ID-S35
 

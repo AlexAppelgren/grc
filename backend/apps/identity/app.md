@@ -467,6 +467,10 @@ When it switches back without a new step-up
 Then the answer is 403 "step_up_required": the step-up stayed with the session it was made on
 When it steps up on the console session and switches back
 Then a new bank session answers and the console session is revoked
+Given the account is also an active member of a second bank, as a reader there
+When it steps up and switches from the first bank to the second
+Then the new session is the second bank's and holds the reader's grants alone
+And the first bank's session is revoked, with session.revoked in the first bank and session.context_switched in the second, neither naming the other bank
 ```
 
 ### ID-S35 — Each session of an account in both zones holds its own zone's grants only `@integration` (ID-09, D-122)
