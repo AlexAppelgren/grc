@@ -9,9 +9,9 @@ reviews of 2026-09-19 that were not that branch's to fix.
   handed `proposals.review` to a bank session and opened the library fence. The principal
   now keeps only the permissions of its own zone.
 - **H13** `build_principal` also added every platform grant to a bank session. Platform
-  grants now reach a session with no tenant only, and a bank invitation refuses an address
-  that holds a platform role, at creation and again at acceptance: platform staff are
-  separate accounts (`bootstrap_platform` already refuses the other direction).
+  grants now reach a session with no tenant only. H13 also made platform staff separate
+  accounts; D-122 (ADR 0067, Alex 2026-11-08) lifted that, so a bank invitation now reaches
+  platform staff, and what keeps the zones apart is the one-zone session pinned below.
 - **H3** A tenant reads the audit rows without a tenant whose subject is a library record
   (apps/governance/logic.py). Nothing stopped a future writer from recording a
   tenant-derived title there, which would show one bank's words to all of them. The guard
@@ -20,8 +20,8 @@ reviews of 2026-09-19 that were not that branch's to fix.
   `tenant_id=principal.tenant_id` that is None under a platform session is named rather
   than walked past (review 2026-09-20).
 
-The H13 refusal is proved end to end through the enrolment ceremony by ID-S27 in
-apps/identity/tests_scenarios.py: the route answers 422 and writes no credential.
+A dual account's two sessions are proved end to end by ID-S30, ID-S34 and ID-S35 in
+apps/identity/tests_scenarios.py.
 """
 
 from __future__ import annotations
@@ -133,7 +133,7 @@ class PrincipalKeepsOneZone(TestCase):
 
     def test_a_bank_session_of_a_platform_account_carries_no_platform_grant(self) -> None:
         staff = factories.platform_user(roles=("library_editor",), email="editor@platform.test.example")
-        # A membership written around the invitation guard below (an older row, a restore).
+        # One account in both zones (D-122): its bank session reads the membership alone.
         membership = factories.member(self.tenant, roles=("reader",), user_row=staff)
         bank = self._principal(membership.user, self.tenant)
         assert bank is not None
@@ -151,9 +151,9 @@ class PrincipalKeepsOneZone(TestCase):
 
 
 # ---------------------------------------------------------------------------------------
-# H13: a bank invitation refuses a platform account
+# D-122 (superseding H13's separate accounts): a bank invitation reaches platform staff
 # ---------------------------------------------------------------------------------------
-class BankInvitationsRefusePlatformAccounts(TestCase):
+class BankInvitationsReachPlatformStaff(TestCase):
     def setUp(self) -> None:
         seed_languages()
         seed_jurisdictions()
@@ -165,31 +165,30 @@ class BankInvitationsRefusePlatformAccounts(TestCase):
         roles_logic.ensure_platform_roles()
         PlatformRoleAssignment.objects.create(user=user, role=PlatformRole.objects.get(key=key))
 
-    def test_inviting_a_platform_account_is_refused_and_writes_no_invitation(self) -> None:
+    def test_platform_staff_are_invited_and_accept_like_anyone_else(self) -> None:
         staff = factories.platform_user(email="staff@platform.test.example")
-        with self.assertRaises(ValidationError) as caught:
-            members_logic.invite_member(
-                tenant=self.tenant,
-                actor=self.actor,
-                invited_by=self.admin,
-                email=staff.email,
-                role_keys=["reader"],
-                title="Analyst",
-            )
-        self.assertEqual(caught.exception.code, "platform_account")
-        self.assertFalse(Invitation.objects.filter(tenant=self.tenant, email=staff.email).exists())
-        self.assertFalse(Membership.objects.filter(tenant=self.tenant, user=staff).exists())
+        issued = members_logic.invite_member(
+            tenant=self.tenant,
+            actor=self.actor,
+            invited_by=self.admin,
+            email=staff.email,
+            role_keys=["reader"],
+            title="Analyst",
+        )
+        self.assertTrue(Invitation.objects.filter(tenant=self.tenant, email=staff.email).exists())
+        membership = invitation_logic.accept_invitation(issued, staff, timezone.now())
+        assert membership is not None
+        self.assertEqual([role.key for role in membership.roles.all()], ["reader"])
 
-    def test_accepting_is_refused_when_the_platform_role_arrived_after_the_invitation(self) -> None:
+    def test_accepting_goes_through_when_the_platform_role_arrived_after_the_invitation(self) -> None:
         invitation = factories.invitation(self.tenant, email="late@bank.test.example")
         person = invitation_logic.get_or_create_user(invitation.email)
         self._grant_platform_role(person)
-        with self.assertRaises(ValidationError) as caught:
-            invitation_logic.accept_invitation(invitation, person, timezone.now())
-        self.assertEqual(caught.exception.code, "platform_account")
+        membership = invitation_logic.accept_invitation(invitation, person, timezone.now())
+        assert membership is not None
         invitation.refresh_from_db()
-        self.assertIsNone(invitation.accepted_at)
-        self.assertFalse(Membership.objects.filter(tenant=self.tenant, user=person).exists())
+        self.assertIsNotNone(invitation.accepted_at)
+        self.assertTrue(Membership.objects.filter(tenant=self.tenant, user=person).exists())
 
     def test_an_ordinary_address_is_invited_and_accepted_as_before(self) -> None:
         issued = members_logic.invite_member(
@@ -205,7 +204,7 @@ class BankInvitationsRefusePlatformAccounts(TestCase):
         assert membership is not None
         self.assertEqual([role.key for role in membership.roles.all()], ["reader"])
 
-    def test_a_platform_invitation_is_untouched_by_the_refusal(self) -> None:
+    def test_a_platform_invitation_is_accepted_with_no_membership(self) -> None:
         staff = factories.platform_user(email="console@platform.test.example")
         tenancy.clear_tenant()  # the platform's own invitation is written with no bank active (H-C)
         issued = invitation_logic.create_invitation(

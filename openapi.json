@@ -7562,6 +7562,37 @@
         "title": "ConsoleTenantRow",
         "type": "object"
       },
+      "ContextSwitchBody": {
+        "description": "Where to move the signed-in person (D-122).",
+        "examples": [
+          {
+            "tenantId": null
+          },
+          {
+            "tenantId": "00000000-0000-4000-8000-00000000000a"
+          }
+        ],
+        "properties": {
+          "tenantId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The bank to work in, a UUID from `contexts` in `GET /me`, or null for the platform console. Required: send null explicitly for the console.",
+            "title": "Tenantid"
+          }
+        },
+        "required": [
+          "tenantId"
+        ],
+        "title": "ContextSwitchBody",
+        "type": "object"
+      },
       "CredentialEntryRef": {
         "description": "The agent access entry a credential is bound to: its id and name.",
         "properties": {
@@ -14536,6 +14567,13 @@
         "description": "Who the caller is and what this session may do: the one read every screen makes\nfirst. The enrolment session may make it too, and sees `enrolmentPending` true.",
         "examples": [
           {
+            "contexts": [
+              {
+                "current": true,
+                "tenantId": "00000000-0000-4000-8000-00000000000a",
+                "tenantName": "Example Bank AB"
+              }
+            ],
             "counts": {
               "assignedToMe": 1,
               "proposals": 2,
@@ -14612,6 +14650,14 @@
           }
         ],
         "properties": {
+          "contexts": {
+            "description": "Every place the person can work, the current one marked: each bank they are an active member of, the earliest joined first, then the platform console when they hold an active platform role. Most people hold one, the current one. With more than one, a screen offers a switch, which is `POST /me/context` behind a passkey step-up. Empty for an enrolment session and a support session, which cannot switch.",
+            "items": {
+              "$ref": "#/components/schemas/MeContext"
+            },
+            "title": "Contexts",
+            "type": "array"
+          },
           "counts": {
             "anyOf": [
               {
@@ -14677,7 +14723,7 @@
             "type": "array"
           },
           "platformRoles": {
-            "description": "The platform roles of platform staff, as key, kind and label: the seeded `platform_admin` and `library_editor`. Always empty for a member of a bank, because platform staff sign in with accounts of their own and a bank session never carries a platform grant. They are a platform vocabulary that only the platform's own administrators manage; a bank's admin cannot extend it.",
+            "description": "The platform roles of platform staff, as key, kind and label: the seeded `platform_admin` and `library_editor`. Always empty in a bank's session, even for a member who is platform staff too, because a bank session never carries a platform grant; `contexts` says whether the console is one switch away. They are a platform vocabulary that only the platform's own administrators manage; a bank's admin cannot extend it.",
             "items": {
               "$ref": "#/components/schemas/RoleRef"
             },
@@ -14727,6 +14773,7 @@
           "roles",
           "permissions",
           "platformRoles",
+          "contexts",
           "enrolmentPending",
           "passkeyCount",
           "stepUpValidUntil",
@@ -14736,6 +14783,48 @@
           "headOf"
         ],
         "title": "Me",
+        "type": "object"
+      },
+      "MeContext": {
+        "description": "One place the person can work (D-122): a bank they are an active member of, or the\nplatform console when they hold a platform role. A session is in exactly one of them.",
+        "properties": {
+          "current": {
+            "description": "True for the context this session is in, false for every other one.",
+            "title": "Current",
+            "type": "boolean"
+          },
+          "tenantId": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The bank's permanent identifier, a UUID, or null for the platform console. Send it as `tenantId` to `POST /me/context` to move there.",
+            "title": "Tenantid"
+          },
+          "tenantName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The bank's own name, such as `Example Bank AB`, for display, or null for the platform console, which a screen names in the reader's own language.",
+            "title": "Tenantname"
+          }
+        },
+        "required": [
+          "tenantId",
+          "tenantName",
+          "current"
+        ],
+        "title": "MeContext",
         "type": "object"
       },
       "MeCounts": {
@@ -15133,6 +15222,7 @@
             "lastSeenAt": "2026-09-22T06:58:04Z",
             "name": "Sara Lindqvist",
             "passkeyCount": 2,
+            "platformStaff": false,
             "roles": [
               {
                 "key": "compliance_officer",
@@ -15182,6 +15272,11 @@
             "title": "Passkeycount",
             "type": "integer"
           },
+          "platformStaff": {
+            "description": "True when the same account also holds a platform role, so the person can work in the platform console as well as in this bank. Each of their sessions is in one place only, and their console session reads nothing of this bank; granting the role wrote `platform_role.assigned` in this bank's audit log. False for everyone else.",
+            "title": "Platformstaff",
+            "type": "boolean"
+          },
           "roles": {
             "description": "The roles the person holds in this bank, each as its stable key with a label in the reader's language; what they may do is the union of the permissions of these roles. Role keys come from the bank's own role list, a vocabulary its administrators extend with `POST /tenant/roles`: the system roles seeded on day one are `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, and a bank may have added more. Read `GET /tenant/roles` for the live set and store keys, never labels.",
             "items": {
@@ -15225,7 +15320,8 @@
           "lastSeenAt",
           "passkeyCount",
           "activeSessions",
-          "teams"
+          "teams",
+          "platformStaff"
         ],
         "title": "MemberOut",
         "type": "object"
@@ -15313,6 +15409,7 @@
                 "lastSeenAt": "2026-09-22T06:58:04Z",
                 "name": "Sara Lindqvist",
                 "passkeyCount": 2,
+                "platformStaff": false,
                 "roles": [
                   {
                     "key": "compliance_officer",
@@ -22110,6 +22207,13 @@
             "accessToken": "v2.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.8f14e45fceea467a9575b1d2c3e4f5a6.1790150400.ExampleSignatureThatNoServerWillAccept00000",
             "expiresIn": 600,
             "me": {
+              "contexts": [
+                {
+                  "current": true,
+                  "tenantId": "00000000-0000-4000-8000-00000000000a",
+                  "tenantName": "Example Bank AB"
+                }
+              ],
               "counts": {
                 "assignedToMe": 1,
                 "proposals": 2,
@@ -43756,7 +43860,7 @@
     },
     "/api/v1/auth/passkeys/register/verify": {
       "post": {
-        "description": "The second half of the registration ceremony: send the credential the browser returned\nfrom `navigator.credentials.create()`, in its JSON form, and optionally a name. The server\nchecks the challenge, the page's origin, the domain and that the person was verified,\nthen stores the passkey (its credential ID, public key, signature counter, transports,\nauthenticator model and backup flags) and answers 201 with it. With no name given it\nnames the passkey from the device; the person may rename it later.\n\nFrom an enrolment session this completes enrolment: the invitation is accepted, the\nperson becomes a member of the bank with the roles they were invited with, the account\nturns active and the emailed code stops working for good, the enrolment session is\nrevoked, and a full session starts with this response, its access token in the body and\nits refresh token as an `HttpOnly` cookie. A screen then offers a second passkey. From a\nfull session it adds a passkey and the session carries on; adding an authentication\nfactor needs a session younger than 5 minutes or a fresh passkey step-up.\n\nNeeds a session of either kind and no permission. It writes an enrolled entry to the\nsecurity log and the audit event `passkey.registered` with the name, how it was chosen,\nthe device type and the authenticator model; completing an enrolment also writes\n`session.revoked` and `session.created`.\n\nErrors: `challenge_expired` (400) when the challenge is unknown, used or older than its\nlifetime, and start again from the options call; `invalid_credential` (400) when the\ncredential cannot be read; `registration_failed` (400) when it does not verify or that\npasskey is already registered; `step_up_required` (403) when a full session is older\nthan the step-up window and holds no fresh assertion; `platform_account` (422) when a\nbank invitation reaches an account that has since become platform staff;\n`unauthenticated` (401) without a live session; `validation_error` (422) for a malformed\nbody.",
+        "description": "The second half of the registration ceremony: send the credential the browser returned\nfrom `navigator.credentials.create()`, in its JSON form, and optionally a name. The server\nchecks the challenge, the page's origin, the domain and that the person was verified,\nthen stores the passkey (its credential ID, public key, signature counter, transports,\nauthenticator model and backup flags) and answers 201 with it. With no name given it\nnames the passkey from the device; the person may rename it later.\n\nFrom an enrolment session this completes enrolment: the invitation is accepted, the\nperson becomes a member of the bank with the roles they were invited with, the account\nturns active and the emailed code stops working for good, the enrolment session is\nrevoked, and a full session starts with this response, its access token in the body and\nits refresh token as an `HttpOnly` cookie. A screen then offers a second passkey. From a\nfull session it adds a passkey and the session carries on; adding an authentication\nfactor needs a session younger than 5 minutes or a fresh passkey step-up.\n\nNeeds a session of either kind and no permission. It writes an enrolled entry to the\nsecurity log and the audit event `passkey.registered` with the name, how it was chosen,\nthe device type and the authenticator model; completing an enrolment also writes\n`session.revoked` and `session.created`.\n\nErrors: `challenge_expired` (400) when the challenge is unknown, used or older than its\nlifetime, and start again from the options call; `invalid_credential` (400) when the\ncredential cannot be read; `registration_failed` (400) when it does not verify or that\npasskey is already registered; `step_up_required` (403) when a full session is older\nthan the step-up window and holds no fresh assertion; `unauthenticated` (401) without a live session; `validation_error` (422) for a malformed\nbody.",
         "operationId": "passkeyRegisterVerify",
         "parameters": [],
         "requestBody": {
@@ -46965,7 +47069,7 @@
         ]
       },
       "post": {
-        "description": "Creates an organisation and, in the same transaction, invites the person who will\nrun it. Call it once per bank, when a new customer is being onboarded; there is no\nsecond step that turns the bank on.\n\nNeeds the platform permission `tenants.manage`. One call writes the organisation with\nits name and a short name derived from it; gives it the system roles and the starting\nset of its own lists, which its administrator may extend afterwards; and sends the\nfirst administrator an enrolment invitation carrying the system role that can invite\neveryone else. That person receives a one-time code by email, which stops working the\nmoment their first passkey exists; no password is ever created. The timezone, default\nlanguage and content languages are the bank's own to set afterwards, on its\nOrganisation profile screen (D-68): platform staff are never asked to guess at them,\nand the onboarding \"profile\" step stays open until the bank's administrator sets them.\nThe creation is recorded in the audit log as `tenant.created` with the whole profile,\nand the invitation is recorded against the new bank. If anything in the call is\nrefused, nothing at all is written.\n\nThe address must belong to the bank. Platform staff are separate accounts, and an\naddress that already carries a platform role is refused, because a console account\ninvited into a bank would carry the console's permissions into a bank session.\n\nAnswers 201 with the new bank's console row. Errors: a 422 for a blank name or an\naddress that belongs to platform staff, each with its own `code` and a message to\nshow; `permission_denied` without `tenants.manage`.",
+        "description": "Creates an organisation and, in the same transaction, invites the person who will\nrun it. Call it once per bank, when a new customer is being onboarded; there is no\nsecond step that turns the bank on.\n\nNeeds the platform permission `tenants.manage`. One call writes the organisation with\nits name and a short name derived from it; gives it the system roles and the starting\nset of its own lists, which its administrator may extend afterwards; and sends the\nfirst administrator an enrolment invitation carrying the system role that can invite\neveryone else. That person receives a one-time code by email, which stops working the\nmoment their first passkey exists; no password is ever created. The timezone, default\nlanguage and content languages are the bank's own to set afterwards, on its\nOrganisation profile screen (D-68): platform staff are never asked to guess at them,\nand the onboarding \"profile\" step stays open until the bank's administrator sets them.\nThe creation is recorded in the audit log as `tenant.created` with the whole profile,\nand the invitation is recorded against the new bank. If anything in the call is\nrefused, nothing at all is written.\n\nThe address may already belong to platform staff, the caller's own included (D-122): one\naccount may be a bank's member and platform staff, each session holding one zone's\npermissions only, and the bank's member list marks them.\n\nAnswers 201 with the new bank's console row. Errors: a 422 for a blank name or a\nmalformed address, each with its own `code` and a message to show;\n`permission_denied` without `tenants.manage`.",
         "operationId": "createConsoleTenant",
         "parameters": [],
         "requestBody": {
@@ -48963,6 +49067,44 @@
         "summary": "Find your comments and the ones that mention you",
         "tags": [
           "Collab"
+        ]
+      }
+    },
+    "/api/v1/me/context": {
+      "post": {
+        "description": "For a person who works in more than one place, a bank and the platform console or\nseveral banks (`contexts` in `GET /me`): end this session and start one in the other\nplace, and answer with its access token as sign-in does (`sessionKind` `full`). The\nrefresh cookie this response sets replaces the old one; drop the old access token, which\nstops working at once, and read `GET /me` again with the new one.\n\nA session is always in one place: a bank session holds only that bank's permissions and a\nconsole session only platform permissions, so nothing carries over, and neither does the\nstep-up. Each switch therefore needs its own passkey confirmation on the session it\nleaves, younger than 5 minutes; a stepped-up session can switch once.\n\nSelf-service: it needs a full session and no permission, and moves no one else. In the\nplace being left it revokes the old session, writing \"session_revoked\" to the security\nlog and the audit event `session.revoked`, both with the reason \"context_switched\". In\nthe place entered it writes a passkey \"signin\" to the security log with the same reason,\nand the audit events `session.created` and `session.context_switched`, the latter\ncarrying the step-up.\n\nErrors: `step_up_required` (403) without a fresh passkey assertion on this session;\n`not_found` (404) for a bank the person is not an active member of, the console for a\nperson without an active platform role, or the place this session is already in, and\nnothing is written; `validation_error` (422) when `tenantId` is missing or not a UUID or\nnull; `unauthenticated` (401) without a live session; `enrolment_only` (403) from an\nenrolment session; `support_read_only` (403) from a support session.",
+        "operationId": "switchContext",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContextSwitchBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionTokens"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Switch between your bank and the platform console",
+        "tags": [
+          "Identity"
         ]
       }
     },
@@ -55170,7 +55312,7 @@
         ]
       },
       "post": {
-        "description": "Sends an invitation to a work email address and answers it with the status\n`pending`. The mail carries a link that works for 72 hours; opening it\nemails a one-time code, and the person enrols a passkey with it. Only when that first\npasskey is stored do they become a member, with the roles and title given here. An open\ninvitation already sent to the same address by this bank is replaced and stops working.\nA deactivated member can be invited back this way and returns with the new roles.\n\nNeeds `members.manage` on a person's session in the bank. Records the audit event\n`invitation.created` with the roles and the expiry; the token is never recorded.\n\nErrors: `already_member` (409) when the address belongs to a current member;\n`unknown_key` (422) for a role key the bank does not have or has retired;\n`invalid_email` (422) for an address without an `@`; `platform_account` (422) when the\naddress belongs to platform staff, who never hold a bank membership;\n`validation_error` (422) for an empty role list or a field over its length;\n`permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a\nlive session.",
+        "description": "Sends an invitation to a work email address and answers it with the status\n`pending`. The mail carries a link that works for 72 hours; opening it\nemails a one-time code, and the person enrols a passkey with it. Only when that first\npasskey is stored do they become a member, with the roles and title given here. An open\ninvitation already sent to the same address by this bank is replaced and stops working.\nA deactivated member can be invited back this way and returns with the new roles.\n\nNeeds `members.manage` on a person's session in the bank. Records the audit event\n`invitation.created` with the roles and the expiry; the token is never recorded.\n\nErrors: `already_member` (409) when the address belongs to a current member;\n`unknown_key` (422) for a role key the bank does not have or has retired;\n`invalid_email` (422) for an address without an `@`; `validation_error` (422) for an empty role list or a field over its length;\n`permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a\nlive session.",
         "operationId": "inviteMember",
         "parameters": [],
         "requestBody": {
@@ -55332,7 +55474,7 @@
     },
     "/api/v1/tenant/members/{user_id}/reissue-enrolment": {
       "post": {
-        "description": "The only way back in for a member who lost every passkey, and the way to lock out a\npasskey that may be compromised. It retires every passkey the person holds, ends every\nsession they have, in this bank and in any other, sets them back to `invited`, and\nemails them a re-enrolment link that works for 72 hours, keeping their\nroles and title. Every other member holding `members.manage`, apart from the caller, is\ntold by email. The person enrols a new passkey through the link exactly as at their first\nenrolment. Answers 202 with `{}` once the mails are queued.\n\nNeeds `members.manage` and a passkey step-up on this session younger than\n5 minutes. Writes \"reenrolment_issued\" and a \"session_revoked\" entry per\nended session to the security log, and the audit events `session.revoked`,\n`enrolment.reissued` for the new invitation and `member.enrolment_reissued` with how many\nsessions and passkeys were affected and the step-up assertion.\n\nErrors: `step_up_required` (403) without a fresh step-up, which the screen answers by\nopening the passkey prompt and retrying; `not_found` (404) when the person is not a\ncurrent member; `platform_account` (422) when the address belongs to platform staff;\n`permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a\nlive session.",
+        "description": "The only way back in for a member who lost every passkey, and the way to lock out a\npasskey that may be compromised. It retires every passkey the person holds, ends every\nsession they have, in this bank and in any other, sets them back to `invited`, and\nemails them a re-enrolment link that works for 72 hours, keeping their\nroles and title. Every other member holding `members.manage`, apart from the caller, is\ntold by email. The person enrols a new passkey through the link exactly as at their first\nenrolment. Answers 202 with `{}` once the mails are queued.\n\nNeeds `members.manage` and a passkey step-up on this session younger than\n5 minutes. Writes \"reenrolment_issued\" and a \"session_revoked\" entry per\nended session to the security log, and the audit events `session.revoked`,\n`enrolment.reissued` for the new invitation and `member.enrolment_reissued` with how many\nsessions and passkeys were affected and the step-up assertion.\n\nErrors: `step_up_required` (403) without a fresh step-up, which the screen answers by\nopening the passkey prompt and retrying; `not_found` (404) when the person is not a\ncurrent member; `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a\nlive session.",
         "operationId": "reissueEnrolment",
         "parameters": [
           {

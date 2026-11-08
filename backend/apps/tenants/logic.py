@@ -21,7 +21,6 @@ from apps.identity import invitation_logic, roles_logic
 from apps.identity.models import (
     Invitation,
     Membership,
-    PlatformRoleAssignment,
     User,
     WebAuthnCredential,
 )
@@ -453,14 +452,6 @@ def create_tenant(
     if not cleaned_name:
         raise ValidationError("Give the organisation a name.", code="name_required")
     email = invitation_logic.normalise_email(first_admin_email)
-    # Platform staff are separate accounts, the same rule bootstrap_platform enforces from
-    # the other side: a platform role holder invited into a bank would carry the console's
-    # permissions into a bank session.
-    if PlatformRoleAssignment.objects.filter(user__email=email).exists():
-        raise ValidationError(
-            "That address belongs to platform staff. Invite the bank's administrator with an address of their own.",
-            code="platform_account",
-        )
     tenant = _create_with_derived_slug(cleaned_name)
     # Platform staff have no bypass (playbook 14): the one tenant this call activates is
     # the one it has just written, so no other tenant's rows are readable or writable here.

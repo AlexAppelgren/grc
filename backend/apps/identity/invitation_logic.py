@@ -27,7 +27,6 @@ from apps.identity.models import (
     LoginMethod,
     Membership,
     MembershipRole,
-    PlatformRoleAssignment,
     TenantRole,
     User,
     UserStatus,
@@ -111,47 +110,6 @@ def has_live_passkey(user: User) -> bool:
     return WebAuthnCredential.objects.filter(user=user, retired_at__isnull=True).exists()
 
 
-PLATFORM_ACCOUNT_REFUSAL = (
-    "That address belongs to platform staff, who sign in with an account of their own. "
-    "Invite this person with a work address the platform does not use."
-)
-
-
-def holds_a_platform_role(user: User) -> bool:
-    """True when the account holds any platform role assignment, whether or not that role
-    row is still active (a retired role can be brought back, and the account is platform
-    staff either way). Read without the identity-lookup flag: platform_role_assignment
-    belongs to no tenant and carries no row-level security, so the flag would only add two
-    set_config queries and a transaction to every invitation. `build_principal` reads the
-    same table the same way."""
-    return PlatformRoleAssignment.objects.filter(user=user).exists()
-
-
-def refuse_platform_account(user: User) -> None:
-    """A bank invitation never goes to platform staff (ID-01, ADM-02, hardening H13), and
-    never becomes a membership: `bootstrap_platform` refuses an address a bank knows, and
-    this refuses the other direction, at creation and again at acceptance, since a role
-    can be granted in between. One account holding both zones' grants is what keeps them
-    two zones."""
-    if holds_a_platform_role(user):
-        raise ValidationError(PLATFORM_ACCOUNT_REFUSAL, code="platform_account")
-
-
-def belongs_to_a_tenant(user: User) -> bool:
-    """True when any bank knows this person: a membership, active or deactivated (a
-    deactivated member can be invited back), or a bank invitation not yet accepted or
-    revoked (an expired one counts, because the bank can resend it). bootstrap_platform
-    refuses such a person, since platform staff are separate accounts: a platform role on
-    a bank member's account would reach into their bank session."""
-    with tenancy.identity_lookup():
-        return (
-            Membership.objects.filter(user=user).exists()
-            or Invitation.objects.filter(
-                tenant__isnull=False, email=user.email, accepted_at__isnull=True, revoked_at__isnull=True
-            ).exists()
-        )
-
-
 # ---------------------------------------------------------------------------------------
 # Creating, resending, revoking
 # ---------------------------------------------------------------------------------------
@@ -182,8 +140,6 @@ def create_invitation(
     cleaned = normalise_email(email)
     now = timezone.now()
     user = get_or_create_user(cleaned)
-    if tenant is not None:
-        refuse_platform_account(user)
     if kind is InvitationKind.INVITE and tenant is not None:
         if Membership.objects.filter(tenant=tenant, user=user, deactivated_at__isnull=True).exists():
             raise ValidationError("That person is already a member.", code="already_member")
@@ -291,11 +247,9 @@ def open_invitation(token: str, request: HttpRequest | None) -> Invitation:
 def accept_invitation(invitation: Invitation, user: User, now: datetime) -> Membership | None:
     """Called when the first passkey is stored: mark accepted and, for a tenant
     invitation, create the membership with the invited roles (a re-enrolment keeps the
-    existing membership). The caller has activated the invitation's tenant."""
-    if invitation.tenant_id is not None:
-        # A platform role granted after the invitation was sent: refuse before anything is
-        # written, so the enrolment leaves no membership behind (hardening H13).
-        refuse_platform_account(user)
+    existing membership). The caller has activated the invitation's tenant. Platform staff
+    may accept one too (D-122): the membership's grants are read only in this bank's
+    sessions."""
     invitation.accepted_at = now
     invitation.accepted_user = user
     invitation.save(update_fields=["accepted_at", "accepted_user"])

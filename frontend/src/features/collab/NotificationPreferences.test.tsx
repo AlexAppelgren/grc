@@ -25,6 +25,7 @@ function me(notificationPrefs: NotificationPrefs | null): Me {
     roles: [],
     permissions: [],
     platformRoles: [],
+    contexts: [],
     enrolmentPending: false,
     passkeyCount: 1,
     stepUpValidUntil: null,

@@ -35,6 +35,7 @@
   "shell.accountFor": "{name}, kontomeny",
   "shell.orgRoles": "{organisation} · {roles}",
   "shell.console": "Plattformskonsol",
+  "shell.workIn": "Arbeta i",
   "sidebar.collapse": "Minimera menyn",
   "sidebar.expand": "Visa menyn",
   "nav.admin.vocabularies": "Vokabulärer",

@@ -34,6 +34,7 @@ vi.mock('@/features/identity/hooks', () => ({
   useSession: () => ({ status: 'signed-in', me: session.me, error: null, refetch: () => {} }),
   useSignOut: () => ({ mutate: vi.fn(), isPending: false }),
   useSetLanguage: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  useSwitchContext: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 vi.mock('@/features/tenant-admin/hooks', () => ({
@@ -49,6 +50,7 @@ function me(unreadNotifications: number | null): Me {
     roles: [{ key: 'officer', kind: null, label: 'Compliance officer' }],
     permissions: ['watch.read', 'library.read'],
     platformRoles: [],
+    contexts: [],
     headOf: [],
     enrolmentPending: false,
     passkeyCount: 1,

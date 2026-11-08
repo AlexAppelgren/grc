@@ -17,7 +17,11 @@ A support session (TEN-06, ADR 0042) is minted here and nowhere else: a platform
 enters one bank under a grant it approved, and the session activates that bank exactly as a
 member's does, then re-reads the grant under the bank's own policies on every request. The
 one window onto a grant before any bank is active, `app.platform_user_id`, is also set here
-and nowhere else (`own_grants`); `apps/shared/tests_support_session.py` pins both."""
+and nowhere else (`own_grants`); `apps/shared/tests_support_session.py` pins both.
+
+One account may be a bank's member and platform staff (D-122, ADR 0067), but a session is in
+one zone: `switch_context` is how the person moves, behind a fresh step-up, to a new session
+in another context they hold (`held_banks`, `holds_platform`)."""
 
 from __future__ import annotations
 
@@ -134,17 +138,30 @@ def clear_refresh_cookie(response: HttpResponse) -> None:
 # ---------------------------------------------------------------------------------------
 # Creating sessions
 # ---------------------------------------------------------------------------------------
-def choose_tenant(user: User) -> uuid.UUID | None:
-    """The tenant a full session binds to: the person's oldest active membership (R1 has no
-    tenant switcher); platform staff without one get a platform session."""
+def held_banks(user: User) -> list[tuple[uuid.UUID, str]]:
+    """The banks the person is an active member of, as (id, name), oldest membership first.
+    Read through the identity lookup: under a bank's zone the person's other memberships do
+    not show."""
     with tenancy.identity_lookup():
-        membership = (
+        return list(
             Membership.objects.filter(user=user, deactivated_at__isnull=True)
             .order_by("created_at", "id")
-            .values_list("tenant_id", flat=True)
-            .first()
+            .values_list("tenant_id", "tenant__name")
         )
-    return membership
+
+
+def holds_platform(user: User) -> bool:
+    """Whether the person holds an active platform role, which is what a console session of
+    theirs reads (`_session_reads`, `platform_grants`)."""
+    return PlatformRoleAssignment.objects.filter(user=user, role__active=True).exists()
+
+
+def choose_tenant(user: User) -> uuid.UUID | None:
+    """The tenant a full session binds to at sign-in: the person's oldest active membership;
+    platform staff without one get a platform session. Another context is one switch away
+    (`switch_context`)."""
+    banks = held_banks(user)
+    return banks[0][0] if banks else None
 
 
 def create_session(
@@ -239,9 +256,10 @@ def build_principal(session: UserSession) -> Principal | None:
     tenant session reads the membership's role rows and keeps what `TENANT_PERMISSIONS`
     names, so a row written around the seeds and the role editor cannot smuggle
     `proposals.review` past the library fence; a platform session reads the platform
-    assignments and keeps what `PLATFORM_PERMISSIONS` names. Platform staff are separate
-    accounts (bootstrap_platform and every bank invitation refuse an address the other
-    zone knows), so a platform grant is never read in a bank session at all."""
+    assignments and keeps what `PLATFORM_PERMISSIONS` names. One account may hold both
+    (D-122, ADR 0067), and still a platform grant is never read in a bank session, nor a
+    membership's in a platform session: the query reads one zone's grants by the
+    session's own `tenant_id`."""
     if not hasattr(session, "tenant_grants"):
         loaded = _read_session(session.id)
         if loaded is None:
@@ -455,6 +473,61 @@ def create_support_session(
         after={"kind": session.kind, "expiresAt": session.expires_at.isoformat(), "grantId": str(grant.id)},
     )
     return SessionBundle(session=session, access_token=access_token, expires_in=expires_in, refresh_value=refresh_value)
+
+
+# ---------------------------------------------------------------------------------------
+# Switching context (D-122, ADR 0067)
+# ---------------------------------------------------------------------------------------
+CONTEXT_SWITCHED = "context_switched"
+
+
+def switch_context(
+    *, principal: Principal, tenant_id: uuid.UUID | None, step_up_assertion_id: uuid.UUID, request: HttpRequest
+) -> SessionBundle:
+    """Replace the caller's full session with one in another context they hold: a bank they
+    are an active member of (`tenant_id`), or the console (None) when they hold an active
+    platform role. The route has already demanded a fresh step-up on the current session;
+    the assertion stays with that session, so each switch costs one.
+
+    The old session is revoked in its own zone first, then the zone is changed and the new
+    session written there, so neither zone ever holds the other's session row. A context the
+    person does not hold, or the one they are in, is a 404 and writes nothing. The security
+    log records a passkey sign-in to the new zone with the reason `context_switched`; the
+    audit trail records the revocation in the old zone and the switch, with the step-up, in
+    the new one, naming no other bank."""
+    user = principal.user or User.objects.get(pk=principal.subject_id)
+    held = holds_platform(user) if tenant_id is None else any(bank == tenant_id for bank, _ in held_banks(user))
+    if not held or tenant_id == principal.tenant_id:
+        raise ValidationError("Not found.", code="not_found")
+    actor = actor_of(user)
+    assert principal.session_id is not None  # a person's session always names itself
+    old = UserSession.objects.select_related("user").get(pk=principal.session_id, user=user)
+    revoke_session(old, reason=CONTEXT_SWITCHED, actor=actor, request=request)
+    if tenant_id is None:
+        tenancy.clear_tenant()
+    bundle = create_session(user=user, kind=SessionKind.FULL, tenant_id=tenant_id, request=request)
+    log_event(
+        event=LoginEventKind.SIGNIN,
+        method=LoginMethod.PASSKEY,
+        success=True,
+        request=request,
+        user=user,
+        tenant_id=tenant_id,
+        failure_reason=CONTEXT_SWITCHED,
+    )
+    record(
+        action="session.context_switched",
+        actor=actor,
+        subject_type="user_session",
+        subject_id=bundle.session.id,
+        subject_title=user.name,
+        summary="Switched to the platform console." if tenant_id is None else "Switched to this bank.",
+        tenant_id=tenant_id,
+        before={"sessionId": str(old.id)},
+        after={"sessionId": str(bundle.session.id)},
+        step_up_assertion_id=step_up_assertion_id,
+    )
+    return bundle
 
 
 # ---------------------------------------------------------------------------------------

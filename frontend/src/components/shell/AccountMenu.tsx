@@ -8,17 +8,18 @@ import { useId, useState } from 'react';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { BellIcon, showsAccountLink, UnreadCount, useUnreadCount, withUnread } from '@/features/collab/NotificationBell';
 import { isDemoFrame } from '@/features/demo/frame';
-import { useSession, useSetLanguage, useSignOut } from '@/features/identity/hooks';
+import { useSession, useSetLanguage, useSignOut, useSwitchContext } from '@/features/identity/hooks';
 import type { Me } from '@/features/identity/types';
 import { useLanguages } from '@/features/tenant-admin/hooks';
 import type { LanguageRef } from '@/features/tenant-admin/types';
 import { isLocale } from '@/shared/i18n';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
-import { ACCOUNT_PARENT, childDestinations, PUBLIC_HOME } from '@/shared/navigation/registry';
+import { ACCOUNT_PARENT, childDestinations, homeOf, PUBLIC_HOME } from '@/shared/navigation/registry';
 
 // The signed-in person as one quiet row in the rail's footer: name, then
-// organisation and roles, and a menu for my passkeys, my sessions, the
-// interface language and sign out, with Notifications first and the unread
+// organisation and roles, and a menu for my passkeys, my sessions, where to
+// work (for a person who holds a bank and the console, D-122), the interface
+// language and sign out, with Notifications first and the unread
 // dot on the row's icon (NotificationBell.tsx). No avatar, no bordered card (the "who"
 // panel it replaces). The prototype's "Switch user" never ships
 // (design/README.md). Below 1024 px the More sheet lays the same account out
@@ -62,6 +63,32 @@ export function useInterfaceLanguages(): { options: LanguageRef[]; choose: (key:
   };
 }
 
+/** The radio value of the platform console; a bank's is its id, a UUID, which never reads this. */
+const CONSOLE_CONTEXT = 'console';
+
+/**
+ * Where a person can work and the switch between them (D-122), shared by the
+ * rail's menu and the More sheet. Offered only to someone who holds more than
+ * one place; a bank reads its own name, the console the catalog's. Choosing
+ * another place runs the passkey step-up (the api client opens the prompt on
+ * the route's 403 step_up_required and retries), then loads that place's home.
+ */
+export function useContextSwitch(): { options: { value: string; label: string }[]; current: string; choose: (value: string) => void; pending: boolean } {
+  const t = useT();
+  const { me } = useSession();
+  const switchContext = useSwitchContext((tenantId) => window.location.assign(homeOf({ tenant: tenantId === null ? null : { id: tenantId } })));
+  const contexts = me?.contexts ?? [];
+  const current = contexts.find((row) => row.current)?.tenantId ?? CONSOLE_CONTEXT;
+  return {
+    options: contexts.length > 1 ? contexts.map((row) => ({ value: row.tenantId ?? CONSOLE_CONTEXT, label: row.tenantName ?? t('shell.console') })) : [],
+    current,
+    choose: (value) => {
+      if (value !== current) switchContext.mutate(value === CONSOLE_CONTEXT ? null : value);
+    },
+    pending: switchContext.isPending,
+  };
+}
+
 /**
  * Signs out, then leaves for the public page whatever the server answered. The rail's menu and the More sheet share it.
  * In the public page's demo there is no session to end, so it starts the demo over at Today instead of framing the page in itself.
@@ -79,6 +106,8 @@ export function AccountMenu() {
   const { isCompact } = useSidebar();
   const { pending, signOut } = useSignOutToPublicPage();
   const languages = useInterfaceLanguages();
+  const contexts = useContextSwitch();
+  const contextLabel = useId();
   const languageLabel = useId();
   const languageError = useId();
   const unread = useUnreadCount();
@@ -144,6 +173,27 @@ export function AccountMenu() {
               </DropdownMenu.Item>
             ))}
             <DropdownMenu.Separator className="mx-1 my-1 h-px bg-sidebar-border" />
+            {contexts.options.length > 1 ? (
+              <>
+                <DropdownMenu.Label id={contextLabel} className="px-2 py-1.5 text-meta text-sidebar-muted-foreground">
+                  {t('shell.workIn')}
+                </DropdownMenu.Label>
+                <DropdownMenu.RadioGroup aria-labelledby={contextLabel} value={contexts.current} onValueChange={contexts.choose}>
+                  {contexts.options.map((row) => (
+                    // Closes on a choice: the passkey prompt opens next.
+                    <DropdownMenu.RadioItem key={row.value} value={row.value} disabled={contexts.pending} className={`${MENU_ITEM} justify-between gap-2`}>
+                      {row.label}
+                      <DropdownMenu.ItemIndicator>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4 fill-current">
+                          <circle cx="12" cy="12" r="4" />
+                        </svg>
+                      </DropdownMenu.ItemIndicator>
+                    </DropdownMenu.RadioItem>
+                  ))}
+                </DropdownMenu.RadioGroup>
+                <DropdownMenu.Separator className="mx-1 my-1 h-px bg-sidebar-border" />
+              </>
+            ) : null}
             {languages.options.length > 1 ? (
               <>
                 <DropdownMenu.Label id={languageLabel} className="px-2 py-1.5 text-meta text-sidebar-muted-foreground">

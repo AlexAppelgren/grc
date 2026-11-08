@@ -9,7 +9,7 @@ passkeyAuthenticateOptions, passkeyAuthenticateVerify, stepUpOptions, stepUpVeri
 refreshSession, signOut, updateMe, renameMyPasskey, removeMyPasskey, revokeMySession,
 inviteMember, updateMember, deactivateMember, revokeMemberSessions, reissueEnrolment,
 resendInvitation, revokeInvitation, createRole, updateRole, retireRole, createApiKey,
-revokeApiKey, markVisit, createAgentAccessKey, createMyToken, revokeMyToken.
+revokeApiKey, markVisit, createAgentAccessKey, createMyToken, revokeMyToken, switchContext.
 
 The ceremonies run for real against py_webauthn through the software authenticator in
 tests_webauthn_support.py; the emailed link and code are read from the mock mailer.
@@ -1003,27 +1003,19 @@ class IdentityScenarioTests(ScenarioTestCase):
     def test_id_s30(self) -> None:
         """ID-S30
 
-        A bank invitation never reaches platform staff (ID-01, ID-02, ID-03).
+        Platform staff may be a bank's member too (ID-01, ID-02, ID-03, D-122).
         """
-        # At invitation: an address that already holds a platform role is turned away and
-        # no invitation row is written.
+        # At invitation: an address that already holds a platform role is invited like
+        # anyone else.
         staff = factories.platform_user(roles=("library_editor",), email="editor@platform.example")
-        refused = self.client.post(
-            "/api/v1/tenant/members",
-            data={"email": staff.email, "roleKeys": ["reader"]},
-            content_type="application/json",
-            **sign_in(self.admin, tenant=self.tenant),
-        )
-        self.assertEqual(refused.status_code, 422, refused.content)
-        self.assertEqual(refused.json()["code"], "platform_account")
+        invited = self._post("/tenant/members", {"email": staff.email, "roleKeys": ["reader"]}, **sign_in(self.admin, tenant=self.tenant))
+        self.assertEqual(invited.status_code, 201, invited.content)
+        self.assertEqual(MockMailer.sent[-1].to, staff.email)
         self.activate(self.tenant)
-        self.assertFalse(Invitation.objects.filter(tenant=self.tenant, email=staff.email).exists())
+        self.assertTrue(Invitation.objects.filter(tenant=self.tenant, email=staff.email).exists())
 
-        # At enrolment: the platform role arrived after the invitation went out. The
-        # ceremony has to refuse before the credential is stored, because a 422 is built
-        # inside the view and the request's transaction still commits: a credential
-        # written first would stay behind with no audit row, and the account would hold a
-        # live passkey it cannot sign in with and an emailed code that no longer works.
+        # At enrolment: the platform role arrived after the invitation went out, and the
+        # enrolment goes through into the bank.
         _, token = self._invite("late@bank.example")
         code = self._open_and_get_code(token)
         late = User.objects.get(email="late@bank.example")
@@ -1032,13 +1024,16 @@ class IdentityScenarioTests(ScenarioTestCase):
         verified = self._verify_code("late@bank.example", code)
         self.assertEqual(verified.status_code, 200, verified.content)
         registered = self._register(verified.json()["accessToken"], SoftwareAuthenticator())
-        self.assertEqual(registered.status_code, 422, registered.content)
-        self.assertEqual(registered.json()["code"], "platform_account")
-        self.assertEqual(WebAuthnCredential.objects.filter(user=late).count(), 0)
-        late.refresh_from_db()
-        self.assertNotEqual(late.status, UserStatus.ACTIVE.value)
+        self.assertEqual(registered.status_code, 201, registered.content)
+        self.assertEqual(WebAuthnCredential.objects.filter(user=late).count(), 1)
         self.activate(self.tenant)
-        self.assertFalse(Membership.objects.filter(tenant=self.tenant, user=late).exists())
+        self.assertTrue(Membership.objects.filter(tenant=self.tenant, user=late, deactivated_at__isnull=True).exists())
+        # The full session is the bank's and carries the membership's grants alone.
+        me = self.client.get("/api/v1/me", **self._bearer(registered.json()["accessToken"])).json()
+        self.assertEqual(me["tenant"]["id"], str(self.tenant.id))
+        self.assertEqual(me["platformRoles"], [])
+        self.assertTrue(set(me["permissions"]) <= perms.TENANT_PERMISSIONS)
+        self.assertNotIn(perms.PROPOSALS_REVIEW, me["permissions"])
 
     def test_id_s31(self) -> None:
         """ID-S31
@@ -1224,6 +1219,234 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertIn("2 passkey(s) retired", out.getvalue())
         self.assertIn("platform roles: library_editor, platform_admin\n", out.getvalue())
         self.assertIn("/invite#", out.getvalue())
+
+    # --- D-122: one account, both zones, one zone per session ------------------------------
+    def _dual(self, email: str = "alex@bank.example") -> tuple[User, SoftwareAuthenticator]:
+        """A bank admin of `self.tenant` who is a platform admin too, with a real passkey."""
+        user = factories.member(self.tenant, roles=("admin",), user_row=factories.user(email=email, name="Alex Berg")).user
+        roles_logic.ensure_platform_roles()
+        PlatformRoleAssignment.objects.create(user=user, role=PlatformRole.objects.get(key="platform_admin"))
+        return user, self._admin_with_passkey(user)
+
+    def _switch(self, access_token: str, tenant_id: Any) -> Any:
+        return self._post("/me/context", {"tenantId": None if tenant_id is None else str(tenant_id)}, **self._bearer(access_token))
+
+    def test_id_s34(self) -> None:
+        """ID-S34
+
+        A person who works in a bank and the console switches between them with a passkey (ID-04, ID-06, ID-11, D-122).
+        """
+        user, authenticator = self._dual()
+        signed_in = self._sign_in(authenticator)
+        self.assertEqual(signed_in.status_code, 200, signed_in.content)
+        bank_token = signed_in.json()["accessToken"]
+        me = self.client.get("/api/v1/me", **self._bearer(bank_token)).json()
+        self.assertEqual(me["tenant"]["id"], str(self.tenant.id))
+        self.assertEqual(
+            me["contexts"],
+            [{"tenantId": str(self.tenant.id), "tenantName": self.tenant.name, "current": True}, {"tenantId": None, "tenantName": None, "current": False}],
+        )
+
+        # Without a fresh step-up nothing moves.
+        refused = self._switch(bank_token, None)
+        self.assertEqual(refused.status_code, 403, refused.content)
+        self.assertEqual(refused.json()["code"], "step_up_required")
+        self.assertEqual(self.client.get("/api/v1/me", **self._bearer(bank_token)).status_code, 200)
+
+        # Stepped up, the switch answers a console session like a sign-in.
+        self.assertEqual(self._step_up(bank_token, authenticator).status_code, 200)
+        self.activate(self.tenant)
+        bank_session = UserSession.objects.get(user=user, tenant=self.tenant, revoked_at__isnull=True)
+        # The audit-asserting client counts rows in the zone the test stands in, which the
+        # switch leaves for the console: count from there.
+        tenancy.clear_tenant()
+        switched = self._switch(bank_token, None)
+        self.assertEqual(switched.status_code, 200, switched.content)
+        self.assertEqual(switched.json()["sessionKind"], "full")
+        self.assertIn(COOKIE, switched.cookies)
+        self.assertTrue(switched.cookies[COOKIE]["httponly"])
+        self.assertEqual(switched.cookies[COOKIE]["samesite"], "Strict")
+        console_token = switched.json()["accessToken"]
+        console_me = self.client.get("/api/v1/me", **self._bearer(console_token)).json()
+        self.assertIsNone(console_me["tenant"])
+        self.assertEqual([role["key"] for role in console_me["platformRoles"]], ["platform_admin"])
+        self.assertEqual([row["current"] for row in console_me["contexts"]], [False, True])
+        # The bank session is over, and so is its token.
+        self.activate(self.tenant)
+        bank_session.refresh_from_db()
+        self.assertEqual(bank_session.revoked_reason, "context_switched")
+        self.assertEqual(self.client.get("/api/v1/me", **self._bearer(bank_token)).status_code, 401)
+        # The new cookie refreshes the console session (from no bank, as a request starts).
+        tenancy.clear_tenant()
+        refreshed = self._post("/auth/refresh", **self._cookie(switched.cookies[COOKIE].value))
+        self.assertEqual(refreshed.status_code, 200, refreshed.content)
+        self.assertIsNone(refreshed.json()["me"]["tenant"])
+        # The security log: a passkey sign-in to the console; the audit: the revocation in
+        # the bank, the switch with its step-up in the console.
+        tenancy.clear_tenant()
+        console_session = UserSession.objects.get(user=user, tenant__isnull=True, revoked_at__isnull=True)
+        signin = LoginEvent.objects.get(user=user, event="signin", failure_reason="context_switched")
+        self.assertIsNone(signin.tenant_id)
+        switch_row = AuditEvent.objects.get(action="session.context_switched", subject_id=console_session.id)
+        self.assertIsNone(switch_row.tenant_id)
+        self.assertIsNotNone(switch_row.step_up_assertion_id)
+        self.assertEqual(switch_row.before, {"sessionId": str(bank_session.id)})
+        self.activate(self.tenant)
+        revoked_row = AuditEvent.objects.get(action="session.revoked", subject_id=bank_session.id)
+        self.assertEqual((revoked_row.tenant_id, revoked_row.after), (self.tenant.id, {"reason": "context_switched"}))
+
+        # The step-up stayed with the bank session: going back needs a new one.
+        again = self._switch(console_token, self.tenant.id)
+        self.assertEqual(again.status_code, 403, again.content)
+        self.assertEqual(again.json()["code"], "step_up_required")
+        self.assertEqual(self._step_up(console_token, authenticator).status_code, 200)
+        back = self._switch(console_token, self.tenant.id)
+        self.assertEqual(back.status_code, 200, back.content)
+        back_me = self.client.get("/api/v1/me", **self._bearer(back.json()["accessToken"])).json()
+        self.assertEqual(back_me["tenant"]["id"], str(self.tenant.id))
+        self.assertIsNone(back_me["stepUpValidUntil"], "a switch is not a step-up")
+        tenancy.clear_tenant()
+        console_session.refresh_from_db()
+        self.assertEqual(console_session.revoked_reason, "context_switched")
+        self.assertEqual(self.client.get("/api/v1/me", **self._bearer(console_token)).status_code, 401)
+
+    def test_id_s35(self) -> None:
+        """ID-S35
+
+        Each session of an account in both zones holds its own zone's grants only (ID-09, D-122).
+        """
+        user, _ = self._dual()
+        bank = sign_in(user, tenant=self.tenant)
+        refused = self.client.get("/api/v1/console/tenants", **bank)
+        self.assertEqual(refused.status_code, 403, refused.content)
+        me = self.client.get("/api/v1/me", **bank).json()
+        self.assertEqual(me["platformRoles"], [])
+        self.assertFalse(set(me["permissions"]) & perms.PLATFORM_PERMISSIONS)
+        self.assertIn(perms.MEMBERS_MANAGE, me["permissions"])
+
+        console = sign_in(user, tenant=None)
+        self.assertEqual(self.client.get("/api/v1/tenant", **console).status_code, 404)
+        self.assertEqual(self.client.get("/api/v1/tenant/members", **console).status_code, 403)
+        me = self.client.get("/api/v1/me", **console).json()
+        self.assertIsNone(me["tenant"])
+        self.assertEqual(me["roles"], [])
+        self.assertFalse(set(me["permissions"]) & perms.TENANT_PERMISSIONS)
+        self.assertIn(perms.TENANTS_MANAGE, me["permissions"])
+
+    def test_id_s36(self) -> None:
+        """ID-S36
+
+        A switch reaches only a place the person holds (ID-06, D-122).
+        """
+        other = factories.tenant(slug="other-bank")
+        left = factories.tenant(slug="left-bank")
+        membership = factories.member(left, roles=("reader",), user_row=self.admin)
+        membership.deactivated_at = timezone.now()
+        membership.save(update_fields=["deactivated_at"])
+        headers = sign_in(self.admin, tenant=self.tenant, step_up=True)
+        token = headers["HTTP_AUTHORIZATION"].split(" ", 1)[1]
+        sessions_before = UserSession.objects.filter(user=self.admin).count()
+        for target in (None, other.id, left.id, self.tenant.id):
+            with self.subTest(target=target):
+                refused = self._switch(token, target)
+                self.assertEqual(refused.status_code, 404, refused.content)
+                self.assertEqual(refused.json()["code"], "not_found")
+        self.activate(self.tenant)
+        self.assertEqual(UserSession.objects.filter(user=self.admin).count(), sessions_before)
+        me = self.client.get("/api/v1/me", **headers).json()
+        self.assertEqual(me["contexts"], [{"tenantId": str(self.tenant.id), "tenantName": self.tenant.name, "current": True}])
+        # The body says where, always: a missing tenantId is not read as the console.
+        missing = self._post("/me/context", {}, **headers)
+        self.assertEqual(missing.status_code, 422, missing.content)
+
+    def test_id_s37(self) -> None:
+        """ID-S37
+
+        The bank sees a member who is platform staff (ID-09, ID-11, AUD-01, D-122).
+        """
+        anna = factories.member(self.tenant, roles=("reader",), user_row=factories.user(email=ANNA, name="Anna Berg")).user
+        factories.passkey(anna)
+        sign_in(anna, tenant=self.tenant)
+        MockMailer.reset()
+        out = StringIO()
+        call_command("bootstrap_platform", "--admin-email", ANNA, "--role", "library_editor", stdout=out)
+        self.assertEqual(list(PlatformRoleAssignment.objects.filter(user=anna).values_list("role__key", flat=True)), ["library_editor"])
+        self.assertEqual(MockMailer.sent, [], "an enrolled member switches; no invitation is needed")
+        self.assertIn("no invitation sent", out.getvalue())
+        tenancy.clear_tenant()
+        self.assertFalse(Invitation.objects.filter(email=ANNA, tenant__isnull=True).exists())
+        self.assertEqual(AuditEvent.objects.filter(action="platform_role.assigned", subject_id=anna.id, tenant__isnull=True).count(), 1)
+        self.activate(self.tenant)
+        in_bank = AuditEvent.objects.get(action="platform_role.assigned", subject_id=anna.id, tenant=self.tenant)
+        self.assertEqual(in_bank.after["role"], "library_editor")
+
+        # Admin > Members marks Anna, and nobody else.
+        listed = self.client.get("/api/v1/tenant/members", **sign_in(self.admin, tenant=self.tenant)).json()["items"]
+        self.assertEqual({row["email"] for row in listed if row["platformStaff"]}, {ANNA})
+        detail = self.client.put(
+            f"/api/v1/tenant/members/{anna.id}/teams", data={"teams": []}, content_type="application/json", **sign_in(self.admin, tenant=self.tenant)
+        )
+        self.assertTrue(detail.json()["platformStaff"], detail.content)
+
+        # Re-enrolment from the shell, which stands in no bank, ends her bank session too, and
+        # the bank is told.
+        tenancy.clear_tenant()
+        call_command("bootstrap_platform", "--admin-email", ANNA, "--reenrol", stdout=StringIO())
+        self.activate(self.tenant)
+        self.assertFalse(UserSession.objects.filter(user=anna, tenant=self.tenant, revoked_at__isnull=True).exists())
+        reissued = AuditEvent.objects.get(action="platform_staff.enrolment_reissued", subject_id=anna.id, tenant=self.tenant)
+        self.assertEqual(reissued.after, {"sessionsRevoked": 1, "passkeysRetired": 1})
+
+    def test_id_s38(self) -> None:
+        """ID-S38
+
+        Four eyes holds across the two zones of one account (ID-06, TEN-06, PRO-02, D-122).
+        """
+        from apps.library.seeds import seed_jurisdictions
+        from apps.proposals.models import Proposal, ProposalStatus
+        from apps.taxonomy.seeds import seed_library_vocabularies
+        from apps.tenants.models import SupportAccess
+
+        user, _ = self._dual()
+        PlatformRoleAssignment.objects.create(user=user, role=PlatformRole.objects.get(key="library_editor"))
+        self.activate(self.tenant)
+        membership = Membership.objects.get(tenant=self.tenant, user=user)
+        for role in roles_logic.roles_by_keys(self.tenant.id, ["compliance_officer"]):
+            membership.roles.add(role, through_defaults={"tenant": self.tenant})
+
+        # Support access asked for from the console, approved from the bank: refused.
+        console = sign_in(user, tenant=None)
+        requested = self._post(
+            f"/console/tenants/{self.tenant.id}/support-access", {"purpose": "The watch feed stopped updating.", "hours": 2}, **console
+        )
+        self.assertEqual(requested.status_code, 201, requested.content)
+        grant = requested.json()["id"]
+        refused = self._post(f"/tenant/support-access/{grant}/approve", **sign_in(user, tenant=self.tenant, step_up=True))
+        self.assertEqual(refused.status_code, 409, refused.content)
+        self.assertEqual(refused.json()["code"], "four_eyes_violation")
+        self.activate(self.tenant)
+        self.assertIsNone(SupportAccess.objects.get(pk=grant).approved_by_id)
+
+        # A library proposal filed from the bank, approved from the console: refused.
+        seed_jurisdictions()
+        seed_library_vocabularies()
+        filed = self._post(
+            "/proposals",
+            {
+                "kind": "vocabulary_create",
+                "title": "Add the flag Client money",
+                "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money", "sv": "Kundmedel"}, "usageNote": "Safeguarding of client funds."},
+                "sourceLabel": "FFFS 2017:2",
+                "sourceUrl": "https://www.fi.se/",
+            },
+            **sign_in(user, tenant=self.tenant),
+        )
+        self.assertEqual(filed.status_code, 201, filed.content)
+        own = self._post(f"/proposals/{filed.json()['id']}/approve", {}, **sign_in(user, tenant=None, step_up=True))
+        self.assertEqual(own.status_code, 409, own.content)
+        self.assertEqual(own.json()["code"], "four_eyes_violation")
+        tenancy.clear_tenant()
+        self.assertEqual(Proposal.objects.get(pk=filed.json()["id"]).status, ProposalStatus.OPEN.value)
 
     # --- ACC: agent access credentials (acc-personal-grants) -------------------------------
     def _mint_token(self, user: User, body: dict[str, Any]) -> Any:

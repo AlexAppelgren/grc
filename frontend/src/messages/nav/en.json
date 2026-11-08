@@ -35,6 +35,7 @@
   "shell.accountFor": "{name}, account menu",
   "shell.orgRoles": "{organisation} · {roles}",
   "shell.console": "Platform console",
+  "shell.workIn": "Work in",
   "sidebar.collapse": "Minimise menu",
   "sidebar.expand": "Expand menu",
   "nav.admin.vocabularies": "Vocabularies",

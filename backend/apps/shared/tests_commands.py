@@ -2,8 +2,8 @@
 its "what breaks without it" line), migrate_from_zero (the subprocess it spawns and the
 scratch database it drops), export_openapi (writes the normalised document), and
 bootstrap_platform's --role option (which platform role it grants, the audit row the
-grant leaves, its refusal of anyone a bank knows, and --add-role for a second role), and
-its --reenrol option (platform staff's own recovery, ID-05)."""
+grant leaves, in each of a bank member's banks too since D-122, and --add-role for a second
+role), and its --reenrol option (platform staff's own recovery, ID-05)."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from django.test import SimpleTestCase, TestCase, override_settings
 
 from apps.identity import invitation_logic
 from apps.identity.models import Invitation, PlatformRoleAssignment, User, WebAuthnCredential
-from apps.shared import factories
+from apps.shared import factories, tenancy
 from apps.shared.management.commands import migrate_from_zero, seed_reference
 from apps.shared.models import AuditEvent
 
@@ -223,50 +223,39 @@ class BootstrapPlatformRole(TestCase):
         self.assertFalse(User.objects.filter(email="nobody@bleqq.test").exists())
         self.assertFalse(AuditEvent.objects.filter(action="platform_role.assigned").exists())
 
-    def _assert_refused_before_anything_is_written(self, email: str) -> None:
-        # The owner's shell has no tenant active. Activating another bank hides this
-        # person's bank the same way, so only an identity lookup can find them.
-        factories.tenant()
-        audit_rows = AuditEvent.objects.count()
-        with self.assertRaisesMessage(CommandError, "belongs to a bank"):
-            call_command("bootstrap_platform", "--admin-email", email, stdout=StringIO())
-        self.assertEqual(self._granted(email), [])
-        self.assertEqual(AuditEvent.objects.count(), audit_rows, "neither the grant nor a platform invitation is audited")
-        self.assertFalse(Invitation.objects.filter(email=email, tenant__isnull=True).exists())
-
-    def test_a_bank_member_partway_through_re_enrolment_or_deactivated_is_refused(self) -> None:
-        """Re-enrolment retires every passkey and keeps the membership, so the passkey
-        check alone let a bank's member through: their bank session then carried the
-        platform grants, and the grant's audit row had no tenant, so the bank never saw
-        it. Platform staff are separate accounts."""
-        with self.subTest("partway through re-enrolment"):
-            bank = factories.tenant()
-            admin = factories.member(bank, roles=("admin",)).user
-            member = factories.member(bank, user_row=factories.user(email="anna@bank.test")).user
-            factories.passkey(member)
-            invitation_logic.reissue_enrolment(
-                tenant=bank, user=member, actor=factories.user_actor(), actor_user=admin, request=None, step_up_assertion_id=None
-            )
-            self._assert_refused_before_anything_is_written("anna@bank.test")
-        with self.subTest("deactivated, with no invitation open"):
-            bank = factories.tenant()
-            membership = factories.member(bank, user_row=factories.user(email="bo@bank.test"))
-            membership.deactivated_at = membership.created_at
-            membership.save(update_fields=["deactivated_at"])
-            self._assert_refused_before_anything_is_written("bo@bank.test")
-
-    def test_a_person_a_bank_invited_who_has_not_enrolled_is_refused(self) -> None:
-        """No user row and no membership yet: only the bank's invitation knows them. An
-        expired invitation counts too, because the bank can still resend it."""
-        with self.subTest("invitation open"):
-            factories.invitation(factories.tenant(), email="cai@bank.test")
-            self._assert_refused_before_anything_is_written("cai@bank.test")
-        with self.subTest("invitation expired, not revoked"):
-            invitation = factories.invitation(factories.tenant(), email="dag@bank.test")
-            invitation.expires_at = invitation.created_at
-            invitation.save(update_fields=["expires_at"])
-            self._assert_refused_before_anything_is_written("dag@bank.test")
-        self.assertFalse(User.objects.filter(email__in=["cai@bank.test", "dag@bank.test"]).exists())
+    def test_a_bank_member_is_granted_the_role_and_each_of_their_banks_sees_the_grant(self) -> None:
+        """D-122: a bank's member may be platform staff too. The grant's row without a tenant
+        never showed in the bank's log, so it is written in each bank they are an active
+        member of as well, and in no other bank. One partway through re-enrolment holds no
+        live passkey and is invited; a deactivated membership's bank is not told."""
+        bank = factories.tenant()
+        other = factories.tenant()
+        left = factories.tenant()
+        admin = factories.member(bank, roles=("admin",)).user
+        member = factories.member(bank, user_row=factories.user(email="anna@bank.test")).user
+        factories.member(other, user_row=member)
+        gone = factories.member(left, user_row=member)
+        gone.deactivated_at = gone.created_at
+        gone.save(update_fields=["deactivated_at"])
+        factories.passkey(member)
+        tenancy.activate(bank.id)
+        invitation_logic.reissue_enrolment(
+            tenant=bank, user=member, actor=factories.user_actor(), actor_user=admin, request=None, step_up_assertion_id=None
+        )
+        tenancy.clear_tenant()  # the owner's shell stands in no bank
+        out = StringIO()
+        call_command("bootstrap_platform", "--admin-email", "anna@bank.test", stdout=out)
+        self.assertEqual(self._granted("anna@bank.test"), ["platform_admin"])
+        self.assertIn("/invite#", out.getvalue())
+        self.assertTrue(Invitation.objects.filter(email="anna@bank.test", tenant__isnull=True).exists())
+        for zone, expected in ((None, 1), (bank, 1), (other, 1), (left, 0)):
+            with self.subTest(zone=zone and zone.slug):
+                if zone is None:
+                    tenancy.clear_tenant()
+                else:
+                    tenancy.activate(zone.id)
+                rows = [row for row in self._assigned_rows("anna@bank.test") if row.tenant_id == (zone and zone.id)]
+                self.assertEqual(len(rows), expected)
 
     def test_a_second_platform_role_needs_add_role_and_every_role_held_is_printed(self) -> None:
         """Re-running without --role on a library editor used to make them a platform

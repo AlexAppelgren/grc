@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useId, useState, type ReactNode } from 'react';
 
-import { accountLine, useInterfaceLanguages, useSignOutToPublicPage } from '@/components/shell/AccountMenu';
+import { accountLine, useContextSwitch, useInterfaceLanguages, useSignOutToPublicPage } from '@/components/shell/AccountMenu';
 import { groupDestinations } from '@/components/shell/AppSidebar';
 import { NavIcon } from '@/components/shell/NavIcon';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -20,8 +20,8 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 // Escape, and the scrim is hidden from them), every visible destination the
 // bar does not hold, in the rail's groups, then a hairline and the account
 // laid flat: name, organisation and roles, notifications with the unread
-// count (NotificationBell.tsx), my passkeys, my sessions, the
-// interface language as a radio group, sign out. Inside a sheet a second menu
+// count (NotificationBell.tsx), my passkeys, my sessions, where to work and
+// the interface language as radio groups, sign out. Inside a sheet a second menu
 // layer would add a tap for nothing.
 //
 // It carries no data-who-panel: that marker stays on the rail's row, which is
@@ -37,6 +37,8 @@ export function MoreSheet({ surface, children }: { surface: Surface; children: R
   const { pending, signOut } = useSignOutToPublicPage();
   const languages = useInterfaceLanguages();
   const languageName = useId();
+  const contexts = useContextSwitch();
+  const contextName = useId();
   const unread = useUnreadCount();
 
   // Any route change closes the sheet (the Android back gesture, Safari's edge
@@ -111,6 +113,32 @@ export function MoreSheet({ surface, children }: { surface: Surface; children: R
                   .filter((d) => showsAccountLink(d.id, me))
                   .map((d) => row(d, false))}
               </SidebarMenu>
+              {contexts.options.length > 1 ? (
+                // Closes on a choice: the passkey prompt opens next.
+                <fieldset className="m-0 min-w-0 border-0 p-0">
+                  <legend className="px-2 pt-1.5 pb-1 text-meta text-muted">{t('shell.workIn')}</legend>
+                  {contexts.options.map((row) => (
+                    <label
+                      key={row.value}
+                      className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-md px-2 py-2 text-body hover:hover-fill has-[:disabled]:cursor-default has-[:disabled]:opacity-45"
+                    >
+                      {row.label}
+                      <input
+                        type="radio"
+                        name={contextName}
+                        value={row.value}
+                        checked={row.value === contexts.current}
+                        disabled={contexts.pending}
+                        onChange={() => {
+                          setOpen(false);
+                          contexts.choose(row.value);
+                        }}
+                        className="size-4 accent-fg"
+                      />
+                    </label>
+                  ))}
+                </fieldset>
+              ) : null}
               {languages.options.length > 1 ? (
                 // Stays open on a choice, so the sheet itself is seen to change language.
                 <fieldset className="m-0 min-w-0 border-0 p-0">

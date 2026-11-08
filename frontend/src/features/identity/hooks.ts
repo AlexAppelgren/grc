@@ -22,6 +22,9 @@ export const identityKeys = {
 /** The sign-out mutation's key: the session gate takes the screens down while it is pending. */
 export const signOutKey = ['sign-out'] as const;
 
+/** The context switch's key: once it has succeeded the gate takes the screens down, as for a sign-out. */
+export const switchContextKey = ['switch-context'] as const;
+
 export type SessionStatus = 'loading' | 'anonymous' | 'enrolment' | 'signed-in' | 'error';
 
 export interface SessionState {
@@ -187,6 +190,22 @@ export function useSignOut(then: () => void): UseMutationResult<void, unknown, v
     onSettled: () => {
       queryClient.clear();
       then();
+    },
+  });
+}
+
+// D-122: move to another bank or the console. Every cached answer belongs to
+// the session being left, so the new place is loaded from scratch: the new
+// access token is kept and the browser goes to that place's home, where the
+// cold load refreshes from the cookie this response set. `then` sits in the
+// mutation's options for the same reason as the sign-out's.
+export function useSwitchContext(then: (tenantId: string | null) => void): UseMutationResult<TokenResponse, unknown, string | null> {
+  return useMutation({
+    mutationKey: switchContextKey,
+    mutationFn: (tenantId) => identity.switchContext(tenantId),
+    onSuccess: (response, tenantId) => {
+      tokenStore.set(response.accessToken);
+      then(tenantId);
     },
   });
 }

@@ -11,12 +11,12 @@ from collections.abc import Iterable
 from typing import Any
 
 from django.core.exceptions import ValidationError
-from django.db.models import Count, Q
+from django.db.models import Count, Exists, OuterRef, Q
 from django.http import HttpRequest
 from django.utils import timezone
 
 from apps.identity import api_keys_logic, invitation_logic, roles_logic, session_logic
-from apps.identity.models import Invitation, InvitationKind, Membership, MembershipRole, User, UserSession
+from apps.identity.models import Invitation, InvitationKind, Membership, MembershipRole, PlatformRoleAssignment, User, UserSession
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
@@ -55,7 +55,16 @@ def team_keys(tenant_id: uuid.UUID, user_ids: list[uuid.UUID]) -> dict[uuid.UUID
     return keys
 
 
-def member_out(membership: Membership, order: list[str], *, passkey_count: int, active_sessions: int, teams: list[str]) -> dict[str, Any]:
+def _platform_staff() -> Exists:
+    """Whether the member's account holds any platform role (D-122): the bank sees who among
+    its members can also work in the console. Any assignment counts, as an active or a
+    retired role, which can be brought back."""
+    return Exists(PlatformRoleAssignment.objects.filter(user_id=OuterRef("user_id")))
+
+
+def member_out(
+    membership: Membership, order: list[str], *, passkey_count: int, active_sessions: int, teams: list[str], platform_staff: bool
+) -> dict[str, Any]:
     user = membership.user
     return {
         "user_id": user.id,
@@ -68,6 +77,7 @@ def member_out(membership: Membership, order: list[str], *, passkey_count: int, 
         "passkey_count": passkey_count,
         "active_sessions": active_sessions,
         "teams": teams,
+        "platform_staff": platform_staff,
     }
 
 
@@ -84,6 +94,7 @@ def list_members(tenant_id: uuid.UUID, order: list[str], *, limit: int, offset: 
                 filter=Q(user__sessions__revoked_at__isnull=True, user__sessions__expires_at__gt=now, user__sessions__kind="full", user__sessions__tenant_id=tenant_id),
                 distinct=True,
             ),
+            platform_staff=_platform_staff(),
         )
         .order_by("created_at", "id")
     )
@@ -91,7 +102,10 @@ def list_members(tenant_id: uuid.UUID, order: list[str], *, limit: int, offset: 
     rows = list(queryset[offset : offset + limit])
     teams = team_keys(tenant_id, [m.user_id for m in rows])
     return [
-        member_out(m, order, passkey_count=m.passkey_count, active_sessions=m.active_sessions, teams=teams[m.user_id]) for m in rows
+        member_out(
+            m, order, passkey_count=m.passkey_count, active_sessions=m.active_sessions, teams=teams[m.user_id], platform_staff=m.platform_staff
+        )
+        for m in rows
     ], total
 
 
@@ -100,7 +114,8 @@ def member_detail(tenant_id: uuid.UUID, user_id: uuid.UUID, order: list[str]) ->
     passkeys = membership.user.credentials.filter(retired_at__isnull=True).count()
     sessions = len(session_logic.live_sessions(membership.user, tenant_id=tenant_id))
     teams = team_keys(tenant_id, [user_id])[user_id]
-    return member_out(membership, order, passkey_count=passkeys, active_sessions=sessions, teams=teams)
+    platform_staff = PlatformRoleAssignment.objects.filter(user_id=user_id).exists()
+    return member_out(membership, order, passkey_count=passkeys, active_sessions=sessions, teams=teams, platform_staff=platform_staff)
 
 
 # ---------------------------------------------------------------------------------------

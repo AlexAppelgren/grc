@@ -15,6 +15,8 @@ export type RoleRef = Schemas['RoleRef'];
 export type MeUser = Schemas['MeUser'];
 export type MeTenant = Schemas['MeTenant'];
 export type Me = Schemas['Me'];
+/** A place the person can work: a bank (its id and name) or, with a null id, the platform console (D-122). */
+export type MeContext = Schemas['MeContext'];
 export type MeUpdate = Schemas['MePatch'];
 
 // Local: the backend types the session kind as a plain string; the fixed kind list lives here.

@@ -241,14 +241,6 @@ def verify_registration(principal: Principal, credential: dict[str, Any], nickna
         # in the session's tenant, never whichever tenant invited the address last
         # (finding F8).
         invitation = invitation_logic.find_open_for_tenant(user.email, session.tenant_id)
-        if invitation is not None and invitation.tenant_id is not None:
-            # A platform role granted after the invitation was sent, refused here and not
-            # at acceptance below: a ValidationError becomes a 422 inside the view and the
-            # request's transaction still commits, so a refusal after the credential
-            # insert would leave a credential row with no audit row, an account holding a
-            # live passkey it cannot sign in with, and an emailed code already closed
-            # (hardening H13, review 2026-09-20).
-            invitation_logic.refuse_platform_account(user)
     challenge = _consume_challenge(ChallengeKind.REGISTRATION, _challenge_from_credential(credential), user=user, session=session)
     try:
         verified = verify_registration_response(

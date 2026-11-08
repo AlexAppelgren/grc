@@ -39,6 +39,7 @@
   "admin.members.sessions": "{count, plural, =0 {No session} one {# session} other {# sessions}}",
   "admin.members.awaitingEnrolment": "Awaiting enrolment",
   "admin.members.deactivated": "Deactivated",
+  "admin.members.platformStaff": "Platform staff",
   "admin.members.accepted": "Accepted",
   "admin.members.revokedPill": "Revoked",
   "admin.members.expiredPill": "Expired",

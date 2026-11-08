@@ -70,6 +70,11 @@ exactly once, to enrol a passkey, and with a passkey from then on.
   constraint enforces it and the API answers 409 `four_eyes_violation`.
 - **Platform staff see tenant data only through a support access grant** the
   tenant can see, time-boxed and logged.
+- **One account, one zone per session** (D-122, ADR 0067). An account may be a
+  bank's member and platform staff, but each session holds one zone's grants
+  only, and moving between them is a new session behind a passkey step-up
+  (`POST /me/context`). The bank sees a member who is platform staff, on
+  Members and in its audit log.
 - **SSO (OIDC, SAML) and SCIM** are an R3 tenant option and never reintroduce
   a password.
 - **The 403 is structured:** `detail`, `code`, `requiredPermission`. The UI

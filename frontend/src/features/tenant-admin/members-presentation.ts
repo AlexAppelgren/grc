@@ -9,7 +9,7 @@ import type { MessageKey, Translate } from '@/shared/i18n';
 
 const ORDER = { kind: 5, roles: 10, scopes: 10, status: 50 } as const;
 
-export type MemberFacts = Pick<Member, 'status' | 'roles'>;
+export type MemberFacts = Pick<Member, 'status' | 'roles' | 'platformStaff'>;
 export type InvitationFacts = Pick<Invitation, 'kind' | 'roles' | 'status'>;
 // The roles list returns active roles only, so a role row has no retired state.
 export type RoleFacts = Pick<TenantRole, 'isSystem'>;
@@ -30,6 +30,11 @@ export const memberStatusTone: Record<MemberStatus, PillTone | null> = {
 
 export function presentMember(member: MemberFacts, t: Translate): PresentedPill[] {
   const pills = rolePills(member.roles);
+  // The same account holds a platform role (D-122): a fact worth seeing, as the
+  // console is one switch away for them; `notice`, like "Reads our register".
+  if (member.platformStaff) {
+    pills.push({ key: 'kind:platform-staff', label: t('admin.members.platformStaff'), tone: 'notice', order: ORDER.kind });
+  }
   const tone = memberStatusTone[member.status];
   if (tone !== null && tone !== undefined) {
     const label = member.status === 'invited' ? t('admin.members.awaitingEnrolment') : t('admin.members.deactivated');

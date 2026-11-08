@@ -1,11 +1,11 @@
 'use client';
 
-import { useIsMutating } from '@tanstack/react-query';
+import { useIsMutating, useMutationState } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 
 import { ErrorState } from '@/components/ui/States';
-import { signOutKey, userLocaleOf, useSession } from '@/features/identity/hooks';
+import { signOutKey, switchContextKey, userLocaleOf, useSession } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PUBLIC_HOME } from '@/shared/navigation/registry';
@@ -18,13 +18,16 @@ import { PermissionsProvider } from '@/shared/navigation/require-permission';
 // nothing else, AC-ID2), and a signed-in person gets the permission list for
 // the client gate and the catalog in their own language. While a sign-out is pending
 // the screens are taken down first, so none of them asks the server for
-// anything once the session has ended.
+// anything once the session has ended. The same holds once a switch to another
+// bank or the console has succeeded, while the browser leaves for its home:
+// the screens on show belong to the session that just ended.
 
 export function SessionGate({ children }: { children: ReactNode }) {
   const t = useT();
   const router = useRouter();
   const session = useSession();
   const signingOut = useIsMutating({ mutationKey: signOutKey }) > 0;
+  const switched = useMutationState({ filters: { mutationKey: switchContextKey, status: 'success' } }).length > 0;
 
   useEffect(() => {
     if (session.status === 'anonymous') router.replace(PUBLIC_HOME);
@@ -38,7 +41,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (signingOut || session.status !== 'signed-in' || session.me === null) {
+  if (signingOut || switched || session.status !== 'signed-in' || session.me === null) {
     return (
       <div role="status" aria-busy="true" className="grid min-h-screen place-items-center text-muted" data-session-loading="">
         {t('shell.loading')}

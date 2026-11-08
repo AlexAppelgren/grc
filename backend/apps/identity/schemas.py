@@ -273,6 +273,19 @@ class InvitationCodeVerifyBody(CamelSchema):
     )
 
 
+class ContextSwitchBody(CamelSchema):
+    """Where to move the signed-in person (D-122)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"tenantId": None}, {"tenantId": "00000000-0000-4000-8000-00000000000a"}]})
+
+    tenant_id: uuid.UUID | None = Field(
+        description=(
+            "The bank to work in, a UUID from `contexts` in `GET /me`, or null for the platform "
+            "console. Required: send null explicitly for the console."
+        )
+    )
+
+
 class SessionTokens(CamelSchema):
     """A session has just started. The access token is in the body; the refresh token is
     set as an `HttpOnly` cookie by the same response and never appears in a body."""
@@ -1025,6 +1038,25 @@ class MeTenant(CamelSchema):
     )
 
 
+class MeContext(CamelSchema):
+    """One place the person can work (D-122): a bank they are an active member of, or the
+    platform console when they hold a platform role. A session is in exactly one of them."""
+
+    tenant_id: uuid.UUID | None = Field(
+        description=(
+            "The bank's permanent identifier, a UUID, or null for the platform console. Send it "
+            "as `tenantId` to `POST /me/context` to move there."
+        )
+    )
+    tenant_name: str | None = Field(
+        description=(
+            "The bank's own name, such as `Example Bank AB`, for display, or null for the platform "
+            "console, which a screen names in the reader's own language."
+        )
+    )
+    current: bool = Field(description="True for the context this session is in, false for every other one.")
+
+
 class MeDepartment(CamelSchema):
     """A department the caller heads (TEN-02, HOM-05, D-21): a business area, business unit or
     function of the bank whose head is the caller."""
@@ -1242,6 +1274,7 @@ class Me(CamelSchema):
                         "workflow.manage",
                     ],
                     "platformRoles": [],
+                    "contexts": [{"tenantId": "00000000-0000-4000-8000-00000000000a", "tenantName": "Example Bank AB", "current": True}],
                     "enrolmentPending": False,
                     "passkeyCount": 2,
                     "stepUpValidUntil": None,
@@ -1298,10 +1331,20 @@ class Me(CamelSchema):
     platform_roles: list[RoleRef] = Field(
         description=(
             "The platform roles of platform staff, as key, kind and label: the seeded "
-            "`platform_admin` and `library_editor`. Always empty for a member of a bank, "
-            "because platform staff sign in with accounts of their own and a bank session "
-            "never carries a platform grant. They are a platform vocabulary that only the "
-            "platform's own administrators manage; a bank's admin cannot extend it."
+            "`platform_admin` and `library_editor`. Always empty in a bank's session, even for "
+            "a member who is platform staff too, because a bank session never carries a "
+            "platform grant; `contexts` says whether the console is one switch away. They are "
+            "a platform vocabulary that only the platform's own administrators manage; a "
+            "bank's admin cannot extend it."
+        )
+    )
+    contexts: list[MeContext] = Field(
+        description=(
+            "Every place the person can work, the current one marked: each bank they are an "
+            "active member of, the earliest joined first, then the platform console when they "
+            "hold an active platform role. Most people hold one, the current one. With more than "
+            "one, a screen offers a switch, which is `POST /me/context` behind a passkey step-up. "
+            "Empty for an enrolment session and a support session, which cannot switch."
         )
     )
     enrolment_pending: bool = Field(
@@ -1531,6 +1574,7 @@ _EXAMPLE_MEMBER: dict[str, JsonValue] = {
     "passkeyCount": 2,
     "activeSessions": 1,
     "teams": ["compliance"],
+    "platformStaff": False,
 }
 _EXAMPLE_INVITATION: dict[str, JsonValue] = {
     "id": "7d2e9b14-6a3c-4f58-b1d0-3e8c5a7f2b96",
@@ -1699,6 +1743,14 @@ class MemberOut(CamelSchema):
             "`GET /vocab/team` and never match on a label. A deactivated member keeps the teams "
             "they were in until their removal ends them. `PUT /tenant/members/{user_id}/teams` "
             "sets them."
+        )
+    )
+    platform_staff: bool = Field(
+        description=(
+            "True when the same account also holds a platform role, so the person can work in the "
+            "platform console as well as in this bank. Each of their sessions is in one place "
+            "only, and their console session reads nothing of this bank; granting the role "
+            "wrote `platform_role.assigned` in this bank's audit log. False for everyone else."
         )
     )
 

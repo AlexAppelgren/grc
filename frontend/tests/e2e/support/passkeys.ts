@@ -90,6 +90,8 @@ export const LOGINS = {
   libraryOnly: 'library-only@example-bank.test',
   /** Reserved for CAS-S14 (J-2) and TEN-S7 (J-8): tenant B's compliance officer. */
   secondBankComplianceOfficer: 'compliance_officer@second-bank.test',
+  /** Reserved for ID-S34 and ID-S37 (D-122): a member of tenant A who is a platform admin too. */
+  dual: 'dual@example-bank.test',
 } as const;
 
 export const ANNA_INVITE_TOKEN = 'e2e-invite-anna';

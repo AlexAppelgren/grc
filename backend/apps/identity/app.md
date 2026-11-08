@@ -26,6 +26,13 @@ library only through an approved proposal. A key can never step up, so the
 four-eyes check constraint, not a passkey, is what stands behind an agent's
 approval.
 
+One account may be a bank's member and platform staff (D-122, ADR 0067, Alex
+2026-11-08; it supersedes hardening H13's separate accounts). A session is still in one
+zone and holds that zone's grants only; signing in lands in the oldest membership, and
+moving to the console or another bank is a new session behind a fresh passkey step-up
+(`POST /me/context`), listed in `GET /me` as `contexts`. The bank sees it: its member
+list marks platform staff, and a platform grant is audited in each of their banks.
+
 Deliberately simplified for R1: no self-service recovery of any kind (an admin
 re-issues enrolment), no SSO or SCIM (R3, and they never add a password), and
 credential and session policies are fixed defaults until R2 makes them tenant
@@ -396,14 +403,15 @@ Then the response is 403 with code "credential_policy" and the security log reco
 When an admin sets a date or an allow-list that would refuse their own passkeys
 Then the request answers 409
 
-### ID-S30 — A bank invitation never reaches platform staff `@integration` (ID-01, ID-02, ID-03)
+### ID-S30 — Platform staff may be a bank's member too `@integration` (ID-01, ID-02, ID-03, D-122)
 ```gherkin
 Given an address that holds a platform role
 When a tenant admin invites it into the bank
-Then the answer is 422 "platform_account" and no invitation is written
+Then the invitation is written and emailed as for anyone else
 Given a bank invitation whose address is granted a platform role afterwards
 When the invited person enters the emailed code and registers their first passkey
-Then the answer is 422 "platform_account" with no passkey, no membership and no audit row written
+Then the passkey and the membership are written and the full session is in the bank
+And that session holds the membership's permissions and no platform permission
 ```
 
 ### ID-S31 — The review scope reaches the queue and never a library row `@integration` (ID-10, AC-PRO1, AC-ID3)
@@ -441,6 +449,60 @@ And the security log and an audit event without a tenant record how many were re
 Given an address that holds no platform role, a bank member's included
 When the owner runs the same command for it
 Then it is refused and nothing is written
+```
+
+### ID-S34 — A person who works in a bank and the console switches between them with a passkey `@integration` `@e2e` (ID-04, ID-06, ID-11, D-122)
+```gherkin
+Given an account that is a member of a bank and holds a platform role
+When it signs in with its passkey
+Then the session is in its bank, and GET /me lists the bank as current and the console beside it
+When it asks to switch to the console without a fresh step-up
+Then the answer is 403 "step_up_required" and the bank session stays live
+When it steps up and switches to the console
+Then a full session in no bank answers with its access token and a new refresh cookie
+And the bank session is revoked with the reason "context_switched" and its token stops working
+And the security log records a passkey sign-in to the console with the reason "context_switched"
+And the audit trail records session.revoked in the bank and session.context_switched, with the step-up, in the console
+When it switches back without a new step-up
+Then the answer is 403 "step_up_required": the step-up stayed with the session it was made on
+When it steps up on the console session and switches back
+Then a new bank session answers and the console session is revoked
+```
+
+### ID-S35 — Each session of an account in both zones holds its own zone's grants only `@integration` (ID-09, D-122)
+```gherkin
+Given an account that is a bank's admin and a platform admin
+When it calls a console route from its bank session
+Then the answer is 403 and GET /me there names no platform role and no platform permission
+When it calls a bank route from its console session
+Then the answer is 404, or 403 where the route asks for a bank permission first, and GET /me there names no bank, no bank role and no bank permission
+```
+
+### ID-S36 — A switch reaches only a place the person holds `@integration` (ID-06, D-122)
+```gherkin
+Given a bank member without a platform role, with a fresh step-up
+When they ask to switch to the console, to a bank they do not belong to, to a bank whose membership was deactivated, or to the bank they are in
+Then each answers 404 "not_found", the session stays live and no session is written
+And GET /me lists the one bank they hold, so no switch is offered
+```
+
+### ID-S37 — The bank sees a member who is platform staff `@integration` `@e2e` (ID-09, ID-11, AUD-01, D-122)
+```gherkin
+Given a member of the bank who holds a passkey
+When the owner grants them a platform role with bootstrap_platform
+Then the role is granted without a new invitation, and the bank's audit log holds platform_role.assigned for them as well as the platform's
+And Admin › Members marks them as platform staff, and nobody else
+When the owner re-enrols them with --reenrol
+Then their sessions in the bank are revoked too and the bank's audit log records the re-enrolment
+```
+
+### ID-S38 — Four eyes holds across the two zones of one account `@integration` (ID-06, TEN-06, PRO-02, D-122)
+```gherkin
+Given an account that is a bank's admin and compliance officer, and a platform admin and library editor
+When it asks for support access to its own bank from the console and approves the request from its bank session
+Then the approval answers 409 "four_eyes_violation" and the request stays pending
+When it files a library proposal from its bank session and approves it from the console
+Then the approval answers 409 "four_eyes_violation" and the proposal stays open
 ```
 
 ### ACC-S3 — A service key acts as the entry and a personal token acts as the person `@integration` `@e2e` (ACC-03)

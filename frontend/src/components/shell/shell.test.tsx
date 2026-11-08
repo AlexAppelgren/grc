@@ -31,6 +31,7 @@ const language = vi.hoisted(() => ({
   isPending: false,
   isError: false,
 }));
+const switching = vi.hoisted(() => ({ mutate: vi.fn(), isPending: false }));
 
 vi.mock('next/navigation', () => ({
   usePathname: () => nav.pathname,
@@ -52,6 +53,7 @@ vi.mock('@/features/identity/hooks', () => ({
     return { mutate: session.mutate, isPending: session.isPending };
   },
   useSetLanguage: () => ({ mutate: language.mutate, isPending: language.isPending, isError: language.isError }),
+  useSwitchContext: () => ({ mutate: switching.mutate, isPending: switching.isPending }),
 }));
 
 vi.mock('@/features/tenant-admin/hooks', () => ({
@@ -70,6 +72,7 @@ function me(overrides: Partial<Me> = {}): Me {
     roles: [{ key: 'officer', kind: null, label: 'Compliance officer' }],
     permissions: PERMISSIONS,
     platformRoles: [],
+    contexts: [],
     enrolmentPending: false,
     passkeyCount: 2,
     stepUpValidUntil: null,
@@ -104,6 +107,8 @@ beforeEach(() => {
   language.mutate.mockReset();
   language.isPending = false;
   language.isError = false;
+  switching.mutate.mockReset();
+  switching.isPending = false;
   window.localStorage.clear();
   vi.stubGlobal('matchMedia', (query: string) => ({
     get matches() {
@@ -328,6 +333,49 @@ describe('the signed-in person', () => {
     expect(failed).toHaveAttribute('aria-live', 'polite');
     expect(within(who).getByRole('group', { name: 'Language' })).toHaveAttribute('aria-describedby', failed.id);
     expect(within(who).queryByRole('alert')).toBeNull();
+  });
+
+  it('switches between the bank and the console from the menu, for a person who holds both', () => {
+    session.me = me({
+      contexts: [
+        { tenantId: 't1', tenantName: 'Example Bank AB', current: true },
+        { tenantId: null, tenantName: null, current: false },
+      ],
+    });
+    const view = renderShell();
+    const who = document.querySelector('[data-who-panel]') as HTMLElement;
+    const trigger = within(who).getByRole('button', { name: 'Sara Lindqvist, account menu' });
+    act(() => trigger.focus());
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' });
+    const group = within(who).getByRole('group', { name: 'Work in' });
+    const bank = within(group).getByRole('menuitemradio', { name: 'Example Bank AB' });
+    const console = within(group).getByRole('menuitemradio', { name: 'Platform console' });
+    expect(bank).toHaveAttribute('aria-checked', 'true');
+    expect(console).toHaveAttribute('aria-checked', 'false');
+
+    // The console is a null bank; choosing it closes the menu for the passkey prompt.
+    fireEvent.click(console);
+    expect(switching.mutate).toHaveBeenCalledExactlyOnceWith(null);
+    expect(within(who).queryByRole('menu')).toBeNull();
+
+    view.unmount();
+    switching.isPending = true;
+    renderShell();
+    const again = document.querySelector('[data-who-panel]') as HTMLElement;
+    const reopen = within(again).getByRole('button', { name: 'Sara Lindqvist, account menu' });
+    act(() => reopen.focus());
+    fireEvent.pointerDown(reopen, { button: 0, ctrlKey: false, pointerType: 'mouse' });
+    expect(within(again).getByRole('menuitemradio', { name: 'Example Bank AB' })).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('offers no switch to a person who works in one place', () => {
+    session.me = me({ contexts: [{ tenantId: 't1', tenantName: 'Example Bank AB', current: true }] });
+    renderShell();
+    const who = document.querySelector('[data-who-panel]') as HTMLElement;
+    const trigger = within(who).getByRole('button', { name: 'Sara Lindqvist, account menu' });
+    act(() => trigger.focus());
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' });
+    expect(within(who).queryByRole('group', { name: 'Work in' })).toBeNull();
   });
 
   it('offers no language choice before the languages are known', () => {
@@ -596,6 +644,23 @@ describe('at compact width: the tab bar', () => {
     language.isError = true;
     view.rerender(shell(EVERYONE_AND_ADMIN));
     expect(within(sheet()).getByRole('alert')).toHaveTextContent('The language could not be changed. Try again.');
+  });
+
+  it('switches to the console from the sheet, closing it so the passkey prompt can open', () => {
+    session.me = me({
+      contexts: [
+        { tenantId: 't1', tenantName: 'Example Bank AB', current: true },
+        { tenantId: null, tenantName: null, current: false },
+      ],
+    });
+    renderShell({ permissions: EVERYONE_AND_ADMIN });
+    openMore();
+    const account = within(sheet()).getByRole('group', { name: 'Account' });
+    const group = within(account).getByRole('group', { name: 'Work in' });
+    expect(within(group).getByRole('radio', { name: 'Example Bank AB' })).toBeChecked();
+    fireEvent.click(within(group).getByRole('radio', { name: 'Platform console' }));
+    expect(switching.mutate).toHaveBeenCalledExactlyOnceWith(null);
+    expect(screen.queryByRole('dialog', { name: 'More' })).toBeNull();
   });
 
   it('offers no language choice in the sheet before the languages are known', () => {

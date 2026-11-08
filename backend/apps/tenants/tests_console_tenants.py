@@ -217,13 +217,15 @@ class ConsoleTenants(ScenarioTestCase):
     def test_an_address_without_an_at_sign_is_refused(self) -> None:
         self.assertEqual(self._code(self._create(body(firstAdminEmail="anna"))), "invalid_email")
 
-    def test_a_platform_account_cannot_be_a_banks_first_admin(self) -> None:
-        """The other side of bootstrap_platform's rule: platform staff are separate accounts."""
+    def test_a_platform_account_may_be_a_banks_first_admin(self) -> None:
+        """One account may be a bank's member and platform staff (D-122): the platform's
+        own address may run a bank it creates, and keeps its platform role."""
         editor = factories.platform_user(roles=("library_editor",), email="editor@bleqq.test")
-        refused = self._create(body(firstAdminEmail="Editor@bleqq.test"))
-        self.assertEqual(refused.status_code, 422, refused.content)
-        self.assertEqual(self._code(refused), "platform_account")
-        self.assertFalse(Tenant.objects.filter(name="Example Bank Oyj").exists())
+        created = self._create(body(firstAdminEmail="Editor@bleqq.test"))
+        self.assertEqual(created.status_code, 201, created.content)
+        tenant = Tenant.objects.get(name="Example Bank Oyj")
+        tenancy.activate(tenant.id)
+        self.assertTrue(Invitation.objects.filter(tenant=tenant, email="editor@bleqq.test").exists())
         self.assertEqual(
             list(PlatformRoleAssignment.objects.filter(user=editor).values_list("role__key", flat=True)),
             ["library_editor"],

@@ -39,6 +39,7 @@
   "admin.members.sessions": "{count, plural, =0 {Ingen session} one {# session} other {# sessioner}}",
   "admin.members.awaitingEnrolment": "Väntar på registrering",
   "admin.members.deactivated": "Avaktiverad",
+  "admin.members.platformStaff": "Plattformspersonal",
   "admin.members.accepted": "Accepterad",
   "admin.members.revokedPill": "Återkallad",
   "admin.members.expiredPill": "Utgången",

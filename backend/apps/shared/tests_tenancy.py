@@ -173,11 +173,13 @@ class IdentityLookupMode(TestCase):
     def test_only_the_auth_layer_calls_identity_lookup(self) -> None:
         allowed = {
             "apps/shared/tenancy.py",
-            # Three functions of the session module and not the module (ADR 0064): picking a
-            # bank at sign-in, reading a session by its refresh cookie, and looking up the
-            # row behind a signed token whose claimed bank did not show it. A request's own
-            # access token is resolved under the bank it signs and never opens the lookup.
-            "apps/identity/session_logic.py::choose_tenant",
+            # Three functions of the session module and not the module (ADR 0064): reading the
+            # banks a person is an active member of (to pick one at sign-in, to list and check
+            # them for a context switch, D-122), reading a session by its refresh cookie, and
+            # looking up the row behind a signed token whose claimed bank did not show it. A
+            # request's own access token is resolved under the bank it signs and never opens
+            # the lookup.
+            "apps/identity/session_logic.py::held_banks",
             "apps/identity/session_logic.py::_load_by_refresh",
             "apps/identity/session_logic.py::_refuse_claim",
             "apps/identity/invitation_logic.py",
@@ -248,6 +250,13 @@ class IdentityLookupMode(TestCase):
             # `agent_definitions.manage`, so the zone asserted is the one the caller is in.
             "apps/identity/api_keys_logic.py::create_agent_key",
             "apps/identity/api_keys_logic.py::revoke_agent_key",
+            # A person who is a bank's member and platform staff switching from the bank to the
+            # console (D-122, ADR 0067): the old bank session is revoked in its bank, then the
+            # new console session, a row that belongs to no tenant, is written in no bank. It
+            # is reached only by a full session with a fresh passkey step-up whose person holds
+            # an active platform role, and the zone it enters is the one the new session's own
+            # row belongs to.
+            "apps/identity/session_logic.py::switch_context",
         }
         offenders = [
             offender

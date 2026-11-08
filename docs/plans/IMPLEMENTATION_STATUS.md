@@ -304,3 +304,22 @@ Alex's word ("go ahead, write the brief and build all steps"), built ahead of th
   from cross-border services, the Danish, Norwegian and Finnish licence registers, a Today
   row for a suggestion. Three questions with defaults are in `docs/TODO_FOR_alex.md`
   ("public-registers").
+
+## One account in both zones (worktree branch, 2026-11-08, D-122, ADR 0067)
+
+Alex's call of 2026-11-08: one account may be a bank's member and platform staff, with a
+toggle between the two. It supersedes hardening H13's separate accounts.
+
+- **Built (backend):** the refusals are gone (`bootstrap_platform` and its `--reenrol`, a bank
+  invitation and its acceptance, a new bank's first administrator; the code
+  `platform_account` no longer exists). `POST /me/context` switches behind a fresh step-up on
+  the current session, revokes it (`context_switched`), writes the new session, rotates the
+  refresh cookie and records a security-log sign-in and `session.context_switched`; `GET /me`
+  lists `contexts`. Members carry `platformStaff`; `bootstrap_platform` audits a grant in each
+  of the person's banks and `--reenrol` ends their bank sessions too (ID-S30, ID-S34 to S38).
+- **Built (screens):** "Work in" in the account menu and the More sheet for a person with more
+  than one place, running the passkey prompt and loading the new place's home; the "Platform
+  staff" pill on Members (ID-S34, ID-S37 journeys; `dual@example-bank.test` in `seed_e2e`).
+- **Left, deliberately:** no console screen to grant a platform role (the owner's shell stays
+  the only door), and no remembered "last place" at sign-in: sign-in still lands in the oldest
+  membership.

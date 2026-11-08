@@ -158,6 +158,19 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
     # Tenant B's compliance officer: J-2 triages tenant B's own lead, and J-8 signs in as them.
     SeedLogin(_id(28), "compliance_officer@second-bank.test", "Søren Kristensen", TENANT_B_SLUG, ("compliance_officer",), title="Compliance officer", reserved_for=("CAS-S14", "TEN-S7")),
     # --- end r2-e2e-login-roster -------------------------------------------------------------
+    # D-122: one account that is a bank's member and platform staff. ID-S34 switches it from
+    # the bank to the console and back with a passkey; ID-S37 reads its marker on Members.
+    # Reserved, because a switch revokes the session it leaves.
+    SeedLogin(
+        _id(29),
+        "dual@example-bank.test",
+        "Alva Strand",
+        TENANT_A_SLUG,
+        ("contributor",),
+        platform_roles=("platform_admin",),
+        title="Product specialist and platform administrator",
+        reserved_for=("ID-S34", "ID-S37"),
+    ),
 )
 
 # The login ADM-S2 spends (above). Named here so the guard and the journey read one value.

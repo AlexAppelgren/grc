@@ -1499,9 +1499,7 @@ export interface paths {
          *     lifetime, and start again from the options call; `invalid_credential` (400) when the
          *     credential cannot be read; `registration_failed` (400) when it does not verify or that
          *     passkey is already registered; `step_up_required` (403) when a full session is older
-         *     than the step-up window and holds no fresh assertion; `platform_account` (422) when a
-         *     bank invitation reaches an account that has since become platform staff;
-         *     `unauthenticated` (401) without a live session; `validation_error` (422) for a malformed
+         *     than the step-up window and holds no fresh assertion; `unauthenticated` (401) without a live session; `validation_error` (422) for a malformed
          *     body.
          */
         post: operations["passkeyRegisterVerify"];
@@ -3425,13 +3423,13 @@ export interface paths {
          *     and the invitation is recorded against the new bank. If anything in the call is
          *     refused, nothing at all is written.
          *
-         *     The address must belong to the bank. Platform staff are separate accounts, and an
-         *     address that already carries a platform role is refused, because a console account
-         *     invited into a bank would carry the console's permissions into a bank session.
+         *     The address may already belong to platform staff, the caller's own included (D-122): one
+         *     account may be a bank's member and platform staff, each session holding one zone's
+         *     permissions only, and the bank's member list marks them.
          *
-         *     Answers 201 with the new bank's console row. Errors: a 422 for a blank name or an
-         *     address that belongs to platform staff, each with its own `code` and a message to
-         *     show; `permission_denied` without `tenants.manage`.
+         *     Answers 201 with the new bank's console row. Errors: a 422 for a blank name or a
+         *     malformed address, each with its own `code` and a message to show;
+         *     `permission_denied` without `tenants.manage`.
          */
         post: operations["createConsoleTenant"];
         delete?: never;
@@ -4498,6 +4496,49 @@ export interface paths {
         get: operations["listMyComments"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Switch between your bank and the platform console
+         * @description For a person who works in more than one place, a bank and the platform console or
+         *     several banks (`contexts` in `GET /me`): end this session and start one in the other
+         *     place, and answer with its access token as sign-in does (`sessionKind` `full`). The
+         *     refresh cookie this response sets replaces the old one; drop the old access token, which
+         *     stops working at once, and read `GET /me` again with the new one.
+         *
+         *     A session is always in one place: a bank session holds only that bank's permissions and a
+         *     console session only platform permissions, so nothing carries over, and neither does the
+         *     step-up. Each switch therefore needs its own passkey confirmation on the session it
+         *     leaves, younger than 5 minutes; a stepped-up session can switch once.
+         *
+         *     Self-service: it needs a full session and no permission, and moves no one else. In the
+         *     place being left it revokes the old session, writing "session_revoked" to the security
+         *     log and the audit event `session.revoked`, both with the reason "context_switched". In
+         *     the place entered it writes a passkey "signin" to the security log with the same reason,
+         *     and the audit events `session.created` and `session.context_switched`, the latter
+         *     carrying the step-up.
+         *
+         *     Errors: `step_up_required` (403) without a fresh passkey assertion on this session;
+         *     `not_found` (404) for a bank the person is not an active member of, the console for a
+         *     person without an active platform role, or the place this session is already in, and
+         *     nothing is written; `validation_error` (422) when `tenantId` is missing or not a UUID or
+         *     null; `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
+         *     enrolment session; `support_read_only` (403) from a support session.
+         */
+        post: operations["switchContext"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8151,9 +8192,7 @@ export interface paths {
          *
          *     Errors: `already_member` (409) when the address belongs to a current member;
          *     `unknown_key` (422) for a role key the bank does not have or has retired;
-         *     `invalid_email` (422) for an address without an `@`; `platform_account` (422) when the
-         *     address belongs to platform staff, who never hold a bank membership;
-         *     `validation_error` (422) for an empty role list or a field over its length;
+         *     `invalid_email` (422) for an address without an `@`; `validation_error` (422) for an empty role list or a field over its length;
          *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
          *     live session.
          */
@@ -8284,8 +8323,7 @@ export interface paths {
          *
          *     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
          *     opening the passkey prompt and retrying; `not_found` (404) when the person is not a
-         *     current member; `platform_account` (422) when the address belongs to platform staff;
-         *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
+         *     current member; `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
          *     live session.
          */
         post: operations["reissueEnrolment"];
@@ -14697,6 +14735,23 @@ export interface components {
             status: string;
         };
         /**
+         * ContextSwitchBody
+         * @description Where to move the signed-in person (D-122).
+         * @example {
+         *       "tenantId": null
+         *     }
+         * @example {
+         *       "tenantId": "00000000-0000-4000-8000-00000000000a"
+         *     }
+         */
+        ContextSwitchBody: {
+            /**
+             * Tenantid
+             * @description The bank to work in, a UUID from `contexts` in `GET /me`, or null for the platform console. Required: send null explicitly for the console.
+             */
+            tenantId: string | null;
+        };
+        /**
          * CredentialEntryRef
          * @description The agent access entry a credential is bound to: its id and name.
          */
@@ -19387,6 +19442,13 @@ export interface components {
          * @description Who the caller is and what this session may do: the one read every screen makes
          *     first. The enrolment session may make it too, and sees `enrolmentPending` true.
          * @example {
+         *       "contexts": [
+         *         {
+         *           "current": true,
+         *           "tenantId": "00000000-0000-4000-8000-00000000000a",
+         *           "tenantName": "Example Bank AB"
+         *         }
+         *       ],
          *       "counts": {
          *         "assignedToMe": 1,
          *         "proposals": 2,
@@ -19463,6 +19525,11 @@ export interface components {
          *     }
          */
         Me: {
+            /**
+             * Contexts
+             * @description Every place the person can work, the current one marked: each bank they are an active member of, the earliest joined first, then the platform console when they hold an active platform role. Most people hold one, the current one. With more than one, a screen offers a switch, which is `POST /me/context` behind a passkey step-up. Empty for an enrolment session and a support session, which cannot switch.
+             */
+            contexts: components["schemas"]["MeContext"][];
             /** @description The caller's own queue counts for 'Decide now', or null for a platform session, which has no tenant to count against. Each count is 0 rather than refused when the caller's permissions do not unlock it. */
             counts: components["schemas"]["MeCounts"] | null;
             /**
@@ -19495,7 +19562,7 @@ export interface components {
             permissions: string[];
             /**
              * Platformroles
-             * @description The platform roles of platform staff, as key, kind and label: the seeded `platform_admin` and `library_editor`. Always empty for a member of a bank, because platform staff sign in with accounts of their own and a bank session never carries a platform grant. They are a platform vocabulary that only the platform's own administrators manage; a bank's admin cannot extend it.
+             * @description The platform roles of platform staff, as key, kind and label: the seeded `platform_admin` and `library_editor`. Always empty in a bank's session, even for a member who is platform staff too, because a bank session never carries a platform grant; `contexts` says whether the console is one switch away. They are a platform vocabulary that only the platform's own administrators manage; a bank's admin cannot extend it.
              */
             platformRoles: components["schemas"]["RoleRef"][];
             /**
@@ -19512,6 +19579,28 @@ export interface components {
             tenant: components["schemas"]["MeTenant"] | null;
             /** @description The signed-in person's own account: identifier, address, name and chosen language. Present for every session, the enrolment session included. */
             user: components["schemas"]["MeUser"];
+        };
+        /**
+         * MeContext
+         * @description One place the person can work (D-122): a bank they are an active member of, or the
+         *     platform console when they hold a platform role. A session is in exactly one of them.
+         */
+        MeContext: {
+            /**
+             * Current
+             * @description True for the context this session is in, false for every other one.
+             */
+            current: boolean;
+            /**
+             * Tenantid
+             * @description The bank's permanent identifier, a UUID, or null for the platform console. Send it as `tenantId` to `POST /me/context` to move there.
+             */
+            tenantId: string | null;
+            /**
+             * Tenantname
+             * @description The bank's own name, such as `Example Bank AB`, for display, or null for the platform console, which a screen names in the reader's own language.
+             */
+            tenantName: string | null;
         };
         /**
          * MeCounts
@@ -19767,6 +19856,7 @@ export interface components {
          *       "lastSeenAt": "2026-09-22T06:58:04Z",
          *       "name": "Sara Lindqvist",
          *       "passkeyCount": 2,
+         *       "platformStaff": false,
          *       "roles": [
          *         {
          *           "key": "compliance_officer",
@@ -19808,6 +19898,11 @@ export interface components {
              * @description How many live passkeys the person holds. Zero means they cannot sign in until they enrol, which is the state after an invitation or a re-issued enrolment.
              */
             passkeyCount: number;
+            /**
+             * Platformstaff
+             * @description True when the same account also holds a platform role, so the person can work in the platform console as well as in this bank. Each of their sessions is in one place only, and their console session reads nothing of this bank; granting the role wrote `platform_role.assigned` in this bank's audit log. False for everyone else.
+             */
+            platformStaff: boolean;
             /**
              * Roles
              * @description The roles the person holds in this bank, each as its stable key with a label in the reader's language; what they may do is the union of the permissions of these roles. Role keys come from the bank's own role list, a vocabulary its administrators extend with `POST /tenant/roles`: the system roles seeded on day one are `admin`, `compliance_officer`, `owner`, `approver`, `contributor`, `reader` and `auditor`, and a bank may have added more. Read `GET /tenant/roles` for the live set and store keys, never labels.
@@ -19885,6 +19980,7 @@ export interface components {
          *           "lastSeenAt": "2026-09-22T06:58:04Z",
          *           "name": "Sara Lindqvist",
          *           "passkeyCount": 2,
+         *           "platformStaff": false,
          *           "roles": [
          *             {
          *               "key": "compliance_officer",
@@ -24399,6 +24495,13 @@ export interface components {
          *       "accessToken": "v2.5c0d2a1e7b3f4c8e9a6d1b2c3e4f5a6b.full.8f14e45fceea467a9575b1d2c3e4f5a6.1790150400.ExampleSignatureThatNoServerWillAccept00000",
          *       "expiresIn": 600,
          *       "me": {
+         *         "contexts": [
+         *           {
+         *             "current": true,
+         *             "tenantId": "00000000-0000-4000-8000-00000000000a",
+         *             "tenantName": "Example Bank AB"
+         *           }
+         *         ],
          *         "counts": {
          *           "assignedToMe": 1,
          *           "proposals": 2,
@@ -40007,6 +40110,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CollabMyCommentPage"];
+                };
+            };
+        };
+    };
+    switchContext: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContextSwitchBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTokens"];
                 };
             };
         };

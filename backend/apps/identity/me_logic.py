@@ -140,10 +140,23 @@ def notification_prefs(membership: Membership) -> dict[str, bool]:
     return MembershipNotificationPrefs.model_validate(membership.notification_prefs).model_dump(by_alias=True)
 
 
+def contexts(principal: Principal, user: User) -> list[dict[str, Any]]:
+    """Where the person can work (D-122): their banks, the earliest joined first, then the
+    console when they hold an active platform role, the session's own marked. Empty for an
+    enrolment or a support session, which cannot switch."""
+    if principal.kind is not PrincipalKind.USER or principal.support_access_id is not None:
+        return []
+    held: list[tuple[uuid.UUID | None, str | None]] = [*session_logic.held_banks(user)]
+    if session_logic.holds_platform(user):
+        held.append((None, None))
+    return [{"tenant_id": tenant_id, "tenant_name": name, "current": tenant_id == principal.tenant_id} for tenant_id, name in held]
+
+
 def me(principal: Principal) -> dict[str, Any]:
     """The session's own read already loaded the person and the bank, and the step-up; the
     passkeys and the "Decide now" counts are one read of figures. A bank's session never
-    reads platform roles: platform staff are separate accounts (hardening H13)."""
+    reads platform roles, even of a person who is platform staff too (D-122): it lists the
+    console among `contexts` instead."""
     user = principal.user or User.objects.select_related("locale").get(pk=principal.subject_id)
     tenant = principal.tenant
     if tenant is None and principal.tenant_id is not None:
@@ -186,6 +199,7 @@ def me(principal: Principal) -> dict[str, Any]:
         "roles": roles,
         "permissions": sorted(principal.permissions),
         "platform_roles": platform_roles,
+        "contexts": contexts(principal, user),
         "enrolment_pending": principal.kind is PrincipalKind.ENROLMENT or user.status != UserStatus.ACTIVE.value,
         "passkey_count": passkeys,
         "step_up_valid_until": fresh_until,

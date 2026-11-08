@@ -390,13 +390,13 @@ def create_console_tenant(request: HttpRequest, body: ConsoleTenantCreateBody) -
     and the invitation is recorded against the new bank. If anything in the call is
     refused, nothing at all is written.
 
-    The address must belong to the bank. Platform staff are separate accounts, and an
-    address that already carries a platform role is refused, because a console account
-    invited into a bank would carry the console's permissions into a bank session.
+    The address may already belong to platform staff, the caller's own included (D-122): one
+    account may be a bank's member and platform staff, each session holding one zone's
+    permissions only, and the bank's member list marks them.
 
-    Answers 201 with the new bank's console row. Errors: a 422 for a blank name or an
-    address that belongs to platform staff, each with its own `code` and a message to
-    show; `permission_denied` without `tenants.manage`.
+    Answers 201 with the new bank's console row. Errors: a 422 for a blank name or a
+    malformed address, each with its own `code` and a message to show;
+    `permission_denied` without `tenants.manage`.
     """
     platform_user = User.objects.get(pk=_principal(request).subject_id)
     tenant = logic.create_tenant(

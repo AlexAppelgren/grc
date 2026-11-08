@@ -23,6 +23,7 @@ import {
   useSignIn,
   useSignOut,
   useStepUp,
+  useSwitchContext,
   useVerifyCode,
   useVerifyInvitationCode,
 } from './hooks';
@@ -37,6 +38,7 @@ const me: Me = {
   roles: [],
   permissions: ['watch.read'],
   platformRoles: [],
+  contexts: [],
   enrolmentPending: false,
   passkeyCount: 1,
   stepUpValidUntil: null,
@@ -219,6 +221,18 @@ describe('identity hooks', () => {
     expect(tokenStore.get()).toBeNull();
     await waitFor(() => expect(queryClient.getQueryData(['me'])).toBeUndefined());
     expect(then).toHaveBeenCalledOnce();
+  });
+
+  it('useSwitchContext posts the place, keeps the new token and hands on with it', async () => {
+    tokenStore.set('old');
+    const sent = installAdapter(() => ({ status: 200, data: { accessToken: 'new', sessionKind: 'full', expiresIn: 300 } }));
+    const { wrapper } = queryWrapper();
+    const then = vi.fn();
+    const { result } = renderHook(() => useSwitchContext(then), { wrapper });
+    await result.current.mutateAsync(null);
+    expect(sent.map((s) => [s.path, s.body])).toEqual([['/api/v1/me/context', { tenantId: null }]]);
+    expect(tokenStore.get()).toBe('new');
+    expect(then).toHaveBeenCalledExactlyOnceWith(null);
   });
 
   it('useSignOut hands on when the server refused the sign-out too', async () => {

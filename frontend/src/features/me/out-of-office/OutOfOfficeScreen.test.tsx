@@ -36,6 +36,7 @@ function me(): Me {
     roles: [],
     permissions: [],
     platformRoles: [],
+    contexts: [],
     enrolmentPending: false,
     passkeyCount: 1,
     stepUpValidUntil: null,

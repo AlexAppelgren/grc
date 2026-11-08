@@ -22,7 +22,7 @@ const roles = [
 
 describe('presentMember', () => {
   it('shows the role labels from the rows as information pills, then the status', () => {
-    expect(presentMember({ status: 'invited', roles }, t).map((p) => [p.label, p.tone, p.order])).toEqual([
+    expect(presentMember({ status: 'invited', roles, platformStaff: false }, t).map((p) => [p.label, p.tone, p.order])).toEqual([
       ['Compliance officer', 'information', 10],
       ['Reader', 'information', 11],
       ['Awaiting enrolment', 'warning', 50],
@@ -30,9 +30,16 @@ describe('presentMember', () => {
   });
 
   it('marks a deactivated member as a neutral fact and an active one with nothing', () => {
-    expect(presentMember({ status: 'deactivated', roles: [] }, t)).toEqual([{ key: 'status:deactivated', label: 'Deactivated', tone: 'information', order: 50 }]);
-    expect(presentMember({ status: 'active', roles: [] }, t)).toEqual([]);
-    expect(presentMember({ status: 'later' as 'active', roles: [] }, t)).toEqual([]);
+    expect(presentMember({ status: 'deactivated', roles: [], platformStaff: false }, t)).toEqual([{ key: 'status:deactivated', label: 'Deactivated', tone: 'information', order: 50 }]);
+    expect(presentMember({ status: 'active', roles: [], platformStaff: false }, t)).toEqual([]);
+    expect(presentMember({ status: 'later' as 'active', roles: [], platformStaff: false }, t)).toEqual([]);
+  });
+
+  it('marks a member who is platform staff too, first, as a notice', () => {
+    expect(presentMember({ status: 'active', roles: [roles[1]!], platformStaff: true }, t).map((p) => [p.label, p.tone])).toEqual([
+      ['Platform staff', 'notice'],
+      ['Reader', 'information'],
+    ]);
   });
 });
 

@@ -37,6 +37,7 @@ from apps.identity.schemas import (
     ApiKeysPage,
     CodeRequestBody,
     CodeVerifyBody,
+    ContextSwitchBody,
     Empty,
     ENROLMENT_SESSION_EXAMPLE,
     InvitationCodeVerifyBody,
@@ -377,9 +378,7 @@ def passkey_register_verify(request: HttpRequest, body: PasskeyRegisterBody, res
     lifetime, and start again from the options call; `invalid_credential` (400) when the
     credential cannot be read; `registration_failed` (400) when it does not verify or that
     passkey is already registered; `step_up_required` (403) when a full session is older
-    than the step-up window and holds no fresh assertion; `platform_account` (422) when a
-    bank invitation reaches an account that has since become platform staff;
-    `unauthenticated` (401) without a live session; `validation_error` (422) for a malformed
+    than the step-up window and holds no fresh assertion; `unauthenticated` (401) without a live session; `validation_error` (422) for a malformed
     body.
     """
     # Ungated by design: capability. From a full session, adding an authentication factor
@@ -701,6 +700,52 @@ def mark_visit(request: HttpRequest) -> tuple[int, None]:
     # session with no tenant has no membership to move and answers 404.
     me_logic.mark_visit(_principal(request))
     return 204, None
+
+
+@router.post(
+    "/me/context",
+    response=SessionTokens,
+    auth=SessionAuth(),
+    operation_id="switchContext",
+    by_alias=True,
+    summary="Switch between your bank and the platform console",
+)
+@requires_step_up
+@_quoting_settings
+def switch_context(request: HttpRequest, body: ContextSwitchBody, response: HttpResponse) -> SessionTokens:
+    """For a person who works in more than one place, a bank and the platform console or
+    several banks (`contexts` in `GET /me`): end this session and start one in the other
+    place, and answer with its access token as sign-in does (`sessionKind` `full`). The
+    refresh cookie this response sets replaces the old one; drop the old access token, which
+    stops working at once, and read `GET /me` again with the new one.
+
+    A session is always in one place: a bank session holds only that bank's permissions and a
+    console session only platform permissions, so nothing carries over, and neither does the
+    step-up. Each switch therefore needs its own passkey confirmation on the session it
+    leaves, younger than $step_up_minutes minutes; a stepped-up session can switch once.
+
+    Self-service: it needs a full session and no permission, and moves no one else. In the
+    place being left it revokes the old session, writing "session_revoked" to the security
+    log and the audit event `session.revoked`, both with the reason "context_switched". In
+    the place entered it writes a passkey "signin" to the security log with the same reason,
+    and the audit events `session.created` and `session.context_switched`, the latter
+    carrying the step-up.
+
+    Errors: `step_up_required` (403) without a fresh passkey assertion on this session;
+    `not_found` (404) for a bank the person is not an active member of, the console for a
+    person without an active platform role, or the place this session is already in, and
+    nothing is written; `validation_error` (422) when `tenantId` is missing or not a UUID or
+    null; `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
+    enrolment session; `support_read_only` (403) from a support session.
+    """
+    # Ungated by design: self. Moves the caller's own session to a context they hold.
+    bundle = session_logic.switch_context(
+        principal=_principal(request),
+        tenant_id=body.tenant_id,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
+        request=request,
+    )
+    return _session_response(bundle, response)
 
 
 _PASSKEY_ID = Path(
@@ -1107,9 +1152,7 @@ def invite_member(request: HttpRequest, body: MemberInvite) -> tuple[int, Invita
 
     Errors: `already_member` (409) when the address belongs to a current member;
     `unknown_key` (422) for a role key the bank does not have or has retired;
-    `invalid_email` (422) for an address without an `@`; `platform_account` (422) when the
-    address belongs to platform staff, who never hold a bank membership;
-    `validation_error` (422) for an empty role list or a field over its length;
+    `invalid_email` (422) for an address without an `@`; `validation_error` (422) for an empty role list or a field over its length;
     `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
     live session.
     """
@@ -1325,8 +1368,7 @@ def reissue_enrolment(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> 
 
     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
     opening the passkey prompt and retrying; `not_found` (404) when the person is not a
-    current member; `platform_account` (422) when the address belongs to platform staff;
-    `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
+    current member; `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
     live session.
     """
     actor_user = _actor_user(request)

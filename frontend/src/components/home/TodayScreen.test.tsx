@@ -27,6 +27,7 @@ const me: Me = {
   roles: [{ key: 'compliance_officer', kind: null, label: 'Compliance officer' }],
   permissions: ['watch.read', 'roadmap.read', 'cases.triage', 'proposals.create'],
   platformRoles: [],
+  contexts: [],
   enrolmentPending: false,
   passkeyCount: 1,
   stepUpValidUntil: null,

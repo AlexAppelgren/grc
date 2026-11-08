@@ -214,11 +214,11 @@ means every test user re-enrols their passkeys**: a passkey made under
 otherwise. The way back, in order:
 
 1. The platform admin, whose own passkey stops working at the same moment:
-   `bootstrap_platform` refuses an address that still holds a passkey, so run
-   it with a new address of your own
-   (`python manage.py bootstrap_platform --admin-email <new address>`) and
-   enrol that. The old platform account stays unusable, which is harmless on
-   a test deployment.
+   `python manage.py bootstrap_platform --admin-email <your address> --reenrol`
+   retires your passkeys, revokes your sessions (in the console and in any bank
+   you are a member of), keeps your platform roles and emails a re-enrolment
+   link; enrol again from it. An account that is also a bank's member gets its
+   bank access back with the same passkey (D-122).
 2. One administrator of each test bank: the platform re-issues their
    enrolment with `POST /api/v1/console/tenants/{tenantId}/members/{userId}/reissue-enrolment`
    (step-up, audited). The console has no screen for it yet, so on a test

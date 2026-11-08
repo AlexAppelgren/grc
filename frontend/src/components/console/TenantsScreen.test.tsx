@@ -160,13 +160,13 @@ describe('the console tenants screen', () => {
 
   it('reports a server error on the form without inventing a code the route never raises', async () => {
     server({ status: 200, data: { items: [tenantA], total: 1 } }, (s) =>
-      s.method === 'post' ? { status: 422, data: { code: 'platform_account', detail: 'That address belongs to platform staff.', status: 422 } } : undefined,
+      s.method === 'post' ? { status: 422, data: { code: 'invalid_email', detail: 'Enter a valid work address.', status: 422 } } : undefined,
     );
     renderIn(<TenantsScreen />);
     const form = await openForm();
-    fill(form, { name: 'Another Bank AB', email: 'platform@bleqq.test' });
+    fill(form, { name: 'Another Bank AB', email: 'anna@example-bank.test' });
     fireEvent.click(within(form).getByRole('button', { name: 'Create tenant' }));
 
-    expect(await within(form).findByText('That address belongs to platform staff.')).toBeInTheDocument();
+    expect(await within(form).findByText('Enter a valid work address.')).toBeInTheDocument();
   });
 });

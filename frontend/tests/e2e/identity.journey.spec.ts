@@ -335,6 +335,45 @@ test.describe('identity journeys', () => {
     expect(restoreStatus, 'the restoring save needed no second step-up').toBe(200);
   });
 
+  test("ID-S34: A person who works in a bank and the console switches between them with a passkey", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    apiGuard.allow(/\/me\/context$/, 403, 'each switch answers step_up_required first and opens the passkey prompt');
+    await signInAs(page, LOGINS.dual);
+    const who = page.locator('[data-who-panel]');
+    await expect(who).toContainText('Example Bank AB');
+    const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
+    const choose = async (place: string) => {
+      await who.getByRole('button', { name: /^Alva Strand, / }).click();
+      await page.getByRole('group', { name: 'Work in' }).getByRole('menuitemradio', { name: place, exact: true }).click();
+      await expect(prompt).toBeVisible();
+      await prompt.getByRole('button', { name: 'Use passkey' }).click();
+    };
+
+    // To the console: a passkey, then the console's home in a session of its own.
+    await choose('Platform console');
+    await expect(page).toHaveURL(/\/console(\/|$)/, { timeout: 15_000 });
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+    await expect(who).not.toContainText('Example Bank AB');
+    await expect(who).toContainText('Platform administrator');
+
+    // And back: the step-up did not travel, so the passkey is asked for again.
+    await choose('Example Bank AB');
+    await expect(page).toHaveURL(/:\d+\/$/, { timeout: 15_000 });
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+    await expect(who).toContainText('Example Bank AB');
+  });
+
+  test("ID-S37: The bank sees a member who is platform staff", async ({ page, apiGuard }) => {
+    // The marker on Members. The grant's audit row in the bank is the integration test's:
+    // the grant is the owner's shell command, and no screen makes it.
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.admin);
+    await page.goto('/admin/members');
+    const dual = page.locator('[data-member-id]', { hasText: LOGINS.dual });
+    await expect(dual.getByText('Platform staff', { exact: true })).toBeVisible();
+    await expect(page.locator('[data-member-id]', { hasText: LOGINS.contributor }).getByText('Platform staff', { exact: true })).toHaveCount(0);
+  });
+
   test("ID-S18: Permissions are code and roles are rows", async ({ page, apiGuard }) => {
     // pending: ID-S18 (ID-09) -> built in chunk 1
     allowFreshContext(apiGuard);

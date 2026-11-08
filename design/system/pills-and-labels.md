@@ -175,6 +175,12 @@ callout (foundations.md), not a pill, and it stays until a person decides.
 | Pill | Tone | Slot or kind, and why |
 |---|---|---|
 | Research request status: "Queued", "Running", "Done", "Failed", "Rejected", "Cancelled" | `information`, `notice`, `positive`, `negative`, `information`, `information` | Kind (`RequestState`). Queued is a neutral fact and running reads as a running agent; Done is good and Failed did not finish; Rejected and Cancelled are decisions made on purpose, never negative, like a rejected proposal (`frontend/src/features/agents/agents-presentation.ts`) |
+## A member who is platform staff too (D-122)
+
+| Pill | Tone | Slot or kind, and why |
+|---|---|---|
+| "Platform staff" on a member (Admin › Members, a member's page) | `notice` | Computed from the account's platform roles (`platformStaff`): a fact worth seeing, as "Reads our register" is, because the same person can work in the platform console. First in the row, before the roles |
+
 ## The gallery covers R2 (r2-gallery-coldstart-demo)
 
 `/dev/pills` and `pills-and-labels.html` draw every R2 record type beside the R1 sections,
