@@ -1,0 +1,222 @@
+{
+  "tranche": "se-forordningar",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "sfs-2009-92",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-200992-om-atgarder-mot-penningtvatt_sfs-2009-92/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2009:92, Förordning (2009:92) om åtgärder mot penningtvätt och finansiering av terrorism, text as amended up to SFS 2025:888",
+      "text": {
+        "en": "Fills in the details of the Swedish Anti-Money Laundering Act. It sets up Bolagsverket's register of businesses that must notify their activity, assigns supervision of those businesses to three county administrative boards, and lets Finansinspektionen, the other supervisors and the Police issue more detailed rules. A bank has no duties of its own under it: its duties come from the Act and from Finansinspektionen's regulations made under the powers given here."
+      }
+    },
+    {
+      "key": "sfs-2004-329",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2004329-om-bank-och_sfs-2004-329/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2004:329, Förordning (2004:329) om bank- och finansieringsrörelse, text as amended up to SFS 2026:1092",
+      "text": {
+        "en": "Fills in the details of the Banking and Financing Business Act: what a licence application must contain, Bolagsverket's bank register and registration filings, fees, and Finansinspektionen's tasks. It binds banks, savings banks, member banks and credit market companies directly. A bank must notify Finansinspektionen before it starts business, with an auditor's certificate showing its initial capital, and must consult Finansinspektionen early if it intends to decide on its own liquidation."
+      }
+    },
+    {
+      "key": "sfs-2014-993",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2014993-om-sarskild-tillsyn-och_sfs-2014-993/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2014:993, Förordning (2014:993) om särskild tillsyn och kapitalbuffertar, text as amended up to SFS 2026:1093",
+      "text": {
+        "en": "Fills in the details of the acts on special supervision of credit institutions and investment firms and on capital buffers. Most of it governs Finansinspektionen's work: what it publishes, how it handles bank mergers and divisions, how it sets capital buffers and which detailed rules it may issue. It reaches a bank directly on one point: a Swedish subsidiary credit institution whose Swedish parent calculates at group level computes its total risk exposure amount without the output floor."
+      }
+    },
+    {
+      "key": "sfs-2011-834",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2011834-om-insattningsgaranti_sfs-2011-834/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:834, Förordning (2011:834) om insättningsgaranti, text as amended up to SFS 2020:179",
+      "text": {
+        "en": "Fills in the details of the Deposit Guarantee Act, following the EU deposit guarantee rules. It mostly governs the guarantee authority: cooperation with other EEA schemes on payouts at branches, reporting to the European Banking Authority, information for depositors, stress tests of its own systems and its power to issue rules. For an institution in the scheme the direct effect is a fixed fee of SEK 2,000 when it asks the authority to review the terms of an account type."
+      }
+    },
+    {
+      "key": "sfs-2016-1033",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/rubriken-upphor-att-galla-u2026-11-20_sfs-2016-1033/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1033, Förordning (2016:1033) om verksamhet med bostadskrediter, text as amended up to SFS 2026:1034",
+      "text": {
+        "en": "Fills in the details of the Mortgage Credit Business Act, which licenses lenders and credit intermediaries other than banks. It covers Finansinspektionen's public register of those firms, its notices to other EEA supervisors, and the detailed rules Finansinspektionen and, for certain other consumer credit, Konsumentverket may issue. A bank has no duties under this ordinance itself, although the Act's conduct rules and the regulations issued under these powers do reach a bank's mortgage lending."
+      }
+    },
+    {
+      "key": "sfs-2016-1034",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20161034-om-standardiserat_sfs-2016-1034/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1034, Förordning (2016:1034) om standardiserat EU-faktablad och beräkning av effektiv ränta vid bostadskrediter, text as amended up to SFS 2026:1035",
+      "text": {
+        "en": "Fills in the Consumer Credit Act for mortgage credit to consumers, following the EU mortgage credit rules. It sets the format of the standard European information sheet a lender hands over before the agreement and how the effective interest rate is calculated. It binds every creditor offering such credit, banks included: the sheet follows the EU format, with an extra rate showing the risk of a rate rise where the rate can vary, and the rate is calculated with the EU formula and assumptions."
+      }
+    },
+    {
+      "key": "sfs-2010-1855",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101855-om-berakning-av-effektiv_sfs-2010-1855/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1855, Förordning (2010:1855) om beräkning av effektiv ränta vid konsumentkrediter, text as amended up to SFS 2026:1031",
+      "text": {
+        "en": "Sets how the effective interest rate on consumer credit other than mortgage credit is calculated under the Consumer Credit Act, following the EU consumer credit rules and, under the new Consumer Credit Act from 20 November 2026, the revised EU rules. It binds every creditor, banks included. A bank uses the EU formula and assumptions, leaves out charges for the consumer's breach of contract, and counts account and payment-instrument costs unless the account is optional and its costs are shown separately."
+      }
+    },
+    {
+      "key": "sfs-2010-1856",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101856-om-formular-for_sfs-2010-1856/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1856, Förordning (2010:1856) om formulär för förhandsinformation vid konsumentkrediter, text as amended up to SFS 2026:1032",
+      "text": {
+        "en": "Names the standard form a creditor must use to give consumers pre-contractual information on consumer credit under the Consumer Credit Act. It binds every creditor, banks included. Today the form is the one in the EU consumer credit directive; under the new Consumer Credit Act from 20 November 2026 it is the form in the revised EU directive, made available by Konsumentverket. A bank's pre-contractual information for consumer credit follows that form."
+      }
+    },
+    {
+      "key": "sfs-2018-479",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2018479-om-naringsidkares_sfs-2018-479/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:479, Förordning (2018:479) om näringsidkares upplysningsskyldighet vid marknadsföring av konsumentkrediter, text as amended up to SFS 2026:1036",
+      "text": {
+        "en": "Fills in the Consumer Credit Act's rules on the information that must accompany marketing of consumer credit. It binds every trader that markets consumer credit, banks included. Such marketing must carry the statement 'Att låna kostar pengar' (borrowing costs money), and Konsumentverket may issue further rules on information about the risks of debt, where consumers can get budget and debt advice, and how that information is given."
+      }
+    },
+    {
+      "key": "sfs-2007-1135",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20071135-om-arliga-avgifter-for_sfs-2007-1135/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:1135, Förordning (2007:1135) om årliga avgifter för finansiering av Finansinspektionens verksamhet, text as amended up to SFS 2026:981",
+      "text": {
+        "en": "Sets the annual fees that finance Finansinspektionen's supervision. Supervised firms are sorted into fee groups, and each group carries the costs attributed to it. It binds Swedish banks, credit market companies, investment firms, payment and e-money institutions and the other listed firms directly. A bank pays a yearly fee set and invoiced by Finansinspektionen, shared within its fee group by balance sheet total with a minimum amount, and pays penalty interest if it pays late."
+      }
+    },
+    {
+      "key": "sfs-2010-1008",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20101008-om-betaltjanster_sfs-2010-1008/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1008, Förordning (2010:1008) om betaltjänster, text as amended up to SFS 2026:1087",
+      "text": {
+        "en": "Fills in the details of the Payment Services Act. Most of it governs authorities: Finansinspektionen's register of payment institutions and agents, its comparison website for payment account fees, its reporting to EU bodies, and the rules it and the Post and Telecom Authority may issue. For a credit institution that must provide cash services it sets the coverage targets: only a very small share of the population may live more than 25 km by road from the nearest cash withdrawal or deposit point."
+      }
+    },
+    {
+      "key": "sfs-2011-776",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2011776-om-elektroniska-pengar_sfs-2011-776/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:776, Förordning (2011:776) om elektroniska pengar, text as amended up to SFS 2025:200",
+      "text": {
+        "en": "Fills in the details of the Electronic Money Act, following the EU e-money rules. It makes Finansinspektionen responsible for the public register of e-money institutions, registered issuers, agents and branches, and lets Finansinspektionen and the Police issue detailed rules on capital, safeguarding of funds, applications and reporting. A bank has no duties of its own under it: the provisions address authorities, and the detailed rules they allow concern e-money institutions and registered issuers."
+      }
+    },
+    {
+      "key": "sfs-2007-572",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2007572-om-vardepappersmarknaden_sfs-2007-572/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:572, Förordning (2007:572) om värdepappersmarknaden, text as amended up to SFS 2026:1836",
+      "text": {
+        "en": "Fills in the details of the Securities Market Act: Finansinspektionen's register of investment firms, registration of tied agents with Bolagsverket, how Finansinspektionen handles applications and notices, and the detailed rules it may issue. It binds investment firms and credit institutions providing investment services. A bank that uses tied agents registers each one with Bolagsverket on a notice signed by a board member or the managing director, and reports changes to the registered details as soon as possible."
+      }
+    },
+    {
+      "key": "sfs-2013-587",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2013587-om-forvaltare-av-alternativa_sfs-2013-587/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2013:587, Förordning (2013:587) om förvaltare av alternativa investeringsfonder, text as amended up to SFS 2026:921",
+      "text": {
+        "en": "Fills in the details of the Alternative Investment Fund Managers Act, following the EU rules for such managers. It covers Finansinspektionen's reports to the European Securities and Markets Authority, its notices to Bolagsverket, and the detailed rules it may issue on applications, marketing, capital, remuneration and fund information. A bank has no duties of its own under it: it addresses Finansinspektionen, and duties for managers and depositaries come from the Act and Finansinspektionen's regulations."
+      }
+    },
+    {
+      "key": "sfs-2013-588",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2013588-om-vardepappersfonder_sfs-2013-588/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2013:588, Förordning (2013:588) om värdepappersfonder, text as amended up to SFS 2026:923",
+      "text": {
+        "en": "Fills in the details of the Swedish UCITS Funds Act. It sets out how Finansinspektionen handles applications, certificates, publications and notices to EU bodies and the Swedish Tax Agency, and the detailed rules Finansinspektionen and the Police may issue. A bank has no duties of its own under it: it addresses authorities, and duties for fund management companies and depositaries, including a bank acting as depositary, come from the Act and Finansinspektionen's regulations."
+      }
+    },
+    {
+      "key": "sfs-2024-1167",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20241167-med-kompletterande_sfs-2024-1167/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2024:1167, Förordning (2024:1167) med kompletterande bestämmelser till EU:s förordning om marknader för kryptotillgångar, text as amended up to SFS 2026:338",
+      "text": {
+        "en": "Supplements the Swedish act that sits alongside the EU regulation on markets in crypto-assets. It lets Finansinspektionen issue rules on firms' reporting duties and on product intervention, requires it to tell Bolagsverket when it bans someone from a board or managing director role and to send the Tax Agency a yearly list of crypto-asset service providers, and lets the Police set how certain information is filed. A bank has no duties of its own under it."
+      }
+    },
+    {
+      "key": "sfs-2018-1231",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20181231-om-forsakringsdistribution_sfs-2018-1231/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1231, Förordning (2018:1231) om försäkringsdistribution, text as amended up to SFS 2025:353",
+      "text": {
+        "en": "Fills in the details of the Insurance Distribution Act, following the EU insurance distribution rules, including registration of tied intermediaries with Bolagsverket and criminal record checks of distributors. It reaches a bank that distributes insurance. In practice the firm checks recent criminal record extracts of its distributing staff and of tied intermediaries before registering them, reports changes to Bolagsverket, and tells customers on request which staff of a tied intermediary may distribute insurance."
+      }
+    },
+    {
+      "key": "sfs-2011-257",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forsakringsrorelseforordning-2011257_sfs-2011-257/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:257, Försäkringsrörelseförordning (2011:257), text as amended up to SFS 2026:654",
+      "text": {
+        "en": "Fills in the details of the Insurance Business Act: applications to Finansinspektionen, registration with Bolagsverket and how authorities handle them. It binds insurance undertakings, not banks, so it reaches a bank only through an insurance company in its group. The duty recorded here is that an insurance undertaking must tell Bolagsverket in writing as soon as possible when information it has given Bolagsverket changes."
+      }
+    },
+    {
+      "key": "sfs-2019-809",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2019809-om-tjanstepensionsforetag_sfs-2019-809/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2019:809, Förordning (2019:809) om tjänstepensionsföretag, text as amended up to SFS 2026:662",
+      "text": {
+        "en": "Fills in the details of the Occupational Pension Undertakings Act, which follows the EU rules for occupational pension funds. It binds occupational pension undertakings, not banks, so it matters to a bank only through such an undertaking in its group. Such an undertaking disregards negative market rates when calculating its capital requirement for interest-rate risk, and must tell Bolagsverket in writing as soon as possible when information it has given there changes."
+      }
+    },
+    {
+      "key": "sfs-2024-1292",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20241292-med-kompletterande_sfs-2024-1292/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2024:1292, Förordning (2024:1292) med kompletterande bestämmelser till EU:s förordning om digital operativ motståndskraft för finanssektorn, text as issued",
+      "text": {
+        "en": "Supplements the Swedish act that sits alongside the EU regulation on digital operational resilience in the financial sector. It lets Finansinspektionen issue rules on how major ICT-related incidents, significant cyber threats and information on ICT third-party service providers are reported, and requires it to tell Bolagsverket when it bans someone from a board or managing director role. A bank has no duties of its own under it: its reporting duties come from the EU regulation and those rules."
+      }
+    },
+    {
+      "key": "sfs-2025-1507",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/cybersakerhetsforordning-20251507_sfs-2025-1507/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1507, Cybersäkerhetsförordning (2025:1507), text as amended up to SFS 2026:623",
+      "text": {
+        "en": "Fills in the details of the Cybersecurity Act, which brings the EU NIS2 directive into Swedish law. It names the authorities: where operators send their notification under the Act and their incident reports, which authority supervises each sector, and their tasks. The National Defence Radio Establishment is the single point of contact and Finansinspektionen supervises banking and financial market infrastructure. A bank within the Act's scope files its notification with that contact point."
+      }
+    },
+    {
+      "key": "sfs-2018-219",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2018219-med-kompletterande_sfs-2018-219/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:219, Förordning (2018:219) med kompletterande bestämmelser till EU:s dataskyddsförordning, text as amended up to SFS 2020:1140",
+      "text": {
+        "en": "Supplements the Swedish Data Protection Act and the GDPR. Most of it concerns authorities: Integritetsskyddsmyndigheten's role and powers, accreditation of certification bodies, archiving rules and administrative fines. For a private firm such as a bank the main point is narrow: it may process personal data on criminal convictions and offences only where needed for legal claims or to meet a duty under an act or ordinance, unless Integritetsskyddsmyndigheten has allowed further cases."
+      }
+    },
+    {
+      "key": "sfs-2015-921",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-2015921-om-identifiering-av_sfs-2015-921/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:921, Förordning (2015:921) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton, text as amended up to SFS 2025:1394",
+      "text": {
+        "en": "Fills in the details of the Swedish act on identifying reportable accounts for the automatic exchange of financial account information with other countries under the Common Reporting Standard. It binds reporting financial institutions, banks included. A bank aggregates related accounts when testing balance thresholds, accepts only properly given written self-certifications, and makes reasonable efforts to obtain a missing foreign tax identification number and date of birth for pre-existing reportable accounts."
+      }
+    },
+    {
+      "key": "sfs-2015-70",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-201570-om-identifiering-av_sfs-2015-70/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:70, Förordning (2015:70) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet, text as issued",
+      "text": {
+        "en": "Fills in the details of the Swedish act on identifying accounts to be reported to the United States under the FATCA agreement. It binds reporting financial institutions, banks included. A bank aggregates related accounts and converts dollar amounts at a published rate when testing thresholds, and reviews a pre-existing individual account under the enhanced procedures within six months once its value passes USD 1,000,000."
+      }
+    },
+    {
+      "key": "sfs-2011-1261",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandeforordning-20111261_sfs-2011-1261/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1261, Skatteförfarandeförordning (2011:1261), text as amended up to SFS 2026:1570",
+      "text": {
+        "en": "Fills in the details of the Tax Procedure Act, including what control statements filed with Skatteverket must contain. It binds everyone who files, and reaches a bank directly as a filer of control statements on its customers, including FATCA and CRS statements. A bank's statements carry the prescribed identity and tax details, including foreign tax identification numbers and the set categories for account type and controlling persons, and a bank files its annual report with its income tax return."
+      }
+    },
+    {
+      "key": "sfs-2025-1390",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forordning-20251390-om-inhamtande-av-vissa_sfs-2025-1390/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1390, Förordning (2025:1390) om inhämtande av vissa uppgifter på skatteområdet om kryptotillgångar, text as issued",
+      "text": {
+        "en": "Fills in the details of the Swedish act on collecting information on crypto-assets for tax purposes, which follows the EU rules on tax cooperation. It binds crypto-asset service providers that must report, so it reaches a bank only if it provides such services. Users' self-certifications must be given electronically or in another non-oral form, through a system that keeps them intact, logs every access, checks who submits them and can produce a paper copy."
+      }
+    },
+    {
+      "key": "sfs-1971-49",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/kupongskatteforordning-197149_sfs-1971-49/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 1971:49, Kupongskatteförordning (1971:49), text as amended up to SFS 2016:70",
+      "text": {
+        "en": "Fills in the details of the Coupon Tax Act, the Swedish withholding tax on dividends to recipients without full tax liability in Sweden. It sets how central securities depositories, nominees and Skatteverket handle the information that decides liability. A bank registered as nominee for shares or fund units checks individual recipients' tax details with Skatteverket in the way Skatteverket decides, and names, when the depository asks, the person for whom it collected interest."
+      }
+    }
+  ]
+}

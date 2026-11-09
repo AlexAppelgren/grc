@@ -10,6 +10,7 @@ import type {
   Instrument,
   InstrumentAuthorityRef,
   InstrumentDetail,
+  InstrumentLinkRef,
   InstrumentLineageRef,
   InstrumentQuery,
   InstrumentSummary,
@@ -391,7 +392,15 @@ export function instrumentDetailOf(raw: Schemas['InstrumentDetail']): Instrument
     verifiedBy: raw.verifiedBy === null || raw.verifiedBy === undefined ? null : { id: raw.verifiedBy.id, name: raw.verifiedBy.name },
     privateToUs: raw.privateToUs,
     lineage: (raw.lineage ?? []).map(lineageOf),
+    summary: textOf(raw.summary),
+    implements: raw.implements.map(linkOf),
+    implementedBy: raw.implementedBy.map(linkOf),
+    obligationCounts: { ...raw.obligationCounts },
   };
+}
+
+function linkOf(raw: Schemas['InstrumentLinkRef']): InstrumentLinkRef {
+  return { id: raw.id, key: raw.key, shortName: raw.shortName, jurisdiction: refOf(raw.jurisdiction) };
 }
 
 export async function getInstrument(instrumentId: string): Promise<InstrumentDetail> {

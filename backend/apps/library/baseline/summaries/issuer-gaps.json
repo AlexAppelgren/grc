@@ -1,0 +1,110 @@
+{
+  "tranche": "issuer-gaps",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "no-for-2022-09-19-1612",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2022-09-19-1612",
+      "sourceLabel": "Lovdata, FOR-2022-09-19-1612, Forskrift om finansavtaler (finansavtaleforskriften), consolidated text; fastsatt av Justis- og beredskapsdepartementet, § 8-1 on entry into force",
+      "text": {
+        "en": "The Norwegian regulation that fills in the Financial Agreements Act: how lenders calculate the effective interest rate and early repayment costs, what credit marketing must and must not say, standard fee information for payment accounts, and how lenders run and present credit assessments. It binds lenders and payment service providers in Norway directly. A bank must follow these calculation, disclosure and marketing rules and grade credit assessments green, yellow or red."
+      }
+    },
+    {
+      "key": "no-for-2017-10-31-1691",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2017-10-31-1691",
+      "sourceLabel": "Lovdata, FOR-2017-10-31-1691, Forskrift om virksomhet etter gjeldsinformasjonsloven (gjeldsinformasjonsforskriften), consolidated text; fastsatt av Barne- og likestillingsdepartementet, now listed under Barne- og familiedepartementet, § 11 on entry into force",
+      "text": {
+        "en": "The Norwegian regulation on the debt information system, through which licensed companies gather information on consumers' unsecured debt such as instalment loans, credit lines and charge cards so lenders can see a borrower's total debt. It binds financial institutions directly. A bank must make its customers' debt information available to the debt information companies without undue delay, use information it obtains only for permitted purposes and never for marketing, and keep the service secure."
+      }
+    },
+    {
+      "key": "no-for-2019-12-02-1640",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-02-1640",
+      "sourceLabel": "Lovdata, FOR-2019-12-02-1640, Forskrift om krav til rapportering av opplysninger om innskytere og innskudd til Bankenes sikringsfond (innskuddsgarantiforskriften); fastsatt av Bankenes sikringsfond under finansforetaksloven § 19-14, § 9 on entry into force",
+      "text": {
+        "en": "Rules from the Norwegian Banks' Guarantee Fund on the depositor and deposit information member banks must be able to produce so the fund can pay out deposit guarantees quickly. It binds every member of the Norwegian deposit guarantee scheme directly. A bank must keep systems that can produce machine-readable depositor lists in the fund's format at any time, send them on request within the fund's deadlines, and keep doing so after its deposits become unavailable."
+      }
+    },
+    {
+      "key": "dk-bek-2025-789",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/789",
+      "sourceLabel": "Retsinformation, BEK nr 789 af 20/06/2025, signed by Digitaliseringsministeriet; Retsinformation now lists it under Forsknings-, Uddannelses- og Digitaliseringsministeriet; § 16 on entry into force",
+      "text": {
+        "en": "A Danish executive order on how private payers may use NemKonto, the national register of the account each person or company has chosen for public payments, to pay people. It binds private payers, the account intermediaries that give them access and operators of financial infrastructure. A bank acting in those roles may look up a payee's NemKonto only shortly before paying them, must first tell the payee they can opt out, and must support the Agency for Digital Government with information."
+      }
+    },
+    {
+      "key": "dk-bek-2025-790",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/790",
+      "sourceLabel": "Retsinformation, BEK nr 790 af 20/06/2025, signed by Digitaliseringsministeriet; Retsinformation now lists it under Forsknings-, Uddannelses- og Digitaliseringsministeriet; § 11 on entry into force",
+      "text": {
+        "en": "A Danish executive order on the public service scheme for NemKonto, the national register of the account each person or company has chosen for public payments. It binds banks, payment, e-money and credit institutions. A bank in the scheme must help customers register or change accounts as their NemKonto, report and update the system within the deadlines set, keep records of each report for five years, and connect to the system under the Agency for Digital Government's integration and security requirements."
+      }
+    },
+    {
+      "key": "dk-bek-2000-531",
+      "source": "https://www.retsinformation.dk/eli/lta/2000/531",
+      "sourceLabel": "Retsinformation, BEK nr 531 af 15/06/2000, signed by Justitsministeriet, status valid and linked to the Data Protection Act (LBK nr 289 af 08/03/2024); § 8 on entry into force",
+      "text": {
+        "en": "A Danish executive order on when banks may pass on information about a customer's financial standing and creditworthiness to others, now linked to the Danish Data Protection Act. It binds banks directly and also covers information about businesses. A bank must tell a customer when it first passes on such information, stop if the customer objects in writing, tell the customer on request what it passed on and to whom, and correct wrong information with all recipients."
+      }
+    },
+    {
+      "key": "dk-bek-2019-1376",
+      "source": "https://www.retsinformation.dk/eli/lta/2019/1376",
+      "sourceLabel": "Retsinformation, BEK nr 1376 af 12/12/2019, issued by Erhvervsstyrelsen under hvidvaskloven § 15 a, stk. 3; § 6 on entry into force",
+      "text": {
+        "en": "A Danish executive order issued under the anti-money-laundering act on reporting differences between the beneficial ownership information a firm holds and what is registered with the Danish Business Authority. It binds every obliged entity under that act, banks included. A bank that finds such a discrepancy must report it to the Authority with the required details through its digital reporting solution on virk.dk, using e-mail only when that solution cannot be used."
+      }
+    },
+    {
+      "key": "fi-sd-2015-172",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2015/172",
+      "sourceLabel": "Finlex, Verohallinnon päätös FATCA-sopimukseen perustuvasta tiedonantovelvollisuudesta (172/2015), issued by Verohallinto under verotusmenettelylaki 17 a § 2 mom.; 4 § on entry into force",
+      "text": {
+        "en": "A decision of the Finnish Tax Administration on how financial institutions report the information required under the FATCA agreement between Finland and the United States on accounts held by US persons. It binds reporting Finnish financial institutions, banks included. A bank must file the required information electronically every year by the end of January for the previous calendar year, and must notify the Tax Administration even when it has nothing to report."
+      }
+    },
+    {
+      "key": "fi-sd-2016-1009",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2016/1009",
+      "sourceLabel": "Finlex, Verohallinnon päätös korkotulon lähdeverosta annetussa laissa tarkoitetun koronmaksajan yleisestä tiedonantovelvollisuudesta (1009/2016), issued by Verohallinto; 4 § on entry into force",
+      "text": {
+        "en": "A decision of the Finnish Tax Administration on the annual return that payers of interest file under the Act on Withholding Tax on Interest Income, which taxes certain interest paid to individuals at source. It binds payers of such interest, which includes banks. A bank must report electronically each year the interest it paid that was subject to the tax, the tax it withheld and the interest paid to non-residents, by the deadline the decision sets."
+      }
+    },
+    {
+      "key": "fi-sd-2020-417",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2020/417",
+      "sourceLabel": "Finlex, Verohallinnon päätös raportoitavia järjestelyjä koskevasta ilmoitus- ja tiedonantovelvollisuudesta (417/2020), issued by Verohallinto; 3 § on entry into force",
+      "text": {
+        "en": "A decision of the Finnish Tax Administration on what information must be given, and how, when notifying cross-border tax arrangements that must be reported under the Finnish rules on reportable arrangements, which implement the EU rules on mandatory disclosure. It binds Finnish intermediaries and taxpayers that must report, which can include banks. A bank that must report gives only the information the decision names and files electronically."
+      }
+    },
+    {
+      "key": "fi-sd-2025-1030",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1030",
+      "sourceLabel": "Finlex, Verohallinnon päätös yleisestä tiedonantovelvollisuudesta (1030/2025), issued by Verohallinto; 45 § on entry into force and the repeal of decision 635/2024",
+      "text": {
+        "en": "The main decision of the Finnish Tax Administration on the annual returns that payers, intermediaries and financial firms file for taxation, replacing the earlier decision. It binds the institutions it names, banks included. A bank must report each year the interest and similar yields it pays, securities trades and data needed to calculate gains, share savings accounts, loans to individuals and asset management fees, mostly by the end of January."
+      }
+    },
+    {
+      "key": "fi-sd-2023-659",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2023/659",
+      "sourceLabel": "Finlex, Laki rajat ylittäviä maksuja koskevasta maksupalveluntarjoajien tiedonantovelvollisuudesta (659/2023), consolidated text in force; 6 § on entry into force",
+      "text": {
+        "en": "The Finnish act that implements the EU rules requiring payment service providers to report cross-border payments to the tax authorities, to help detect VAT fraud in e-commerce. It binds payment service providers, banks included, directly. A bank that handles more than 25 cross-border payments to the same payee in a quarter must report the payments electronically each quarter, keep the data for three years and include the payee and payment details the act lists."
+      }
+    },
+    {
+      "key": "fi-sd-2004-699",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2004/699",
+      "sourceLabel": "Finlex, Laki rahoitus- ja vakuutusryhmittymien valvonnasta (699/2004), consolidated text in force; 38 § on entry into force and the application of chapter 3 from 1.1.2005",
+      "text": {
+        "en": "The Finnish act on supervising financial conglomerates, groups that combine significant banking or investment and insurance business, implementing the EU directive on financial conglomerates. It binds the entities in such a group, in practice the bank or insurer heading it. The group must keep sound governance and risk management, hold enough own funds, report its capital, large exposures, risk concentrations and intra-group transactions to the Finnish supervisor, and act on a recovery plan if capital falls short."
+      }
+    }
+  ]
+}

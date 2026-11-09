@@ -187,6 +187,43 @@ class LibraryUpdates(ScenarioTestCase):
         self.assertEqual(body["days"][0]["date"], timezone.localdate(applied, timezone=ZoneInfo(self.tenant.timezone)).isoformat())
         self.assertLess(body["since"], applied.isoformat())
 
+    def test_a_new_regulation_is_named_and_its_summary_is_not_an_update(self) -> None:
+        """INV-09: a new-regulation row names the regulation it added, so a reader sees which
+        one arrived; adding a regulation's summary changes no fact and is not listed."""
+        from apps.library.seeds.library import seed_authorities
+        from apps.proposals.tests_kinds import SOURCE as KINDS_SOURCE, instrument_body, summary_body
+
+        seed_authorities()
+        tenancy.clear_tenant()
+        body = instrument_body()
+        proposal, _ = logic.create(
+            kind=body["kind"],
+            title=body["title"],
+            payload=body["payload"],
+            proposer=logic.Proposer(actor=factories.user_actor()),
+            field_sources=body["fieldSources"],
+            source_label=body["sourceLabel"],
+            source_url=KINDS_SOURCE,
+        )
+        self._approve(proposal)
+        summary = summary_body(instrument=body["payload"]["key"])
+        tenancy.clear_tenant()
+        filed, _ = logic.create(
+            kind=summary["kind"],
+            title=summary["title"],
+            payload=summary["payload"],
+            proposer=logic.Proposer(actor=factories.user_actor()),
+            field_sources=summary["fieldSources"],
+            source_label=summary["sourceLabel"],
+            source_url=KINDS_SOURCE,
+        )
+        self._approve(filed)
+
+        items = self._items(self._read(self.reader, self.tenant))
+        self.assertEqual([item["kind"] for item in items], ["new_instrument"])
+        added = Instrument.objects.get(stable_key=body["payload"]["key"])
+        self.assertEqual(items[0]["instrument"], {"id": str(added.id), "shortName": "FFFS 2026:9", "officialRef": "FFFS 2026:9"})
+
     def test_a_change_names_the_agents_behind_it_and_never_a_person(self) -> None:
         """INV-05, D-62: a change an independent agent confirmed names both agents by their
         definition keys, so it never reads as a person's approval; one a person approved

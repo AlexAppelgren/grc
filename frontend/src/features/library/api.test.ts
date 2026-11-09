@@ -391,10 +391,15 @@ const serverInstrumentRow = {
   sourceUrl: 'https://www.fi.se/en/published/regulations/2017/fffs-20172/',
 };
 
+const directiveLink = { id: 'in-7', key: 'celex-32017l0593', shortName: 'Delegated directive (EU) 2017/593', jurisdiction: { key: 'eu', kind: 'union', label: 'European Union' } };
 const serverInstrumentDetail = {
   ...serverInstrumentRow,
   eliUri: '',
   verifiedBy: null,
+  summary: { text: 'Rules for investment services.', language: 'en', isOriginal: true, isMachine: false },
+  implements: [directiveLink],
+  implementedBy: [],
+  obligationCounts: { inLibrary: 2, inScope: 1, waitingForReview: 0 },
   lineage: [
     {
       relation: { key: 'amends', kind: null, label: 'Amends' },
@@ -481,6 +486,10 @@ describe('library instruments api', () => {
           toRef: '',
         },
       ],
+      summary: { text: 'Rules for investment services.', language: 'en', isOriginal: true, isMachine: false },
+      implements: [directiveLink],
+      implementedBy: [],
+      obligationCounts: { inLibrary: 2, inScope: 1, waitingForReview: 0 },
     });
     expect(sent.map((s) => [s.method, s.path])).toEqual([['get', '/api/v1/instruments/in-1']]);
   });

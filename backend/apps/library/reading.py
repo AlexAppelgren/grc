@@ -63,6 +63,9 @@ in production: an instrument or obligation is shared or the caller's own (INPUT_
 from __future__ import annotations
 
 import datetime
+import functools
+import operator
+import re
 import uuid
 from collections.abc import Collection, Iterable, Mapping
 from typing import Any, NamedTuple, TypeVar
@@ -80,6 +83,7 @@ from apps.library.logic import in_force, version_diff
 from apps.library.models import (
     Authority,
     Instrument,
+    InstrumentSummary,
     InstrumentRelation,
     InstrumentTitle,
     JurisdictionLabel,
@@ -105,6 +109,8 @@ from apps.library.schemas import (
     InstrumentAuthorityRef,
     InstrumentDetail,
     InstrumentLineageRef,
+    InstrumentLinkRef,
+    InstrumentObligationCounts,
     InstrumentProvisionsQuery,
     InstrumentQuery,
     InstrumentRow,
@@ -479,6 +485,18 @@ def held_stable_keys(subject: str, keys: Collection[str]) -> set[str]:
     wanted = {key.lower() for key in keys}
     held = model.objects.annotate(folded=Lower("stable_key")).filter(folded__in=wanted).values_list("folded", flat=True)
     return set(held)
+
+
+def has_summary(instrument: Instrument) -> bool:
+    """Whether the library holds a summary of `instrument` (INV-09), for the proposal door,
+    which never names a library model itself."""
+    return InstrumentSummary.objects.filter(instrument=instrument).exists()
+
+
+def summarised_stable_keys() -> set[str]:
+    """The stable keys, lowercased, of every instrument the library holds a summary for (INV-09):
+    one query, for the baseline filer, which never names a library model itself."""
+    return {key.lower() for key in InstrumentSummary.objects.values_list("instrument__stable_key", flat=True).distinct()}
 
 
 def held_as_own(tenant_id: uuid.UUID, *, instrument: bool, key: str, reference: str, instrument_key: str = "") -> bool:
@@ -1336,19 +1354,73 @@ def _lineage(instrument: Instrument, order: list[str], reader: Reader) -> list[I
     return lineage
 
 
+# An official number as references write it: 2014/59 in "Directive 2014/59/EU", 575/2013 in
+# "Regulation (EU) No 575/2013". Bounded on both sides so 2014/5 never matches 2014/59.
+_OFFICIAL_NUMBER = re.compile(r"(?<![\d/])(\d{1,4}/\d{1,4})(?![\d])")
+
+
+def _numbers(text: str) -> set[str]:
+    return set(_OFFICIAL_NUMBER.findall(text))
+
+
+def _links(instruments: Iterable[Instrument], order: list[str]) -> list[InstrumentLinkRef]:
+    rows = sorted(instruments, key=lambda row: (row.jurisdiction.sort_order, row.short_name.lower()))
+    refs = vocabulary_refs(JurisdictionLabel, [row.jurisdiction for row in rows], order)
+    return [InstrumentLinkRef(id=row.id, key=row.stable_key, short_name=row.short_name, jurisdiction=refs[row.jurisdiction_id]) for row in rows]
+
+
+def _implementation(instrument: Instrument, order: list[str], reader: Reader) -> tuple[list[InstrumentLinkRef], list[InstrumentLinkRef]]:
+    """What this instrument implements and what implements it (INV-09), read from the
+    `implementsNote` free text by official number, both ways, among the instruments this
+    reader may open: one query, narrowed by the numbers before the exact match, and none
+    when neither the reference nor the note carries a number."""
+    own = _numbers(instrument.official_ref)
+    named = _numbers(instrument.implements_note)
+    if not own and not named:
+        return [], []
+    wanted = [Q(official_ref__contains=n) for n in named] + [Q(implements_note__contains=n) for n in own]
+    candidates = list(
+        readable_instruments(reader).exclude(pk=instrument.pk).filter(functools.reduce(operator.or_, wanted)).select_related("jurisdiction")
+    )
+    implements = [row for row in candidates if _numbers(row.official_ref) & named]
+    implemented_by = [row for row in candidates if _numbers(row.implements_note) & own]
+    return _links(implements, order), _links(implemented_by, order)
+
+
+def _counts(instrument: Instrument, tenant: Tenant, reader: Reader) -> InstrumentObligationCounts:
+    """The duties under the instrument: held and in the caller's scope as `GET /obligations`
+    counts them, and, for a shared instrument, the new ones still waiting in the review queue."""
+    from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
+
+    waiting = 0
+    if instrument.owner_tenant_id is None:
+        waiting = Proposal.objects.filter(
+            status=ProposalStatus.OPEN.value,
+            kind=ProposalKind.NEW_OBLIGATION.value,
+            owner_tenant_id=None,
+            payload__instrument=instrument.stable_key,
+        ).count()
+    return InstrumentObligationCounts(
+        in_library=_obligation_counts([instrument.id], tenant, "all", reader).get(instrument.id, 0),
+        in_scope=_obligation_counts([instrument.id], tenant, "in", reader).get(instrument.id, 0),
+        waiting_for_review=waiting,
+    )
+
+
 def instrument_detail(tenant: Tenant, order: list[str], instrument_id: uuid.UUID, reader: Reader = OPEN) -> InstrumentDetail:
     """One instrument as the card reads it (INV-01, INV-06): its identity, dates, lineage
     and re-verification stamp. The card carries no footprint verdict of its own (the
     Instruments tab and its filter read that from the row); the queries fan out, so their
     number does not grow with the lineage the record carries."""
     instrument = _visible(
-        readable_instruments(reader).select_related("level", "authority", "jurisdiction", "regime__dimension", "verified_by").prefetch_related("titles"),
+        readable_instruments(reader).select_related("level", "authority", "jurisdiction", "regime__dimension", "verified_by").prefetch_related("titles", "summaries"),
         instrument_id,
     )
     regime_refs = vocabulary_refs(TaxonomyTermLabel, [instrument.regime], order, field="term")
     level_refs = vocabulary_refs(InstrumentLevelLabel, [instrument.level], order)
     jurisdiction_refs = vocabulary_refs(JurisdictionLabel, [instrument.jurisdiction], order)
     verifier = instrument.verified_by
+    implements, implemented_by = _implementation(instrument, order, reader)
     return InstrumentDetail(
         id=instrument.id,
         stable_key=instrument.stable_key,
@@ -1369,6 +1441,10 @@ def instrument_detail(tenant: Tenant, order: list[str], instrument_id: uuid.UUID
         verified_by=None if verifier is None else PersonRef(id=verifier.id, name=verifier.name),
         private_to_us=instrument.owner_tenant_id == tenant.id,
         lineage=_lineage(instrument, order, reader),
+        summary=localized(instrument.summaries.all(), order),
+        implements=implements,
+        implemented_by=implemented_by,
+        obligation_counts=_counts(instrument, tenant, reader),
     )
 
 

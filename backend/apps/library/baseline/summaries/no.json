@@ -1,0 +1,174 @@
+{
+  "tranche": "no",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "no-lov-2015-04-10-17",
+      "source": "https://lovdata.no/dokument/NL/lov/2015-04-10-17",
+      "sourceLabel": "Lovdata, lov 10. april 2015 nr. 17 om finansforetak og finanskonsern (finansforetaksloven) as in force",
+      "text": {
+        "en": "Norway's core act for banks, credit institutions, insurers and other financial undertakings, covering licensing, ownership, governance, capital, liquidity and recovery. It implements EU banking, resolution, payment and insurance directives and binds a Norwegian bank directly. A bank needs fit and proper management, sound governance and independent control functions, the required capital and buffers and sound liquidity, and must protect customer data, inform on prices and deposit cover and keep a recovery plan."
+      }
+    },
+    {
+      "key": "no-lov-2007-06-29-75",
+      "source": "https://lovdata.no/dokument/NL/lov/2007-06-29-75",
+      "sourceLabel": "Lovdata, lov 29. juni 2007 nr. 75 om verdipapirhandel (verdipapirhandelloven) as in force",
+      "text": {
+        "en": "Norway's main act on securities trading, covering investment services, conduct of business and market abuse. It implements MiFID II and makes the EU Market Abuse, Short Selling and MiFIR regulations Norwegian law. It binds a bank that provides investment services or trades in financial instruments, and a listed bank as issuer. In practice that means conflict management, appropriateness checks, best execution, call recording, product governance, suspicious transaction reports and insider rules."
+      }
+    },
+    {
+      "key": "no-lov-2018-06-01-23",
+      "source": "https://lovdata.no/dokument/NL/lov/2018-06-01-23",
+      "sourceLabel": "Lovdata, lov 1. juni 2018 nr. 23 om tiltak mot hvitvasking og terrorfinansiering (hvitvaskingsloven) as in force",
+      "text": {
+        "en": "Norway's Anti-Money Laundering Act, implementing the EU anti-money laundering directive and making the EU Transfer of Funds Regulation Norwegian law. It binds banks and other reporting entities directly. A bank must assess its risk, keep procedures, carry out customer due diligence covering beneficial owners, politically exposed persons and correspondent banks, monitor customers electronically, report suspicions to Økokrim, keep records for five years and train staff."
+      }
+    },
+    {
+      "key": "no-lov-2020-12-18-146",
+      "source": "https://lovdata.no/dokument/NL/lov/2020-12-18-146",
+      "sourceLabel": "Lovdata, LOV-2020-12-18-146, Lov om finansavtaler (finansavtaleloven) as in force",
+      "text": {
+        "en": "Norway's Financial Agreements Act sets the private-law rules for agreements on accounts, payments, credit and other financial services between providers and customers. It implements the private-law parts of EU payment, payment account and mortgage credit rules and binds banks directly. A bank must advise according to the customer's needs, inform before contracting, offer payment accounts on fair terms, refund unauthorised payments quickly, support account switching and assess creditworthiness before lending."
+      }
+    },
+    {
+      "key": "no-lov-2011-11-25-44",
+      "source": "https://lovdata.no/dokument/NL/lov/2011-11-25-44",
+      "sourceLabel": "Lovdata, LOV-2011-11-25-44, Lov om verdipapirfond (verdipapirfondloven) as in force",
+      "text": {
+        "en": "Norway's Securities Funds Act governs UCITS funds and the management companies that run them, implementing the EU UCITS Directive. Its duties fall mainly on management companies, so it reaches a bank through a fund management company in its group and when the bank sells or advises on fund units. A seller must give investors the fund's key information before they subscribe, while the manager must be organised soundly, manage risk and conflicts and handle complaints."
+      }
+    },
+    {
+      "key": "no-lov-2014-06-20-28",
+      "source": "https://lovdata.no/dokument/NL/lov/2014-06-20-28",
+      "sourceLabel": "Lovdata, LOV-2014-06-20-28, Lov om forvaltning av alternative investeringsfond (AIF-loven) as in force",
+      "text": {
+        "en": "Norway's AIF Act governs managers of alternative investment funds, meaning collective investment funds that are not UCITS, and implements the EU AIFM Directive. Its duties fall on AIF managers, so it reaches a bank only where the bank or a group company manages such funds. A manager must follow good business practice, manage conflicts of interest, keep a separate risk management function, manage each fund's liquidity with stress tests and value assets independently."
+      }
+    },
+    {
+      "key": "no-lov-1989-06-16-69",
+      "source": "https://lovdata.no/dokument/NL/lov/1989-06-16-69",
+      "sourceLabel": "Lovdata, LOV-1989-06-16-69, Lov om forsikringsavtaler (forsikringsavtaleloven) as in force",
+      "text": {
+        "en": "Norway's Insurance Contracts Act sets the rules between insurers and customers on insurance contracts, including the distribution duties added to implement the EU Insurance Distribution Directive. It binds insurers and insurance intermediaries, so it reaches a bank when the bank distributes insurance. The distributor must act in the customer's interest, identify demands and needs, give pre-contract information and base any insurance-based investment product on a personal recommendation."
+      }
+    },
+    {
+      "key": "no-lov-2021-12-22-163",
+      "source": "https://lovdata.no/dokument/NL/lov/2021-12-22-163",
+      "sourceLabel": "Lovdata, LOV-2021-12-22-163, Lov om forsikringsformidling (forsikringsformidlingsloven) as in force",
+      "text": {
+        "en": "Norway's Insurance Mediation Act sets who may distribute insurance as a broker or agent and how intermediaries must operate, implementing the EU Insurance Distribution Directive. A bank that sells insurance on an insurer's behalf must be registered as an insurance agent, since a bank cannot use the ancillary agent route. It must then run that business soundly with documented controls, keep client money separate, manage conflicts of interest and avoid pay that steers staff away from the customer's best interest."
+      }
+    },
+    {
+      "key": "no-lov-2018-06-15-38",
+      "source": "https://lovdata.no/dokument/NL/lov/2018-06-15-38",
+      "sourceLabel": "Lovdata, LOV-2018-06-15-38, Lov om behandling av personopplysninger (personopplysningsloven) as in force",
+      "text": {
+        "en": "Norway's Personal Data Act makes the EU General Data Protection Regulation Norwegian law and adds national rules, with Datatilsynet as the supervisory authority. It applies to every organisation that processes personal data, banks included. A bank must keep records of its processing, notify Datatilsynet of personal data breaches within 72 hours unless the breach is unlikely to put people at risk, and use national identity numbers only where secure identification is objectively needed."
+      }
+    },
+    {
+      "key": "no-lov-2025-05-27-18",
+      "source": "https://lovdata.no/dokument/NL/lov/2025-05-27-18",
+      "sourceLabel": "Lovdata, LOV-2025-05-27-18, Lov om digital operasjonell motstandsdyktighet i finanssektoren (DORA-loven) as in force",
+      "text": {
+        "en": "Norway's DORA Act makes the EU Digital Operational Resilience Act Norwegian law, with Finanstilsynet as the competent authority. It binds banks and other financial entities directly. A bank's management body must own and oversee an ICT risk management framework, and the bank must report major ICT incidents to Finanstilsynet, run a resilience testing programme and keep a register of all contracts with ICT third-party providers."
+      }
+    },
+    {
+      "key": "no-lov-2025-05-27-20",
+      "source": "https://lovdata.no/dokument/NL/lov/2025-05-27-20",
+      "sourceLabel": "Lovdata, LOV-2025-05-27-20, Lov om kryptoeiendeler (kryptoeiendelsloven) as in force",
+      "text": {
+        "en": "Norway's Crypto-Assets Act makes the EU Markets in Crypto-Assets Regulation Norwegian law, covering issuers of crypto-assets and crypto-asset service providers. A bank needs no separate licence to offer crypto-asset services but must notify Finanstilsynet with the prescribed information at least 40 working days before it starts. Any firm arranging or executing crypto-asset transactions, a bank included, must have systems to detect and report suspected market abuse."
+      }
+    },
+    {
+      "key": "no-lov-2023-12-20-108",
+      "source": "https://lovdata.no/dokument/NL/lov/2023-12-20-108",
+      "sourceLabel": "Lovdata, LOV-2023-12-20-108, Lov om digital sikkerhet (digitalsikkerhetsloven) as in force",
+      "text": {
+        "en": "Norway's Digital Security Act implements the first EU NIS Directive and sets security and incident notification duties for providers of essential services in named sectors, banking and financial market infrastructure among them. Those duties apply only where other law sets no equivalent or stricter requirements. A bank's ICT security and incident duties come from DORA, applied in Norway through the DORA Act, so the library records no separate bank duties under this act."
+      }
+    },
+    {
+      "key": "no-lov-2024-06-21-40",
+      "source": "https://lovdata.no/dokument/NL/lov/2024-06-21-40",
+      "sourceLabel": "Lovdata, LOV-2024-06-21-40, Lov om nøkkelinformasjon om sammensatte og forsikringsbaserte investeringsprodukter (PRIIPs-loven) as in force",
+      "text": {
+        "en": "Norway's PRIIPs Act makes the EU regulation on key information documents for packaged retail and insurance-based investment products Norwegian law. It binds the manufacturers of such products and the firms that advise on or sell them, banks included. A bank that manufactures them must produce and publish a key information document in Norwegian, and a bank that sells or advises on them must give it to retail investors in good time before they commit."
+      }
+    },
+    {
+      "key": "no-lov-2021-12-22-161",
+      "source": "https://lovdata.no/dokument/NL/lov/2021-12-22-161",
+      "sourceLabel": "Lovdata, LOV-2021-12-22-161, Lov om offentliggjøring av bærekraftsinformasjon i finanssektoren og et rammeverk for bærekraftige investeringer as in force",
+      "text": {
+        "en": "This act makes the EU Sustainable Finance Disclosure Regulation and the EU Taxonomy Regulation Norwegian law. It binds financial market participants and financial advisers, which includes a bank that offers portfolio management or investment advice. Such a bank must publish its policies on sustainability risks, state whether and how it considers the principal adverse impacts of investment decisions, and explain in pre-contract disclosures how sustainability risks are integrated."
+      }
+    },
+    {
+      "key": "no-lov-2024-06-21-41",
+      "source": "https://lovdata.no/dokument/NL/lov/2024-06-21-41",
+      "sourceLabel": "Lovdata, LOV-2024-06-21-41, Lov om Finanstilsynet (finanstilsynsloven) as in force",
+      "text": {
+        "en": "Norway's Financial Supervision Act sets out Finanstilsynet's mandate and powers over banks and other supervised firms. It binds a bank directly as a supervised firm. A bank must give Finanstilsynet the information and documents it asks for, notwithstanding confidentiality, tell it as quickly as possible of matters that could decide whether the business can continue, and notify critical or important outsourcing at least 60 days before it takes effect."
+      }
+    },
+    {
+      "key": "no-lov-1999-12-17-95",
+      "source": "https://lovdata.no/dokument/NL/lov/1999-12-17-95",
+      "sourceLabel": "Lovdata, LOV-1999-12-17-95, Lov om betalingssystemer m.v. (betalingssystemloven) as in force",
+      "text": {
+        "en": "Norway's Payment Systems Act governs interbank settlement systems and systems for payment services, and implements the EU Settlement Finality Directive. It reaches a bank in two ways. A bank that sets up and runs a system for payment services must notify Finanstilsynet, and as a credit institution it must give payment institutions access to its payment account services on objective, non-discriminatory and proportionate terms, reporting any refusal with reasons."
+      }
+    },
+    {
+      "key": "no-lov-2016-05-27-14",
+      "source": "https://lovdata.no/dokument/NL/lov/2016-05-27-14",
+      "sourceLabel": "Lovdata, LOV-2016-05-27-14, Lov om skatteforvaltning (skatteforvaltningsloven) as in force",
+      "text": {
+        "en": "Norway's Tax Administration Act sets the general rules for tax assessment and administration, including the duty of third parties to report information to the tax authorities. It reaches a bank as a reporting entity. A bank must report deposits, loans, fund holdings, financial instruments and pension arrangements for each customer, identify account holders and their tax residence, and investigate and report where a customer appears to avoid exchange of information with other countries."
+      }
+    },
+    {
+      "key": "no-lov-2019-03-15-6",
+      "source": "https://lovdata.no/dokument/NL/lov/2019-03-15-6",
+      "sourceLabel": "Lovdata, LOV-2019-03-15-6, Lov om verdipapirsentraler og verdipapiroppgjør mv. (verdipapirsentralloven) as in force",
+      "text": {
+        "en": "Norway's Central Securities Depositories Act makes the EU CSD Regulation Norwegian law and governs securities registration and settlement, including the role of account operators. A bank acting as account operator for securities accounts is bound directly. It must keep the accounts it operates compliant, protect the integrity of issues, offer account types with information on their protection and costs, handle complaints and keep records of its registrations for ten years."
+      }
+    },
+    {
+      "key": "no-lov-2017-06-16-47",
+      "source": "https://lovdata.no/dokument/NL/lov/2017-06-16-47",
+      "sourceLabel": "Lovdata, LOV-2017-06-16-47, Lov om gjeldsinformasjon ved kredittvurdering av privatpersoner (gjeldsinformasjonsloven) as in force",
+      "text": {
+        "en": "Norway's Debt Information Act sets up licensed debt information companies that collect data on private individuals' unsecured debt and credit limits for use in credit assessments. It binds financial undertakings directly. A bank must report, or otherwise make available, its customers' debt and unused credit limits that are not secured by a registered mortgage to the licensed companies, as the ministry's regulation details."
+      }
+    },
+    {
+      "key": "no-for-2008-09-22-1080",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2008-09-22-1080",
+      "sourceLabel": "Lovdata, FOR-2008-09-22-1080, Forskrift om risikostyring og internkontroll as in force",
+      "text": {
+        "en": "Finanstilsynet's regulation setting basic risk management and internal control duties for a list of supervised firms, among them investment firms, fund management companies, payment and e-money institutions, regulated markets and insurance intermediaries. Banks are not on that list, so it reaches a bank group only through members that are. Such a firm's board must ensure sound risk management and internal control, risks are reviewed and documented yearly, and the chief executive reports an overall risk assessment."
+      }
+    },
+    {
+      "key": "no-for-2021-09-15-2777",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-09-15-2777",
+      "sourceLabel": "Lovdata, FOR-2021-09-15-2777, Forskrift om meldeplikt ved utkontraktering av virksomhet mv. as in force",
+      "text": {
+        "en": "Finanstilsynet's regulation filling in the Financial Supervision Act's duty to notify outsourcing. It binds firms under Finanstilsynet's supervision, banks included. A bank must keep an up-to-date overview of all its outsourcing agreements, leaving out ICT service agreements covered by the DORA rules, and each notice of critical or important outsourcing must give the provider, the activity, location, subcontractors, contract period and how the bank will oversee the arrangement."
+      }
+    }
+  ]
+}

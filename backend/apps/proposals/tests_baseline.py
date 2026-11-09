@@ -115,22 +115,24 @@ class TheRealBaseline(BaselineCase):
         entries = baseline.load()
         instruments = {entry.key for entry in entries if entry.kind == baseline.INSTRUMENT}
         duties = {entry.key for entry in entries if entry.kind == baseline.OBLIGATION}
+        summaries = {entry.key for entry in entries if entry.kind == baseline.SUMMARY}
         self.assertTrue(instruments, "the baseline holds instruments")
+        self.assertEqual(summaries, instruments, "every instrument of the baseline has its summary (INV-09)")
 
         first = baseline.file()
         self.assertEqual(first.refused, [])
         self.assertEqual(sum(first.filed.values()), len(instruments), "only instruments are due on the first call")
-        self.assertEqual(sum(first.waiting.values()), len(duties))
+        self.assertEqual(sum(first.waiting.values()), len(duties) + len(summaries))
         self.assertEqual(self.approve_open(), len(instruments))
 
         second = baseline.file()
         self.assertEqual(second.refused, [])
-        self.assertEqual(sum(second.filed.values()), len(duties))
-        self.assertEqual(self.approve_open(), len(duties))
+        self.assertEqual(sum(second.filed.values()), len(duties) + len(summaries), "the duties and the summaries follow")
+        self.assertEqual(self.approve_open(), len(duties) + len(summaries))
 
         third = baseline.file()
         self.assertEqual((sum(third.filed.values()), third.runs), (0, 0))
-        self.assertEqual(sum(third.held.values()), len(instruments) + len(duties))
+        self.assertEqual(sum(third.held.values()), len(instruments) + len(duties) + len(summaries))
         self.assertEqual(set(Instrument.objects.filter(stable_key__in=instruments).values_list("stable_key", flat=True)), instruments)
         self.assertEqual(set(Obligation.objects.filter(stable_key__in=duties).values_list("stable_key", flat=True)), duties)
 

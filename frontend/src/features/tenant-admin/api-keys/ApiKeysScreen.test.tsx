@@ -219,7 +219,7 @@ describe('bank API keys', () => {
       renderScreen();
       const form = await openForm();
 
-      for (const hint of ['Read the tenant profile', 'Read instruments and obligations', 'Read upcoming dates', 'Run searches', 'Submit proposals to the library queue']) {
+      for (const hint of ['Read the tenant profile', 'Read regulations and obligations', 'Read upcoming dates', 'Run searches', 'Submit proposals to the library queue']) {
         expect(within(form).getByText(hint)).toBeInTheDocument();
       }
       expect(within(form).getByText('Creating a key asks for your passkey.')).toBeInTheDocument();

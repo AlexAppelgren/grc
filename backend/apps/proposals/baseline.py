@@ -15,6 +15,8 @@ What one call files:
 - a `new_instrument` for every instrument whose stable key the library does not hold;
 - a `new_obligation` for every duty whose instrument the library holds and whose key it does
   not, so a duty is filed on the first call after its instrument is approved;
+- a `new_instrument_summary` for every instrument the library holds without a summary, from
+  the tranche's file of the same name under `summaries/` (INV-09, D-124), filed the same way;
 - never an entry open in the queue under the same stable key, whoever filed it;
 - never an entry this agent filed before unchanged: the retry key carries the entry's
   content hash, so a rejected entry stays rejected until the baseline says something new
@@ -42,7 +44,7 @@ from django.db import transaction
 from apps.agents import runner_events, tasks
 from apps.agents.models import AgentRun, RunStatus
 from apps.library.models import SubjectType
-from apps.library.reading import held_stable_keys
+from apps.library.reading import held_stable_keys, summarised_stable_keys
 from apps.proposals import logic
 from apps.proposals.models import Proposal, ProposalKind, ProposalStatus
 from apps.shared.adapters.agent_runner import RunnerEvent
@@ -61,6 +63,11 @@ SOURCE_ORDER = ["en"]
 
 INSTRUMENT = ProposalKind.NEW_INSTRUMENT.value
 OBLIGATION = ProposalKind.NEW_OBLIGATION.value
+SUMMARY = ProposalKind.NEW_INSTRUMENT_SUMMARY.value
+# The folder beside the tranches that holds each tranche's instrument summaries, by its name.
+SUMMARIES_DIR = "summaries"
+# The language the baseline's summaries are written in.
+SUMMARY_LANGUAGE = "en"
 
 
 @dataclass(frozen=True)
@@ -116,15 +123,34 @@ def load(only: Collection[str] = (), folder: Path | None = None) -> list[Entry]:
         if only and name not in only:
             continue
         data = json.loads((folder / f"{name}.json").read_text(encoding="utf-8"))
+        summaries = _summaries(folder, name)
         for item in data["instruments"]:
-            key = item["payload"]["key"]
-            entries.append(_entry(name, INSTRUMENT, item, item["payload"], key))
+            payload = item["payload"]
+            key = payload["key"]
+            entries.append(_entry(name, INSTRUMENT, item, payload, key))
             for duty in item.get("obligations", []):
                 entries.append(_entry(name, OBLIGATION, duty, {**duty["payload"], "instrument": key}, key))
+            if key in summaries:
+                summary = summaries[key]
+                written = {
+                    "title": f"Add a summary of {payload['shortName']}, {payload['officialRef']}",
+                    "source": summary["source"],
+                    "sourceLabel": summary["sourceLabel"],
+                }
+                body = {"instrument": key, "summaries": summary["text"], "originalLanguage": SUMMARY_LANGUAGE}
+                entries.append(_entry(name, SUMMARY, written, body, key, key=key))
     return entries
 
 
-def _entry(tranche: str, kind: str, item: dict[str, Any], payload: dict[str, Any], instrument: str) -> Entry:
+def _summaries(folder: Path, tranche: str) -> dict[str, dict[str, Any]]:
+    """The tranche's instrument summaries by instrument key, or none when it has no file."""
+    path = folder / SUMMARIES_DIR / f"{tranche}.json"
+    if not path.exists():
+        return {}
+    return {item["key"]: item for item in json.loads(path.read_text(encoding="utf-8"))["summaries"]}
+
+
+def _entry(tranche: str, kind: str, item: dict[str, Any], payload: dict[str, Any], instrument: str, *, key: str = "") -> Entry:
     """An entry whose every sourced field names a page: its own in `fieldSources`, else the
     entry's `source`, the page the record is read from."""
     given: dict[str, str] = item.get("fieldSources", {})
@@ -132,7 +158,7 @@ def _entry(tranche: str, kind: str, item: dict[str, Any], payload: dict[str, Any
     return Entry(
         tranche=tranche,
         kind=kind,
-        key=payload["key"],
+        key=key or payload["key"],
         instrument=instrument,
         title=item["title"],
         payload=payload,
@@ -150,21 +176,23 @@ class _Library:
 
     instruments: set[str]
     obligations: set[str]
+    summarised: set[str]
     open: set[tuple[str, str]]
     filed: set[str]
 
 
 def _library(entries: list[Entry]) -> _Library:
     keys = {kind: {entry.key for entry in entries if entry.kind == kind} for kind in (INSTRUMENT, OBLIGATION)}
-    parents = {entry.instrument for entry in entries if entry.kind == OBLIGATION}
+    parents = {entry.instrument for entry in entries if entry.kind != INSTRUMENT}
+    open_rows = Proposal.objects.filter(status=ProposalStatus.OPEN.value, kind__in=(INSTRUMENT, OBLIGATION, SUMMARY))
     return _Library(
         instruments=held_stable_keys(SubjectType.INSTRUMENT.value, keys[INSTRUMENT] | parents),
         obligations=held_stable_keys(SubjectType.OBLIGATION.value, keys[OBLIGATION]),
+        summarised=summarised_stable_keys(),
+        # A summary is open under the instrument it is for; every other kind under its own key.
         open={
-            (kind, key)
-            for kind, key in Proposal.objects.filter(status=ProposalStatus.OPEN.value, kind__in=(INSTRUMENT, OBLIGATION)).values_list(
-                "kind", "payload__key"
-            )
+            (kind, summary_for if kind == SUMMARY else key)
+            for kind, key, summary_for in open_rows.values_list("kind", "payload__key", "payload__instrument")
         },
         filed={
             key
@@ -178,23 +206,24 @@ def _library(entries: list[Entry]) -> _Library:
 
 def _state(entry: Entry, library: _Library) -> str:
     """Where `entry` stands: `held`, `open`, `decided`, `waiting` for its instrument, or `due`."""
-    held = library.instruments if entry.kind == INSTRUMENT else library.obligations
+    held = {INSTRUMENT: library.instruments, OBLIGATION: library.obligations, SUMMARY: library.summarised}[entry.kind]
     if entry.key.lower() in held:
         return "held"
     if (entry.kind, entry.key) in library.open:
         return "open"
     if entry.retry_key in library.filed:
         return "decided"
-    if entry.kind == OBLIGATION and entry.instrument.lower() not in library.instruments:
+    if entry.kind != INSTRUMENT and entry.instrument.lower() not in library.instruments:
         return "waiting"
     return "due"
 
 
-def file(*, only: Collection[str] = (), dry_run: bool = False, folder: Path | None = None) -> Report:
+def file(*, only: Collection[str] = (), dry_run: bool = False, folder: Path | None = None, summaries: bool = True) -> Report:
     """File every due entry of the named tranches, or of all. A dry run files nothing and
     reports what a real one would. `folder` names another folder of tranches, as the E2E
-    seed's fixture is."""
-    entries = load(only, folder)
+    seed's fixture is. `summaries` False leaves the instruments' summaries out, for a caller
+    whose reviewer is an agent: a summary is approved by a person (INV-09)."""
+    entries = [entry for entry in load(only, folder) if summaries or entry.kind != SUMMARY]
     report = Report()
     library = _library(entries)
     due: list[Entry] = []

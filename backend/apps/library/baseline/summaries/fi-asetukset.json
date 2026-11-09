@@ -1,0 +1,190 @@
+{
+  "tranche": "fi-asetukset",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "fi-sd-2021-929",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2021/929",
+      "sourceLabel": "Finlex, Valtioneuvoston asetus menettelyistä asiakkaan tuntemiseksi ja riskitekijöistä rahanpesun ja terrorismin rahoittamisen estämisessä (929/2021), consolidated text in force",
+      "text": {
+        "en": "Fills in the Finnish Act on Preventing Money Laundering and Terrorist Financing with detailed rules on customer due diligence. It lists the customer, product, delivery channel and geographic factors that point to lower or higher risk, and says what simplified and enhanced due diligence must involve. It binds obliged entities, banks included: a bank weighs these factors in its risk assessment, keeps simplified measures able to detect unusual transactions, and steps up checks and monitoring where risk is higher."
+      }
+    },
+    {
+      "key": "fi-sd-2019-610",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2019/610",
+      "sourceLabel": "Finlex, Valtioneuvoston asetus rahanpesun ja terrorismin rahoittamisen estämisestä annetussa laissa tarkoitetuista merkittävistä julkisista tehtävistä (610/2019), consolidated text in force",
+      "text": {
+        "en": "Lists the Finnish public functions whose holders count as politically exposed persons under the Act on Preventing Money Laundering and Terrorist Financing, among them ministers, members of Parliament, senior judges, Bank of Finland board members, generals and admirals, and the heads of state-owned companies. It binds obliged entities, banks included. A bank uses the list to identify domestic politically exposed persons among its customers."
+      }
+    },
+    {
+      "key": "fi-sd-2018-76",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2018/76",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen tilinpäätöksestä, konsernitilinpäätöksestä ja toimintakertomuksesta (76/2018), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree under the Credit Institutions Act that sets the format and content of the financial statements, group accounts and board of directors' report of credit institutions and investment firms. It binds them directly. A bank uses the prescribed income statement and balance sheet formats, adds a cash flow statement and the listed notes, reports its main risks and risk management in the board report, and keeps itemised balance sheet listings; IFRS reporters follow only selected parts."
+      }
+    },
+    {
+      "key": "fi-sd-2014-1286",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1286",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen elvytyssuunnitelmiin sisällytettävistä tiedoista (1286/2014), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree under the Credit Institutions Act listing what a recovery plan must contain, following the EU bank recovery and resolution rules. It binds credit institutions and investment firms directly. A bank's plan must set out its capital, liquidity and risk-reduction options, critical functions, governance of recovery planning, communication plan and the indicators that trigger action, and also how it keeps operations and network and information systems running under the EU digital operational resilience rules."
+      }
+    },
+    {
+      "key": "fi-sd-2024-831",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2024/831",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusuunnitelmien laatimiseksi toimitettavista ja niihin sisällytettävistä tiedoista (831/2024), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree under the Act on the Resolution of Credit Institutions and Investment Firms listing the information needed to draw up their resolution plans. It binds credit institutions and investment firms directly. A bank must be able to give the Financial Stability Authority detailed information on its group and legal structure, owners, critical functions and core business lines, liabilities, collateral, major counterparties, the payment and settlement systems it uses, and its key management and IT systems."
+      }
+    },
+    {
+      "key": "fi-sd-2018-1033",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2018/1033",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen toiminnan uudelleenjärjestämisehdotuksen sisällölle asetettavista vaatimuksista (1033/2018), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree under the Act on the Resolution of Credit Institutions and Investment Firms setting what a business reorganisation plan must contain after the firm's liabilities have been written down or converted in resolution, following the EU bank recovery and resolution rules. It binds credit institutions and investment firms in that situation. The plan must explain why the firm was failing, set out realistic measures to restore long-term viability, and give their timetable."
+      }
+    },
+    {
+      "key": "fi-sd-2025-71",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2025/71",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen valmiussuunnittelun perusteista (71/2025), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree under the Credit Institutions Act setting what a credit institution's preparedness plan for serious disruptions and emergencies must cover. It binds credit institutions directly, with the option of a plan at group or amalgamation level. A bank keeps a plan based on a regularly renewed threat assessment, assigns leadership and resources, and shows how it would keep essential services running in Finland, such as account access, payments, cash, lending, securities services and strong electronic identification."
+      }
+    },
+    {
+      "key": "fi-sd-2015-820",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/saadoskokoelma/2015/820",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus talletuspankin velvollisuudesta antaa tietoja talletussuojasta (820/2015), text as published in the Statute Book (Finlex shows no amendment)",
+      "text": {
+        "en": "A Ministry of Finance decree on the information deposit banks must give depositors about deposit protection, following the EU deposit guarantee rules. It binds deposit banks directly. Before an account agreement a bank tells the depositor which scheme covers the deposits, the amount of cover, which deposits are eligible and how payout works, and at least once a year it gives each depositor information on their eligible deposits, in Finnish or Swedish unless another language was agreed."
+      }
+    },
+    {
+      "key": "fi-sd-2020-75",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/saadoskokoelma/2020/75",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus talletussuojarahaston ja talletuspankkien välisten lainasopimusten ehdoista (75/2020), text as published in the Statute Book (Finlex shows no amendment)",
+      "text": {
+        "en": "A Ministry of Finance decree setting the terms of loans that deposit banks grant to the deposit guarantee fund when the Financial Stability Authority decides that they must. It binds deposit banks directly. After such a decision a bank transfers its share within four business days; the loan is unsecured, carries the interest set in the Government's permission, cannot be set off against the bank's own contributions, and is repaid in instalments once the fund reaches its minimum level."
+      }
+    },
+    {
+      "key": "fi-sd-2021-409",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2021/409",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus luottolaitoksen ja sijoituspalveluyrityksen rahoitusjärjestelmän rakenteellisten ominaisuuksien perusteella määrättävästä lisäpääomavaatimuksesta (409/2021), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree under the Credit Institutions Act on calculating the systemic risk buffer, the extra capital requirement that can be set because of structural features of the Finnish financial system. It binds credit institutions and investment firms. A bank calculates the buffer in euros by applying the set rate to its total risk exposure amount and the rates for any targeted subsets of exposures, with the total capped at 5 percent of its total risk exposure amount."
+      }
+    },
+    {
+      "key": "fi-sd-2014-208",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/208",
+      "sourceLabel": "Finlex, Valtioneuvoston asetus omistusosuuden hankkimista ja luovuttamista luottolaitoksessa, rahastoyhtiössä, säilytysyhteisössä, erityisessä säilytysyhteisössä, vakuutusyhtiössä, rahoitus- ja vakuutusryhmittymän omistusyhteisössä ja vaihtoehtorahastojen hoitajassa koskevasta ilmoituksesta (208/2014), consolidated text in force; title as amended by 256/2019",
+      "text": {
+        "en": "A Government decree on what a notice of acquiring or disposing of a qualifying holding must contain, for holdings in credit institutions, fund management companies, depositaries, insurers, conglomerate holding companies and alternative investment fund managers. It reaches a bank as a buyer or seller of such a holding. A notice of acquisition gives the prescribed details on the notifier, its record, the holdings, links to the target and financing, with a business plan where control is acquired."
+      }
+    },
+    {
+      "key": "fi-sd-2015-1356",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2015/1356",
+      "sourceLabel": "Finlex, Valtioneuvoston asetus rahoitus- ja vakuutusryhmittymän vakavaraisuuden laskemisesta (1356/2015), consolidated text in force",
+      "text": {
+        "en": "A Government decree under the Act on the Supervision of Financial and Insurance Conglomerates on how a conglomerate's solvency is calculated. It binds financial and insurance conglomerates, which can include a bank group with insurance business. Solvency is calculated by consolidation, by deduction and aggregation, or by a combination, and where a regulated subsidiary is foreign the coordinating supervisor may require a different method after hearing the head of the conglomerate. Own funds counted for each sector must meet that sector's rules."
+      }
+    },
+    {
+      "key": "fi-sd-2023-871",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2023/871",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus eräisiin luottolaitostoimintaa koskeviin lupahakemuksiin liitettävistä selvityksistä (871/2023), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree listing the documents to attach to certain licence applications in credit institution business. It binds applicants, so it reaches a bank when it applies, for example, to open a branch outside the EEA or for a licence under the Act on Mortgage Credit Banks and Covered Bonds. The application must include a business plan, information on management fitness and internal control, and, for covered bonds, how the cover pool requirements are met at all times."
+      }
+    },
+    {
+      "key": "fi-sd-2026-608",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2026/608",
+      "sourceLabel": "Finlex, Valtioneuvoston asetus eräistä asuntoyhteisöluottoja koskevista rajoituksista (608/2026), consolidated text in force",
+      "text": {
+        "en": "A Government decree under the Credit Institutions Act and the Act on the Registration of Certain Credit Providers and Credit Intermediaries limiting loans granted to housing companies. It binds credit institutions and registered creditors directly. A lender may lend a housing company at most 70 percent of the debt-free price of the shares offered for sale, may allow an amortisation-free period of at most 24 months from the end of construction, and may set a repayment period of at most 40 years."
+      }
+    },
+    {
+      "key": "fi-sd-2010-789",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2010/789",
+      "sourceLabel": "Finlex, Valtioneuvoston asetus luottosopimuksesta kuluttajalle annettavista tiedoista (789/2010), consolidated text in force",
+      "text": {
+        "en": "A Government decree under the Consumer Protection Act on the information consumers must receive about credit, following the EU consumer credit and mortgage credit rules and, from 20 November 2026, the revised consumer credit rules. It binds creditors and credit intermediaries, banks included. A bank gives pre-contractual information on the prescribed standard forms, includes the listed particulars in credit agreements, and, from 20 November 2026, uses the prescribed warning that taking out credit costs money in advertising."
+      }
+    },
+    {
+      "key": "fi-sd-2016-1031",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2016/1031",
+      "sourceLabel": "Finlex, Valtioneuvoston asetus luotonantajien ja luotonvälittäjien ammatillisista vaatimuksista asunto-omaisuuteen liittyvissä kuluttajaluotoissa (1031/2016), consolidated text in force",
+      "text": {
+        "en": "A Government decree on the professional knowledge required in consumer credit relating to residential property, following the EU mortgage credit rules. It binds creditors, banks included, and credit intermediaries. A bank's staff who grant such credit, intermediate it or give advice must have the knowledge their role requires, covering the credit products, finance and economics and, where relevant, creditworthiness assessment, shown by a suitable qualification, training or test and kept up to date."
+      }
+    },
+    {
+      "key": "fi-sd-2026-164",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2026/164",
+      "sourceLabel": "Finlex, Valtioneuvoston asetus luotonantajien ja luotonvälittäjien ammatillisista vaatimuksista eräissä kuluttajaluotoissa (164/2026), consolidated text in force",
+      "text": {
+        "en": "A Government decree on the professional knowledge required of creditors and credit intermediaries in certain consumer credits under the Consumer Protection Act, following the revised EU consumer credit rules that apply from 20 November 2026. It binds creditors, banks included, and credit intermediaries. A bank's senior management must know consumer credit, consumer law, creditworthiness assessment and the Finnish credit market, and its staff must have the competence their role requires."
+      }
+    },
+    {
+      "key": "fi-sd-2022-811",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2022/811",
+      "sourceLabel": "Finlex, Valtioneuvoston asetus eräistä positiiviseen luottotietorekisteriin talletettavista tiedoista (811/2022), consolidated text in force",
+      "text": {
+        "en": "A Government decree under the Act on the Positive Credit Register that fixes the categories used when certain loan details are reported to the register. It binds lenders that report credits, banks included. A bank records the repayment method, the basis of the interest rate and the type of collateral only as one of the listed categories, such as annuity or equal principal repayments, Euribor or a fixed rate, and residential property or a guarantee."
+      }
+    },
+    {
+      "key": "fi-sd-2012-1020",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1020",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus arvopaperin liikkeeseenlaskijan säännöllisestä tiedonantovelvollisuudesta (1020/2012), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree under the Securities Markets Act on the periodic reporting of issuers of securities. It binds issuers, so it reaches a bank whose shares or other securities are listed, unless banking law provides otherwise. Such an issuer covers the prescribed content in its half-yearly report, adds shareholder and management holding details to its board report, and publishes a corporate governance statement, including board gender balance reporting where that rule applies."
+      }
+    },
+    {
+      "key": "fi-sd-2012-1021",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2012/1021",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus huomattavien omistus- ja ääniosuuksien ilmoittamisesta (1021/2012), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree under the Securities Markets Act on flagging notifications, the disclosures made when holdings of shares and votes in a listed company cross set thresholds. It reaches a bank as a shareholder, as a market maker or parent of a fund manager or investment firm seeking an exemption, and as a listed company. Notifications carry the prescribed details, exemptions require notice to FIN-FSA, and the target company publishes what it receives."
+      }
+    },
+    {
+      "key": "fi-sd-2019-608",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2019/608",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus osakkeen liikkeeseenlaskijan palkitsemispolitiikasta ja palkitsemisraportista (608/2019), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree under the Securities Markets Act on the remuneration policy and remuneration report of share issuers, following the EU shareholder rights rules. It binds companies with listed shares, so it reaches a bank whose shares are listed. The policy must explain how pay supports strategy and set out pay components and criteria, and the report must show per person how pay followed the policy, with the auditor checking that the report was given."
+      }
+    },
+    {
+      "key": "fi-sd-2014-230",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/230",
+      "sourceLabel": "Finlex, Valtiovarainministeriön asetus vaihtoehtorahaston säilytysyhteisön velvollisuuksista (230/2014), consolidated text in force",
+      "text": {
+        "en": "A Ministry of Finance decree under the Act on Alternative Investment Fund Managers on the duties of a fund's depositary, following the EU rules for such funds. It reaches a bank that acts as depositary of an alternative investment fund. The depositary keeps the fund's instruments and cash safe, segregated and recorded per client, and checks that any custodian it delegates to is supervised, keeps client assets apart and uses them only with prior consent."
+      }
+    },
+    {
+      "key": "fi-sd-2000-428",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2000/428",
+      "sourceLabel": "Finlex, Valtioneuvoston asetus korkotulon lähdeverosta (428/2000), consolidated text in force",
+      "text": {
+        "en": "A Government decree under the Act on Withholding Tax on Interest Income, the Finnish tax a payer withholds at source from certain interest. It binds payers of interest such as banks. A bank may leave the tax unwithheld on interest paid to the state or its institutions, a municipality, a joint municipal authority or a parish, or to an account reliably shown to belong to a registered entity, partnership or jointly owned property unit, and before paying a non-resident it needs a source tax card or the recipient's identity and home address."
+      }
+    }
+  ]
+}

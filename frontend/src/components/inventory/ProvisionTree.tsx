@@ -5,7 +5,6 @@ import { useState } from 'react';
 
 import { Chip, ChipRow } from '@/components/ui/Chip';
 import { DiffText } from '@/components/inventory/DiffText';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { LegalText } from '@/components/inventory/LegalText';
 import { diffSentence } from '@/components/inventory/ObligationScreen';
 import { Notice } from '@/components/ui/Notice';
@@ -162,34 +161,39 @@ function ProvisionNodes({ instrumentId }: { instrumentId: string }) {
   const t = useT();
   const provisions = useInstrumentProvisions(instrumentId);
   const nodes = provisions.data ?? [];
+  // No provision text held: the panel is left out rather than promising text that may never come.
+  if (provisions.isSuccess && nodes.length === 0) return null;
 
-  return provisions.isPending ? (
-    <LoadingState rows={2} />
-  ) : provisions.isError ? (
-    problemStatus(provisions.error) === 403 ? (
-      <div data-provisions-denied="">
-        <ProblemAlert error={provisions.error} />
-      </div>
-    ) : (
-      <ErrorState title={t('inventory.instrument.provisionsErrorTitle')} onRetry={() => void provisions.refetch()} />
-    )
-  ) : nodes.length === 0 ? (
-    <EmptyState title={t('inventory.instrument.provisionsEmpty.title')} body={t('inventory.instrument.provisionsEmpty.body')} />
-  ) : (
-    <ul className="m-0 list-none p-0">
-      {nodes.map((node) => (
-        <ProvisionUnit key={node.id} node={node} />
-      ))}
-    </ul>
+  return (
+    <Panel title={t('inventory.instrument.provisionsTitle')} data-provision-tree="">
+      {provisions.isPending ? (
+        <LoadingState rows={2} />
+      ) : provisions.isError ? (
+        problemStatus(provisions.error) === 403 ? (
+          <div data-provisions-denied="">
+            <ProblemAlert error={provisions.error} />
+          </div>
+        ) : (
+          <ErrorState title={t('inventory.instrument.provisionsErrorTitle')} onRetry={() => void provisions.refetch()} />
+        )
+      ) : (
+        <ul className="m-0 list-none p-0">
+          {nodes.map((node) => (
+            <ProvisionUnit key={node.id} node={node} />
+          ))}
+        </ul>
+      )}
+    </Panel>
   );
 }
 
 /** The instrument's level kind and source decide whether there is a tree to read at all. */
 export function ProvisionTree({ instrumentId, levelKind, sourceUrl }: { instrumentId: string; levelKind: string | null; sourceUrl: string }) {
   const t = useT();
+  if (levelKind !== STANDARD_LEVEL_KIND) return <ProvisionNodes instrumentId={instrumentId} />;
   return (
     <Panel title={t('inventory.instrument.provisionsTitle')} data-provision-tree="">
-      {levelKind === STANDARD_LEVEL_KIND ? <LicensedText sourceUrl={sourceUrl} /> : <ProvisionNodes instrumentId={instrumentId} />}
+      <LicensedText sourceUrl={sourceUrl} />
     </Panel>
   );
 }

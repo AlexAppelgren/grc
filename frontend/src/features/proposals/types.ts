@@ -33,6 +33,7 @@ export type TenantProposalQuery = Unnulled<Schemas['TenantProposalQuery']>;
 // Kept narrow rather than `string` so a screen that switches over them is checked by `tsc`.
 export type ProposalKind =
   | 'new_instrument'
+  | 'new_instrument_summary'
   | 'new_obligation'
   | 'new_obligation_version'
   | 'new_provision'

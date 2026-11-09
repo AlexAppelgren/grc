@@ -1,0 +1,318 @@
+{
+  "tranche": "se-acts",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "sfs-2004-297",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2004297-om-bank-och-finansieringsrorelse_sfs-2004-297/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2004:297, Lag (2004:297) om bank- och finansieringsrörelse, text as amended up to SFS 2026:1080",
+      "text": {
+        "en": "Sweden's core banking statute: who may run banking or financing business, on what licence, and how a licensed institution must be run. It binds banks and credit market companies directly and is Sweden's implementation of the EU capital requirements directive and parts of the bank recovery and resolution directive. For a bank it sets the duties on sound operation, risk management and internal control, credit assessment, bank secrecy, outsourcing notices, recovery planning, whistleblowing channels and depositor data."
+      }
+    },
+    {
+      "key": "sfs-2007-528",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2007528-om-vardepappersmarknaden_sfs-2007-528/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2007:528, Lag (2007:528) om värdepappersmarknaden, text as amended up to SFS 2026:1066",
+      "text": {
+        "en": "Governs investment services, trading venues and the conduct of firms that deal in financial instruments in Sweden. It binds investment firms and banks licensed for investment services directly, and is Sweden's implementation of MiFID II. For a bank it sets the conduct rules for investment business: client classification, conflicts of interest, product governance, client information and costs, inducements, best execution, recording of calls and messages, and staff competence."
+      }
+    },
+    {
+      "key": "sfs-2016-1306",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20161306-med-kompletterande-bestammelser_sfs-2016-1306/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1306, Lag (2016:1306) med kompletterande bestämmelser till EU:s marknadsmissbruksförordning, text as amended up to SFS 2026:1074",
+      "text": {
+        "en": "Fills in the EU Market Abuse Regulation in Swedish law, naming Finansinspektionen as the supervisor and adding duties the regulation leaves to member states. It binds issuers and the financial firms it names, banks included. For a bank it means a channel for staff to report suspected market abuse that protects reporter and reported, keeping suspicious order and transaction reports secret from the client, and explaining a delayed disclosure of inside information to FI when the bank is an issuer."
+      }
+    },
+    {
+      "key": "sfs-2016-1307",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20161307-om-straff-for-marknadsmissbruk-pa_sfs-2016-1307/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1307, Lag (2016:1307) om straff för marknadsmissbruk på värdepappersmarknaden, text as amended up to SFS 2026:1324",
+      "text": {
+        "en": "Makes insider dealing, unlawful disclosure of inside information and market manipulation criminal offences in Sweden, implementing the EU directive on criminal sanctions for market abuse. It binds every person rather than the institution as such, so it reaches a bank through its employees and through trading for its own or its clients' account. The duties listed here are the prohibitions themselves, which mark the conduct a bank's staff rules and controls deal with."
+      }
+    },
+    {
+      "key": "sfs-2017-630",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2017630-om-atgarder-mot-penningtvatt-och_sfs-2017-630/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2017:630, Lag (2017:630) om åtgärder mot penningtvätt och finansiering av terrorism, text as amended up to SFS 2026:1075",
+      "text": {
+        "en": "Sweden's anti-money laundering and counter-terrorist financing act, setting what firms must do so they are not used for laundering or terrorist financing. It binds banks and other financial businesses directly and is Sweden's implementation of the EU anti-money laundering directive. For a bank it means a general risk assessment, risk-based customer due diligence including beneficial owners and politically exposed persons, ongoing monitoring, reporting suspicions to the Police, record keeping, training and AML governance roles."
+      }
+    },
+    {
+      "key": "sfs-2010-751",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2010751-om-betaltjanster_sfs-2010-751/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:751, Lag (2010:751) om betaltjänster, text as amended up to SFS 2026:1068",
+      "text": {
+        "en": "Governs payment services in Sweden: who may provide them, what users must be told, and how payments, refunds and fraud are handled. It binds banks and other payment service providers directly and implements the EU payment services and payment accounts directives. For a bank it covers contract information, execution times, refunds of unauthorised payments, strong customer authentication, access for third-party providers, risk and fraud reporting to FI, basic payment accounts, account switching and, for the largest deposit takers, cash services."
+      }
+    },
+    {
+      "key": "sfs-2011-755",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2011755-om-elektroniska-pengar_sfs-2011-755/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:755, Lag (2011:755) om elektroniska pengar, text as amended up to SFS 2026:1069",
+      "text": {
+        "en": "Governs the issuing of electronic money: who may issue it, how the funds received are protected and what rights holders have. It binds e-money institutions and other issuers, which can include a bank that issues e-money, and implements the EU e-money directive. In practice an issuer must issue e-money at par without delay, set out clear redemption terms, redeem at nominal value on request and pay no interest on holdings, while an e-money institution must also safeguard the funds it receives."
+      }
+    },
+    {
+      "key": "sfs-2010-1846",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/konsumentkreditlag-20101846_sfs-2010-1846/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:1846, Konsumentkreditlag (2010:1846), text as amended up to SFS 2026:249",
+      "text": {
+        "en": "Protects consumers who take credit from businesses: marketing, pre-contract information, the creditworthiness assessment, the agreement itself and caps on interest and costs. It binds creditors dealing with consumers, banks included, and implements the EU consumer credit and mortgage credit directives. It is replaced by the new Consumer Credit Act on 20 November 2026; until then a bank must follow good credit practice, assess creditworthiness, give the prescribed information and keep within the interest and cost caps."
+      }
+    },
+    {
+      "key": "sfs-2026-1011",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/konsumentkreditlag-20261011_sfs-2026-1011/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2026:1011, Konsumentkreditlag (2026:1011), text as issued",
+      "text": {
+        "en": "Sweden's new consumer credit law, which replaces the 2010 Consumer Credit Act on 20 November 2026 and implements the revised EU consumer credit directive. It binds businesses that grant or broker credit to consumers, banks included. For a bank it means good credit practice, moderate marketing, the standard European information form before signing, a creditworthiness assessment on verified data with human review of automated assessments on request, interest and cost caps, and early help for consumers in payment difficulty."
+      }
+    },
+    {
+      "key": "sfs-2016-1024",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/rubriken-upphor-att-galla-u2026-11-20lag_sfs-2016-1024/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2016:1024, Lag (2016:1024) om verksamhet med bostadskrediter, text as amended up to SFS 2026:1022",
+      "text": {
+        "en": "Governs the business of granting, brokering and advising on mortgage credit to consumers, including the licensing of lenders and brokers that are not banks. A bank needs no licence under it but must follow its conduct parts: fair and professional treatment, staff competence, pay that does not distort advice, suitable advice, and lending and valuation guidelines. It implements the EU mortgage credit directive and from 20 November 2026 also covers certain other consumer credits."
+      }
+    },
+    {
+      "key": "sfs-2026-226",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2026226-om-begransning-av-bostadskrediter_sfs-2026-226/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2026:226, Lag (2026:226) om begränsning av bostadskrediter, text as amended up to SFS 2026:1028",
+      "text": {
+        "en": "Puts the mortgage cap and the amortisation requirement into law: how much can be borrowed against a home in Sweden and how fast a mortgage must be paid down. It binds Swedish and foreign credit institutions and mortgage lenders directly. For a bank it means calculating the loan-to-value ratio when a mortgage is granted or increased and keeping within the limits, applying minimum amortisation by loan-to-value band with the allowed exemptions, and giving borrowers on request the data behind the calculation."
+      }
+    },
+    {
+      "key": "sfs-2004-46",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-200446-om-vardepappersfonder_sfs-2004-46/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2004:46, Lag (2004:46) om värdepappersfonder, text as amended up to SFS 2026:916",
+      "text": {
+        "en": "Governs UCITS funds sold to the public: the fund management company, what a fund may invest in, redemption, investor information and the depositary. It binds fund management companies and depositaries, so it reaches a bank mainly through a fund company in its group or when the bank acts as depositary, and it implements the EU UCITS directive. In practice that means acting solely in unitholders' interest, investment and risk limits, prospectus, key information and reports, and the depositary's custody and oversight duties."
+      }
+    },
+    {
+      "key": "sfs-2013-561",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2013561-om-forvaltare-av-alternativa_sfs-2013-561/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2013:561, Lag (2013:561) om förvaltare av alternativa investeringsfonder, text as amended up to SFS 2026:1070",
+      "text": {
+        "en": "Governs managers of alternative investment funds, such as special, private equity and property funds, and the marketing of those funds in Sweden. It binds AIF managers, so it reaches a bank mainly through a fund management company in its group, and it implements the EU AIFM directive. The duties cover acting in investors' interest, liquidity and risk management, liquidity management tools for open-ended funds, independent valuation, conflicts of interest, appointing a depositary and informing investors."
+      }
+    },
+    {
+      "key": "sfs-2010-2043",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forsakringsrorelselag-20102043_sfs-2010-2043/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2010:2043, Försäkringsrörelselag (2010:2043), text as amended up to SFS 2026:635",
+      "text": {
+        "en": "Sweden's insurance business act, covering the licensing, solvency, governance and supervision of insurance companies. It binds insurers, not banks, so it reaches a bank only where its group includes an insurance company, and it implements the EU Solvency II directive. For such an insurer it means sound and prudent management, prudent investment, a system of governance with key functions, fit and proper checks, an own risk and solvency assessment, outsourcing notices and a yearly solvency report."
+      }
+    },
+    {
+      "key": "sfs-2018-1219",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20181219-om-forsakringsdistribution_sfs-2018-1219/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:1219, Lag (2018:1219) om försäkringsdistribution, text as amended up to SFS 2026:250",
+      "text": {
+        "en": "Governs the selling of and advice on insurance, whether by insurers or by intermediaries. It binds insurance distributors, which includes a bank that distributes insurance to its customers, and implements the EU insurance distribution directive. In practice it requires good distribution practice and suitable advice, limits on third-party remuneration, controls on staff knowledge and reputation, product approval for manufacturers, complaint handling, pre-contract information and documentation of each sale."
+      }
+    },
+    {
+      "key": "sfs-2019-742",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2019742-om-tjanstepensionsforetag_sfs-2019-742/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2019:742, Lag (2019:742) om tjänstepensionsföretag, text as amended up to SFS 2026:641",
+      "text": {
+        "en": "Governs occupational pension undertakings, the bodies that run workplace pension schemes, covering their licensing, capital, investments and governance. It binds those undertakings and not banks, so a bank meets it only if its group includes one, and it implements the EU IORP II directive. For such an undertaking it means yearly pension statements, prudent investment, assets covering technical provisions, capital requirements, a system of governance with key functions, an own risk assessment and outsourcing notices."
+      }
+    },
+    {
+      "key": "sfs-2005-104",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/forsakringsavtalslag-2005104_sfs-2005-104/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2005:104, Försäkringsavtalslag (2005:104), text as amended up to SFS 2026:1210",
+      "text": {
+        "en": "Sweden's insurance contracts act, setting the rights and duties of insurers and policyholders under an insurance contract, from the information given before it is signed to the settlement of claims. It binds insurance companies rather than banks, so it reaches a bank only through an insurer in its group. For that insurer it means information before and after the contract that makes important limits of cover clear, prompt claims settlement, and not refusing personal insurance without special reasons."
+      }
+    },
+    {
+      "key": "sfs-2018-218",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2018218-med-kompletterande-bestammelser_sfs-2018-218/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2018:218, Lag (2018:218) med kompletterande bestämmelser till EU:s dataskyddsförordning, text as amended up to SFS 2026:1589",
+      "text": {
+        "en": "Sweden's supplement to the GDPR, filling in the points the regulation leaves to member states. It applies to everyone who processes personal data, so it binds a bank directly alongside the GDPR. For a bank it adds a confidentiality duty for its data protection officer, narrow conditions for processing data about criminal convictions and offences outside public authorities, and the rule that personal identity numbers are processed without consent only where clearly justified."
+      }
+    },
+    {
+      "key": "sfs-1995-1571",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-19951571-om-insattningsgaranti_sfs-1995-1571/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 1995:1571, Lag (1995:1571) om insättningsgaranti, text as amended up to SFS 2026:1061",
+      "text": {
+        "en": "Sets up the Swedish deposit guarantee, which compensates depositors up to a set amount if their bank fails, and says how it is funded and paid out. It binds banks and other institutions whose deposits it covers directly, and implements the EU deposit guarantee schemes directive. For a bank it means having account types assessed for cover, telling depositors about cover, accepting deposits unless there are special reasons not to, paying the yearly fee and supplying depositor data for a payout."
+      }
+    },
+    {
+      "key": "sfs-2015-1016",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20151016-om-resolution_sfs-2015-1016/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:1016, Lag (2015:1016) om resolution, text as amended up to SFS 2026:1073",
+      "text": {
+        "en": "Governs how the Swedish National Debt Office deals with a failing bank through resolution rather than ordinary bankruptcy, and how institutions are prepared for it. It binds banks and other institutions and their group companies directly, and implements the EU bank recovery and resolution directive. For a bank it means meeting its minimum requirement for own funds and eligible liabilities, bail-in and stay terms in contracts under third-country law, paying resolution fees and informing the Debt Office."
+      }
+    },
+    {
+      "key": "sfs-2014-966",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2014966-om-kapitalbuffertar_sfs-2014-966/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2014:966, Lag (2014:966) om kapitalbuffertar, text as amended up to SFS 2026:1071",
+      "text": {
+        "en": "Sets the capital buffers banks must hold on top of their minimum capital requirements, and the limits that apply when a buffer is not met. It binds banks and other credit institutions directly and is part of Sweden's implementation of the EU capital requirements directive. For a bank it means holding common equity tier 1 capital for the combined buffer requirement, calculating its countercyclical buffer, and, if a buffer is breached, limiting distributions and variable pay and filing a capital conservation plan with FI."
+      }
+    },
+    {
+      "key": "sfs-2014-968",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2014968-om-sarskild-tillsyn-over_sfs-2014-968/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2014:968, Lag (2014:968) om särskild tillsyn över kreditinstitut och värdepappersbolag, text as amended up to SFS 2026:1081",
+      "text": {
+        "en": "Sweden's supervision act for credit institutions and investment firms, supplementing the EU capital requirements regulation and giving Finansinspektionen its tools for capital, liquidity and group supervision. It binds banks directly, along with their holding companies and group entities, and implements the EU capital requirements directive. For a bank it means meeting the special own funds and liquidity requirements FI sets, soundness at group level, holding company approval, and supplying information and group structure disclosures."
+      }
+    },
+    {
+      "key": "sfs-2006-531",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2006531-om-sarskild-tillsyn-over_sfs-2006-531/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2006:531, Lag (2006:531) om särskild tillsyn över finansiella konglomerat, text as amended up to SFS 2026:633",
+      "text": {
+        "en": "Provides for extra supervision of financial groups that combine banking or investment business with insurance on a significant scale. It binds the regulated entities in such a conglomerate, so it reaches a bank whose group also holds an insurer, and implements the EU financial conglomerates directive. In practice the conglomerate must hold own funds for its special capital requirement, calculate and report it regularly, report significant risk concentrations and intra-group transactions, and keep adequate risk management and internal control."
+      }
+    },
+    {
+      "key": "sfs-2003-1223",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20031223-om-utgivning-av-sakerstallda_sfs-2003-1223/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2003:1223, Lag (2003:1223) om utgivning av säkerställda obligationer, text as amended up to SFS 2026:627",
+      "text": {
+        "en": "Governs the issuing of covered bonds, bonds backed by a ring-fenced pool of mortgages and other high-quality assets that investors can rely on if the issuer fails. It binds credit institutions that hold a permit to issue them, and implements the EU covered bond directive. For an issuing bank it means a permit from FI, individual valuation and monitoring of collateral, overcollateralisation and matching of the cover pool, a liquidity buffer, a register of bonds and assets, and information for investors."
+      }
+    },
+    {
+      "key": "sfs-1995-1559",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-19951559-om-arsredovisning-i-kreditinstitut_sfs-1995-1559/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 1995:1559, Lag (1995:1559) om årsredovisning i kreditinstitut och värdepappersbolag, text as amended up to SFS 2026:781",
+      "text": {
+        "en": "Sets the special accounting rules for the annual reports, consolidated accounts and interim reports of credit institutions and investment firms. It binds banks directly and implements the EU bank accounts directive. For a bank it means including a capital adequacy analysis in the annual report, preparing consolidated accounts as a parent company unless an exemption applies, and producing at least one interim report each financial year."
+      }
+    },
+    {
+      "key": "sfs-2023-714",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023714-om-forvarv-och-forvaltning-av_sfs-2023-714/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:714, Lag (2023:714) om förvärv och förvaltning av nödlidande kreditavtal, text as amended up to SFS 2026:1027",
+      "text": {
+        "en": "Governs the sale of non-performing loans by credit institutions and the licensing and conduct of the firms that buy and service them. It reaches a bank as the seller of such loans, and implements the EU credit servicers directive. For a bank that sells non-performing loans it means giving the buyer the information it needs about the loans and their collateral, and telling Finansinspektionen who the buyer and its representative are and which loans were transferred."
+      }
+    },
+    {
+      "key": "sfs-2022-1568",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20221568-om-sveriges-riksbank_sfs-2022-1568/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2022:1568, Lag (2022:1568) om Sveriges riksbank, text as amended up to SFS 2026:1078",
+      "text": {
+        "en": "Sweden's central bank law, covering the Riksbank's activities, organisation and capital, from monetary policy and the financial system to cash and crisis preparedness. It is aimed mainly at the Riksbank but places some duties on financial firms under FI's supervision. For a bank it means giving the Riksbank information it requests for its tasks and, where the bank is of particular importance for payments, planning to keep payments running in crises and heightened alert and taking part in the Riksbank's preparedness work."
+      }
+    },
+    {
+      "key": "sfs-2011-1244",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/skatteforfarandelag-20111244_sfs-2011-1244/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1244, Skatteförfarandelag (2011:1244), text as amended up to SFS 2026:1305",
+      "text": {
+        "en": "Sweden's tax procedure act, setting how taxes are declared, withheld, reported and paid. It binds a bank directly as a payer of interest and dividends, a reporting financial institution and a payment service provider. For a bank it means withholding preliminary tax on interest and dividends and filing control statements to Skatteverket on interest, dividends, fund and securities disposals, FATCA and CRS accounts and any crypto-asset users, plus reporting cross-border arrangements as an intermediary and cross-border payments."
+      }
+    },
+    {
+      "key": "sfs-2015-911",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2015911-om-identifiering-av_sfs-2015-911/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:911, Lag (2015:911) om identifiering av rapporteringspliktiga konton vid automatiskt utbyte av upplysningar om finansiella konton, text as amended up to SFS 2025:1386",
+      "text": {
+        "en": "Sets how financial institutions identify accounts held by people and entities that are tax resident abroad, so that account information can be exchanged automatically with other countries under the EU and OECD rules. It binds reporting financial institutions, banks included, directly. For a bank it means self-certifications of tax residence for new accounts, due diligence reviews of existing accounts, notifying Skatteverket of its status, keeping the records, and telling customers about data breaches that affect them."
+      }
+    },
+    {
+      "key": "sfs-2015-62",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-201562-om-identifiering-av_sfs-2015-62/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2015:62, Lag (2015:62) om identifiering av rapporteringspliktiga konton med anledning av FATCA-avtalet, text as amended up to SFS 2025:1385",
+      "text": {
+        "en": "Sets how Swedish financial institutions identify accounts held by US taxpayers under the FATCA agreement between Sweden and the United States. It binds reporting financial institutions, banks included, directly. For a bank it means registering with the US Internal Revenue Service, obtaining self-certifications to decide whether new account holders are US tax residents, and keeping the identification records for five years after an account closes; the reporting itself sits in the Tax Procedure Act."
+      }
+    },
+    {
+      "key": "sfs-2020-434",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2020434-om-rapporteringspliktiga_sfs-2020-434/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2020:434, Lag (2020:434) om rapporteringspliktiga arrangemang, text as amended up to SFS 2020:558",
+      "text": {
+        "en": "Defines which cross-border tax arrangements must be reported to Skatteverket, through a list of hallmarks such as features tied to a tax advantage or that could undermine account information exchange or hide beneficial ownership. It implements the EU rules on reportable cross-border arrangements. The act only sets the definitions and the reporting duty sits in the Tax Procedure Act, so for a bank acting as an intermediary or user it means identifying arrangements that meet a hallmark."
+      }
+    },
+    {
+      "key": "sfs-2025-1377",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20251377-om-inhamtande-av-vissa-uppgifter_sfs-2025-1377/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1377, Lag (2025:1377) om inhämtande av vissa uppgifter på skatteområdet om kryptotillgångar, text as issued",
+      "text": {
+        "en": "Sets the checks that crypto-asset service providers must carry out on their users so that tax information on crypto-asset transactions can be exchanged between countries, implementing the EU rules on tax reporting for crypto-assets. It binds reporting crypto-asset service providers, so it reaches a bank only if the bank provides crypto-asset services. In that case the bank must obtain self-certifications of tax residence from users and check them; the reporting itself sits in the Tax Procedure Act."
+      }
+    },
+    {
+      "key": "sfs-2011-1268",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20111268-om-investeringssparkonto_sfs-2011-1268/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2011:1268, Lag (2011:1268) om investeringssparkonto, text as amended up to SFS 2026:909",
+      "text": {
+        "en": "Creates the investment savings account, a Swedish savings account for financial instruments with its own tax treatment. It binds the firms that offer the accounts, which include Swedish banks and other credit institutions as well as investment firms and fund companies. For a bank offering it, the act sets who may hold an account and on what terms, requires returns and sale proceeds to go straight to the account, prescribes the information given before the agreement, and requires the holder to be told quickly about assets that may not be held on the account."
+      }
+    },
+    {
+      "key": "sfs-2024-1278",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20241278-med-kompletterande-bestammelser_sfs-2024-1278/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2024:1278, Lag (2024:1278) med kompletterande bestämmelser till EU:s förordning om digital operativ motståndskraft för finanssektorn, text as issued",
+      "text": {
+        "en": "Fills in the EU digital operational resilience regulation (DORA) in Swedish law: it names Finansinspektionen as the supervisor, sets supervision fees and divides the work on threat-led penetration testing between FI, which picks the firms to be tested, and the Riksbank, which oversees the tests. A bank is bound directly, but its main ICT risk duties come from DORA itself. Under this act it must give the Riksbank the information it needs for the tests."
+      }
+    },
+    {
+      "key": "sfs-2025-1506",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/cybersakerhetslag-20251506_sfs-2025-1506/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:1506, Cybersäkerhetslag (2025:1506), text as issued",
+      "text": {
+        "en": "Sweden's cybersecurity act, implementing the EU NIS2 directive, which sets security and incident reporting duties for operators in critical sectors. Credit institutions that meet its size and establishment criteria are covered, but a firm covered by DORA, such as a bank, is exempt from the act's security measure, management training and incident reporting duties. In practice a bank in scope must register with the authority the government designates and report changes to its registration within the set time."
+      }
+    },
+    {
+      "key": "sfs-2024-1159",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-20241159-med-kompletterande-bestammelser_sfs-2024-1159/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2024:1159, Lag (2024:1159) med kompletterande bestämmelser till EU:s förordning om marknader för kryptotillgångar, text as amended up to SFS 2026:336",
+      "text": {
+        "en": "Fills in the EU markets in crypto-assets regulation (MiCA) in Swedish law, naming Finansinspektionen as the supervisor and adding secrecy, information and marketing rules. It binds firms covered by MiCA, so it reaches a bank only if it issues crypto-assets or provides crypto-asset services. For such a bank it adds a confidentiality duty for staff, a duty to hand over customer information quickly and electronically in criminal investigations, and a duty to give FI the information it requests."
+      }
+    },
+    {
+      "key": "sfs-1998-1479",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-19981479-om-vardepapperscentraler-och_sfs-1998-1479/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 1998:1479, Lag (1998:1479) om värdepapperscentraler och kontoföring av finansiella instrument, text as amended up to SFS 2025:317",
+      "text": {
+        "en": "Governs central securities depositories and the electronic registration of financial instruments in Sweden, including the role of account operators and of intermediaries that hold shares for others. It reaches a bank that acts as an account operator or nominee, and its shareholder rules implement the EU shareholder rights directive. For such a bank it means keeping registration records, answering companies' shareholder identification requests, helping shareholders exercise their rights, and charging published, proportionate fees."
+      }
+    },
+    {
+      "key": "sfs-2020-272",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2020272-om-konto-och-vardefackssystem_sfs-2020-272/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2020:272, Lag (2020:272) om konto- och värdefackssystem, text as amended up to SFS 2026:123",
+      "text": {
+        "en": "Sets up a national system, run on Skatteverket's platform, through which authorities can search directly and immediately who holds and represents accounts and safe deposit boxes, in line with the EU anti-money laundering directive. It binds credit institutions and investment firms that hold client funds on accounts directly. For a bank it means making holder and representative data searchable through the system and keeping authorities' searches secret from customers."
+      }
+    },
+    {
+      "key": "sfs-2025-327",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2025327-om-internationella-sanktioner_sfs-2025-327/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2025:327, Lag (2025:327) om internationella sanktioner, text as issued",
+      "text": {
+        "en": "Makes breaches and circumvention of EU and UN sanctions a crime in Sweden and sets how sanctions that do not apply directly are given effect, implementing the EU directive on penalties for breaching restrictive measures. It binds everyone, banks included. For a bank the practical point is that making funds available to listed persons, failing to freeze their assets or carrying out prohibited transactions can be a crime even through gross negligence, and that FI can decide interim freezes after UN listings."
+      }
+    }
+  ]
+}

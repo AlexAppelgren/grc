@@ -604,7 +604,7 @@ test.describe('the library baseline', () => {
     await signInAs(page, LOGINS.editor);
     await page.goto('/console/queue');
     await queueSettled(page);
-    await page.getByRole('combobox', { name: 'Kind' }).selectOption({ label: 'New instrument' });
+    await page.getByRole('combobox', { name: 'Kind' }).selectOption({ label: 'New regulation' });
     await queueOfKind(page, 'new_instrument');
     const waiting = (await row(first.title).count()) > 0;
     if (!waiting) {
@@ -626,8 +626,9 @@ test.describe('the library baseline', () => {
     await expect(fact('regime')).toHaveText('Securities');
     await expect(fact('inForceFrom')).toHaveText('6 Apr 2016');
     const sources = page.locator('[data-proposal-sources]');
-    await expect(sources.locator('dt')).toHaveText(['Title (English)', 'Short name', 'Official reference', 'ELI', 'Level', 'Jurisdiction', 'Authority', 'Regime', 'In force from']);
-    await expect(sources.locator(`dd a[href="${first.source}"]`)).toHaveCount(9);
+    // Every fact comes from the one page, so it is named once with the fields it supports.
+    await expect(sources.locator('[data-source-group] p')).toHaveText(['Title (English), Short name, Official reference, ELI, Level, Jurisdiction, Authority, Regime, In force from']);
+    await expect(sources.locator('[data-source-group]')).toHaveCount(1);
     await expect(page.locator('[data-proposal-correction]')).toHaveCount(0);
 
     // Back on the filtered queue, every row on the page selected and approved behind one passkey.

@@ -1,0 +1,278 @@
+{
+  "tranche": "dk-bekendtgorelser",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "dk-bek-2024-760",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/760",
+      "sourceLabel": "Retsinformation, BEK nr 760 af 14/06/2024 as in force",
+      "text": {
+        "en": "Sets the conduct rules for firms that provide investment services in Denmark: how they classify and inform clients, disclose costs, test suitability and appropriateness, and report on the service. It is issued under the Act on Investment Firms and Investment Services, the Financial Business Act and the act on investment advisers, and implements parts of MiFID II. A bank offering investment services applies it directly, including extra limits on selling subordinated eligible liabilities and capital instruments to retail clients."
+      }
+    },
+    {
+      "key": "dk-bek-2016-330",
+      "source": "https://www.retsinformation.dk/eli/lta/2016/330",
+      "sourceLabel": "Retsinformation, BEK nr 330 af 07/04/2016 as in force",
+      "text": {
+        "en": "The general good-practice rules for financial undertakings in their dealings with customers, issued under the Financial Business Act. It applies directly to banks and other financial undertakings operating in Denmark, mainly in relations with private customers. A bank must document agreements, give notice of price changes, advise in the customer's interest with information on costs, conflicts and tax, and offer private customers a basic deposit account, refusing only on objective grounds."
+      }
+    },
+    {
+      "key": "dk-bek-2022-973",
+      "source": "https://www.retsinformation.dk/eli/lta/2022/973",
+      "sourceLabel": "Retsinformation, BEK nr 973 af 22/06/2022 as in force",
+      "text": {
+        "en": "Governs how banks, mortgage-credit institutions, payment and e-money institutions and similar firms outsource functions to service providers. Issued under the Financial Business Act and related acts, it binds a bank directly whenever it outsources. The board sets an outsourcing policy and frames critical outsourcing, and the bank analyses risks first, uses written contracts with audit rights, keeps a register, plans exits and notifies Finanstilsynet of critical or important outsourcing in advance."
+      }
+    },
+    {
+      "key": "dk-bek-2021-1242",
+      "source": "https://www.retsinformation.dk/eli/lta/2021/1242",
+      "sourceLabel": "Retsinformation, BEK nr 1242 af 10/06/2021 as in force",
+      "text": {
+        "en": "Sets the rules on remuneration policy and pay in banks, mortgage-credit institutions, investment firms and certain holding companies, under the Financial Business Act and related acts, implementing parts of the EU capital requirements and investment firm directives. It binds a bank directly. The board identifies material risk takers and sets and reviews a risk-aligned pay policy, and the bank caps variable pay, keeps control-function pay independent of results and reports and publishes pay data yearly."
+      }
+    },
+    {
+      "key": "dk-bek-2024-1558",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/1558",
+      "sourceLabel": "Retsinformation, BEK nr 1558 af 06/12/2024 as in force",
+      "text": {
+        "en": "Sets minimum standards for how financial undertakings handle customer complaints, issued under the Financial Business Act and other financial sector acts. It applies to banks, mortgage-credit institutions, insurers, payment institutions and other listed firms in Denmark, including branches of foreign firms. A bank needs a written complaints procedure, a named complaints officer customers can easily find, acknowledgement of each complaint within three working days and an overview of complaint numbers."
+      }
+    },
+    {
+      "key": "dk-bek-2025-1443",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/1443",
+      "sourceLabel": "Retsinformation, BEK nr 1443 af 27/11/2025 as in force",
+      "text": {
+        "en": "Sets the conduct rules for granting and arranging housing credit to consumers, issued under the Financial Business Act and related acts and implementing parts of the EU Mortgage Credit Directive. It binds banks and other lenders and intermediaries offering housing credit in Denmark. A bank must market fairly, assess creditworthiness thoroughly, explain the loan, offer variable-rate and interest-only loans only to borrowers who could carry a fixed-rate repayment loan, and not tie other products to the credit."
+      }
+    },
+    {
+      "key": "dk-bek-2024-1557",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/1557",
+      "sourceLabel": "Retsinformation, BEK nr 1557 af 06/12/2024 as in force",
+      "text": {
+        "en": "Sets good business practice for distributing insurance: what distributors tell customers, how they establish demands and needs, and extra rules for insurance-based investment products. Issued under the Insurance Business Act and the Insurance Distribution Act, it implements parts of the EU Insurance Distribution Directive. It binds insurers and insurance intermediaries, so it reaches a bank when the bank distributes insurance, for example as an intermediary for an insurer."
+      }
+    },
+    {
+      "key": "dk-bek-2022-1037",
+      "source": "https://www.retsinformation.dk/eli/lta/2022/1037",
+      "sourceLabel": "Retsinformation, BEK nr 1037 af 15/06/2022 as in force",
+      "text": {
+        "en": "Sets the knowledge and experience staff need before they give investment advice, advise on pension pools or give information about investment products to retail clients. Issued under the Financial Business Act and related acts, it implements parts of MiFID II and binds banks directly. A bank must check each employee's competence yearly, run a systematic training programme and, for advice beyond simple products, have advisers pass an approved exam and retake it every three years."
+      }
+    },
+    {
+      "key": "dk-bek-2025-1425",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/1425",
+      "sourceLabel": "Retsinformation, BEK nr 1425 af 27/11/2025 as in force",
+      "text": {
+        "en": "Sets the competence staff need to grant, arrange or advise on housing credit to consumers, issued under the Financial Business Act and related acts and implementing parts of the EU Mortgage Credit Directive. It binds banks and other housing credit lenders and intermediaries. A bank must ensure its staff together have sufficient competence, that each adviser knows the listed subjects, that staff complete systematic training first, and that its tied intermediaries meet the same standard."
+      }
+    },
+    {
+      "key": "dk-bek-2021-2018",
+      "source": "https://www.retsinformation.dk/eli/lta/2021/2018",
+      "sourceLabel": "Retsinformation, BEK nr 2018 af 26/10/2021 as in force",
+      "text": {
+        "en": "Sets what banks and other in-scope firms must have ready so that Finanstilsynet can plan their resolution and Finansiel Stabilitet can carry it out. Issued under the Financial Business Act and the Act on Investment Firms, it implements parts of the EU Bank Recovery and Resolution Directive. A bank must supply planning data on request, produce prescribed balance sheets and deposit statements, be able to write down uncovered deposits, inform customers and have this checked by its auditor yearly."
+      }
+    },
+    {
+      "key": "dk-bek-2016-1483",
+      "source": "https://www.retsinformation.dk/eli/lta/2016/1483",
+      "sourceLabel": "Retsinformation, BEK nr 1483 af 02/12/2016 as in force",
+      "text": {
+        "en": "Sets how the Danish depositor and investor guarantee scheme is administered and funded, under the Act on a Depositor and Investor Guarantee Scheme. It binds banks, mortgage-credit institutions, investment firms and Danish branches of foreign institutions. A bank reports its covered deposits and risk indicators to Finansiel Stabilitet each year with auditor confirmation, and pays the annual contribution, and any extraordinary contribution, that Finansiel Stabilitet sets."
+      }
+    },
+    {
+      "key": "dk-bek-2026-679",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/679",
+      "sourceLabel": "Retsinformation, BEK nr 679 af 24/07/2026 as in force",
+      "text": {
+        "en": "Sets when investment firms may pay or receive fees, commissions and other benefits from third parties, and how research is paid for. Issued under the Act on Investment Firms and Investment Services and related acts, it implements parts of MiFID II. A bank providing investment services must pass third-party payments on to clients in portfolio management and independent advice, accept them elsewhere only if they improve the service, keep a list of them and disclose amounts to clients."
+      }
+    },
+    {
+      "key": "dk-bek-2020-147",
+      "source": "https://www.retsinformation.dk/eli/lta/2020/147",
+      "sourceLabel": "Retsinformation, BEK nr 147 af 25/02/2020 as in force",
+      "text": {
+        "en": "Sets what price information banks must publish for consumers, issued under the Financial Business Act. It binds Danish and foreign banks offering products to consumers in Denmark. A bank shows on its website its own fees, rates for common foreign banknotes, standard information on widely held deposit and credit products and any discounts it gives to member groups. From 20 November 2026 the order covers only deposit products, currency exchange and housing credit."
+      }
+    },
+    {
+      "key": "dk-bek-2025-1160",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/1160",
+      "sourceLabel": "Retsinformation, BEK nr 1160 af 09/09/2025 as in force",
+      "text": {
+        "en": "Sets how Danish financial institutions identify account holders who are tax resident abroad and report their accounts to the Danish tax administration for exchange with other countries, under the Tax Reporting Act. It implements the EU rules on automatic exchange of financial account information, built on the OECD standard. A bank must register as a reporting institution, obtain self-certifications of tax residence, review existing accounts and report each reportable account every year."
+      }
+    },
+    {
+      "key": "dk-bek-2021-724",
+      "source": "https://www.retsinformation.dk/eli/lta/2021/724",
+      "sourceLabel": "Retsinformation, BEK nr 724 af 22/04/2021 as in force",
+      "text": {
+        "en": "Sets how Danish financial institutions identify accounts held by US persons and report them to the Danish tax administration, under the Tax Reporting Act. It binds banks and other reporting financial institutions directly. A bank must register as a reporting institution, obtain self-certifications on new accounts, classify entity holders and their controlling persons, and report each US reportable account every year with balances, income and tax numbers."
+      }
+    },
+    {
+      "key": "dk-bek-2025-913",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/913",
+      "sourceLabel": "Retsinformation, BEK nr 913 af 26/06/2025 as in force",
+      "text": {
+        "en": "Sets how the requirement for eligible liabilities (MREL) is calculated, so that a failing bank can absorb losses and be recapitalised in resolution. Issued under the Financial Business Act and the Act on Investment Firms, it implements parts of EU resolution law and applies to banks, certain investment firms and their holding companies. A bank must hold eligible liabilities meeting the requirement Finanstilsynet sets, measured against both its risk exposure and its leverage exposure."
+      }
+    },
+    {
+      "key": "dk-bek-2023-1114",
+      "source": "https://www.retsinformation.dk/eli/lta/2023/1114",
+      "sourceLabel": "Retsinformation, BEK nr 1114 af 25/08/2023 as in force",
+      "text": {
+        "en": "Sets up the central mechanism through which the Money Laundering Secretariat and the Danish tax administration find out who holds or controls bank and payment accounts and safe-deposit boxes in Denmark. Issued under the Anti-Money Laundering Act, it implements parts of EU anti-money laundering law. A bank must take part in the jointly run mechanism and answer its queries fast and accurately with account holders, beneficial owners and account details."
+      }
+    },
+    {
+      "key": "dk-bek-2017-917",
+      "source": "https://www.retsinformation.dk/eli/lta/2017/917",
+      "sourceLabel": "Retsinformation, BEK nr 917 af 25/06/2017 as in force",
+      "text": {
+        "en": "Sets how securities dealers execute client orders to get the best possible result, issued under the Financial Business Act and implementing parts of MiFID II. It binds banks and other firms executing client orders in Denmark. A bank needs an order execution policy clients have agreed to, judges best execution for retail clients on total cost, handles orders fairly and in sequence, publishes unexecuted limit orders and reviews its venues and arrangements regularly."
+      }
+    },
+    {
+      "key": "dk-bek-2021-1761",
+      "source": "https://www.retsinformation.dk/eli/lta/2021/1761",
+      "sourceLabel": "Retsinformation, BEK nr 1761 af 01/09/2021 as in force",
+      "text": {
+        "en": "Sets the step-by-step process for moving a consumer's payment account, or its standing orders and direct debits, from one provider to another in Denmark. Issued under the Payment Accounts Act, it implements parts of the EU Payment Accounts Directive. A bank must handle switches within fixed deadlines whether it is the sending or the receiving provider, keep any fees reasonable and give consumers free information about how switching works."
+      }
+    },
+    {
+      "key": "dk-bek-2018-1609",
+      "source": "https://www.retsinformation.dk/eli/lta/2018/1609",
+      "sourceLabel": "Retsinformation, BEK nr 1609 af 18/12/2018 as in force",
+      "text": {
+        "en": "Sets the standard terms and format for the fee information document and the statement of fees that providers of consumer payment accounts must give. Issued under the Payment Accounts Act, it implements parts of the EU Payment Accounts Directive. A bank offering consumer payment accounts must describe its account services with the prescribed standard terms and make both documents clear, accurate, not misleading and in the prescribed layout."
+      }
+    },
+    {
+      "key": "dk-bek-2020-691",
+      "source": "https://www.retsinformation.dk/eli/lta/2020/691",
+      "sourceLabel": "Retsinformation, BEK nr 691 af 25/05/2020 as in force",
+      "text": {
+        "en": "Requires banks, e-money institutions and payment institutions to have a written policy for a sound corporate culture, issued under the Financial Business Act and the Payments Act. It binds a bank directly. The board sets the policy, covering ethical standards and the risk of breaching financial and anti-money laundering rules, reviews it yearly and reports on it to the annual meeting, while the chief executive puts it into daily practice and reports back to the board."
+      }
+    },
+    {
+      "key": "dk-bek-2024-1389",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/1389",
+      "sourceLabel": "Retsinformation, BEK nr 1389 af 04/12/2024 as in force",
+      "text": {
+        "en": "Requires supervised financial firms to publish Finanstilsynet's statements about them, issued under the Financial Business Act and other financial sector acts. It applies to banks, mortgage-credit institutions and other firms under Finanstilsynet's supervision. After an inspection, or an order, reprimand or risk notice that matters to customers, a bank must put Finanstilsynet's statement on its website within three working days with a clear link from the front page."
+      }
+    },
+    {
+      "key": "dk-bek-2020-2143",
+      "source": "https://www.retsinformation.dk/eli/lta/2020/2143",
+      "sourceLabel": "Retsinformation, BEK nr 2143 af 22/12/2020 as in force",
+      "text": {
+        "en": "Sets the quality of capital that banks and mortgage-credit institutions must use to cover the individual solvency add-on, the extra capital they need above the minimum for their own risks. Issued under the Financial Business Act, it applies to banks, mortgage-credit institutions and groups headed by them. A bank must hold at least 56.25 per cent of that capital as common equity tier 1 and at least 75 per cent as tier 1, or more if Finanstilsynet requires."
+      }
+    },
+    {
+      "key": "dk-bek-2025-441",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/441",
+      "sourceLabel": "Retsinformation, BEK nr 441 af 25/04/2025 as in force",
+      "text": {
+        "en": "Sets how banks and mortgage-credit institutions calculate the systemic risk buffer, an extra capital requirement for risks in the Danish financial system. Issued under the Financial Business Act, it implements parts of the EU capital requirements directive. A bank must calculate its buffer with the prescribed formula, applying the rates the Minister for Business sets for all or selected exposures, and publish its institution-specific buffer rate on its website."
+      }
+    },
+    {
+      "key": "dk-bek-2019-922",
+      "source": "https://www.retsinformation.dk/eli/lta/2019/922",
+      "sourceLabel": "Retsinformation, BEK nr 922 af 05/09/2019 as in force",
+      "text": {
+        "en": "Sets the materiality threshold that decides when an overdue amount counts towards a borrower being in default under the EU capital requirements rules. Issued under the Financial Business Act, it applies to banks and mortgage-credit institutions. A bank using the EU default definition counts past-due exposures against an absolute limit of DKK 750 for retail and DKK 4,000 for other exposures, combined with a relative limit of 1 per cent of its exposure to the borrower."
+      }
+    },
+    {
+      "key": "dk-bek-2017-1172",
+      "source": "https://www.retsinformation.dk/eli/lta/2017/1172",
+      "sourceLabel": "Retsinformation, BEK nr 1172 af 31/10/2017 as in force",
+      "text": {
+        "en": "Sets how holdings of shares and related financial instruments in listed companies are reported once they cross notification thresholds, issued under the Capital Markets Act and implementing parts of the EU Transparency Directive. It binds the holders, so it reaches a bank when the bank itself holds such shares or instruments. Notifications go digitally to Finanstilsynet on its standard form and to the issuer, with the prescribed content, in Danish or English."
+      }
+    },
+    {
+      "key": "dk-bek-2015-820",
+      "source": "https://www.retsinformation.dk/eli/lta/2015/820",
+      "sourceLabel": "Retsinformation, BEK nr 820 af 03/07/2015 as in force",
+      "text": {
+        "en": "Sets what depositors and investors must be told about the Danish guarantee fund, and what failing institutions must deliver to it, under the Act on a Depositor and Investor Guarantee Scheme. It binds banks, mortgage-credit institutions, investment firms and Danish branches of foreign institutions. A bank gives an information sheet at account opening, states yearly whether deposits are covered, displays scheme information and must be able to send the guarantee fund each depositor's position within 12 hours of entering insolvency proceedings."
+      }
+    },
+    {
+      "key": "dk-bek-2023-1016",
+      "source": "https://www.retsinformation.dk/eli/lta/2023/1016",
+      "sourceLabel": "Retsinformation, BEK nr 1016 af 22/06/2023 as in force",
+      "text": {
+        "en": "The main implementing order for tax reporting by banks and other reporting entities, issued under the Tax Reporting Act and related tax acts. It sets how a bank registers as a reporter and what it reports each year to the Danish tax administration. For a bank this covers in particular yearly data on the pension schemes it holds and on securities held in custody, with owners, holdings, returns and market values."
+      }
+    },
+    {
+      "key": "dk-bek-2024-19",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/19",
+      "sourceLabel": "Retsinformation, BEK nr 19 af 10/01/2024 as in force",
+      "text": {
+        "en": "A short order under the Share Savings Account Act that sets when a customer's share savings account can be moved to another institution around the turn of the year. It binds the institutions involved in the transfer. When a customer asks to move the account between 15 December and 22 February, the transfer can take effect no earlier than 23 February, so a bank's transfer handling must respect that date."
+      }
+    },
+    {
+      "key": "dk-bek-2018-420",
+      "source": "https://www.retsinformation.dk/eli/lta/2018/420",
+      "sourceLabel": "Retsinformation, BEK nr 420 af 02/05/2018 as in force",
+      "text": {
+        "en": "Sets the rules for children's savings accounts, and for self-pension accounts opened before 2 June 1998, under the Pension Taxation Act. It covers who may open a child's account, the binding period and who may agree transfers and placement of the balance. A bank offering these accounts opens them only within the age and family limits, agrees the binding period at opening and takes transfer and placement instructions only from the entitled person."
+      }
+    },
+    {
+      "key": "dk-bek-2019-1634",
+      "source": "https://www.retsinformation.dk/eli/lta/2019/1634",
+      "sourceLabel": "Retsinformation, BEK nr 1634 af 27/12/2019 as in force",
+      "text": {
+        "en": "Sets how intermediaries and taxpayers report cross-border tax arrangements that show prescribed hallmarks of possible tax avoidance to the Danish tax administration, under the Tax Reporting Act. It implements the EU rules known as DAC6. A bank is caught when it designs, markets, organises or helps carry out such an arrangement, and must then register as a reporter and report the arrangement within 30 days."
+      }
+    },
+    {
+      "key": "dk-bek-2009-430",
+      "source": "https://www.retsinformation.dk/eli/lta/2009/430",
+      "sourceLabel": "Retsinformation, BEK nr 430 af 27/05/2009 as in force",
+      "text": {
+        "en": "Sets how banks administer establishment accounts and entrepreneur accounts, tax-favoured savings for starting a business, under the act on deposits to such accounts. It binds the banks that hold them. A bank keeps these deposits on separate accounts that show each deposit year, reports deposits and withdrawals to the tax administration yearly, checks withdrawal forms and keeps them for five years, and withholds and pays over tax when the tax administration tells it to."
+      }
+    },
+    {
+      "key": "dk-bek-2014-1138",
+      "source": "https://www.retsinformation.dk/eli/lta/2014/1138",
+      "sourceLabel": "Retsinformation, BEK nr 1138 af 22/10/2014 as in force",
+      "text": {
+        "en": "Sets detailed rules under the Pension Return Taxation Act for the tax on returns from pension savings. It binds banks and other providers holding pension schemes. A bank must keep separate accounts for its pension pools, calculate the tax across each saver's schemes and allocate it, observe the year-end transfer window, tell savers the tax each year and have its final tax statement audited and filed with the tax administration."
+      }
+    },
+    {
+      "key": "dk-bek-2012-1370",
+      "source": "https://www.retsinformation.dk/eli/lta/2012/1370",
+      "sourceLabel": "Retsinformation, BEK nr 1370 af 21/12/2012 as in force",
+      "text": {
+        "en": "Sets detailed rules under the Pension Taxation Act for how pension schemes are labelled, taxed and administered by banks, insurers and pension funds. A bank must state each scheme's tax form with the prescribed designations in agreements and statements, calculate, withhold and pay the levy on payouts within short deadlines, and give the tax administration yearly declarations backed by an auditor's statement."
+      }
+    }
+  ]
+}

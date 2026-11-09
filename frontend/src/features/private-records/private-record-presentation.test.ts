@@ -48,11 +48,11 @@ describe('presentPrivateProposal', () => {
   it('gives a person\'s proposal no agent pill, and a decided one its status tone', () => {
     const row = { ...agentRow, origin: 'user', kind: 'new_instrument' };
     expect(presentPrivateProposal({ ...row, status: 'approved' }, t).map((p) => [p.label, p.tone])).toEqual([
-      ['New instrument', 'notice'],
+      ['New regulation', 'notice'],
       ['Approved', 'positive'],
     ]);
     expect(presentPrivateProposal({ ...row, status: 'rejected' }, t).map((p) => [p.label, p.tone])).toEqual([
-      ['New instrument', 'notice'],
+      ['New regulation', 'notice'],
       ['Rejected', 'information'],
     ]);
   });
@@ -102,7 +102,7 @@ describe('payloadRows', () => {
       ['refLabel', 'Reference', '4 kap.', null, null],
       ['summaries.sv', 'Text (Swedish)', 'Innan betalaren blir bunden ska informationen lämnas.', 1, 'sv'],
       ['originalLanguage', 'Original language', 'Swedish', null, null],
-      ['instrument', 'Instrument', 'sfs-2010-751', null, null],
+      ['instrument', 'Regulation', 'sfs-2010-751', null, null],
       ['dutyType', 'Duty type', 'disclosure', 1, null],
       ['effectiveFrom', 'In force from', '1 May 2010', null, null],
       ['terms', 'Scope', 'regime:payments', 2, null],

@@ -39,7 +39,7 @@ from django.test import TransactionTestCase
 
 from apps.agents import testing as agents_testing
 from apps.library import testing as build
-from apps.library.models import ObligationVersion, RecurringDuty
+from apps.library.models import InstrumentSummary, ObligationVersion, RecurringDuty
 from apps.shared import factories, tenancy
 from apps.shared.models import Tenant
 from apps.shared.tenancy import library_write
@@ -52,6 +52,7 @@ TRANSLATED = {"language_id": "sv", "is_original": False, "is_machine": True}
 # because A's parent already holds a child with the shared one's unique value.
 CHANGED: dict[str, dict[str, Any]] = {
     "instrument_title": TRANSLATED,
+    "instrument_summary": TRANSLATED,
     "obligation_title": TRANSLATED,
     "obligation_summary": TRANSLATED,
     "provision_text": TRANSLATED,
@@ -82,6 +83,7 @@ class ChildrenFollowTheirParentsZone(TransactionTestCase):
             table: (column, shared[parent], own[parent])
             for table, (column, parent) in {
                 "instrument_title": ("instrument_id", "instrument"),
+                "instrument_summary": ("instrument_id", "instrument"),
                 "instrument_relation": ("from_instrument_id", "instrument"),
                 "provision": ("instrument_id", "instrument"),
                 "provision_version": ("provision_id", "provision"),
@@ -118,6 +120,7 @@ class ChildrenFollowTheirParentsZone(TransactionTestCase):
         with transaction.atomic(), library_write("a test builder"), tenancy.platform_zone():
             if owner is not None:
                 tenancy.activate(owner.id)
+            InstrumentSummary.objects.create(instrument=instrument, language_id="en", text="What the act is.", is_original=True)
             RecurringDuty.objects.create(
                 obligation=obligation,
                 title="Quarterly report to the supervisor",
@@ -228,6 +231,9 @@ class ChildrenFollowTheirParentsZone(TransactionTestCase):
 
     def test_instrument_title(self) -> None:
         self._prove("instrument_title")
+
+    def test_instrument_summary(self) -> None:
+        self._prove("instrument_summary")
 
     def test_instrument_relation(self) -> None:
         self._prove("instrument_relation")

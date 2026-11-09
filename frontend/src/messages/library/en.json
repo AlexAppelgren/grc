@@ -25,7 +25,6 @@
   "library.relatedChanges.emptyTitle": "No change affects this obligation",
   "library.relatedChanges.emptyBody": "A change appears here once an agent links it to this duty.",
   "library.relatedChanges.errorTitle": "Could not load the related changes",
-
   "library.updates.title": "Library updates",
   "library.updates.lede": "{count, plural, one {# update} other {# updates}} in our scope since {date}",
   "library.updates.markAsSeen": "Mark as seen",
@@ -35,7 +34,7 @@
   "library.updates.filter.outside": "Show outside our scope",
   "library.updates.kind.newVersion": "New version",
   "library.updates.kind.vocabulary": "Vocabulary",
-  "library.updates.kind.newInstrument": "New instrument",
+  "library.updates.kind.newInstrument": "New regulation",
   "library.updates.kind.newObligation": "New obligation",
   "library.updates.kind.newProvision": "New provision",
   "library.updates.kind.newProvisionVersion": "New provision version",
@@ -63,6 +62,6 @@
   "library.watchedMarket": "Market we watch: {jurisdiction}",
   "library.empty.watched.title": "The markets we watch add nothing here",
   "library.empty.watched.body": "The markets we watch bring no obligation that the other filters allow. EU rules already show, because they reach the markets we operate in.",
-  "library.empty.watchedInstruments.body": "The markets we watch bring no instrument that the other filters allow. EU rules already show, because they reach the markets we operate in.",
+  "library.empty.watchedInstruments.body": "The markets we watch bring no regulation that the other filters allow. EU rules already show, because they reach the markets we operate in.",
   "library.privateToUs": "Private to us"
 }

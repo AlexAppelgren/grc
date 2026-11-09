@@ -44,6 +44,7 @@ from typing import Any
 from unittest import mock
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import DatabaseError, connection, transaction
 from django.db.models import Q
 from django.test import Client
@@ -886,6 +887,49 @@ class LibraryScenarioTests(ScenarioTestCase):
         for confirmation in (after["provenance"], after["version"]):
             self.assertEqual(confirmation["verifiedOrigin"], "agent")
             self.assertEqual(confirmation["confirmedByAgent"]["key"], confirmer.agent.key)
+
+    def test_inv_s16(self) -> None:
+        """INV-S16
+
+        A regulation says what it is and what applies (INV-09): its summary, the laws that
+        implement it or that it implements, its duty counts, and a summary is written once
+        and approved by a person.
+        """
+        from apps.library.models import InstrumentSummary
+        from apps.proposals import logic as proposals
+        from apps.shared.tenancy import library_write
+
+        directive = build.instrument(key="celex-32002l0047", official_ref="Directive 2002/47/EC", jurisdiction="eu", level="eu_directive", regime="regime:securities")
+        act = build.instrument(key="sfs-2004-46", official_ref="SFS 2004:46", regime="regime:securities", implements_note="Financial Collateral Directive, Directive 2002/47/EC")
+        build.instrument(key="sfs-2004-47", official_ref="SFS 2004:47", regime="regime:securities", implements_note="Directive 2002/470/EC")
+        with transaction.atomic(), library_write("a test builder"), tenancy.platform_zone():
+            InstrumentSummary.objects.create(instrument=directive, language_id="en", text="Makes financial collateral arrangements enforceable.", is_original=True)
+
+        card = self.read(f"/api/v1/instruments/{directive.id}")
+        self.assertEqual(card["summary"]["text"], "Makes financial collateral arrangements enforceable.")
+        self.assertEqual([link["key"] for link in card["implementedBy"]], ["sfs-2004-46"])
+        self.assertEqual(card["obligationCounts"], {"inLibrary": 0, "inScope": 0, "waitingForReview": 0})
+        self.assertEqual([link["key"] for link in self.read(f"/api/v1/instruments/{act.id}")["implements"]], ["celex-32002l0047"])
+
+        counts = self.read(f"/api/v1/instruments/{self.instrument.id}")["obligationCounts"]
+        held = self.read("/api/v1/obligations", {"instrument": self.instrument.stable_key, "footprint": "all"})["total"]
+        in_scope = self.read("/api/v1/obligations", {"instrument": self.instrument.stable_key})["total"]
+        self.assertEqual((counts["inLibrary"], counts["inScope"]), (held, in_scope))
+
+        # Written once: a second summary is refused before anyone reads it.
+        tenancy.clear_tenant()
+        with self.assertRaises(ValidationError) as refused:
+            proposals.create(
+                kind="new_instrument_summary",
+                title="Another summary",
+                payload={"instrument": directive.stable_key, "summaries": {"en": "Another wording."}, "originalLanguage": "en"},
+                proposer=proposals.Proposer(actor=factories.user_actor()),
+                field_sources={"instrument": "https://eur-lex.europa.eu/eli/dir/2002/47/oj", "summaries.en": "https://eur-lex.europa.eu/eli/dir/2002/47/oj"},
+                source_label="EUR-Lex",
+                source_url="https://eur-lex.europa.eu/eli/dir/2002/47/oj",
+            )
+        self.assertEqual(refused.exception.code, "duplicate_key")
+        self.assertNotIn("new_instrument_summary", proposals.AGENT_CONFIRMABLE_KINDS, "a person approves a summary")
 
     def test_inv_s15(self) -> None:
         """INV-S15

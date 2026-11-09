@@ -59,7 +59,7 @@ describe('updateKindLabel', () => {
 
   it('names each kind of new record by its own label, in both languages', () => {
     expect(['new_instrument', 'new_obligation', 'new_provision', 'new_provision_version'].map((kind) => updateKindLabel(kind, t))).toEqual([
-      'New instrument',
+      'New regulation',
       'New obligation',
       'New provision',
       'New provision version',
@@ -180,5 +180,13 @@ describe('confirmedLine', () => {
     // A person approved an agent's proposal: that is a person's approval, and the row says nothing.
     expect(confirmedLine(row({ ...byAgents, verifiedOrigin: 'user', confirmedByAgent: null }), t)).toBeNull();
     expect(confirmedLine(row(), t)).toBeNull();
+  });
+});
+
+describe('a new regulation', () => {
+  it('is titled by the regulation it added, never by the kind alone', () => {
+    const row = { kind: 'new_instrument', target: null, instrument: { id: 'in-1', shortName: 'MAR', officialRef: 'Regulation (EU) No 596/2014' } };
+    expect(titleOf(row, t)).toBe('MAR, Regulation (EU) No 596/2014');
+    expect(titleOf({ ...row, instrument: null }, t)).toBe('New regulation');
   });
 });

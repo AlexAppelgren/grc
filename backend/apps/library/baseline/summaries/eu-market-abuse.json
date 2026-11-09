@@ -1,0 +1,174 @@
+{
+  "tranche": "eu-market-abuse",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "celex-32014r0596",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/596/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 596/2014 as published in the Official Journal",
+      "text": {
+        "en": "The EU rulebook against insider dealing, unlawful disclosure of inside information and market manipulation in financial instruments traded on EU venues. It applies directly to everyone who trades, banks included, and adds duties for issuers and their managers. For a bank this means surveillance that detects and reports suspicious orders and transactions and, as a listed issuer, prompt disclosure or controlled delay of inside information, insider lists, managers' transaction notices and closed periods."
+      }
+    },
+    {
+      "key": "celex-32024r2809",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/2809/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/2809 as published in the Official Journal",
+      "text": {
+        "en": "An amending regulation that changes the Prospectus Regulation, the Market Abuse Regulation and MiFIR to make listing in the EU simpler. It lightens prospectuses for follow-on issues and smaller firms, limits disclosure in drawn-out processes to the final event, makes the market sounding procedure an optional safe harbour, raises the threshold for notifying managers' transactions and widens closed-period exemptions, and sets how trading venues keep order data. A bank's duties sit in the amended acts as they now read."
+      }
+    },
+    {
+      "key": "celex-32014l0057",
+      "source": "https://eur-lex.europa.eu/eli/dir/2014/57/oj",
+      "sourceLabel": "EUR-Lex, Directive 2014/57/EU as published in the Official Journal",
+      "text": {
+        "en": "A directive requiring member states to make serious, intentional insider dealing, unlawful disclosure of inside information and market manipulation criminal offences, including inciting, aiding and attempting them, with prison sentences of at least a set maximum length and liability for companies. It binds the member states, not a bank directly. A bank's exposure comes from each country's national criminal law that implements it, while its conduct duties sit in the Market Abuse Regulation."
+      }
+    },
+    {
+      "key": "celex-32015l2392",
+      "source": "https://eur-lex.europa.eu/eli/dir_impl/2015/2392/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Directive (EU) 2015/2392 as published in the Official Journal",
+      "text": {
+        "en": "A Commission directive on how national supervisors receive and follow up reports of actual or potential breaches of the Market Abuse Regulation: dedicated staff, secure reporting channels, confidentiality, record keeping, protection of employees who report or are accused, and protection of personal data. It binds the member states and their supervisors, not a bank, so a bank has no duties of its own under it. Any duty to run internal reporting channels for staff comes from national law."
+      }
+    },
+    {
+      "key": "celex-32016r0522",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/522/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/522 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation filling in detail under the Market Abuse Regulation: which third-country public bodies and central banks are exempt, the signs of market manipulation, which supervisor is told of a delayed disclosure, when managers may trade in a closed period and which transactions they must notify. It applies directly. For a bank it shapes how its surveillance reads manipulation indicators and, as a listed issuer, how it notifies delays and handles managers' dealings."
+      }
+    },
+    {
+      "key": "celex-32016r0957",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/957/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/957 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation setting the standards for detecting and reporting suspected market abuse. It applies directly to firms that professionally arrange or execute transactions and to trading venue operators, which includes banks trading for clients or themselves. A bank must monitor all orders and transactions with surveillance that produces alerts, train the staff involved, keep records of its analysis for five years and file suspicious transaction and order reports on the set template without delay."
+      }
+    },
+    {
+      "key": "celex-32016r0958",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/958/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/958 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation on how investment recommendations must be presented and which interests and conflicts they must disclose. It applies directly to anyone producing or spreading recommendations, with stricter rules for credit institutions, investment firms and professional analysts. A bank's research must name its authors and supervisor, explain its valuation basis, disclose relationships that could impair objectivity, publish quarterly its split of buy, hold and sell calls, and identify the bank when it passes on others' research."
+      }
+    },
+    {
+      "key": "celex-32016r1052",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1052/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1052 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation setting the conditions under which share buy-backs and price stabilisation after an offering are shielded from the market abuse prohibitions. It applies directly to issuers, offerors and the firms carrying out stabilisation. It matters to a bank when it buys back its own shares, within set price and volume limits with disclosure and records, and when it acts as stabilisation manager in an offering, where stabilisation must be announced in advance, time-limited and reported."
+      }
+    },
+    {
+      "key": "celex-32016r0523",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/523/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/523 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation fixing the template and format for notifying and publishing managers' transactions under the Market Abuse Regulation. It applies directly to persons discharging managerial responsibilities, their closely associated persons and listed issuers. Where a bank is a listed issuer, its managers and their close associates must report their dealings on this template through the supervisor's electronic channel, and the bank publishes the information in the same format."
+      }
+    },
+    {
+      "key": "celex-32016r1055",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/1055/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/1055 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation on the technical means for publishing inside information and for delaying its publication. It applies directly to issuers whose instruments trade on EU venues. A listed bank must spread inside information free of charge and at the same time across the EU, keep it on its website, keep durable records of each delay decision, notify the supervisor of a delay through its dedicated channel and, when delaying to protect financial stability, follow the stricter notification route."
+      }
+    },
+    {
+      "key": "celex-32026r1291",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2026/1291/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2026/1291 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation setting the format of insider lists under the Market Abuse Regulation, replacing the earlier template rules. It applies directly to issuers and to those acting on their behalf, such as a bank advising on a transaction. An insider list needs a section for each piece of inside information on the prescribed template, must be kept electronically with restricted access and earlier versions preserved, and personal data on it may be kept no longer than five years after a person leaves it."
+      }
+    },
+    {
+      "key": "celex-32026r0789",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2026/789/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/789 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation specifying, under the Market Abuse Regulation, when the final event of a drawn-out process must be disclosed, and when inside information may not be delayed because it would contradict what the issuer last said publicly. It applies directly to issuers. A listed bank uses its non-exhaustive lists to decide when a multi-step matter must be announced and to check, before delaying, that the delay would not leave the market misled by its earlier statements."
+      }
+    },
+    {
+      "key": "celex-32016r0960",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/960/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/960 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation setting the arrangements a firm needs when it conducts market soundings, the contacts used to gauge investor interest before a deal is announced. It applies directly to disclosing market participants, such as a bank arranging an offering. A bank sounding the market must follow regularly reviewed procedures, use recorded lines where available, list everyone sounded, respect investors who opt out, and keep durable records of its procedures, the information given and all communications."
+      }
+    },
+    {
+      "key": "celex-32016r0959",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2016/959/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2016/959 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation setting the systems, notification templates and record formats for market soundings under the Market Abuse Regulation. It applies directly to disclosing market participants, such as a bank arranging a transaction. A bank must keep its sounding records electronically, write minutes of unrecorded conversations on the prescribed template that fits whether inside information was shared, and keep a separate list of recipients for each sounding."
+      }
+    },
+    {
+      "key": "esma-gl-2016-1478",
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma70-156-4966_mar_gls-delay_in_the_disclosure_of_inside_information.pdf",
+      "sourceLabel": "ESMA, MAR Guidelines on delay in the disclosure of inside information and interactions with prudential supervision, ESMA70-159-4966 of 13 April 2022",
+      "text": {
+        "en": "ESMA guidelines that national supervisors apply on when an issuer may delay disclosing inside information, with a part on how prudential supervision of banks interacts with disclosure. They are not law in themselves, but supervisors expect issuers to follow them. A listed bank looks to the indicative cases of legitimate interest for a delay, may treat a decision on own funds instruments awaiting supervisory approval as one, and assesses whether its Pillar 2 requirement and guidance are inside information."
+      }
+    },
+    {
+      "key": "esma-gl-2016-1477",
+      "source": "https://www.esma.europa.eu/sites/default/files/library/2016-1477_mar_guidelines_-_market_soundings.pdf",
+      "sourceLabel": "ESMA, MAR Guidelines: Persons receiving market soundings, ESMA/2016/1477 of 10 November 2016",
+      "text": {
+        "en": "ESMA guidelines for firms that receive market soundings, the contacts used to gauge investor interest before a deal is announced. They are not law in themselves, but national supervisors expect recipients to follow them. A bank receiving soundings needs procedures for need-to-know handling, trained staff, its own assessment of whether it holds inside information, signature of the seller's minutes of unrecorded calls within five working days, and at least five years of records."
+      }
+    },
+    {
+      "key": "celex-32012r0236",
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/236/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 236/2012 as published in the Official Journal",
+      "text": {
+        "en": "The EU regulation on short selling of shares and sovereign debt and on sovereign credit default swaps. It applies directly to anyone who takes such positions, banks included. A bank must report significant net short positions in shares to its supervisor and publish the larger ones, report net short positions in sovereign debt, short sell only when it has borrowed, agreed to borrow or located the securities, and give advance notice before relying on the market making exemption."
+      }
+    },
+    {
+      "key": "celex-32012r0827",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2012/827/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) No 827/2012 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation setting technical standards under the Short Selling Regulation: how net short positions in shares are published and reported, and which borrowing agreements and locate arrangements count before a short sale. It applies directly. A bank that short sells must hold one of the listed binding arrangements or a valid locate confirmation, and a bank that gives locates to others must take part in sourcing the securities and be able to evidence it."
+      }
+    },
+    {
+      "key": "celex-32012r0918",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2012/918/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) No 918/2012 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation supplementing the Short Selling Regulation with definitions and calculation rules: how net short positions are calculated, when a sovereign credit default swap counts as covered, and the notification and liquidity thresholds. It applies directly. A bank must calculate its positions with the delta-adjusted method across every instrument that gains from a fall in price, for each legal entity and aggregated across its group, which drives when it must notify and disclose."
+      }
+    },
+    {
+      "key": "celex-32016r1011",
+      "source": "https://eur-lex.europa.eu/eli/reg/2016/1011/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2016/1011 as published in the Official Journal",
+      "text": {
+        "en": "The EU regulation on providing, contributing to and using benchmarks, such as interest rate indices, in financial contracts, instruments and fund performance. It applies directly to administrators, contributors and supervised users, banks included. A bank using benchmarks may add references only to permitted ones, keeps written plans for a benchmark's material change or end, replaces benchmarks named in a public warning, and as a contributor to a critical benchmark manages conflicts and gives notice before it stops."
+      }
+    },
+    {
+      "key": "celex-32025r0914",
+      "source": "https://eur-lex.europa.eu/eli/reg/2025/914/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2025/914 as published in the Official Journal",
+      "text": {
+        "en": "An amending regulation that narrows the Benchmarks Regulation to critical and significant benchmarks, EU climate benchmarks and certain commodity benchmarks, and lets other administrators opt in. It makes recognition a lasting route into the EU for third-country benchmarks under ESMA supervision and lets supervisors warn publicly against non-compliant significant benchmarks, after which users must stop adding references and replace them. A bank's duties as user or contributor sit in the Benchmarks Regulation as it now reads."
+      }
+    }
+  ]
+}

@@ -62,7 +62,7 @@
   "me.tokens.scopes": "What it may read",
   "me.tokens.scopesHint": "Only what you can read yourself.",
   "me.tokens.scopesRequired": "Pick at least one thing it may read.",
-  "me.tokens.scope.library:read": "Instruments and obligations",
+  "me.tokens.scope.library:read": "Regulations and obligations",
   "me.tokens.scope.search:read": "Search the library",
   "me.tokens.scope.upcoming:read": "Dated changes ahead",
   "me.tokens.scope.tenant:read": "Our register decisions, through a named agent",

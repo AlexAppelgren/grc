@@ -101,13 +101,16 @@ test.describe('library journeys', () => {
     await signInAs(page, LOGINS.complianceOfficer);
     await openInstrument(page, 'fffs-2017-2');
 
-    // The short name and jurisdiction are brand, the level and binding force
-    // information: a tone is chosen by slot or kind, never by a person.
-    await expect(headerPills(page)).toHaveText(['FFFS 2017:2', 'Supervisory regulation', 'Binding', 'Sweden', 'Securities']);
-    await expect(headerPills(page).nth(0)).toHaveAttribute('data-pill', 'brand');
+    // The short name is the heading (INV-09); the jurisdiction is brand, the level and
+    // binding force information: a tone is chosen by slot or kind, never by a person.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('FFFS 2017:2');
+    await expect(headerPills(page)).toHaveText(['Supervisory regulation', 'Binding', 'Sweden', 'Securities']);
+    await expect(headerPills(page).nth(0)).toHaveAttribute('data-pill', 'information');
     await expect(headerPills(page).nth(1)).toHaveAttribute('data-pill', 'information');
-    await expect(headerPills(page).nth(2)).toHaveAttribute('data-pill', 'information');
-    await expect(headerPills(page).nth(3)).toHaveAttribute('data-pill', 'brand');
+    await expect(headerPills(page).nth(2)).toHaveAttribute('data-pill', 'brand');
+    // What applies is said before the list: how many duties the library holds, and how
+    // many of them our scope takes (INV-09).
+    await expect(page.locator('[data-obligations-panel] [data-applies-counts]')).toContainText('in the library.');
 
     // Identity: official reference, ELI where available (FFFS has none), the
     // authority and the in-force date with its day precision.
@@ -143,7 +146,7 @@ test.describe('library journeys', () => {
     // the Filters button says so.
     await inventory.click();
     await expect(page.locator(`[data-obligation-rows] [data-obligation="${RESEARCH}"]`)).toBeVisible();
-    await expect(page.locator('[data-inventory-filters]').getByRole('button', { name: 'Remove the Instrument filter, FFFS 2017:2' })).toBeVisible();
+    await expect(page.locator('[data-inventory-filters]').getByRole('button', { name: 'Remove the Regulation filter, FFFS 2017:2' })).toBeVisible();
   });
 
   test("INV-S2: The provision tree holds verbatim text versions", async ({ page, apiGuard }) => {
@@ -187,6 +190,26 @@ test.describe('library journeys', () => {
     // the instrument's own source link and verified date (chunk3-rest-T17).
     await expect(page.getByRole('link', { name: 'Source' })).toHaveAttribute('href', /^https?:\/\//);
     await expect(page.locator('[data-identity-panel]').getByText('Last verified')).toBeVisible();
+  });
+
+  test("INV-S16: A regulation says what it is and what applies", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+
+    // The Regulations tab pages: the range of the total, and every row at once on request.
+    await page.goto('/inventory?tab=instruments');
+    const pager = page.locator('[data-list-pager]');
+    await expect(pager.locator('[data-pager-range]')).toContainText(' of ');
+    await pager.getByRole('combobox').selectOption('all');
+    await expect(pager.getByRole('button', { name: 'Next' })).toHaveCount(0);
+
+    // The card leads with the short name, says what applies before the list, and names the
+    // obligations by the level of the regulation: these are a supervisor's rules.
+    await openInstrument(page, 'fffs-2017-2');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('FFFS 2017:2');
+    const obligations = page.locator('[data-obligations-panel]');
+    await expect(obligations.getByRole('heading', { name: 'Obligations from these rules' })).toBeVisible();
+    await expect(obligations.locator('[data-applies-counts]')).toContainText('in the library.');
   });
 
   test("INV-S3: An obligation states the duty and its facets", async ({ page, apiGuard }) => {
@@ -424,9 +447,12 @@ test.describe('standards in the library', () => {
     // "Standard" in the binding slot, as information, never "Guidance, comply or explain".
     // The level's label and the binding slot both read "Standard"; the third pill is the slot.
     const pills = headerPills(page);
-    await expect(pills).toHaveText(['ISO/IEC 27001:2022', 'Standard', 'Standard', 'International', 'AI and ICT']);
-    await expect(pills.nth(0)).toHaveAttribute('data-pill', 'brand');
-    await expect(pills.nth(2)).toHaveAttribute('data-pill', 'information');
+    // The short name is the heading, so the pills begin with the level (INV-09).
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('ISO/IEC 27001:2022');
+    await expect(pills).toHaveText(['Standard', 'Standard', 'International', 'AI and ICT']);
+    await expect(pills.nth(0)).toHaveAttribute('data-pill', 'information');
+    await expect(pills.nth(1)).toHaveAttribute('data-pill', 'information');
+    await expect(pills.nth(2)).toHaveAttribute('data-pill', 'brand');
 
     // Public facts: the official reference, the publication date with its day precision
     // and "Standard" as the binding force. Library facts assert through a locator.

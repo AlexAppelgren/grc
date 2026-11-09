@@ -2109,6 +2109,38 @@ _SAMPLE_INSTRUMENT_DETAIL: dict[str, Any] = {
 }
 
 
+class InstrumentLinkRef(LibraryResponse):
+    """Another instrument this one is tied to by implementation, as the card links to it."""
+
+    id: UUID = Field(description="The other instrument's id, a UUID, the value `GET /instruments/{instrumentId}` takes.")
+    key: str = Field(description="The other instrument's stable key, issued once and never changed.", examples=["se-sfs-2004-297"])
+    short_name: str = Field(description="The other instrument's short name, to print.", examples=["LBF"])
+    jurisdiction: LibraryRef = Field(description=_INSTRUMENT_JURISDICTION)
+
+
+class InstrumentObligationCounts(LibraryResponse):
+    """How many duties sit under the instrument, so the card can say what applies."""
+
+    in_library: int = Field(
+        description="How many obligations the library holds under this instrument that this caller may read, whatever its scope. 0 or more.",
+        examples=[5],
+    )
+    in_scope: int = Field(
+        description=(
+            "How many of those fall inside the caller's regulatory scope, counted exactly as "
+            "`GET /obligations?instrument=<key>` lists them with the default `footprint=in`. 0 or more."
+        ),
+        examples=[3],
+    )
+    waiting_for_review: int = Field(
+        description=(
+            "How many new duties under this shared instrument wait in the library's review queue "
+            "and are not in the library yet. Always 0 for an organisation's own instrument. 0 or more."
+        ),
+        examples=[0],
+    )
+
+
 class InstrumentDetail(LibraryResponse):
     """`GET /instruments/{instrumentId}` (INV-01, INV-06): the row's own facts, plus the
     ELI, the authority in full, who last re-verified it and its lineage to other
@@ -2166,6 +2198,32 @@ class InstrumentDetail(LibraryResponse):
             "is served here instead. Only instruments this caller may read appear: a "
             "relation to one they may not is left out silently."
         )
+    )
+    summary: LocalizedText | None = Field(
+        description=(
+            "What the instrument is and what it means for a bank, in two to four plain sentences, "
+            "in the caller's first content language the summary is written in, or null when the "
+            "library holds no summary for it yet. Written once from the instrument's own source "
+            "and entered through an approved proposal (INV-09)."
+        )
+    )
+    implements: list[InstrumentLinkRef] = Field(
+        description=(
+            "The instruments this one implements, read from its `implementsNote`: each library "
+            "instrument whose official number (such as 2014/59 in Directive 2014/59/EU) the note "
+            "names. Empty when the note names none the library holds or this caller may read."
+        )
+    )
+    implemented_by: list[InstrumentLinkRef] = Field(
+        description=(
+            "The instruments that implement this one, read the other way: each library "
+            "instrument whose `implementsNote` names this instrument's official number. For an "
+            "EU directive these are the national laws that carry its duties. Empty when the "
+            "library holds none this caller may read."
+        )
+    )
+    obligation_counts: InstrumentObligationCounts = Field(
+        description="How many duties sit under the instrument: held, in the caller's scope, and waiting for review."
     )
 
 

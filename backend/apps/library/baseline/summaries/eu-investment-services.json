@@ -1,0 +1,174 @@
+{
+  "tranche": "eu-investment-services",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "celex-32014l0065",
+      "source": "https://eur-lex.europa.eu/eli/dir/2014/65/oj",
+      "sourceLabel": "EUR-Lex, Directive 2014/65/EU as published in the Official Journal",
+      "text": {
+        "en": "MiFID II is the main EU framework for investment services and trading: licensing of investment firms, organisation and conduct rules, investor protection such as suitability, inducements and product governance, and the operation of trading venues. As a directive it binds the member states, not a bank directly; a bank providing investment services takes its duties from each country's national law that implements it, alongside the directly binding MiFIR and the Commission's regulations."
+      }
+    },
+    {
+      "key": "celex-32014r0600",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/600/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 600/2014 as published in the Official Journal",
+      "text": {
+        "en": "MiFIR is the directly applicable companion to MiFID II, covering trade transparency, transaction reporting to supervisors and where certain shares and derivatives must be traded. It binds investment firms and banks providing investment services directly. A bank must report its transactions by the next working day, keep order and transaction records for five years, publish trades done off venue, trade on eligible venues where required, and accept no payment for order flow on orders of retail clients or clients treated as professional at their request."
+      }
+    },
+    {
+      "key": "celex-32017r0565",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2017/565/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/565 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets out in detail how investment firms, including banks providing investment services, must be organised and treat clients under MiFID II, and binds them directly. It covers the compliance function, complaints, personal transactions, conflicts of interest, costs and charges information, suitability and appropriateness, client reporting, best execution, record keeping and the recording of telephone and electronic communications."
+      }
+    },
+    {
+      "key": "celex-32017l0593",
+      "source": "https://eur-lex.europa.eu/eli/dir_del/2017/593/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Directive (EU) 2017/593 as published in the Official Journal",
+      "text": {
+        "en": "This Commission directive details MiFID II on three topics: safeguarding client financial instruments and funds, product governance for firms that manufacture or distribute financial instruments, and the rules on fees, commissions and other benefits, including research. As a directive it binds the member states, not a bank directly; a bank providing investment services takes these duties from each country's national law that implements it."
+      }
+    },
+    {
+      "key": "celex-32017r0590",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2017/590/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/590 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the content, format and standards of MiFIR transaction reports: the data fields, how clients, decision makers and instruments are identified, and how reporting arrangements must work. It binds investment firms and banks that execute transactions directly. A bank must obtain a client's legal entity identifier before trading for it, identify individuals by the prescribed national identifiers, test and reconcile its reporting, and promptly tell its authority of errors."
+      }
+    },
+    {
+      "key": "celex-32017r0589",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2017/589/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/589 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the organisational requirements for firms that trade algorithmically, including banks trading on their own account or for clients, and binds them directly. A bank engaged in algorithmic trading must test algorithms before use, review and validate them every year, run pre-trade controls on every order, be able to cancel all open orders at once, and monitor all trading through its systems for signs of market manipulation."
+      }
+    },
+    {
+      "key": "celex-32026r0825",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2026/825/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/825 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the criteria investment firms use to build and assess their order execution policy so that client orders get the best possible result, and repeals the earlier best execution reporting standards. It binds investment firms, including banks executing client orders, directly, with duties that apply from February 2028. A bank must document how it selects and approves venues, monitor execution quality against reliable data, and assess its policy at least yearly."
+      }
+    },
+    {
+      "key": "celex-32026r1092",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2026/1092/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/1092 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation establishes the EU code of conduct for issuer-sponsored research, meaning investment research that the company concerned pays for in whole or in part. Research may carry that label only if it is produced under the code, which among other things requires effective handling of conflicts of interest. It binds investment firms directly: a bank that produces such research must follow the code, and one that distributes it must first check that it meets the code."
+      }
+    },
+    {
+      "key": "celex-32014r1286",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/1286/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 1286/2014 as published in the Official Journal",
+      "text": {
+        "en": "This regulation requires a short, standardised key information document for packaged investment products offered to retail investors, such as funds, structured products and insurance-based investments, so that products can be compared. It binds manufacturers and anyone advising on or selling these products directly, banks included. A bank must produce, publish and review the document for products it makes, give it to retail investors in good time before they commit, and handle complaints."
+      }
+    },
+    {
+      "key": "celex-32017r0653",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2017/653/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/653 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the template, content and methods behind the PRIIPs key information document, including how risk, performance scenarios and costs are presented, and when the document is reviewed. It binds product manufacturers and those who advise on or sell the products directly. A bank must follow the template within three sides of A4, review the document at least yearly and after significant changes, publish revisions, and deliver it in time for the investor to consider it."
+      }
+    },
+    {
+      "key": "celex-32019r2088",
+      "source": "https://eur-lex.europa.eu/eli/reg/2019/2088/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2088 as published in the Official Journal",
+      "text": {
+        "en": "This regulation makes financial firms explain how they take sustainability risks and adverse impacts on sustainability into account, at firm level and for each product. It binds financial market participants and financial advisers directly, including banks that manage portfolios or give investment advice. Such a bank must publish its policies on its website, reflect them in its remuneration policy, and give pre-contractual, website and periodic disclosures for products with sustainability features."
+      }
+    },
+    {
+      "key": "celex-32022r1288",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2022/1288/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2022/1288 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the content and templates for SFDR disclosures: the yearly statement on principal adverse impacts, and the pre-contractual, website and periodic disclosures for products that promote environmental or social characteristics or have a sustainable investment objective. It binds the same firms as SFDR directly, including banks that manage portfolios or give advice, which must use the prescribed templates and website sections."
+      }
+    },
+    {
+      "key": "celex-32020r0852",
+      "source": "https://eur-lex.europa.eu/eli/reg/2020/852/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2020/852 as published in the Official Journal",
+      "text": {
+        "en": "The Taxonomy Regulation sets an EU classification of which economic activities count as environmentally sustainable, based on their contribution to environmental objectives and on doing no significant harm. It applies directly to firms that offer financial products and to companies under sustainability reporting rules. For a bank offering such products it means stating in pre-contractual and periodic disclosures how far the investments are taxonomy-aligned, or carrying the prescribed statement."
+      }
+    },
+    {
+      "key": "celex-32019r2033",
+      "source": "https://eur-lex.europa.eu/eli/reg/2019/2033/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2033 as published in the Official Journal",
+      "text": {
+        "en": "The Investment Firms Regulation sets prudential rules for investment firms: own funds, capital requirements based on the risks a firm poses, liquidity, concentration risk, reporting and public disclosure. It binds investment firms directly; a bank authorised as a credit institution follows the bank capital rules instead, so it reaches a bank only through investment firm subsidiaries. Such a firm must hold the required own funds and liquid assets, watch concentration risk and report quarterly."
+      }
+    },
+    {
+      "key": "celex-32019l2034",
+      "source": "https://eur-lex.europa.eu/eli/dir/2019/2034/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2019/2034 as published in the Official Journal",
+      "text": {
+        "en": "The Investment Firms Directive sets the supervisory framework for investment firms: initial capital, internal governance, remuneration, internal capital and risk assessment, and supervisory review. As a directive it binds the member states, not a bank directly; duties come from each country's national law that implements it. A bank authorised as a credit institution falls under the banking directive instead, so this concerns a bank only through investment firm subsidiaries."
+      }
+    },
+    {
+      "key": "esma-35-43-3172",
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3172_Guidelines_on_certain_aspects_of_the_MiFID_II_suitability_requirements.pdf",
+      "sourceLabel": "ESMA website, ESMA35-43-3172, Guidelines on certain aspects of the MiFID II suitability requirements",
+      "text": {
+        "en": "ESMA issued these guidelines on how firms assess whether investment advice and portfolio management suit each client under MiFID II, including sustainability preferences. They are guidance that national authorities commit to apply on a comply or explain basis and expect firms to follow, banks included. A bank is expected to explain the assessment to clients, collect and update reliable client information, match clients to suitable products and keep orderly records."
+      }
+    },
+    {
+      "key": "esma-35-43-3448",
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-08/ESMA35-43-3448_Guidelines_on_product_governance.pdf",
+      "sourceLabel": "ESMA website, ESMA35-43-3448, Guidelines on MiFID II product governance requirements",
+      "text": {
+        "en": "ESMA issued these guidelines on MiFID II product governance: how firms that manufacture or distribute financial instruments and structured deposits define and use a target market. They are guidance that national authorities commit to apply on a comply or explain basis and expect firms to follow, banks included. A bank is expected to identify the target market in the five set categories, align its distribution with it, report sales outside it and review products regularly."
+      }
+    },
+    {
+      "key": "esma-35-43-3006",
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma35-43-3006_gls_on_certain_aspects_of_the_mifid_ii_appropriateness_and_execution-only_requirements_en.pdf",
+      "sourceLabel": "ESMA website, ESMA35-43-3006, Guidelines on certain aspects of the MiFID II appropriateness and execution-only requirements",
+      "text": {
+        "en": "ESMA issued these guidelines on the MiFID II appropriateness test and execution-only services, which govern when a firm must check that a client understands a product before a non-advised sale. They are guidance that national authorities commit to apply on a comply or explain basis and expect firms to follow, banks included. A bank is expected to explain the assessment to clients, check that the information it gets is reliable, and monitor its controls and tools."
+      }
+    },
+    {
+      "key": "esma-35-36-1952",
+      "source": "https://www.esma.europa.eu/sites/default/files/library/guidelines_on_certain_aspects_of_mifid_ii_compliance_function_requirements.pdf",
+      "sourceLabel": "ESMA website, ESMA35-36-1952, Guidelines on certain aspects of the MiFID II compliance function requirements",
+      "text": {
+        "en": "ESMA issued these guidelines on the MiFID II compliance function: its risk assessment, monitoring programme, reports to management, resources and independence. They are guidance that national authorities commit to apply on a comply or explain basis and expect firms to follow, banks providing investment services included. A bank is expected to run a risk-based monitoring programme, report on every relevant business unit to the management body and give the function adequate resources."
+      }
+    },
+    {
+      "key": "esma-35-43-3565",
+      "source": "https://www.esma.europa.eu/sites/default/files/2023-04/ESMA35-43-3565_Guidelines_on_certain_aspects_of_the_MiFID_II_remuneration_requirements.pdf",
+      "sourceLabel": "ESMA website, ESMA35-43-3565, Guidelines on certain aspects of the MiFID II remuneration requirements",
+      "text": {
+        "en": "ESMA issued these guidelines on the MiFID II remuneration rules, which keep pay and incentives for staff from working against clients' interests. They are guidance that national authorities commit to apply on a comply or explain basis and expect firms to follow, banks included. A bank is expected to set pay criteria that reward acting in the client's best interest, review its remuneration policy when its business changes, and run controls that check the outcomes for clients."
+      }
+    },
+    {
+      "key": "esma-71-1154262120-153",
+      "source": "https://www.esma.europa.eu/sites/default/files/library/esma71-1154262120-153_guidelines_for_the_assessment_of_knowledge_and_competence_corrigendum.pdf",
+      "sourceLabel": "ESMA website, ESMA71-1154262120-153, Guidelines for the assessment of knowledge and competence",
+      "text": {
+        "en": "ESMA issued these guidelines on the knowledge and competence that staff giving investment advice or information about investment products must have. They are guidance that national authorities commit to apply on a comply or explain basis and expect firms to follow, banks included. A bank is expected to ensure such staff hold an appropriate qualification and experience, review their development at least yearly, and let staff still qualifying work only under supervision for a limited time."
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "privateRecords.title": "Our own records",
   "privateRecords.lede": "What our agent found for the regulations we research ourselves, waiting for someone here to decide",
-  "privateRecords.kind.newInstrument": "New instrument",
+  "privateRecords.kind.newInstrument": "New regulation",
   "privateRecords.kind.newObligation": "New obligation",
   "privateRecords.kind.newVersion": "New version",
   "privateRecords.kind.other": "Proposal",
@@ -24,7 +24,7 @@
   "privateRecords.field.shortName": "Short name",
   "privateRecords.field.officialRef": "Official reference",
   "privateRecords.field.refLabel": "Reference",
-  "privateRecords.field.instrument": "Instrument",
+  "privateRecords.field.instrument": "Regulation",
   "privateRecords.field.level": "Level",
   "privateRecords.field.jurisdiction": "Jurisdiction",
   "privateRecords.field.authority": "Authority",

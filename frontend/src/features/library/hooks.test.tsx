@@ -72,7 +72,16 @@ const instrumentRow = {
   sourceUrl: 'https://www.fi.se/',
 };
 
-const instrumentDetail = { ...instrumentRow, eliUri: '', verifiedBy: null, lineage: [] };
+const instrumentDetail = {
+  ...instrumentRow,
+  eliUri: '',
+  verifiedBy: null,
+  lineage: [],
+  summary: null,
+  implements: [],
+  implementedBy: [],
+  obligationCounts: { inLibrary: 0, inScope: 0, waitingForReview: 0 },
+};
 
 describe('library hooks', () => {
   beforeEach(() => {

@@ -1,0 +1,70 @@
+{
+  "tranche": "dk-finanstilsynet",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "dk-bek-2017-921",
+      "source": "https://www.retsinformation.dk/eli/lta/2017/921",
+      "sourceLabel": "Retsinformation, BEK nr 921 af 26/06/2017 as in force",
+      "text": {
+        "en": "Issued by Finanstilsynet under the Financial Business Act, this order sets organisational requirements for banks and other securities dealers, implementing parts of MiFID II. It binds a bank that provides investment services. The bank must safeguard and segregate client assets, use client instruments only with consent, appoint an officer for client assets, manage conflicts of interest, record client calls and communications and keep data transfers secure in line with DORA."
+      }
+    },
+    {
+      "key": "dk-bek-2023-657",
+      "source": "https://www.retsinformation.dk/eli/lta/2023/657",
+      "sourceLabel": "Retsinformation, BEK nr 657 af 26/05/2023 as in force",
+      "text": {
+        "en": "Issued by Finanstilsynet under the Anti-Money Laundering Act, this order sets how reports of suspected money laundering or terrorist financing reach the Money Laundering Secretariat. It binds every firm covered by the Act, banks included. A bank files reports digitally through the secretariat's portal in the prescribed XML format and content, checks by the next banking day that each was accepted, and uses an agreed fallback channel if the portal is down."
+      }
+    },
+    {
+      "key": "dk-bek-2024-558",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/558",
+      "sourceLabel": "Retsinformation, BEK nr 558 af 29/05/2024 as in force",
+      "text": {
+        "en": "Issued by Finanstilsynet under the Financial Business Act and related acts, this order sets product governance rules for retail banking products such as loans, deposits, payment accounts and e-money offered to consumers. It binds a bank both as manufacturer and as distributor. The bank needs board-approved approval procedures, a defined target market, scenario testing, ongoing monitoring, suitable distribution and documentation it can show Finanstilsynet."
+      }
+    },
+    {
+      "key": "dk-bek-2023-245",
+      "source": "https://www.retsinformation.dk/eli/lta/2023/245",
+      "sourceLabel": "Retsinformation, BEK nr 245 af 07/03/2023 as in force",
+      "text": {
+        "en": "Issued by Finanstilsynet under the Act on Investment Firms and Investment Services and the act on investment advisers, this order sets product governance rules for financial instruments and structured deposits, implementing parts of MiFID II. It binds a bank that creates or distributes such products. The bank approves each product for a defined target market, reviews products regularly, shares information along the distribution chain and offers products only in the client's interest."
+      }
+    },
+    {
+      "key": "dk-bek-2024-1529",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/1529",
+      "sourceLabel": "Retsinformation, BEK nr 1529 af 05/12/2024 as in force",
+      "text": {
+        "en": "Issued by Finanstilsynet under the Financial Business Act and other financial sector acts, this order sets how audits of banks, insurers, investment firms and funds are carried out. It binds a bank directly. A bank averaging 125 or more full-time employees must have an independent internal audit function under a qualified chief auditor, whose arrival and departure it reports to Finanstilsynet; every bank prepares large-exposure overviews for the long-form audit report and sends that report to Finanstilsynet."
+      }
+    },
+    {
+      "key": "dk-bek-2021-2640",
+      "source": "https://www.retsinformation.dk/eli/lta/2021/2640",
+      "sourceLabel": "Retsinformation, BEK nr 2640 af 28/12/2021 as in force",
+      "text": {
+        "en": "Issued by Finanstilsynet under the Financial Business Act, this order sets how banks run tax-favoured pension and child savings, both in pooled schemes and in customers' own custody accounts. It binds banks and Danish branches of foreign credit institutions offering these products. A bank must set written pool guidelines, keep pool assets separate, inform customers about returns and costs, and invest only in permitted instruments within the spread limits."
+      }
+    },
+    {
+      "key": "dk-bek-2025-1051",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/1051",
+      "sourceLabel": "Retsinformation, BEK nr 1051 af 20/08/2025 as in force",
+      "text": {
+        "en": "Issued by Finanstilsynet under the Financial Business Act, this order sets how banks and mortgage-credit institutions calculate their own countercyclical buffer rate and the cap on distributions when they fall short of their combined buffer, and what a capital conservation plan holds. It implements parts of the EU capital requirements directive. A bank calculates these by the set methods, notifies Finanstilsynet and submits a board-approved plan when required."
+      }
+    },
+    {
+      "key": "dk-bek-2020-311",
+      "source": "https://www.retsinformation.dk/eli/lta/2020/311",
+      "sourceLabel": "Retsinformation, BEK nr 311 af 26/03/2020 as in force",
+      "text": {
+        "en": "Issued by Finanstilsynet under the Anti-Money Laundering Act, this order lets issuers of electronic money, including banks issuing e-money, skip parts of customer due diligence for low-value prepaid instruments. It implements parts of the EU anti-money laundering directive. The relief applies only within strict limits on amounts, use and reloading, never to cash redemption or remote payments above EUR 50, and only if the issuer monitors transactions closely enough to spot suspicious activity."
+      }
+    }
+  ]
+}

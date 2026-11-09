@@ -57,8 +57,10 @@ export function presentLibraryUpdate(row: Pick<LibraryUpdateRow, 'kind' | 'targe
 }
 
 /** The duty's own title (its reference when it has none); a change to a shared list names no record, so it reads as its kind. */
-export function titleOf(row: Pick<LibraryUpdateRow, 'target' | 'kind'>, t: Translate): string {
+export function titleOf(row: Pick<LibraryUpdateRow, 'target' | 'kind' | 'instrument'>, t: Translate): string {
   const target = row.target ?? null;
+  // A new regulation is named by the regulation it added (INV-09).
+  if (target === null && row.instrument) return `${row.instrument.shortName}, ${row.instrument.officialRef}`;
   if (target === null) return updateKindLabel(row.kind, t);
   return target.title !== '' ? target.title : target.referenceLabel;
 }

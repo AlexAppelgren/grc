@@ -81,7 +81,7 @@ describe('kind and status', () => {
   });
 
   it('names each kind of new record by its own label', () => {
-    expect(kindLabel('new_instrument', t)).toBe('New instrument');
+    expect(kindLabel('new_instrument', t)).toBe('New regulation');
     expect(kindLabel('new_obligation', t)).toBe('New obligation');
     expect(kindLabel('new_provision', t)).toBe('New provision');
     expect(kindLabel('new_provision_version', t)).toBe('New provision version');
@@ -349,7 +349,7 @@ describe('field sources', () => {
   it("names every fact a new obligation or provision sources in words, its texts per language", () => {
     const fields = ['instrument', 'parent', 'titles.en', 'summaries.en', 'texts.fi', 'refLabel', 'heading', 'provisionKind', 'dutyType', 'effectiveFrom', 'terms'];
     expect(fields.map((field) => fieldSourceLabel(field, langName, t))).toEqual([
-      'Instrument',
+      'Regulation',
       'Parent provision',
       'Title (English)',
       'Text (English)',

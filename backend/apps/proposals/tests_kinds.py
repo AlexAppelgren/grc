@@ -36,6 +36,7 @@ from apps.governance.models import AiGeneration
 from apps.library import testing as library_build
 from apps.library.models import (
     Instrument,
+    InstrumentSummary,
     InstrumentTitle,
     Obligation,
     ObligationTerm,
@@ -127,6 +128,23 @@ def obligation_body(instrument: str = PARENT_KEY, **payload: Any) -> dict[str, A
         "payload": fields,
         "fieldSources": {field: SOURCE for field in _facts(fields)},
         "sourceLabel": "Finansinspektionen, FFFS 2026:9, 4 kap. 2 §",
+        "sourceUrl": SOURCE,
+    }
+
+
+def summary_body(instrument: str = PARENT_KEY) -> dict[str, Any]:
+    """A summary of `instrument` in plain words, sourced (INV-09, D-124)."""
+    fields: dict[str, Any] = {
+        "instrument": instrument,
+        "summaries": {"en": "Finansinspektionen's rules on how a bank outsources functions and keeps a register of them."},
+        "originalLanguage": "en",
+    }
+    return {
+        "kind": "new_instrument_summary",
+        "title": "Add a summary of the outsourcing rules",
+        "payload": fields,
+        "fieldSources": {"instrument": SOURCE, "summaries.en": SOURCE},
+        "sourceLabel": "Finansinspektionen, FFFS 2017:2",
         "sourceUrl": SOURCE,
     }
 
@@ -244,6 +262,35 @@ class KindsTestCase(ScenarioTestCase):
         confirmer = confirmer or agents_testing.reviewer_api_key()
         actor = Actor(kind=ActorType.AGENT, id=confirmer.agent.id, label=confirmer.agent.key)
         return logic.Reviewer(actor=actor, api_key_id=confirmer.id, agent_id=confirmer.agent.id, api_key_prefix=confirmer.row.key_prefix)
+
+
+class NewInstrumentSummary(KindsTestCase):
+    """INV-09, D-124: what an instrument is, in plain words, enters the library through the
+    proposal door like every fact, is written once, and never under a bank's own record."""
+
+    def test_a_person_approves_and_the_summary_is_written_once(self) -> None:
+        proposal = self._filed(summary_body())
+        self.assertEqual((proposal["kind"], proposal["targetId"]), ("new_instrument_summary", None))
+        self.assertFalse(InstrumentSummary.objects.filter(instrument=self.parent).exists(), "nothing changes until approval")
+
+        approved = self._approve(proposal["id"])
+
+        self.assertEqual(approved.status_code, 200, approved.content)
+        row = InstrumentSummary.objects.get(instrument=self.parent)
+        self.assertEqual((row.language_id, row.is_original, row.is_machine), ("en", True, False))
+        event = AuditEvent.objects.get(action="instrument.summary_added", subject_id=self.parent.id)
+        self.assertIsNotNone(event.step_up_assertion_id)
+        self.assertIsNone(event.tenant_id)
+        # A second summary of the same instrument is refused when filed, and at approval.
+        self._refused(self._file(summary_body()), 409, "duplicate_key")
+        stored = self._stored(summary_body())
+        self._refused(self._approve(str(stored.id)), 409, "duplicate_key")
+
+    def test_an_unknown_instrument_and_an_agent_reviewer_are_refused(self) -> None:
+        self._refused(self._file(summary_body(instrument="no-such-act")), 422, "unknown_key")
+        proposal = self._filed(summary_body())
+        response, _confirmer = self._approve_as_agent(proposal["id"])
+        self._refused(response, 409, "person_review_required")
 
 
 class NewInstrument(KindsTestCase):

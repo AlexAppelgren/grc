@@ -177,6 +177,7 @@ and never write, and what they may read is a credential and a scope, not a seat.
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 |
 | INV-07 | Tenant-private instruments and obligations, proposed by the bank's own agents or its compliance officers and approved inside that bank by a second person. Platform staff never see or approve them, and their text never reaches a model, the search index or another tenant. This is the minimum of OWN; a bank's own private sources are WAT-06 (R3) | M | R2 |
 | INV-08 | Standards within the sector scope as instruments, one per edition. Each holds publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link, and exactly one conformance duty in our own words, which carries the standard's term. Only a standard's own records carry a standard term. There is no standard text, clause or control title, or paraphrase in the library, the search index, Ask or agent output | M | R1 |
+| INV-09 | Every regulation says what it is and what applies. A plain-language summary in two to four sentences, written once from its own source and entered through an approved proposal; the duties the library holds under it and how many fall in the bank's scope, before any list; for an EU directive, that its duties come from each country's implementing law, with the national laws the library holds; and new duties still waiting for review. The screens call an instrument a regulation | M | R1 |
 
 ### PRO: proposals
 

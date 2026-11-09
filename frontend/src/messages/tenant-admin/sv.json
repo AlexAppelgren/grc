@@ -150,7 +150,7 @@
   "admin.apiKeys.errorTitle": "Kunde inte hämta API-nycklar",
   "admin.apiKeys.scope.proposals:write": "Skicka förslag till bibliotekets kö",
   "admin.apiKeys.scope.search:read": "Köra sökningar",
-  "admin.apiKeys.scope.library:read": "Läsa instrument och skyldigheter",
+  "admin.apiKeys.scope.library:read": "Läsa rättsakter och skyldigheter",
   "admin.apiKeys.scope.upcoming:read": "Läsa kommande datum",
   "admin.apiKeys.scope.tenant:read": "Läsa organisationens profil",
   "admin.securityLog.title": "Säkerhetslogg",

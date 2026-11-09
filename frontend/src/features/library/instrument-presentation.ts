@@ -1,6 +1,6 @@
 import type { PresentedPill, VocabularyRef } from '@/features/shared/presentation-types';
 import { slotTone } from '@/features/shared/tone-by-kind';
-import type { Translate } from '@/shared/i18n';
+import type { MessageKey, Translate } from '@/shared/i18n';
 
 import { presentBindingLevel } from './obligation-presentation';
 
@@ -49,3 +49,24 @@ export function presentInstrument(instrument: InstrumentFacts, t: Translate): Pr
   }
   return pills;
 }
+
+// The words the instrument card uses for the record, by its level (INV-09): a directive
+// is "this directive", an act "this act". Levels are rows an admin may add to, so a level
+// this map does not know reads as the general term. Keys are compared, never labels.
+const OBLIGATIONS_TITLE: Record<string, MessageKey> = {
+  eu_regulation: 'inventory.instrument.obligationsTitle.euRegulation',
+  eu_directive: 'inventory.instrument.obligationsTitle.euDirective',
+  eu_guidance: 'inventory.instrument.obligationsTitle.euGuidance',
+  act: 'inventory.instrument.obligationsTitle.act',
+  government_regulation: 'inventory.instrument.obligationsTitle.governmentRegulation',
+  authority_regulation: 'inventory.instrument.obligationsTitle.authorityRegulation',
+  standard: 'inventory.instrument.obligationsTitle.standard',
+};
+
+/** "Obligations from this directive", "from this act": the obligations panel's title for the level. */
+export function obligationsTitleOf(levelKey: string, t: Translate): string {
+  return t(OBLIGATIONS_TITLE[levelKey] ?? 'inventory.instrument.obligationsTitle.other');
+}
+
+/** The level whose duties sit in each country's implementing law, not under the record itself (ADR 0065). */
+export const DIRECTIVE_LEVEL = 'eu_directive';

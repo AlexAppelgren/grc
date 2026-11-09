@@ -178,6 +178,23 @@ class ProposalInstrumentPayload(WriteBody):
     implements_note: str = ""
 
 
+class ProposalInstrumentSummaryPayload(WriteBody):
+    """`new_instrument_summary` (INV-09, D-124): what an instrument in the shared library is
+    and what it means for a bank, in plain words, written from the instrument's own source.
+
+    `instrument` is the stable key of a shared instrument in force that has no summary yet:
+    a summary is written once and never rewritten in place. `summaries` is the text per
+    content language, `originalLanguage` the one it was written in, and `isMachine` says the
+    others are machine translations until a person confirms them (INV-05). Each text needs
+    its source, an https link, in `fieldSources`.
+    """
+
+    instrument: str = Field(max_length=120, pattern=STABLE_KEY_PATTERN)
+    summaries: dict[str, str]
+    original_language: str
+    is_machine: bool = False
+
+
 class ProposalObligationPayload(WriteBody):
     """`new_obligation` (PRO-01, INV-03, INV-04): a duty the library does not hold yet,
     under an instrument it does, with its first version.
@@ -1000,6 +1017,14 @@ class LibraryUpdateTarget(CamelSchema):
     instrument_short_name: str = Field(description="The short name of the law, regulation or guideline the duty sits in, for example \"FFFS 2017:2\".")
 
 
+class LibraryUpdateInstrument(CamelSchema):
+    """The regulation a new-regulation update added, named by the library record itself."""
+
+    id: UUID = Field(description="The regulation's id, a UUID, the value `GET /instruments/{instrumentId}` takes, so a row can link straight to its card.")
+    short_name: str = Field(description="The regulation's short name, for example \"MAR\" or \"FFFS 2017:2\".")
+    official_ref: str = Field(description="The regulation's official reference, for example \"Regulation (EU) No 596/2014\".")
+
+
 # The watch agent proposed the change and an independent agent confirmed it (D-62).
 _SAMPLE_CONFIRMED_BY_AGENTS: dict[str, Any] = {
     "verifiedOrigin": "agent",
@@ -1077,6 +1102,10 @@ class LibraryUpdateRow(CamelSchema):
     target: LibraryUpdateTarget | None = Field(
         default=None,
         description="The duty that changed, or the duty that arrived, named by the library's own wording. Null on a change to a shared list, which names no single record, when `vocabularyList` says which list it was, and null on a new instrument.",
+    )
+    instrument: LibraryUpdateInstrument | None = Field(
+        default=None,
+        description="The regulation a `new_instrument` update added, by id, short name and official reference. Null on every other kind, and when the reader may not open that regulation.",
     )
     vocabulary_list: str | None = Field(
         default=None,

@@ -1,0 +1,230 @@
+{
+  "tranche": "eu-banking-credit",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "celex-32013r0575",
+      "source": "https://eur-lex.europa.eu/eli/reg/2013/575/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 575/2013 as published in the Official Journal",
+      "text": {
+        "en": "Sets the prudential rules every bank in the EU must meet: how much capital it holds against its risks, the leverage ratio, liquidity and stable funding, limits on large exposures, and what it reports to its supervisor and discloses to the public. As a regulation it binds credit institutions and investment firms directly, without national implementation. In practice a bank meets its capital, liquidity and large exposure requirements at all times and files regular supervisory reports and public Pillar 3 disclosures."
+      }
+    },
+    {
+      "key": "celex-32024r1623",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1623/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1623 as published in the Official Journal",
+      "text": {
+        "en": "Amends the Capital Requirements Regulation to complete the final Basel III standards in EU law. It changes how banks calculate capital for credit risk, credit valuation adjustment risk, operational risk and market risk, introduces the output floor that limits how far internal models can lower capital requirements, and adds reporting and disclosure on ESG and crypto-asset exposures. It holds no duties of its own: a bank's duties sit in the Capital Requirements Regulation as it now reads."
+      }
+    },
+    {
+      "key": "celex-32015r0061",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2015/61/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/61 as published in the Official Journal",
+      "text": {
+        "en": "Sets out in detail the liquidity coverage requirement of the Capital Requirements Regulation: which assets count as high-quality liquid assets, how they are valued, and the outflow and inflow rates used to model a 30-day stress period. It binds credit institutions directly. In practice a bank holds a diversified buffer of liquid assets at least equal to its stressed net outflows, keeps ready access to them and may draw on the buffer in stress under the notification rules."
+      }
+    },
+    {
+      "key": "celex-32019r2160",
+      "source": "https://eur-lex.europa.eu/eli/reg/2019/2160/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2019/2160 as published in the Official Journal",
+      "text": {
+        "en": "Amends the Capital Requirements Regulation on covered bonds. It tightens the conditions a covered bond must meet for an investing bank to give it a preferential risk weight, including a minimum level of overcollateralisation and limits on the assets that may sit in the cover pool, and works alongside the Covered Bond Directive. It holds no duties of its own: they sit in the Capital Requirements Regulation as it now reads."
+      }
+    },
+    {
+      "key": "celex-32013l0036",
+      "source": "https://eur-lex.europa.eu/eli/dir/2013/36/oj",
+      "sourceLabel": "EUR-Lex, Directive 2013/36/EU as published in the Official Journal",
+      "text": {
+        "en": "Sets the EU framework for licensing and supervising banks: authorisation, the powers of supervisors, internal governance and risk management, remuneration, the supervisory review of capital and liquidity, and the capital buffers on top of the minimum requirements. As a directive it binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. In practice it shapes the licence, governance, pay and buffer rules a bank meets at home."
+      }
+    },
+    {
+      "key": "celex-32024l1619",
+      "source": "https://eur-lex.europa.eu/eli/dir/2024/1619/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2024/1619 as published in the Official Journal",
+      "text": {
+        "en": "Amends the Capital Requirements Directive. It requires banks from outside the EU to set up an authorised branch, or in some cases a subsidiary, to provide core banking services in a member state, strengthens supervisors' fit-and-proper assessments and sanctioning powers, and requires banks to manage ESG risks with specific plans. As a directive it binds the member states; a bank's duties come from national law implementing the Capital Requirements Directive as it now reads."
+      }
+    },
+    {
+      "key": "celex-32002l0087",
+      "source": "https://eur-lex.europa.eu/eli/dir/2002/87/oj",
+      "sourceLabel": "EUR-Lex, Directive 2002/87/EC as published in the Official Journal",
+      "text": {
+        "en": "Adds a layer of group supervision for financial conglomerates, groups that combine significant banking or investment business with insurance. It covers capital adequacy at conglomerate level, risk concentration, intra-group transactions and internal control, under one coordinating supervisor. As a directive it binds the member states, not a bank directly; a bank that belongs to an identified conglomerate meets these duties through the national law that implements it."
+      }
+    },
+    {
+      "key": "celex-32014l0059",
+      "source": "https://eur-lex.europa.eu/eli/dir/2014/59/oj",
+      "sourceLabel": "EUR-Lex, Directive 2014/59/EU as published in the Official Journal",
+      "text": {
+        "en": "Sets the EU framework for handling banks in difficulty without taxpayer bail-outs: recovery plans drawn up by banks, resolution planning and resolution tools for authorities, bail-in, the minimum requirement for own funds and eligible liabilities (MREL) and national resolution funds. As a directive it binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. Those duties include keeping a recovery plan and meeting the MREL its resolution authority sets."
+      }
+    },
+    {
+      "key": "celex-32026l0806",
+      "source": "https://eur-lex.europa.eu/eli/dir/2026/806/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2026/806 as published in the Official Journal",
+      "text": {
+        "en": "Amends the Bank Recovery and Resolution Directive as part of the crisis management and deposit insurance reform, and the public procurement directive for valuation services in resolution. It clarifies early intervention, widens the public interest test so resolution can reach smaller and mid-sized deposit-funded banks, lets deposit guarantee schemes help such banks reach resolution funding, and ranks deposits, with limited exceptions, above ordinary unsecured claims in insolvency. As a directive it binds the member states; a bank's duties come from the national law implementing them."
+      }
+    },
+    {
+      "key": "celex-32014l0049",
+      "source": "https://eur-lex.europa.eu/eli/dir/2014/49/oj",
+      "sourceLabel": "EUR-Lex, Directive 2014/49/EU as published in the Official Journal",
+      "text": {
+        "en": "Sets common EU rules for deposit guarantee schemes: deposits are protected up to EUR 100 000 per depositor per bank, payouts are made within a short deadline, and schemes are funded in advance by contributions from member banks. As a directive it binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. Those duties are mainly scheme membership, contributions, information to depositors and keeping the data needed for a payout."
+      }
+    },
+    {
+      "key": "celex-32026l0804",
+      "source": "https://eur-lex.europa.eu/eli/dir/2026/804/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2026/804 as published in the Official Journal",
+      "text": {
+        "en": "Amends the Deposit Guarantee Schemes Directive as part of the crisis management and deposit insurance reform. It extends protection to deposits of most public authorities, such as local authorities, and under conditions to client funds that financial institutions hold with banks, harmonises protection of temporary high balances, sets common rules for using scheme funds beyond payouts, improves cross-border cooperation and standardises information to depositors. As a directive it binds the member states; a bank's duties come from national law implementing the amended directive."
+      }
+    },
+    {
+      "key": "celex-32013r1024",
+      "source": "https://eur-lex.europa.eu/eli/reg/2013/1024/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 1024/2013 as published in the Official Journal",
+      "text": {
+        "en": "Gives the European Central Bank the task of supervising banks in the euro area and other participating member states, directly for significant banks and through national supervisors for the rest. Of the Nordic countries only Finland takes part. It binds banks established in a participating member state directly: they supply the information the ECB asks for and accept its investigations and on-site inspections, which may come unannounced."
+      }
+    },
+    {
+      "key": "celex-32014r0806",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/806/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 806/2014 as published in the Official Journal",
+      "text": {
+        "en": "Creates the Single Resolution Mechanism for the banking union: the Single Resolution Board plans and decides on the resolution of significant and cross-border banks, backed by the Single Resolution Fund that banks pay into. It binds banks in participating member states directly; in the Nordics that is Finland. Such a bank meets the minimum requirement for own funds and eligible liabilities (MREL) the Board sets and reports on it through its national resolution authority."
+      }
+    },
+    {
+      "key": "celex-32026r0808",
+      "source": "https://eur-lex.europa.eu/eli/reg/2026/808/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2026/808 as published in the Official Journal",
+      "text": {
+        "en": "Amends the Single Resolution Mechanism Regulation in line with the crisis management and deposit insurance reform of the bank resolution directive. It changes the rules on early intervention, the conditions and public interest test for resolution, and how resolution action is funded, including contributions from deposit guarantee schemes. It holds no duties of its own: they sit in the Single Resolution Mechanism Regulation as it now reads, which reaches banks in the banking union, in the Nordics Finland."
+      }
+    },
+    {
+      "key": "celex-32010r1093",
+      "source": "https://eur-lex.europa.eu/eli/reg/2010/1093/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 1093/2010 as published in the Official Journal",
+      "text": {
+        "en": "Establishes the European Banking Authority and sets its powers: drafting technical standards, issuing guidelines and recommendations, settling disagreements between supervisors and acting on breaches of EU law. It is addressed mainly to authorities, but reaches a bank directly in one respect: a bank must make every effort to comply with EBA guidelines and recommendations and, where a guideline asks for it, report whether it complies."
+      }
+    },
+    {
+      "key": "celex-32014l0017",
+      "source": "https://eur-lex.europa.eu/eli/dir/2014/17/oj",
+      "sourceLabel": "EUR-Lex, Directive 2014/17/EU as published in the Official Journal",
+      "text": {
+        "en": "Sets EU rules for consumer credit secured on residential property or used to buy it: standardised pre-contract information on a common information sheet, a creditworthiness assessment before lending, property valuation, staff knowledge and competence, early repayment and the handling of arrears. As a directive it binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. Those duties reach a bank as a mortgage lender."
+      }
+    },
+    {
+      "key": "celex-32008l0048",
+      "source": "https://eur-lex.europa.eu/eli/dir/2008/48/oj",
+      "sourceLabel": "EUR-Lex, Directive 2008/48/EC as published in the Official Journal",
+      "text": {
+        "en": "Sets EU rules for consumer loans not secured on property: standard pre-contract information, an annual percentage rate of charge calculated the same way everywhere, a creditworthiness check, a 14-day right of withdrawal and early repayment. As a directive it binds the member states; a bank's duties come from national law implementing it. The new Consumer Credit Directive repeals it, and national rules implementing the new directive take over from 20 November 2026."
+      }
+    },
+    {
+      "key": "celex-32023l2225",
+      "source": "https://eur-lex.europa.eu/eli/dir/2023/2225/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2023/2225 as published in the Official Journal",
+      "text": {
+        "en": "Replaces the 2008 Consumer Credit Directive and widens its scope, with some exemptions, to loans below EUR 200 and up to EUR 100 000, interest-free credit and buy-now-pay-later schemes. It tightens creditworthiness assessments, pre-contract information and advertising, requires measures against excessive borrowing costs and support for borrowers in financial difficulty. As a directive it binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. Those duties reach a bank as a consumer lender."
+      }
+    },
+    {
+      "key": "celex-32021l2167",
+      "source": "https://eur-lex.europa.eu/eli/dir/2021/2167/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2021/2167 as published in the Official Journal",
+      "text": {
+        "en": "Sets EU rules for selling and servicing non-performing bank loans: credit servicers need an authorisation and are supervised, credit purchasers do not, and borrowers keep their protections when a loan is sold. As a directive it binds the member states; a bank's duties come from national law implementing it. A bank that sells non-performing loans gives the buyer the information it needs to assess them and reports such sales to its supervisor."
+      }
+    },
+    {
+      "key": "celex-32019l2162",
+      "source": "https://eur-lex.europa.eu/eli/dir/2019/2162/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2019/2162 as published in the Official Journal",
+      "text": {
+        "en": "Sets common EU rules for issuing covered bonds: dual recourse for investors to the issuer and the cover pool, eligible cover assets, coverage and liquidity buffer requirements, investor information and public supervision of covered bond programmes. As a directive it binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. A bank that issues covered bonds meets these duties at home, and the label European Covered Bond is reserved for bonds that comply."
+      }
+    },
+    {
+      "key": "celex-32023l2673",
+      "source": "https://eur-lex.europa.eu/eli/dir/2023/2673/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2023/2673 as published in the Official Journal",
+      "text": {
+        "en": "Moves the rules on financial services contracts concluded at a distance, online or by phone, into the Consumer Rights Directive and repeals the old distance marketing directive. Consumers get clear pre-contract information, a right to ask for human intervention online, a withdrawal button for online contracts and protection against misleading interface design. As a directive it binds the member states; a bank's duties come from national law implementing the amended Consumer Rights Directive."
+      }
+    },
+    {
+      "key": "celex-32019l0882",
+      "source": "https://eur-lex.europa.eu/eli/dir/2019/882/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2019/882 as published in the Official Journal",
+      "text": {
+        "en": "Sets accessibility requirements for a list of products and services, among them consumer banking services, e-commerce, e-books, ATMs and payment terminals, so that people with disabilities can use them. As a directive it binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. For a bank this concerns its websites, mobile apps, online banking, self-service terminals and the information it gives consumers about its services."
+      }
+    },
+    {
+      "key": "eba-gl-2021-05",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/internal-governance/guidelines-internal-governance-under-crd",
+      "sourceLabel": "EBA, Guidelines on internal governance under CRD (EBA/GL/2021/05), guideline page and final report",
+      "text": {
+        "en": "Set out how a bank organises its internal governance: the roles of the management body, risk culture, the three internal control functions of risk management, compliance and internal audit, conflicts of interest, whistleblowing channels and new product approval. EBA guidelines bind institutions through the duty to make every effort to comply. In practice a bank documents its management body's responsibilities, runs independent control functions and approves new products and significant changes through a formal process."
+      }
+    },
+    {
+      "key": "eba-gl-2019-02",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/internal-governance/guidelines-third-party-risk-management?version=2019",
+      "sourceLabel": "EBA, Guidelines on outsourcing arrangements (EBA/GL/2019/02), guideline page (2019 version) and final report",
+      "text": {
+        "en": "Set out how a bank manages outsourcing of functions to service providers, inside or outside its group: an outsourcing policy, risk assessment and due diligence before signing, contract terms, a register of all arrangements, informing the supervisor and exit plans. EBA guidelines bind institutions through the duty to make every effort to comply. In practice a bank keeps an outsourcing register, gives critical or important functions extra scrutiny and can exit them without undue disruption."
+      }
+    },
+    {
+      "key": "eba-gl-2020-06",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/credit-risk/guidelines-loan-origination-and-monitoring",
+      "sourceLabel": "EBA, Guidelines on loan origination and monitoring (EBA/GL/2020/06), guideline page and final report",
+      "text": {
+        "en": "Set out how a bank grants and monitors loans to consumers and businesses: credit risk governance and policies, assessing the borrower's ability to repay rather than relying on collateral, risk-based pricing, valuation of property collateral and ongoing monitoring of exposures. EBA guidelines bind institutions through the duty to make every effort to comply. In practice a bank's credit policies, loan approval, pricing and collateral valuation follow these standards across its lending."
+      }
+    },
+    {
+      "key": "eba-gl-2021-04",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/remuneration/guidelines-sound-remuneration-policies-under-crd",
+      "sourceLabel": "EBA, Guidelines on sound remuneration policies under CRD (EBA/GL/2021/04), guideline page and final report",
+      "text": {
+        "en": "Set out how a bank designs and governs remuneration under the Capital Requirements Directive: a pay policy for all staff, identifying staff whose work has a material impact on the risk profile, the cap on variable pay relative to fixed pay, deferral, and malus and clawback. EBA guidelines bind institutions through the duty to make every effort to comply. In practice a bank runs a yearly assessment of its identified staff and applies these pay rules to that group."
+      }
+    },
+    {
+      "key": "eba-gl-2015-18",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/consumer-protection/guidelines-product-oversight-and-governance-arrangements-retail-banking-products?version=2015",
+      "sourceLabel": "EBA, Guidelines on product oversight and governance arrangements for retail banking products (EBA/GL/2015/18), guideline page (2015 version) and consolidated version of 30 June 2026",
+      "text": {
+        "en": "Set out how a bank designs, approves, sells and reviews retail banking products such as mortgages, personal loans, deposits, payment accounts, payment services and e-money, so that each fits the needs of a defined target market. EBA guidelines bind institutions through the duty to make every effort to comply. In practice a bank as manufacturer defines, tests and monitors products for their target market, and as distributor sells them to the right customers; amendments add rules on sustainability claims."
+      }
+    },
+    {
+      "key": "eba-gl-2026-07",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/consumer-protection/guidelines-product-oversight-and-governance-arrangements-retail-banking-products",
+      "sourceLabel": "EBA, Guidelines amending the product oversight and governance Guidelines (EBA/GL/2026/07), guideline page and final report",
+      "text": {
+        "en": "Amend the EBA guidelines on product oversight and governance for retail banking products to address greenwashing. They make ESG features explicit in the rules on the target market, distribution channels, internal control functions and the information exchanged between manufacturer and distributor, and update references to other EBA guidelines. They hold no duties of their own: the duties sit in the product oversight and governance guidelines as they now read, from 11 January 2027."
+      }
+    }
+  ]
+}

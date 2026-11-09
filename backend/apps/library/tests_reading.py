@@ -32,13 +32,14 @@ from apps.agents import testing as agents_testing
 from apps.identity.models import User
 from apps.library import reading
 from apps.library import testing as build
-from apps.library.models import Instrument, Obligation, ObligationTerm, Provision
+from apps.library.models import Instrument, InstrumentSummary, Obligation, ObligationTerm, Provision
 from apps.library.reading import instrument_scope_term_ids, instrument_scopes, obligation_scopes, scope_term_ids
 from apps.library.schemas import ObligationRow
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
 from apps.proposals.models import Proposal
 from apps.shared import factories, tenancy
+from apps.shared.tenancy import library_write
 from apps.shared import permissions as perms
 from apps.shared.logging import JsonFormatter
 from apps.shared.middleware import RequestIdLogFilter
@@ -1080,8 +1081,10 @@ INSTRUMENT_LIST_QUERIES = 2 + 2 + 2 + 3 + 2 + 3 + 2 + 1
 # session with the caller's tenant and locale (2); the instrument with its level,
 # authority, jurisdiction, regime and verifier (1) and its titles (1); one label query
 # each for the regime, the level and the jurisdiction (3); the lineage, both directions,
-# and one label query for the relation types (3).
-INSTRUMENT_DETAIL_QUERIES = 2 + 2 + 1 + 1 + 3 + 3
+# and one label query for the relation types (3); its summaries (1); the duty counts, held,
+# in scope and waiting for review (3); and the implementation links (1, none when neither
+# its reference nor its note carries an official number, as for an FFFS).
+INSTRUMENT_DETAIL_QUERIES = 2 + 2 + 1 + 1 + 3 + 3 + 1 + 3
 
 
 def seed_instruments() -> tuple[Instrument, Instrument, Instrument]:
@@ -1326,9 +1329,37 @@ class InstrumentDetailTests(TestCase):
     def test_the_query_count_does_not_grow_with_the_lineage(self) -> None:
         for instrument in (self.fffs, self.amendment):
             headers = sign_in(self.reader, tenant=self.tenant)
-            with self.subTest(key=instrument.stable_key), self.assertNumQueries(INSTRUMENT_DETAIL_QUERIES):
+            numbered = bool(reading._numbers(instrument.official_ref) or reading._numbers(instrument.implements_note))
+            with self.subTest(key=instrument.stable_key), self.assertNumQueries(INSTRUMENT_DETAIL_QUERIES + numbered):
                 response = self.get(instrument, headers)
             self.assertEqual(response.status_code, 200, response.content)
+
+    def test_the_card_says_what_the_instrument_is_and_where_its_duties_sit(self) -> None:
+        """INV-09: the summary, the implementation links both ways by official number, and
+        the duty counts held, in scope and waiting for review."""
+        directive = build.instrument(key="dir-2002-47", official_ref="Directive 2002/47/EC", jurisdiction="eu", level="eu_directive", regime="regime:securities")
+        national = build.instrument(
+            key="se-collateral", official_ref="SFS 2004:46", regime="regime:securities", implements_note="Financial Collateral Directive, Directive 2002/47/EC"
+        )
+        # A number that only starts the same is not the same act.
+        build.instrument(key="se-other", official_ref="SFS 2004:47", regime="regime:securities", implements_note="Directive 2002/470/EC")
+        with transaction.atomic(), library_write("a test builder"), tenancy.platform_zone():
+            InstrumentSummary.objects.create(instrument=directive, language_id="en", text="Makes collateral arrangements enforceable.", is_original=True)
+
+        card = self.card(directive)
+        self.assertEqual((card["summary"]["text"], card["summary"]["language"]), ("Makes collateral arrangements enforceable.", "en"))
+        self.assertEqual([link["key"] for link in card["implementedBy"]], ["se-collateral"])
+        self.assertEqual(card["implementedBy"][0]["jurisdiction"]["key"], "se")
+        self.assertEqual(card["implements"], [])
+        self.assertEqual(card["obligationCounts"], {"inLibrary": 0, "inScope": 0, "waitingForReview": 0})
+        national_card = self.card(national)
+        self.assertEqual([link["key"] for link in national_card["implements"]], ["dir-2002-47"])
+        self.assertIsNone(national_card["summary"])
+
+        held = self.card(self.fffs)["obligationCounts"]
+        listed = self.client.get(f"/api/v1/obligations?instrument={self.fffs.stable_key}&footprint=all", **sign_in(self.reader, tenant=self.tenant)).json()
+        in_scope = self.client.get(f"/api/v1/obligations?instrument={self.fffs.stable_key}", **sign_in(self.reader, tenant=self.tenant)).json()
+        self.assertEqual((held["inLibrary"], held["inScope"]), (listed["total"], in_scope["total"]))
 
     def test_a_person_needs_library_read_and_a_key_needs_library_read_scope(self) -> None:
         no_scope = factories.api_key(self.tenant, scopes=(perms.SCOPE_CHANGES_WRITE,))

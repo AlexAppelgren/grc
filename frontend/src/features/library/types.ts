@@ -346,4 +346,25 @@ export interface InstrumentDetail {
   verifiedBy: PersonRef | null;
   privateToUs: boolean;
   lineage: InstrumentLineageRef[];
+  /** What it is and what it means for a bank, in plain words (INV-09), or null until the library holds one. */
+  summary: LocalizedText | null;
+  /** The instruments its implementsNote names, and those whose note names it (INV-09). */
+  implements: InstrumentLinkRef[];
+  implementedBy: InstrumentLinkRef[];
+  obligationCounts: InstrumentObligationCounts;
+}
+
+/** Another instrument tied to this one by implementation, as the card links to it. */
+export interface InstrumentLinkRef {
+  id: string;
+  key: string;
+  shortName: string;
+  jurisdiction: LibraryRef;
+}
+
+/** The duties under an instrument: held, in the reader's scope, and waiting for review. */
+export interface InstrumentObligationCounts {
+  inLibrary: number;
+  inScope: number;
+  waitingForReview: number;
 }

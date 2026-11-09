@@ -1,0 +1,222 @@
+{
+  "tranche": "eu-insurance-funds",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "celex-32009l0138",
+      "source": "https://eur-lex.europa.eu/eli/dir/2009/138/oj",
+      "sourceLabel": "EUR-Lex, Directive 2009/138/EC as published in the Official Journal",
+      "text": {
+        "en": "Solvency II is the EU rulebook for authorising and supervising insurers and reinsurers: how much capital they hold against their risks, how they value assets and liabilities, how they are governed, and what they report and disclose. As a directive it binds the member states, not a bank directly; the duties come from each country's national law that implements it. It matters to a bank only through an insurance or reinsurance undertaking in its group."
+      }
+    },
+    {
+      "key": "celex-32025l0002",
+      "source": "https://eur-lex.europa.eu/eli/dir/2025/2/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2025/2 as published in the Official Journal",
+      "text": {
+        "en": "This directive amends Solvency II. It redesigns the long-term guarantee measures and eases the capital treatment of long-term equity investments, creates a category of small and non-complex insurers with lighter reporting, governance and other requirements, widens the macroprudential toolkit and strengthens supervisory cooperation. It binds the member states, not a bank directly; the duties sit in Solvency II as it now reads, through national law, and concern a bank only through an insurer in its group."
+      }
+    },
+    {
+      "key": "celex-32025l0001",
+      "source": "https://eur-lex.europa.eu/eli/dir/2025/1/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2025/1 as published in the Official Journal",
+      "text": {
+        "en": "This directive sets up a recovery and resolution framework for insurers and reinsurers, so that a failing insurer can be restructured or wound down in an orderly way that protects policyholders and limits harm to the economy. Insurers covering at least 60% of each national life and non-life market prepare pre-emptive recovery plans, and authorities prepare resolution plans and gain resolution powers. As a directive it binds the member states, not a bank directly; duties come from national law, and a bank is concerned only through an insurer in its group."
+      }
+    },
+    {
+      "key": "celex-32016l0097",
+      "source": "https://eur-lex.europa.eu/eli/dir/2016/97/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2016/97 as published in the Official Journal",
+      "text": {
+        "en": "The Insurance Distribution Directive sets the rules for anyone who sells or advises on insurance, including banks that distribute insurance to their customers: registration, staff training, conflicts of interest, information to customers, product oversight and extra protections for insurance-based investment products. As a directive it binds the member states, not a bank directly; a bank's duties as an insurance distributor come from each country's national law that implements it."
+      }
+    },
+    {
+      "key": "celex-32016l2341",
+      "source": "https://eur-lex.europa.eu/eli/dir/2016/2341/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2016/2341 as published in the Official Journal",
+      "text": {
+        "en": "This directive governs occupational pension funds: their governance, key functions, risk management, investment rules, depositary and the information they give members and beneficiaries. As a directive it binds the member states, not a bank directly; duties come from each country's national law that implements it. A bank is concerned as an employer sponsoring such a fund or as a service provider to one, not as the regulated institution."
+      }
+    },
+    {
+      "key": "celex-32015r0035",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2015/35/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/35 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation fills in the detail of Solvency II: how insurers calculate technical provisions, own funds and capital requirements, how they organise governance, remuneration and outsourcing, and what they report to supervisors and the public. It binds insurance and reinsurance undertakings directly, not banks. An insurer in a bank's group must keep fit and proper, outsourcing and remuneration policies, integrate sustainability risks and publish its solvency and financial condition report."
+      }
+    },
+    {
+      "key": "celex-32026r0269",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2026/269/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/269 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation amends the Solvency II Delegated Regulation to put the latest Solvency II reform into effect. It changes the rules on technical provisions, long-term guarantee measures, own funds, equity risk, spread risk on securitisations, other standard formula capital requirements, reporting and disclosure, proportionality and group solvency. It adds no duties of its own: they sit in the Delegated Regulation as it now reads, which binds insurers, not banks."
+      }
+    },
+    {
+      "key": "celex-32017r2358",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2358/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2358 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets out how insurance products are designed, approved and brought to customers under the IDD product oversight and governance rules. It binds insurers and intermediaries that manufacture insurance products, and every insurance distributor, so it reaches a bank that distributes insurance. Such a bank needs written distribution arrangements that follow the manufacturer's target market; one that designs products also needs an approval process, a target market and regular reviews."
+      }
+    },
+    {
+      "key": "celex-32017r2359",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2017/2359/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2017/2359 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets conduct rules for selling insurance-based investment products, such as unit-linked life insurance: conflicts of interest, inducements, suitability and appropriateness assessments, and reporting to customers. It binds insurers and insurance intermediaries directly, so it reaches a bank that distributes these products. The bank must manage conflicts and inducements, assess suitability including sustainability preferences, give suitability statements and annual reports, and keep records."
+      }
+    },
+    {
+      "key": "celex-32017r1469",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2017/1469/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2017/1469 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation fixes the standard layout of the insurance product information document, the short summary a customer receives before buying a non-life insurance product. It binds the manufacturer of the product directly, which must present the document in the prescribed format and length. A bank has this duty only where it manufactures non-life insurance; where it only distributes, the document comes from the insurer."
+      }
+    },
+    {
+      "key": "celex-32019r1238",
+      "source": "https://eur-lex.europa.eu/eli/reg/2019/1238/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2019/1238 as published in the Official Journal",
+      "text": {
+        "en": "This regulation creates the pan-European Personal Pension Product, a voluntary personal pension that authorised providers, banks included, can offer across the EU under one set of rules. It binds PEPP providers and distributors directly. A bank that offers or distributes a PEPP must produce a key information document, advise on the saver's retirement needs, issue a yearly benefit statement, and offer a Basic PEPP built on a capital guarantee or a technique aimed at recouping the capital."
+      }
+    },
+    {
+      "key": "celex-32009l0065",
+      "source": "https://eur-lex.europa.eu/eli/dir/2009/65/oj",
+      "sourceLabel": "EUR-Lex, Directive 2009/65/EC as published in the Official Journal",
+      "text": {
+        "en": "The UCITS Directive is the EU framework for retail investment funds that can be sold across the EU on one authorisation: fund authorisation, management companies, depositaries, investment limits and investor information. As a directive it binds the member states, not a bank directly; duties come from each country's national law that implements it. A bank is concerned when its group manages UCITS or when it acts as depositary for them."
+      }
+    },
+    {
+      "key": "celex-32010l0043",
+      "source": "https://eur-lex.europa.eu/eli/dir/2010/43/oj",
+      "sourceLabel": "EUR-Lex, Commission Directive 2010/43/EU as published in the Official Journal",
+      "text": {
+        "en": "This Commission directive details the UCITS Directive for management companies: organisation, conflicts of interest, conduct of business, risk management, and the content of the agreement between the depositary and the management company. It is addressed to the member states, so its duties reach firms through national law, not directly. A bank is concerned when its group runs a UCITS management company or when it acts as depositary under such an agreement."
+      }
+    },
+    {
+      "key": "celex-32011l0061",
+      "source": "https://eur-lex.europa.eu/eli/dir/2011/61/oj",
+      "sourceLabel": "EUR-Lex, Directive 2011/61/EU as published in the Official Journal",
+      "text": {
+        "en": "AIFMD regulates managers of alternative investment funds, such as hedge, private equity and real estate funds: authorisation, capital, conduct, risk and liquidity management, valuation, depositaries, reporting and marketing to professional investors. As a directive it binds the member states, not a bank directly; duties come from each country's national law that implements it. A bank is concerned when its group manages such funds or when it acts as their depositary."
+      }
+    },
+    {
+      "key": "celex-32024l0927",
+      "source": "https://eur-lex.europa.eu/eli/dir/2024/927/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2024/927 as published in the Official Journal",
+      "text": {
+        "en": "This directive amends AIFMD and the UCITS Directive. It tightens the rules on delegation, requires liquidity management tools in open-ended funds, expands supervisory reporting, changes the rules on depositary and custody services, and adds common rules for funds that originate loans. As a directive it binds the member states, not a bank directly; the duties sit in the two amended directives as they now read, through national law."
+      }
+    },
+    {
+      "key": "celex-32019l1160",
+      "source": "https://eur-lex.europa.eu/eli/dir/2019/1160/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2019/1160 as published in the Official Journal",
+      "text": {
+        "en": "This directive amends the UCITS Directive and AIFMD to ease the cross-border marketing of investment funds. It sets rules for pre-marketing to professional investors, the facilities that must be available to retail investors, and how a manager stops marketing a fund in a country. As a directive it binds the member states, not a bank directly; the duties sit in the two amended directives as they now read, through national law."
+      }
+    },
+    {
+      "key": "celex-32013r0231",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2013/231/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) No 231/2013 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation fills in AIFMD for managers of alternative investment funds and for fund depositaries: conflicts of interest, risk and liquidity management, valuation, delegation, depositary duties and reporting to supervisors. It binds AIFMs and AIF depositaries directly, so it reaches a bank whose group manages such funds or that acts as depositary. A manager must handle conflicts, keep a stress-tested liquidity system, value assets under written policies and report to its authority."
+      }
+    },
+    {
+      "key": "celex-32016r0438",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/438/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/438 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the duties of a depositary that keeps the assets of a UCITS safe and oversees how the fund is run. It binds depositaries directly, a role banks commonly hold. A bank acting as UCITS depositary must run risk-based oversight procedures, monitor and reconcile the fund's cash flows, keep segregated custody records, and choose and monitor any third party it delegates safekeeping to under documented due diligence."
+      }
+    },
+    {
+      "key": "celex-32017r1131",
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/1131/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1131 as published in the Official Journal",
+      "text": {
+        "en": "This regulation sets the rules for money market funds, which invest in short-term debt and are used to hold cash for short periods: eligible assets, maturity and liquidity limits, credit quality assessment, stress tests, valuation, investor information and reporting. It binds the funds and their managers directly and bans outside support, including from a sponsor, that guarantees liquidity or stabilises the fund's value. A bank is concerned when its group manages or sponsors such a fund."
+      }
+    },
+    {
+      "key": "celex-32015r0760",
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/760/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/760 as published in the Official Journal",
+      "text": {
+        "en": "This regulation creates the European long-term investment fund, a type of alternative investment fund that invests in long-term assets such as infrastructure and unlisted companies. It binds these funds and their managers directly, and also reaches a bank that sells them to retail investors. A distributing bank must assess suitability and give a suitability statement before a retail sale; a manager in its group must meet the investment, redemption and disclosure rules."
+      }
+    },
+    {
+      "key": "celex-32019r1156",
+      "source": "https://eur-lex.europa.eu/eli/reg/2019/1156/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2019/1156 as published in the Official Journal",
+      "text": {
+        "en": "This regulation sets common rules for marketing investment funds across borders: what marketing communications must look like, how national marketing rules and supervisory fees are published, and a central ESMA database of funds marketed cross-border. It binds UCITS management companies and AIFMs directly. A fund manager in a bank's group must keep marketing identifiable, fair, clear and not misleading, with risks and rewards shown equally and consistent with the fund documents."
+      }
+    },
+    {
+      "key": "celex-32026r0466",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2026/466/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/466 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets out how the liquidity management tools a UCITS may use are to work, such as suspensions of dealing, redemption gates, redemption fees, swing pricing and anti-dilution levies. It binds UCITS and their management companies directly. A management company in a bank's group must apply suspensions and gates as the rules set them, and calibrate fees, swing factors and similar charges to the estimated transaction costs."
+      }
+    },
+    {
+      "key": "celex-32026r0465",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2026/465/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/465 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets out how the liquidity management tools of open-ended alternative investment funds are to work, such as suspensions of dealing, redemption gates, redemption fees, swing pricing and anti-dilution levies. It binds AIFMs directly. A fund manager in a bank's group must apply suspensions and gates as the rules set them, and calibrate fees, swing factors and similar charges to the estimated transaction costs."
+      }
+    },
+    {
+      "key": "eiopa-bos-14-253",
+      "source": "https://www.eiopa.europa.eu/publications/guidelines-system-governance_en",
+      "sourceLabel": "EIOPA, Guidelines on system of governance (EIOPA-BoS-14/253)",
+      "text": {
+        "en": "EIOPA issued these guidelines on how insurers and reinsurers organise their system of governance under Solvency II, including internal reviews, fit and proper requirements, key functions and outsourcing. They are guidance that national supervisors commit to apply on a comply or explain basis and expect insurers to follow; they do not reach a bank directly. An insurer in a bank's group is expected to review its governance regularly and keep fit and proper and outsourcing policies."
+      }
+    },
+    {
+      "key": "eiopa-bos-13-164",
+      "source": "https://www.eiopa.europa.eu/publications/guidelines-complaints-handling-insurance-intermediaries_en",
+      "sourceLabel": "EIOPA, Guidelines on complaints-handling by insurance intermediaries (EIOPA-BoS-13/164)",
+      "text": {
+        "en": "EIOPA issued these guidelines on how insurance intermediaries handle customer complaints. They are guidance that national supervisors commit to apply on a comply or explain basis and expect intermediaries to follow, which includes a bank that distributes insurance. Such a bank is expected to have a written complaints policy and a complaints function overseen by senior management, keep a register, publish its process and answer complaints clearly and without undue delay."
+      }
+    },
+    {
+      "key": "eiopa-17-651",
+      "source": "https://www.eiopa.europa.eu/publications/guidelines-under-insurance-distribution-directive-insurance-based-investment-products-incorporate_en",
+      "sourceLabel": "EIOPA, Guidelines under the IDD on insurance-based investment products (EIOPA-17/651)",
+      "text": {
+        "en": "EIOPA issued these guidelines under the IDD on when an insurance-based investment product counts as complex because its structure makes the risks hard for a customer to understand. They are guidance that national supervisors commit to apply on a comply or explain basis and expect distributors to follow. A bank that sells such products without advice or an appropriateness assessment is expected to check first that the product is not complex under these criteria."
+      }
+    },
+    {
+      "key": "esma-34-671404336-1364",
+      "source": "https://www.esma.europa.eu/document/guidelines-liquidity-management-tools-ucits-and-open-ended-aifs",
+      "sourceLabel": "ESMA, Guidelines on liquidity management tools of UCITS and open-ended AIFs (ESMA34-671404336-1364)",
+      "text": {
+        "en": "ESMA issued these guidelines on choosing, calibrating and activating liquidity management tools in UCITS and open-ended alternative investment funds. They are guidance that national authorities commit to apply on a comply or explain basis and expect fund managers to follow. A fund manager in a bank's group stays responsible for liquidity risk and is expected to select at least the required tools for each fund, consider anti-dilution tools for all funds and set prudent activation thresholds."
+      }
+    }
+  ]
+}

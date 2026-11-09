@@ -1,0 +1,126 @@
+{
+  "tranche": "eu-payments",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "celex-32015l2366",
+      "source": "https://eur-lex.europa.eu/eli/dir/2015/2366/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2015/2366 as published in the Official Journal",
+      "text": {
+        "en": "Sets the EU rules for payment services: authorisation of payment institutions, information to users before and after a payment, rights and liability for unauthorised or faulty payments, strong customer authentication, and access for third-party providers to payment accounts. As a directive it binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. The Commission's technical standards made under it, such as those on strong customer authentication, apply directly."
+      }
+    },
+    {
+      "key": "celex-32009l0110",
+      "source": "https://eur-lex.europa.eu/eli/dir/2009/110/oj",
+      "sourceLabel": "EUR-Lex, Directive 2009/110/EC as published in the Official Journal",
+      "text": {
+        "en": "Sets the rules for authorising and supervising electronic money institutions and for issuing e-money: capital and safeguarding requirements, redemption at par value at any time and a ban on paying interest on e-money. As a directive it binds the member states, not a bank directly. A bank may issue e-money under its banking licence, and the issuance and redemption rules then reach it through the national law that implements the directive."
+      }
+    },
+    {
+      "key": "celex-32018r0389",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/389/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/389 as published in the Official Journal",
+      "text": {
+        "en": "Sets the technical rules for strong customer authentication and secure communication under the Payment Services Directive: how authentication codes work, which exemptions exist, fraud monitoring, protection of security credentials, and the interfaces banks open to third-party providers. It applies directly to payment service providers. In practice a bank authenticates customers with two independent factors, tracks fraud rates for its exemptions and keeps a working interface for account information and payment initiation providers."
+      }
+    },
+    {
+      "key": "celex-32015r0751",
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/751/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/751 as published in the Official Journal",
+      "text": {
+        "en": "Caps the interchange fees on consumer debit and credit card payments and sets business rules for card schemes, issuers and acquirers: co-badging and brand choice, identifiable cards, unbundled merchant pricing and freedom for merchants to steer customers. It applies directly to banks that issue cards or acquire card payments. In practice a bank keeps its fees within the caps, leaves brand choice to the payer and merchant, and gives merchants and cardholders the information the rules require."
+      }
+    },
+    {
+      "key": "celex-32021r1230",
+      "source": "https://eur-lex.europa.eu/eli/reg/2021/1230/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2021/1230 as published in the Official Journal",
+      "text": {
+        "en": "Requires payment service providers to charge the same for a cross-border payment in euro as for a corresponding domestic payment, and makes currency conversion charges transparent for card payments, ATM withdrawals and online credit transfers. It applies directly to banks, including those outside the euro area for their euro payments. In practice a bank aligns its euro payment fees with domestic ones, shows the conversion mark-up over the ECB reference rate and sends the required electronic messages."
+      }
+    },
+    {
+      "key": "celex-32012r0260",
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/260/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 260/2012 as published in the Official Journal",
+      "text": {
+        "en": "Sets the technical and business rules for euro credit transfers and direct debits across the EU: payment accounts identified by IBAN, ISO 20022 message formats, reachability across borders, direct debit mandate rights for payers and a ban on interchange fees per direct debit. It applies directly to payment service providers, including those outside the euro area for their euro payments. In practice a bank processes euro payments in the common formats and gives payers control over direct debits."
+      }
+    },
+    {
+      "key": "celex-32024r0886",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/886/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/886 as published in the Official Journal",
+      "text": {
+        "en": "Amends the SEPA Regulation and related acts so that banks offering euro credit transfers also offer instant ones, around the clock, with funds credited within ten seconds and at no higher price than ordinary transfers. It adds a free check that the payee's name matches the IBAN, daily screening of customers against EU sanctions instead of screening each instant payment, and yearly reporting on charges. It applies directly; banks outside the euro area have later deadlines."
+      }
+    },
+    {
+      "key": "celex-32025r1979",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/1979/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/1979 as published in the Official Journal",
+      "text": {
+        "en": "Sets uniform templates, instructions and methodology for the yearly report payment service providers send to their supervisor under the SEPA Regulation: the charges for credit transfers, instant credit transfers and payment accounts, and the share of instant credit transfers rejected because of EU sanctions. It applies directly to payment service providers. In practice a bank reports annual figures on these templates in its supervisor's data format; banks outside the euro area also complete the euro templates."
+      }
+    },
+    {
+      "key": "celex-32014l0092",
+      "source": "https://eur-lex.europa.eu/eli/dir/2014/92/oj",
+      "sourceLabel": "EUR-Lex, Directive 2014/92/EU as published in the Official Journal",
+      "text": {
+        "en": "Sets EU rules on payment accounts for consumers: comparable fee information using standard terms, a fee information document before the contract and a yearly statement of fees, a switching service for moving an account between banks, and a right for anyone legally resident in the EU to open a basic payment account. As a directive it binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it."
+      }
+    },
+    {
+      "key": "celex-32018r0034",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/34/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/34 as published in the Official Journal",
+      "text": {
+        "en": "Sets the standard layout and common symbol for the fee information document a bank gives consumers before they open a payment account, so that fees can be compared across banks. It supplements the Payment Accounts Directive and applies directly to payment service providers. In practice a bank produces one fee information document per consumer payment account it offers, in the prescribed template, without changing its order, headings or layout."
+      }
+    },
+    {
+      "key": "celex-32018r0033",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/33/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/33 as published in the Official Journal",
+      "text": {
+        "en": "Sets the standard layout and common symbol for the statement of fees a bank gives consumers, at least once a year, showing the fees charged on their payment account and the interest applied. It supplements the Payment Accounts Directive and applies directly to payment service providers. In practice a bank issues each consumer's statement of fees in the prescribed template, without changing its order, headings or layout."
+      }
+    },
+    {
+      "key": "celex-32001r1338",
+      "source": "https://eur-lex.europa.eu/eli/reg/2001/1338/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EC) No 1338/2001 as published in the Official Journal",
+      "text": {
+        "en": "Sets measures to protect euro banknotes and coins against counterfeiting, including cooperation between authorities and duties for those who handle cash professionally. It binds credit institutions directly, and a companion Council regulation extends it to member states that do not use the euro. In practice a bank checks the authenticity of euro notes and coins it puts back into circulation, using approved machines or trained staff, and hands suspected counterfeits to the national authorities at once."
+      }
+    },
+    {
+      "key": "eba-gl-2018-05",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/payment-services-and-electronic-money/guidelines-fraud-reporting-under-psd2",
+      "sourceLabel": "EBA, Guidelines on fraud reporting under PSD2 (EBA/GL/2018/05 as amended by EBA/GL/2020/01), status Applicable",
+      "text": {
+        "en": "Set out what fraud data payment service providers report to their supervisor under the Payment Services Directive: unauthorised payments and payments made because a fraudster manipulated the payer, by volume and value, with set breakdowns by payment type and geography. EBA guidelines bind providers through the duty to make every effort to comply. In practice a bank reports its fraud statistics every six months, and a branch in another EEA country also reports to the host supervisor."
+      }
+    },
+    {
+      "key": "eba-gl-2018-07",
+      "source": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/payment-services-and-electronic-money/guidelines",
+      "sourceLabel": "EBA, Guidelines on the exemption from the contingency mechanism under Article 33(6) of the RTS on SCA & CSC (EBA/GL/2018/07), status Applicable",
+      "text": {
+        "en": "Set out the conditions under which a supervisor may exempt a bank from keeping a fallback to its customer interface for third-party providers, where it offers a dedicated interface for account information and payment initiation. The conditions cover service levels, published performance statistics, stress testing and the absence of obstacles. EBA guidelines bind banks through the duty to make every effort to comply. In practice a bank seeking the exemption measures and tests its interface accordingly."
+      }
+    },
+    {
+      "key": "eba-gl-2019-04",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/internal-governance/guidelines-ict-and-security-risk-management",
+      "sourceLabel": "EBA, Guidelines on ICT and security risk management (EBA/GL/2019/04 as amended by EBA/GL/2025/02, now limited to Section 3.8), status Applicable",
+      "text": {
+        "en": "Set out how payment service providers and banks manage ICT and security risk. As amended, only the part on the relationship with payment service users still applies; the rest has given way to the Digital Operational Resilience Act. EBA guidelines bind providers through the duty to make every effort to comply. In practice a bank gives customers security guidance and support, lets them switch off payment functions and adjust limits, and offers alerts on payment attempts."
+      }
+    }
+  ]
+}

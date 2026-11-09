@@ -31,7 +31,7 @@ from django.conf import settings
 from django.db.models import Exists, OuterRef, Q, QuerySet
 from django.utils import timezone
 
-from apps.library.models import Obligation, ObligationVersion
+from apps.library.models import Instrument, Obligation, ObligationVersion
 from apps.library.reading import (
     RecordHeading,
     agent_ref,
@@ -45,7 +45,7 @@ from apps.library.reading import (
 from apps.library.schemas import LibraryRef, OutsideReason
 from apps.proposals import logic
 from apps.proposals.models import OriginType, Proposal, ProposalKind, ProposalStatus
-from apps.proposals.schemas import LibraryUpdateDay, LibraryUpdateRow, LibraryUpdatesPage, LibraryUpdateTarget
+from apps.proposals.schemas import LibraryUpdateDay, LibraryUpdateInstrument, LibraryUpdateRow, LibraryUpdatesPage, LibraryUpdateTarget
 from apps.taxonomy import matching
 from apps.taxonomy.models import TaxonomyTerm, TaxonomyTermLabel
 
@@ -68,7 +68,12 @@ def _applied(*, since: datetime.datetime, kind: str | None, outside_footprint: b
     first version its approval wrote."""
     from apps.library.reading import scope_term_ids
 
-    queryset = logic.filtered(Proposal.objects.all(), status=ProposalStatus.APPROVED.value, kind=kind).filter(applied_at__gte=since)
+    # A regulation's summary describes a record and changes no fact a bank acts on (INV-09).
+    queryset = (
+        logic.filtered(Proposal.objects.all(), status=ProposalStatus.APPROVED.value, kind=kind)
+        .filter(applied_at__gte=since)
+        .exclude(kind=ProposalKind.NEW_INSTRUMENT_SUMMARY.value)
+    )
     if not outside_footprint:
         inside = Obligation.objects.filter(
             matching.in_footprint_expression(tenant_id, scope_term_ids())
@@ -164,6 +169,18 @@ def _verdicts(
     return verdicts
 
 
+def _instruments(applied: list[Proposal]) -> dict[uuid.UUID, LibraryUpdateInstrument]:
+    """The regulation each new-regulation update added, in one query, among those this
+    reader may open (row-level security reads the rest as absent)."""
+    keys = {proposal.id: (proposal.corrected_payload or proposal.payload).get("key", "") for proposal in applied if proposal.kind == ProposalKind.NEW_INSTRUMENT.value}
+    held = {row.stable_key: row for row in Instrument.objects.filter(stable_key__in=set(keys.values()))}
+    return {
+        proposal_id: LibraryUpdateInstrument(id=held[key].id, short_name=held[key].short_name, official_ref=held[key].official_ref)
+        for proposal_id, key in keys.items()
+        if key in held
+    }
+
+
 def _row(
     proposal: Proposal,
     *,
@@ -172,6 +189,7 @@ def _row(
     version: ObligationVersion | None,
     vocabulary: LibraryRef | None,
     verdict: tuple[bool, list[OutsideReason]],
+    instrument: LibraryUpdateInstrument | None = None,
 ) -> LibraryUpdateRow:
     in_footprint, outside = verdict
     target = None
@@ -191,6 +209,7 @@ def _row(
         effective_from=None if version is None else partial_date(version.effective_from, version.effective_from_precision),
         version_number=None if version is None else version.version_number,
         target=target,
+        instrument=instrument,
         # Which list changed, and the row itself as that list labels it today.
         vocabulary_list=(applied.get("list") or applied.get("dimension")) if duty is None else None,
         vocabulary=vocabulary,
@@ -223,6 +242,7 @@ def page(
     headings = obligation_headings(list(duties.values()), order)
     vocabularies = _vocabulary_refs(applied, order)
     verdicts = _verdicts(list(duties.values()), order, tenant.id)
+    instruments = _instruments(applied)
     zone = ZoneInfo(tenant.timezone)
     days: list[LibraryUpdateDay] = []
     for proposal in applied:
@@ -234,6 +254,7 @@ def page(
             version=versions.get(proposal.id),
             vocabulary=vocabularies.get(proposal.id),
             verdict=(True, []) if duty is None else verdicts.get(duty, (True, [])),
+            instrument=instruments.get(proposal.id),
         )
         day = timezone.localdate(cast(datetime.datetime, proposal.applied_at), timezone=zone)
         if not days or days[-1].date != day:

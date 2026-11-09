@@ -18,9 +18,9 @@ import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useInstrument, useObligations, useReportInstrumentProblem } from '@/features/library/hooks';
-import { presentInstrument } from '@/features/library/instrument-presentation';
+import { DIRECTIVE_LEVEL, obligationsTitleOf, presentInstrument } from '@/features/library/instrument-presentation';
 import { markPrivateToUs, presentBindingLevel } from '@/features/library/obligation-presentation';
-import type { InstrumentDetail, InstrumentLineageRef, ScopeFilter } from '@/features/library/types';
+import type { InstrumentDetail, InstrumentLineageRef, InstrumentLinkRef, ScopeFilter } from '@/features/library/types';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -82,18 +82,89 @@ function LineageGroup({ group }: { group: LineageGroupOf }) {
   );
 }
 
-/** "Lineage": what this instrument implements, elaborates or amends, and what does so to it in turn (INV-01). */
+/** "Lineage": what this instrument implements, elaborates or amends, and what does so to it in turn (INV-01, INV-09). Left out when there is none. */
 function LineagePanel({ instrument }: { instrument: InstrumentDetail }) {
   const t = useT();
   const groups = lineageGroups(instrument.lineage);
+  if (groups.length === 0 && instrument.implements.length === 0) return null;
   return (
     <Panel title={t('inventory.instrument.lineageTitle')} data-lineage-panel="">
-      {groups.length === 0 ? (
-        <p className="text-meta text-muted">{t('inventory.instrument.lineageEmpty')}</p>
-      ) : (
-        groups.map((group) => <LineageGroup key={group.id} group={group} />)
+      {instrument.implements.length === 0 ? null : (
+        <div className="mb-3" data-implements="">
+          <h3 className="mb-1.5 font-semibold">{t('inventory.instrument.implementsTitle')}</h3>
+          <InstrumentLinks links={instrument.implements} />
+        </div>
       )}
+      {groups.map((group) => (
+        <LineageGroup key={group.id} group={group} />
+      ))}
     </Panel>
+  );
+}
+
+/** Other instruments by short name and jurisdiction, each opening its own card. */
+function InstrumentLinks({ links }: { links: readonly InstrumentLinkRef[] }) {
+  return (
+    <ul className="m-0 grid list-none gap-1.5 p-0 text-meta">
+      {links.map((link) => (
+        <li key={link.id} data-instrument-link={link.key}>
+          <Link href={`/inventory/instruments/${link.id}`} prefetch={false} className="font-medium underline">
+            {link.shortName}
+          </Link>
+          <span className="ml-2 text-muted">{link.jurisdiction.label}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** "What it is": the instrument in plain words (INV-09), when the library holds a summary. */
+function SummaryPanel({ instrument }: { instrument: InstrumentDetail }) {
+  const t = useT();
+  if (instrument.summary === null) return null;
+  return (
+    <Panel title={t('inventory.instrument.summaryTitle')} data-summary-panel="">
+      <p className="max-w-[72ch] text-body">{instrument.summary.text}</p>
+    </Panel>
+  );
+}
+
+/**
+ * What applies, said before any list (INV-09): how many duties the library holds and
+ * how many fall in the reader's scope; for a directive, that its duties come from each
+ * country's implementing law, with those laws; and new duties still waiting for review.
+ */
+function WhatApplies({ instrument }: { instrument: InstrumentDetail }) {
+  const t = useT();
+  const counts = instrument.obligationCounts;
+  const directive = instrument.level.key === DIRECTIVE_LEVEL && counts.inLibrary === 0;
+  return (
+    <div className="mb-3 grid gap-2 text-body" data-what-applies="">
+      {directive ? (
+        <>
+          <p>{t('inventory.instrument.applies.directive')}</p>
+          {instrument.implementedBy.length === 0 ? (
+            <p className="text-meta text-muted">{t('inventory.instrument.applies.noNationalLaw')}</p>
+          ) : (
+            <div data-implemented-by="">
+              <h3 className="mb-1.5 font-semibold">{t('inventory.instrument.applies.implementedByTitle')}</h3>
+              <InstrumentLinks links={instrument.implementedBy} />
+            </div>
+          )}
+        </>
+      ) : counts.inLibrary === 0 ? (
+        counts.waitingForReview === 0 ? (
+          <p className="text-meta text-muted">{t('inventory.instrument.applies.none')}</p>
+        ) : null
+      ) : (
+        <p data-applies-counts="">{t('inventory.instrument.applies.counts', { inLibrary: counts.inLibrary, inScope: counts.inScope })}</p>
+      )}
+      {counts.waitingForReview === 0 ? null : (
+        <p className="text-meta text-muted" data-applies-waiting="">
+          {t('inventory.instrument.applies.waiting', { count: counts.waitingForReview })}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -139,8 +210,16 @@ function ObligationsPanel({ instrument }: { instrument: InstrumentDetail }) {
   const obligations = useObligations(scope === 'in' ? { instrument: instrument.stableKey } : { instrument: instrument.stableKey, footprint: scope });
   const items = obligations.data?.items ?? [];
   const inventory = `/inventory?${searchOf('obligations', { instrument: instrument.stableKey, regime: '', service: '', dutyType: '', asOf: '', scope })}`;
+  if (instrument.obligationCounts.inLibrary === 0) {
+    return (
+      <Panel title={obligationsTitleOf(instrument.level.key, t)} data-obligations-panel="">
+        <WhatApplies instrument={instrument} />
+      </Panel>
+    );
+  }
   return (
-    <Panel title={t('inventory.instrument.obligationsTitle')} data-obligations-panel="">
+    <Panel title={obligationsTitleOf(instrument.level.key, t)} data-obligations-panel="">
+      <WhatApplies instrument={instrument} />
       <div className="mb-3">
         <ScopeControl value={scope} onChange={setScope} />
       </div>
@@ -204,8 +283,11 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
     },
     t,
   );
+  // The short name is the heading, so its pill would only repeat it.
+  const facts = pills.filter((pill) => !pill.key.startsWith('instrument:'));
   // The bank's own instrument leads its head with "Private to us", as its obligations do (OWN-04).
-  const header = record.privateToUs ? markPrivateToUs(pills, t) : pills;
+  const header = record.privateToUs ? markPrivateToUs(facts, t) : facts;
+  const officialTitle = record.name === null || record.name.text === record.shortName ? undefined : record.name.text;
   const context: ReportContext = {};
   const sourceHref = externalHref(record.sourceUrl);
 
@@ -215,7 +297,7 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
       <div className="mb-1.5" data-header-pills="">
         <PillRow pills={header} />
       </div>
-      <PageHead title={record.name === null ? record.shortName : record.name.text} />
+      <PageHead title={record.shortName} lede={officialTitle} />
       <Meta className="mb-4">
         <span data-in-force-line="">{inForceLabel(record.inForceFrom, record.inForceTo, t, ctx)}</span>
         {sourceHref === null ? (
@@ -229,8 +311,9 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <ProvisionTree instrumentId={instrumentId} levelKind={record.level.kind} sourceUrl={record.sourceUrl} />
+          <SummaryPanel instrument={record} />
           <ObligationsPanel instrument={record} />
+          <ProvisionTree instrumentId={instrumentId} levelKind={record.level.kind} sourceUrl={record.sourceUrl} />
         </div>
         <div>
           <IdentityPanel

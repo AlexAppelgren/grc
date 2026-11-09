@@ -1,0 +1,46 @@
+{
+  "tranche": "nordic-sanctions",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "sfs-2023-677",
+      "source": "https://www.riksdagen.se/sv/dokument-och-lagar/dokument/svensk-forfattningssamling/lag-2023677-om-frysning-av-tillgangar_sfs-2023-677/",
+      "sourceLabel": "Riksdagen, Svensk författningssamling, SFS 2023:677, Lag (2023:677) om frysning av tillgångar, text as amended up to SFS 2025:330",
+      "text": {
+        "en": "Sets up a Swedish freezing regime for people suspected or convicted of terrorist offences who are not already frozen under an EU sanctions regulation, giving effect to a UN Security Council resolution on terrorist financing. A prosecutor decides each freeze, and the ban on providing assets binds everyone, banks included. A bank must block the named person's assets and not make assets available to them or to entities they own or control; breaches are crimes."
+      }
+    },
+    {
+      "key": "dk-lov-1984-109",
+      "source": "https://www.retsinformation.dk/eli/lta/2011/635",
+      "sourceLabel": "Retsinformation, LOV nr 109 af 28/03/1984 as consolidated by LBK nr 635 af 09/06/2011 (eksportkontrolloven), § 3 on entry into force",
+      "text": {
+        "en": "The Danish act that gives effect in Denmark to EU rules on economic relations with countries outside the EU, including EU sanctions, with the Danish Business Authority (Erhvervsstyrelsen) as supervisor. It binds anyone in Denmark directly. A bank must give the Authority the information and assistance it demands and must not give false or misleading information; a Danish company owned or controlled by a sanctioned person must cut that person off from control."
+      }
+    },
+    {
+      "key": "dk-bek-2026-778",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/778",
+      "sourceLabel": "Retsinformation, BEK nr 778 af 03/09/2026, issued by the Minister for Business under § 1 a, stk. 6-7 of eksportkontrolloven, § 6 on entry into force",
+      "text": {
+        "en": "A Danish executive order on how a company owned or controlled by a person under EU sanctions cuts that person off from control, for example by suspending voting and signing rights and blocking access to accounts and payment cards. It binds Danish companies with a sanctioned owner, so it reaches a bank only in that case. Such a company documents its measures to the Danish Business Authority, sends a yearly statement on whether they work, and pays for the Authority's handling."
+      }
+    },
+    {
+      "key": "no-lov-2021-04-16-18",
+      "source": "https://lovdata.no/dokument/NL/lov/2021-04-16-18",
+      "sourceLabel": "Lovdata, lov 16. april 2021 nr. 18 om gjennomføring av internasjonale sanksjoner (sanksjonsloven), consolidated text",
+      "text": {
+        "en": "The Norwegian Sanctions Act lets the government give effect by regulation to UN Security Council sanctions and to restrictive measures Norway joins with other countries, such as EU sanctions, and sets the criminal penalties for breaching them. It reaches Norwegian-registered undertakings and business carried on in Norway. A bank's concrete freezing and screening duties come from the regulations made under the Act for each regime."
+      }
+    },
+    {
+      "key": "fi-sd-1967-659",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/1967/659",
+      "sourceLabel": "Finlex, Laki eräiden Suomelle Yhdistyneiden Kansakuntien ja Euroopan unionin jäsenenä kuuluvien velvoitusten täyttämisestä (659/1967), consolidated text, 6 § on entry into force",
+      "text": {
+        "en": "The Finnish Sanctions Act gives effect in Finland to UN and EU sanctions, names the Ministry for Foreign Affairs as competent authority, lets the bailiff enforce asset freezes and makes sanctions breaches crimes. It binds everyone in Finland, banks included. A bank must on its own initiative tell the bailiff without delay what it holds on designated persons, must not enforce agreements that breach sanctions and must suspend earlier commitments that conflict with them."
+      }
+    }
+  ]
+}

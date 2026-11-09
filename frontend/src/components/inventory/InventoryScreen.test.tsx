@@ -356,10 +356,22 @@ describe('InventoryScreen', () => {
     expect(screen.queryByText(/Showing the first/)).toBeNull();
   });
 
-  it('says so when the page holds fewer rows than the library', async () => {
-    serve({ items: [research], total: 42 });
+  it('pages through the library, a chosen number of rows a page or every row at once', async () => {
+    const sent = serve({ items: [research], total: 242 });
     renderIn(<InventoryScreen />);
-    expect(await screen.findByText('Showing the first 1 of 42.')).toBeVisible();
+    const pager = (await screen.findByText('1–1 of 242')).closest('[data-list-pager]') as HTMLElement;
+    expect(within(pager).getByRole('button', { name: 'Previous' })).toBeDisabled();
+    fireEvent.click(within(pager).getByRole('button', { name: 'Next' }));
+    await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/obligations').at(-1)?.params).toMatchObject({ limit: 20, offset: 20 }));
+
+    // "All" reads every page at the route's maximum, the pages after the first side by side.
+    fireEvent.change(within(pager).getByRole('combobox'), { target: { value: 'all' } });
+    await waitFor(() => {
+      const pages = sent.filter((s) => s.path === '/api/v1/obligations').map((s) => s.params as { limit?: number; offset?: number } | undefined);
+      const offsets = pages.filter((params) => params?.limit === 100).map((params) => params?.offset);
+      expect(offsets).toEqual([0, 100, 200]);
+    });
+    expect(within(document.querySelector('[data-list-pager]') as HTMLElement).queryByRole('button', { name: 'Next' })).toBeNull();
   });
 
   it('offers a retry when the read fails', async () => {
@@ -515,9 +527,9 @@ describe('InventoryScreen', () => {
     await screen.findByText('1 obligation');
     // Nothing is set and the sheet is shut, so a hundred instruments are not read.
     expect(sent.filter((s) => s.path === '/api/v1/instruments')).toEqual([]);
-    const picker = within(within(await openFilters()).getByRole('group', { name: 'Instrument' }));
+    const picker = within(within(await openFilters()).getByRole('group', { name: 'Regulation' }));
     const option = await picker.findByRole('button', { name: 'FFFS 2017:2 (2)' });
-    expect(picker.getByRole('button', { name: 'All instruments' })).toHaveAttribute('aria-pressed', 'true');
+    expect(picker.getByRole('button', { name: 'All regulations' })).toHaveAttribute('aria-pressed', 'true');
     expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toEqual([expect.objectContaining({ limit: 100 })]);
     fireEvent.click(option);
     expect(nav.replace).toHaveBeenCalledWith('/inventory?instrument=fffs-2017-2');
@@ -537,9 +549,9 @@ describe('InventoryScreen', () => {
     const lvm: Instrument = { ...fffs, id: 'in-3', stableKey: 'sfs-2007-528', shortName: 'LVM' };
     serve({ items: [research], total: 1 }, { items: [fffs, lvm], total: 2 });
     renderIn(<InventoryScreen />);
-    const picker = within(within(await openFilters()).getByRole('group', { name: 'Instrument' }));
+    const picker = within(within(await openFilters()).getByRole('group', { name: 'Regulation' }));
     await picker.findByRole('button', { name: 'LVM (2)' });
-    fireEvent.change(picker.getByRole('searchbox', { name: 'Find an instrument' }), { target: { value: 'lv' } });
+    fireEvent.change(picker.getByRole('searchbox', { name: 'Find a regulation' }), { target: { value: 'lv' } });
     expect(picker.queryByRole('button', { name: 'FFFS 2017:2 (2)' })).toBeNull();
     expect(picker.getByRole('button', { name: 'LVM (2)' })).toBeVisible();
   });
@@ -552,10 +564,10 @@ describe('InventoryScreen', () => {
     const lfd: Instrument = { ...fffs, id: 'in-2', stableKey: 'lfd-2005-405', shortName: 'LFD', inFootprint: false };
     const sent = serve({ items: [], total: 0 }, { items: [fffs], total: 1 }, { items: [fffs, lfd], total: 2 });
     renderIn(<InventoryScreen />);
-    expect(await screen.findByRole('button', { name: 'Remove the Instrument filter, LFD' })).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Remove the Regulation filter, LFD' })).toBeVisible();
     expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ footprint: 'all', limit: 100 }));
     expect(sent.find((s) => s.path === '/api/v1/obligations')?.params).toMatchObject({ instrument: 'lfd-2005-405' });
-    fireEvent.click(screen.getByRole('button', { name: 'Remove the Instrument filter, LFD' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove the Regulation filter, LFD' }));
     expect(nav.replace).toHaveBeenCalledWith('/inventory');
   });
 
@@ -565,14 +577,14 @@ describe('InventoryScreen', () => {
     renderIn(<InventoryScreen />);
     // Neither the options in our scope nor the ones outside it name this key.
     await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ footprint: 'all' })));
-    expect(await screen.findByRole('button', { name: 'Remove the Instrument filter, sfs-1999-999' })).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Remove the Regulation filter, sfs-1999-999' })).toBeVisible();
   });
 
   it('asks for the instruments outside our scope only when the picked one is not an option', async () => {
     nav.search = 'instrument=fffs-2017-2';
     const sent = serve({ items: [research], total: 1 });
     renderIn(<InventoryScreen />);
-    expect(await screen.findByRole('button', { name: 'Remove the Instrument filter, FFFS 2017:2' })).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Remove the Regulation filter, FFFS 2017:2' })).toBeVisible();
     await screen.findByText('1 obligation');
     expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).not.toContainEqual(expect.objectContaining({ footprint: 'all' }));
   });
@@ -629,7 +641,7 @@ describe('InventoryScreen', () => {
     const sent = serve({ items: [], total: 0 });
     renderIn(<InventoryScreen />);
     const box = await screen.findByRole('searchbox', { name: 'Search the inventory' });
-    expect(box).toHaveAttribute('placeholder', 'Find an instrument by reference or name');
+    expect(box).toHaveAttribute('placeholder', 'Find a regulation by reference or name');
     fireEvent.change(box, { target: { value: 'FFFS' } });
     fireEvent.submit(screen.getByRole('search'));
     await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/instruments').map((s) => s.params)).toContainEqual(expect.objectContaining({ q: 'FFFS' })));
@@ -640,7 +652,7 @@ describe('InventoryScreen', () => {
     serve({ items: [research], total: 1 });
     renderIn(<InventoryScreen />);
     await screen.findByText('1 obligation');
-    fireEvent.click(screen.getByRole('tab', { name: 'Instruments' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Regulations' }));
     expect(nav.replace).toHaveBeenCalledWith('/inventory?tab=instruments&regime=securities&scope=all');
   });
 
@@ -648,8 +660,8 @@ describe('InventoryScreen', () => {
     nav.search = 'tab=instruments';
     serve({ items: [], total: 0 }, { items: [fffs], total: 1 });
     renderIn(<InventoryScreen />);
-    await waitFor(() => expect(screen.getByText('1 instrument')).toBeVisible());
-    expect(screen.getByRole('tab', { name: 'Instruments' })).toHaveAttribute('aria-selected', 'true');
+    await waitFor(() => expect(screen.getByText('1 regulation')).toBeVisible());
+    expect(screen.getByRole('tab', { name: 'Regulations' })).toHaveAttribute('aria-selected', 'true');
     const row = within(document.querySelector('[data-instrument-rows]') as HTMLElement).getByRole('link');
     expect(row).toHaveAttribute('href', '/inventory/instruments/in-1');
   });
@@ -658,7 +670,7 @@ describe('InventoryScreen', () => {
     nav.search = 'tab=instruments';
     const sent = serve({ items: [], total: 0 }, { items: [], total: 0 });
     renderIn(<InventoryScreen />);
-    await screen.findByText('No instruments match');
+    await screen.findByText('No regulations match');
     expect(sent.find((s) => s.path === '/api/v1/instruments')?.params).not.toHaveProperty('footprint');
     const sheet = await openFilters();
     expect(within(sheet).queryByRole('group', { name: 'Duty type' })).toBeNull();
@@ -874,7 +886,7 @@ describe('bulk tagging on the inventory', () => {
     // Another page: the Instruments tab and back. Nothing is selected any more.
     nav.search = 'tab=instruments';
     rerender();
-    await screen.findByRole('tab', { name: 'Instruments', selected: true });
+    await screen.findByRole('tab', { name: 'Regulations', selected: true });
     nav.search = 'regime=securities';
     rerender();
     await waitFor(() => expect(box('obl-research-payments')).not.toBeNull());
@@ -1092,7 +1104,7 @@ describe('the register overlay on the inventory', () => {
     renderIn(<InventoryScreen />);
     await screen.findByText('1 obligation');
     // The filter row is the search and the Filters button: no list of the bank's is read with the page.
-    expect(screen.queryAllByRole('combobox')).toEqual([]);
+    expect((document.querySelector('[data-inventory-filters]') as HTMLElement).querySelectorAll('select')).toHaveLength(0);
     expect(sent.filter((request) => BANK_LISTS.includes(request.path))).toEqual([]);
 
     const sheet = await openFilters();

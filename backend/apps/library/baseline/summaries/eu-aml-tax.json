@@ -1,0 +1,158 @@
+{
+  "tranche": "eu-aml-tax",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "celex-32015l0849",
+      "source": "https://eur-lex.europa.eu/eli/dir/2015/849/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2015/849 as published in the Official Journal",
+      "text": {
+        "en": "Sets the EU rules against money laundering and terrorist financing that apply until the new single rulebook takes over: customer due diligence, beneficial ownership registers, reporting suspicious transactions to the financial intelligence unit, record keeping and supervision. As a directive it binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. The sixth Anti-Money Laundering Directive repeals it from 10 July 2027, when the Anti-Money Laundering Regulation starts to apply."
+      }
+    },
+    {
+      "key": "celex-32024l1640",
+      "source": "https://eur-lex.europa.eu/eli/dir/2024/1640/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2024/1640 as published in the Official Journal",
+      "text": {
+        "en": "Sets what member states must put in place against money laundering and terrorist financing alongside the new Anti-Money Laundering Regulation: financial intelligence units, supervisors and their powers, central beneficial ownership registers and central bank account registers. It amends and later repeals the 2015 directive. As a directive it binds the member states, not a bank directly; a bank's own duties come mainly from the Regulation and from national law implementing this directive."
+      }
+    },
+    {
+      "key": "celex-32018l1673",
+      "source": "https://eur-lex.europa.eu/eli/dir/2018/1673/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2018/1673 as published in the Official Journal",
+      "text": {
+        "en": "Sets minimum rules for defining money laundering as a criminal offence and for its penalties, including a common list of predicate offences, self-laundering and liability of legal persons. As a directive it binds the member states in their criminal law and places no duties on a bank. Its relevance to a bank is that a legal person can be held liable where laundering is committed for its benefit by someone in a leading position or through a lack of supervision."
+      }
+    },
+    {
+      "key": "celex-32024r1624",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1624/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1624 as published in the Official Journal",
+      "text": {
+        "en": "Sets one directly applicable EU rulebook for preventing money laundering, terrorist financing and evasion of targeted financial sanctions, replacing most national rules made under the earlier directives. It binds banks and other obliged entities directly, with its duties applying from 10 July 2027. A bank keeps a documented risk assessment and internal controls, names a responsible board member and a compliance officer, applies customer due diligence and monitoring, reports suspicions and keeps records."
+      }
+    },
+    {
+      "key": "celex-32024r1620",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1620/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1620 as published in the Official Journal",
+      "text": {
+        "en": "Establishes the Anti-Money Laundering Authority (AMLA), the EU agency that coordinates national AML/CFT supervisors and financial intelligence units and directly supervises a limited number of higher-risk cross-border credit and financial institutions. It mainly binds authorities, but reaches a bank directly if AMLA selects it for direct supervision: the bank then supplies the information AMLA asks for and submits to its investigations and on-site inspections."
+      }
+    },
+    {
+      "key": "celex-32023r1113",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1113/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1113 as published in the Official Journal",
+      "text": {
+        "en": "Requires information on the payer and payee to travel with every transfer of funds, and on the originator and beneficiary with every transfer of crypto-assets, so that transfers can be traced. It applies directly to payment service providers, including banks, and to crypto-asset service providers. In practice a bank sends complete payer and payee data with outgoing transfers, detects missing data on incoming ones, deals with counterparts that repeatedly fail to send it and keeps records for five years."
+      }
+    },
+    {
+      "key": "celex-32016r1675",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1675/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1675 as published in the Official Journal",
+      "text": {
+        "en": "Lists the third countries the Commission has identified as having strategic deficiencies in their regimes against money laundering and terrorist financing, and is updated as countries are added or removed. It supplements the 2015 Anti-Money Laundering Directive and places no duties of its own on a bank. The list matters through national law: a bank applies enhanced due diligence to business relationships and transactions involving the listed countries."
+      }
+    },
+    {
+      "key": "celex-32019r0758",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/758/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/758 as published in the Official Journal",
+      "text": {
+        "en": "Specifies what a credit or financial institution must do when it has branches or majority-owned subsidiaries in third countries whose law stops it applying group-wide AML/CFT policies, for example by restricting the sharing of customer data. It supplements the 2015 Anti-Money Laundering Directive and binds those institutions directly. In practice a bank assesses the risk in each such country, informs its home supervisor of any restriction and applies extra measures, or ends the operations concerned if the risk cannot be managed."
+      }
+    },
+    {
+      "key": "eba-gl-2021-02",
+      "source": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/anti-money-laundering-and-countering-financing-1",
+      "sourceLabel": "European Banking Authority, EBA/GL/2021/02 (ML/TF Risk Factors Guidelines) guideline page",
+      "text": {
+        "en": "Set out how credit and financial institutions assess money laundering and terrorist financing risk for the business as a whole and for each customer, and how they scale customer due diligence to that risk, with sector guidance including retail banking, correspondent banking and wealth management. EBA guidelines bind institutions through the duty to make every effort to comply. In practice a bank keeps business-wide and customer risk assessments, applies enhanced due diligence where risk is high and monitors transactions."
+      }
+    },
+    {
+      "key": "eba-gl-2022-15",
+      "source": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/anti-money-laundering-and-countering-financing-4",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/15 (Remote Customer Onboarding Guidelines) guideline page",
+      "text": {
+        "en": "Set out how credit and financial institutions onboard new customers remotely: the policies and procedures behind the solution, testing it before use, checking that identity documents are genuine and match the person, and the use of third-party providers. EBA guidelines bind institutions through the duty to make every effort to comply. In practice a bank that opens accounts online assesses and monitors its onboarding solution and stays in control of the identity checks it relies on."
+      }
+    },
+    {
+      "key": "eba-gl-2022-05",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/anti-money-laundering-and-countering-financing-1",
+      "sourceLabel": "European Banking Authority, EBA/GL/2022/05 (AML/CFT Compliance Officer Guidelines) guideline page",
+      "text": {
+        "en": "Set out how credit and financial institutions organise AML/CFT compliance: the management body member responsible for AML/CFT, the appointment, standing and tasks of the AML/CFT compliance officer, and how groups coordinate compliance. EBA guidelines bind institutions through the duty to make every effort to comply. In practice a bank names a responsible board member, appoints a compliance officer at management level and has the board review the officer's yearly activity report."
+      }
+    },
+    {
+      "key": "eba-gl-2023-04",
+      "source": "https://www.eba.europa.eu/legacy/regulation-and-policy/regulatory-activities/anti-money-laundering-and-countering-financing-6",
+      "sourceLabel": "European Banking Authority, EBA/GL/2023/04 (Access to Financial Services Guidelines) guideline page",
+      "text": {
+        "en": "Set out how credit and financial institutions manage money laundering and terrorist financing risk without unduly refusing or ending customer relationships, a practice known as de-risking. EBA guidelines bind institutions through the duty to make every effort to comply. In practice a bank assesses individual customers rather than whole categories, considers measures to mitigate risk before refusing or exiting, records the reason for each refusal, and keeps basic payment account onboarding from producing automated rejections."
+      }
+    },
+    {
+      "key": "eba-gl-2024-11",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/anti-money-laundering-and-countering-financing-terrorism/guidelines-information-requirements-relation-transfers-funds-and-certain-crypto-assets-transfers",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/11 (Travel Rule Guidelines) guideline page",
+      "text": {
+        "en": "Set out how payment and crypto-asset service providers apply the rules on information accompanying transfers: which information must travel with a transfer, how to detect missing or incomplete information, when to reject, suspend or execute such a transfer, and how to treat counterparts that repeatedly fail to send it. EBA guidelines bind providers through the duty to make every effort to comply. In practice a bank sets these criteria in its policies and reports repeatedly failing providers."
+      }
+    },
+    {
+      "key": "celex-32011l0016",
+      "source": "https://eur-lex.europa.eu/eli/dir/2011/16/oj",
+      "sourceLabel": "EUR-Lex, Council Directive 2011/16/EU as published in the Official Journal",
+      "text": {
+        "en": "Sets how EU tax authorities cooperate and exchange information: on request, spontaneously and automatically, with categories of information exchanged automatically that later amendments extended to financial accounts, tax rulings, cross-border arrangements and crypto-assets. As a directive it binds the member states, not a bank directly; a bank's reporting duties come from each country's national law that implements it and its amendments."
+      }
+    },
+    {
+      "key": "celex-32014l0107",
+      "source": "https://eur-lex.europa.eu/eli/dir/2014/107/oj",
+      "sourceLabel": "EUR-Lex, Council Directive 2014/107/EU as published in the Official Journal",
+      "text": {
+        "en": "Amends the directive on administrative cooperation in taxation to bring in automatic exchange of financial account information under the OECD Common Reporting Standard. Banks and other financial institutions identify the tax residence of account holders and controlling persons and report accounts held by residents of other member states to their tax authority each year. As a directive it binds the member states; a bank's duties come from national law implementing the amended directive."
+      }
+    },
+    {
+      "key": "celex-32018l0822",
+      "source": "https://eur-lex.europa.eu/eli/dir/2018/822/oj",
+      "sourceLabel": "EUR-Lex, Council Directive (EU) 2018/822 as published in the Official Journal",
+      "text": {
+        "en": "Amends the directive on administrative cooperation in taxation to require reporting of cross-border arrangements that bear certain hallmarks of aggressive tax planning. Intermediaries that design, market or help implement such arrangements, which can include banks, report them to their tax authority, and the authorities exchange the reports. As a directive it binds the member states; a bank's duties come from national law implementing the amended directive."
+      }
+    },
+    {
+      "key": "celex-32023l2226",
+      "source": "https://eur-lex.europa.eu/eli/dir/2023/2226/oj",
+      "sourceLabel": "EUR-Lex, Council Directive (EU) 2023/2226 as published in the Official Journal",
+      "text": {
+        "en": "Amends the directive on administrative cooperation in taxation to bring in reporting by crypto-asset service providers on their users' transactions and to extend the Common Reporting Standard to e-money products and central bank digital currency, among other changes. As a directive it binds the member states; a bank's duties come from national law implementing the amended directive, mainly where it provides crypto-asset services or holds accounts in the extended reporting scope."
+      }
+    },
+    {
+      "key": "celex-32020l0284",
+      "source": "https://eur-lex.europa.eu/eli/dir/2020/284/oj",
+      "sourceLabel": "EUR-Lex, Council Directive (EU) 2020/284 as published in the Official Journal",
+      "text": {
+        "en": "Amends the VAT directive so that payment service providers keep records of cross-border payments and report them to tax authorities, to help detect VAT fraud in e-commerce. Records are kept for payees that receive more than 25 cross-border payments a quarter, and the data feeds a central EU system (CESOP). As a directive it binds the member states; a bank's duties as a payment service provider come from national law implementing the amended VAT directive."
+      }
+    },
+    {
+      "key": "celex-32025l0050",
+      "source": "https://eur-lex.europa.eu/eli/dir/2025/50/oj",
+      "sourceLabel": "EUR-Lex, Council Directive (EU) 2025/50 as published in the Official Journal",
+      "text": {
+        "en": "Sets a common EU digital tax residence certificate and faster procedures for relieving excess withholding tax on dividends from listed shares and, where applicable, interest on listed bonds, through relief at source or quick refund. Financial intermediaries can register as certified intermediaries and report payment data; large institutions must register where a member state keeps a national register. As a directive it binds the member states; a bank's duties come from national law implementing it."
+      }
+    }
+  ]
+}

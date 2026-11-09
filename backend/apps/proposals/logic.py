@@ -79,6 +79,7 @@ from apps.proposals.schemas import (
     ProposalAgentRef,
     ProposalControlPayload,
     ProposalInstrumentPayload,
+    ProposalInstrumentSummaryPayload,
     ProposalObligationPayload,
     ProposalObligationVersionPayload,
     ProposalProvisionPayload,
@@ -122,6 +123,7 @@ PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
     ProposalKind.NEW_PROVISION_VERSION.value: ProposalProvisionVersionPayload,
     ProposalKind.NEW_RECURRING_DUTY.value: ProposalRecurringDutyPayload,
     ProposalKind.NEW_CONTROL.value: ProposalControlPayload,
+    ProposalKind.NEW_INSTRUMENT_SUMMARY.value: ProposalInstrumentSummaryPayload,
 }
 VOCABULARY_KINDS = frozenset(
     kind.value
@@ -146,9 +148,14 @@ RECORD_TARGETS = {**VERSION_TARGETS, ProposalKind.NEW_RECURRING_DUTY.value: OBLI
 # does not exist yet, and every fact they carry is sourced by an https link: a new record
 # has no provision of its own to cite (PRO-01).
 NEW_RECORD_KINDS = frozenset(
-    {ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_PROVISION.value}
+    {
+        ProposalKind.NEW_INSTRUMENT.value,
+        ProposalKind.NEW_OBLIGATION.value,
+        ProposalKind.NEW_PROVISION.value,
+        ProposalKind.NEW_INSTRUMENT_SUMMARY.value,
+    }
 )
-NEW_RECORD_PAYLOADS = (ProposalInstrumentPayload, ProposalObligationPayload, ProposalProvisionPayload)
+NEW_RECORD_PAYLOADS = (ProposalInstrumentPayload, ProposalObligationPayload, ProposalProvisionPayload, ProposalInstrumentSummaryPayload)
 # The kinds a bank may file as a record of its own (INV-07, OWN-02, OWN-05): what does not
 # exist in the library yet, and a control of one of the bank's own obligations. A version
 # always targets a shared record, so it is never the bank's own.
@@ -316,6 +323,8 @@ def _validate_target(kind: str, payload: pydantic.BaseModel, owner_tenant_id: uu
         validated_obligation(payload, owner_tenant_id)
     elif isinstance(payload, ProposalProvisionPayload):
         validated_provision(payload)
+    elif isinstance(payload, ProposalInstrumentSummaryPayload):
+        validated_instrument_summary(payload)
     elif isinstance(payload, ProposalProvisionVersionPayload):
         _validate_text_payload(payload)
     elif isinstance(payload, ProposalRecurringDutyPayload):
@@ -545,6 +554,25 @@ def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, An
         raise ValidationError(PRIVATE_PROVISIONS, code="private_provisions_not_supported")
     parent = parent_provision(instrument, payload.parent) if payload.parent else None
     return instrument, parent, live_provision_kind(payload.provision_kind)
+
+
+def validated_instrument_summary(payload: ProposalInstrumentSummaryPayload) -> Any:
+    """An instrument's summary (INV-09, D-124): a shared instrument in force that has none
+    yet, and the text in real content languages with the original among them (INV-05), each
+    at most `PROPOSAL_TEXT_MAX_CHARS`. A summary is written once and never rewritten in place,
+    so a second one is 422 `duplicate_key`; a bank's own instrument is 422 `validation_error`.
+    Returns the instrument for the apply, which runs this again."""
+    from apps.library.reading import has_summary
+    from apps.taxonomy import tenant_lists_logic as lists
+
+    payload.summaries = _capped(lists.validated_labels(payload.summaries, max_chars=None), "summary")
+    _written_in(payload.original_language, payload.summaries, "summary")
+    instrument = active_instrument(payload.instrument)
+    if instrument.owner_tenant_id is not None:
+        raise ValidationError(f"{payload.instrument!r} is your organisation's own instrument: its summary is not filed here.", code="validation_error")
+    if has_summary(instrument):
+        raise ValidationError(f"{payload.instrument!r} already has a summary.", code="duplicate_key")
+    return instrument
 
 
 def validated_recurring_duty(payload: ProposalRecurringDutyPayload) -> Any:

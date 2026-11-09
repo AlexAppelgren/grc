@@ -162,10 +162,12 @@ describe('ProvisionTree', () => {
     expect(screen.queryAllByRole('button', { name: 'Show what changed' })).toHaveLength(1);
   });
 
-  it('shows the empty state for an instrument with no provisions yet', async () => {
-    serve([]);
-    renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
-    expect(await screen.findByText('No provisions yet')).toBeVisible();
+  it('renders nothing for an instrument with no provisions yet, once the read answers', async () => {
+    const sent = serve([]);
+    const { container } = renderIn(<ProvisionTree instrumentId="in-1" levelKind={null} sourceUrl={SOURCE} />);
+    await waitFor(() => expect(sent.some((request) => request.path.endsWith('/provisions'))).toBe(true));
+    await waitFor(() => expect(container.querySelector('[data-provision-tree]')).toBeNull());
+    expect(document.querySelector('[data-loading-state]')).toBeNull();
   });
 
   it("says a standard's text is licensed and links the catalogue, without reading a tree", async () => {

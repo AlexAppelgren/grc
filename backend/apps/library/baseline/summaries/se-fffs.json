@@ -1,0 +1,238 @@
+{
+  "tranche": "se-fffs",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "fffs-2017-11",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2017/201711/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2017:11 (Finansinspektionens föreskrifter om åtgärder mot penningtvätt och finansiering av terrorism)",
+      "text": {
+        "en": "Finansinspektionen's detailed rules under the Swedish anti-money laundering act, setting how supervised firms carry out the act's duties. They bind banks directly. In practice a bank must review its risk assessment at least yearly, verify customers and beneficial owners in set ways, train staff and keep training records, protect staff exposed by AML work, validate its AML models, run a secure whistleblowing channel, set up compliance and audit functions, and report AML data to FI every year."
+      }
+    },
+    {
+      "key": "fffs-2014-1",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2014/20141/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2014:1 (Finansinspektionens föreskrifter och allmänna råd om styrning, riskhantering och kontroll i kreditinstitut)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines on how a credit institution is governed and controlled, filling in the banking act's demands for sound operation and implementing parts of the EU capital requirements directive. They bind banks directly. In practice they require a clear organisation, a board-set risk appetite and strategy, independent risk control, compliance and internal audit functions, a risk framework with limits, conflict of interest rules, outsourcing controls, and plans and tests for ESG risks."
+      }
+    },
+    {
+      "key": "fffs-2017-2",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2017/20172/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2017:2 (Finansinspektionens föreskrifter om värdepappersrörelse)",
+      "text": {
+        "en": "Finansinspektionen's detailed rules under the Securities Market Act on how firms providing investment services organise themselves and treat clients. They bind banks licensed for investment services directly. In practice they set competence and knowledge test requirements for staff who advise or inform clients, a named person responsible for safeguarding client assets with a yearly auditor check, documented quality gains for inducements, passing third-party fees on in independent advice and portfolio management, and record keeping."
+      }
+    },
+    {
+      "key": "fffs-2014-12",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2014/201412/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2014:12 (Finansinspektionens föreskrifter och allmänna råd om tillsynskrav och kapitalbuffertar)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines on prudential requirements and capital buffers, filling in Swedish supervision and buffer law alongside the EU capital requirements regulation. They bind banks directly and investment firms in part. For a bank they set the materiality thresholds for past-due exposures, how reporting data is documented and kept, group structure disclosures, the payout limits and capital conservation plan when buffers are breached, and the written assessment of capital and liquidity needs."
+      }
+    },
+    {
+      "key": "fffs-2018-10",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2018/201810/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2018:10 (Finansinspektionens föreskrifter om försäkringsdistribution)",
+      "text": {
+        "en": "Finansinspektionen's detailed rules under the Insurance Distribution Act on how insurance distributors run their business and treat customers. They bind insurers and intermediaries, and a bank that distributes insurance. In practice they require staff knowledge, practical experience, knowledge tests and at least fifteen hours of training a year, a board-adopted complaints policy and a complaints officer, careful handling and registering of complaints, and a written record of each sale given to the customer."
+      }
+    },
+    {
+      "key": "fffs-2024-21",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2024/202421/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2024:21 (Finansinspektionens föreskrifter och allmänna råd om insättningssystem)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines on the systems firms use to keep track of covered deposits, kept as a separate set when the general IT security rules gave way to DORA. They bind banks and other firms that take deposits covered by the deposit guarantee. For a bank it means IT systems and routines that can automatically compile depositor data in the form the deposit guarantee authority requires, and a yearly internal audit review of those systems reported to the board."
+      }
+    },
+    {
+      "key": "fffs-2024-20",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2024/fffs-202420/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2024:20 (Finansinspektionens föreskrifter om rapportering av incidenter och informationsregister enligt EU:s förordning om digital operativ motståndskraft för finanssektorn)",
+      "text": {
+        "en": "Finansinspektionen's rules on how the firms it supervises report to it under the EU digital operational resilience regulation (DORA). They bind banks and other financial entities that DORA covers and FI supervises. In practice a bank reports major ICT-related incidents, and on a voluntary basis significant cyber threats, to FI in the way FI's website describes, and files its complete register of ICT third-party arrangements with FI every year."
+      }
+    },
+    {
+      "key": "fffs-2013-9",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2013/20139/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2013:9 (Finansinspektionens föreskrifter om värdepappersfonder)",
+      "text": {
+        "en": "Finansinspektionen's detailed rules under the Securities Funds Act for fund management companies running UCITS funds. They are aimed at fund companies, so they reach a bank mainly through a fund company in its group. For that company they require a compliance function, board-approved risk management with liquidity stress tests, records of every transaction and order, a remuneration policy, prompt reports to FI of events that threaten stability or client assets, and investor complaint handling."
+      }
+    },
+    {
+      "key": "fffs-2013-10",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2013/201310/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2013:10 (Finansinspektionens föreskrifter om förvaltare av alternativa investeringsfonder)",
+      "text": {
+        "en": "Finansinspektionen's detailed rules under the act on managers of alternative investment funds, such as special, private equity and property funds. They bind AIF managers, so they reach a bank mainly through a fund management company in its group. For that manager they cover the remuneration policy, the content of the information brochure, information to retail investors in Swedish, quarterly reporting on special funds, and an account to FI of conflicts when managing a fund on a third party's initiative."
+      }
+    },
+    {
+      "key": "fffs-2018-4",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2018/20184/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2018:4 (Finansinspektionens föreskrifter om verksamhet för betaltjänstleverantörer)",
+      "text": {
+        "en": "Finansinspektionen's detailed rules under the Payment Services Act on how payment service providers run their business. They bind every kind of payment service provider, banks included. In practice a bank must answer payment complaints within set deadlines, make consumer information accessible, complete account switches within set days, keep a documented operational and security risk framework, send FI a yearly risk assessment and twice-yearly fraud statistics, and report its basic payment account fees."
+      }
+    },
+    {
+      "key": "fffs-2014-4",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2014/20144/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2014:4 (Finansinspektionens föreskrifter och allmänna råd om hantering av operativa risker)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines on how credit institutions and certain investment firms manage operational risk, with ICT risk now left to DORA. They bind banks directly. In practice a bank must set an operational risk appetite and limits, handle and record incidents and losses, report risks to the board and the CEO, map and control its material processes, run an approval process for new products and changes, and keep continuity plans that are tested at least once a year."
+      }
+    },
+    {
+      "key": "fffs-2010-7",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2010/20107/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2010:7 (Finansinspektionens föreskrifter om hantering och offentliggörande av likviditetsrisker för kreditinstitut och värdepappersbolag)",
+      "text": {
+        "en": "Finansinspektionen's rules on how credit institutions and certain investment firms manage and disclose liquidity risk. They bind banks directly and build on the EU capital requirements directive. In practice a bank needs a board-set liquidity risk tolerance and strategy, an independent liquidity risk control function, regular liquidity stress tests, a liquidity reserve and limits, a tested contingency plan for liquidity crises, and yearly and quarterly public liquidity disclosures."
+      }
+    },
+    {
+      "key": "fffs-2011-1",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2011/20111/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2011:1 (Finansinspektionens föreskrifter om ersättningssystem i kreditinstitut)",
+      "text": {
+        "en": "Finansinspektionen's rules on remuneration in credit institutions, setting how pay is designed so that it supports sound risk management. They bind banks directly and implement the remuneration parts of the EU capital requirements directive. In practice a bank needs a board-decided, gender-neutral remuneration policy, a yearly analysis of its material risk takers, public disclosure, a remuneration committee or responsible board member, a yearly review, and deferral and payment in instruments of part of risk takers' variable pay."
+      }
+    },
+    {
+      "key": "fffs-2018-16",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2018/201816/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2018:16 (Finansinspektionens föreskrifter och allmänna råd om hantering av kreditrisker i kreditinstitut och värdepappersbolag)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines on how credit institutions and investment firms identify, measure, steer and control credit risk. They bind banks directly, with the credit assessment rules covering lending to businesses and consumer mortgages. In practice a bank needs a credit risk appetite with limits and mandates, well-founded and forward-looking credit assessments, documented credit decisions by qualified people, at least yearly credit reviews, and controls and a register for loans to related parties."
+      }
+    },
+    {
+      "key": "fffs-2016-6",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2016/20166/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2016:6 (Finansinspektionens föreskrifter om återhämtningsplaner, koncernåterhämtningsplaner och avtal om finansiellt stöd inom koncerner)",
+      "text": {
+        "en": "Finansinspektionen's rules on what recovery plans and group recovery plans must contain, filling in the banking act's recovery planning duty and implementing part of the EU bank recovery and resolution directive. They bind banks, credit market companies and investment firms directly. In practice a bank's plan must cover the prescribed content without assuming state support, analyse central bank facilities and collateral, be backed by routines to monitor its indicators, and be updated every year."
+      }
+    },
+    {
+      "key": "fffs-2004-4",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2004/20044/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2004:4 (Finansinspektionens föreskrifter och allmänna råd om finansiell rådgivning till konsumenter)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines under the act on financial advice to consumers, covering advisers' competence and the record of each advice session. They do not apply to advice given by securities institutions, fund management companies or AIF managers, so a bank licensed for investment services falls outside them. For a firm they do cover, advisers must pass a knowledge test and keep their knowledge current, and each session must be documented with the record given to the consumer."
+      }
+    },
+    {
+      "key": "fffs-2015-1",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2015/20151/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2015:1 (Finansinspektionens föreskrifter och allmänna råd om information om ränta på bostadskrediter)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines on telling consumers what interest rates mortgage borrowers actually pay, so they can compare offers. They bind banks and credit market companies that offer mortgages to consumers. In practice a bank must publish each month the average rate paid for each fixed-rate period in the previous month, with twelve months of history, and explain which factors about the consumer, the loan and the collateral affect the rate it offers."
+      }
+    },
+    {
+      "key": "fffs-2016-29",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2016/201629/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2016:29 (Finansinspektionens föreskrifter och allmänna råd om verksamhet med bostadskrediter)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines under the act on mortgage credit business, filling in its licensing, conduct and competence rules and implementing parts of the EU mortgage credit directive. Banks need no licence under that act but follow these rules for their mortgage lending, brokering and advice. In practice a bank needs board-approved lending guidelines, remuneration rules that do not reward loan volume, valuation guidelines with independent valuers, and trained and tested mortgage staff."
+      }
+    },
+    {
+      "key": "fffs-2013-1",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2013/20131/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2013:1 (Finansinspektionens föreskrifter och allmänna råd om säkerställda obligationer)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines under the Covered Bonds Act on how issuers manage, register and report their cover pools. They bind banks and credit market companies that issue or apply to issue covered bonds. In practice an issuing bank must stress test loan-to-value ratios against house price falls, check daily that the cover pool's present value exceeds the bonds after interest and currency shocks, keep a secure register, and publish and report cover pool data every quarter."
+      }
+    },
+    {
+      "key": "fffs-2014-14",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2014/201414/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2014:14 (Finansinspektionens föreskrifter om rapportering av kvartals- och årsbokslutsuppgifter)",
+      "text": {
+        "en": "Finansinspektionen's rules on reporting balance sheet and income statement data to it each quarter and year on its standard reporting form. They bind credit institutions and investment firms, including their branches abroad and certain foreign firms' branches in Sweden. For a bank it means filing quarterly and annual accounts data by the set deadlines in the form FI prescribes, and promptly sending corrected figures when an error is found."
+      }
+    },
+    {
+      "key": "fffs-2008-25",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2008/200825/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2008:25 (Finansinspektionens föreskrifter och allmänna råd om årsredovisning i kreditinstitut och värdepappersbolag)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines on how credit institutions and investment firms prepare annual reports, consolidated accounts and interim reports, filling in the act on annual accounts in credit institutions. They bind banks directly. In practice a bank applies EU-endorsed international accounting standards within the limits of Swedish law, presents five-year key figures and its return on assets, and includes a capital adequacy analysis in its annual and interim reports."
+      }
+    },
+    {
+      "key": "fffs-2016-1",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2016/20161/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2016:1 (Finansinspektionens föreskrifter om anmälan av vissa förvärv)",
+      "text": {
+        "en": "Finansinspektionen's rules requiring advance notice to FI of large acquisitions by banks and credit market companies. They bind those institutions directly. For a bank it means notifying FI before it acquires property for a price of at least ten percent of its own funds, unless the deal is a share acquisition or a material transfer that already needs a permit under the special supervision act."
+      }
+    },
+    {
+      "key": "fffs-2011-14",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2011/201114/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2011:14 (Finansinspektionens föreskrifter och allmänna råd om rapportering av ägares kvalificerade innehav och ägarintressen)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines on reporting to FI who owns supervised firms and what holdings those firms have. They bind banks, credit market companies, investment firms, fund companies, insurers and the other firms they list. For a bank it means reporting its general register details, its qualifying holders, its subsidiaries and its other ownership interests to FI through FI's website every year and as soon as the registered facts change."
+      }
+    },
+    {
+      "key": "fffs-2011-26",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2011/201126/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2011:26 (Finansinspektionens föreskrifter och allmänna råd om särskild tillsyn över finansiella konglomerat)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines on supplementary supervision of financial conglomerates, filling in the financial conglomerates act. They reach a bank only where its group is a financial conglomerate combining banking or investment business with insurance. In that case the conglomerate must report the risk concentrations and intra-group transactions FI has decided on, and calculate its own funds and capital requirement without double counting and report them every year."
+      }
+    },
+    {
+      "key": "fffs-2023-13",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2023/finansinspektionens-foreskrifter-fffs-202313-om-agar--agarlednings--och-ledningsprovning-i-kreditinstitut/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2023:13 (Finansinspektionens föreskrifter om ägar-, ägarlednings-, lednings- och lämplighetsprövning i kreditinstitut och vissa andra företag)",
+      "text": {
+        "en": "Finansinspektionen's rules on the information banks and credit market companies must give FI when it assesses their owners, management and key persons after authorisation. They bind banks directly. In practice a bank must send FI the prescribed information when it appoints or changes board members, the CEO or their deputies, assess the board's collective knowledge and experience at each change, and supply set information when notifying key persons for a suitability assessment."
+      }
+    },
+    {
+      "key": "fffs-2019-7",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2019/20197/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2019:7 (Finansinspektionens föreskrifter om produktingripande i fråga om kontrakt som avser prisskillnader (CFD-kontrakt))",
+      "text": {
+        "en": "Finansinspektionen's product intervention rules restricting the sale of contracts for difference (CFDs) to retail clients. They bind firms providing investment services under the Securities Market Act, banks included. A bank may sell CFDs to retail clients only with initial margin protection, margin close-out protection, negative balance protection and no incentives beyond realised profits, and its marketing must carry the prescribed risk warning and the share of retail clients who lost money."
+      }
+    },
+    {
+      "key": "fffs-2019-8",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2019/20198/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2019:8 (Finansinspektionens föreskrifter om produktingripande i fråga om binära optioner)",
+      "text": {
+        "en": "Finansinspektionen's product intervention rules on binary options for retail clients. They bind firms providing investment services under the Securities Market Act, banks included. In practice they ban marketing, distributing or selling binary options to retail clients, except narrowly defined products that guarantee a minimum payout of at least the amount paid, run at least ninety days, have an approved prospectus and earn the distributor nothing beyond disclosed fees."
+      }
+    },
+    {
+      "key": "fffs-2002-11",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2002/200211/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2002:11 (Finansinspektionens föreskrifter om skyldighet att elektroniskt lämna uppgifter om handel med vissa finansiella instrument)",
+      "text": {
+        "en": "Finansinspektionen's rules on firms handing over data on their trading in shares and share options electronically, which FI uses to monitor compliance with market rules such as those on market abuse. They bind firms carrying on securities business or trading on a regulated market, banks included. For a bank the duty arises when FI asks: it must then deliver the data in the prescribed format, while transactions reported under MiFIR follow separate rules."
+      }
+    },
+    {
+      "key": "fffs-2024-2",
+      "source": "https://www.fi.se/sv/vara-register/fffs/sok-fffs/2024/20242/",
+      "sourceLabel": "Finansinspektionen, FFFS register, FFFS 2024:2 (Finansinspektionens föreskrifter och allmänna råd om förvärv och förvaltning av nödlidande kreditavtal)",
+      "text": {
+        "en": "Finansinspektionen's regulations and general guidelines under the act on non-performing credit agreements, setting what sellers and buyers of such loans report to FI and what credit servicers must submit to FI. They reach a bank as the seller of non-performing loans. For a bank that has transferred such loans it means reporting the transfers to FI every half-year, covering the preceding six months, by the set deadlines and in the prescribed form."
+      }
+    }
+  ]
+}

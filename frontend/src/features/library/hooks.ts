@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
 import { vocabularyKeys } from '@/features/vocabularies/hooks';
 
@@ -195,4 +195,56 @@ export function useProvisionDiff(provisionId: string, lang: string, enabled: boo
     queryFn: () => library.getProvisionDiff(provisionId, lang),
     enabled,
   });
+}
+
+// ---------------------------------------------------------------------------------------
+// The inventory's two lists, paged (INV-01): 20, 50 or 100 rows a page, the route's own
+// maximum, or every row at once, read as parallel pages of 100 once the total is known
+// (fan out, never chain).
+// ---------------------------------------------------------------------------------------
+export const PER_PAGE_CHOICES = [20, 50, 100] as const;
+export type PerPage = (typeof PER_PAGE_CHOICES)[number] | 'all';
+/** The most rows the list routes answer in one read. */
+export const LIST_ROUTE_MAX = 100;
+
+export interface PagedList<T> {
+  items: T[];
+  total: number;
+  isPending: boolean;
+  isError: boolean;
+  refetch: () => void;
+}
+
+function usePagedList<T>(key: readonly unknown[], read: (limit: number, offset: number) => Promise<Page<T>>, perPage: PerPage, page: number): PagedList<T> {
+  const size = perPage === 'all' ? LIST_ROUTE_MAX : perPage;
+  const offset = perPage === 'all' ? 0 : page * size;
+  // The page in view stays on screen while the next one loads, so paging never flashes empty.
+  const filter = JSON.stringify(key);
+  const first = useQuery({
+    queryKey: [...key, { limit: size, offset }],
+    queryFn: () => read(size, offset),
+    // Only another page of the same list: rows of another filter are never shown as this one's.
+    placeholderData: (previous, previousQuery) => (previousQuery !== undefined && JSON.stringify(previousQuery.queryKey.slice(0, -1)) === filter ? previous : undefined),
+  });
+  const total = first.data?.total ?? 0;
+  const restOffsets = perPage === 'all' && first.data !== undefined ? Array.from({ length: Math.max(Math.ceil(total / size) - 1, 0) }, (_, i) => (i + 1) * size) : [];
+  const rest = useQueries({ queries: restOffsets.map((at) => ({ queryKey: [...key, { limit: size, offset: at }], queryFn: () => read(size, at) })) });
+  return {
+    items: [...(first.data?.items ?? []), ...rest.flatMap((answer) => answer.data?.items ?? [])],
+    total,
+    isPending: first.isPending || rest.some((answer) => answer.isPending),
+    isError: first.isError || rest.some((answer) => answer.isError),
+    refetch: () => {
+      void first.refetch();
+      rest.forEach((answer) => void answer.refetch());
+    },
+  };
+}
+
+export function usePagedObligations(query: ObligationQuery, perPage: PerPage, page: number): PagedList<Obligation> {
+  return usePagedList(['library', 'obligations', 'paged', query], (limit, offset) => library.listObligations({ ...query, limit, offset }), perPage, page);
+}
+
+export function usePagedInstruments(query: InstrumentQuery, perPage: PerPage, page: number): PagedList<Instrument> {
+  return usePagedList(['library', 'instruments', 'paged', query], (limit, offset) => library.listInstruments({ ...query, limit, offset }), perPage, page);
 }

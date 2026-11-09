@@ -1,0 +1,190 @@
+{
+  "tranche": "dk",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "dk-lov-2003-453",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/432",
+      "sourceLabel": "Retsinformation, LBK nr 432 af 16/04/2026 (lov om finansiel virksomhed), consolidated act as in force",
+      "text": {
+        "en": "Denmark's central financial regulation law: it covers the licensing, management, capital, supervision and conduct of banks, mortgage-credit institutions, insurers and other financial undertakings, with executive orders under it adding detail. It binds Danish banks directly. In practice a bank must follow good practice, keep fit and proper management with trained board members, run sound risk management, culture and remuneration policies, keep a recovery plan, a whistleblowing scheme and adequate capital, and have the board approve exposures to insiders."
+      }
+    },
+    {
+      "key": "dk-lov-2017-650",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/464",
+      "sourceLabel": "Retsinformation, LBK nr 464 af 01/05/2026 (lov om kapitalmarkeder), consolidated act as in force",
+      "text": {
+        "en": "Denmark's law on actors and conduct in the capital markets: trading venues, listed issuers' disclosure, major shareholdings, takeover bids and penalties for market abuse. A bank is reached as a market participant and as an issuer if its securities are listed. In practice an issuer must publish regulated and inside information properly and explain any delayed disclosure on request, holders must notify major shareholdings, and the firm must not penalise staff who report breaches. It also sets Danish penalties for insider dealing and market manipulation."
+      }
+    },
+    {
+      "key": "dk-lov-2017-651",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/433",
+      "sourceLabel": "Retsinformation, LBK nr 433 af 17/04/2026 (hvidvaskloven), consolidated act as in force",
+      "text": {
+        "en": "Denmark's anti-money laundering law: it requires banks and the other businesses it lists to know their customers and to detect and report money laundering and terrorist financing. It binds banks directly. In practice a bank must assess its risks, keep written policies and controls, including on financial sanctions, appoint an employee empowered to take AML decisions and an AML compliance officer, train staff, carry out customer due diligence and enhanced checks, investigate unusual transactions, report suspicions to the Money Laundering Secretariat and keep records."
+      }
+    },
+    {
+      "key": "dk-lov-2017-652",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/463",
+      "sourceLabel": "Retsinformation, LBK nr 463 af 26/04/2026 (lov om betalinger), consolidated act as in force",
+      "text": {
+        "en": "Denmark's law on payment services and electronic money: the licensing of payment and e-money institutions and the rules between payment providers and their users. It binds all payment service providers, banks included. In practice a bank must inform users, protect security credentials, refund unauthorised payments quickly, meet execution deadlines, manage operational and security risks, use strong customer authentication, report payment fraud statistics to the Danish FSA and process payment data only with consent. It implements the EU's second payment services and e-money directives."
+      }
+    },
+    {
+      "key": "dk-lov-1990-398",
+      "source": "https://www.retsinformation.dk/eli/lta/2019/817",
+      "sourceLabel": "Retsinformation, LBK nr 817 af 06/08/2019 (lov om kreditaftaler), consolidated act as in force",
+      "text": {
+        "en": "Denmark's law on credit agreements with consumers: what must be disclosed, how creditworthiness is assessed, how agreements are written and the consumer's right to withdraw. It binds creditors and credit intermediaries, including banks lending to consumers. In practice a bank must give pre-contract information, assess creditworthiness, put agreements on a durable medium, announce rate changes in advance and honour withdrawals. As the revised EU consumer credit directive takes effect it must also offer human review of automated assessments, show forbearance and help consumers in difficulty."
+      }
+    },
+    {
+      "key": "dk-lov-2013-597",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/445",
+      "sourceLabel": "Retsinformation, LBK nr 445 af 17/04/2026 (lov om investeringsforeninger m.v.), consolidated act as in force",
+      "text": {
+        "en": "Governs Danish UCITS funds, such as investment associations and SIKAVs: their set-up, management, depositaries, redemption and investor information. Its duties fall on the funds and those who run them, so a bank meets it when it acts as a fund's depositary, distributes fund units or has a fund manager in its group. In practice a fund must follow good practice, keep its assets with an approved depositary, redeem units on request, publish a prospectus and publish issue and redemption prices regularly. It implements the EU's UCITS directive."
+      }
+    },
+    {
+      "key": "dk-lov-2013-598",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/468",
+      "sourceLabel": "Retsinformation, LBK nr 468 af 26/04/2026 (lov om forvaltere af alternative investeringsfonde m.v.), consolidated act as in force",
+      "text": {
+        "en": "Governs managers of alternative investment funds in Denmark, such as private equity, real estate and hedge funds. Its duties fall on fund managers, so a bank is reached mainly through a manager in its group. The manager must follow good practice, keep a remuneration policy, keep risk management separate from portfolio management, manage each fund's liquidity, value assets independently, appoint a depositary for each fund, inform investors before they invest and report regularly to the Danish FSA. It implements the EU's AIFM directive."
+      }
+    },
+    {
+      "key": "dk-lov-1930-129",
+      "source": "https://www.retsinformation.dk/eli/lta/2015/1237",
+      "sourceLabel": "Retsinformation, LBK nr 1237 af 09/11/2015 (lov om forsikringsaftaler), consolidated act as in force",
+      "text": {
+        "en": "Denmark's law on insurance contracts: the rights and duties of insurers and policyholders when a policy is taken out, while it runs and when a claim is paid. It binds insurers, not banks, so a bank meets it only through an insurer in its group. For the insurer it means not seeking or using genetic information, paying claims within set time limits once it can assess them, giving the listed information for contracts concluded at a distance and not designing online interfaces that steer consumers' choices."
+      }
+    },
+    {
+      "key": "dk-lov-2018-41",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/1543",
+      "sourceLabel": "Retsinformation, LBK nr 1543 af 18/11/2025 (lov om forsikringsformidling), consolidated act as in force",
+      "text": {
+        "en": "Governs insurance intermediaries in Denmark, including brokers and ancillary intermediaries: their competence, conduct, remuneration and product approval. It covers intermediaries, not insurers, so a bank is reached when it acts as an insurance intermediary. In practice an intermediary must keep staff competent, follow good practice, place Danish risks only with permitted insurers, avoid remuneration that conflicts with customers' best interest and run product approval where it designs products. It implements the EU's insurance distribution directive."
+      }
+    },
+    {
+      "key": "dk-lov-2018-502",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/289",
+      "sourceLabel": "Retsinformation, LBK nr 289 af 08/03/2024 (databeskyttelsesloven), consolidated act as in force",
+      "text": {
+        "en": "Denmark's national supplement to the EU General Data Protection Regulation: it fills in the points the Regulation leaves to national law. It applies to any firm processing personal data within the Regulation's scope, banks included. For a bank its main practical effects are the conditions for processing data on criminal offences and CPR numbers, and the duty to check the CPR register for marketing opt-outs before passing consumer data to another firm for direct marketing. The Regulation itself carries the main data protection duties."
+      }
+    },
+    {
+      "key": "dk-lov-2015-333",
+      "source": "https://www.retsinformation.dk/eli/lta/2019/24",
+      "sourceLabel": "Retsinformation, LBK nr 24 af 04/01/2019 (lov om restrukturering og afvikling af visse finansielle virksomheder), consolidated act as in force",
+      "text": {
+        "en": "Sets how failing banks, mortgage-credit institutions and certain investment firms in Denmark are restructured or resolved, with Finansiel Stabilitet as the resolution authority and tools such as bail-in. It applies to those firms, to financial holding companies and to Danish branches of foreign institutions. The duty a bank carries directly under it is to help finance the Resolution Fund (Afviklingsformuen) through contributions. It implements the EU bank recovery and resolution directive."
+      }
+    },
+    {
+      "key": "dk-lov-1998-415",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/39",
+      "sourceLabel": "Retsinformation, LBK nr 39 af 09/01/2024 (lov om en indskyder- og investorgarantiordning), consolidated act as in force",
+      "text": {
+        "en": "Sets up Denmark's depositor and investor guarantee scheme, the Guarantee Fund (Garantiformuen), which Finansiel Stabilitet administers and which covers depositors' and investors' losses when an institution fails. Banks, mortgage-credit institutions, investment firms and certain other firms must be members. In practice a bank must pay annual contributions to the fund's banking department and inform depositors and investors of the coverage of the scheme it belongs to. It implements the EU deposit guarantee and investor compensation directives."
+      }
+    },
+    {
+      "key": "dk-lov-2021-1155",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/467",
+      "sourceLabel": "Retsinformation, LBK nr 467 af 26/04/2026 (lov om fondsmæglerselskaber og investeringsservice og -aktiviteter), consolidated act as in force",
+      "text": {
+        "en": "Denmark's law on investment firms and investment services: the licensing and capital of investment firms and conduct rules that also bind banks providing investment services. In practice a bank must follow good practice and investor protection rules, call advice independent only when it covers a broad market range, not keep third-party payments for independent advice and portfolio management, protect client assets, keep records for five years, run product approval, ensure service continuity, control staff dealing and avoid sales incentives that conflict with clients' interests."
+      }
+    },
+    {
+      "key": "dk-lov-2025-434",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/434",
+      "sourceLabel": "Retsinformation, LOV nr 434 af 06/05/2025 (NIS 2-loven), as in force",
+      "text": {
+        "en": "Denmark's cybersecurity law for essential and important entities in critical sectors, whose list includes credit institutions. Entities in scope must manage the risks to their network and information systems and report significant incidents within set deadlines. The act does not apply where sector-specific EU rules with at least the same effect cover the entity, which for banks are the EU's digital operational resilience rules for the financial sector. It implements the EU's NIS2 directive."
+      }
+    },
+    {
+      "key": "dk-lov-2017-1536",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/1059",
+      "sourceLabel": "Retsinformation, LBK nr 1059 af 21/08/2025 (skatteindberetningsloven), consolidated act as in force",
+      "text": {
+        "en": "Denmark's law on the information businesses must report to the tax authority about payments and accounts, from wages to interest, dividends and financial accounts linked to other countries. It reaches banks as deposit takers, custodians and financial institutions. In practice a bank must report the interest, other returns and year-end balance of each deposit account every year, report dividends on shares it holds in custody, carry out the international due diligence and reporting on foreign-linked accounts, and tell reportable customers their data will be passed on."
+      }
+    },
+    {
+      "key": "dk-lov-2016-375",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/1462",
+      "sourceLabel": "Retsinformation, LBK nr 1462 af 18/11/2025 (lov om betalingskonti og basale erhvervskonti), consolidated act as in force",
+      "text": {
+        "en": "Governs consumer payment accounts in Denmark: fee transparency, the right to a basic payment account and, for systemically important and other large banks, basic business accounts. It binds payment service providers offering consumer accounts, with the basic account rules aimed at banks. In practice a bank must give a fee information document and a yearly fee statement, offer a basic account in Danish kroner to eligible consumers, close it only on the listed grounds and not discriminate on nationality or residence. It implements the EU payment accounts directive."
+      }
+    },
+    {
+      "key": "dk-bek-2022-1103",
+      "source": "https://www.retsinformation.dk/eli/lta/2022/1103",
+      "sourceLabel": "Retsinformation, BEK nr 1103 af 30/06/2022, issued by Finanstilsynet, as in force",
+      "text": {
+        "en": "The Danish FSA's executive order on how banks and other financial firms are managed and controlled: the duties of the board and executive board, policies, risk management and compliance. It applies to banks, mortgage-credit institutions, investment firms, investment management companies, financial holding companies and some branches. In practice the board sets the business model and risk policies and reviews the firm's risks regularly, while management must ensure a risk management function with a chief risk officer, an independent compliance function and a product approval process."
+      }
+    },
+    {
+      "key": "dk-bek-2025-677",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/677",
+      "sourceLabel": "Retsinformation, BEK nr 677 af 12/06/2025, issued by Finanstilsynet, as in force",
+      "text": {
+        "en": "The Danish FSA's executive order on how banks and similar firms calculate risk exposures, own funds and their individual solvency need, the capital they consider adequate for their risks. It applies to banks, mortgage-credit institutions, investment firms, certain branches and holding companies. In practice the board and executive board must set adequate own funds and the solvency need taking the listed risk areas into account, and banks must publish set information on their solvency need at least yearly, with large institutions publishing parts of it half-yearly."
+      }
+    },
+    {
+      "key": "dk-bek-2025-658",
+      "source": "https://www.retsinformation.dk/eli/lta/2025/658",
+      "sourceLabel": "Retsinformation, BEK nr 658 af 23/05/2025, issued by Finanstilsynet, as in force",
+      "text": {
+        "en": "The Danish FSA's accounting rules for banks, mortgage-credit institutions, investment firms, management companies and similar firms: how their annual and half-year reports are prepared and published, including sustainability reporting. A Danish bank is bound directly. In practice it must prepare and publish an annual report and a half-year report for each financial year following the order's rules. It implements the EU bank accounts, accounting and corporate sustainability reporting directives."
+      }
+    },
+    {
+      "key": "dk-bek-2026-536",
+      "source": "https://www.retsinformation.dk/eli/lta/2026/536",
+      "sourceLabel": "Retsinformation, BEK nr 536 af 11/06/2026, issued by Finanstilsynet, as in force",
+      "text": {
+        "en": "The Danish FSA's executive order on recovery plans: how banks, mortgage-credit institutions, the ship finance institution and some investment firms plan to restore their finances if they come under severe stress. In practice a bank must set recovery indicators suited to its business, tell its management and then the Danish FSA within one business day each when an indicator is breached, notify the FSA when the board decides to take or not take recovery actions, and submit its plan by the deadline for its category, mostly yearly. It implements the EU bank recovery and resolution directive."
+      }
+    },
+    {
+      "key": "dk-bek-2024-1062",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/1062",
+      "sourceLabel": "Retsinformation, BEK nr 1062 af 17/09/2024, issued by Finanstilsynet, as in force",
+      "text": {
+        "en": "The Danish FSA's executive order requiring firms under the anti-money laundering law to report data the FSA uses for its money laundering risk assessment of each firm. Banks, mortgage-credit institutions, payment and e-money providers and some others report quarterly, while investment firms, life insurers, fund managers and certain other firms report yearly. In practice a bank must send the Danish FSA, by each quarterly deadline, the specified data, such as its own rating of its inherent money laundering risk, its number of business locations, the product types it offers and its turnover."
+      }
+    },
+    {
+      "key": "dk-bek-2024-1366",
+      "source": "https://www.retsinformation.dk/eli/lta/2024/1366",
+      "sourceLabel": "Retsinformation, BEK nr 1366 af 01/12/2024, issued by Finanstilsynet, as in force",
+      "text": {
+        "en": "The Danish FSA's executive order on the basic course that new board members of banks, mortgage-credit institutions and insurers must take, and on approving course providers. A person joining a bank's board must complete the course within twelve months of joining. It covers set areas such as the board's framework, operational risk, money laundering prevention, IT and cybersecurity, ESG, credit and liquidity. The duty rests on each new board member personally and applies to those joining a board from the start of 2025."
+      }
+    },
+    {
+      "key": "dk-bek-2019-1259",
+      "source": "https://www.retsinformation.dk/eli/lta/2019/1259",
+      "sourceLabel": "Retsinformation, BEK nr 1259 af 28/11/2019, issued by Finanstilsynet, as in force",
+      "text": {
+        "en": "The Danish FSA's executive order on the statistics payment service providers must report on the operation and misuse of their payment services. It applies to banks providing payment services, payment and e-money institutions, public bodies and branches of foreign providers. In practice a bank must send the Danish FSA statistics on fraud and misuse of its payment services every half year on the FSA's forms, while some smaller providers report yearly. It implements the fraud reporting duty of the EU's second payment services directive."
+      }
+    }
+  ]
+}

@@ -1,0 +1,286 @@
+{
+  "tranche": "fi",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "fi-sd-2014-610",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/610",
+      "sourceLabel": "Finlex, Laki luottolaitostoiminnasta (610/2014), consolidated text as in force",
+      "text": {
+        "en": "Finland's core banking law: it sets who may take deposits and run a credit institution, and how such a firm must be governed, capitalised, managed for risk and run towards its customers. It binds every Finnish credit institution directly. In practice a bank answers to it for board and management fitness, internal control, remuneration, whistleblowing, recovery planning, outsourcing, good banking practice, mortgage lending caps, customer secrecy and account switching. It carries the EU's bank capital and recovery directives into Finnish law."
+      }
+    },
+    {
+      "key": "fi-sd-2012-747",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2012/747",
+      "sourceLabel": "Finlex, Sijoituspalvelulaki (747/2012), consolidated text as in force",
+      "text": {
+        "en": "Sets the rules for providing investment services in Finland, such as advice, portfolio management and executing client orders, and how the firms offering them must be organised and treat clients. It binds investment firms and also credit institutions when they provide investment services. For a bank this means compliance arrangements, product governance, conflict of interest controls, suitability checks, cost disclosure, limits on inducements, best execution, record keeping, call recording and safekeeping of client assets. It implements the EU's MiFID II directive."
+      }
+    },
+    {
+      "key": "fi-sd-2012-746",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2012/746",
+      "sourceLabel": "Finlex, Arvopaperimarkkinalaki (746/2012), consolidated text as in force",
+      "text": {
+        "en": "Governs how securities are offered and traded in Finland: disclosure by listed issuers, major shareholding notifications, takeover bids and the general ban on misleading conduct in the market. A bank is reached as a market participant and, where its own shares or bonds are listed, as an issuer. In practice that means no misleading information in marketing or trading, timely financial reporting, holding notifications and a whistleblowing channel. It carries EU transparency and takeover rules and supplements the EU Market Abuse Regulation."
+      }
+    },
+    {
+      "key": "fi-sd-1889-39",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/1889/39",
+      "sourceLabel": "Finlex, Rikoslaki (39/1889), consolidated text as in force",
+      "text": {
+        "en": "Finland's general criminal law. For financial firms the relevant part is the chapter on securities and crypto-asset market offences, which makes insider dealing, market manipulation and giving misleading information in the market crimes. It binds individuals, including a bank's staff, and a company in whose operations such an offence is committed can be sentenced to a corporate fine. That chapter implements the EU directive on criminal sanctions for market abuse."
+      }
+    },
+    {
+      "key": "fi-sd-2017-444",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2017/444",
+      "sourceLabel": "Finlex, Laki rahanpesun ja terrorismin rahoittamisen estämisestä (444/2017), consolidated text as in force",
+      "text": {
+        "en": "Finland's anti-money laundering law: it requires banks and other obliged entities to know their customers and to detect and report suspected money laundering and terrorist financing. It binds credit institutions directly, along with many other financial and non-financial businesses. In practice a bank must keep a risk assessment, identify customers and beneficial owners, apply enhanced checks for politically exposed persons and high-risk countries, monitor transactions, report suspicions to the Financial Intelligence Unit, train staff and keep records."
+      }
+    },
+    {
+      "key": "fi-sd-2010-290",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2010/290",
+      "sourceLabel": "Finlex, Maksupalvelulaki (290/2010), consolidated text as in force",
+      "text": {
+        "en": "Sets the contract rules between payment service providers and their users in Finland: what customers must be told, how fast payments move, who bears losses from unauthorised payments and how complaints are handled. It binds all payment service providers, including banks offering accounts, cards and transfers. For a bank this means pre-contract information, execution deadlines, blocking lost cards, prompt refunds of unauthorised payments, strong customer authentication and timely replies to complaints. It implements the EU's second payment services directive."
+      }
+    },
+    {
+      "key": "fi-sd-2010-297",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2010/297",
+      "sourceLabel": "Finlex, Maksulaitoslaki (297/2010), consolidated text as in force",
+      "text": {
+        "en": "Governs the licensing, organisation and safeguarding duties of payment institutions and e-money institutions, the non-bank firms that provide payment services. Most of its duties fall on those firms, not on banks. A bank is reached directly mainly in one respect: it must give payment institutions and other licensed or exempt payment firms access to its payment account services on objective, non-discriminatory and proportionate terms. It implements the EU's second payment services and e-money directives."
+      }
+    },
+    {
+      "key": "fi-sd-2019-213",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2019/213",
+      "sourceLabel": "Finlex, Sijoitusrahastolaki (213/2019), consolidated text as in force",
+      "text": {
+        "en": "Governs Finnish mutual funds and the management companies that run them: authorisation, conduct towards unitholders, risk management, liquidity tools and investor information. Its duties fall on management companies, so a bank meets it mainly through a fund management company in its group, as a distributor of fund units or as a fund's depositary. The management company must act in unitholders' interests, control risk and liquidity and give investors key information before they subscribe. It implements the EU's UCITS directive."
+      }
+    },
+    {
+      "key": "fi-sd-2014-162",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/162",
+      "sourceLabel": "Finlex, Laki vaihtoehtorahastojen hoitajista (162/2014), consolidated text as in force",
+      "text": {
+        "en": "Governs managers of alternative investment funds in Finland, such as real estate, private equity and hedge funds: authorisation or registration, organisation, risk and liquidity management, investor information and reporting to FIN-FSA. Its duties fall on fund managers, so a bank is reached mainly through a manager in its group. The manager must control conflicts of interest and fund risks, inform investors before they invest and report regularly on exposures and leverage. It implements the EU's AIFM directive."
+      }
+    },
+    {
+      "key": "fi-sd-2008-521",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2008/521",
+      "sourceLabel": "Finlex, Vakuutusyhtiölaki (521/2008), consolidated text as in force",
+      "text": {
+        "en": "Finland's law on insurance companies: how they are licensed, governed, capitalised and supervised under the EU's Solvency II regime. It binds insurers, not banks, so a bank meets it only through an insurance company in its group. For the insurer it means a governance system with defined key functions, risk management, a regular own risk and solvency assessment, a yearly public report on its solvency and financial condition, and own funds that always cover its capital requirements."
+      }
+    },
+    {
+      "key": "fi-sd-2018-234",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2018/234",
+      "sourceLabel": "Finlex, Laki vakuutusten tarjoamisesta (234/2018), consolidated text as in force",
+      "text": {
+        "en": "Governs how insurance is sold and advised on in Finland by insurers, agents, brokers and ancillary intermediaries. A bank is reached when it distributes insurance, which it may do only as a registered or notified distributor. In practice it must keep staff competent, act in the customer's best interest without conflicting incentives, and offer insurance sold together with another product separately as well; insurers must also run product approval. It implements the EU's insurance distribution directive."
+      }
+    },
+    {
+      "key": "fi-sd-1978-38",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/1978/38",
+      "sourceLabel": "Finlex, Kuluttajansuojalaki (38/1978), consolidated text as in force",
+      "text": {
+        "en": "Finland's general consumer protection law. For banks its key parts are the chapters on consumer credit and housing credit, which bind every business that lends to consumers. In practice a bank must give pre-contract information, lend and advertise responsibly, assess repayment ability, verify identity strongly, respect the interest and cost caps on consumer credit, honour the right of withdrawal and limit housing loan terms. As the revised EU consumer credit rules take effect it must also warn of credit costs in advertising and explain rejections."
+      }
+    },
+    {
+      "key": "fi-sd-2018-1050",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2018/1050",
+      "sourceLabel": "Finlex, Tietosuojalaki (1050/2018), consolidated text as in force",
+      "text": {
+        "en": "Finland's national supplement to the EU General Data Protection Regulation: it fills in the points the Regulation leaves to national law. It applies to anyone processing personal data within the Regulation's scope, banks included. For a bank its main practical effects are the conditions for processing personal identity codes, allowed where unambiguous identification matters, as in lending, and for processing data on criminal convictions and offences. The Regulation itself carries the main data protection duties."
+      }
+    },
+    {
+      "key": "fi-sd-2008-878",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2008/878",
+      "sourceLabel": "Finlex, Laki Finanssivalvonnasta (878/2008), consolidated text as in force",
+      "text": {
+        "en": "Sets up the Financial Supervisory Authority (FIN-FSA) and gives it its tasks and powers to supervise Finland's financial sector, including information requests, inspections and administrative sanctions. It binds supervised entities, which include every bank. In practice a bank must give FIN-FSA the information and regular reports it asks for, despite secrecy, and let FIN-FSA inspect its premises, documents, recorded communications and information systems."
+      }
+    },
+    {
+      "key": "fi-sd-2022-151",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2022/151",
+      "sourceLabel": "Finlex, Laki kiinnitysluottopankeista ja katetuista joukkolainoista (151/2022), consolidated text as in force",
+      "text": {
+        "en": "Governs the issuing of covered bonds in Finland: who may issue them, what assets may back them and how bond investors are protected. It binds credit institutions holding a permit to issue covered bonds, so a bank that does not issue them has no duties under it. An issuer must keep the cover pool above the bonds' value with a minimum overcollateralisation, hold liquid assets for the next 180 days of outflows, keep a register of bonds and cover assets, and publish and report information on them quarterly."
+      }
+    },
+    {
+      "key": "fi-sd-2023-186",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2023/186",
+      "sourceLabel": "Finlex, Laki eräiden luotonantajien ja luotonvälittäjien rekisteröinnistä (186/2023), consolidated text as in force",
+      "text": {
+        "en": "Regulates businesses other than credit institutions that lend to consumers or housing companies, or broker peer-to-peer loans: they must register and follow sound lending rules. A bank has no duties of its own under it, since credit institutions are licensed and supervised under their own law. Registered credit providers must lend on criteria set in writing, respect a loan-to-collateral cap for home loans and keep their lending records for at least five years."
+      }
+    },
+    {
+      "key": "fi-sd-2014-1194",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1194",
+      "sourceLabel": "Finlex, Laki luottolaitosten ja sijoituspalveluyritysten kriisinratkaisusta (1194/2014), consolidated text as in force",
+      "text": {
+        "en": "Sets how a failing bank or investment firm in Finland is resolved without disrupting the financial system, including resolution planning and the power to write down or convert debt (bail-in). It binds credit institutions and investment firms directly. In practice a bank must give the Financial Stability Authority what it needs for its resolution plan, hold its minimum requirement for own funds and eligible liabilities (MREL), include bail-in recognition terms in contracts where required and report its eligible liabilities regularly."
+      }
+    },
+    {
+      "key": "fi-sd-2014-1195",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2014/1195",
+      "sourceLabel": "Finlex, Laki rahoitusvakausviranomaisesta (1195/2014), consolidated text as in force",
+      "text": {
+        "en": "Sets up the Financial Stability Authority, Finland's resolution authority, and the fund it manages for resolution financing and deposit guarantees. Its duties reach deposit banks through the deposit guarantee scheme. In practice a deposit bank must be able to identify each depositor's eligible and covered deposits at any time and deliver that data on request, pay contributions when the Deposit Guarantee Fund is below its minimum level, pay an entry fee when new, and inform depositors about deposit protection."
+      }
+    },
+    {
+      "key": "fi-sd-2019-571",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2019/571",
+      "sourceLabel": "Finlex, Laki pankki- ja maksutilien valvontajärjestelmästä (571/2019), consolidated text as in force",
+      "text": {
+        "en": "Creates Finland's system through which authorities can quickly find out who holds bank and payment accounts and safe deposit boxes. It binds credit institutions, which must run their own data retrieval system, and payment, e-money and crypto-asset firms, which report to the register kept by Finnish Customs. In practice a bank must keep customer and account data available to the competent authorities through its retrieval system, despite bank secrecy. It implements part of the EU's fifth anti-money laundering directive."
+      }
+    },
+    {
+      "key": "fi-sd-2022-739",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2022/739",
+      "sourceLabel": "Finlex, Laki positiivisesta luottotietorekisteristä (739/2022), consolidated text as in force",
+      "text": {
+        "en": "Creates Finland's positive credit register, a central record of individuals' loans and income kept by the Incomes Register Unit. It binds creditors that grant consumer credit, including banks. In practice a bank must register as a reporting creditor before it starts reporting, and then report its consumer credits to the register with the prescribed borrower, credit, interest, collateral, repayment and arrears data."
+      }
+    },
+    {
+      "key": "fi-sd-1995-1558",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/1995/1558",
+      "sourceLabel": "Finlex, Laki verotusmenettelystä (1558/1995), consolidated text as in force",
+      "text": {
+        "en": "Finland's general law on how taxes are assessed, including who must give the Tax Administration information about others. It reaches banks as payers and intermediaries of interest, dividends, fund returns and other payments, and as reporting institutions under international tax agreements. In practice a bank must report the payments it makes or mediates, meet its due diligence and reporting duties under the FATCA agreement with the United States, and report cross-border tax arrangements it knows of as an intermediary."
+      }
+    },
+    {
+      "key": "fi-sd-2025-1042",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2025/1042",
+      "sourceLabel": "Finlex, Laki raportoivien finanssilaitosten tiedonantovelvollisuudesta verotuksen alalla (1042/2025), consolidated text as in force",
+      "text": {
+        "en": "Sets the due diligence and reporting duties that let Finland exchange financial account information with other tax authorities under the OECD Common Reporting Standard and the EU rules on administrative cooperation in tax. It binds reporting financial institutions, which include banks. In practice a bank must review its accounts to find holders who are tax resident elsewhere, collect self-certifications when accounts are opened, keep records of the steps it took and report reportable accounts to the Tax Administration every year."
+      }
+    },
+    {
+      "key": "fi-sd-1990-1341",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/1990/1341",
+      "sourceLabel": "Finlex, Laki korkotulon lähdeverosta (1341/1990), consolidated text as in force",
+      "text": {
+        "en": "Imposes a source tax on interest from certain deposits and bonds paid to individuals who are generally liable to tax in Finland and to domestic estates. The tax is owed by the recipient, but collecting it is the duty of deposit banks, Finnish branches of foreign credit institutions and the other payers the act names. In practice a bank must withhold the 30 percent tax from each covered interest payment and account for it to the state."
+      }
+    },
+    {
+      "key": "fi-sd-2025-124",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2025/124",
+      "sourceLabel": "Finlex, Kyberturvallisuuslaki (124/2025), consolidated text as in force",
+      "text": {
+        "en": "Finland's cybersecurity law for essential and important entities in the critical sectors listed in its annexes. Entities in scope must manage risks to their network and information systems, make their management accountable for this and report significant incidents within set deadlines. Where an EU regulation sets at least equivalent risk management and incident reporting duties, as the EU's digital operational resilience rules do for banks, those rules apply in place of the act's corresponding chapters. It implements the EU's NIS2 directive."
+      }
+    },
+    {
+      "key": "fi-sd-2024-402",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2024/402",
+      "sourceLabel": "Finlex, Laki kryptovarapalvelun tarjoajista ja kryptovaramarkkinoista (402/2024), consolidated text as in force",
+      "text": {
+        "en": "Finland's national supplement to the EU Markets in Crypto-Assets Regulation: it makes FIN-FSA the supervisor and adds national rules on secrecy, supervision and sanctions. It binds crypto-asset service providers and issuers and offerors of crypto-assets, so a bank is reached only if it provides crypto-asset services or issues crypto-assets. Such a firm must keep customer information confidential and, when FIN-FSA asks, explain why a delay in disclosing inside information was justified."
+      }
+    },
+    {
+      "key": "fi-sd-2013-325",
+      "source": "https://www.finlex.fi/fi/lainsaadanto/2013/325",
+      "sourceLabel": "Finlex, Laki varojen jäädyttämisestä terrorismin torjumiseksi (325/2013), consolidated text as in force",
+      "text": {
+        "en": "Lets the National Bureau of Investigation freeze the funds of persons and entities linked to terrorism through national decisions, which apply alongside EU sanctions. It binds everyone, banks included. In practice a bank must freeze the funds of anyone named in a published freezing decision, keep them from being moved or used, and make no funds available to them except in the ways the act allows, such as arranging payments so that the funds stay frozen."
+      }
+    },
+    {
+      "key": "fi-fiva-aml",
+      "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/valvottavan-toiminnan-jarjestaminen/02_2023/",
+      "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 2/2023: Rahanpesun ja terrorismin rahoittamisen estäminen",
+      "text": {
+        "en": "FIN-FSA's binding regulations and guidelines on how supervised entities apply the anti-money laundering law in practice. They apply to credit institutions and the other obliged entities FIN-FSA supervises, such as investment firms, fund management companies, payment institutions and life insurers. For a bank they add detail on the money laundering risk assessment, checking identity documents, resourcing transaction monitoring, giving customers time before restricting a relationship, and the yearly risk data report to FIN-FSA."
+      }
+    },
+    {
+      "key": "fi-fiva-sanctions-cdd",
+      "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/valvottavan-toiminnan-jarjestaminen/04_2023/",
+      "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 4/2023: Pakotesääntelyn ja kansallisten jäädyttämispäätösten noudattamiseen liittyvä asiakkaan tunteminen",
+      "text": {
+        "en": "FIN-FSA's regulations and guidelines on how supervised entities ensure they comply with EU sanctions and Finnish national freezing decisions as part of knowing their customers. They apply to credit institutions and the other obliged entities FIN-FSA supervises. In practice a bank must assess its sanctions risks, screen customers and their owners at onboarding and payments against current lists wherever technically possible, keep its screening systems tested and fit for purpose, and report on its sanctions controls to FIN-FSA every year."
+      }
+    },
+    {
+      "key": "fi-fiva-operational-risk",
+      "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/riskienhallinta/08_2014/",
+      "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 8/2014: Operatiivisen riskin hallinta rahoitussektorin valvottavissa",
+      "text": {
+        "en": "FIN-FSA's regulations and guidelines on managing operational risk, the risk of loss from failed processes, people, systems or external events. They apply to credit institutions, investment firms, payment institutions, fund management companies, the stock exchange and other supervised entities. For a bank this means board-approved operational risk policies, identifying risks across products, processes and systems, assessing new products before launch, up-to-date continuity plans and a yearly report to FIN-FSA on its largest operational loss events."
+      }
+    },
+    {
+      "key": "fi-fiva-credit-risk",
+      "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/riskienhallinta/04_2018/",
+      "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 4/2018: Luottoriskien hallinta ja luottokelpoisuuden arviointi rahoitussektorin valvottavissa",
+      "text": {
+        "en": "FIN-FSA's regulations and guidelines on how lenders manage credit risk and assess borrowers' creditworthiness. They apply to credit institutions, investment firms, third-country branches and group holding companies, and the consumer lending part also reaches other supervised firms that grant consumer or housing credit. For a bank this means lending based mainly on the borrower's ability to repay rather than on collateral, a documented credit analysis, written lending instructions, decisions at the right level and limits that keep credit risk diversified."
+      }
+    },
+    {
+      "key": "fi-fiva-outsourcing",
+      "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/valvottavan-toiminnan-jarjestaminen/01_2012/",
+      "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 1/2012: Ulkoistaminen rahoitussektoriin kuuluvissa valvottavissa",
+      "text": {
+        "en": "FIN-FSA's regulations and guidelines on outsourcing by supervised financial firms. They apply to credit institutions, fund management companies, the stock exchange, Finnish branches of non-EEA credit institutions and payment institutions. For a bank the binding part concerns notifying FIN-FSA when it outsources a significant function: the notice must name the service provider, describe the nature and scope of the outsourced activity and give an overall assessment of its effects. Payment institutions must also check their providers' resources and controls."
+      }
+    },
+    {
+      "key": "fi-fiva-banking-conduct",
+      "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/menettelytavat/03_2024/",
+      "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 3/2024: Pankkipalveluissa noudatettavat menettelytavat",
+      "text": {
+        "en": "FIN-FSA's regulations and guidelines on the procedures banks and other supervised firms must follow in banking services to consumers. They apply to firms that offer or broker housing or consumer credit, or offer deposit accounts, in Finland, including foreign firms serving Finnish customers. The binding rule recorded for a bank concerns housing credit advertising: where the annual percentage rate must be shown, it must be given through a representative example calculated on FIN-FSA's set assumptions."
+      }
+    },
+    {
+      "key": "fi-fiva-consumer-credit-risk",
+      "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/menettelytavat/maksukyvyttomyysriskien-hallinta-kuluttajaluotonannossa/",
+      "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 1/2025: Maksukyvyttömyysriskien hallinta kuluttajaluotonannossa",
+      "text": {
+        "en": "FIN-FSA's regulations and guidelines on managing the risk that consumers cannot repay unsecured consumer credit. They apply to credit institutions, including foreign banks lending in Finland, and to registered credit providers granting such credit. In practice a lender must measure how well its risk rating model predicts insolvency, track the share of bad loans in its riskiest borrower class using FIN-FSA's methods, and report its unsecured consumer credit portfolio to FIN-FSA every year."
+      }
+    },
+    {
+      "key": "fi-fiva-investment-services",
+      "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/valvottavan-toiminnan-jarjestaminen/07_2018/",
+      "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 7/2018: Sijoituspalvelujen toiminnan järjestäminen ja menettelytavat",
+      "text": {
+        "en": "FIN-FSA's regulations and guidelines on how investment services must be organised and provided in Finland, adding detail to the investment services law and the EU rules behind it. They apply to investment firms, credit institutions, fund management companies and fund managers offering such services, and to branches. For a bank this means product governance matched to target clients, records that keep each client's assets separate and reconciled, inducements only where they improve the service, and competent investment advisers."
+      }
+    },
+    {
+      "key": "fi-fiva-risk-data-collection",
+      "source": "https://www.finanssivalvonta.fi/saantely/maarays-ja-ohjekokoelma/riskienhallinta/01_2014/",
+      "sourceLabel": "Finanssivalvonta, määräys- ja ohjekokoelma, Määräykset ja ohjeet 1/2014: Luottolaitosten riskitiedonkeruu",
+      "text": {
+        "en": "FIN-FSA's regulations and guidelines on the risk data credit institutions must report to it for supervision. The part recorded here applies to credit institutions and to Finnish branches of foreign credit institutions. In practice a bank must report on FIN-FSA's loan-to-collateral form the loan-to-collateral data of the consumer credits it has granted for buying or renovating a home in Finland, calculated at the time each credit was granted."
+      }
+    }
+  ]
+}

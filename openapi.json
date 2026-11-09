@@ -12442,6 +12442,22 @@
             "title": "Id",
             "type": "string"
           },
+          "implementedBy": {
+            "description": "The instruments that implement this one, read the other way: each library instrument whose `implementsNote` names this instrument's official number. For an EU directive these are the national laws that carry its duties. Empty when the library holds none this caller may read.",
+            "items": {
+              "$ref": "#/components/schemas/InstrumentLinkRef"
+            },
+            "title": "Implementedby",
+            "type": "array"
+          },
+          "implements": {
+            "description": "The instruments this one implements, read from its `implementsNote`: each library instrument whose official number (such as 2014/59 in Directive 2014/59/EU) the note names. Empty when the note names none the library holds or this caller may read.",
+            "items": {
+              "$ref": "#/components/schemas/InstrumentLinkRef"
+            },
+            "title": "Implements",
+            "type": "array"
+          },
           "implementsNote": {
             "description": "What this instrument implements or elaborates, in the library's own words, so a reader can see where a Swedish rule comes from. Free text for a person and never a machine-readable link; an empty string when nothing was recorded, never null. The structured lineage between instruments is `lineage` on the instrument's own read.",
             "examples": [
@@ -12515,6 +12531,10 @@
             ],
             "description": "The instrument's full name, in the best language this reader can be served. The original is the jurisdiction's legal language, so a Swedish regulation read in English usually still answers its Swedish name rather than a translation. Null only when the record carries no name in any language."
           },
+          "obligationCounts": {
+            "$ref": "#/components/schemas/InstrumentObligationCounts",
+            "description": "How many duties sit under the instrument: held, in the caller's scope, and waiting for review."
+          },
           "officialRef": {
             "description": "The reference the issuing authority itself publishes the instrument under, written as that authority writes it. It is how a lawyer cites the instrument and how a reader recognises it on the authority's own site; it is not an identifier this API accepts, which is `key`.",
             "examples": [
@@ -12559,6 +12579,17 @@
             "title": "Stablekey",
             "type": "string"
           },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalizedText"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What the instrument is and what it means for a bank, in two to four plain sentences, in the caller's first content language the summary is written in, or null when the library holds no summary for it yet. Written once from the instrument's own source and entered through an approved proposal (INV-09)."
+          },
           "verifiedBy": {
             "anyOf": [
               {
@@ -12590,7 +12621,11 @@
           "lastVerifiedAt",
           "verifiedBy",
           "privateToUs",
-          "lineage"
+          "lineage",
+          "summary",
+          "implements",
+          "implementedBy",
+          "obligationCounts"
         ],
         "title": "InstrumentDetail",
         "type": "object"
@@ -12648,6 +12683,81 @@
           "toRef"
         ],
         "title": "InstrumentLineageRef",
+        "type": "object"
+      },
+      "InstrumentLinkRef": {
+        "description": "Another instrument this one is tied to by implementation, as the card links to it.",
+        "properties": {
+          "id": {
+            "description": "The other instrument's id, a UUID, the value `GET /instruments/{instrumentId}` takes.",
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "jurisdiction": {
+            "$ref": "#/components/schemas/LibraryRef",
+            "description": "Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in."
+          },
+          "key": {
+            "description": "The other instrument's stable key, issued once and never changed.",
+            "examples": [
+              "se-sfs-2004-297"
+            ],
+            "title": "Key",
+            "type": "string"
+          },
+          "shortName": {
+            "description": "The other instrument's short name, to print.",
+            "examples": [
+              "LBF"
+            ],
+            "title": "Shortname",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "shortName",
+          "jurisdiction"
+        ],
+        "title": "InstrumentLinkRef",
+        "type": "object"
+      },
+      "InstrumentObligationCounts": {
+        "description": "How many duties sit under the instrument, so the card can say what applies.",
+        "properties": {
+          "inLibrary": {
+            "description": "How many obligations the library holds under this instrument that this caller may read, whatever its scope. 0 or more.",
+            "examples": [
+              5
+            ],
+            "title": "Inlibrary",
+            "type": "integer"
+          },
+          "inScope": {
+            "description": "How many of those fall inside the caller's regulatory scope, counted exactly as `GET /obligations?instrument=<key>` lists them with the default `footprint=in`. 0 or more.",
+            "examples": [
+              3
+            ],
+            "title": "Inscope",
+            "type": "integer"
+          },
+          "waitingForReview": {
+            "description": "How many new duties under this shared instrument wait in the library's review queue and are not in the library yet. Always 0 for an organisation's own instrument. 0 or more.",
+            "examples": [
+              0
+            ],
+            "title": "Waitingforreview",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "inLibrary",
+          "inScope",
+          "waitingForReview"
+        ],
+        "title": "InstrumentObligationCounts",
         "type": "object"
       },
       "InstrumentPage": {
@@ -13638,6 +13748,34 @@
         "title": "LibraryUpdateDay",
         "type": "object"
       },
+      "LibraryUpdateInstrument": {
+        "description": "The regulation a new-regulation update added, named by the library record itself.",
+        "properties": {
+          "id": {
+            "description": "The regulation's id, a UUID, the value `GET /instruments/{instrumentId}` takes, so a row can link straight to its card.",
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "officialRef": {
+            "description": "The regulation's official reference, for example \"Regulation (EU) No 596/2014\".",
+            "title": "Officialref",
+            "type": "string"
+          },
+          "shortName": {
+            "description": "The regulation's short name, for example \"MAR\" or \"FFFS 2017:2\".",
+            "title": "Shortname",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "shortName",
+          "officialRef"
+        ],
+        "title": "LibraryUpdateInstrument",
+        "type": "object"
+      },
       "LibraryUpdateRow": {
         "description": "One change that reached the shared library while this reader was away (PRO-03,\nINV-04): what changed, when it was applied, when it starts binding, whether it reaches\nthis bank, and who confirmed it. It is a fact about the library and never a task:\nwhether the duty applies here, and whether this bank complies with it, are the bank's\nown judgements recorded elsewhere. No person is named: who asked for a change is not a\nbank's business, and a change another bank asked for reads exactly like any other. The\nplatform agents that proposed or confirmed it are named by definition key (INV-05,\nD-62), so a change an independent agent confirmed never reads as a person's approval.",
         "examples": [
@@ -13717,6 +13855,17 @@
             ],
             "title": "Infootprint",
             "type": "boolean"
+          },
+          "instrument": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LibraryUpdateInstrument"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The regulation a `new_instrument` update added, by id, short name and official reference. Null on every other kind, and when the reader may not open that regulation."
           },
           "kind": {
             "description": "What kind of change it was, and therefore which of the fields below are filled. A fixed kind: `new_obligation_version` is a new wording of a duty, `new_obligation` is a duty new to the library with its first wording, `new_instrument` is an instrument new to the library, which names no duty and no list, `new_provision` and `new_provision_version` are a law's verbatim text, new or amended, which name no duty and no list either, `new_recurring_duty` is a schedule a duty falls due on, which names that duty, and `vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore`, `vocabulary_merge`, `term_create` and `term_update` are changes to a shared list or to the taxonomy every bank reads.",

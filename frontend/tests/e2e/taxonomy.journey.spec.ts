@@ -1505,7 +1505,7 @@ test.describe('regulatory scope, markets and standards', () => {
       await expect(page.locator('[data-obligation-rows] [data-obligation]:not([data-watched-market="dk"])')).toHaveCount(0);
 
       // The Instruments tab keeps the value and lists the Danish act alone.
-      await page.getByRole('tab', { name: 'Instruments' }).click();
+      await page.getByRole('tab', { name: 'Regulations' }).click();
       await expect(page).toHaveURL(/tab=instruments.*scope=watched/);
       await expect(page.locator(`[data-instrument-rows] [data-instrument="${WATCHED_MARKET_INSTRUMENT}"]`)).toBeVisible();
       await expect(page.locator('[data-instrument="fffs-2017-2"]')).toHaveCount(0);

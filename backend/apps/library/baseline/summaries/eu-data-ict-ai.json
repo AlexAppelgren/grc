@@ -1,0 +1,142 @@
+{
+  "tranche": "eu-data-ict-ai",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "celex-32016r0679",
+      "source": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2016/679 as published in the Official Journal",
+      "text": {
+        "en": "The GDPR is the EU's general law on personal data: when it may be used, what people must be told, the rights they have over their data and how organisations protect it. It binds every organisation handling personal data directly, banks included. A bank needs a lawful basis for each use, privacy notices, a process for rights requests, records of processing, impact assessments, a data protection officer where required, security, breach notification, processor contracts and safeguards for transfers."
+      }
+    },
+    {
+      "key": "celex-32025r2518",
+      "source": "https://eur-lex.europa.eu/eli/reg/2025/2518/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2025/2518 as published in the Official Journal",
+      "text": {
+        "en": "This regulation adds procedural rules for how data protection authorities handle cross-border GDPR cases: complaints, cooperation between authorities, dispute resolution, and the rights of parties under investigation, such as being heard and having access to the file. It is addressed to the supervisory authorities and the European Data Protection Board, so a bank has no duties of its own under it; it matters to a bank that is under investigation in a cross-border case."
+      }
+    },
+    {
+      "key": "celex-32002l0058",
+      "source": "https://eur-lex.europa.eu/eli/dir/2002/58/oj",
+      "sourceLabel": "EUR-Lex, Directive 2002/58/EC as published in the Official Journal",
+      "text": {
+        "en": "The ePrivacy Directive protects privacy in electronic communications: confidentiality of communications, storing or reading information on a user's device such as cookies, traffic and location data, and unsolicited electronic marketing. As a directive it binds the member states, not a bank directly; a bank's duties, for example on cookie consent and direct marketing by email or text message, come from each country's national law that implements it."
+      }
+    },
+    {
+      "key": "celex-32022r2554",
+      "source": "https://eur-lex.europa.eu/eli/reg/2022/2554/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2022/2554 as published in the Official Journal",
+      "text": {
+        "en": "DORA sets one EU rulebook for how financial firms manage risks from information and communication technology, so they can withstand and recover from cyber attacks and IT failures. It binds banks and other financial entities directly. A bank needs a board-owned ICT risk framework, asset inventories, protection and detection, continuity plans and backups, incident classification and reporting, resilience testing, and control of ICT providers through contracts, a register and exit plans."
+      }
+    },
+    {
+      "key": "celex-32024r1774",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1774/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1774 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation specifies the ICT risk management framework DORA requires: security policies, network and data protection, vulnerability and patch management, access control, encryption, logging, change management and business continuity, with a simplified framework for smaller entities. It binds banks directly. A bank must document and apply these policies, scan systems that support critical functions for vulnerabilities at least weekly, and grant access on least privilege."
+      }
+    },
+    {
+      "key": "celex-32024r1772",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1772/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1772 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the criteria and thresholds under DORA for classifying ICT-related incidents as major and cyber threats as significant, such as clients affected, duration, geographical spread, data losses, critical services affected and economic impact. It binds banks directly. A bank must classify each incident against these thresholds, check monthly for recurring incidents that together count as major, and use the criteria to judge which threats are significant."
+      }
+    },
+    {
+      "key": "celex-32024r1773",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1773/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1773 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets what a financial entity's policy on ICT services that support critical or important functions must contain under DORA. It binds banks directly. The policy must be reviewed at least yearly by the management body and must cover how such services are identified, risk assessment and due diligence before contracting, ongoing monitoring of the provider's performance, and exit and termination."
+      }
+    },
+    {
+      "key": "celex-32025r0301",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2025/301/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/301 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the content of reports on major ICT-related incidents under DORA, the time limits for sending them, and the content of voluntary notifications of significant cyber threats. It binds banks directly. A bank must send the initial notification within 4 hours of classifying an incident as major and at most 24 hours after becoming aware of it, the intermediate report within 72 hours of the initial notification, and the final report within a month of the latest intermediate report."
+      }
+    },
+    {
+      "key": "celex-32025r0302",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2025/302/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2025/302 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the standard forms and procedures for reporting major ICT-related incidents and notifying significant cyber threats under DORA. It binds banks directly. A bank must report on the prescribed template and data glossary, tell its authority if an incident reported as major turns out not to be, and inform the authority before the first report if it outsources its incident reporting to a third party."
+      }
+    },
+    {
+      "key": "celex-32024r2956",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2024/2956/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2024/2956 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the templates for the register of information that DORA requires on all contracts for ICT services. It binds banks directly. A bank must keep the register at entity level and, where relevant, at group level, covering direct providers and the subcontractors that effectively support critical or important functions, identify providers by the prescribed codes, keep it accurate and complete, and review it regularly."
+      }
+    },
+    {
+      "key": "celex-32025r1190",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2025/1190/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/1190 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets how threat-led penetration testing under DORA is run: which firms must do it, how tests are scoped, prepared and kept secret, the roles of testers and the authority, and the closing reports. It binds the firms their authority identifies, by default including banks identified as globally or otherwise systemically important. Such a bank appoints a control team lead, keeps the test confidential, and submits a summary of findings and remediation plans."
+      }
+    },
+    {
+      "key": "celex-32025r0532",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2025/532/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2025/532 as published in the Official Journal",
+      "text": {
+        "en": "This Commission regulation sets the conditions for letting an ICT provider subcontract services that support critical or important functions under DORA. It binds banks directly. Before agreeing, a bank must assess the risks and the provider's ability to oversee its subcontractors; the contract must state which services may be subcontracted and on what terms, and oblige the provider to announce material changes so the bank can object."
+      }
+    },
+    {
+      "key": "celex-32022l2556",
+      "source": "https://eur-lex.europa.eu/eli/dir/2022/2556/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2022/2556 as published in the Official Journal",
+      "text": {
+        "en": "This directive amends the sectoral directives for banks, investment firms, insurers, fund managers, payment service providers and occupational pension funds so that they refer to DORA for ICT risk management, incident handling and resilience. It binds the member states, not a bank directly, and adds no duties of its own: they sit in DORA and in the amended directives as they now read, through national law."
+      }
+    },
+    {
+      "key": "celex-32022l2555",
+      "source": "https://eur-lex.europa.eu/eli/dir/2022/2555/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2022/2555 as published in the Official Journal",
+      "text": {
+        "en": "NIS2 sets common cybersecurity rules for important sectors across the EU, banking among them: risk management measures, incident reporting and supervision. As a directive it binds the member states, not a bank directly; duties come from each country's national law that implements it. For banks DORA, as the more specific act, takes precedence on ICT risk management and incident reporting, so a bank's cyber duties sit mainly under DORA."
+      }
+    },
+    {
+      "key": "celex-32024r1689",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1689/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/1689 as published in the Official Journal and as amended by Regulation (EU) 2026/1744",
+      "text": {
+        "en": "The AI Act sets EU rules for artificial intelligence by level of risk: it bans certain practices, sets strict requirements for high-risk systems, and transparency duties for systems that talk to people or generate content. It binds providers and deployers directly, banks included. A bank must avoid banned practices, support staff AI literacy and disclose chatbots and generated content; using AI to score individuals' credit brings high-risk duties such as human oversight and informing customers."
+      }
+    },
+    {
+      "key": "celex-32023r2854",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2854 as published in the Official Journal",
+      "text": {
+        "en": "The Data Act sets EU rules on access to and use of data: users' rights to data from connected products, fair terms for data sharing between businesses, switching between cloud and other data processing services, and access by public bodies in exceptional need. It applies directly. A bank's own duty here is to make data it holds available on a reasoned request from a public body that shows an exceptional need, such as a public emergency."
+      }
+    },
+    {
+      "key": "celex-32014r0910",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/910/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 910/2014 as published in the Official Journal and as amended by Regulation (EU) 2024/1183",
+      "text": {
+        "en": "The eIDAS Regulation sets the EU framework for electronic identification and trust services such as electronic signatures, seals and time stamps, and, as amended, for European Digital Identity Wallets. It applies directly. A bank that is not a micro or small enterprise and must use strong user authentication for online identification must accept the wallets when a user chooses to use one, and must register as a relying party before relying on them."
+      }
+    }
+  ]
+}

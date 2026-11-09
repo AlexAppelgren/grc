@@ -32,7 +32,8 @@ import { TabPanel, Tabs } from '@/components/ui/Tabs';
 import { VocabularyPicker } from '@/components/vocabularies/VocabularyPicker';
 import { useFormatContext } from '@/features/identity/hooks';
 import type { TaggingBatch } from '@/features/library/api';
-import { bulkTaggingCap, useInstruments, useObligations, usePreviewObligationTagging, useTagObligations } from '@/features/library/hooks';
+import { bulkTaggingCap, usePagedInstruments, usePagedObligations, useInstruments, useObligations, usePreviewObligationTagging, useTagObligations, type PerPage } from '@/features/library/hooks';
+import { ListPager } from '@/components/inventory/ListPager';
 import type { InstrumentQuery, Obligation, ObligationQuery, ScopeFilter } from '@/features/library/types';
 import { useSearchResults } from '@/features/search/hooks';
 import type { SearchRequestBody } from '@/features/search/types';
@@ -373,11 +374,21 @@ function ObligationsTab({ filters, apply, pathname, bar, query }: { filters: Scr
   const t = useT();
   const ctx = useFormatContext();
   const permissions = usePermissions();
-  const obligations = useObligations(queryOf(filters));
+  const [perPage, setPerPage] = useState<PerPage>(20);
+  const [page, setPage] = useState(0);
+  const listQuery = queryOf(filters);
+  const listKey = JSON.stringify(listQuery);
+  const [pagedFor, setPagedFor] = useState(listKey);
+  if (pagedFor !== listKey) {
+    // A new filter starts again at the first page.
+    setPagedFor(listKey);
+    setPage(0);
+  }
+  const obligations = usePagedObligations(listQuery, perPage, page);
   const results = useSearchResults(query === '' ? null : searchRequestOf(filters, query));
-  const items = obligations.data?.items ?? [];
+  const items = obligations.items;
   const hits = results.data?.items ?? [];
-  const total = obligations.data?.total ?? 0;
+  const total = obligations.total;
   const allHref = `${pathname}?${searchOf('obligations', { ...filters, scope: 'all' })}`;
   const allAction = filters.scope === 'all' ? undefined : { label: t('library.scope.all'), href: allHref };
   const untagged = searchOf('obligations', { ...filters, tenantTag: '' });
@@ -457,7 +468,17 @@ function ObligationsTab({ filters, apply, pathname, bar, query }: { filters: Scr
             />
           ))}
         </div>
-        {items.length < total ? <p className="mt-3 text-meta text-muted">{t('inventory.showingFirst', { shown: items.length, total })}</p> : null}
+        <ListPager
+          total={total}
+          shown={items.length}
+          perPage={perPage}
+          page={page}
+          onPage={setPage}
+          onPerPage={(next) => {
+            setPerPage(next);
+            setPage(0);
+          }}
+        />
       </>
     );
   }
@@ -536,8 +557,19 @@ function ObligationsTab({ filters, apply, pathname, bar, query }: { filters: Scr
 
 function InstrumentsTab({ filters, apply, pathname, bar, query }: { filters: ScreenFilters; apply: (patch: Partial<ScreenFilters>) => void; pathname: string; bar: ReactNode; query: string }) {
   const t = useT();
-  const instruments = useInstruments(instrumentQueryOf(filters, query));
-  const items = instruments.data?.items ?? [];
+  const [perPage, setPerPage] = useState<PerPage>(20);
+  const [page, setPage] = useState(0);
+  const listQuery = instrumentQueryOf(filters, query);
+  const listKey = JSON.stringify(listQuery);
+  const [pagedFor, setPagedFor] = useState(listKey);
+  if (pagedFor !== listKey) {
+    // A new filter or search starts again at the first page.
+    setPagedFor(listKey);
+    setPage(0);
+  }
+  const instruments = usePagedInstruments(listQuery, perPage, page);
+  const items = instruments.items;
+  const total = instruments.total;
   const narrowed = filters.regime !== '' || query !== '';
   const allHref = `${pathname}?${searchOf('instruments', { ...filters, scope: 'all' })}`;
 
@@ -569,6 +601,17 @@ function InstrumentsTab({ filters, apply, pathname, bar, query }: { filters: Scr
           ))}
         </div>
       )}
+      <ListPager
+        total={total}
+        shown={items.length}
+        perPage={perPage}
+        page={page}
+        onPage={setPage}
+        onPerPage={(next) => {
+          setPerPage(next);
+          setPage(0);
+        }}
+      />
     </>
   );
 }

@@ -1,0 +1,158 @@
+{
+  "tranche": "no-forskrifter",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "no-for-2016-12-09-1502",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2016-12-09-1502",
+      "sourceLabel": "Lovdata, FOR-2016-12-09-1502, Forskrift om finansforetak og finanskonsern (finansforetaksforskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's detailed rules under the Financial Institutions Act on how financial institutions and groups are organised, run and resolved. It binds banks directly. A bank must, among other things, have a board risk committee, follow the remuneration rules and bonus cap, avoid pay that harms customers' interests, not tie products together, link to Finansportalen.no, inform depositors about the deposit guarantee, offer cash services, ensure mortgage staff are competent and keep a recovery plan."
+      }
+    },
+    {
+      "key": "no-for-2014-08-22-1097",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2014-08-22-1097",
+      "sourceLabel": "Lovdata, FOR-2014-08-22-1097, Forskrift om kapitalkrav og gjennomføring av CRR/CRD-regelverket (CRR/CRD-forskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules on capital requirements, which make the EU Capital Requirements Regulation Norwegian law and carry out parts of the Capital Requirements Directive. It binds banks and other institutions under the capital rules directly. Beyond the EU rules it sets Norwegian floors on risk weights for property lending under internal models, a capital plan when buffers are breached, and requirements for liquidity strategy and stress testing, risk management, internal control, independent risk and compliance functions and country-by-country disclosure."
+      }
+    },
+    {
+      "key": "no-for-2020-12-09-2648",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2020-12-09-2648",
+      "sourceLabel": "Lovdata, FOR-2020-12-09-2648, Forskrift om finansforetakenes utlånspraksis (utlånsforskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules on how financial institutions grant loans to consumers, covering mortgages, credit lines and unsecured credit. It binds lenders directly, banks included. A bank must make and document a sound credit assessment, test affordability against a rate rise, keep total debt within five times income and mortgages within set loan-to-value limits, require minimum repayments, and keep loans that break these limits within a small quarterly allowance."
+      }
+    },
+    {
+      "key": "no-for-2018-09-14-1324",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2018-09-14-1324",
+      "sourceLabel": "Lovdata, FOR-2018-09-14-1324, Forskrift om tiltak mot hvitvasking og terrorfinansiering (hvitvaskingsforskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's detailed rules under the Anti-Money Laundering Act on how reporting entities identify customers, apply enhanced checks and monitor transactions. It binds banks directly as reporting entities. A bank must verify identity against valid documents, apply extra measures for the high-risk third countries the EU lists, restrict products where due diligence cannot be completed, report to Økokrim electronically, keep records for the set periods and run electronic monitoring of all customer transactions."
+      }
+    },
+    {
+      "key": "no-for-2007-06-29-876",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2007-06-29-876",
+      "sourceLabel": "Lovdata, FOR-2007-06-29-876, Forskrift til verdipapirhandelloven (verdipapirforskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's detailed rules under the Securities Trading Act on investment services, market conduct and issuers' duties. It binds investment firms, including banks providing investment services, and listed issuers directly. A bank must keep retrievable recordings of client calls and messages, safeguard and reconcile client assets under a responsible officer, run product governance for target markets, accept third-party payments only where they improve the service, link to Finansportalen.no, and as a listed issuer send updated lists of its managers to the market operator."
+      }
+    },
+    {
+      "key": "no-for-2019-02-15-152",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2019-02-15-152",
+      "sourceLabel": "Lovdata, FOR-2019-02-15-152, Forskrift om systemer for betalingstjenester, consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules on the security of payment services, which also make the EU standards on strong customer authentication and secure communication Norwegian law. It binds payment service providers, banks included, directly. A bank must assess risk before launching services, give Finanstilsynet a yearly assessment of operational and security risk, notify users of incidents that affect them, apply strong customer authentication, and give licensed third-party providers access to payment accounts."
+      }
+    },
+    {
+      "key": "no-for-2025-06-24-1296",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-06-24-1296",
+      "sourceLabel": "Lovdata, FOR-2025-06-24-1296, Forskrift om digital operasjonell motstandsdyktighet i finanssektoren (DORA-forskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules supplementing Norway's law on digital operational resilience, which applies the EU Digital Operational Resilience Act. It makes the EU technical standards under that act Norwegian law, extends parts of it to some firms outside its scope, and sets the Norwegian process for threat-led penetration testing. For a bank, beyond the EU act itself, it means Finanstilsynet may designate it for such testing, with Norges Bank approving the scope and coordinating, and the bank shares Norges Bank's costs."
+      }
+    },
+    {
+      "key": "no-for-2025-06-25-1311",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-06-25-1311",
+      "sourceLabel": "Lovdata, FOR-2025-06-25-1311, Forskrift til lov om kryptoeiendeler (kryptoeiendelsforskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules supplementing Norway's law on crypto-assets, which applies the EU Markets in Crypto-Assets Regulation. It makes the EU technical standards under that regulation Norwegian law. Its one rule of its own concerns delayed disclosure of inside information about crypto-assets: the written explanation of a delay goes to the supervisor when it asks. A bank is touched only if it issues crypto-assets or provides crypto-asset services."
+      }
+    },
+    {
+      "key": "no-for-2024-09-16-2162",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2024-09-16-2162",
+      "sourceLabel": "Lovdata, FOR-2024-09-16-2162, Forskrift til lov om nøkkelinformasjon om sammensatte og forsikringsbaserte investeringsprodukter (PRIIPs-forskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules supplementing Norway's law on key information documents for packaged retail and insurance-based investment products. They make two EU acts Norwegian law, the criteria for product intervention and the technical standards on the content and form of the key information document, and set the fines Finanstilsynet can impose for breaches. A bank has no duties under this regulation's own text; its duties as a maker or seller of such products sit in the incorporated EU acts and the underlying PRIIPs rules."
+      }
+    },
+    {
+      "key": "no-for-2022-12-20-2354",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2022-12-20-2354",
+      "sourceLabel": "Lovdata, FOR-2022-12-20-2354, Forskrift til lov om offentliggjøring av bærekraftsinformasjon i finanssektoren og et rammeverk for bærekraftige investeringer, consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules supplementing Norway's law on sustainability disclosure in the financial sector and the EU taxonomy. They make EU technical standards Norwegian law: the detailed disclosure templates under the Sustainable Finance Disclosure Regulation and the taxonomy rules on technical screening criteria and on what firms must report. A bank has no duties under this regulation's own text; its disclosure duties as adviser, portfolio manager or reporting firm sit in those EU acts."
+      }
+    },
+    {
+      "key": "no-for-2014-06-26-877",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2014-06-26-877",
+      "sourceLabel": "Lovdata, FOR-2014-06-26-877, Forskrift til lov om forvaltning av alternative investeringsfond, consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules supplementing Norway's law on managers of alternative investment funds, which also make the EU's detailed rules for those managers Norwegian law. It binds fund managers and depositaries directly. A bank is covered mainly where it acts as depositary for an alternative investment fund: it must check issues, redemptions and valuations, delegate safekeeping only with due care, refuse unlawful instructions and tell Finanstilsynet of breaches that are not corrected."
+      }
+    },
+    {
+      "key": "no-for-2011-12-21-1467",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2011-12-21-1467",
+      "sourceLabel": "Lovdata, FOR-2011-12-21-1467, Forskrift til verdipapirfondloven (verdipapirfondforskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules supplementing Norway's law on securities funds, carrying out the EU UCITS framework. It binds management companies, depositaries and those who hold or market fund units. A bank is covered as a depositary, where its managers must be fit and proper and it may delegate safekeeping or reuse assets only on strict terms, as a nominee holding units for clients, where it keeps a list of the real owners, and when marketing funds, which must point to the prospectus."
+      }
+    },
+    {
+      "key": "no-for-2021-12-22-3872",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2021-12-22-3872",
+      "sourceLabel": "Lovdata, FOR-2021-12-22-3872, Forskrift om forsikringsformidling (forsikringsformidlingsforskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules supplementing Norway's law on insurance distribution, carrying out the EU Insurance Distribution Directive. It binds insurance intermediaries, which includes a bank distributing insurance as an agent. Such a bank must make sure the staff involved know the products, claims handling, complaints, customer needs and conflicts of interest, meet the continuing education requirements, and keep records for each employee that prove it."
+      }
+    },
+    {
+      "key": "no-for-2025-03-27-543",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2025-03-27-543",
+      "sourceLabel": "Lovdata, FOR-2025-03-27-543, Forskrift til finanstilsynsloven (finanstilsynsforskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules supplementing the Financial Supervision Act, covering Finanstilsynet's board, staff trading, information exchange, its complaints board and how its costs are funded. Most of it binds the authority, not banks. The part that reaches a bank is the cost allocation: Finanstilsynet's yearly costs are shared among the firms it supervises, with banks paying by total assets, and some firm types also pay application and register fees."
+      }
+    },
+    {
+      "key": "no-for-2004-12-06-1573",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2004-12-06-1573",
+      "sourceLabel": "Lovdata, FOR-2004-12-06-1573, Forskrift om register over opplysninger om valutaveksling og overføring av betalingsmidler inn og ut av Norge (valutaregisterforskriften), consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules on the currency register, which records currency exchange and transfers of money into and out of Norway. It binds reporting entities such as banks directly. A bank must report each reportable exchange or cross-border transfer within five working days with the parties' details, send monthly aggregated figures, correct wrong information without undue delay, and tell customers that information about them has gone to the register."
+      }
+    },
+    {
+      "key": "no-for-2017-04-04-427",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2017-04-04-427",
+      "sourceLabel": "Lovdata, FOR-2017-04-04-427, Forskrift om fakturering av kredittkortgjeld mv., consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules on how credit card debt and other unsecured credit lines are invoiced to consumers living in Norway. It binds lenders offering such credit, banks included. A bank's payment requests must propose the full outstanding balance as the amount to pay, and the bank must explain what it costs the consumer to pay less than the full amount, including a table showing the cost of different payment amounts."
+      }
+    },
+    {
+      "key": "no-for-2019-12-16-1843",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-16-1843",
+      "sourceLabel": "Lovdata, FOR-2019-12-16-1843, Forskrift om formidlingsgebyr i kortordninger mv., consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules that make the EU Interchange Fee Regulation and its supplementing standard on the independence of card schemes and processing entities Norwegian law. Those EU acts cap interchange fees on consumer card payments and set business rules for card schemes, issuers and acquirers. A bank has no duties under this regulation's own text; its duties as card issuer or acquirer sit in the incorporated EU acts."
+      }
+    },
+    {
+      "key": "no-for-1998-12-16-1240",
+      "source": "https://lovdata.no/dokument/SF/forskrift/1998-12-16-1240",
+      "sourceLabel": "Lovdata, FOR-1998-12-16-1240, Forskrift om årsregnskap for banker, kredittforetak og finansieringsforetak, consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules on annual and interim accounts for banks, credit institutions and finance companies. It binds these institutions directly. A bank must prepare its accounts under IFRS or the regulation's adapted version of IFRS depending on whether it is listed, have the board adopt the annual accounts and directors' report within the set deadline, and prepare quarterly interim accounts that the board adopts within 45 days."
+      }
+    },
+    {
+      "key": "no-for-2015-12-18-1764",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2015-12-18-1764",
+      "sourceLabel": "Lovdata, FOR-2015-12-18-1764, Forskrift om konsolidering mv. i tverrsektorielle grupper, consolidated text",
+      "text": {
+        "en": "The Ministry of Finance's rules for financial groups that combine banking or investment business with insurance, carrying out the EU Financial Conglomerates Directive. It binds the top Norwegian entity of such a group directly. A bank that heads or belongs to a cross-sector group must see that the group consolidates and calculates own funds for its banking and insurance parts, and reports risk concentration and intra-group transactions to Finanstilsynet at least once a year."
+      }
+    }
+  ]
+}

@@ -35,6 +35,10 @@ const fffs: InstrumentDetail = {
   lastVerifiedAt: '2026-06-30T07:12:44Z',
   verifiedBy: null,
   privateToUs: false,
+  summary: null,
+  implements: [],
+  implementedBy: [],
+  obligationCounts: { inLibrary: 34, inScope: 34, waitingForReview: 0 },
   lineage: [
     {
       relation: { key: 'amends', kind: null, label: 'Amends' },
@@ -143,11 +147,11 @@ describe('InstrumentScreen', () => {
     };
     const sent = serve(iso, [control]);
     renderIn(<InstrumentScreen instrumentId="in-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'Information security management systems' });
+    await screen.findByRole('heading', { level: 1, name: 'ISO/IEC 27001:2022' });
+    expect(screen.getByText('Information security management systems')).toBeVisible();
 
     const header = document.querySelectorAll('[data-header-pills] [data-pill]');
     expect([...header].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
-      ['ISO/IEC 27001:2022', 'brand'],
       ['Standard edition', 'information'],
       ['Standard', 'information'],
       ['International', 'brand'],
@@ -173,11 +177,10 @@ describe('InstrumentScreen', () => {
   it('leads the head of the bank\'s own instrument with "Private to us", its short name outlined (OWN-04)', async () => {
     serve({ ...fffs, privateToUs: true });
     renderIn(<InstrumentScreen instrumentId="in-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'FFFS 2017:2 om värdepappersrörelse' });
+    await screen.findByRole('heading', { level: 1, name: 'FFFS 2017:2' });
     const header = document.querySelectorAll('[data-header-pills] [data-pill]');
-    expect([...header].slice(0, 3).map((pill) => [pill.textContent, pill.getAttribute('data-pill'), pill.hasAttribute('data-outlined')])).toEqual([
+    expect([...header].slice(0, 2).map((pill) => [pill.textContent, pill.getAttribute('data-pill'), pill.hasAttribute('data-outlined')])).toEqual([
       ['Private to us', 'information', true],
-      ['FFFS 2017:2', 'information', true],
       ['Supervisory regulation', 'information', false],
     ]);
   });
@@ -185,12 +188,13 @@ describe('InstrumentScreen', () => {
   it('shows the header pills, the identity panel, the source link and the obligations from this instrument', async () => {
     serve(fffs);
     renderIn(<InstrumentScreen instrumentId="in-1" />);
-    await screen.findByRole('heading', { level: 1, name: 'FFFS 2017:2 om värdepappersrörelse' });
+    await screen.findByRole('heading', { level: 1, name: 'FFFS 2017:2' });
 
-    // Short name and jurisdiction are brand, level and binding are information (INV-S1).
+    // The short name is the heading and the official title stands under it; the jurisdiction
+    // is brand, level and binding are information (INV-S1).
+    expect(screen.getByText('FFFS 2017:2 om värdepappersrörelse')).toBeVisible();
     const header = document.querySelectorAll('[data-header-pills] [data-pill]');
     expect([...header].map((pill) => [pill.textContent, pill.getAttribute('data-pill')])).toEqual([
-      ['FFFS 2017:2', 'brand'],
       ['Supervisory regulation', 'information'],
       ['Binding', 'information'],
       ['Sweden', 'brand'],
@@ -207,10 +211,9 @@ describe('InstrumentScreen', () => {
     expect(source).toHaveAttribute('href', fffs.sourceUrl);
     expect(source).toHaveAttribute('rel', 'noopener noreferrer');
 
-    // An instrument with no provision tree yet shows the empty state, not an error.
-    expect(await screen.findByText('No provisions yet')).toBeVisible();
-
     expect(await screen.findByText('Pay for third-party research only under the permitted models')).toBeInTheDocument();
+    // No provision text held: the panel is left out rather than promising text.
+    expect(document.querySelector('[data-provision-tree]')).toBeNull();
   });
 
   it('groups the lineage by relation and direction, each under its own heading', async () => {
@@ -219,7 +222,7 @@ describe('InstrumentScreen', () => {
     await screen.findByRole('heading', { level: 1 });
     const groups = [...document.querySelectorAll('[data-lineage-group]')];
     expect(groups.map((group) => [group.getAttribute('data-lineage-group'), group.querySelector('h3')?.textContent])).toEqual([
-      ['amends:incoming', 'Amends this instrument'],
+      ['amends:incoming', 'Amends this regulation'],
       ['implements:outgoing', 'Implements'],
     ]);
     const amendedBy = document.querySelector('[data-lineage-group="amends:incoming"]') as HTMLElement;
@@ -239,19 +242,78 @@ describe('InstrumentScreen', () => {
     renderIn(<InstrumentScreen instrumentId="in-1" />);
     await screen.findByRole('heading', { level: 1 });
     const implementedBy = document.querySelector('[data-lineage-group="implements:incoming"]') as HTMLElement;
-    expect(within(implementedBy).getByRole('heading', { level: 3 })).toHaveTextContent('Implements this instrument');
+    expect(within(implementedBy).getByRole('heading', { level: 3 })).toHaveTextContent('Implements this regulation');
     expect(within(implementedBy).getByText('FFFS 2017:2')).toBeInTheDocument();
     const amends = document.querySelector('[data-lineage-group="amends:outgoing"]') as HTMLElement;
     expect(within(amends).getByRole('heading', { level: 3 })).toHaveTextContent('Amends');
     expect(within(amends).getByText('FFFS 2017:1')).toBeInTheDocument();
-    expect(screen.queryByText('The library files no other instrument beside this one.')).toBeNull();
   });
 
-  it('shows the lineage empty state when the instrument has none', async () => {
+  it('leaves the lineage out when the instrument has none', async () => {
     serve({ ...fffs, lineage: [] });
     renderIn(<InstrumentScreen instrumentId="in-1" />);
-    expect(await screen.findByText('The library files no other instrument beside this one.')).toBeVisible();
-    expect(document.querySelector('[data-lineage-group]')).toBeNull();
+    await screen.findByText('Pay for third-party research only under the permitted models');
+    expect(document.querySelector('[data-lineage-panel]')).toBeNull();
+  });
+
+  it('says what the instrument is, and how many of its obligations the library holds and our scope takes', async () => {
+    serve({
+      ...fffs,
+      summary: { text: "Finansinspektionen's rules for investment services.", language: 'en', isOriginal: true, isMachine: false },
+      obligationCounts: { inLibrary: 5, inScope: 3, waitingForReview: 2 },
+    });
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    const summary = (await screen.findByText("Finansinspektionen's rules for investment services.")).closest('[data-summary-panel]') as HTMLElement;
+    expect(within(summary).getByRole('heading', { name: 'What it is' })).toBeInTheDocument();
+    const panel = document.querySelector('[data-obligations-panel]') as HTMLElement;
+    expect(within(panel).getByRole('heading', { name: 'Obligations from these rules' })).toBeInTheDocument();
+    expect(panel.querySelector('[data-applies-counts]')).toHaveTextContent('5 obligations in the library. 3 fall in your scope.');
+    expect(panel.querySelector('[data-applies-waiting]')).toHaveTextContent('2 more obligations wait for review before reaching the library.');
+  });
+
+  it('for a directive, says its obligations come from national law and links the laws that implement it', async () => {
+    const directive: InstrumentDetail = {
+      ...fffs,
+      id: 'in-9',
+      stableKey: 'celex-32002l0047',
+      shortName: 'Financial Collateral Directive',
+      level: { key: 'eu_directive', kind: null, label: 'EU directive' },
+      jurisdiction: { key: 'eu', kind: 'union', label: 'European Union' },
+      lineage: [],
+      obligationCounts: { inLibrary: 0, inScope: 0, waitingForReview: 0 },
+      implementedBy: [{ id: 'in-10', key: 'se-sfs-1991-980', shortName: 'Lag om finansiell säkerhet', jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' } }],
+    };
+    serve(directive, []);
+    renderIn(<InstrumentScreen instrumentId="in-9" />);
+    const panel = (await screen.findByRole('heading', { name: 'Obligations from this directive' })).closest('[data-obligations-panel]') as HTMLElement;
+    expect(panel).toHaveTextContent("A directive binds the member states, not your bank directly. A bank's obligations come from each country's law that implements it.");
+    expect(within(panel).getByRole('link', { name: 'Lag om finansiell säkerhet' })).toHaveAttribute('href', '/inventory/instruments/in-10');
+    expect(within(panel).getByText('Sweden')).toBeInTheDocument();
+    // No scope control over a list that cannot have rows.
+    expect(within(panel).queryByRole('button', { name: 'My scope' })).toBeNull();
+
+    serve({ ...directive, implementedBy: [] }, []);
+    renderIn(<InstrumentScreen instrumentId="in-9" />);
+    expect(await screen.findByText('The library holds no national law that implements it yet.')).toBeVisible();
+  });
+
+  it('says when the library holds no obligation under it, or that new ones wait for review', async () => {
+    serve({ ...fffs, level: { key: 'act', kind: null, label: 'Act' }, obligationCounts: { inLibrary: 0, inScope: 0, waitingForReview: 0 } }, []);
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    expect(await screen.findByText('The library holds no obligation under it yet.')).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Obligations from this act' })).toBeInTheDocument();
+
+    serve({ ...fffs, obligationCounts: { inLibrary: 0, inScope: 0, waitingForReview: 1 } }, []);
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    expect(await screen.findByText('1 more obligation waits for review before reaching the library.')).toBeVisible();
+  });
+
+  it('lists what the instrument implements, each opening its own card', async () => {
+    serve({ ...fffs, lineage: [], implements: [{ id: 'in-7', key: 'celex-32014l0065', shortName: 'MiFID II', jurisdiction: { key: 'eu', kind: 'union', label: 'European Union' } }] });
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    const implementsGroup = (await screen.findByRole('link', { name: 'MiFID II' })).closest('[data-implements]') as HTMLElement;
+    expect(within(implementsGroup).getByRole('heading', { level: 3 })).toHaveTextContent('Implements');
+    expect(within(implementsGroup).getByRole('link', { name: 'MiFID II' })).toHaveAttribute('href', '/inventory/instruments/in-7');
   });
 
   it('reads the obligations inside our scope first, with the total and a link to the same list in the inventory', async () => {
@@ -302,10 +364,10 @@ describe('InstrumentScreen', () => {
   it('says none is in our scope, and none at all once the reader looks outside it', async () => {
     serve(fffs, []);
     renderIn(<InstrumentScreen instrumentId="in-1" />);
-    expect(await screen.findByText('No obligation from this instrument is in our scope.')).toBeVisible();
+    expect(await screen.findByText('No obligation from this regulation is in our scope.')).toBeVisible();
     expect(screen.queryByRole('link', { name: 'Open in the inventory' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Show all items' }));
-    expect(await screen.findByText('This instrument has no obligation yet.')).toBeVisible();
+    expect(await screen.findByText('This regulation has no obligation yet.')).toBeVisible();
   });
 
   it('offers a retry when the read fails, and Not found on a 404', async () => {
@@ -313,7 +375,7 @@ describe('InstrumentScreen', () => {
     renderIn(<InstrumentScreen instrumentId="in-1" />);
     fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(sent.filter((s) => s.path === '/api/v1/instruments/in-1').length).toBeGreaterThan(1));
-    expect(screen.getByText('Could not load this instrument')).toBeVisible();
+    expect(screen.getByText('Could not load this regulation')).toBeVisible();
 
     serve(404);
     renderIn(<InstrumentScreen instrumentId="in-1" />);

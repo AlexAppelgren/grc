@@ -38,6 +38,7 @@ from pydantic.alias_generators import to_camel
 
 from apps.library.models import (
     Instrument,
+    InstrumentSummary,
     InstrumentTitle,
     Jurisdiction,
     Obligation,
@@ -64,6 +65,7 @@ from apps.proposals.logic import (
     validated_instrument,
     PRIVATE_RECORD_KINDS,
     validated_obligation,
+    validated_instrument_summary,
     validated_provision,
     validated_recurring_duty,
 )
@@ -72,6 +74,7 @@ from apps.proposals.schemas import (
     ObligationScopePayload,
     ProposalControlPayload,
     ProposalInstrumentPayload,
+    ProposalInstrumentSummaryPayload,
     ProposalObligationPayload,
     ProposalObligationVersionPayload,
     ProposalProvisionPayload,
@@ -175,6 +178,9 @@ def apply(
         elif proposal.kind == ProposalKind.NEW_PROVISION_VERSION.value:
             assert isinstance(payload, ProposalProvisionVersionPayload)
             _provision_version(payload, proposal, actor, reviewer, step_up)
+        elif proposal.kind == ProposalKind.NEW_INSTRUMENT_SUMMARY.value:
+            assert isinstance(payload, ProposalInstrumentSummaryPayload)
+            _new_instrument_summary(payload, proposal, actor, reviewer, step_up)
         elif proposal.kind == ProposalKind.NEW_RECURRING_DUTY.value:
             assert isinstance(payload, ProposalRecurringDutyPayload)
             _new_recurring_duty(payload, proposal, actor, reviewer, step_up)
@@ -326,6 +332,32 @@ def _new_instrument(
             "verifiedOrigin": instrument.verified_origin,
             "proposal": str(proposal.id),
         },
+        step_up_assertion_id=step_up,
+    )
+
+
+def _new_instrument_summary(
+    payload: ProposalInstrumentSummaryPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
+) -> None:
+    """Add the instrument's summary the proposal asks for (INV-09, D-124), one row per
+    language. Checked again by the function creation ran: the instrument may have been
+    retired, or have been given a summary, while the proposal waited. The instrument's row
+    is locked first, so two approvals cannot both find it without one."""
+    instrument = validated_instrument_summary(payload)
+    instrument = Instrument.objects.select_for_update().get(pk=instrument.pk)
+    if InstrumentSummary.objects.filter(instrument=instrument).exists():
+        raise ValidationError(f"{payload.instrument!r} already has a summary.", code="duplicate_key")
+    for language, text, is_original, is_machine in _texts(payload.summaries, payload.original_language, payload.is_machine, reviewer):
+        InstrumentSummary.objects.create(instrument=instrument, language_id=language, text=text, is_original=is_original, is_machine=is_machine)
+    record(
+        action="instrument.summary_added",
+        actor=actor,
+        subject_type=SubjectType.INSTRUMENT.value,
+        subject_id=instrument.id,
+        subject_title=instrument.stable_key,
+        summary=f"Added the summary of the instrument {instrument.stable_key} (proposal {proposal.id}).",
+        tenant_id=None,
+        after={"stableKey": instrument.stable_key, "languages": sorted(payload.summaries), "proposal": str(proposal.id)},
         step_up_assertion_id=step_up,
     )
 

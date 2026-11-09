@@ -150,7 +150,7 @@
   "admin.apiKeys.errorTitle": "Could not load API keys",
   "admin.apiKeys.scope.proposals:write": "Submit proposals to the library queue",
   "admin.apiKeys.scope.search:read": "Run searches",
-  "admin.apiKeys.scope.library:read": "Read instruments and obligations",
+  "admin.apiKeys.scope.library:read": "Read regulations and obligations",
   "admin.apiKeys.scope.upcoming:read": "Read upcoming dates",
   "admin.apiKeys.scope.tenant:read": "Read the tenant profile",
   "admin.securityLog.title": "Security log",

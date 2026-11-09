@@ -291,6 +291,45 @@ def sources(ref: dict[str, set[str]]) -> list[str]:
     return problems
 
 
+# Each tranche's instrument summaries (INV-09, D-124), in a file of the same name here.
+SUMMARIES_DIR = "summaries"
+SUMMARY_MIN, SUMMARY_MAX = 250, 600
+# What the summaries never say: a dash for a pause, advice to the reader, or a purpose claim.
+SUMMARY_REFUSED = re.compile(r"[\u2013\u2014]|\bshould\b|\baims to\b", re.IGNORECASE)
+
+
+def summaries() -> list[str]:
+    """Every tranche has a summary file with one English summary per instrument, its own
+    https source, and plain text of the agreed length and style."""
+    problems = []
+    for path in sorted(path for path in HERE.glob("*.json") if path.name != SOURCES_FILE):
+        keys = [entry["payload"]["key"] for entry in json.loads(path.read_text(encoding="utf-8"))["instruments"]]
+        where = f"{SUMMARIES_DIR}/{path.name}"
+        side = HERE / SUMMARIES_DIR / path.name
+        if not side.exists():
+            problems.append(f"{where}: missing; every instrument has a summary")
+            continue
+        data = json.loads(side.read_text(encoding="utf-8"))
+        if data.get("tranche") != path.stem:
+            problems.append(f"{where}: tranche must be {path.stem!r}")
+        written = [item.get("key") for item in data.get("summaries", [])]
+        if sorted(written) != sorted(keys):
+            problems.append(f"{where}: one summary per instrument; missing {sorted(set(keys) - set(written))}, extra {sorted(set(written) - set(keys))}")
+        for item in data.get("summaries", []):
+            text = item.get("text", {})
+            label = f"{where}[{item.get('key')}]"
+            if list(text) != ["en"]:
+                problems.append(f"{label}: text is written in English only, as {{\"en\": ...}}")
+            english = str(text.get("en", ""))
+            if not SUMMARY_MIN <= len(english) <= SUMMARY_MAX:
+                problems.append(f"{label}: {len(english)} characters; a summary is {SUMMARY_MIN} to {SUMMARY_MAX}")
+            if SUMMARY_REFUSED.search(english):
+                problems.append(f"{label}: no dashes, no 'should', no 'aims to'")
+            if not str(item.get("source", "")).startswith("https://") or not item.get("sourceLabel"):
+                problems.append(f"{label}: an https source and its label")
+    return problems
+
+
 def main(argv: list[str]) -> int:
     files = [Path(arg) for arg in argv] or sorted(path for path in HERE.glob("*.json") if path.name != SOURCES_FILE)
     checker = Checker()
@@ -304,6 +343,7 @@ def main(argv: list[str]) -> int:
         checker.file(path)
     if not argv:
         checker.problems += sources(checker.ref)
+        checker.problems += summaries()
     for tranche, (instruments, obligations) in sorted(checker.counts.items()):
         print(f"{tranche}: {instruments} instruments, {obligations} obligations")
     if checker.problems:

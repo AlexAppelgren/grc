@@ -18202,6 +18202,16 @@ export interface components {
              */
             id: string;
             /**
+             * Implementedby
+             * @description The instruments that implement this one, read the other way: each library instrument whose `implementsNote` names this instrument's official number. For an EU directive these are the national laws that carry its duties. Empty when the library holds none this caller may read.
+             */
+            implementedBy: components["schemas"]["InstrumentLinkRef"][];
+            /**
+             * Implements
+             * @description The instruments this one implements, read from its `implementsNote`: each library instrument whose official number (such as 2014/59 in Directive 2014/59/EU) the note names. Empty when the note names none the library holds or this caller may read.
+             */
+            implements: components["schemas"]["InstrumentLinkRef"][];
+            /**
              * Implementsnote
              * @description What this instrument implements or elaborates, in the library's own words, so a reader can see where a Swedish rule comes from. Free text for a person and never a machine-readable link; an empty string when nothing was recorded, never null. The structured lineage between instruments is `lineage` on the instrument's own read.
              * @example MiFID II delegated directive (EU) 2017/593
@@ -18228,6 +18238,8 @@ export interface components {
             lineage: components["schemas"]["InstrumentLineageRef"][];
             /** @description The instrument's full name, in the best language this reader can be served. The original is the jurisdiction's legal language, so a Swedish regulation read in English usually still answers its Swedish name rather than a translation. Null only when the record carries no name in any language. */
             name: components["schemas"]["LocalizedText"] | null;
+            /** @description How many duties sit under the instrument: held, in the caller's scope, and waiting for review. */
+            obligationCounts: components["schemas"]["InstrumentObligationCounts"];
             /**
              * Officialref
              * @description The reference the issuing authority itself publishes the instrument under, written as that authority writes it. It is how a lawyer cites the instrument and how a reader recognises it on the authority's own site; it is not an identifier this API accepts, which is `key`.
@@ -18260,6 +18272,8 @@ export interface components {
              * @example fffs-2017-2
              */
             stableKey: string;
+            /** @description What the instrument is and what it means for a bank, in two to four plain sentences, in the caller's first content language the summary is written in, or null when the library holds no summary for it yet. Written once from the instrument's own source and entered through an approved proposal (INV-09). */
+            summary: components["schemas"]["LocalizedText"] | null;
             /** @description The bleqq platform person who last confirmed this record against its source, by id and name, or null when nobody has. Never a member of a bank: re-verifying a shared fact is bleqq's own check. */
             verifiedBy: components["schemas"]["PersonRef"] | null;
         };
@@ -18297,6 +18311,56 @@ export interface components {
              * @example Article 25(3) and (4)
              */
             toRef: string;
+        };
+        /**
+         * InstrumentLinkRef
+         * @description Another instrument this one is tied to by implementation, as the card links to it.
+         */
+        InstrumentLinkRef: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The other instrument's id, a UUID, the value `GET /instruments/{instrumentId}` takes.
+             */
+            id: string;
+            /** @description Where the instrument applies, as `{key, kind, label}` from the jurisdiction vocabulary (`se`, `dk`, `no`, `fi`, `eu` and `intl` among the rows seeded on day one). The values are rows an admin manages, not a closed set: a platform admin may extend, relabel or retire one without a deploy, so read `GET /reference/jurisdictions` for the live set and match on the key, never on the label. The `kind` is one of three kinds fixed in code: `country`, `supranational` (the European Union) or `international`, the jurisdiction of a standards body such as ISO/IEC, which is no market a bank operates in. */
+            jurisdiction: components["schemas"]["LibraryRef"];
+            /**
+             * Key
+             * @description The other instrument's stable key, issued once and never changed.
+             * @example se-sfs-2004-297
+             */
+            key: string;
+            /**
+             * Shortname
+             * @description The other instrument's short name, to print.
+             * @example LBF
+             */
+            shortName: string;
+        };
+        /**
+         * InstrumentObligationCounts
+         * @description How many duties sit under the instrument, so the card can say what applies.
+         */
+        InstrumentObligationCounts: {
+            /**
+             * Inlibrary
+             * @description How many obligations the library holds under this instrument that this caller may read, whatever its scope. 0 or more.
+             * @example 5
+             */
+            inLibrary: number;
+            /**
+             * Inscope
+             * @description How many of those fall inside the caller's regulatory scope, counted exactly as `GET /obligations?instrument=<key>` lists them with the default `footprint=in`. 0 or more.
+             * @example 3
+             */
+            inScope: number;
+            /**
+             * Waitingforreview
+             * @description How many new duties under this shared instrument wait in the library's review queue and are not in the library yet. Always 0 for an organisation's own instrument. 0 or more.
+             * @example 0
+             */
+            waitingForReview: number;
         };
         /**
          * InstrumentPage
@@ -18959,6 +19023,28 @@ export interface components {
             items: components["schemas"]["LibraryUpdateRow"][];
         };
         /**
+         * LibraryUpdateInstrument
+         * @description The regulation a new-regulation update added, named by the library record itself.
+         */
+        LibraryUpdateInstrument: {
+            /**
+             * Id
+             * Format: uuid
+             * @description The regulation's id, a UUID, the value `GET /instruments/{instrumentId}` takes, so a row can link straight to its card.
+             */
+            id: string;
+            /**
+             * Officialref
+             * @description The regulation's official reference, for example "Regulation (EU) No 596/2014".
+             */
+            officialRef: string;
+            /**
+             * Shortname
+             * @description The regulation's short name, for example "MAR" or "FFFS 2017:2".
+             */
+            shortName: string;
+        };
+        /**
          * LibraryUpdateRow
          * @description One change that reached the shared library while this reader was away (PRO-03,
          *     INV-04): what changed, when it was applied, when it starts binding, whether it reaches
@@ -19023,6 +19109,8 @@ export interface components {
              * @example true
              */
             inFootprint: boolean;
+            /** @description The regulation a `new_instrument` update added, by id, short name and official reference. Null on every other kind, and when the reader may not open that regulation. */
+            instrument?: components["schemas"]["LibraryUpdateInstrument"] | null;
             /**
              * Kind
              * @description What kind of change it was, and therefore which of the fields below are filled. A fixed kind: `new_obligation_version` is a new wording of a duty, `new_obligation` is a duty new to the library with its first wording, `new_instrument` is an instrument new to the library, which names no duty and no list, `new_provision` and `new_provision_version` are a law's verbatim text, new or amended, which name no duty and no list either, `new_recurring_duty` is a schedule a duty falls due on, which names that duty, and `vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore`, `vocabulary_merge`, `term_create` and `term_update` are changes to a shared list or to the taxonomy every bank reads.

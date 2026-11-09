@@ -30,6 +30,7 @@ const SLOT_ORDER = { kind: 10, status: 20, flagged: 25, yours: 30 } as const;
 
 const KIND_LABEL: Readonly<Record<ProposalKind, MessageKey>> = {
   new_instrument: 'console.queue.kind.newInstrument',
+  new_instrument_summary: 'console.queue.kind.newInstrumentSummary',
   new_obligation: 'console.queue.kind.newObligation',
   new_obligation_version: 'console.queue.kind.newObligationVersion',
   new_provision: 'console.queue.kind.newProvision',
@@ -198,6 +199,19 @@ export function instrumentPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>):
   return newRecordPayloadOf(row, 'new_instrument') as InstrumentPayload | null;
 }
 
+/** A `new_instrument_summary` payload: the instrument it describes by key and its text per language (INV-09). */
+export interface InstrumentSummaryPayload {
+  instrument: string;
+  summaries: Record<string, string>;
+  originalLanguage: string;
+  isMachine?: boolean;
+}
+
+export function instrumentSummaryPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>): InstrumentSummaryPayload | null {
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+  return row.kind === 'new_instrument_summary' && typeof payload.summaries === 'object' && payload.summaries !== null ? (payload as unknown as InstrumentSummaryPayload) : null;
+}
+
 export function newObligationPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>): NewObligationPayload | null {
   return newRecordPayloadOf(row, 'new_obligation') as NewObligationPayload | null;
 }
@@ -295,6 +309,18 @@ export function fieldSourceRows(fieldSources: Record<string, string>): { field: 
   return Object.entries(fieldSources)
     .map(([field, url]) => ({ field, url }))
     .sort((a, b) => fieldRank(a.field) - fieldRank(b.field) || a.field.localeCompare(b.field));
+}
+
+/**
+ * The field sources grouped by page, in the fields' own order: one row per page with every
+ * field it is the source of, so a page that supports every fact is named once, not per field.
+ */
+export function fieldSourceGroups(fieldSources: Record<string, string>): { url: string; fields: string[] }[] {
+  const groups = new Map<string, string[]>();
+  for (const { field, url } of fieldSourceRows(fieldSources)) {
+    groups.set(url, [...(groups.get(url) ?? []), field]);
+  }
+  return [...groups].map(([url, fields]) => ({ url, fields }));
 }
 
 /** The proposed scope as `brand` pills, in the scope block's own slot (pills-and-labels.md). */

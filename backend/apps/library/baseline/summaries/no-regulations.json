@@ -1,0 +1,46 @@
+{
+  "tranche": "no-regulations",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "no-for-2016-11-23-1360",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2016-11-23-1360",
+      "sourceLabel": "Lovdata, FOR-2016-11-23-1360, Forskrift til skatteforvaltningsloven (skatteforvaltningsforskriften), consolidated text; fastsatt av Skattedirektoratet",
+      "text": {
+        "en": "The Directorate of Taxes' detailed rules under the Tax Administration Act, including what third parties must report to the tax authorities and the due diligence rules for the FATCA agreement with the United States and the OECD Common Reporting Standard. It binds banks directly as reporting financial institutions. A bank must report customers' deposits, loans and other financial data, identify accounts of foreign tax residents and US persons through self-certifications and searches, keep the documentation, and give customers a copy of what was reported."
+      }
+    },
+    {
+      "key": "no-for-2022-01-12-59",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2022-01-12-59",
+      "sourceLabel": "Lovdata, FOR-2022-01-12-59, Forskrift om beregning av foretaksspesifikke satser for kapitalbufferkrav, consolidated text; fastsatt av Finanstilsynet",
+      "text": {
+        "en": "Finanstilsynet's rules on how an institution calculates its own countercyclical capital buffer rate and systemic risk buffer rate. It binds banks and other institutions subject to the buffer requirements directly. A bank must work out each rate as a weighted average of the rates that apply where its relevant exposures are located, and publish the basis for both rates, which in turn sets how much common equity it must hold above its minimum requirements."
+      }
+    },
+    {
+      "key": "no-for-2020-02-04-107",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2020-02-04-107",
+      "sourceLabel": "Lovdata, FOR-2020-02-04-107, Forskrift om forbud mot markedsføring, distribusjon og salg av binære opsjoner til ikke-profesjonelle mv., consolidated text; fastsatt av Finanstilsynet",
+      "text": {
+        "en": "Finanstilsynet's rules banning the marketing, distribution and sale of binary options to non-professional clients in or from Norway and restricting how contracts for difference are offered to them. It binds any firm offering these products to such clients, banks included. A bank offering contracts for difference to non-professional clients must require the minimum initial margins, may not offer incentives beyond the realised profit, and must show the prescribed risk warning in every communication about them."
+      }
+    },
+    {
+      "key": "no-for-2022-11-29-2044",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2022-11-29-2044",
+      "sourceLabel": "Lovdata, FOR-2022-11-29-2044, Forskrift om rapportering for forsikringsformidlingsforetak, consolidated text; fastsatt av Finanstilsynet",
+      "text": {
+        "en": "Finanstilsynet's rules on the yearly report that insurance intermediaries give about their insurance distribution business. It binds firms registered as insurance agent firms and firms licensed for insurance or reinsurance broking. A bank is covered only if it is registered as an insurance agent firm or holds a broking licence; it must then report on its insurance distribution in the previous financial year on Finanstilsynet's forms by the yearly deadline."
+      }
+    },
+    {
+      "key": "no-for-2019-12-18-1900",
+      "source": "https://lovdata.no/dokument/SF/forskrift/2019-12-18-1900",
+      "sourceLabel": "Lovdata, FOR-2019-12-18-1900, Forskrift om verdipapirsentraler og verdipapiroppgjør (verdipapirsentralforskriften), consolidated text; fastsatt av Finanstilsynet",
+      "text": {
+        "en": "Finanstilsynet's rules supplementing Norway's law on central securities depositories and securities settlement. They make the EU technical standards under the Central Securities Depositories Regulation, including the settlement discipline rules, part of Norwegian law, and set what the depository's register must record about instruments, account holders, account operators, limited rights and powers of attorney. The register duty rests on the depository; a bank is touched as an account holder or account operator and through the incorporated settlement rules."
+      }
+    }
+  ]
+}

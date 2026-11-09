@@ -101,7 +101,7 @@ describe('the queue', () => {
       ['Proposed by our agent', 'brand'],
     ]);
     expect(within(agent).getByText('Source: riksdagen.se')).toBeInTheDocument();
-    expect([...mine.querySelectorAll('[data-pill]')].map((pill) => pill.textContent)).toEqual(['New instrument', 'Waiting']);
+    expect([...mine.querySelectorAll('[data-pill]')].map((pill) => pill.textContent)).toEqual(['New regulation', 'Waiting']);
     expect(within(mine).getByText('Proposed by you')).toBeInTheDocument();
   });
 

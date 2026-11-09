@@ -1,0 +1,86 @@
+{
+  "tranche": "eu-securitisation",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "celex-32017r2402",
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/2402/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/2402 as published in the Official Journal",
+      "text": {
+        "en": "Sets the EU framework for securitisation, where loans are pooled and their credit risk passed to investors in tranches, and the criteria for the simple, transparent and standardised (STS) label. It binds originators, sponsors, original lenders, securitisation special purpose entities and institutional investors directly. A bank that securitises its loans keeps a 5% retained interest, lends to its usual standards and discloses the deal; a bank that invests does due diligence first and monitors the position."
+      }
+    },
+    {
+      "key": "celex-32021r0557",
+      "source": "https://eur-lex.europa.eu/eli/reg/2021/557/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2021/557 as published in the Official Journal",
+      "text": {
+        "en": "Amends the Securitisation Regulation as part of the recovery package after the COVID-19 crisis. It extends the simple, transparent and standardised (STS) label to on-balance-sheet synthetic securitisations, where a bank buys credit protection on loans it keeps, and removes obstacles to securitising non-performing exposures. It holds no duties of its own: the duties sit in the Securitisation Regulation as it now reads."
+      }
+    },
+    {
+      "key": "celex-32020r1224",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1224/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1224 as published in the Official Journal",
+      "text": {
+        "en": "Specifies what the originator, sponsor and securitisation special purpose entity must disclose about a securitisation: loan-level data on the underlying exposures for each asset type, investor reports, and inside information and significant events. It supplements the Securitisation Regulation and binds the reporting entity directly. In practice a bank that reports for a securitisation makes complete and consistent data available and corrects any factual error without undue delay."
+      }
+    },
+    {
+      "key": "celex-32020r1225",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1225/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1225 as published in the Official Journal",
+      "text": {
+        "en": "Sets the templates and format for the disclosures a securitisation's originator, sponsor or special purpose entity must make: standard electronic XML templates for underlying-exposure data, investor reports and, for securitisations with a prospectus, inside information and significant events. It supplements the Securitisation Regulation and binds the reporting entity directly. In practice a bank that reports for a securitisation uses the templates that match the exposure type, in machine-readable form."
+      }
+    },
+    {
+      "key": "celex-32020r1226",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2020/1226/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2020/1226 as published in the Official Journal",
+      "text": {
+        "en": "Specifies what information originators and sponsors give ESMA when they notify a securitisation as simple, transparent and standardised (STS), with separate content for traditional securitisations, asset-backed commercial paper and on-balance-sheet synthetic securitisations. It supplements the Securitisation Regulation and binds the notifying parties directly. In practice a bank seeking the STS label explains, field by field, how each criterion is met."
+      }
+    },
+    {
+      "key": "celex-32020r1227",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2020/1227/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2020/1227 as published in the Official Journal",
+      "text": {
+        "en": "Sets the templates for notifying ESMA that a securitisation meets the simple, transparent and standardised (STS) criteria, one for each type of securitisation, and requires the notification to be electronic and machine-readable. It supplements the Securitisation Regulation and binds the notifying originator or sponsor directly. In practice a bank seeking the STS label completes the template for its deal type and uses the prescribed wording where information is unavailable."
+      }
+    },
+    {
+      "key": "celex-32023r2175",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2023/2175/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2023/2175 as published in the Official Journal",
+      "text": {
+        "en": "Specifies how the 5% risk retention in a securitisation works: how each retention option is fulfilled and measured at origination, the ban on hedging or selling the retained interest, and when assets kept on the balance sheet count as comparable for the ban on adverse selection. It supplements the Securitisation Regulation and binds originators, sponsors, original lenders and servicers directly. In practice a bank that securitises structures and keeps its retention to these rules."
+      }
+    },
+    {
+      "key": "celex-32019r1851",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2019/1851/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2019/1851 as published in the Official Journal",
+      "text": {
+        "en": "Specifies when the loans or receivables in a simple, transparent and standardised (STS) securitisation count as homogeneous: one asset type, similar underwriting and servicing, and shared risk factors such as property type, obligor type or jurisdiction. It supplements the Securitisation Regulation and applies directly to the parties structuring an STS securitisation. In practice a bank that originates or sponsors an STS deal builds its pool so that it passes this test."
+      }
+    },
+    {
+      "key": "celex-32024r0920",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/920/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/920 as published in the Official Journal",
+      "text": {
+        "en": "Specifies the performance-related triggers an on-balance-sheet synthetic securitisation needs to qualify as simple, transparent and standardised (STS) when it does not pay down tranches strictly in order of seniority, and how those triggers are calibrated. It supplements the Securitisation Regulation and binds the parties to the credit protection agreement directly. In practice a bank buying protection on its own loans sets triggers that act before the protecting tranches become too thin to absorb losses."
+      }
+    },
+    {
+      "key": "celex-32024r1700",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2024/1700/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2024/1700 as published in the Official Journal",
+      "text": {
+        "en": "Specifies how the originator of a simple, transparent and standardised (STS) traditional or on-balance-sheet securitisation presents information on the principal adverse impacts of the financed assets on sustainability factors, where it publishes that instead of environmental performance data. It supplements the Securitisation Regulation and binds the originator directly. In practice a bank choosing this route uses the set statement format, templates and indicators and corrects errors without undue delay."
+      }
+    }
+  ]
+}

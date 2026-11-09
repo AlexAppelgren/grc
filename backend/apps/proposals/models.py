@@ -84,6 +84,7 @@ class ProposalKind(enum.StrEnum):
     OBLIGATION_SCOPE = "obligation_scope"
     NEW_RECURRING_DUTY = "new_recurring_duty"
     NEW_CONTROL = "new_control"
+    NEW_INSTRUMENT_SUMMARY = "new_instrument_summary"
 
 
 class ProposalStatus(enum.StrEnum):

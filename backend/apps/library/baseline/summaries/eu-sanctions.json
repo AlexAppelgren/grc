@@ -1,0 +1,398 @@
+{
+  "tranche": "eu-sanctions",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "celex-32014r0833",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/833/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 833/2014 as published in the Official Journal",
+      "text": {
+        "en": "The EU's main economic and financial sanctions against Russia over its war on Ukraine: bans on trade in many goods and services, restrictions on Russian state securities and lending, transaction bans with listed state firms and the Central Bank of Russia, and limits on deposits, crypto and payment services for Russians. It applies directly to everyone in the EU and to EU nationals and companies, banks included. Banks must screen for these restrictions, refuse covered business, report large deposits and Central Bank of Russia assets, and keep non-EU subsidiaries from undermining the measures."
+      }
+    },
+    {
+      "key": "celex-32014r0269",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/269/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 269/2014 as published in the Official Journal",
+      "text": {
+        "en": "The EU asset freeze on people and entities listed for undermining Ukraine's territorial integrity, sovereignty and independence, the core Russia listing regime. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the assets of anyone in its annex, never make funds available to them directly or indirectly, report frozen assets and unfrozen listed assets to its competent authority within two weeks, and use best efforts to keep entities it controls outside the EU from undermining the measures."
+      }
+    },
+    {
+      "key": "celex-32006r0765",
+      "source": "https://eur-lex.europa.eu/eli/reg/2006/765/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EC) No 765/2006 as published in the Official Journal; title as amended, read in the consolidated text of 24 July 2026 (CELEX 02006R0765-20260724)",
+      "text": {
+        "en": "The EU sanctions against Belarus, for its internal situation and its involvement in Russia's war on Ukraine: an asset freeze on listed persons plus wide trade and financial restrictions. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze listed assets and not make funds available, refuse dealings in covered Belarusian state securities, cap deposits from Belarusian persons and entities, not offer them crypto or certain payment services, report large deposits and pass compliance information to its authority."
+      }
+    },
+    {
+      "key": "celex-32012r0267",
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/267/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 267/2012 as published in the Official Journal",
+      "text": {
+        "en": "The EU sanctions against Iran over its nuclear programme: asset freezes, trade restrictions on sensitive goods and controls on financial dealings with Iran. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze listed assets and not make funds available, transfer funds with Iranian banks only in permitted categories, notify its authority in advance of transfers with Iranian persons from EUR 10 000 and get prior authorisation where the amount or purpose requires it, and not open accounts or correspondent relationships with Iranian banks."
+      }
+    },
+    {
+      "key": "celex-32017r1509",
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/1509/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2017/1509 as published in the Official Journal",
+      "text": {
+        "en": "The EU sanctions against North Korea (DPRK), giving effect to UN measures and adding EU ones: asset freezes, wide trade bans and a near-complete cut-off of financial links with the country. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze listed assets and not make funds available, not transfer funds to or from North Korea outside narrow exceptions, and not open accounts, correspondent relationships or ownership links with North Korean banks, reporting relevant information to its authority."
+      }
+    },
+    {
+      "key": "celex-32001r2580",
+      "source": "https://eur-lex.europa.eu/eli/reg/2001/2580/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EC) No 2580/2001 as published in the Official Journal",
+      "text": {
+        "en": "The EU's own counter-terrorism sanctions list, giving effect to a UN Security Council resolution on terrorist financing, covering people, groups and entities the Council designates for involvement in terrorist acts. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of the listed persons and groups, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32002r0881",
+      "source": "https://eur-lex.europa.eu/eli/reg/2002/881/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EC) No 881/2002 as published in the Official Journal; title as amended, read in the consolidated text of 28 August 2026 (CELEX 02002R0881-20260828)",
+      "text": {
+        "en": "Gives effect in the EU to the UN Security Council's sanctions against ISIL (Da'esh), Al-Qaida and those associated with them, applying the UN list as the EU list. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of everyone on the list, including funds a third party holds for them, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32016r1686",
+      "source": "https://eur-lex.europa.eu/eli/reg/2016/1686/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2016/1686 as published in the Official Journal",
+      "text": {
+        "en": "The EU's own sanctions against ISIL (Da'esh), Al-Qaeda and people and entities associated with them, separate from and in addition to the UN-based list. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of the persons the Council lists, including funds a third party holds for them, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32011r0359",
+      "source": "https://eur-lex.europa.eu/eli/reg/2011/359/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 359/2011 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people and entities responsible for serious human rights violations in Iran. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32023r1529",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1529/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2023/1529 as published in the Official Journal; title as amended, read in the consolidated text of 1 August 2026 (CELEX 02023R1529-20260801)",
+      "text": {
+        "en": "EU sanctions over Iran's drone and missile programmes and its transfer of drones, missiles and components to Russia for the war against Ukraine and to armed groups in the Middle East and Red Sea region, and over its actions against freedom of navigation there. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the assets of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts to its competent authority. It also bans exports of drone and missile components to Iran."
+      }
+    },
+    {
+      "key": "celex-32020r1998",
+      "source": "https://eur-lex.europa.eu/eli/reg/2020/1998/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2020/1998 as published in the Official Journal",
+      "text": {
+        "en": "The EU global human rights sanctions regime, which lets the Council list people and entities anywhere in the world responsible for serious human rights violations and abuses. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32019r0796",
+      "source": "https://eur-lex.europa.eu/eli/reg/2019/796/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2019/796 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people and entities responsible for, supporting or involved in cyber-attacks that threaten the EU or its member states. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32018r1542",
+      "source": "https://eur-lex.europa.eu/eli/reg/2018/1542/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2018/1542 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people and entities involved in developing or using chemical weapons, wherever they are. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32024r0386",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/386/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2024/386 as published in the Official Journal; title as amended, read in the consolidated text of 28 May 2026 (CELEX 02024R0386-20260528)",
+      "text": {
+        "en": "EU sanctions against Hamas, Palestinian Islamic Jihad and the people and entities that support, facilitate or enable their violent actions. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32024r1485",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/1485/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2024/1485 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions over the situation in Russia, covering people and entities responsible for serious human rights violations and the repression of civil society and opposition there. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32024r2642",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/2642/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2024/2642 as published in the Official Journal; title as amended, read in the consolidated text of 13 July 2026 (CELEX 02024R2642-20260713)",
+      "text": {
+        "en": "EU sanctions against people and entities behind Russia's destabilising activities, such as hybrid threats, information manipulation and interference against the EU and other countries. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32014r0208",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/208/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 208/2014 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people identified as responsible for misappropriating Ukrainian state funds, and those associated with them. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32012r0036",
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/36/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 36/2012 as published in the Official Journal",
+      "text": {
+        "en": "The EU sanctions regime concerning the situation in Syria, including an asset freeze on persons and entities the Council lists. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of everyone listed in its annex, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32011r0753",
+      "source": "https://eur-lex.europa.eu/eli/reg/2011/753/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 753/2011 as published in the Official Journal",
+      "text": {
+        "en": "Gives effect in the EU to the UN sanctions against the Taliban and people, groups and entities associated with them in Afghanistan. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those on the list, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32015r1755",
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/1755/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2015/1755 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people whose actions undermine democracy or obstruct a political solution in Burundi, or who are responsible for human rights violations there. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32014r0224",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/224/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 224/2014 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions over the situation in the Central African Republic, giving effect to UN measures. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of the listed persons and entities, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority. It also bans supplying arms, and related technical assistance and financing, to armed groups in the country."
+      }
+    },
+    {
+      "key": "celex-32005r1183",
+      "source": "https://eur-lex.europa.eu/eli/reg/2005/1183/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EC) No 1183/2005 as published in the Official Journal; title as amended, read in the consolidated text of 10 December 2025 (CELEX 02005R1183-20251210)",
+      "text": {
+        "en": "EU sanctions over the situation in the Democratic Republic of the Congo, applying both UN and EU designations. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of everyone listed, including funds a third party holds for them, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32024r0287",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/287/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2024/287 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people and entities undermining democracy, the rule of law or the peaceful transfer of power in Guatemala. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32009r1284",
+      "source": "https://eur-lex.europa.eu/eli/reg/2009/1284/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 1284/2009 as published in the Official Journal; title as amended, read in the consolidated text of 13 September 2024 (CELEX 02009R1284-20240913)",
+      "text": {
+        "en": "EU sanctions over the situation in Guinea, covering the people held responsible for the violent repression of 28 September 2009 and those associated with them. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32012r0377",
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/377/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 377/2012 as published in the Official Journal; title as amended, read in the consolidated text of 24 September 2025 (CELEX 02012R0377-20250924)",
+      "text": {
+        "en": "EU sanctions against people and entities threatening the peace, security and stability of Guinea-Bissau. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32022r2309",
+      "source": "https://eur-lex.europa.eu/eli/reg/2022/2309/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2022/2309 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions over the situation in Haiti, covering people involved in gang violence, criminal activities or undermining stability there, giving effect to UN measures and adding EU ones. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32003r1210",
+      "source": "https://eur-lex.europa.eu/eli/reg/2003/1210/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EC) No 1210/2003 as published in the Official Journal",
+      "text": {
+        "en": "Restricts economic and financial relations with Iraq, giving effect to UN measures adopted after the fall of Saddam Hussein's government, including a freeze on that government's and its senior officials' assets and a ban on trade in Iraqi cultural property. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the assets of the former government bodies and persons listed, not make funds available to the listed persons, and pass relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32006r0305",
+      "source": "https://eur-lex.europa.eu/eli/reg/2006/305/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EC) No 305/2006 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people suspected of involvement in the assassination of former Lebanese Prime Minister Rafiq Hariri, applying UN designations. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority. Reports go to the national authority named in the Regulation's annex."
+      }
+    },
+    {
+      "key": "celex-32021r1275",
+      "source": "https://eur-lex.europa.eu/eli/reg/2021/1275/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2021/1275 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people and entities in Lebanon who undermine democracy or the rule of law there, for example by obstructing the formation of a government or by serious financial misconduct. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32016r0044",
+      "source": "https://eur-lex.europa.eu/eli/reg/2016/44/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2016/44 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions over the situation in Libya, giving effect to UN measures and adding EU ones. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of the listed persons and entities, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority. It also carries an arms embargo, a ban on equipment for internal repression and controls on illicit petroleum exports."
+      }
+    },
+    {
+      "key": "celex-32017r1770",
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/1770/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2017/1770 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people and entities obstructing the political transition or threatening peace and security in Mali. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32023r0888",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/888/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2023/888 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people and entities whose actions destabilise the Republic of Moldova or undermine its democracy, rule of law and stability. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32013r0401",
+      "source": "https://eur-lex.europa.eu/eli/reg/2013/401/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 401/2013 as published in the Official Journal; title as amended, read in the consolidated text of 29 April 2026 (CELEX 02013R0401-20260429)",
+      "text": {
+        "en": "EU sanctions over the situation in Myanmar/Burma, covering people and entities responsible for undermining democracy and for serious human rights violations. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority. It also carries an arms embargo and bans on equipment for internal repression."
+      }
+    },
+    {
+      "key": "celex-32019r1716",
+      "source": "https://eur-lex.europa.eu/eli/reg/2019/1716/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2019/1716 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people and entities responsible for serious human rights violations or for undermining democracy and the rule of law in Nicaragua. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32023r2406",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/2406/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2023/2406 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions over the situation in Niger, covering people and entities whose actions threaten its peace, stability, security or constitutional order. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32010r0356",
+      "source": "https://eur-lex.europa.eu/eli/reg/2010/356/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 356/2010 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions over the situation in Somalia, giving effect to UN designations of people and entities threatening peace and stability there. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority. It also bans arms-related assistance and financing for those listed."
+      }
+    },
+    {
+      "key": "celex-32015r0735",
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/735/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2015/735 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions over the situation in South Sudan, applying both UN and EU designations. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of everyone listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority. It also bans arms-related technical assistance and financing for the country."
+      }
+    },
+    {
+      "key": "celex-32014r0747",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/747/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 747/2014 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions over the situation in Sudan, giving effect to UN designations relating to the Darfur conflict. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority. It also bans arms-related technical assistance and financing for the country."
+      }
+    },
+    {
+      "key": "celex-32023r2147",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/2147/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2023/2147 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people and entities undermining the stability and political transition of Sudan. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32011r0101",
+      "source": "https://eur-lex.europa.eu/eli/reg/2011/101/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 101/2011 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions against people identified as responsible for misappropriating Tunisian state funds, and those associated with them. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32019r1890",
+      "source": "https://eur-lex.europa.eu/eli/reg/2019/1890/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2019/1890 as published in the Official Journal; title as amended, read in the consolidated text of 26 November 2025 (CELEX 02019R1890-20251126)",
+      "text": {
+        "en": "EU sanctions against people and entities responsible for or involved in Türkiye's unauthorised hydrocarbon drilling in the Eastern Mediterranean. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32017r2063",
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/2063/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2017/2063 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions over the situation in Venezuela, covering people responsible for human rights violations or for undermining democracy there. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority. It also carries an arms embargo and bans on equipment for internal repression and surveillance."
+      }
+    },
+    {
+      "key": "celex-32014r1352",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/1352/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 1352/2014 as published in the Official Journal",
+      "text": {
+        "en": "EU sanctions over the situation in Yemen, giving effect to UN designations of people threatening its peace, security or stability. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must freeze the funds and economic resources of those listed, must not make funds available to them directly or indirectly, and must report frozen accounts and other relevant information to its national competent authority."
+      }
+    },
+    {
+      "key": "celex-32014r0692",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/692/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) No 692/2014 as published in the Official Journal; title as amended, read in the consolidated text of 25 February 2025 (CELEX 02014R0692-20250225)",
+      "text": {
+        "en": "EU sanctions in response to Russia's illegal annexation of Crimea and Sevastopol: bans on importing goods from there, investment and financing restrictions, and limits on services linked to the territory. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must not grant loans or other financing to entities in Crimea or Sevastopol, acquire participations there or provide related investment services, and must notify its authority before carrying out older contracts the Regulation still allows."
+      }
+    },
+    {
+      "key": "celex-32022r0263",
+      "source": "https://eur-lex.europa.eu/eli/reg/2022/263/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EU) 2022/263 as published in the Official Journal; title as amended, read in the consolidated text of 25 February 2025 (CELEX 02022R0263-20250225)",
+      "text": {
+        "en": "EU sanctions in response to Russia's recognition, occupation or annexation of the areas of Ukraine outside government control that the Regulation names: bans on goods, investment and services linked to those areas. It applies directly to everyone in the EU and to EU nationals and companies, banks included. A bank must not grant loans or other financing to entities there, acquire participations or provide related investment services, and must notify its authority before carrying out older contracts the Regulation still allows."
+      }
+    },
+    {
+      "key": "celex-31996r2271",
+      "source": "https://eur-lex.europa.eu/eli/reg/1996/2271/oj",
+      "sourceLabel": "EUR-Lex, Council Regulation (EC) No 2271/96 as published in the Official Journal",
+      "text": {
+        "en": "The EU Blocking Statute protects EU businesses from foreign sanctions laws that reach beyond their own country, namely the third-country laws listed in its annex. It applies directly to EU companies and residents, banks included. A bank must not comply with those foreign laws or court requests based on them unless the Commission authorises it, and must inform the Commission within 30 days when such laws affect its economic or financial interests."
+      }
+    },
+    {
+      "key": "celex-32024l1226",
+      "source": "https://eur-lex.europa.eu/eli/dir/2024/1226/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2024/1226 as published in the Official Journal",
+      "text": {
+        "en": "Sets common minimum rules on which breaches of EU sanctions are crimes, such as making funds available to a listed person or failing to freeze assets, and on penalties for people and companies, and adds sanctions breaches to the predicate offences for money laundering. As a directive it binds the member states except Denmark, which does not take part, and not a bank directly; each bound country writes these offences into its criminal law. A bank has no duties of its own under the Directive; its sanctions duties come from the sanctions regulations."
+      }
+    },
+    {
+      "key": "eba-gl-2024-14",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/anti-money-laundering-and-countering-financing-terrorism/guidelines-internal-policies-procedures-and-controls-ensure-implementation-union-and-national",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/14 (Restrictive Measures Guidelines) guideline page",
+      "text": {
+        "en": "European Banking Authority guidelines on the governance, policies, procedures and controls financial institutions need to comply with EU and national sanctions. They are addressed to financial institutions and their supervisors, which apply them through supervision. In practice a bank's management body approves and oversees its sanctions strategy, a senior staff member owns the framework, and the bank assesses its exposure, keeps lists current, acts on matches without delay and trains staff."
+      }
+    },
+    {
+      "key": "eba-gl-2024-15",
+      "source": "https://www.eba.europa.eu/activities/single-rulebook/regulatory-activities/anti-money-laundering-and-countering-financing-terrorism/guidelines-internal-policies-procedures-and-controls-ensure-implementation-union-and-national",
+      "sourceLabel": "European Banking Authority, EBA/GL/2024/15 (Restrictive Measures Guidelines for PSPs and CASPs) guideline page",
+      "text": {
+        "en": "European Banking Authority guidelines on what payment and crypto-asset service providers, banks included, must do to apply sanctions when transferring funds and crypto-assets, focusing on know-your-customer checks, screening and due diligence. Supervisors apply them through supervision. In practice a bank calibrates and reviews its screening system, screens customers and every transfer and its parties, investigates matches promptly, suspends and freezes on a true match and reports to its authority."
+      }
+    }
+  ]
+}

@@ -50,6 +50,10 @@ function UpdateRow({ row, canReport, onReport }: { row: LibraryUpdateRow; canRep
           <Link href={`/inventory/obligations/${target.id}`} prefetch={false} className="hover:underline">
             {titleOf(row, t)}
           </Link>
+        ) : row.instrument ? (
+          <Link href={`/inventory/instruments/${row.instrument.id}`} prefetch={false} className="hover:underline">
+            {titleOf(row, t)}
+          </Link>
         ) : (
           titleOf(row, t)
         )}

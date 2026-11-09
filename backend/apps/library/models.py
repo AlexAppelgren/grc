@@ -271,6 +271,20 @@ class InstrumentTitle(Translation):
         constraints = _translation_constraints("instrument", "instrument_title")
 
 
+class InstrumentSummary(Translation):
+    """What an instrument is and what it means for a bank, in plain words, per content
+    language (INV-09, D-124): written once from the instrument's own source and entered
+    through an approved `new_instrument_summary` proposal like every library fact. Never
+    rewritten in place: the instrument's own facts are what change (INV-01)."""
+
+    instrument = models.ForeignKey(Instrument, on_delete=models.CASCADE, related_name="summaries")
+
+    class Meta:
+        db_table = "instrument_summary"
+        ordering = ["language"]
+        constraints = _translation_constraints("instrument", "instrument_summary")
+
+
 class InstrumentRelation(LibraryModel):
     """Lineage between instruments (INV-01): implements, elaborates."""
 

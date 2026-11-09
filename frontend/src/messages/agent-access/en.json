@@ -95,7 +95,7 @@
   "agentAccess.issue.nameRequired": "Give the key a name.",
   "agentAccess.issue.scopes": "What it may read",
   "agentAccess.issue.scopesRequired": "Choose at least one thing it may read.",
-  "agentAccess.issue.scope.library:read": "Instruments and obligations in its scope",
+  "agentAccess.issue.scope.library:read": "Regulations and obligations in its scope",
   "agentAccess.issue.scope.search:read": "Search the library in its scope",
   "agentAccess.issue.scope.upcoming:read": "Dated changes that touch its scope",
   "agentAccess.issue.scope.tenant:read": "Our register decisions, while our register is readable",

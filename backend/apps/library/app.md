@@ -79,6 +79,7 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 | INV-06 | Source link and last-verified date on every record, and a "this looks wrong" report | M | R1 | built |
 | INV-07 | Tenant-private instruments and obligations, proposed by the bank's own agents or its compliance officers and approved inside that bank by a second person; never seen by platform staff, a model, the search index or another tenant (D-57). OWN's minimum; a bank's own private sources are WAT-06, R3 (D-89) | M | R2 | built |
 | INV-08 | Standards as instruments, one per edition: publisher, reference, dates, lifecycle, national adoptions as a note, a catalogue link and exactly one conformance duty in our own words carrying the standard's term; no standard text, clause or control title, or paraphrase, anywhere. Built for tests and E2E: the first standard is seeded by `seed_e2e` only until the publishers' terms are cleared (TODO_FOR_alex, legal) | M | R1 | built |
+| INV-09 | What a regulation is and what applies: a plain-language summary entered by the `new_instrument_summary` proposal kind (once, never rewritten, a person approves), filed for the baseline from `baseline/summaries/` (D-124); the card's `summary`, `implements` and `implementedBy` (by official number in `implementsNote`) and `obligationCounts` (held, in scope, waiting for review); the screen's short-name heading, level-specific wording and directive explanation | M | R1 | built |
 | OWN-04 | The bank's own records read "Private to us", only to that bank; never indexed, never a model input, never agent access (whose answer says how many it left out), never a support session; the register decides them as shared obligations; nothing changes automatically when the library later covers the item (D-89, D-91) | M | R2 | built |
 
 > **Note — the bank's own records (d89-private-records, 2026-09-27).** INV-07 is built: a
@@ -143,6 +144,17 @@ Then it holds level, binding force, official reference, ELI, jurisdiction SE, au
 And the API returns the binding level as key, kind and label
 And the instrument screen shows the short name as a brand pill, the regime as information and "Guidance, comply or explain" only when it is not binding and the level kind is not standard
 And the record carries no tenant_id and is readable by every tenant
+```
+
+### INV-S16 — A regulation says what it is and what applies `@integration` `@e2e` (INV-09)
+```gherkin
+Given the EU directive "Directive 2002/47/EC" with a summary, and the Swedish act "SFS 2004:46" whose implementsNote names Directive 2002/47/EC
+When a reader opens the directive's card
+Then it carries the summary, the Swedish act among the laws that implement it, and no duties of its own
+And the act's card names the directive among what it implements, and an act numbered 2002/470 is never matched
+And the counts of duties held and in scope are those GET /obligations answers for the same regulation, with new duties waiting for review counted apart
+When a second summary of the same regulation is proposed
+Then it is refused with duplicate_key, and an agent cannot approve one: a person does
 ```
 
 ### INV-S2 — The provision tree holds verbatim text versions `@integration` `@e2e` (INV-02)

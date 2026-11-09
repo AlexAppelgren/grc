@@ -169,6 +169,7 @@ LIBRARY_OWNED_TABLES = frozenset({"instrument", "obligation"})
 # holds no zone yet, and the package that gives it one rewrites the pair with both parents.
 CHILD_TABLES = {
     "instrument_title": "instrument",
+    "instrument_summary": "instrument",
     "instrument_relation": "instrument",
     "provision": "instrument",
     "provision_version": "provision",

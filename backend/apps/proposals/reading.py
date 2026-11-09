@@ -47,6 +47,7 @@ from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
 from apps.proposals.schemas import (
     ProposalAppliedVersion,
     ProposalDetail,
+    ProposalInstrumentSummaryPayload,
     ProposalObligationPayload,
     ProposalObligationVersionPayload,
     ProposalQueueRow,
@@ -196,12 +197,12 @@ def detail(proposal: Proposal, order: list[str], *, reviewer: Reviewer) -> Propo
     if not isinstance(payload, ProposalObligationVersionPayload) or proposal.target_id is None:
         # No wording to compare: a list row is written by a person, and a new record replaces
         # nothing. Its sources are still what a reviewer checks it against, and a new duty
-        # names the instrument it would sit under.
+        # names the instrument it would sit under, as a summary names the one it describes.
         return ProposalDetail(
             **dict(row),
             sources=_sources(proposal),
             rejection_reason=_rejection_reason(proposal, order),
-            instrument_short_name=shared_instrument_short_name(payload.instrument) if isinstance(payload, ProposalObligationPayload) else "",
+            instrument_short_name=shared_instrument_short_name(payload.instrument) if isinstance(payload, ProposalObligationPayload | ProposalInstrumentSummaryPayload) else "",
         )
     language = payload.original_language
     applied = _applied(proposal)

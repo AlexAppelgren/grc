@@ -1,0 +1,190 @@
+{
+  "tranche": "eu-markets-infrastructure",
+  "researchedOn": "2026-11-09",
+  "summaries": [
+    {
+      "key": "celex-32012r0648",
+      "source": "https://eur-lex.europa.eu/eli/reg/2012/648/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 648/2012 as published in the Official Journal",
+      "text": {
+        "en": "The EU regulation on over-the-counter derivatives, central counterparties and trade repositories. It applies directly to financial and non-financial counterparties, banks included. A bank must clear derivatives in mandated classes through an authorised or recognised central counterparty, hold an active account at an EU one where in scope, report every derivative to a trade repository and keep records, and for uncleared trades confirm promptly, value daily, reconcile and exchange margin."
+      }
+    },
+    {
+      "key": "celex-32024r2987",
+      "source": "https://eur-lex.europa.eu/eli/reg/2024/2987/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2024/2987 as published in the Official Journal",
+      "text": {
+        "en": "An amending regulation that changes EMIR, the Capital Requirements Regulation and the Money Market Funds Regulation to cut reliance on third-country central counterparties. It brings in the active account requirement at EU central counterparties, reporting of clearing at third-country ones, new client information duties for clearing providers, a new way of measuring positions against clearing thresholds, and a wider exemption from the capital charge for credit valuation adjustment risk on intragroup trades. A bank's duties sit in the amended acts as they now read."
+      }
+    },
+    {
+      "key": "celex-32024l2994",
+      "source": "https://eur-lex.europa.eu/eli/dir/2024/2994/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2024/2994 as published in the Official Journal",
+      "text": {
+        "en": "A directive amending the UCITS Directive, the Capital Requirements Directive and the Investment Firms Directive on concentration risk from exposures to central counterparties. It binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. Through that law a bank must cover this risk in its risk management, its management body sets plans and measurable targets for exposures to systemically important central counterparties, and supervisors can require it to reduce them."
+      }
+    },
+    {
+      "key": "celex-32016r2251",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/2251/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/2251 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation setting the risk-mitigation standards for OTC derivatives not cleared by a central counterparty, above all the exchange of margin. It applies directly to financial counterparties and large non-financial counterparties, banks included. A bank must have documented collateral procedures, calculate and exchange variation margin at least daily and initial margin where the thresholds are met, within tight deadlines, using eligible collateral with haircuts and, for initial margin, segregation."
+      }
+    },
+    {
+      "key": "celex-32015r2205",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2015/2205/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2015/2205 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation that makes certain interest rate derivatives subject to the EMIR clearing obligation: Euribor basis swaps, fixed-to-float swaps and forward rate agreements, and overnight index swaps in euro, sterling, US dollar and yen, within set maturities. It applies directly to counterparties within the clearing obligation, which includes banks. A bank trading these contracts with another in-scope counterparty must clear them through an authorised or recognised central counterparty."
+      }
+    },
+    {
+      "key": "celex-32016r1178",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2016/1178/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2016/1178 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation extending the EMIR clearing obligation to interest rate swaps referencing NIBOR, STIBOR and WIBOR in Norwegian krone, Swedish krona and Polish zloty. It applies directly to counterparties within the clearing obligation, which includes banks. A Nordic bank trading the listed fixed-to-float swaps or forward rate agreements in these currencies with another in-scope counterparty must clear them through an authorised or recognised central counterparty within the set maturity ranges."
+      }
+    },
+    {
+      "key": "celex-32022r1860",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2022/1860/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2022/1860 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation setting how derivatives are reported to trade repositories under EMIR: the data standards, the ISO 20022 XML format, the unique transaction identifier and the reporting arrangements. It applies directly to counterparties and others responsible for reporting, banks included. A bank must report in the prescribed format, agree who generates each identifier, tell its supervisor of significant misreporting, and when reporting for small non-financial clients arrange to receive their details in time."
+      }
+    },
+    {
+      "key": "celex-32026r0305",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2026/305/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2026/305 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation specifying the EMIR active account requirement: the operational conditions an account at an EU central counterparty must meet, the representative trades that must be cleared through it, and the reporting to supervisors. It applies directly to counterparties above the relevant clearing thresholds, which can include banks. A bank in scope must show a working account at an EU central counterparty, clear the minimum number of trades in its most relevant subcategories, and report the data to its supervisor."
+      }
+    },
+    {
+      "key": "celex-32015r2365",
+      "source": "https://eur-lex.europa.eu/eli/reg/2015/2365/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2015/2365 as published in the Official Journal",
+      "text": {
+        "en": "The EU regulation on transparency of securities financing transactions, such as repos and securities lending, and of the reuse of collateral. It applies directly to the counterparties to these transactions, banks included, and to fund managers. A bank must report each transaction and any change or termination to a trade repository by the next working day, keep records for five years after it ends, and before reusing collateral inform the provider of the risks in writing and obtain its consent."
+      }
+    },
+    {
+      "key": "celex-32014r0909",
+      "source": "https://eur-lex.europa.eu/eli/reg/2014/909/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) No 909/2014 as published in the Official Journal",
+      "text": {
+        "en": "The EU regulation on central securities depositories and on settling securities transactions. It applies directly to depositories and also to participants, issuers and investment firms, which includes banks. A bank must settle on the intended date, move to a one-day settlement cycle for trades on venues, agree arrangements with clients that limit settlement fails, report settlement it internalises outside a settlement system every quarter, and offer clients a choice of omnibus or individual account segregation."
+      }
+    },
+    {
+      "key": "celex-32023r2845",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/2845/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2845 as published in the Official Journal",
+      "text": {
+        "en": "An amending regulation that changes the Central Securities Depositories Regulation and the Short Selling Regulation. It recasts settlement discipline so that mandatory buy-ins apply only as a last resort once activated, clarifies the scope of cash penalties, eases cross-border services and banking-type ancillary services for depositories, adds rules for third-country depositories, and places buy-in procedures for central counterparties clearing shares in the Short Selling Regulation. A bank's duties sit in the amended acts as they now read."
+      }
+    },
+    {
+      "key": "celex-32025r2075",
+      "source": "https://eur-lex.europa.eu/eli/reg/2025/2075/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2025/2075 as published in the Official Journal",
+      "text": {
+        "en": "An amending regulation that shortens the settlement cycle in the Central Securities Depositories Regulation: transactions in transferable securities executed on trading venues must settle no later than the first business day after the trade, from 11 October 2027. Privately negotiated trades executed on a venue, trades only reported to a venue, first recordings in book-entry form and certain securities financing transactions are excluded. A bank's duties sit in the amended regulation as it now reads."
+      }
+    },
+    {
+      "key": "celex-32018r1229",
+      "source": "https://eur-lex.europa.eu/eli/reg_del/2018/1229/oj",
+      "sourceLabel": "EUR-Lex, Commission Delegated Regulation (EU) 2018/1229, entry into force as set by Article 42 as amended by Delegated Regulation (EU) 2021/70",
+      "text": {
+        "en": "A Commission regulation setting the settlement discipline standards under the Central Securities Depositories Regulation: measures to prevent settlement fails, their monitoring and reporting, cash penalties and buy-in procedures. It applies directly to depositories, their participants and investment firms, including banks. A bank providing investment services must obtain written allocations and confirmations from professional clients and settlement information from retail clients within set deadlines."
+      }
+    },
+    {
+      "key": "celex-32017r1129",
+      "source": "https://eur-lex.europa.eu/eli/reg/2017/1129/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2017/1129 as published in the Official Journal",
+      "text": {
+        "en": "The EU regulation on the prospectus required when securities are offered to the public or admitted to a regulated market. It applies directly to issuers, offerors, persons seeking admission and the intermediaries in an offer. A bank meets it as an issuer of shares or bonds, which must publish an approved prospectus and supplements for new material facts, and as a distributor, which must tell investors about supplements and their withdrawal rights; its advertisements must point to the prospectus and be consistent with it."
+      }
+    },
+    {
+      "key": "celex-32004l0109",
+      "source": "https://eur-lex.europa.eu/eli/dir/2004/109/oj",
+      "sourceLabel": "EUR-Lex, Directive 2004/109/EC as published in the Official Journal",
+      "text": {
+        "en": "A directive on the information that issuers with securities on a regulated market must publish, such as annual and half-yearly financial reports, and on notifying major holdings of voting rights. It binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. That law reaches a bank as a listed issuer that reports periodically and as a shareholder that must notify when its holdings cross set thresholds."
+      }
+    },
+    {
+      "key": "celex-32007l0036",
+      "source": "https://eur-lex.europa.eu/eli/dir/2007/36/oj",
+      "sourceLabel": "EUR-Lex, Directive 2007/36/EC as published in the Official Journal",
+      "text": {
+        "en": "A directive on the exercise of shareholder rights in listed companies with a registered office in the EU: notice and information before general meetings, the right to add items and ask questions, and voting by proxy or at a distance. It binds the member states, not a bank directly; a bank's duties come from each country's national law that implements it. That law reaches a bank as a listed company and, since the directive was amended, as an intermediary holding shares for clients."
+      }
+    },
+    {
+      "key": "celex-32017l0828",
+      "source": "https://eur-lex.europa.eu/eli/dir/2017/828/oj",
+      "sourceLabel": "EUR-Lex, Directive (EU) 2017/828 as published in the Official Journal",
+      "text": {
+        "en": "A directive amending the Shareholder Rights Directive to encourage long-term shareholder engagement. It adds shareholder identification and the passing of information along the chain of intermediaries, engagement and transparency duties for institutional investors, asset managers and proxy advisors, shareholder votes on directors' pay and rules on related party transactions. It binds the member states, not a bank directly; a bank's duties come from the national law that implements it, as custodian, asset manager or listed company."
+      }
+    },
+    {
+      "key": "celex-32018r1212",
+      "source": "https://eur-lex.europa.eu/eli/reg_impl/2018/1212/oj",
+      "sourceLabel": "EUR-Lex, Commission Implementing Regulation (EU) 2018/1212 as published in the Official Journal",
+      "text": {
+        "en": "A Commission regulation setting minimum requirements for how intermediaries identify shareholders, pass on information about general meetings and corporate events, and help shareholders exercise their rights under the Shareholder Rights Directive. It applies directly. A bank holding shares for clients must use the standard formats, forward identification requests, event information and votes along the custody chain within tight deadlines, and secure and authenticate the messages it sends."
+      }
+    },
+    {
+      "key": "celex-32023r1114",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/1114/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/1114 as published in the Official Journal",
+      "text": {
+        "en": "The EU regulation on crypto-assets not covered by other financial law, on their issuers and on crypto-asset service providers, including stablecoins such as e-money tokens. It applies directly. A credit institution may provide crypto-asset services after notifying its supervisor instead of seeking separate authorisation, and must then meet the conduct, custody, conflicts, suitability and market abuse rules; only credit and e-money institutions may issue e-money tokens, which are redeemable at par and bear no interest."
+      }
+    },
+    {
+      "key": "celex-32022r0858",
+      "source": "https://eur-lex.europa.eu/eli/reg/2022/858/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2022/858 as published in the Official Journal",
+      "text": {
+        "en": "A regulation setting up a temporary EU regime in which market infrastructures may trade and settle financial instruments recorded on distributed ledgers, with exemptions from some existing rules. It applies only to investment firms, market operators and central securities depositories that apply for and receive a specific permission to run such a system. A bank has no duties of its own under it unless it chooses to run one, which a credit institution may do only when authorised as an investment firm or market operator."
+      }
+    },
+    {
+      "key": "celex-32023r2631",
+      "source": "https://eur-lex.europa.eu/eli/reg/2023/2631/oj",
+      "sourceLabel": "EUR-Lex, Regulation (EU) 2023/2631 as published in the Official Journal",
+      "text": {
+        "en": "The EU regulation creating the voluntary European Green Bond label and optional disclosures for bonds marketed as environmentally sustainable or sustainability-linked. It applies directly to issuers that choose to use the label or the templates. A bank issuing a European Green Bond must allocate the proceeds in line with the EU taxonomy, publish a factsheet with a positive external review before issuing, report on allocation every year until the proceeds are fully allocated, and keep these documents on its website."
+      }
+    },
+    {
+      "key": "celex-31998l0026",
+      "source": "https://eur-lex.europa.eu/eli/dir/1998/26/oj",
+      "sourceLabel": "EUR-Lex, Directive 98/26/EC as published in the Official Journal",
+      "text": {
+        "en": "A directive that protects payment and securities settlement systems against the insolvency of a participant: transfer orders and netting entered into a designated system stay legally enforceable, and collateral given in connection with the system is shielded. It binds the member states, not a bank directly, and gives a bank no duties of its own. As a system participant a bank relies on the protection that each country's national law implementing it provides."
+      }
+    },
+    {
+      "key": "celex-32002l0047",
+      "source": "https://eur-lex.europa.eu/eli/dir/2002/47/oj",
+      "sourceLabel": "EUR-Lex, Directive 2002/47/EC as published in the Official Journal",
+      "text": {
+        "en": "A directive making financial collateral arrangements, such as cash, securities or credit claims given by title transfer or as security, simple to create and enforce, recognising close-out netting and limiting how insolvency rules can undo them. It binds the member states, not a bank directly, and places no duties of its own on a bank. As a provider or taker of collateral a bank relies on the enforceability that each country's national law implementing it gives."
+      }
+    }
+  ]
+}

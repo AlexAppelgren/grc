@@ -216,7 +216,9 @@ describe('the decision panel', () => {
     expect(fact('implementsNote')).toHaveTextContent('Article 19 of MAR');
     // The source panel names each field in words, never by its payload name.
     const sources = within(screen.getByRole('heading', { name: 'Source' }).closest('section') as HTMLElement);
-    expect(sources.getAllByRole('term').map((term) => term.textContent)).toEqual(['Title (English)', 'Short name']);
+    // Fields that share a page are listed under it once, with that page linked once.
+    expect([...document.querySelectorAll('[data-source-group] p')].map((fields) => fields.textContent)).toEqual(['Title (English), Short name']);
+    expect(sources.getAllByRole('link', { name: 'https://eur-lex.europa.eu/eli/reg_impl/2016/523/oj' })).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Approve and apply' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reject' })).toBeInTheDocument();
     expect(document.querySelector('[data-proposal-correction]')).toBeNull();
@@ -264,7 +266,7 @@ describe('the decision panel', () => {
       }),
     );
     const panel = (await screen.findByRole('heading', { name: 'What it adds' })).closest('section') as HTMLElement;
-    expect(panel.querySelector('[data-proposal-fact="instrument"]')).toHaveTextContent('celex-32099r0001The library does not hold this instrument.');
+    expect(panel.querySelector('[data-proposal-fact="instrument"]')).toHaveTextContent('celex-32099r0001The library does not hold this regulation.');
     expect(panel.querySelector('[data-proposal-fact="effectiveFrom"]')).toHaveTextContent('Since the duty began');
     expect(panel.querySelector('[data-proposal-fact="terms"]')).toHaveTextContent('No scope terms');
     // A key no read labels stays the key, rather than a guess.

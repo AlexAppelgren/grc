@@ -20,7 +20,8 @@ import {
   decisionLine,
   decisionNoteLine,
   fieldSourceLabel,
-  fieldSourceRows,
+  fieldSourceGroups,
+  instrumentSummaryPayloadOf,
   instrumentPayloadOf,
   isObligationVersion,
   isVocabularyKind,
@@ -60,7 +61,8 @@ import { hasProblemCode } from '@/shared/utils/problem';
 function SourcePanel({ proposal }: { proposal: ProposalRow }) {
   const t = useT();
   const ctx = useFormatContext();
-  const rows = fieldSourceRows(proposal.fieldSources ?? {});
+  const groups = fieldSourceGroups(proposal.fieldSources ?? {});
+  const label = (field: string) => fieldSourceLabel(field, (code) => languageName(code, ctx.locale), t);
   return (
     <Panel title={t('console.queue.detail.sourcePanel')} data-proposal-sources="">
       {proposal.sourceLabel !== '' ? (
@@ -75,17 +77,15 @@ function SourcePanel({ proposal }: { proposal: ProposalRow }) {
           )}
         </p>
       ) : null}
-      {rows.length > 0 ? (
-        <dl className="grid grid-cols-1 gap-x-3.5 gap-y-2 text-meta md:grid-cols-[140px_1fr]">
-          {rows.map(({ field, url }) => (
-            <div key={field} className="contents">
-              <dt className="text-muted">{fieldSourceLabel(field, (code) => languageName(code, ctx.locale), t)}</dt>
-              <dd className="m-0">
-                <MaybeLink href={url} />
-              </dd>
-            </div>
+      {groups.length > 0 ? (
+        <ul className="m-0 grid list-none gap-2 p-0 text-meta" data-source-groups="">
+          {groups.map(({ url, fields }) => (
+            <li key={url} data-source-group={url}>
+              {url === proposal.sourceUrl ? <span className="font-medium">{t('console.queue.detail.sameSource')}</span> : <MaybeLink href={url} />}
+              <p className="mt-0.5 text-muted">{fields.map(label).join(', ')}</p>
+            </li>
           ))}
-        </dl>
+        </ul>
       ) : null}
     </Panel>
   );
@@ -272,6 +272,24 @@ function NewObligationFacts({ proposal }: { proposal: ProposalDetail }) {
   );
 }
 
+function NewSummaryFacts({ proposal }: { proposal: ProposalDetail }) {
+  const t = useT();
+  const payload = instrumentSummaryPayloadOf(proposal);
+  if (payload === null) return null;
+  return (
+    <Panel title={t('console.queue.detail.whatItAdds')} data-proposal-record={proposal.kind}>
+      <dl className={cn(FACTS, 'mb-3')}>
+        <Fact field="instrument" label={t('console.queue.field.instrument')}>
+          {proposal.instrumentShortName === '' ? null : <span className="mr-2">{proposal.instrumentShortName}</span>}
+          <span className="font-mono text-meta text-muted">{payload.instrument}</span>
+          {proposal.instrumentShortName === '' ? <span className="block text-meta text-muted">{t('console.queue.detail.instrumentNotHeld')}</span> : null}
+        </Fact>
+      </dl>
+      <LanguageTextBlocks heading={t('console.queue.detail.summary')} texts={payload.summaries} originalLanguage={payload.originalLanguage} isMachine={payload.isMachine ?? false} field="summaries" />
+    </Panel>
+  );
+}
+
 function VocabularyChanges({ proposal }: { proposal: ProposalRow }) {
   const t = useT();
   const payload = vocabularyPayloadOf(proposal);
@@ -416,6 +434,8 @@ export function ProposalDetailScreen({ proposalId }: { proposalId: string }) {
           <NewInstrumentFacts proposal={proposal} />
         ) : proposal.kind === 'new_obligation' ? (
           <NewObligationFacts proposal={proposal} />
+        ) : proposal.kind === 'new_instrument_summary' ? (
+          <NewSummaryFacts proposal={proposal} />
         ) : null}
       </div>
 
