@@ -172,3 +172,27 @@ class Translator(TestCase):
                 again.assert_not_called()
         self.assertTrue(Proposal.objects.filter(kind="new_translations", payload__key="obl-added").exists())
         self.assertIn("apps.proposals.tasks.file_library_translations", tasks.file_library_translations.app.tasks)
+
+    def test_a_reviewer_reads_each_translation_beside_the_original_it_was_made_from(self) -> None:
+        """GET /proposals/{id} for a new_translations proposal names the record and answers its
+        original title and summary, so a reviewer judges each translation against its source;
+        a record the library no longer holds in force answers neither."""
+        from apps.shared.testing import sign_in
+
+        self.assertEqual(self._translate(Translating(), "obligation", self.duty.id), "filed")
+        proposal = Proposal.objects.get(kind="new_translations", payload__key="obl-suitability")
+        editor = factories.platform_user(roles=("library_editor",), email="editor-translations@bleqq.test")
+        read = self.client.get(f"/api/v1/proposals/{proposal.id}", **sign_in(editor))
+        self.assertEqual(read.status_code, 200, read.content)
+        body = read.json()
+        self.assertEqual(body["instrumentShortName"], "FFFS 2017:2")
+        self.assertEqual((body["originalTitle"]["language"], body["originalTitle"]["text"]), ("en", "Assess suitability"))
+        self.assertEqual((body["originalSummary"]["language"], body["originalSummary"]["text"]), ("en", "Assess the client first."))
+        self.assertEqual(body["payload"]["titles"]["sv"], "[sv] Assess suitability")
+
+        gone = Proposal.objects.filter(pk=proposal.id)
+        tenancy.clear_tenant()
+        payload = {**proposal.payload, "key": "obl-not-held"}
+        gone.update(payload=payload)
+        read = self.client.get(f"/api/v1/proposals/{proposal.id}", **sign_in(editor)).json()
+        self.assertEqual((read["instrumentShortName"], read["originalTitle"], read["originalSummary"]), ("", None, None))
