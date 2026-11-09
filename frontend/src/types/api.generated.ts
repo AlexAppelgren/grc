@@ -16022,6 +16022,13 @@ export interface components {
              */
             items: components["schemas"]["FootprintRequestRow"][];
             /**
+             * Soleapprover
+             * @description True when the caller may approve their own request, because they are the organisation's only active member holding `footprint.approve` and the platform allows it (D-125); false otherwise, and then a request is approved by someone other than the person who asked for it.
+             * @default false
+             * @example false
+             */
+            soleApprover: boolean;
+            /**
              * Total
              * @description How many change requests the organisation has sent in all, across every page, counted at the moment of the call.
              */

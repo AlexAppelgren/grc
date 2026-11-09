@@ -39,6 +39,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, prefetch_related_objects
@@ -48,6 +49,7 @@ from django.utils.text import slugify
 from apps.cases import reading as case_reading
 from apps.library import reading
 from apps.library.models import Jurisdiction, JurisdictionLabel
+from apps.shared import permissions as perms
 from apps.shared.audit import Actor, batched, record
 from apps.shared.models import Tenant
 from apps.taxonomy import markets_logic, matching, terms_logic
@@ -863,6 +865,25 @@ def _decidable(request: FootprintChangeRequest, expected_version: int | None) ->
 
 
 @batched()
+def sole_approver(tenant: Tenant, user: Any) -> bool:
+    """Whether `user` may approve their own scope request as the bank's only member able to
+    approve one (D-125): the setting allows it, they hold `footprint.approve` themselves, and
+    no other active member of the bank does. Permissions, never role names."""
+    from apps.identity.models import Membership, UserStatus
+
+    if not settings.FOOTPRINT_SOLE_APPROVER_ALLOWED:
+        return False
+    holders = set(
+        Membership.objects.filter(
+            tenant=tenant,
+            deactivated_at__isnull=True,
+            user__status=UserStatus.ACTIVE.value,
+            roles__permissions__contains=[perms.FOOTPRINT_APPROVE],
+        ).values_list("user_id", flat=True)
+    )
+    return holders == {user.id}
+
+
 def approve(
     *,
     tenant: Tenant,
@@ -875,13 +896,16 @@ def approve(
 ) -> FootprintChangeRequest:
     """The second person's decision (FP-02, AC-FP1). Four eyes is checked here and by the
     `footprint_change_request_four_eyes` check constraint, which is the database's word on
-    it; the API answers 409 `four_eyes_violation`."""
+    it; the API answers 409 `four_eyes_violation`. The one exception (D-125): the bank's
+    only member able to approve may approve their own request, marked `sole_approver`."""
     _decidable(request, expected_version)
     if request.requested_by_id == decider.id:
-        raise ValidationError(
-            "A regulatory scope change is approved by someone other than the person who asked for it.",
-            code="four_eyes_violation",
-        )
+        if not sole_approver(tenant, decider):
+            raise ValidationError(
+                "A regulatory scope change is approved by someone other than the person who asked for it.",
+                code="four_eyes_violation",
+            )
+        request.sole_approver = True
     adds, removes = _changes(request)
     item_adds, item_removes = _scope_item_changes_of([request])[0]
     entity_includes, entity_excludes = _entity_changes_of([request])[0]
@@ -1023,10 +1047,12 @@ def _decide(
     request.decision_note = note
     request.version += 1
     request.preview = preview.model_dump(by_alias=True)
-    request.save(update_fields=["status", "decided_by", "decided_at", "decision_note", "version", "preview"])
+    request.save(update_fields=["status", "decided_by", "decided_at", "decision_note", "version", "preview", "sole_approver"])
     # The note a person typed stays on the request row; the audit value carries no tenant
     # text (CHUNK10_TASKS rule 13).
     after: dict[str, Any] = {"status": status.value, "version": request.version, "preview": request.preview}
+    if request.sole_approver:
+        after["soleApprover"] = True
     if status is not ApprovalStatus.APPROVED:
         # The items this request asked for never entered the scope; the decision's audit
         # row names them by id and key.

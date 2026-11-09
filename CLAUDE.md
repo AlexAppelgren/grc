@@ -78,7 +78,11 @@ Weakening any of these is a stop: ask the owner (Alex) first.
   taken.
 - Four eyes, enforced by a check constraint, with a passkey step-up on
   approvals, sign-off, footprint changes, exports, key creation, role and
-  security changes, re-enrolment.
+  security changes, re-enrolment. One temporary exception
+  (D-125, Alex 2026-11-09, to be hardened): a bank's only member holding
+  `footprint.approve` may approve their own regulatory scope request, still with
+  a passkey, marked `sole_approver` and audited; the setting
+  `FOOTPRINT_SOLE_APPROVER_ALLOWED` switches it off.
 - No passwords, ever. The emailed code works once, for enrolment, and stops
   working the moment the first passkey exists. No self-service fallback.
 - "Applies" and "we comply" are separate facts. Stable keys never change.

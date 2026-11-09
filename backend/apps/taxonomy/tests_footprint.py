@@ -29,7 +29,7 @@ from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.db import DEFAULT_DB_ALIAS, IntegrityError, connection, connections, transaction
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase, TransactionTestCase, override_settings
 
 from apps.cases import testing as cases_build
 from apps.identity.models import User
@@ -423,3 +423,49 @@ class TenantListRaces(TransactionTestCase):
     def test_two_retirements_of_one_value_at_once_write_one_audit_row(self) -> None:
         self.assertEqual(_race(self.tenant.id, self._retire, self._retire), (LANDED, "invalid_transition"))
         self.assertEqual(self._events("vocabulary.retired"), 1)
+
+
+class SoleApprover(TestCase):
+    """D-125: the bank's only member able to approve a regulatory scope change may approve
+    their own request, with a passkey, marked and audited; with a second such member, or with
+    the setting off, four eyes holds, and the database refuses an unmarked self-approval."""
+
+    def setUp(self) -> None:
+        _seed_library()
+        self.tenant = factories.tenant(slug="sole")
+        self.admin = factories.member(self.tenant, roles=("admin",)).user
+        self.retail = terms_logic.term_by_ref("client_category", "retail")
+        tenancy.activate(self.tenant.id)
+
+    def _create(self) -> FootprintChangeRequest:
+        return footprint_logic.create_request(tenant=self.tenant, requester=self.admin, actor=_actor(self.admin), adds=[self.retail], removes=[])
+
+    def _approve_own(self, request: FootprintChangeRequest) -> FootprintChangeRequest:
+        return footprint_logic.approve(
+            tenant=self.tenant, request=request, decider=self.admin, actor=_actor(self.admin), note="", step_up_assertion_id=uuid.uuid4()
+        )
+
+    def test_the_only_approver_approves_their_own_request_and_it_says_so(self) -> None:
+        self.assertTrue(footprint_logic.sole_approver(self.tenant, self.admin))
+        approved = self._approve_own(self._create())
+        approved.refresh_from_db()
+        self.assertEqual((approved.status, approved.sole_approver, approved.decided_by_id), ("approved", True, self.admin.id))
+        event = AuditEvent.objects.get(tenant=self.tenant, action="footprint.change_approved")
+        self.assertTrue(event.after["soleApprover"])
+        self.assertIsNotNone(event.step_up_assertion_id)
+
+    def test_a_second_approver_or_the_setting_off_restores_four_eyes(self) -> None:
+        waiting = self._create()
+        with override_settings(FOOTPRINT_SOLE_APPROVER_ALLOWED=False), self.assertRaises(ValidationError) as off:
+            self._approve_own(waiting)
+        self.assertEqual(off.exception.code, "four_eyes_violation")
+        factories.member(self.tenant, roles=("approver",))
+        self.assertFalse(footprint_logic.sole_approver(self.tenant, self.admin))
+        with self.assertRaises(ValidationError) as second:
+            self._approve_own(waiting)
+        self.assertEqual(second.exception.code, "four_eyes_violation")
+
+    def test_the_database_refuses_a_self_approval_that_is_not_marked(self) -> None:
+        waiting = self._create()
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            FootprintChangeRequest.objects.filter(pk=waiting.pk).update(decided_by=self.admin, status="approved")

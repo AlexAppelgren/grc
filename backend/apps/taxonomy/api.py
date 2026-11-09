@@ -961,7 +961,7 @@ def list_footprint_requests(request: HttpRequest, page: Query[PageQuery]) -> Foo
     rows, total = footprint_logic.requests_of(
         tenant.id, reading.language_order(request, tenant=tenant), limit=page.limit, offset=page.offset
     )
-    return FootprintRequestPage(items=rows, total=total)
+    return FootprintRequestPage(items=rows, total=total, sole_approver=footprint_logic.sole_approver(tenant, caller_user(request)))
 
 
 @router.post(

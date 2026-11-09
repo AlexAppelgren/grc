@@ -43,12 +43,12 @@ export function useFootprint(): UseQueryResult<Footprint> {
 }
 
 /** The request history, one page at a time: the next page begins where the pages read so far end. */
-export function useFootprintRequests(): UseInfiniteQueryResult<{ pages: Page<FootprintChangeRequest>[] }> {
+export function useFootprintRequests(): UseInfiniteQueryResult<{ pages: footprint.FootprintRequestPage[] }> {
   return useInfiniteQuery({
     queryKey: footprintKeys.requests,
     queryFn: ({ pageParam }) => footprint.listFootprintRequests({ limit: REQUEST_HISTORY_PAGE, offset: pageParam }),
     initialPageParam: 0,
-    getNextPageParam: (last: Page<FootprintChangeRequest>, pages: Page<FootprintChangeRequest>[]) => {
+    getNextPageParam: (last: footprint.FootprintRequestPage, pages: footprint.FootprintRequestPage[]) => {
       const read = pages.reduce((sum, page) => sum + page.items.length, 0);
       return read < last.total ? read : undefined;
     },

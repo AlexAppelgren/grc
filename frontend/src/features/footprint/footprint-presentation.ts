@@ -202,8 +202,14 @@ export function isRequester(request: Pick<FootprintChangeRequest, 'requestedBy'>
 export const FOOTPRINT_REQUEST = 'footprint.request';
 export const FOOTPRINT_APPROVE = 'footprint.approve';
 
-export function canApprove(request: Pick<FootprintChangeRequest, 'requestedBy' | 'status'>, userId: string | null | undefined, permissions: readonly string[]): boolean {
-  return request.status === 'pending' && permissions.includes(FOOTPRINT_APPROVE) && !isRequester(request, userId);
+/** The second person approves; the requester only when they are the bank's only approver (D-125). */
+export function canApprove(
+  request: Pick<FootprintChangeRequest, 'requestedBy' | 'status'>,
+  userId: string | null | undefined,
+  permissions: readonly string[],
+  soleApprover = false,
+): boolean {
+  return request.status === 'pending' && permissions.includes(FOOTPRINT_APPROVE) && (soleApprover || !isRequester(request, userId));
 }
 
 export function canWithdraw(request: Pick<FootprintChangeRequest, 'requestedBy' | 'status'>, userId: string | null | undefined): boolean {

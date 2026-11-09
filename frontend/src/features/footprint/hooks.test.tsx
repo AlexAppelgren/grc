@@ -38,7 +38,7 @@ describe('footprint hooks', () => {
     const fp = renderHook(() => useFootprint(), { wrapper });
     await waitFor(() => expect(fp.result.current.data).toEqual({ dimensions: [], pendingRequest: null, markets: [], scopeItems: [] }));
     const requests = renderHook(() => useFootprintRequests(), { wrapper });
-    await waitFor(() => expect(requests.result.current.data?.pages).toEqual([{ items: [], total: 0 }]));
+    await waitFor(() => expect(requests.result.current.data?.pages).toEqual([{ items: [], total: 0, soleApprover: false }]));
     expect(requests.result.current.hasNextPage).toBe(false);
     const terms = renderHook(() => useTerms('service_type'), { wrapper });
     await waitFor(() => expect(terms.result.current.data).toEqual([]));

@@ -135,9 +135,12 @@ export async function getFootprint(): Promise<Footprint> {
   return footprintOf((await api.get<Schemas['FootprintView']>(FOOTPRINT)).data);
 }
 
-export async function listFootprintRequests(query: PageQuery = {}): Promise<Page<FootprintChangeRequest>> {
+/** A page of change requests, and whether the caller is the bank's only approver (D-125). */
+export type FootprintRequestPage = Page<FootprintChangeRequest> & { soleApprover: boolean };
+
+export async function listFootprintRequests(query: PageQuery = {}): Promise<FootprintRequestPage> {
   const data = (await api.get<Schemas['FootprintRequestPage']>(REQUESTS, { params: query })).data;
-  return { items: data.items.map(requestOf), total: data.total };
+  return { items: data.items.map(requestOf), total: data.total, soleApprover: data.soleApprover ?? false };
 }
 
 /**

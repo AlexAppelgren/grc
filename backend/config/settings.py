@@ -1168,6 +1168,12 @@ if min(WHAT_APPLIES_SUMMARY_DEADLINE_MS, WHAT_APPLIES_SUMMARY_FACTS, WHAT_APPLIE
 # The most terms, and the most scope items, one regulatory scope request may add or remove,
 # each list on its own: every entry costs lookups, a link row and, on approval, a history
 # and an audit row, so the list is bounded at the boundary rather than by the body size.
+# A bank whose only member able to approve a scope change is the person asking may approve
+# its own request (D-125, Alex 2026-11-09: "make it so that a single admin can handle
+# regulatory scope, we can harden it later"). A passkey step-up is still required, the
+# request is marked `sole_approver` and the audit row says so, and the moment a second
+# member can approve, four eyes applies again. False restores four eyes everywhere.
+FOOTPRINT_SOLE_APPROVER_ALLOWED = env_bool("FOOTPRINT_SOLE_APPROVER_ALLOWED", True)
 FOOTPRINT_CHANGE_MAX_TERMS = env_int("FOOTPRINT_CHANGE_MAX_TERMS", 50)
 if FOOTPRINT_CHANGE_MAX_TERMS < 1:
     raise ImproperlyConfigured("Refusing to boot: FOOTPRINT_CHANGE_MAX_TERMS must be at least 1.")

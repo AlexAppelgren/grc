@@ -163,6 +163,13 @@ describe('who may do what', () => {
     expect(canWithdraw(pending, 'u1')).toBe(false);
     expect(canWithdraw(request({ status: 'rejected' }), 'u2')).toBe(false);
   });
+
+  it("lets the bank's only approver approve their own request, and nobody without the grant (D-125)", () => {
+    const pending = request();
+    expect(canApprove(pending, 'u2', ['footprint.approve'], true)).toBe(true);
+    expect(canApprove(pending, 'u2', ['footprint.request'], true)).toBe(false);
+    expect(canApprove(request({ status: 'approved' }), 'u2', ['footprint.approve'], true)).toBe(false);
+  });
 });
 
 describe('draft and diff', () => {

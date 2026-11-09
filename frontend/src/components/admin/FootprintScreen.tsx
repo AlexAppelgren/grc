@@ -582,6 +582,7 @@ function PendingBanner({
   request,
   userId,
   permissions,
+  soleApprover,
   previewId,
   previewShown,
   withdraw,
@@ -593,6 +594,7 @@ function PendingBanner({
   request: FootprintChangeRequest;
   userId: string | null;
   permissions: readonly string[];
+  soleApprover: boolean;
   previewId: string;
   previewShown: boolean;
   withdraw: WithdrawMutation;
@@ -605,7 +607,7 @@ function PendingBanner({
   const ctx = useFormatContext();
   const date = formatDate(request.requestedAt, ctx);
   const mine = canWithdraw(request, userId);
-  const approver = canApprove(request, userId, permissions);
+  const approver = canApprove(request, userId, permissions, soleApprover);
   // Every text inside the warn notice is the text colour (foundations.md, "Restricted setting").
   return (
     <>
@@ -970,6 +972,7 @@ export function FootprintScreen() {
           request={pending}
           userId={userId}
           permissions={permissions}
+          soleApprover={requests.data?.pages[0]?.soleApprover ?? false}
           previewId={previewId}
           previewShown={previewShown}
           withdraw={withdraw}

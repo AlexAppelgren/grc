@@ -64,8 +64,8 @@ describe('footprint api', () => {
       ],
       scopeItems: [],
     });
-    expect(await footprint.listFootprintRequests({ limit: 20, offset: 0 })).toEqual({ items: [screenRequest], total: 1 });
-    expect(await footprint.listFootprintRequests()).toEqual({ items: [screenRequest], total: 1 });
+    expect(await footprint.listFootprintRequests({ limit: 20, offset: 0 })).toEqual({ items: [screenRequest], total: 1, soleApprover: false });
+    expect(await footprint.listFootprintRequests()).toEqual({ items: [screenRequest], total: 1, soleApprover: false });
     expect(sent.map((s) => [s.method, s.path, s.params, s.authorization])).toEqual([
       ['get', '/api/v1/tenant/footprint', null, 'Bearer tok'],
       ['get', '/api/v1/tenant/footprint/requests', { limit: 20, offset: 0 }, 'Bearer tok'],
