@@ -15,7 +15,6 @@ import type {
   FootprintSuggestions,
   JurisdictionRef,
   Market,
-  Page,
   TaxonomyDimension,
   TaxonomyTerm,
   TermSuggest,
