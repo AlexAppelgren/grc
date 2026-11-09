@@ -48,9 +48,22 @@ for wf in ci.yml codeql.yml; do
   say "$wf run ${ids[$wf]}: $(gh run view "${ids[$wf]}" --json url --jq .url)"
 done
 
+settled() { # settled <run>: wait until the run has ended, riding out a watch the network cut
+  # short (2026-11-09: a dropped watch read as a red CI while every job was still running),
+  # then answer whether the run's own conclusion is success.
+  local status=""
+  for _ in $(seq 1 30); do
+    gh run watch "$1" --interval 5 >/dev/null 2>&1 || true
+    status="$(gh run view "$1" --json status --jq .status 2>/dev/null || true)"
+    [ "$status" = completed ] && break
+    sleep 10
+  done
+  [ "$(gh run view "$1" --json conclusion --jq .conclusion 2>/dev/null)" = success ]
+}
+
 failed=0
 for wf in ci.yml codeql.yml; do
-  if gh run watch "${ids[$wf]}" --interval 5 --exit-status >/dev/null 2>&1; then
+  if settled "${ids[$wf]}"; then
     say "$wf green"
   else
     failed=1
