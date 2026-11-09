@@ -7,13 +7,14 @@ import {
   approvedMessage,
   canApprove,
   canWithdraw,
-  companyLines,
   diffFootprint,
   draftAfter,
   draftOf,
+  exclusionLines,
   hasSuggestions,
   hidesSomething,
   historyLine,
+  inScopeLines,
   isRequester,
   marketLevelLabel,
   narrowedGroups,
@@ -414,13 +415,35 @@ describe('company lines and the suggestions from the registers (FP-05)', () => {
     entityInclusions: [{ orgUnit: fonder, term: custody }],
   });
 
-  it('lists a request\'s company lines per company, exclusions first, and keeps them out of the title', () => {
-    expect(companyLines(companies, t)).toEqual([
-      'Example Fonder AB: outside its scope: Banking, Insurance',
-      'Example Liv Försäkring AB: outside its scope: Banking',
+  const regime: FootprintDimension = { dimension: { key: 'regime', kind: 'scope', label: 'Regime' }, restrictsFootprint: true, terms: [banking, { key: 'securities', kind: null, label: 'Securities' }], allSelected: false };
+  const openService: FootprintDimension = { ...service, terms: [] };
+  const taxonomy: TaxonomyTerm[] = [
+    { key: 'advice', kind: null, label: 'Advice', dimension: 'service_type' },
+    { ...custody, active: true },
+    { key: 'retired', kind: null, label: 'Retired', dimension: 'service_type', active: false },
+  ];
+
+  it("lists per company what stays in its scope, then what it gets back, and keeps both out of the title", () => {
+    expect(inScopeLines(companies, [regime], [], t)).toEqual([
+      'Example Fonder AB: in its scope: Securities',
+      'Example Liv Försäkring AB: in its scope: Securities',
       'Example Fonder AB: back in its scope: Custody',
     ]);
-    expect(companyLines(request(), t)).toEqual([]);
+    expect(inScopeLines(companies, [regime], [], sv)[0]).toBe('Example Fonder AB: i dess omfattning: Securities');
+    expect(inScopeLines(request(), [regime], [], t)).toEqual([]);
+    // A group that holds nothing is open: the company keeps every active term but the ones it leaves out.
+    const advice = { key: 'advice', kind: null, label: 'Advice', dimension: 'service_type' };
+    const leavesAdvice = request({ removes: [], entityExclusions: [{ orgUnit: fonder, term: advice }] });
+    expect(inScopeLines(leavesAdvice, [openService], taxonomy, t)).toEqual(['Example Fonder AB: in its scope: Custody']);
+    const leavesBoth = request({ removes: [], entityExclusions: [{ orgUnit: fonder, term: advice }, { orgUnit: fonder, term: custody }] });
+    expect(inScopeLines(leavesBoth, [openService], taxonomy, t)).toEqual(["Example Fonder AB: none of the group's scope"]);
+    // Before the taxonomy is read, an open group has nothing to show, so the line says what the company leaves out.
+    expect(inScopeLines(leavesAdvice, [openService], [], t)).toEqual(['Example Fonder AB: outside its scope: Advice']);
+  });
+
+  it('lists what each company leaves out, once per company, for the preview', () => {
+    expect(exclusionLines(companies, t)).toEqual(['Example Fonder AB: outside its scope: Banking, Insurance', 'Example Liv Försäkring AB: outside its scope: Banking']);
+    expect(exclusionLines(request(), t)).toEqual([]);
     expect(requestTitle(companies, t)).toBe('Add Denmark');
     const onlyCompanies = { ...companies, adds: [] };
     expect(requestTitle(onlyCompanies, t)).toBe("Change each company's own scope");

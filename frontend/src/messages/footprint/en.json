@@ -78,6 +78,8 @@
   "footprint.change.addItem": "Add the regulation {name}",
   "footprint.change.removeItem": "Remove the regulation {name}",
   "footprint.request.companiesOnly": "Change each company's own scope",
+  "footprint.entity.inScope": "{company}: in its scope: {labels}",
+  "footprint.entity.none": "{company}: none of the group's scope",
   "footprint.entity.outside": "{company}: outside its scope: {labels}",
   "footprint.entity.back": "{company}: back in its scope: {labels}",
   "footprint.history.approvedWithCompanies": "approved \"{title}\" requested by {requester}, with {companies}'s own scope.",

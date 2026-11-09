@@ -20,13 +20,14 @@ import {
   approvedMessage,
   canApprove,
   canWithdraw,
-  companyLines,
   diffFootprint,
   draftAfter,
   draftOf,
+  exclusionLines,
   hasSuggestions,
   hidesSomething,
   historyLine,
+  inScopeLines,
   marketLevelLabel,
   narrowedGroups,
   pendingAdditions,
@@ -564,13 +565,17 @@ function SuggestionsPanel({ suggestions, create, onSent, onRequestPending }: { s
 
 // ——— the waiting request ————————————————————————————————————————————
 
-/** The company lines under a request's title: each company's own scope, which the title never names. */
-function CompanyLines({ request }: { request: FootprintChangeRequest }) {
+/** The company lines under a request's title: what each company keeps of the group's scope, which the title never names. */
+function CompanyLines({ request, dimensions }: { request: FootprintChangeRequest; dimensions: readonly FootprintDimension[] }) {
   const t = useT();
-  const lines = companyLines(request, t);
+  const terms = useTerms();
+  return <LineList lines={inScopeLines(request, dimensions, terms.data ?? [], t)} data-company-lines="" />;
+}
+
+function LineList({ lines, ...data }: { lines: readonly string[] } & Record<`data-${string}`, string>) {
   if (lines.length === 0) return null;
   return (
-    <ul className="m-0 list-disc pl-5" data-company-lines="">
+    <ul className="m-0 list-disc pl-5" {...data}>
       {lines.map((line) => (
         <li key={line}>{line}</li>
       ))}
@@ -580,6 +585,7 @@ function CompanyLines({ request }: { request: FootprintChangeRequest }) {
 
 function PendingBanner({
   request,
+  dimensions,
   userId,
   permissions,
   soleApprover,
@@ -592,6 +598,7 @@ function PendingBanner({
   onWithdrawn,
 }: {
   request: FootprintChangeRequest;
+  dimensions: readonly FootprintDimension[];
   userId: string | null;
   permissions: readonly string[];
   soleApprover: boolean;
@@ -618,7 +625,7 @@ function PendingBanner({
           <b>{requestTitle(request, t)}</b>
         </p>
         <p>{mine ? t('footprint.banner.youRequested', { date }) : [t('footprint.banner.requestedBy', { name: request.requestedBy.name, date }), previewSummary(request.preview, t), scopeItemConsequence(request, t)].filter((part) => part.length > 0).join(' ')}</p>
-        <CompanyLines request={request} />
+        <CompanyLines request={request} dimensions={dimensions} />
         {permissions.includes(FOOTPRINT_REQUEST) ? <p>{t('footprint.banner.blocks')}</p> : null}
         <Button variant="ghost" size="small" className="justify-self-start" aria-expanded={previewShown} aria-controls={previewId} onClick={onTogglePreview}>
           {t('footprint.banner.seePreview')}
@@ -671,7 +678,7 @@ function ApproveDialog({
       title={t('footprint.approve.title', { title: requestTitle(request, t) })}
       description={[previewSummary(request.preview, t), scopeItemConsequence(request, t)].filter((part) => part.length > 0).join(' ')}
     >
-      <CompanyLines request={request} />
+      <CompanyLines request={request} dimensions={dimensions} />
       {narrowed.length > 0 || hidesSomething(request.preview) ? <ConsequenceNotice narrowed={narrowed} /> : null}
       {fourEyes ? (
         <Notice tone="bad" className="mt-4 mb-0" data-four-eyes="">
@@ -971,6 +978,7 @@ export function FootprintScreen() {
       ) : (
         <PendingBanner
           request={pending}
+          dimensions={dimensions}
           userId={userId}
           permissions={permissions}
           soleApprover={requests.data?.pages[0]?.soleApprover ?? false}
@@ -996,6 +1004,7 @@ export function FootprintScreen() {
 
       {pending !== null ? (
         <Panel id={previewId} hidden={!previewShown} data-pending-preview="">
+          <LineList lines={exclusionLines(pending, t)} data-company-exclusions="" />
           <PreviewColumns preview={pending.preview} pending={false} />
         </Panel>
       ) : null}

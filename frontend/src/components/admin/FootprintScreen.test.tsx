@@ -700,7 +700,7 @@ describe('FootprintScreen: suggested from your licences (FP-05, FP-S20)', () => 
     });
     const banner = await findBanner();
     expect(within(banner).getByText('Add Denmark')).toBeVisible();
-    expect(within(banner).getByText('Example Fonder AB: outside its scope: Banking, Insurance')).toBeVisible();
+    expect(within(banner).getByText('Example Fonder AB: in its scope: Securities')).toBeVisible();
     expect(panel()).toBeNull();
   });
 
@@ -740,10 +740,13 @@ describe('FootprintScreen: suggested from your licences (FP-05, FP-S20)', () => 
     open(me);
     const banner = await findBanner();
     expect(within(banner).getByText("Change each company's own scope")).toBeVisible();
-    expect(within(banner).getByText('Example Fonder AB: outside its scope: Banking, Insurance')).toBeVisible();
+    expect(within(banner).getByText('Example Fonder AB: in its scope: Securities')).toBeVisible();
+    // What the company leaves out sits with the preview.
+    const preview = document.querySelector('[data-pending-preview]') as HTMLElement;
+    expect(within(preview).getByText('Example Fonder AB: outside its scope: Banking, Insurance')).toBeInTheDocument();
     fireEvent.click(within(banner).getByRole('button', { name: 'Approve' }));
     const dialog = await screen.findByRole('dialog', { name: 'Approve "Change each company\'s own scope"?' });
-    expect(within(dialog).getByText('Example Fonder AB: outside its scope: Banking, Insurance')).toBeVisible();
+    expect(within(dialog).getByText('Example Fonder AB: in its scope: Securities')).toBeVisible();
     expect(panel()).toBeNull();
     expect(sent.some((s) => s.path === SUGGESTIONS_PATH)).toBe(false);
   });

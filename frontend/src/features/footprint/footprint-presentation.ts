@@ -376,12 +376,39 @@ function perCompany(lines: readonly EntityTermLine[]): { name: string; terms: Ta
   return [...byUnit.values()];
 }
 
-/** A request's company lines, one per company and direction, exclusions first: listed under the title in the banner and the approve dialog. */
-export function companyLines(request: Pick<FootprintChangeRequest, 'entityExclusions' | 'entityInclusions'>, t: Translate): string[] {
-  return [
-    ...perCompany(request.entityExclusions).map((company) => companyLine('exclude', company.name, company.terms, t)),
-    ...perCompany(request.entityInclusions).map((company) => companyLine('include', company.name, company.terms, t)),
-  ];
+/** A request's company lines as what each company keeps, listed under the title in the banner and the approve dialog:
+ * per company, the group's scope once approved in the groups its exclusions narrow, less those exclusions, then the
+ * terms a company gets back. A group that holds nothing is open, so every active term of the taxonomy is in it.
+ * With no term to show (the taxonomy not yet read), the line names what the company leaves out. */
+export function inScopeLines(
+  request: Pick<FootprintChangeRequest, 'adds' | 'removes' | 'entityExclusions' | 'entityInclusions'>,
+  dimensions: readonly FootprintDimension[],
+  terms: readonly TaxonomyTerm[],
+  t: Translate,
+): string[] {
+  const after = draftAfter(dimensions, request);
+  const labels = new Map<string, string>();
+  for (const term of terms) labels.set(`${term.dimension}:${term.key}`, term.label);
+  for (const d of dimensions) for (const term of d.terms) labels.set(`${d.dimension.key}:${term.key}`, term.label);
+  for (const term of request.adds) labels.set(`${term.dimension}:${term.key}`, term.label);
+  const groupScope = (dimension: string): string[] => {
+    const held = [...(after[dimension] ?? [])];
+    const keys = held.length > 0 ? held : terms.filter((term) => term.dimension === dimension && term.active !== false).map((term) => term.key);
+    return keys.map((key) => `${dimension}:${key}`);
+  };
+  const kept = perCompany(request.entityExclusions).map((company) => {
+    const excluded = new Set(company.terms.map((term) => `${term.dimension}:${term.key}`));
+    const group = [...new Set(company.terms.map((term) => term.dimension))].flatMap(groupScope);
+    if (group.length === 0) return companyLine('exclude', company.name, company.terms, t);
+    const own = group.filter((id) => !excluded.has(id)).map((id) => labels.get(id) ?? id);
+    return own.length === 0 ? t('footprint.entity.none', { company: company.name }) : t('footprint.entity.inScope', { company: company.name, labels: own.join(', ') });
+  });
+  return [...kept, ...perCompany(request.entityInclusions).map((company) => companyLine('include', company.name, company.terms, t))];
+}
+
+/** What each company leaves out of the group's scope, one line per company: shown with the request's preview. */
+export function exclusionLines(request: Pick<FootprintChangeRequest, 'entityExclusions'>, t: Translate): string[] {
+  return perCompany(request.entityExclusions).map((company) => companyLine('exclude', company.name, company.terms, t));
 }
 
 export function hasSuggestions(suggestions: FootprintSuggestions): boolean {

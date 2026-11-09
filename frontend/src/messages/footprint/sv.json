@@ -78,6 +78,8 @@
   "footprint.change.addItem": "Lägg till regelverket {name}",
   "footprint.change.removeItem": "Ta bort regelverket {name}",
   "footprint.request.companiesOnly": "Ändra varje bolags egen omfattning",
+  "footprint.entity.inScope": "{company}: i dess omfattning: {labels}",
+  "footprint.entity.none": "{company}: inget av koncernens omfattning",
   "footprint.entity.outside": "{company}: utanför dess omfattning: {labels}",
   "footprint.entity.back": "{company}: tillbaka i dess omfattning: {labels}",
   "footprint.history.approvedWithCompanies": "godkände \"{title}\" begärd av {requester}, med egen omfattning för {companies}.",

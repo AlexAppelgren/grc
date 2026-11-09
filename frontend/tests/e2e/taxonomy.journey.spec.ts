@@ -1386,7 +1386,9 @@ test.describe('regulatory scope, markets and standards', () => {
         await suggestions.getByRole('button', { name: 'Request approval' }).click();
         await expect(page.getByText('Sent for approval.', { exact: true })).toBeFocused();
         const banner = page.locator('[data-pending-request]');
-        await expect(banner.locator('[data-company-lines]')).toHaveText(fonderOutside);
+        // The banner says what the company keeps of the group's scope; what it leaves out sits with the preview.
+        await expect(banner.locator('[data-company-lines]')).toHaveText('Example Fonder AB: in its scope: Securities, AML, Execution only, Investment services');
+        await expect(page.locator('[data-pending-preview] [data-company-exclusions]')).toHaveText(fonderOutside, { useInnerText: false });
         await expect(page.locator(`${JURISDICTIONS} [data-term="dk"]`).getByText('Added when approved')).toBeVisible();
         await expect(suggestions).toHaveCount(0);
         // Four eyes: the requester may withdraw, never approve.
