@@ -204,7 +204,7 @@ Our own records
   notice: New obligation
   warning: Waiting
   brand: Proposed by our agent
-  notice: New instrument
+  notice: New regulation
   positive: Approved
   warning: Waiting for your agent
   notice: Our agent is researching
