@@ -258,6 +258,23 @@ When they create another tenant whose name derives the same short name
 Then the second tenant's short name carries a numeric suffix, and both are created
 ```
 
+### ADM-S19 — The console shows whether a bank's first administrator has joined, and sends the invitation again `@integration` `@e2e` (ADM-02, ID-01)
+```gherkin
+Given a platform admin with tenants.manage who created a bank from the console
+Then the bank's row names the first administrator's address, the invitation pending and when its link stops working
+When the link expires unused
+Then the row shows the invitation expired
+When they send it again
+Then a new link goes to the same address, the earlier link stops working
+And the row shows the invitation pending with a new expiry
+And the resend is audited in the bank's own log
+When the person joins
+Then the row shows the invitation accepted with when they joined, and sending it again answers invitation_closed
+And an invitation sent from inside the bank never shows on the console's row
+And a bank this console did not create shows no first administrator, and sending again answers not_found
+And without tenants.manage sending again is refused
+```
+
 ### ADM-S17 — A bank sets its own timezone and languages, not the platform on its behalf `@integration` (ADM-02, TEN-01)
 ```gherkin
 Given a tenant just created from the console, before anyone has touched its profile

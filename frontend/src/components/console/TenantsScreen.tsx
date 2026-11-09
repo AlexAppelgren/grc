@@ -10,12 +10,12 @@ import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
-import { useConsoleTenants, useCreateConsoleTenant } from '@/features/console-tenants/hooks';
-import { presentTenant } from '@/features/console-tenants/tenants-presentation';
-import type { ConsoleTenant } from '@/features/console-tenants/types';
+import { useConsoleTenants, useCreateConsoleTenant, useResendFirstAdministrator } from '@/features/console-tenants/hooks';
+import { canResendFirstAdministrator, presentFirstAdministrator, presentTenant } from '@/features/console-tenants/tenants-presentation';
+import type { ConsoleTenant, FirstAdministrator } from '@/features/console-tenants/types';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { formatDate } from '@/shared/utils/format';
+import { formatDate, formatDateTime } from '@/shared/utils/format';
 
 // Tenants (ADM-02, ADM-S6): every bank on the platform, and the one action
 // that adds one and invites its first administrator in the same transaction.
@@ -26,6 +26,41 @@ import { formatDate } from '@/shared/utils/format';
 // this form asks for a name and that person's address, nothing else.
 
 type FormProblem = 'name' | 'email';
+
+// The invitation the console sent the bank's first administrator (D-123): who,
+// where it stands, and a way to send it again while nobody has joined.
+function FirstAdministratorLine({ tenantId, invitation }: { tenantId: string; invitation: FirstAdministrator }) {
+  const t = useT();
+  const ctx = useFormatContext();
+  const resend = useResendFirstAdministrator();
+  const when =
+    invitation.status === 'accepted' && invitation.acceptedAt !== null
+      ? t('console.tenants.firstAdmin.joined', { date: formatDate(invitation.acceptedAt, ctx) })
+      : invitation.status === 'pending'
+        ? t('console.tenants.firstAdmin.expires', { date: formatDateTime(invitation.expiresAt, ctx) })
+        : invitation.status === 'expired'
+          ? t('console.tenants.firstAdmin.expiredOn', { date: formatDateTime(invitation.expiresAt, ctx) })
+          : null;
+  return (
+    <div className="mt-2" data-first-administrator={invitation.status}>
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <span className="microlabel">{t('console.tenants.firstAdmin.label')}</span>
+        <span className="text-body">{invitation.email}</span>
+        <PillRow pills={presentFirstAdministrator(invitation, t)} />
+      </div>
+      <Meta>{when !== null ? <span>{when}</span> : null}</Meta>
+      {canResendFirstAdministrator(invitation) ? (
+        <div className="mt-1.5">
+          <Button size="small" variant="outline" disabled={resend.isPending} onClick={() => resend.mutate(tenantId)}>
+            {t('console.tenants.firstAdmin.resend')}
+          </Button>
+        </div>
+      ) : null}
+      {resend.isSuccess ? <StatusLine tone="positive">{t('console.tenants.firstAdmin.resent', { email: invitation.email })}</StatusLine> : null}
+      {resend.isError ? <ProblemAlert error={resend.error} /> : null}
+    </div>
+  );
+}
 
 function TenantRow({ tenant }: { tenant: ConsoleTenant }) {
   const t = useT();
@@ -41,6 +76,7 @@ function TenantRow({ tenant }: { tenant: ConsoleTenant }) {
         {tenant.defaultLanguage !== null ? <span>{tenant.defaultLanguage.label}</span> : null}
         <span>{t('console.tenants.created', { date: formatDate(tenant.createdAt, ctx) })}</span>
       </Meta>
+      {tenant.firstAdministrator !== null ? <FirstAdministratorLine tenantId={tenant.id} invitation={tenant.firstAdministrator} /> : null}
     </Row>
   );
 }

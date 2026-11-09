@@ -15,3 +15,7 @@ export async function listConsoleTenants(query: PageQuery): Promise<ConsoleTenan
 export async function createConsoleTenant(body: ConsoleTenantCreate): Promise<ConsoleTenant> {
   return (await api.post<ConsoleTenant>(CONSOLE_TENANTS, body)).data;
 }
+
+export async function resendFirstAdministrator(tenantId: string): Promise<ConsoleTenant> {
+  return (await api.post<ConsoleTenant>(`${CONSOLE_TENANTS}/${encodeURIComponent(tenantId)}/first-administrator/resend`)).data;
+}

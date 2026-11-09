@@ -269,6 +269,9 @@ class Invitation(models.Model):
     accepted_at = models.DateTimeField(null=True, blank=True)
     accepted_user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     revoked_at = models.DateTimeField(null=True, blank=True)
+    # The invitation the console sent when it created the bank, which its tenant list shows
+    # (D-123). Set once, at creation; a resend keeps the row and so the mark.
+    first_administrator = models.BooleanField(default=False)
 
     class Meta:
         db_table = "invitation"

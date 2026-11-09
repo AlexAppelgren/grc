@@ -29,3 +29,11 @@ export function useCreateConsoleTenant(): UseMutationResult<ConsoleTenant, unkno
     onSuccess: () => queryClient.invalidateQueries({ queryKey: consoleTenantKeys.tenants }),
   });
 }
+
+export function useResendFirstAdministrator(): UseMutationResult<ConsoleTenant, unknown, string> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (tenantId) => consoleTenants.resendFirstAdministrator(tenantId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: consoleTenantKeys.tenants }),
+  });
+}

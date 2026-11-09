@@ -11,7 +11,15 @@ type Schemas = components['schemas'];
 // Local: the backend types the tenant's lifecycle as a plain string; the fixed kind list lives here.
 export type TenantStatus = 'active' | 'deactivated';
 
-export type ConsoleTenant = Omit<Schemas['ConsoleTenantRow'], 'status'> & { status: TenantStatus };
+// Local: the backend types the first administrator's invitation status as a plain string; the fixed kind list lives here.
+export type FirstAdministratorStatus = 'pending' | 'expired' | 'accepted' | 'revoked';
+
+export type FirstAdministrator = Omit<Schemas['ConsoleFirstAdministrator'], 'status'> & { status: FirstAdministratorStatus };
+
+export type ConsoleTenant = Omit<Schemas['ConsoleTenantRow'], 'status' | 'firstAdministrator'> & {
+  status: TenantStatus;
+  firstAdministrator: FirstAdministrator | null;
+};
 export type ConsoleTenantCreate = Schemas['ConsoleTenantCreateBody'];
 
 // Local: the generator emits one concrete page per item type, never a generic.

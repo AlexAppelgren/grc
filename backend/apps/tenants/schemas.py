@@ -509,6 +509,40 @@ class ConsoleReissueBody(CamelSchema):
     )
 
 
+class ConsoleFirstAdministrator(CamelSchema):
+    """The invitation the console sent a bank's first administrator when it created the bank
+    (ADM-02, D-123): to whom, and whether they have joined. It is the platform's own act;
+    nothing a bank's members wrote is read for it."""
+
+    email: str = Field(
+        description=(
+            "The address the console invited, as it was typed at creation, lower-cased. It is "
+            "the person who runs the bank's members once they have joined."
+        )
+    )
+    status: str = Field(
+        description=(
+            "Where that invitation stands, one of four values: `pending`, sent and still open, "
+            "so the person can join; `expired`, not used within its window, so nobody can join "
+            "with it until it is sent again; `accepted`, the person joined the bank; `revoked`, "
+            "withdrawn from inside the bank. A pending or an expired one can be sent again with "
+            "`POST /console/tenants/{tenant_id}/first-administrator/resend`."
+        )
+    )
+    expires_at: datetime = Field(
+        description=(
+            "When the link stops working, as a UTC timestamp in ISO 8601: the invitation window "
+            "after it was last sent. In the past for an expired invitation; kept as it was for "
+            "an accepted or revoked one."
+        )
+    )
+    accepted_at: datetime | None = Field(
+        description=(
+            "When the person joined, as a UTC timestamp in ISO 8601; null until they do."
+        )
+    )
+
+
 class ConsoleTenantRow(CamelSchema):
     """One bank as the platform console lists it (ADM-02). No member count and no
     tenant-side content: a platform session reads the tenant row and nothing under it."""
@@ -523,6 +557,12 @@ class ConsoleTenantRow(CamelSchema):
                     "status": "active",
                     "defaultLanguage": _EXAMPLE_LANGUAGE_DA,
                     "createdAt": "2026-09-20T07:41:12Z",
+                    "firstAdministrator": {
+                        "email": "compliance.officer@second-bank.test",
+                        "status": "pending",
+                        "expiresAt": "2026-09-23T07:41:12Z",
+                        "acceptedAt": None,
+                    },
                 }
             ]
         }
@@ -574,6 +614,13 @@ class ConsoleTenantRow(CamelSchema):
             "a contract date, a go-live date or a billing start."
         )
     )
+    first_administrator: ConsoleFirstAdministrator | None = Field(
+        description=(
+            "The invitation the console sent the bank's first administrator, and whether they "
+            "have joined, so a bank nobody has entered yet is visible here. Null for a bank "
+            "that was not created through this console, such as one a deploy seeded."
+        )
+    )
 
 
 class ConsoleTenantPage(CamelSchema):
@@ -591,6 +638,12 @@ class ConsoleTenantPage(CamelSchema):
                             "status": "active",
                             "defaultLanguage": _EXAMPLE_LANGUAGE_SV,
                             "createdAt": "2026-01-09T09:12:44Z",
+                            "firstAdministrator": {
+                                "email": "anna.berg@example-bank.test",
+                                "status": "accepted",
+                                "expiresAt": "2026-01-12T09:12:44Z",
+                                "acceptedAt": "2026-01-09T10:03:18Z",
+                            },
                         },
                         {
                             "id": "00000000-0000-4000-8000-00000000000b",
@@ -599,6 +652,12 @@ class ConsoleTenantPage(CamelSchema):
                             "status": "active",
                             "defaultLanguage": _EXAMPLE_LANGUAGE_DA,
                             "createdAt": "2026-09-20T07:41:12Z",
+                            "firstAdministrator": {
+                                "email": "compliance.officer@second-bank.test",
+                                "status": "expired",
+                                "expiresAt": "2026-09-23T07:41:12Z",
+                                "acceptedAt": None,
+                            },
                         },
                     ],
                     "total": 2,

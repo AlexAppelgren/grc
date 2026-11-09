@@ -6,7 +6,7 @@ import { tokenStore } from '@/shared/utils/api-client';
 import * as consoleTenants from './api';
 import type { ConsoleTenantCreate } from './types';
 
-// The two wrappers hit /console/tenants and return `.data`. Nothing under a
+// The wrappers hit /console/tenants and return `.data`. Nothing under a
 // tenant is ever asked for (ADM-02).
 
 const row = {
@@ -41,5 +41,11 @@ describe('console tenants api', () => {
     const sent = installAdapter(() => ({ status: 201, data: { ...row, id: 't3', name: body.name, slug: 'third-bank' } }));
     expect(await consoleTenants.createConsoleTenant(body)).toMatchObject({ id: 't3', slug: 'third-bank' });
     expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([['post', '/api/v1/console/tenants', body]]);
+  });
+
+  it('sends the first administrator their invitation again', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: row }));
+    expect(await consoleTenants.resendFirstAdministrator('t1')).toEqual(row);
+    expect(sent.map((s) => [s.method, s.path])).toEqual([['post', '/api/v1/console/tenants/t1/first-administrator/resend']]);
   });
 });

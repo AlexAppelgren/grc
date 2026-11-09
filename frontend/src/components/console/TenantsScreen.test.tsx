@@ -20,8 +20,11 @@ const TENANTS_PATH = '/api/v1/console/tenants';
 
 const swedish = { key: 'sv', kind: null, label: 'Swedish' };
 
-const tenantA = { id: 't1', name: 'Example Bank AB', slug: 'example-bank-ab', status: 'active', defaultLanguage: swedish, createdAt: '2026-09-17T08:00:00Z' };
-const tenantB = { id: 't2', name: 'Second Bank A/S', slug: 'second-bank-as', status: 'deactivated', defaultLanguage: null, createdAt: '2026-09-18T08:00:00Z' };
+type FirstAdmin = { email: string; status: string; expiresAt: string; acceptedAt: string | null } | null;
+
+const joined: FirstAdmin = { email: 'anna.berg@example-bank.test', status: 'accepted', expiresAt: '2026-09-20T08:00:00Z', acceptedAt: '2026-09-18T09:30:00Z' };
+const tenantA = { id: 't1', name: 'Example Bank AB', slug: 'example-bank-ab', status: 'active', defaultLanguage: swedish, createdAt: '2026-09-17T08:00:00Z', firstAdministrator: joined };
+const tenantB = { id: 't2', name: 'Second Bank A/S', slug: 'second-bank-as', status: 'deactivated', defaultLanguage: null, createdAt: '2026-09-18T08:00:00Z', firstAdministrator: null as FirstAdmin };
 
 const platformAdmin = {
   user: { id: 'u11', email: 'platform@bleqq.test', name: 'Per Ström', locale: 'en' },
@@ -122,7 +125,7 @@ describe('the console tenants screen', () => {
   });
 
   it('creates a bank from a name and its first administrator, with a short name derived for it', async () => {
-    const created: typeof tenantB = { id: 't3', name: 'Third Bank AB', slug: 'third-bank-ab', status: 'active', defaultLanguage: null, createdAt: '2026-09-20T08:00:00Z' };
+    const created: typeof tenantB = { id: 't3', name: 'Third Bank AB', slug: 'third-bank-ab', status: 'active', defaultLanguage: null, createdAt: '2026-09-20T08:00:00Z', firstAdministrator: null };
     let tenants: (typeof tenantA | typeof created)[] = [tenantA];
     const sent = server({ status: 200, data: { items: [tenantA], total: 1 } }, (s) => {
       if (s.path === TENANTS_PATH && s.method === 'post') {
@@ -168,5 +171,42 @@ describe('the console tenants screen', () => {
     fireEvent.click(within(form).getByRole('button', { name: 'Create tenant' }));
 
     expect(await within(form).findByText('Enter a valid work address.')).toBeInTheDocument();
+  });
+
+  it('shows who the first administrator is and whether they joined, with no resend once they have', async () => {
+    server({ status: 200, data: { items: [tenantA, tenantB], total: 2 } });
+    renderIn(<TenantsScreen />);
+    await screen.findByText('Example Bank AB');
+    const row = document.querySelector('[data-tenant-id="t1"]') as HTMLElement;
+    expect(row).toHaveTextContent('anna.berg@example-bank.test');
+    expect(within(row).getByText('Joined')).toHaveAttribute('data-pill', 'positive');
+    expect(row).toHaveTextContent('Joined 18 Sept 2026');
+    expect(within(row).queryByRole('button', { name: 'Send the invitation again' })).toBeNull();
+    // A bank a deploy seeded has no console invitation to show.
+    expect(document.querySelector('[data-tenant-id="t2"] [data-first-administrator]')).toBeNull();
+  });
+
+  it('sends a pending or an expired invitation again and reads the row back', async () => {
+    const expired = { ...tenantA, id: 't4', slug: 'fourth-bank-ab', name: 'Fourth Bank AB', firstAdministrator: { email: 'eva@fourth-bank.test', status: 'expired', expiresAt: '2026-09-20T08:00:00Z', acceptedAt: null } };
+    const pending = { ...expired, firstAdministrator: { ...expired.firstAdministrator, status: 'pending', expiresAt: '2026-11-12T08:00:00Z' } };
+    let current = expired;
+    const resendPath = '/api/v1/console/tenants/t4/first-administrator/resend';
+    const sent = server({ status: 200, data: { items: [expired], total: 1 } }, (s) => {
+      if (s.path === resendPath && s.method === 'post') {
+        current = pending;
+        return { status: 200, data: pending };
+      }
+      if (s.path === TENANTS_PATH && s.method === 'get') return { status: 200, data: { items: [current], total: 1 } };
+      return undefined;
+    });
+    renderIn(<TenantsScreen />);
+    const row = (await screen.findByText('Fourth Bank AB')).closest('[data-tenant-id]') as HTMLElement;
+    expect(within(row).getByText('Invitation expired')).toHaveAttribute('data-pill', 'information');
+    fireEvent.click(within(row).getByRole('button', { name: 'Send the invitation again' }));
+
+    expect(await within(row).findByText('The invitation went to eva@fourth-bank.test again.')).toBeInTheDocument();
+    expect(await within(row).findByText('Invitation pending')).toHaveAttribute('data-pill', 'warning');
+    expect(row).toHaveTextContent('Link works until');
+    expect(sent.filter((s) => s.method === 'post' && s.path === resendPath)).toHaveLength(1);
   });
 });

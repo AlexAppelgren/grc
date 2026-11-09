@@ -92,6 +92,16 @@ def find_open_for_email(email: str) -> Invitation | None:
         )
 
 
+def first_administrator_invitations(tenant_ids: Iterable[uuid.UUID]) -> dict[uuid.UUID, Invitation]:
+    """Each bank's first-administrator invitation: the one the console sent when it created
+    the bank (D-123). A console session holds no bank's zone, so the rows are read through
+    the identity lookup, and only these marked rows: nothing a bank's own members sent is
+    read."""
+    with tenancy.identity_lookup():
+        rows = Invitation.objects.filter(tenant_id__in=list(tenant_ids), first_administrator=True).order_by("created_at", "id")
+        return {row.tenant_id: row for row in rows if row.tenant_id is not None}
+
+
 def find_open_for_tenant(email: str, tenant_id: uuid.UUID | None) -> Invitation | None:
     """The open invitation for `email` in one tenant (None: a platform invitation). The
     enrolment ceremony accepts the invitation its session came from, not the newest
@@ -135,6 +145,7 @@ def create_invitation(
     kind: InvitationKind = InvitationKind.INVITE,
     step_up_assertion_id: uuid.UUID | None = None,
     fixed_token: str | None = None,
+    first_administrator: bool = False,
 ) -> IssuedInvitation:
     """Create the row, email the link. `fixed_token` exists for the E2E seed alone."""
     cleaned = normalise_email(email)
@@ -158,6 +169,7 @@ def create_invitation(
         kind=kind.value,
         invited_by=invited_by,
         expires_at=expires_at,
+        first_administrator=first_administrator,
     )
     role_keys: list[str] = []
     for role in roles:

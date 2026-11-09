@@ -243,7 +243,7 @@ class ConsoleTenants(ScenarioTestCase):
         self.assertEqual([row["slug"] for row in page["items"]], ["alpha-bank", "beta-bank"])
         self.assertEqual(
             sorted(page["items"][0]),
-            ["createdAt", "defaultLanguage", "id", "name", "slug", "status"],
+            ["createdAt", "defaultLanguage", "firstAdministrator", "id", "name", "slug", "status"],
         )
 
     def test_the_list_paginates(self) -> None:

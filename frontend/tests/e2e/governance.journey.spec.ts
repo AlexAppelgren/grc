@@ -405,6 +405,50 @@ test.describe('governance journeys', () => {
     expect(secondTenantId).not.toBe(tenantId);
   });
 
+  test("ADM-S19: The console shows whether a bank's first administrator has joined, and sends the invitation again", async ({ page, request, apiGuard }, testInfo) => {
+    allowFreshContext(apiGuard);
+    // Fresh names per attempt, so a retry or a parallel run never meets another's bank.
+    const stamp = `${Date.now().toString(36)}-${testInfo.retry}`;
+    const name = `ADM-S19 Bank AB ${stamp}`;
+    const email = `first-admin@${stamp}.test`;
+
+    await signInAs(page, LOGINS.platform);
+    await page.goto('/console/tenants');
+    await expect(page.getByRole('heading', { level: 1, name: 'Tenants' })).toBeVisible();
+    await expect(page.locator('[data-tenants-list]').or(page.locator('[data-empty-state]')).first()).toBeVisible();
+
+    await page.getByRole('button', { name: 'Create a tenant', exact: true }).click();
+    const form = page.getByRole('dialog', { name: 'Create a tenant' });
+    await form.getByLabel('Name', { exact: true }).fill(name);
+    await form.getByLabel("First administrator's email").fill(email);
+    const created = page.waitForResponse((r) => r.url().endsWith('/api/v1/console/tenants') && r.request().method() === 'POST' && r.ok());
+    await form.getByRole('button', { name: 'Create tenant', exact: true }).click();
+    const { id: tenantId } = (await (await created).json()) as { id: string };
+    await expect(form).toBeHidden();
+
+    // The row names the address, the invitation pending and when its link stops working.
+    const row = page.locator(`[data-tenant-id="${tenantId}"]`);
+    const firstAdmin = row.locator('[data-first-administrator]');
+    await expect(firstAdmin).toHaveAttribute('data-first-administrator', 'pending');
+    await expect(firstAdmin.getByText(email, { exact: true })).toBeVisible();
+    await expect(firstAdmin.getByText('Invitation pending', { exact: true })).toBeVisible();
+    await expect(firstAdmin.getByText(/^Link works until /)).toBeVisible();
+    await expect.poll(async () => mailsTo(await mailOutbox(request), email).length).toBe(1);
+
+    // Sending it again mails the same address a new link, and the row stays pending.
+    const resent = page.waitForResponse((r) => r.url().endsWith(`/api/v1/console/tenants/${tenantId}/first-administrator/resend`) && r.request().method() === 'POST' && r.ok());
+    await firstAdmin.getByRole('button', { name: 'Send the invitation again', exact: true }).click();
+    await resent;
+    await expect(firstAdmin.getByText(`The invitation went to ${email} again.`, { exact: true })).toBeVisible();
+    await expect.poll(async () => mailsTo(await mailOutbox(request), email).length).toBe(2);
+    const [first, second] = mailsTo(await mailOutbox(request), email);
+    const links = [first, second].map((mail) => (mail === undefined ? null : inviteLinkFrom(mail)));
+    expect(links[1]).not.toBeNull();
+    expect(links[1]).not.toBe(links[0]);
+    await expect(firstAdmin).toHaveAttribute('data-first-administrator', 'pending');
+    await expect(firstAdmin.getByText('Invitation pending', { exact: true })).toBeVisible();
+  });
+
   test("ACC-S11: Tenant reach needs two people, and off means off", async ({ page, browser, playwright, apiGuard }, testInfo) => {
     // ACC-08, AC-ACC2: two members holding security.manage switch tenant reach on, one asking
     // and the other approving, each with a passkey; either switches it off alone, and then

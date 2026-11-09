@@ -11,8 +11,8 @@ run those guard proofs, so one source proves each rule. AUD-S7 reads through
 GET /audit-events (chunk 4).
 
 Operations exercised (the audit-on-write guard reads these names): createProposal,
-approveProposal, createConsoleTenant, updateTenant, createFootprintRequest, closeProblemReport,
-createChange, confirmSoWhat, rateAnswer. ADM-S4 also drives the console routes other apps
+approveProposal, createConsoleTenant, resendConsoleFirstAdministrator, updateTenant,
+createFootprintRequest, closeProblemReport, createChange, confirmSoWhat, rateAnswer. ADM-S4 also drives the console routes other apps
 register — the source registry, the search evaluation set, the platform agent keys and the
 agent definitions they bind to — by their gate alone; what each one then does is its own
 app's scenario.
@@ -24,16 +24,19 @@ from __future__ import annotations
 
 import unittest
 import uuid
+from datetime import timedelta
 from typing import Any, ClassVar, cast
 from unittest import skip
 
 from django.db import DatabaseError, connection, transaction
 from django.test import Client, override_settings
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from apps.agents import testing as agent_build
 from apps.cases import creation, testing as case_build
 from apps.governance.models import AiGeneration
+from apps.identity import invitation_logic
 from apps.identity.models import Invitation, TenantRole
 from apps.identity.session_logic import actor_of
 from apps.library.seeds import seed_jurisdictions, seed_languages
@@ -102,6 +105,7 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
             "firstAdminEmail": "first.admin@console-bank.test",
         },
     ),
+    "resendConsoleFirstAdministrator": ("POST", f"/console/tenants/{_ANY_ID}/first-administrator/resend", {}),
     "consoleReissueEnrolment": (
         "POST",
         f"/console/tenants/{_ANY_ID}/members/{_ANY_ID}/reissue-enrolment",
@@ -719,6 +723,88 @@ class GovernanceScenarioTests(ScenarioTestCase):
         )
         self.assertEqual(second.status_code, 201, second.content)
         self.assertEqual(Tenant.objects.get(pk=second.json()["id"]).slug, "example-bank-ab-2")
+
+    def test_adm_s19(self) -> None:
+        """ADM-S19
+
+        The console shows whether a bank's first administrator has joined, and sends the
+        invitation again (ADM-02, ID-01).
+        """
+        MockMailer.reset()
+        seed_languages()
+        platform_admin = factories.platform_user(roles=("platform_admin",))
+        headers = sign_in(platform_admin)
+        created = self._post("/console/tenants", {"name": "Joining Bank AB", "firstAdminEmail": "Head@Joining-Bank.test"}, headers)
+        self.assertEqual(created.status_code, 201, created.content)
+        tenant_id = created.json()["id"]
+        first = created.json()["firstAdministrator"]
+        self.assertEqual((first["email"], first["status"], first["acceptedAt"]), ("head@joining-bank.test", "pending", None))
+        tenancy.clear_tenant()
+
+        def row() -> dict[str, Any]:
+            tenancy.clear_tenant()
+            listed = self.client.get(f"{V1}/console/tenants", **headers)
+            self.assertEqual(listed.status_code, 200, listed.content)
+            return next(item for item in listed.json()["items"] if item["id"] == tenant_id)
+
+        def resend() -> Any:
+            tenancy.clear_tenant()
+            return self._post(f"/console/tenants/{tenant_id}/first-administrator/resend", {}, headers)
+
+        self.assertEqual(row()["firstAdministrator"], first)
+        # An invitation sent from inside the bank is the bank's own, and never shows here.
+        tenant = Tenant.objects.get(pk=tenant_id)
+        member = factories.member(tenant, roles=("admin",)).user
+        invitation_logic.create_invitation(tenant=tenant, email="colleague@joining-bank.test", roles=[], title="", invited_by=member, actor=actor_of(member))
+        self.assertEqual(row()["firstAdministrator"]["email"], "head@joining-bank.test")
+
+        # The link expires unused, and the row says so.
+        self.activate(tenant)
+        invitation = Invitation.objects.get(tenant=tenant, first_administrator=True)
+        Invitation.objects.filter(pk=invitation.pk).update(expires_at=timezone.now() - timedelta(minutes=1))
+        old_token = MockMailer.sent[0].body.rsplit("#", 1)[1]
+        self.assertEqual(row()["firstAdministrator"]["status"], "expired")
+
+        # Sent again: a new link to the same address, the earlier one dead, pending with a new
+        # expiry, and the resend in the bank's own log.
+        sent_again = resend()
+        self.assertEqual(sent_again.status_code, 200, sent_again.content)
+        again = sent_again.json()["firstAdministrator"]
+        self.assertEqual(again["status"], "pending")
+        self.assertGreater(parse_datetime(again["expiresAt"]) or timezone.now(), timezone.now())
+        self.assertEqual([mail.to for mail in MockMailer.sent[-1:]], ["head@joining-bank.test"])
+        new_token = MockMailer.sent[-1].body.rsplit("#", 1)[1]
+        self.assertNotEqual(new_token, old_token)
+        tenancy.clear_tenant()
+        self.assertIsNone(invitation_logic.find_by_token(old_token))
+        self.assertEqual(invitation_logic.find_by_token(new_token).id, invitation.id)  # type: ignore[union-attr]
+        self.activate(tenant)
+        resent = self._one("invitation.resent", invitation.id)
+        self.assertEqual((resent.tenant_id, resent.actor_type, resent.actor_id), (tenant.id, "user", platform_admin.id))
+
+        # Once the person joins, the row says when, and there is nothing left to send.
+        joined_at = timezone.now().replace(microsecond=0)
+        Invitation.objects.filter(pk=invitation.pk).update(accepted_at=joined_at)
+        joined = row()["firstAdministrator"]
+        self.assertEqual((joined["status"], parse_datetime(joined["acceptedAt"])), ("accepted", joined_at))
+        closed = resend()
+        self.assertEqual((closed.status_code, closed.json()["code"]), (409, "invitation_closed"))
+
+        # A bank this console did not create has no first administrator to show or send.
+        seeded = factories.tenant(slug="seeded-bank")
+        factories.invitation(seeded, email="someone@seeded-bank.test")
+        tenancy.clear_tenant()
+        listed = self.client.get(f"{V1}/console/tenants", **headers).json()["items"]
+        self.assertIsNone(next(item for item in listed if item["id"] == str(seeded.id))["firstAdministrator"])
+        tenancy.clear_tenant()
+        missing = self._post(f"/console/tenants/{seeded.id}/first-administrator/resend", {}, headers)
+        self.assertEqual((missing.status_code, missing.json()["code"]), (404, "not_found"))
+
+        # Without tenants.manage, sending again is refused.
+        tenancy.clear_tenant()
+        editor = sign_in(factories.platform_user(roles=("library_editor",)))
+        refused = self._post(f"/console/tenants/{tenant_id}/first-administrator/resend", {}, editor)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (403, "permission_denied"))
 
     def test_adm_s17(self) -> None:
         """ADM-S17

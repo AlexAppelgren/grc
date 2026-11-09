@@ -373,8 +373,9 @@ def console_reissue_enrolment(
 # ---------------------------------------------------------------------------------------
 # Console: create a bank and invite its first administrator (ADM-02, ADM-S6)
 # ---------------------------------------------------------------------------------------
-def console_tenant_row(tenant: Tenant) -> dict[str, Any]:
-    """What the console list shows: the tenant row itself, never anything under it."""
+def _console_tenant_row(tenant: Tenant, first_admin: Invitation | None) -> dict[str, Any]:
+    """What the console list shows: the tenant row itself and the invitation the platform
+    sent its first administrator (D-123), never anything the bank wrote."""
     return {
         "id": tenant.id,
         "name": tenant.name,
@@ -382,12 +383,41 @@ def console_tenant_row(tenant: Tenant) -> dict[str, Any]:
         "status": tenant.status,
         "default_language": language_ref(tenant.default_language),
         "created_at": tenant.created,
+        "first_administrator": None
+        if first_admin is None
+        else {
+            "email": first_admin.email,
+            "status": invitation_logic.invitation_status(first_admin),
+            "expires_at": first_admin.expires_at,
+            "accepted_at": first_admin.accepted_at,
+        },
     }
 
 
-def console_tenants(*, limit: int, offset: int) -> tuple[list[Tenant], int]:
+def console_tenant_out(tenant: Tenant) -> dict[str, Any]:
+    return _console_tenant_row(tenant, invitation_logic.first_administrator_invitations([tenant.id]).get(tenant.id))
+
+
+def console_tenants(*, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]:
     tenants = Tenant.objects.select_related("default_language").order_by("slug")
-    return list(tenants[offset : offset + limit]), tenants.count()
+    page = list(tenants[offset : offset + limit])
+    first_admins = invitation_logic.first_administrator_invitations(tenant.id for tenant in page)
+    return [_console_tenant_row(tenant, first_admins.get(tenant.id)) for tenant in page], tenants.count()
+
+
+def resend_first_administrator(*, actor: Actor, tenant_id: uuid.UUID) -> dict[str, Any]:
+    """Send the bank's first administrator their invitation again with a fresh link, while
+    they have not joined (D-123): a pending or an expired one; an accepted or a revoked one
+    is closed (`invitation_closed`)."""
+    tenant = get_tenant(tenant_id)
+    invitation = invitation_logic.first_administrator_invitations([tenant.id]).get(tenant.id)
+    if invitation is None:
+        raise ValidationError("This bank has no invitation from the console to send again.", code="not_found")
+    # The resend writes the bank's own invitation row and audit trail: the one tenant this
+    # call activates is the one in the path, as at creation.
+    tenancy.activate(tenant.id)
+    invitation_logic.resend_invitation(tenant=tenant, invitation=invitation, actor=actor)
+    return console_tenant_out(tenant)
 
 
 # Letters slugify would drop because Unicode decomposition has no ASCII for them ("Sør"
@@ -483,5 +513,6 @@ def create_tenant(
         # members of the bank they open.
         invited_by=None,
         actor=actor,
+        first_administrator=True,
     )
     return tenant

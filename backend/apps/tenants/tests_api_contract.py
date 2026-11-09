@@ -49,6 +49,8 @@ BUILT_BEFORE = {
     "consoleReissueEnrolment",
     "listConsoleTenants",
     "createConsoleTenant",
+    # D-123: the console resends its first-administrator invitation, proved by ADM-S19.
+    "resendConsoleFirstAdministrator",
     # c11-security-policy-routes (ID-08): built, proved in tests_security_policy.py.
     "getSecurityPolicy",
     "putSecurityPolicy",
