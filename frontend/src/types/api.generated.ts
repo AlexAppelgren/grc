@@ -3438,6 +3438,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/console/tenants/{tenant_id}/first-administrator/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a bank's first administrator their invitation again
+         * @description Emails the bank's first administrator the invitation the console sent when it created
+         *     the bank, with a new link that works for the invitation window from now (the setting
+         *     `INVITATION_TTL_HOURS`, 72 hours unless the platform changed it); the link sent before
+         *     stops working. Call it when the console shows that invitation `expired`, or
+         *     `pending` when the person lost the email. The address, the role and the title stay as
+         *     they were.
+         *
+         *     Needs the platform permission `tenants.manage`, like creating the bank, and no passkey
+         *     confirmation, like the bank's own resend. It reads and writes only that one invitation,
+         *     the platform's own (D-123), and records the audit event `invitation.resent` in the
+         *     bank's own log with the new expiry; the token is never recorded. Answers 200 with the
+         *     bank's console row, showing the invitation `pending` with its new expiry.
+         *
+         *     Errors: `invitation_closed` (409) once the person has joined or the invitation was
+         *     revoked inside the bank; `not_found` (404) for an unknown bank or one this console did
+         *     not create; `permission_denied` (403) without `tenants.manage`; `unauthenticated` (401)
+         *     without a live session.
+         */
+        post: operations["resendConsoleFirstAdministrator"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/console/tenants/{tenant_id}/members/{user_id}/reissue-enrolment": {
         parameters: {
             query?: never;
@@ -14488,6 +14524,35 @@ export interface components {
             label: string;
         };
         /**
+         * ConsoleFirstAdministrator
+         * @description The invitation the console sent a bank's first administrator when it created the bank
+         *     (ADM-02, D-123): to whom, and whether they have joined. It is the platform's own act;
+         *     nothing a bank's members wrote is read for it.
+         */
+        ConsoleFirstAdministrator: {
+            /**
+             * Acceptedat
+             * @description When the person joined, as a UTC timestamp in ISO 8601; null until they do.
+             */
+            acceptedAt: string | null;
+            /**
+             * Email
+             * @description The address the console invited, as it was typed at creation, lower-cased. It is the person who runs the bank's members once they have joined.
+             */
+            email: string;
+            /**
+             * Expiresat
+             * Format: date-time
+             * @description When the link stops working, as a UTC timestamp in ISO 8601: the invitation window after it was last sent. In the past for an expired invitation; kept as it was for an accepted or revoked one.
+             */
+            expiresAt: string;
+            /**
+             * Status
+             * @description Where that invitation stands, one of four values: `pending`, sent and still open, so the person can join; `expired`, not used within its window, so nobody can join with it until it is sent again; `accepted`, the person joined the bank; `revoked`, withdrawn from inside the bank. A pending or an expired one can be sent again with `POST /console/tenants/{tenant_id}/first-administrator/resend`.
+             */
+            status: string;
+        };
+        /**
          * ConsoleReissueBody
          * @description Why platform support is entering a bank to re-issue an administrator's enrolment,
          *     and how that person was proved to be who they claim. Both answers are written where
@@ -14694,6 +14759,12 @@ export interface components {
          *             "kind": null,
          *             "label": "Svenska"
          *           },
+         *           "firstAdministrator": {
+         *             "acceptedAt": "2026-01-09T10:03:18Z",
+         *             "email": "anna.berg@example-bank.test",
+         *             "expiresAt": "2026-01-12T09:12:44Z",
+         *             "status": "accepted"
+         *           },
          *           "id": "00000000-0000-4000-8000-00000000000a",
          *           "name": "Example Bank AB",
          *           "slug": "example-bank",
@@ -14705,6 +14776,12 @@ export interface components {
          *             "key": "da",
          *             "kind": null,
          *             "label": "Dansk"
+         *           },
+         *           "firstAdministrator": {
+         *             "acceptedAt": null,
+         *             "email": "compliance.officer@second-bank.test",
+         *             "expiresAt": "2026-09-23T07:41:12Z",
+         *             "status": "expired"
          *           },
          *           "id": "00000000-0000-4000-8000-00000000000b",
          *           "name": "Second Bank A/S",
@@ -14738,6 +14815,12 @@ export interface components {
          *         "kind": null,
          *         "label": "Dansk"
          *       },
+         *       "firstAdministrator": {
+         *         "acceptedAt": null,
+         *         "email": "compliance.officer@second-bank.test",
+         *         "expiresAt": "2026-09-23T07:41:12Z",
+         *         "status": "pending"
+         *       },
          *       "id": "00000000-0000-4000-8000-00000000000b",
          *       "name": "Second Bank A/S",
          *       "slug": "second-bank",
@@ -14753,6 +14836,8 @@ export interface components {
             createdAt: string;
             /** @description The language the bank reads and writes in first, as a reference to a language row by key — `sv`, `en`, `da`, `nb` or `fi` — with a label to show. Languages are library reference rows and not a vocabulary a bank's admin may extend. Null until the bank's own administrator chooses one on its Organisation profile: an organisation created through this console starts without one. */
             defaultLanguage: components["schemas"]["RoleRef"] | null;
+            /** @description The invitation the console sent the bank's first administrator, and whether they have joined, so a bank nobody has entered yet is visible here. Null for a bank that was not created through this console, such as one a deploy seeded. */
+            firstAdministrator: components["schemas"]["ConsoleFirstAdministrator"] | null;
             /**
              * Id
              * Format: uuid
@@ -26119,6 +26204,12 @@ export interface components {
              * @description The company's branches abroad as the register lists them; an empty list when it has none or is no longer listed.
              */
             branches: components["schemas"]["RegisterFactsBranch"][];
+            /**
+             * Branchesread
+             * @description False when the register's own page for the company could not be read, so `branches` is empty and says nothing about whether it has any: add the countries its branches are in to the scope by hand. True when the branches were read, or the company is no longer listed.
+             * @default true
+             */
+            branchesRead: boolean;
             /**
              * Lei
              * @description The company's legal entity identifier (ISO 17442) as the register writes it; empty when the register gives none.
@@ -39173,6 +39264,29 @@ export interface operations {
         responses: {
             /** @description Created */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleTenantRow"];
+                };
+            };
+        };
+    };
+    resendConsoleFirstAdministrator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The identifier of the bank whose first administrator is invited again, the UUID the console's tenant list returns as `id`. A bank that does not exist, or one this console did not create, answers `not_found`. */
+                tenant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -359,8 +359,8 @@ def list_console_tenants(request: HttpRequest, page: PageQuery = Query(...)) -> 
     Errors: a 422 when `limit` is above 100 or `offset` beyond the accepted depth;
     `permission_denied` without `tenants.manage`; `unauthenticated` without a session.
     """
-    tenants, total = logic.console_tenants(limit=page.limit, offset=page.offset)
-    return ConsoleTenantPage(items=[ConsoleTenantRow.model_validate(logic.console_tenant_row(tenant)) for tenant in tenants], total=total)
+    rows, total = logic.console_tenants(limit=page.limit, offset=page.offset)
+    return ConsoleTenantPage(items=[ConsoleTenantRow.model_validate(row) for row in rows], total=total)
 
 
 @router.post(
@@ -405,7 +405,49 @@ def create_console_tenant(request: HttpRequest, body: ConsoleTenantCreateBody) -
         first_admin_email=body.first_admin_email,
         first_admin_title=body.first_admin_title,
     )
-    return 201, ConsoleTenantRow.model_validate(logic.console_tenant_row(tenant))
+    return 201, ConsoleTenantRow.model_validate(logic.console_tenant_out(tenant))
+
+
+@router.post(
+    "/console/tenants/{tenant_id}/first-administrator/resend",
+    response=ConsoleTenantRow,
+    auth=SessionAuth(),
+    operation_id="resendConsoleFirstAdministrator",
+    by_alias=True,
+    summary="Send a bank's first administrator their invitation again",
+)
+@requires_permission(perms.TENANTS_MANAGE)
+def resend_console_first_administrator(
+    request: HttpRequest,
+    tenant_id: uuid.UUID = Path(
+        ...,
+        description=(
+            "The identifier of the bank whose first administrator is invited again, the UUID "
+            "the console's tenant list returns as `id`. A bank that does not exist, or one this "
+            "console did not create, answers `not_found`."
+        ),
+    ),
+) -> ConsoleTenantRow:
+    """Emails the bank's first administrator the invitation the console sent when it created
+    the bank, with a new link that works for the invitation window from now (the setting
+    `INVITATION_TTL_HOURS`, 72 hours unless the platform changed it); the link sent before
+    stops working. Call it when the console shows that invitation `expired`, or
+    `pending` when the person lost the email. The address, the role and the title stay as
+    they were.
+
+    Needs the platform permission `tenants.manage`, like creating the bank, and no passkey
+    confirmation, like the bank's own resend. It reads and writes only that one invitation,
+    the platform's own (D-123), and records the audit event `invitation.resent` in the
+    bank's own log with the new expiry; the token is never recorded. Answers 200 with the
+    bank's console row, showing the invitation `pending` with its new expiry.
+
+    Errors: `invitation_closed` (409) once the person has joined or the invitation was
+    revoked inside the bank; `not_found` (404) for an unknown bank or one this console did
+    not create; `permission_denied` (403) without `tenants.manage`; `unauthenticated` (401)
+    without a live session.
+    """
+    platform_user = User.objects.get(pk=_principal(request).subject_id)
+    return ConsoleTenantRow.model_validate(logic.resend_first_administrator(actor=actor_of(platform_user), tenant_id=tenant_id))
 
 
 # ---------------------------------------------------------------------------------------

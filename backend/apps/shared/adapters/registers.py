@@ -119,6 +119,9 @@ class LicenceFacts:
     licences: tuple[RegisterLicence, ...]
     branches: tuple[RegisterBranch, ...]
     source_url: str
+    # False when the company's own page could not be read: `branches` is then empty and
+    # says nothing about whether it has any.
+    branches_read: bool = True
 
 
 class RegisterUnavailable(Exception):
@@ -446,6 +449,13 @@ class LiveRegisters(RegistersAdapter):
         if row is None:
             return None
         licences = tuple(licence for licence in (_licence(cell) for cell in row[5:]) if licence is not None)
+        # FI's company pages turn away a scripted read (2026-11-09) while its export answers, so
+        # an unreadable page costs the branches, never the licences.
+        try:
+            branches, branches_read = self._branches(registration_number, wanted), True
+        except RegisterUnavailable:
+            logger.warning("register branch pages unreadable", extra={"provider": "live"})
+            branches, branches_read = (), False
         return LicenceFacts(
             name=_clean(row[0], NAME_MAX),
             registration_number=_clean(row[1], 40),
@@ -453,8 +463,9 @@ class LiveRegisters(RegistersAdapter):
             main_business=_clean(row[3], NAME_MAX),
             other_businesses=_clean(row[4], TEXT_MAX),
             licences=licences,
-            branches=self._branches(registration_number, wanted),
+            branches=branches,
             source_url=source,
+            branches_read=branches_read,
         )
 
     def _branches(self, registration_number: str, wanted: str) -> tuple[RegisterBranch, ...]:

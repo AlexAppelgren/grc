@@ -315,6 +315,14 @@ def _stored(facts: RegisterFacts) -> dict[str, Any]:
     return facts.model_dump(mode="json", by_alias=True)
 
 
+def _keeping_branches(stored: RegisterFacts, fresh: RegisterFacts) -> RegisterFacts:
+    """A read whose branch pages could not be read says nothing about the branches: what was
+    stored stays, so an unreadable page never reads as branches closed."""
+    if fresh.branches_read:
+        return fresh
+    return fresh.model_copy(update={"branches": stored.branches, "branches_read": stored.branches_read})
+
+
 def _store(tenant: Tenant, actor: Actor, unit_id: uuid.UUID, authority_id: uuid.UUID, facts: RegisterFacts, source_url: str, read_at: Any) -> None:
     """A company's facts from a lookup: stored the first time, changed when they differ from
     what is stored and are newer, left alone otherwise."""
@@ -343,8 +351,10 @@ def _store(tenant: Tenant, actor: Actor, unit_id: uuid.UUID, authority_id: uuid.
             tenant_id=tenant.id,
             after={"orgUnitId": str(unit_id), "licences": len(facts.licences), "branches": len(facts.branches), "listed": facts.listed},
         )
-    elif entry.read_at < read_at and entry.facts != _stored(facts):
-        _change(entry, facts, source_url, read_at, actor)
+    elif entry.read_at < read_at:
+        facts = _keeping_branches(RegisterFacts.model_validate(entry.facts), facts)
+        if entry.facts != _stored(facts):
+            _change(entry, facts, source_url, read_at, actor)
 
 
 # ---------------------------------------------------------------------------------------
@@ -422,7 +432,7 @@ def recheck(tenant_id: uuid.UUID) -> None:
             if read is None:
                 fresh = stored.model_copy(update={"licences": [], "branches": [], "listed": False})
             else:
-                fresh = registers_logic.register_facts(entry.authority.key, read)
+                fresh = _keeping_branches(stored, registers_logic.register_facts(entry.authority.key, read))
             if _stored(fresh) != entry.facts:
                 _change(entry, fresh, read.source_url if read is not None else entry.source_url, now, actor)
                 continue

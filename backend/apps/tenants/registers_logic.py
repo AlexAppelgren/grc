@@ -241,5 +241,6 @@ def register_facts(authority_key: str, facts: LicenceFacts) -> RegisterFacts:
             RegisterFactsBranch(name=branch.name, country_name=branch.country_name, jurisdiction=names.get(branch.country_name.casefold()))
             for branch in facts.branches
         ],
+        branches_read=facts.branches_read,
         listed=True,
     )
