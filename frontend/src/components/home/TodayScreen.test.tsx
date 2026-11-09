@@ -301,3 +301,52 @@ describe('TodayScreen', () => {
     expect(screen.queryByText('Nothing to show yet')).not.toBeInTheDocument();
   });
 });
+
+describe('Getting started on Today', () => {
+  const TENANT_PATH = '/api/v1/tenant';
+  const tenant = (done: boolean[]) => ({
+    id: 'ta',
+    name: 'Example Bank AB',
+    slug: 'example-bank',
+    timezone: 'Europe/Stockholm',
+    status: 'active',
+    defaultLanguage: null,
+    contentLanguages: [],
+    aiEnabled: true,
+    onboarding: { stepsDone: done.filter(Boolean).length, steps: ['profile', 'members', 'footprint'].map((key, i) => ({ key, done: done[i] ?? false })) },
+  });
+  const ADMIN = [...me.permissions, 'security.manage'];
+
+  function serveWith(answer: unknown): Sent[] {
+    return installAdapter((sent) => {
+      if (sent.path === ME_PATH) return { status: 200, data: me };
+      if (sent.path === HOME_PATH) return { status: 200, data: home };
+      if (sent.path === TENANT_PATH) return { status: 200, data: answer };
+      return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
+    });
+  }
+
+  it('shows the open steps to an administrator, each a link to where it is done', async () => {
+    serveWith(tenant([false, true, false]));
+    render(shell(<TodayScreen />, ADMIN));
+    const card = (await screen.findByText('Set the regulatory scope')).closest('[data-today-onboarding]') as HTMLElement;
+    expect(card).not.toBeNull();
+    expect(screen.getByRole('link', { name: 'Set the regulatory scope' })).toHaveAttribute('href', '/admin/footprint');
+    // The title is the link: it is not repeated beneath itself.
+    expect(screen.getAllByText('Set the regulatory scope')).toHaveLength(1);
+  });
+
+  it('leaves it out once every step is done, and for someone who cannot work through it', async () => {
+    serveWith(tenant([true, true, true]));
+    const { unmount } = render(shell(<TodayScreen />, ADMIN));
+    await screen.findByRole('heading', { level: 1 });
+    await waitFor(() => expect(document.querySelector('[data-today-onboarding]')).toBeNull());
+    unmount();
+
+    const sent = serveWith(tenant([false, false, false]));
+    render(shell(<TodayScreen />));
+    await screen.findByRole('heading', { level: 1 });
+    expect(document.querySelector('[data-today-onboarding]')).toBeNull();
+    expect(sent.some((request) => request.path === TENANT_PATH)).toBe(false);
+  });
+});

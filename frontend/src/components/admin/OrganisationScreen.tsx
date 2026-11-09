@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
+import { OnboardingChecklist } from '@/components/admin/OnboardingChecklist';
 import { DepartmentsSection } from '@/components/admin/DepartmentsSection';
 import { EntitiesSection } from '@/components/admin/EntitiesSection';
 import { ProductsSection } from '@/components/admin/ProductsSection';
@@ -15,9 +15,7 @@ import { Panel } from '@/components/ui/Panel';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
 import { useLanguages, useSetTenantAi, useTenant, useUpdateTenant } from '@/features/tenant-admin/hooks';
 import type { RoleRef, Tenant } from '@/features/tenant-admin/types';
-import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { findDestination } from '@/shared/navigation/registry';
 
 // Organisation (design/screens/admin-organisation.html, TEN-01): name,
 // timezone, default language, content languages in order, and the
@@ -30,37 +28,6 @@ import { findDestination } from '@/shared/navigation/registry';
 
 const NORDIC_ZONES = ['Europe/Stockholm', 'Europe/Helsinki', 'Europe/Oslo', 'Europe/Copenhagen', 'Europe/Brussels'];
 
-function stepLabel(key: string, t: Translate): string {
-  switch (key) {
-    case 'profile':
-      return t('admin.organisation.step.profile');
-    case 'members':
-      return t('admin.organisation.step.members');
-    case 'footprint':
-      return t('admin.organisation.step.footprint');
-    case 'vocabularies':
-      return t('admin.organisation.step.vocabularies');
-    case 'passkey':
-      return t('admin.organisation.step.passkey');
-    default:
-      return key.replace(/_/g, ' ');
-  }
-}
-
-function stepHref(key: string): string | null {
-  switch (key) {
-    case 'members':
-      return findDestination('admin-members')?.href ?? null;
-    case 'passkey':
-      return findDestination('me-passkeys')?.href ?? null;
-    case 'footprint':
-      return findDestination('admin-footprint')?.href ?? null;
-    case 'vocabularies':
-      return findDestination('admin-vocabularies')?.href ?? null;
-    default:
-      return null;
-  }
-}
 
 /** The languages to offer: the reference rows, or what the tenant already holds when the reference read failed. */
 export function languageOptions(reference: RoleRef[] | undefined, tenant: Tenant): RoleRef[] {
@@ -170,37 +137,6 @@ function AiSwitch({ tenant }: { tenant: Tenant }) {
   );
 }
 
-function Checklist({ tenant }: { tenant: Tenant }) {
-  const t = useT();
-  const total = tenant.onboarding.steps.length;
-  const done = tenant.onboarding.stepsDone;
-  return (
-    <Panel title={t('admin.organisation.checklist')} data-onboarding="">
-      <div className="my-2 h-1.5 overflow-hidden rounded-[3px] bg-neutral-soft" aria-hidden="true">
-        <i className="block h-full bg-accent" style={{ width: `${total === 0 ? 0 : Math.round((done / total) * 100)}%` }} />
-      </div>
-      <p className="text-meta text-muted">{t('admin.organisation.progress', { done, total })}</p>
-      <ul className="m-0 list-none p-0">
-        {tenant.onboarding.steps.map((step) => {
-          const href = step.done ? null : stepHref(step.key);
-          return (
-            <li key={step.key} className="flex items-start gap-2.5 border-b border-line py-2.5 last:border-b-0" data-step={step.key} data-done={step.done ? '' : undefined}>
-              <input type="checkbox" className="mt-0.5 h-5 w-5 accent-brand" checked={step.done} disabled readOnly aria-label={stepLabel(step.key, t)} />
-              <span className={step.done ? 'text-muted line-through' : ''}>
-                {stepLabel(step.key, t)}
-                {href !== null ? (
-                  <Link href={href} className="block text-meta">
-                    {t('common.back').length > 0 ? stepLabel(step.key, t) : ''}
-                  </Link>
-                ) : null}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </Panel>
-  );
-}
 
 export function OrganisationScreen() {
   const t = useT();
@@ -222,7 +158,7 @@ export function OrganisationScreen() {
             <ProfileForm key={tenant.data.id} tenant={tenant.data} languages={languageOptions(languages.data, tenant.data)} />
             <AiSwitch tenant={tenant.data} />
           </div>
-          <Checklist tenant={tenant.data} />
+          <OnboardingChecklist tenant={tenant.data} />
         </div>
       )}
       <DepartmentsSection />

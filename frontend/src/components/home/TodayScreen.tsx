@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 
+import { OnboardingChecklist } from '@/components/admin/OnboardingChecklist';
 import { ComingUpPanel } from '@/components/home/ComingUpPanel';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
@@ -10,6 +11,7 @@ import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useHome } from '@/features/home/hooks';
+import { useTenant } from '@/features/tenant-admin/hooks';
 import { presentStanding, type Standing } from '@/features/home/standing-presentation';
 import { decideNowLines, presentLead } from '@/features/home/today-presentation';
 import type { Home } from '@/features/home/types';
@@ -113,6 +115,9 @@ function StandingPanel({ standing, statuses, t }: { standing: Standing; statuses
   );
 }
 
+/** Who finishes setting the organisation up: the profile's own grant (`PATCH /tenant`). */
+const ONBOARDING_PERMISSION = 'security.manage';
+
 export function TodayScreen() {
   const t = useT();
   const ctx = useFormatContext();
@@ -123,6 +128,9 @@ export function TodayScreen() {
   // The statuses the standing lines filter the inventory by, fetched beside GET /home and
   // never after it: the reader's own permission says whether the panel can show.
   const statuses = useVocabularyValues('compliance_status', false, permissions.includes('register.read'));
+  // Getting started, for whoever can work through it, read beside GET /home and only until every step is done.
+  const onboarding = useTenant(permissions.includes(ONBOARDING_PERMISSION));
+  const openSteps = onboarding.data !== undefined && onboarding.data.onboarding.stepsDone < onboarding.data.onboarding.steps.length;
 
   if (query.isPending) return <LoadingState rows={3} />;
   if (forbidden !== null) return <RestrictedScreen {...forbidden} />;
@@ -141,6 +149,11 @@ export function TodayScreen() {
   return (
     <>
       <PageHead kicker={kicker} title={t('today.title')} />
+      {openSteps && onboarding.data !== undefined ? (
+        <div className="mb-4" data-today-onboarding="">
+          <OnboardingChecklist tenant={onboarding.data} />
+        </div>
+      ) : null}
       {nothingAtAll ? (
         <EmptyState title={t('today.empty.title')} body={t('today.empty.body')} action={scopeAction} />
       ) : (

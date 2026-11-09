@@ -43,8 +43,8 @@ export const SECURITY_LOG_PAGE = 20;
 // with more than a hundred members gets paging in a later chunk.
 export const ADMIN_LIST_PAGE = 100;
 
-export function useTenant(): UseQueryResult<Tenant> {
-  return useQuery({ queryKey: adminKeys.tenant, queryFn: admin.getTenant });
+export function useTenant(enabled = true): UseQueryResult<Tenant> {
+  return useQuery({ queryKey: adminKeys.tenant, queryFn: admin.getTenant, enabled });
 }
 
 export function useUpdateTenant(): UseMutationResult<Tenant, unknown, TenantUpdate> {
