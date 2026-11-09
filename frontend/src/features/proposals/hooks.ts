@@ -16,6 +16,7 @@ import type {
   ProposalDetail,
   ProposalPage,
   ProposalQuery,
+  ProposalQueueRow,
   ProposalRejectBody,
   ProposalRow,
   RetagRequest,
@@ -95,6 +96,19 @@ export async function approveInTurn(rows: readonly Pick<ProposalRow, 'id' | 'tit
     onDone(index + 1);
   }
   return outcome;
+}
+
+/**
+ * Every waiting proposal a query matches, across all its pages: the first page says how
+ * many there are, and the rest are read side by side (fan out, never chain). For "Approve
+ * all", which then approves the ones a person may approve from the queue in turn.
+ */
+export async function everyProposal(query: Omit<ProposalQuery, 'limit' | 'offset'>, pageSize: number): Promise<ProposalQueueRow[]> {
+  const first = await proposals.listProposals({ ...query, limit: pageSize, offset: 0 });
+  const offsets = Array.from({ length: Math.max(Math.ceil(first.total / pageSize) - 1, 0) }, (_, i) => (i + 1) * pageSize);
+  const rest = await Promise.all(offsets.map((offset) => proposals.listProposals({ ...query, limit: pageSize, offset })));
+  const seen = new Set<string>();
+  return [first, ...rest].flatMap((page) => page.items).filter((row) => (seen.has(row.id) ? false : (seen.add(row.id), true)));
 }
 
 /** Approve many from the queue, one call after another; the queue re-reads however it ended. `done` counts the calls made. */

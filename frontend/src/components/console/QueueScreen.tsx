@@ -18,7 +18,7 @@ import { ErrorState, LoadingState } from '@/components/ui/States';
 import { Tabs, TabPanel, type TabDef } from '@/components/ui/Tabs';
 import { useFormatContext } from '@/features/identity/hooks';
 import { presentProposal, proposerLine, refusalReason, selectionBlock, sourceLine, targetLine } from '@/features/proposals/proposal-presentation';
-import { useApproveMany, useProposals, type ApproveManyOutcome } from '@/features/proposals/hooks';
+import { everyProposal, useApproveMany, useProposals, type ApproveManyOutcome } from '@/features/proposals/hooks';
 import { TERM_KINDS, VOCABULARY_KINDS, type ProposalKind, type ProposalOrder, type ProposalQueueRow } from '@/features/proposals/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
@@ -49,7 +49,7 @@ const OBLIGATION_KIND: ProposalKind = 'new_obligation_version';
 
 // The kind filter's values as the address holds them: two groups of kinds, and the two
 // kinds a new record arrives as (the library baseline's, D-118), which are the route's own.
-const KIND_FILTERS = ['obligation', 'new_instrument', 'new_obligation', 'vocabulary'] as const;
+const KIND_FILTERS = ['obligation', 'new_instrument', 'new_obligation', 'new_instrument_summary', 'vocabulary'] as const;
 type KindFilter = '' | (typeof KIND_FILTERS)[number];
 type OriginFilter = '' | 'agent' | 'user';
 
@@ -222,6 +222,8 @@ export function QueueScreen() {
   const [retagging, setRetagging] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
+  const [confirmingAll, setConfirmingAll] = useState(false);
+  const [gathering, setGathering] = useState(false);
   const approveMany = useApproveMany();
 
   const tab = tabFrom(params);
@@ -261,6 +263,18 @@ export function QueueScreen() {
     setConfirming(false);
     approveMany.mutate(chosen, { onSettled: () => setSelected(new Set()) });
   };
+  // Approve all: every waiting proposal these filters match, on every page, approved in turn
+  // through the same route; the ones the selection would refuse (yours, flagged, a batch) are left.
+  const startAll = async () => {
+    setConfirmingAll(false);
+    setGathering(true);
+    try {
+      const every = await everyProposal({ status: 'open', kind: kindQueryOf(filters.kind), origin: filters.origin, notMine: filters.notMine, order }, QUEUE_PAGE);
+      approveMany.mutate(every.filter((row) => selectionBlock(row, t) === null));
+    } finally {
+      setGathering(false);
+    }
+  };
 
   const tabs: TabDef[] = [
     { id: 'waiting', label: tab === 'waiting' && query.isSuccess ? t('console.queue.tab.withCount', { label: t('console.queue.tab.waiting'), count: total }) : t('console.queue.tab.waiting') },
@@ -292,6 +306,7 @@ export function QueueScreen() {
             <option value="obligation">{t('console.queue.filter.kindObligationVersion')}</option>
             <option value="new_instrument">{t('console.queue.filter.kindNewInstrument')}</option>
             <option value="new_obligation">{t('console.queue.filter.kindNewObligation')}</option>
+            <option value="new_instrument_summary">{t('console.queue.filter.kindNewInstrumentSummary')}</option>
             <option value="vocabulary">{t('console.queue.filter.kindVocabulary')}</option>
           </Select>
           <Select
@@ -307,7 +322,25 @@ export function QueueScreen() {
           <Chip pressed={filters.notMine} onClick={() => go(tab, { notMine: !filters.notMine })}>
             {t('console.queue.filter.notMine')}
           </Chip>
+          {waiting && total > 0 && !busy && !gathering ? (
+            <Button size="small" className="ml-auto" onClick={() => setConfirmingAll(true)} data-approve-all="">
+              {t('console.queue.approveAll.button', { count: total })}
+            </Button>
+          ) : null}
         </ChipRow>
+        {gathering ? (
+          <p role="status" className="mb-3 font-semibold">
+            {t('console.queue.approveAll.reading')}
+          </p>
+        ) : null}
+        <Modal open={confirmingAll} onOpenChange={setConfirmingAll} title={t('console.queue.approveAll.title', { count: total })} description={t('console.queue.approveAll.body')}>
+          <ButtonBar>
+            <Button variant="outline" onClick={() => setConfirmingAll(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={() => void startAll()}>{t('console.queue.approveAll.button', { count: total })}</Button>
+          </ButtonBar>
+        </Modal>
 
         {approveMany.isSuccess ? <ApproveManyResult outcome={approveMany.data} onDismiss={() => approveMany.reset()} /> : null}
         {busy || (waiting && chosen.length > 0) ? (

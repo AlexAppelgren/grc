@@ -286,6 +286,29 @@ describe('the console queue', () => {
     await waitFor(() => expect(screen.queryByText('1 proposal approved.')).toBeNull());
   });
 
+  it('approves all, reading every page the filters match and leaving what a person reviews alone', async () => {
+    // Two pages of 100 and one more, as the server answers by offset; one of them is yours.
+    const page = (offset: number) => Array.from({ length: offset === 200 ? 1 : 100 }, (_, i) => proposal({ id: `p-${offset + i}`, title: `Add instrument ${offset + i}`, isMine: offset + i === 5 }));
+    const sent = installAdapter((s) => {
+      if (s.path === '/api/v1/me') return { status: 200, data: editor };
+      if (s.path === PROPOSALS) return { status: 200, data: { items: page(Number((s.params as Record<string, number>).offset ?? 0)), total: 201 } };
+      if (s.path.endsWith('/approve')) return { status: 200, data: {} };
+      return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
+    });
+    renderScreen();
+    await screen.findByRole('link', { name: /Add instrument 0/ });
+    fireEvent.click(screen.getByRole('button', { name: 'Approve all 201 proposals' }));
+    const dialog = screen.getByRole('dialog', { name: 'Approve all 201 waiting proposals?' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Approve all 201 proposals' }));
+
+    expect(await screen.findByText('200 proposals approved.', {}, { timeout: 10000 })).toBeInTheDocument();
+    const approved = sent.filter((s) => s.method === 'post').map((s) => s.path);
+    expect(approved).toHaveLength(200);
+    expect(approved).not.toContain('/api/v1/proposals/p-5/approve');
+    // Every page was read with the queue's own filters, the open ones only.
+    expect(queueReads(sent).filter((params) => params.status === 'open').map((params) => String(params.offset))).toEqual(expect.arrayContaining(['100', '200']));
+  });
+
   it('shows how far the run has got while it works', async () => {
     const rows = [proposal({ id: 'p-a', title: 'Add instrument A' }), proposal({ id: 'p-b', title: 'Add instrument B' })];
     let release: () => void = () => undefined;
