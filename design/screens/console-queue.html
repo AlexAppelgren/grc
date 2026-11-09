@@ -9,7 +9,7 @@
    "Agent proposals" tab on Watch (vWatch) had the tenant's compliance officer
    approve; the PRD moves it here for library_editor (INPUT_DELTAS §5). Cut from
    the prototype: the proposal row, the lagrum diff, .btn/.bar. Designed where
-   silent: the detail with the source beside the diff, per-field source, the
+   silent: the detail with the source at the foot of the diff's card, per-field source, the
    corrections to scope and wording before approving, reject with a reason,
    the four-eyes refusal, the applied state, and the vocabulary proposal. */
 :root{
@@ -272,7 +272,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
       <a class="row" href="#"><div class="meta"><span class="pill notice">Re-verification</span><span class="pill warning">Waiting</span><span>Re-verification agent 0.4</span><span>1 Sep 2026 06:01</span></div><h3>Mark "Hold only approved investment assets on an ISK" as re-verified, no change found</h3><div class="meta"><span>Source: Riksdagen, consolidated text</span></div></a>
     </div>
 
-    <h2 class="k">Detail: the source beside the diff, correct before approving</h2>
+    <h2 class="k">Detail: the source at the foot of the diff's card, correct before approving</h2>
     <button class="back">← Queue</button>
     <div class="meta" style="margin-bottom:6px"><span class="pill notice">New version</span><span class="pill warning">Waiting</span><span>Proposed by Research agent 0.4, run 14 Sep 2026 06:02</span></div>
     <h1 style="margin-bottom:6px">Add version 2 of the research payment obligation, in force 1 October 2026</h1>
@@ -314,7 +314,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="empty" role="alert" style="margin-top:10px"><h2>Could not load the queue</h2><p>Check your connection and try again.</p><button class="btn ghost small">Try again</button></div>
     <div class="restricted" role="alert"><h1>This page is not available to you</h1><p>Your role does not include what this page needs. Ask your administrator if you think it should.</p><p style="font-size:.85rem">Needs proposals review</p></div>
     </div>
-    <p class="note">Queue card. The kind is a notice pill from the proposal kind, the status a warning "Waiting", positive "Approved" or information "Rejected". The source sits beside the diff so the editor never approves without the excerpt in view; each changed field names its own source. The editor may correct wording, dates and scope before Approve and apply, which asks for a passkey and writes version, audit row and re-index in one transaction. The proposer, agent or person, never approves: the row shows "Yours", the detail the refusal, and the server answers 409 four_eyes_violation. Reject needs a reason. Two buttons per row on phones, primary on the right.</p>
+    <p class="note">Queue card. The kind is a notice pill from the proposal kind, the status a warning "Waiting", positive "Approved" or information "Rejected". The source sits at the bottom of the same card as the diff (Alex, 2026-11-09), so the editor never approves without it in view; each changed field names its own source. The editor may correct wording, dates and scope before Approve and apply, which asks for a passkey and writes version, audit row and re-index in one transaction. The proposer, agent or person, never approves: the row shows "Yours", the detail the refusal, and the server answers 409 four_eyes_violation. Reject needs a reason. Two buttons per row on phones, primary on the right.</p>
   </main>
 </div>
 <nav class="tabbar" aria-label="Main"><button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Queue<span class="dot">3</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h9a3 3 0 0 1 3 3v11H7a3 3 0 0 0-3 3z"/><path d="M20 5h-4v14h4z"/></svg>Vocabularies</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>Sources</button><button><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>Reports<span class="dot">2</span></button><button><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button></nav>

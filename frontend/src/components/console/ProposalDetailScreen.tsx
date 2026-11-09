@@ -58,13 +58,15 @@ import { hasProblemCode } from '@/shared/utils/problem';
 // "What changes" shows the proposed text plainly; a console session has no
 // tenant, so there is no "Open the obligation" link to a tenant-scoped page.
 
-function SourcePanel({ proposal }: { proposal: ProposalRow }) {
+/** The proposal's sources, at the bottom of the card that shows what it changes or adds. */
+function SourceSection({ proposal }: { proposal: ProposalRow }) {
   const t = useT();
   const ctx = useFormatContext();
   const groups = fieldSourceGroups(proposal.fieldSources ?? {});
   const label = (field: string) => fieldSourceLabel(field, (code) => languageName(code, ctx.locale), t);
   return (
-    <Panel title={t('console.queue.detail.sourcePanel')} data-proposal-sources="">
+    <div className="mt-4 border-t border-line pt-3" data-proposal-sources="">
+      <h3 className="microlabel mb-1 text-muted">{t('console.queue.detail.sourcePanel')}</h3>
       {proposal.sourceLabel !== '' ? (
         <p className="mb-2 flex flex-wrap items-center gap-x-1.5">
           <span>{proposal.sourceLabel}</span>
@@ -87,17 +89,17 @@ function SourcePanel({ proposal }: { proposal: ProposalRow }) {
           ))}
         </ul>
       ) : null}
-    </Panel>
+    </div>
   );
 }
 
-function ObligationChanges({ proposal }: { proposal: ProposalRow }) {
+function ObligationChanges({ proposal, footer }: { proposal: ProposalRow; footer: ReactNode }) {
   const t = useT();
   const ctx = useFormatContext();
   const payload = obligationPayloadOf(proposal);
   const terms = payload?.terms ?? null;
   const { labelOf } = useScopeTermLabels(terms ?? []);
-  if (payload === null) return null;
+  if (payload === null) return <Panel>{footer}</Panel>;
   return (
     <Panel title={t('console.queue.detail.whatChanges')} data-proposal-changes="">
       <p className="microlabel mb-1 text-muted">{t('console.queue.detail.proposedText')}</p>
@@ -118,6 +120,7 @@ function ObligationChanges({ proposal }: { proposal: ProposalRow }) {
         <dt className="text-meta text-muted">{t('console.queue.detail.scope')}</dt>
         <dd className="m-0">{terms === null ? t('console.queue.detail.scopeUnchanged') : <PillRow pills={scopeTermPills(terms, labelOf)} />}</dd>
       </dl>
+      {footer}
     </Panel>
   );
 }
@@ -176,14 +179,14 @@ function MaybeLink({ href }: { href: string }) {
 // from the reads a console session may make: the level's list, the jurisdictions, the
 // regime's terms. The authority is shown by its key: its read, GET /authorities, needs
 // `library.read`, which no platform role holds.
-function NewInstrumentFacts({ proposal }: { proposal: ProposalRow }) {
+function NewInstrumentFacts({ proposal, footer }: { proposal: ProposalRow; footer: ReactNode }) {
   const t = useT();
   const ctx = useFormatContext();
   const payload = instrumentPayloadOf(proposal);
   const levels = useVocabularyValues('instrument_level', true, payload !== null);
   const jurisdictions = useJurisdictions();
   const { labelOf } = useScopeTermLabels(payload === null ? [] : [payload.regime]);
-  if (payload === null) return null;
+  if (payload === null) return <Panel>{footer}</Panel>;
   const eli = payload.eliUri ?? '';
   const implementsNote = payload.implementsNote ?? '';
   return (
@@ -228,6 +231,7 @@ function NewInstrumentFacts({ proposal }: { proposal: ProposalRow }) {
           </Fact>
         )}
       </dl>
+      {footer}
     </Panel>
   );
 }
@@ -235,14 +239,14 @@ function NewInstrumentFacts({ proposal }: { proposal: ProposalRow }) {
 // What a new obligation would add (D-118: each duty once its instrument is approved). Its
 // instrument is named by the key the payload carries and by the short name the library
 // holds under it, which the detail read answers (`instrumentShortName`).
-function NewObligationFacts({ proposal }: { proposal: ProposalDetail }) {
+function NewObligationFacts({ proposal, footer }: { proposal: ProposalDetail; footer: ReactNode }) {
   const t = useT();
   const ctx = useFormatContext();
   const payload = newObligationPayloadOf(proposal);
   const dutyTypes = useVocabularyValues('duty_type', true, payload !== null);
   const terms = payload?.terms ?? [];
   const { labelOf } = useScopeTermLabels(terms);
-  if (payload === null) return null;
+  if (payload === null) return <Panel>{footer}</Panel>;
   return (
     <Panel title={t('console.queue.detail.whatItAdds')} data-proposal-record={proposal.kind}>
       <dl className={cn(FACTS, 'mb-3')}>
@@ -268,14 +272,15 @@ function NewObligationFacts({ proposal }: { proposal: ProposalDetail }) {
           {terms.length === 0 ? t('console.queue.detail.noTerms') : <PillRow pills={scopeTermPills(terms, labelOf)} />}
         </Fact>
       </dl>
+      {footer}
     </Panel>
   );
 }
 
-function NewSummaryFacts({ proposal }: { proposal: ProposalDetail }) {
+function NewSummaryFacts({ proposal, footer }: { proposal: ProposalDetail; footer: ReactNode }) {
   const t = useT();
   const payload = instrumentSummaryPayloadOf(proposal);
-  if (payload === null) return null;
+  if (payload === null) return <Panel>{footer}</Panel>;
   return (
     <Panel title={t('console.queue.detail.whatItAdds')} data-proposal-record={proposal.kind}>
       <dl className={cn(FACTS, 'mb-3')}>
@@ -286,11 +291,12 @@ function NewSummaryFacts({ proposal }: { proposal: ProposalDetail }) {
         </Fact>
       </dl>
       <LanguageTextBlocks heading={t('console.queue.detail.summary')} texts={payload.summaries} originalLanguage={payload.originalLanguage} isMachine={payload.isMachine ?? false} field="summaries" />
+      {footer}
     </Panel>
   );
 }
 
-function VocabularyChanges({ proposal }: { proposal: ProposalRow }) {
+function VocabularyChanges({ proposal, footer }: { proposal: ProposalRow; footer: ReactNode }) {
   const t = useT();
   const payload = vocabularyPayloadOf(proposal);
   const list = payload.list ?? payload.dimension ?? '';
@@ -330,6 +336,7 @@ function VocabularyChanges({ proposal }: { proposal: ProposalRow }) {
           </>
         ) : null}
       </dl>
+      {footer}
     </Panel>
   );
 }
@@ -411,6 +418,7 @@ export function ProposalDetailScreen({ proposalId }: { proposalId: string }) {
 
   const proposal = query.data;
   const pills = presentProposal(proposal, t);
+  const source = <SourceSection proposal={proposal} />;
 
   return (
     <div data-proposal={proposal.id}>
@@ -424,20 +432,19 @@ export function ProposalDetailScreen({ proposalId }: { proposalId: string }) {
         </Notice>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <SourcePanel proposal={proposal} />
-        {isObligationVersion(proposal.kind) ? (
-          <ObligationChanges proposal={proposal} />
-        ) : isVocabularyKind(proposal.kind) ? (
-          <VocabularyChanges proposal={proposal} />
-        ) : proposal.kind === 'new_instrument' ? (
-          <NewInstrumentFacts proposal={proposal} />
-        ) : proposal.kind === 'new_obligation' ? (
-          <NewObligationFacts proposal={proposal} />
-        ) : proposal.kind === 'new_instrument_summary' ? (
-          <NewSummaryFacts proposal={proposal} />
-        ) : null}
-      </div>
+      {isObligationVersion(proposal.kind) ? (
+        <ObligationChanges proposal={proposal} footer={source} />
+      ) : isVocabularyKind(proposal.kind) ? (
+        <VocabularyChanges proposal={proposal} footer={source} />
+      ) : proposal.kind === 'new_instrument' ? (
+        <NewInstrumentFacts proposal={proposal} footer={source} />
+      ) : proposal.kind === 'new_obligation' ? (
+        <NewObligationFacts proposal={proposal} footer={source} />
+      ) : proposal.kind === 'new_instrument_summary' ? (
+        <NewSummaryFacts proposal={proposal} footer={source} />
+      ) : (
+        <Panel>{source}</Panel>
+      )}
 
       <DecisionPanel proposal={proposal} />
     </div>
