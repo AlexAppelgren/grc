@@ -75,6 +75,9 @@
 # Shape (playbook 9):
 # - Tiered by the `changes` job (dorny/paths-filter, `base: github.ref_name` on
 #   push, extglob patterns). A change under .github/ counts as everything.
+# - A push to main of a commit that already passed a full manual run (scripts/ship.sh
+#   on `candidate`) runs no tiered job again: the same commit is not tested twice
+#   (D-127). The secret scan and the tier check still run.
 # - Nightly at 02:30 UTC (04:30 Stockholm, away from local midnight) runs
 #   everything in full: no thinning, full E2E suite, CVE scan regardless of
 #   lockfile changes.
@@ -128,6 +131,11 @@ jobs:
     name: Decide which gates run
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    # Read-only on Actions: to find a full run that already passed on this exact commit.
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
     outputs:
       full: ${{ steps.decide.outputs.full }}
       backend: ${{ steps.decide.outputs.backend }}
@@ -190,9 +198,27 @@ jobs:
               - '**/.dockerignore'
               - 'backend/entrypoint.sh'
 
+      # A push to main of a commit scripts/ship.sh already ran through the full CI on
+      # `candidate` (workflow_dispatch, every gate and the full E2E suite) and saw pass:
+      # the same commit, so the same code, is not tested twice (D-127). Anything else
+      # (no such run, another event, a failed or cancelled one) runs as it always has.
+      - name: Already passed in full on candidate
+        id: shipped
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          passed="$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$SHA&event=workflow_dispatch&status=success&per_page=1" --jq '.total_count')"
+          if [ "$passed" -gt 0 ]; then echo "passed=true" >> "$GITHUB_OUTPUT"; else echo "passed=false" >> "$GITHUB_OUTPUT"; fi
+          echo "a full run on candidate already passed for $SHA: $passed"
+
       - name: Decide
         id: decide
         env:
+          ALREADY_PASSED: ${{ steps.shipped.outputs.passed }}
           EVENT_NAME: ${{ github.event_name }}
           CHANGED_WORKFLOWS: ${{ steps.filter.outputs.workflows }}
           CHANGED_BACKEND: ${{ steps.filter.outputs.backend }}
@@ -208,8 +234,10 @@ jobs:
           esac
           if [ "$CHANGED_WORKFLOWS" = "true" ]; then full=true; fi
           decide() {
+            if [ "$ALREADY_PASSED" = "true" ]; then echo "$1=false"; return; fi
             if [ "$full" = true ] || [ "$2" = "true" ]; then echo "$1=true"; else echo "$1=false"; fi
           }
+          if [ "$ALREADY_PASSED" = "true" ]; then full=false; fi
           {
             echo "full=$full"
             decide backend "$CHANGED_BACKEND"
