@@ -206,7 +206,7 @@ wrap, never a tooltip. The current row takes the current tab's treatment. The
 remaining destinations come first, in the rail's groups separated by space.
 Then a hairline and the account laid flat: the name at 500, organisation and
 roles in muted `meta` (both wrap), My passkeys, My sessions and Sign out. The
-scrim is `Modal`'s, the text colour at 60%. The sheet covers the bar and opens
+scrim is `Modal`'s, black at 60% in light and 70% in dark. The sheet covers the bar and opens
 and closes without animation.
 
 **Table** (the heat map, later lists). Rows 36 px, 8 px cell padding, `meta`

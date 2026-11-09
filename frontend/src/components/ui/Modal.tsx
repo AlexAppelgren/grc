@@ -10,7 +10,7 @@ export function Modal({ open, onOpenChange, title, description, children }: { op
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-fg/60" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-scrim" />
         <Dialog.Content
           className="fixed top-1/2 left-1/2 z-50 max-h-[86vh] w-[calc(100%-32px)] max-w-[560px] -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-overlay border border-line bg-surface p-5 text-fg"
           aria-describedby={description === undefined ? undefined : 'modal-description'}

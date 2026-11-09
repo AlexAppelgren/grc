@@ -168,7 +168,7 @@ Sources: Apple HIG tab bars. UIKit `UITabBarController`. Material 3 navigation b
 | Height | At most 85 svh, with the content scrolling inside | Tall enough for the long Admin and account list on a short landscape phone |
 | Padding | Header: 16 px on the sides. Rows: 8 px on the sides (the rail's group padding). Bottom: `max(16px, env(safe-area-inset-bottom))` | The last row stays clear of the home indicator (section 7) |
 | Rows | `SidebarMenuButton` with a new size, `touch`: at least 44 px tall (`min-h-11 py-2`), `body` text, a 16 px icon, 6 px radius. The label wraps: the `touch` size drops `overflow-hidden` and the label's `truncate`. The current row takes the section 5 treatment: `sidebar-accent`, 500 weight and the inset `line-strong` outline. No tooltip, ever | Rows look like the rail's, with a touch-sized target (section 6). Text zoom never cuts a label |
-| Scrim and stacking | `Modal`'s scrim, `bg-fg/60` at `z-40`. The sheet sits at `z-50` | The same as `Modal.tsx` |
+| Scrim and stacking | `Modal`'s scrim, `bg-scrim` (black at 60% in light, 70% in dark) at `z-40`. The sheet sits at `z-50` | The same as `Modal.tsx` |
 
 Sources: Apple HIG tab bars (a modal covering the bar, avoiding overflow tabs). Material navigation bar. WAI-ARIA APG modal dialog pattern. Radix Dialog docs. shadcn Sheet, Drawer and components index. vaul README. shadcn issue #8847. Roselli on ARIA menu roles. `frontend/src/components/ui/Modal.tsx`. The original prototype's More modal (commit f8d31b2).
 
@@ -797,7 +797,7 @@ Each takes its stated default (`docs/DECISIONS.md` rule) and is listed in `docs/
 | green-design-system MCP get_tokens (shadow, space, viewport) | shadow-l-01/l-02 for shadow-float, space-m/space-5xl, viewport-m = 1024 |
 | frontend/src/shared/navigation/registry.ts | Destinations, dockRank, groups, permission gating, and the existing dockDestinations the bar calls directly |
 | frontend/src/components/ui/sidebar.tsx | MOBILE_QUERY, the phone Dialog branch with its bg-fg/50 scrim, SidebarTrigger, SIZES with overflow-hidden and truncate, and the flex wrapper |
-| frontend/src/components/ui/Modal.tsx | Modal's scrim is bg-fg/60 at z-40, and Modal opens without animation |
+| frontend/src/components/ui/Modal.tsx | Modal's scrim is bg-scrim at z-40, and Modal opens without animation |
 | frontend/src/components/shell/AccountMenu.tsx | Uncontrolled modal DropdownMenu rendered without a portal inside the rail, and data-who-panel on its wrapper |
 | frontend/src/components/shell/AppShell.tsx | The wrapper's px-4 pt-3 pb-16 md:px-8 md:pt-6 and the skip link's focus:top-2 focus:left-2 |
 | frontend/src/app/layout.tsx | html lang is the build default locale, not the person's language |

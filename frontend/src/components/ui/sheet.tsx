@@ -35,7 +35,7 @@ const SIDE = {
 export function SheetContent({ className, children, side = 'bottom', ...props }: ComponentProps<typeof Dialog.Content> & { side?: keyof typeof SIDE }) {
   return (
     <Dialog.Portal>
-      <Dialog.Overlay data-slot="sheet-overlay" className="fixed inset-0 z-40 bg-fg/60" />
+      <Dialog.Overlay data-slot="sheet-overlay" className="fixed inset-0 z-40 bg-scrim" />
       <Dialog.Content
         data-slot="sheet-content"
         // Radix hides the rest of the page but does not say the dialog is
