@@ -10,7 +10,9 @@
 - runs hold at most `WATCH_RUN_MAX_PROPOSALS` filings and close as succeeded with the count;
 - an entry open in the queue under its key is left alone, whoever filed it; a rejected entry
   is not filed again until the baseline changes it; a dry run files nothing;
-- an entry the door refuses is reported and files nothing, and the rest still file.
+- an entry the door refuses is reported and files nothing, and the rest still file;
+- approving a library instrument queues the filing, so its duties follow within seconds:
+  one run for a page of approvals, none when it is switched off or for a bank's own.
 
 Operations exercised (the audit-on-write guard reads these names): none; the command files.
 """
@@ -25,6 +27,7 @@ from pathlib import Path
 from typing import Any
 from unittest import mock
 
+from django.core.cache import cache
 from django.db import IntegrityError, transaction
 from django.conf import settings
 from django.test import TestCase, override_settings
@@ -276,3 +279,53 @@ class TheBaselineOnTheBeat(BaselineCase):
         with mock.patch.object(baseline, "BASELINE_DIR", folder):
             tasks.file_library_baseline()
         self.assertEqual(Proposal.objects.get(payload__key="beat-a").proposed_by_agent.key, baseline.AGENT_KEY)  # type: ignore[union-attr]
+
+
+def _drain_outbox() -> None:
+    """Deliver every pending row; the seeds alone write more than one batch."""
+    from apps.shared import outbox
+
+    while outbox.deliver_batch().delivered:
+        pass
+
+
+@override_settings(LIBRARY_BASELINE_ON_APPROVAL_S=10)
+class DutiesFollowAnApproval(BaselineCase):
+    def setUp(self) -> None:
+        super().setUp()
+        cache.clear()
+        self.folder = Path(tempfile.mkdtemp())
+        body = {"tranche": "follow", "researchedOn": "2026-11-09", "instruments": [_instrument("follow-a", _duty("follow-a-duty")), _instrument("follow-b")]}
+        (self.folder / "follow.json").write_text(json.dumps(body), encoding="utf-8")
+        patcher = mock.patch.object(baseline, "BASELINE_DIR", self.folder)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_approving_an_instrument_files_its_duties_without_waiting_for_the_beat(self) -> None:
+        baseline.file()
+        self.approve_open()
+        self.assertFalse(Proposal.objects.filter(payload__key="follow-a-duty").exists())
+        _drain_outbox()
+        duty = Proposal.objects.get(payload__key="follow-a-duty")
+        self.assertEqual((duty.status, duty.proposed_by_agent.key), (ProposalStatus.OPEN.value, baseline.AGENT_KEY))  # type: ignore[union-attr]
+
+    def test_a_page_of_approvals_queues_one_run(self) -> None:
+        from apps.proposals import tasks
+
+        baseline.file()
+        self.assertEqual(self.approve_open(), 2)
+        with mock.patch.object(tasks.file_library_baseline, "apply_async") as queued:
+            _drain_outbox()
+        queued.assert_called_once_with(countdown=10)
+
+    def test_nothing_is_queued_when_switched_off_or_for_a_banks_own_instrument(self) -> None:
+        from apps.proposals import tasks
+        from apps.shared.models import OutboxEvent
+
+        own = OutboxEvent(topic=tasks.INSTRUMENT_CREATED, tenant_id=uuid.uuid4())
+        shared = OutboxEvent(topic=tasks.INSTRUMENT_CREATED, tenant_id=None)
+        with mock.patch.object(tasks.file_library_baseline, "apply_async") as queued:
+            tasks.queue_after_approval(own)
+            with override_settings(LIBRARY_BASELINE_ON_APPROVAL_S=0):
+                tasks.queue_after_approval(shared)
+        queued.assert_not_called()

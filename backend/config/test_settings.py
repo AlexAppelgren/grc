@@ -63,6 +63,8 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 #     effect without a broker. The memory transport keeps the health check's worker ping
 #     from touching Redis (tests_health.py patches the ping itself).
 CELERY_TASK_ALWAYS_EAGER = True
+# An approval in a test must not file the whole real baseline; tests_baseline turns it on.
+LIBRARY_BASELINE_ON_APPROVAL_S = 0
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BROKER_URL = "memory://"
 

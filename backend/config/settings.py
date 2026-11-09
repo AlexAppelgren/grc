@@ -792,6 +792,16 @@ if LIBRARY_BASELINE_FILING_MINUTES:
         "task": "apps.proposals.tasks.file_library_baseline",
         "schedule": LIBRARY_BASELINE_FILING_MINUTES * 60,
     }
+# The same filing, queued when a reviewer approves a library instrument, so its duties
+# reach the queue within seconds instead of on the next beat. The outbox row of the approval
+# (`instrument.created`) queues one run this many seconds later, and every approval inside
+# that window rides the same run, so approving a page of a hundred files once, not a hundred
+# times. 0 switches it off and leaves the beat alone: the default under E2E_MODE and in the
+# test settings, where an approval must not file the whole real baseline. Below 0 refuses to
+# boot.
+LIBRARY_BASELINE_ON_APPROVAL_S = env_int("LIBRARY_BASELINE_ON_APPROVAL_S", 0 if E2E_MODE else 10)
+if LIBRARY_BASELINE_ON_APPROVAL_S < 0:
+    raise ImproperlyConfigured("Refusing to boot: LIBRARY_BASELINE_ON_APPROVAL_S is 0 (off) or more.")
 
 # ---------------------------------------------------------------------------------------
 # ===== HOM-01 how long Today's "Coming up" list is (apps/home/logic.py, c6-home-backend) =
