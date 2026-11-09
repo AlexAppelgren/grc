@@ -16,6 +16,9 @@ export type ProposalQueueRow = Schemas['ProposalQueueRow'];
 export type ProposalDetail = Schemas['ProposalDetail'];
 export type ProposalPage = Schemas['ProposalPage'];
 export type ProposalApproveBody = Schemas['ProposalApproveBody'];
+/** Approve all, run by the worker: the filters it approves under, and its progress as the worker last wrote it. */
+export type ProposalApproveAllBody = Schemas['ProposalApproveAllBody'];
+export type ProposalApproveAll = Schemas['ProposalApproveAll'];
 export type ProposalRejectBody = Schemas['ProposalRejectBody'];
 export type TenantProposalRow = Schemas['TenantProposalRow'];
 export type TenantProposalPage = Schemas['TenantProposalPage'];

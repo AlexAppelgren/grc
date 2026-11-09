@@ -340,6 +340,5 @@
   "console.queue.filter.kindNewInstrumentSummary": "New summary",
   "console.queue.approveAll.button": "{count, plural, one {Approve all # proposal} other {Approve all # proposals}}",
   "console.queue.approveAll.title": "{count, plural, one {Approve the # waiting proposal?} other {Approve all # waiting proposals?}}",
-  "console.queue.approveAll.body": "Every waiting proposal these filters show, on every page, is approved in turn, exactly as if you opened it alone. Your own, flagged ones and batches are left for their own review. Your passkey is asked for first, and again if it lapses.",
-  "console.queue.approveAll.reading": "Reading the queue…"
+  "console.queue.approveAll.body": "Every waiting proposal these filters show, on every page, is approved by the server in the background, each exactly as if you opened it alone. Your own, flagged ones and batches are left for their own review. Your passkey is asked for once, and you can leave this page while it runs."
 }

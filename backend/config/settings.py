@@ -804,6 +804,17 @@ if LIBRARY_BASELINE_ON_APPROVAL_S < 0:
     raise ImproperlyConfigured("Refusing to boot: LIBRARY_BASELINE_ON_APPROVAL_S is 0 (off) or more.")
 
 # ---------------------------------------------------------------------------------------
+# ===== PRO-02 Approve all, run by the worker (apps/proposals/approve_all.py, D-128) ======
+# How long a reviewer's run keeps its progress readable after it last moved, in seconds,
+# and how long a running run may say nothing before a new start treats its worker as
+# stopped. The worker writes its progress every ten approvals, a second or two apart.
+# ---------------------------------------------------------------------------------------
+PROPOSALS_APPROVE_ALL_KEEP_S = env_int("PROPOSALS_APPROVE_ALL_KEEP_S", 86_400)
+PROPOSALS_APPROVE_ALL_STALE_S = env_int("PROPOSALS_APPROVE_ALL_STALE_S", 300)
+if PROPOSALS_APPROVE_ALL_KEEP_S < 60 or PROPOSALS_APPROVE_ALL_STALE_S < 30:
+    raise ImproperlyConfigured("Refusing to boot: PROPOSALS_APPROVE_ALL_KEEP_S is 60 or more and PROPOSALS_APPROVE_ALL_STALE_S 30 or more.")
+
+# ---------------------------------------------------------------------------------------
 # ===== HOM-01 how long Today's "Coming up" list is (apps/home/logic.py, c6-home-backend) =
 # Today shows the same short list on a 375 px phone and on a desktop, so its length is one
 # number rather than a breakpoint: the screen never decides how much of the roadmap it is

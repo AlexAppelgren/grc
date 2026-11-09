@@ -19807,6 +19807,194 @@
         "title": "ProposalAppliedVersion",
         "type": "object"
       },
+      "ProposalApproveAll": {
+        "description": "The reviewer's latest Approve all run, as the worker last wrote it.",
+        "examples": [
+          {
+            "approved": 480,
+            "refusals": [],
+            "refused": 1,
+            "startedAt": "2026-11-09T13:10:00+00:00",
+            "status": "running",
+            "total": 2357,
+            "updatedAt": "2026-11-09T13:11:02+00:00"
+          }
+        ],
+        "properties": {
+          "approved": {
+            "description": "How many the run has approved so far.",
+            "examples": [
+              480
+            ],
+            "title": "Approved",
+            "type": "integer"
+          },
+          "refusals": {
+            "description": "The first 20 refusals with their reasons; `refused` counts them all.",
+            "items": {
+              "$ref": "#/components/schemas/ProposalApproveAllRefusal"
+            },
+            "title": "Refusals",
+            "type": "array"
+          },
+          "refused": {
+            "description": "How many the run could not approve so far; each stays waiting.",
+            "examples": [
+              1
+            ],
+            "title": "Refused",
+            "type": "integer"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the run started, as an ISO 8601 UTC timestamp; null when idle.",
+            "examples": [
+              "2026-11-09T13:10:00+00:00"
+            ],
+            "title": "Startedat"
+          },
+          "status": {
+            "description": "Where the run stands. The values are `idle` (no run in the last day), `running` (the worker is approving) and `finished` (every listed proposal was tried, or the worker stopped).",
+            "examples": [
+              "running"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "total": {
+            "description": "How many waiting proposals the run lists, read when it started.",
+            "examples": [
+              2357
+            ],
+            "title": "Total",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the worker last wrote its progress, as an ISO 8601 UTC timestamp; null when idle.",
+            "examples": [
+              "2026-11-09T13:11:02+00:00"
+            ],
+            "title": "Updatedat"
+          }
+        },
+        "required": [
+          "status",
+          "total",
+          "approved",
+          "refused",
+          "refusals",
+          "startedAt",
+          "updatedAt"
+        ],
+        "title": "ProposalApproveAll",
+        "type": "object"
+      },
+      "ProposalApproveAllBody": {
+        "additionalProperties": false,
+        "description": "The body of `POST /proposals/approve-all`: the queue filters the reviewer is looking\nat. Every proposal waiting under them when the call is made is approved by the worker,\nexcept the reviewer's own, flagged ones and batches, which each wait for their own review.",
+        "examples": [
+          {
+            "kind": "new_obligation",
+            "origin": "agent"
+          },
+          {}
+        ],
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Approve only these kinds: one value, or several separated by commas, from the kinds `ProposalRow.kind` names, at most 200 characters. Left out, every kind is approved.",
+            "examples": [
+              "new_obligation"
+            ],
+            "title": "Kind"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Approve only the proposals filed by one sort of proposer: `agent` for a watch or research agent's, `user` for a person's. Those are the only two values; anything else is refused with 422 `unknown_key`. Left out, both are approved.",
+            "examples": [
+              "agent"
+            ],
+            "title": "Origin"
+          }
+        },
+        "title": "ProposalApproveAllBody",
+        "type": "object"
+      },
+      "ProposalApproveAllRefusal": {
+        "description": "One proposal the run could not approve, with the server's own reason.",
+        "properties": {
+          "code": {
+            "description": "The refusal's problem code, the same the approve route answers, for example `four_eyes_violation` or `invalid_transition`.",
+            "examples": [
+              "invalid_transition"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "detail": {
+            "description": "The refusal as a sentence a reviewer can read.",
+            "examples": [
+              "This proposal was already decided."
+            ],
+            "title": "Detail",
+            "type": "string"
+          },
+          "id": {
+            "description": "The proposal's UUID, as the queue returns it in `id`.",
+            "examples": [
+              "8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "description": "The proposal's title, empty when the proposal could no longer be read.",
+            "examples": [
+              "Add the duty: Report suspicious transactions"
+            ],
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "code",
+          "detail"
+        ],
+        "title": "ProposalApproveAllRefusal",
+        "type": "object"
+      },
       "ProposalApproveBody": {
         "additionalProperties": false,
         "description": "The body of `POST /proposals/{proposalId}/approve`: the reviewer's word that this\nchange may enter the shared library, and the corrections they made first.\n\nApproving is the only door into the library, so this call needs `proposals.review`\nand a passkey step-up no older than the step-up window; without a fresh assertion it\nanswers 403 `step_up_required`, and the assertion's id is written on every audit row\nthe approval leaves. The reviewer is never the proposer: the database refuses that row\nand the call answers 409 `four_eyes_violation`. Approval carries no\n`Idempotency-Key` and no `If-Match`: a proposal is decided once, and a second call on\na decided proposal answers 409 `invalid_transition` rather than applying anything\ntwice. The audit and outbox rows the approval writes are append-only.\n\nA confirming agent approves with the platform-only scope `proposals:review` instead of\na step-up, and sends two more fields a person never sends: `decision`, the model call\nbehind its approval, and `agentRunId`, the open run of its own key it was made in\n(D-80). The first example is a person's approval, the second an agent's.\n\nThe whole call is platform work in the shared zone. No field ever names the bank a\nproposal came from, because a bank member's identity does not reach the console, and\nnothing a bank wrote about its own compliance is touched by an approval.",
@@ -53044,6 +53232,70 @@
           }
         ],
         "summary": "Ask for a change to the shared library, with the source behind every changed value",
+        "tags": [
+          "Proposals"
+        ]
+      }
+    },
+    "/api/v1/proposals/approve-all": {
+      "get": {
+        "description": "The caller's latest Approve all run as the worker last wrote it: how many proposals\nit lists, how many it has approved and refused, and the first 20 refusals with their\nreasons. Call it every few seconds while `status` is `running`, and on opening the queue\nto pick up a run started earlier. With no run in the last day it answers 200 with\n`status` `idle` and zero counts, never a 404.\n\nA read: it changes nothing and writes no audit row. Each reviewer reads only their own\nrun. Needs the platform permission `proposals.review` from a person.\n\nErrors to branch on: `unauthenticated` (401) without a session; `permission_denied`\n(403) without `proposals.review`.",
+        "operationId": "readApproveAllProposals",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalApproveAll"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Read how far the caller's Approve all run has come",
+        "tags": [
+          "Proposals"
+        ]
+      },
+      "post": {
+        "description": "Approve all: call it once a reviewer has decided that everything waiting under the\nfilters they chose may enter the shared library, as when the library baseline files\nits regulations, duties and summaries. It reads the ids of what is waiting at that\nmoment and answers 202 at once; the worker then approves each one through the same\nlogic as `POST /proposals/{proposalId}/approve`, in a transaction of its own, writing\nthat route's own audit rows with this call's passkey assertion. Four eyes is checked on\nevery row. A proposal filed after the call, the reviewer's own, a flagged one and a\nbatch are never approved by it: each waits for its own review. A row the worker cannot\napprove is counted with its reason and the run goes on.\n\nIt writes one audit row for the decision itself, naming how many proposals it lists and\nthe filters. Read the run's progress with `GET /proposals/approve-all`.\n\nNeeds the platform permission `proposals.review` from a person, stepped up fresh. An\nagent's key approves one proposal at a time and never reaches this route.\n\nErrors to branch on: `unauthenticated` (401) without a session; `permission_denied`\n(403) without `proposals.review`; `step_up_required` (403) without a fresh passkey\nassertion; `approval_running` (409) while the caller's earlier run is still running;\n`unknown_key` (422) when `origin` is neither `agent` nor `user`; `validation_error` (422)\nwhen `kind` is longer than 200 characters.",
+        "operationId": "approveAllProposals",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalApproveAllBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalApproveAll"
+                }
+              }
+            },
+            "description": "Accepted"
+          }
+        },
+        "security": [
+          {
+            "SessionAuth": []
+          }
+        ],
+        "summary": "Approve every waiting proposal under the queue's filters, in the background",
         "tags": [
           "Proposals"
         ]

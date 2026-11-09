@@ -451,3 +451,14 @@ When the editor goes back, selects every row on the page and approves them with 
 Then each is approved through its own approval and both are listed under Approved
 And no duty of theirs waits in the queue yet: their duties are what the next filing adds
 ```
+
+### PRO-S18 — A library editor approves everything waiting with one passkey, and the worker does the rest `@integration` (PRO-02, AC-PRO2, AUD-01)
+```gherkin
+Given the library baseline's agent filed two new instruments, each with a duty that waits for it
+And the editor filed a proposal of their own
+When another library editor chooses "Approve all" and confirms with a passkey
+Then the call answers at once and the worker approves both instruments, each through its own approval under that passkey
+And the editor's own proposal still waits, since four eyes never lets them decide it
+And the duties the approvals let the next filing add wait for the next decision
+And the queue reads the run as finished, with two approved and none refused
+```

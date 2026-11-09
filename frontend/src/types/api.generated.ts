@@ -6426,6 +6426,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/proposals/approve-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read how far the caller's Approve all run has come
+         * @description The caller's latest Approve all run as the worker last wrote it: how many proposals
+         *     it lists, how many it has approved and refused, and the first 20 refusals with their
+         *     reasons. Call it every few seconds while `status` is `running`, and on opening the queue
+         *     to pick up a run started earlier. With no run in the last day it answers 200 with
+         *     `status` `idle` and zero counts, never a 404.
+         *
+         *     A read: it changes nothing and writes no audit row. Each reviewer reads only their own
+         *     run. Needs the platform permission `proposals.review` from a person.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without `proposals.review`.
+         */
+        get: operations["readApproveAllProposals"];
+        put?: never;
+        /**
+         * Approve every waiting proposal under the queue's filters, in the background
+         * @description Approve all: call it once a reviewer has decided that everything waiting under the
+         *     filters they chose may enter the shared library, as when the library baseline files
+         *     its regulations, duties and summaries. It reads the ids of what is waiting at that
+         *     moment and answers 202 at once; the worker then approves each one through the same
+         *     logic as `POST /proposals/{proposalId}/approve`, in a transaction of its own, writing
+         *     that route's own audit rows with this call's passkey assertion. Four eyes is checked on
+         *     every row. A proposal filed after the call, the reviewer's own, a flagged one and a
+         *     batch are never approved by it: each waits for its own review. A row the worker cannot
+         *     approve is counted with its reason and the run goes on.
+         *
+         *     It writes one audit row for the decision itself, naming how many proposals it lists and
+         *     the filters. Read the run's progress with `GET /proposals/approve-all`.
+         *
+         *     Needs the platform permission `proposals.review` from a person, stepped up fresh. An
+         *     agent's key approves one proposal at a time and never reaches this route.
+         *
+         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+         *     (403) without `proposals.review`; `step_up_required` (403) without a fresh passkey
+         *     assertion; `approval_running` (409) while the caller's earlier run is still running;
+         *     `unknown_key` (422) when `origin` is neither `agent` nor `user`; `validation_error` (422)
+         *     when `kind` is longer than 200 characters.
+         */
+        post: operations["approveAllProposals"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/proposals/{proposal_id}": {
         parameters: {
             query?: never;
@@ -23016,6 +23070,117 @@ export interface components {
              * @example 2
              */
             versionNumber: number;
+        };
+        /**
+         * ProposalApproveAll
+         * @description The reviewer's latest Approve all run, as the worker last wrote it.
+         * @example {
+         *       "approved": 480,
+         *       "refusals": [],
+         *       "refused": 1,
+         *       "startedAt": "2026-11-09T13:10:00+00:00",
+         *       "status": "running",
+         *       "total": 2357,
+         *       "updatedAt": "2026-11-09T13:11:02+00:00"
+         *     }
+         */
+        ProposalApproveAll: {
+            /**
+             * Approved
+             * @description How many the run has approved so far.
+             * @example 480
+             */
+            approved: number;
+            /**
+             * Refusals
+             * @description The first 20 refusals with their reasons; `refused` counts them all.
+             */
+            refusals: components["schemas"]["ProposalApproveAllRefusal"][];
+            /**
+             * Refused
+             * @description How many the run could not approve so far; each stays waiting.
+             * @example 1
+             */
+            refused: number;
+            /**
+             * Startedat
+             * @description When the run started, as an ISO 8601 UTC timestamp; null when idle.
+             * @example 2026-11-09T13:10:00+00:00
+             */
+            startedAt: string | null;
+            /**
+             * Status
+             * @description Where the run stands. The values are `idle` (no run in the last day), `running` (the worker is approving) and `finished` (every listed proposal was tried, or the worker stopped).
+             * @example running
+             */
+            status: string;
+            /**
+             * Total
+             * @description How many waiting proposals the run lists, read when it started.
+             * @example 2357
+             */
+            total: number;
+            /**
+             * Updatedat
+             * @description When the worker last wrote its progress, as an ISO 8601 UTC timestamp; null when idle.
+             * @example 2026-11-09T13:11:02+00:00
+             */
+            updatedAt: string | null;
+        };
+        /**
+         * ProposalApproveAllBody
+         * @description The body of `POST /proposals/approve-all`: the queue filters the reviewer is looking
+         *     at. Every proposal waiting under them when the call is made is approved by the worker,
+         *     except the reviewer's own, flagged ones and batches, which each wait for their own review.
+         * @example {
+         *       "kind": "new_obligation",
+         *       "origin": "agent"
+         *     }
+         * @example {}
+         */
+        ProposalApproveAllBody: {
+            /**
+             * Kind
+             * @description Approve only these kinds: one value, or several separated by commas, from the kinds `ProposalRow.kind` names, at most 200 characters. Left out, every kind is approved.
+             * @example new_obligation
+             */
+            kind?: string | null;
+            /**
+             * Origin
+             * @description Approve only the proposals filed by one sort of proposer: `agent` for a watch or research agent's, `user` for a person's. Those are the only two values; anything else is refused with 422 `unknown_key`. Left out, both are approved.
+             * @example agent
+             */
+            origin?: string | null;
+        };
+        /**
+         * ProposalApproveAllRefusal
+         * @description One proposal the run could not approve, with the server's own reason.
+         */
+        ProposalApproveAllRefusal: {
+            /**
+             * Code
+             * @description The refusal's problem code, the same the approve route answers, for example `four_eyes_violation` or `invalid_transition`.
+             * @example invalid_transition
+             */
+            code: string;
+            /**
+             * Detail
+             * @description The refusal as a sentence a reviewer can read.
+             * @example This proposal was already decided.
+             */
+            detail: string;
+            /**
+             * Id
+             * @description The proposal's UUID, as the queue returns it in `id`.
+             * @example 8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21
+             */
+            id: string;
+            /**
+             * Title
+             * @description The proposal's title, empty when the proposal could no longer be read.
+             * @example Add the duty: Report suspicious transactions
+             */
+            title: string;
         };
         /**
          * ProposalApproveBody
@@ -42094,6 +42259,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProposalRow"];
+                };
+            };
+        };
+    };
+    readApproveAllProposals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalApproveAll"];
+                };
+            };
+        };
+    };
+    approveAllProposals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposalApproveAllBody"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposalApproveAll"];
                 };
             };
         };

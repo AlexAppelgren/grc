@@ -20,7 +20,7 @@ from typing import Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.proposals import batch, logic, private_approval, reading, updates
+from apps.proposals import approve_all, batch, logic, private_approval, reading, updates
 from apps.proposals.logic import Proposer, Reviewer
 from apps.proposals.schemas import (
     LibraryUpdatesPage,
@@ -28,6 +28,8 @@ from apps.proposals.schemas import (
     ProposalBatchDecision,
     ProposalBatchInput,
     LibraryUpdatesQuery,
+    ProposalApproveAll,
+    ProposalApproveAllBody,
     ProposalApproveBody,
     ProposalCreateBody,
     ProposalDetail,
@@ -427,6 +429,71 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
         effective_from=body.effective_from,
     )
     return (201 if created else 200), logic.proposer_row(proposal)
+
+
+@router.post(
+    "/proposals/approve-all",
+    response={202: ProposalApproveAll},
+    auth=SESSION,
+    operation_id="approveAllProposals",
+    by_alias=True,
+    summary="Approve every waiting proposal under the queue's filters, in the background",
+)
+@requires_permission(perms.PROPOSALS_REVIEW)
+@requires_step_up
+@answers_problems
+def approve_all_proposals(request: HttpRequest, body: ProposalApproveAllBody) -> tuple[int, ProposalApproveAll]:
+    """Approve all: call it once a reviewer has decided that everything waiting under the
+    filters they chose may enter the shared library, as when the library baseline files
+    its regulations, duties and summaries. It reads the ids of what is waiting at that
+    moment and answers 202 at once; the worker then approves each one through the same
+    logic as `POST /proposals/{proposalId}/approve`, in a transaction of its own, writing
+    that route's own audit rows with this call's passkey assertion. Four eyes is checked on
+    every row. A proposal filed after the call, the reviewer's own, a flagged one and a
+    batch are never approved by it: each waits for its own review. A row the worker cannot
+    approve is counted with its reason and the run goes on.
+
+    It writes one audit row for the decision itself, naming how many proposals it lists and
+    the filters. Read the run's progress with `GET /proposals/approve-all`.
+
+    Needs the platform permission `proposals.review` from a person, stepped up fresh. An
+    agent's key approves one proposal at a time and never reaches this route.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without `proposals.review`; `step_up_required` (403) without a fresh passkey
+    assertion; `approval_running` (409) while the caller's earlier run is still running;
+    `unknown_key` (422) when `origin` is neither `agent` nor `user`; `validation_error` (422)
+    when `kind` is longer than 200 characters.
+    """
+    reviewer = require_reviewer(request)
+    state = approve_all.start(reviewer=reviewer, kind=body.kind, origin=body.origin, step_up_assertion_id=enforce_step_up(request))
+    return 202, ProposalApproveAll.model_validate(state)
+
+
+@router.get(
+    "/proposals/approve-all",
+    response=ProposalApproveAll,
+    auth=SESSION,
+    operation_id="readApproveAllProposals",
+    by_alias=True,
+    summary="Read how far the caller's Approve all run has come",
+)
+@requires_permission(perms.PROPOSALS_REVIEW)
+@answers_problems
+def read_approve_all_proposals(request: HttpRequest) -> ProposalApproveAll:
+    """The caller's latest Approve all run as the worker last wrote it: how many proposals
+    it lists, how many it has approved and refused, and the first 20 refusals with their
+    reasons. Call it every few seconds while `status` is `running`, and on opening the queue
+    to pick up a run started earlier. With no run in the last day it answers 200 with
+    `status` `idle` and zero counts, never a 404.
+
+    A read: it changes nothing and writes no audit row. Each reviewer reads only their own
+    run. Needs the platform permission `proposals.review` from a person.
+
+    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
+    (403) without `proposals.review`.
+    """
+    return ProposalApproveAll.model_validate(approve_all.state_of(require_reviewer(request).user.id))
 
 
 @router.get(

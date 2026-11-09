@@ -457,6 +457,8 @@ LIBRARY_WRITING_ROUTES: dict[str, Node] = {
     "reverifyObligation": APPLY_REVERIFICATION,
     # A batch's approved rows, through the same apply() (PRO-04; c11-proposal-batches-decide).
     "decideProposalBatch": APPLY,
+    # Approve all: the worker approves each listed proposal through the same apply() (D-128).
+    "approveAllProposals": APPLY,
     "approvePrivateProposal": APPLY,
 }
 # The gate of the bank's own approval: a tenant permission no platform role holds and no key

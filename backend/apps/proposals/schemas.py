@@ -2232,3 +2232,68 @@ class PrivateProposalRejectBody(WriteBody):
         ),
         examples=["We already hold this duty as our own."],
     )
+
+
+class ProposalApproveAllBody(WriteBody):
+    """The body of `POST /proposals/approve-all`: the queue filters the reviewer is looking
+    at. Every proposal waiting under them when the call is made is approved by the worker,
+    except the reviewer's own, flagged ones and batches, which each wait for their own review."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"kind": "new_obligation", "origin": "agent"}, {}]})
+
+    kind: str | None = Field(
+        default=None,
+        max_length=200,
+        description=(
+            "Approve only these kinds: one value, or several separated by commas, from the kinds "
+            "`ProposalRow.kind` names, at most 200 characters. Left out, every kind is approved."
+        ),
+        examples=["new_obligation"],
+    )
+    origin: str | None = Field(
+        default=None,
+        description=(
+            "Approve only the proposals filed by one sort of proposer: `agent` for a watch or research "
+            "agent's, `user` for a person's. Those are the only two values; anything else is refused "
+            "with 422 `unknown_key`. Left out, both are approved."
+        ),
+        examples=["agent"],
+    )
+
+
+class ProposalApproveAllRefusal(CamelSchema):
+    """One proposal the run could not approve, with the server's own reason."""
+
+    id: str = Field(description="The proposal's UUID, as the queue returns it in `id`.", examples=["8f1d6d9e-58f0-4c2e-9e2f-6a4a6f1b8c21"])
+    title: str = Field(description="The proposal's title, empty when the proposal could no longer be read.", examples=["Add the duty: Report suspicious transactions"])
+    code: str = Field(
+        description="The refusal's problem code, the same the approve route answers, for example `four_eyes_violation` or `invalid_transition`.",
+        examples=["invalid_transition"],
+    )
+    detail: str = Field(description="The refusal as a sentence a reviewer can read.", examples=["This proposal was already decided."])
+
+
+class ProposalApproveAll(CamelSchema):
+    """The reviewer's latest Approve all run, as the worker last wrote it."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"status": "running", "total": 2357, "approved": 480, "refused": 1, "refusals": [], "startedAt": "2026-11-09T13:10:00+00:00", "updatedAt": "2026-11-09T13:11:02+00:00"}
+            ]
+        }
+    )
+
+    status: str = Field(
+        description=(
+            "Where the run stands. The values are `idle` (no run in the last day), `running` (the worker "
+            "is approving) and `finished` (every listed proposal was tried, or the worker stopped)."
+        ),
+        examples=["running"],
+    )
+    total: int = Field(description="How many waiting proposals the run lists, read when it started.", examples=[2357])
+    approved: int = Field(description="How many the run has approved so far.", examples=[480])
+    refused: int = Field(description="How many the run could not approve so far; each stays waiting.", examples=[1])
+    refusals: list[ProposalApproveAllRefusal] = Field(description="The first 20 refusals with their reasons; `refused` counts them all.")
+    started_at: str | None = Field(description="When the run started, as an ISO 8601 UTC timestamp; null when idle.", examples=["2026-11-09T13:10:00+00:00"])
+    updated_at: str | None = Field(description="When the worker last wrote its progress, as an ISO 8601 UTC timestamp; null when idle.", examples=["2026-11-09T13:11:02+00:00"])

@@ -1,7 +1,7 @@
 'use client';
 
 import { skipToken, useMutation, useQueries, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { termRowsQuery } from '@/features/footprint/hooks';
 import { scopeTermsOf } from '@/features/watch/api';
@@ -10,13 +10,14 @@ import { hasProblemCode } from '@/shared/utils/problem';
 
 import * as proposals from './api';
 import type {
+  ProposalApproveAll,
+  ProposalApproveAllBody,
   ProposalApproveBody,
   ProposalBatch,
   ProposalBatchDecision,
   ProposalDetail,
   ProposalPage,
   ProposalQuery,
-  ProposalQueueRow,
   ProposalRejectBody,
   ProposalRow,
   RetagRequest,
@@ -36,6 +37,7 @@ export const proposalKeys = {
   detail: (id: string) => ['proposals', 'detail', id] as const,
   batch: (id: string) => ['proposals', 'batch', id] as const,
   retag: (id: string) => ['proposals', 'retag', id] as const,
+  approveAll: ['proposals', 'approve-all'] as const,
 };
 
 export function useProposals(query: ProposalQuery): UseQueryResult<ProposalPage> {
@@ -98,17 +100,30 @@ export async function approveInTurn(rows: readonly Pick<ProposalRow, 'id' | 'tit
   return outcome;
 }
 
+/** How often the queue reads a running Approve all run, in milliseconds. */
+export const APPROVE_ALL_POLL_MS = 2000;
+
 /**
- * Every waiting proposal a query matches, across all its pages: the first page says how
- * many there are, and the rest are read side by side (fan out, never chain). For "Approve
- * all", which then approves the ones a person may approve from the queue in turn.
+ * Approve all, run by the worker (D-128): one call under a passkey starts it, and the run is
+ * read every couple of seconds while it works, so the queue shows its progress after a
+ * reload too. The queue's lists are read again once it has finished.
  */
-export async function everyProposal(query: Omit<ProposalQuery, 'limit' | 'offset'>, pageSize: number): Promise<ProposalQueueRow[]> {
-  const first = await proposals.listProposals({ ...query, limit: pageSize, offset: 0 });
-  const offsets = Array.from({ length: Math.max(Math.ceil(first.total / pageSize) - 1, 0) }, (_, i) => (i + 1) * pageSize);
-  const rest = await Promise.all(offsets.map((offset) => proposals.listProposals({ ...query, limit: pageSize, offset })));
-  const seen = new Set<string>();
-  return [first, ...rest].flatMap((page) => page.items).filter((row) => (seen.has(row.id) ? false : (seen.add(row.id), true)));
+export function useApproveAll(): { run: UseQueryResult<ProposalApproveAll>; start: UseMutationResult<ProposalApproveAll, unknown, ProposalApproveAllBody> } {
+  const queryClient = useQueryClient();
+  const run = useQuery({
+    queryKey: proposalKeys.approveAll,
+    queryFn: proposals.readApproveAll,
+    refetchInterval: (query) => (query.state.data?.status === 'running' ? APPROVE_ALL_POLL_MS : false),
+  });
+  const status = run.data?.status;
+  useEffect(() => {
+    if (status === 'finished') void queryClient.invalidateQueries({ queryKey: [...proposalKeys.all, 'list'] });
+  }, [status, queryClient]);
+  const start = useMutation({
+    mutationFn: proposals.startApproveAll,
+    onSuccess: (started) => queryClient.setQueryData(proposalKeys.approveAll, started),
+  });
+  return { run, start };
 }
 
 /** Approve many from the queue, one call after another; the queue re-reads however it ended. `done` counts the calls made. */

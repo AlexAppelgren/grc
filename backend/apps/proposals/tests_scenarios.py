@@ -1428,6 +1428,48 @@ class ProposalsScenarioTests(ScenarioTestCase):
                 for key in (every_scope, bank_key):
                     self.assertEqual(self._post(f"/private-proposals/{proposal.id}/{verb}", body, {"HTTP_X_API_KEY": key.plain_key}).status_code, 401)
 
+    def test_pro_s18(self) -> None:
+        """PRO-S18
+
+        A library editor approves everything waiting with one passkey through
+        approveAllProposals, and the worker does the rest (PRO-02, AC-PRO2, AUD-01).
+        """
+        from django.core.cache import cache
+
+        from apps.agents.seeds import seed_agent_definitions
+        from apps.proposals import baseline
+        from apps.proposals.tests_baseline import _duty, _instrument
+
+        cache.clear()
+        seed_authorities()
+        tenancy.clear_tenant()
+        seed_agent_definitions()
+        folder = self.enterContext(tempfile.TemporaryDirectory())
+        body = {"tranche": "pro-s18", "researchedOn": "2026-11-09", "instruments": [_instrument("pro-s18-a", _duty("obl-pro-s18-a")), _instrument("pro-s18-b", _duty("obl-pro-s18-b"))]}
+        (Path(folder) / "pro-s18.json").write_text(json.dumps(body), encoding="utf-8")
+        self.enterContext(mock.patch.object(baseline, "BASELINE_DIR", Path(folder)))
+        baseline.file()
+        reviewer = factories.platform_user(roles=("library_editor",), email="editor-s18@bleqq.test")
+        own = self._post("/proposals", {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}}, sign_in(reviewer))
+        self.assertEqual(own.status_code, 201, own.content)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            started = self._post("/proposals/approve-all", {}, sign_in(reviewer, step_up=True))
+        self.assertEqual((started.status_code, started.json()["total"]), (202, 2), started.content)
+        tenancy.clear_tenant()
+        instruments = Proposal.objects.filter(payload__key__in=("pro-s18-a", "pro-s18-b"))
+        self.assertEqual({row.status for row in instruments}, {ProposalStatus.APPROVED.value})
+        decision = AuditEvent.objects.get(action="proposal.approve_all_started")
+        approvals = AuditEvent.objects.filter(action="proposal.approved", subject_id__in=[row.id for row in instruments])
+        self.assertEqual(({row.step_up_assertion_id for row in approvals}, approvals.count()), ({decision.step_up_assertion_id}, 2))
+        self.assertEqual(Proposal.objects.get(pk=own.json()["id"]).status, ProposalStatus.OPEN.value)
+
+        later = baseline.file()
+        self.assertEqual(later.filed[("pro-s18", baseline.OBLIGATION)], 2)
+        self.assertEqual(Proposal.objects.filter(payload__key__startswith="obl-pro-s18", status=ProposalStatus.OPEN.value).count(), 2)
+        read = self.client.get(f"{V1}/proposals/approve-all", **sign_in(reviewer)).json()
+        self.assertEqual((read["status"], read["approved"], read["refused"]), ("finished", 2, 0))
+
     def test_pro_s16(self) -> None:
         """PRO-S16
 

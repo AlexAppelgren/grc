@@ -1,6 +1,8 @@
 import { api } from '@/shared/utils/api-client';
 
 import type {
+  ProposalApproveAll,
+  ProposalApproveAllBody,
   ProposalApproveBody,
   ProposalBatch,
   ProposalBatchDecision,
@@ -45,6 +47,16 @@ export async function getProposal(proposalId: string): Promise<ProposalDetail> {
 
 export async function approveProposal(proposalId: string, body: ProposalApproveBody): Promise<ProposalRow> {
   return (await api.post<ProposalRow>(`${PROPOSALS}/${proposalId}/approve`, body)).data;
+}
+
+/** Approve all: the worker approves what waits under the filters now; answers 202 with the run. */
+export async function startApproveAll(body: ProposalApproveAllBody): Promise<ProposalApproveAll> {
+  return (await api.post<ProposalApproveAll>(`${PROPOSALS}/approve-all`, body)).data;
+}
+
+/** The caller's latest Approve all run, `idle` when there is none. */
+export async function readApproveAll(): Promise<ProposalApproveAll> {
+  return (await api.get<ProposalApproveAll>(`${PROPOSALS}/approve-all`)).data;
 }
 
 export async function rejectProposal(proposalId: string, body: ProposalRejectBody): Promise<ProposalRow> {

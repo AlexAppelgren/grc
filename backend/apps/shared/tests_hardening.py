@@ -346,6 +346,11 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "A comment edited or deleted by its author: the same bank's own row, titled by the "
         "record the comment is on."
     ),
+    # Approve all (PRO-02, D-128): the decision itself, before the worker approves each row.
+    "apps/proposals/approve_all.py record(logic.SUBJECT_TYPE) tenant_id=None actor=reviewer.actor title=''": (
+        "A platform person's decision to approve the waiting queue (proposals.review, a session route with a "
+        "step-up); it has no title, and its after names only a count and the queue's filters."
+    ),
     # c11-proposal-batches-decide (PRO-04, PRO-S8).
     "apps/proposals/batch.py record(logic.SUBJECT_TYPE) tenant_id=None actor=reviewer.actor title=proposal.title": (
         "A batch's decision is a platform person's (proposals.review, a session route, and decide refuses "

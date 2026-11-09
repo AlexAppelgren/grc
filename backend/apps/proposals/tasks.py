@@ -12,6 +12,7 @@ from `ProposalsConfig.ready()`, never at import (apps/shared/tests_outbox.py).""
 
 from __future__ import annotations
 
+import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 
@@ -63,3 +64,15 @@ def queue_after_approval(event: OutboxEvent) -> None:
         return
     if cache.add(_QUEUED, True, timeout=wait):
         file_library_baseline.apply_async(countdown=wait)
+
+
+@shared_task
+def approve_listed(user_id: str, proposal_ids: list[str], step_up_assertion_id: str) -> None:
+    """Approve all, run by the worker (apps/proposals/approve_all.py, D-128). Not a
+    `@tenant_task`: the console queue is platform work in the shared zone, as the approve
+    route's own is."""
+    from apps.identity.models import User
+    from apps.proposals import approve_all
+
+    user = User.objects.get(pk=user_id)
+    approve_all.approve_listed(user=user, proposal_ids=proposal_ids, step_up_assertion_id=uuid.UUID(step_up_assertion_id))

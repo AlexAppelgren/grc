@@ -14,12 +14,12 @@ import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
 import { Tabs, TabPanel, type TabDef } from '@/components/ui/Tabs';
 import { useFormatContext } from '@/features/identity/hooks';
 import { presentProposal, proposerLine, refusalReason, selectionBlock, sourceLine, targetLine } from '@/features/proposals/proposal-presentation';
-import { everyProposal, useApproveMany, useProposals, type ApproveManyOutcome } from '@/features/proposals/hooks';
-import { TERM_KINDS, VOCABULARY_KINDS, type ProposalKind, type ProposalOrder, type ProposalQueueRow } from '@/features/proposals/types';
+import { useApproveAll, useApproveMany, useProposals, type ApproveManyOutcome } from '@/features/proposals/hooks';
+import { TERM_KINDS, VOCABULARY_KINDS, type ProposalApproveAll, type ProposalKind, type ProposalOrder, type ProposalQueueRow } from '@/features/proposals/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
 import { cn } from '@/shared/utils/cn';
@@ -190,18 +190,37 @@ function SelectAll({ count, selectedCount, disabled, onChange }: { count: number
 }
 
 /** How a run of approvals ended: how many were approved, and each refusal by its title and the server's reason. */
-function ApproveManyResult({ outcome, onDismiss }: { outcome: ApproveManyOutcome; onDismiss: () => void }) {
+interface ResultRefusal {
+  id: string;
+  title: string;
+  code: string;
+  reason: string;
+}
+
+/** What a page selection's run left: each refusal read from the server's answer. */
+function selectionResult(outcome: ApproveManyOutcome, t: ReturnType<typeof useT>): { approved: number; refused: number; refusals: ResultRefusal[] } {
+  const refusals = outcome.refused.map((refusal) => ({ id: refusal.id, title: refusal.title, code: problemFrom(refusal.error)?.code ?? '', reason: refusalReason(refusal.error, t) }));
+  return { approved: outcome.approved, refused: refusals.length, refusals };
+}
+
+/** What the worker's Approve all run left: its counts and the refusals it kept with their reasons. */
+function allResult(run: ProposalApproveAll, t: ReturnType<typeof useT>): { approved: number; refused: number; refusals: ResultRefusal[] } {
+  const refusals = run.refusals.map((refusal) => ({ ...refusal, reason: refusal.detail === '' ? t('problem.generic') : refusal.detail }));
+  return { approved: run.approved, refused: run.refused, refusals };
+}
+
+function ApproveManyResult({ result, onDismiss }: { result: { approved: number; refused: number; refusals: ResultRefusal[] }; onDismiss: () => void }) {
   const t = useT();
   return (
-    <Notice tone={outcome.refused.length === 0 ? 'plain' : 'warn'} data-approve-many-result="">
-      <p className="font-semibold">{t('console.queue.approveMany.approved', { count: outcome.approved })}</p>
-      {outcome.refused.length === 0 ? null : (
+    <Notice tone={result.refused === 0 ? 'plain' : 'warn'} data-approve-many-result="">
+      <p className="font-semibold">{t('console.queue.approveMany.approved', { count: result.approved })}</p>
+      {result.refused === 0 ? null : (
         <>
-          <p className="mt-1">{t('console.queue.approveMany.refused', { count: outcome.refused.length })}</p>
+          <p className="mt-1">{t('console.queue.approveMany.refused', { count: result.refused })}</p>
           <ul className="m-0 mt-1 grid list-none gap-1 p-0">
-            {outcome.refused.map((refusal) => (
-              <li key={refusal.id} data-approve-many-refused={refusal.id} data-problem-code={problemFrom(refusal.error)?.code}>
-                <b>{refusal.title}</b> <span className="text-meta">{refusalReason(refusal.error, t)}</span>
+            {result.refusals.map((refusal) => (
+              <li key={refusal.id} data-approve-many-refused={refusal.id} data-problem-code={refusal.code}>
+                <b>{refusal.title}</b> <span className="text-meta">{refusal.reason}</span>
               </li>
             ))}
           </ul>
@@ -223,8 +242,14 @@ export function QueueScreen() {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
   const [confirmingAll, setConfirmingAll] = useState(false);
-  const [gathering, setGathering] = useState(false);
   const approveMany = useApproveMany();
+  const approveAll = useApproveAll();
+  const allRun = approveAll.run.data;
+  const allRunning = allRun?.status === 'running';
+  // The finished run's result shows only to whoever watched it run on this page, not on every later visit:
+  // the run seen running is remembered by when it started (state adjusted while rendering, not in an effect).
+  const [watchedRun, setWatchedRun] = useState<string | null>(null);
+  if (allRunning && allRun.startedAt !== watchedRun) setWatchedRun(allRun.startedAt);
 
   const tab = tabFrom(params);
   const filters = filtersFrom(params);
@@ -263,17 +288,11 @@ export function QueueScreen() {
     setConfirming(false);
     approveMany.mutate(chosen, { onSettled: () => setSelected(new Set()) });
   };
-  // Approve all: every waiting proposal these filters match, on every page, approved in turn
-  // through the same route; the ones the selection would refuse (yours, flagged, a batch) are left.
-  const startAll = async () => {
+  // Approve all: the server approves every waiting proposal these filters match, on every page, in
+  // the background, each through the same approval; yours, flagged ones and batches are left.
+  const startAll = () => {
     setConfirmingAll(false);
-    setGathering(true);
-    try {
-      const every = await everyProposal({ status: 'open', kind: kindQueryOf(filters.kind), origin: filters.origin, notMine: filters.notMine, order }, QUEUE_PAGE);
-      approveMany.mutate(every.filter((row) => selectionBlock(row, t) === null));
-    } finally {
-      setGathering(false);
-    }
+    approveAll.start.mutate({ kind: kindQueryOf(filters.kind), origin: filters.origin === '' ? undefined : filters.origin });
   };
 
   const tabs: TabDef[] = [
@@ -322,27 +341,29 @@ export function QueueScreen() {
           <Chip pressed={filters.notMine} onClick={() => go(tab, { notMine: !filters.notMine })}>
             {t('console.queue.filter.notMine')}
           </Chip>
-          {waiting && total > 0 && !busy && !gathering ? (
+          {waiting && total > 0 && !busy && !allRunning && !approveAll.start.isPending ? (
             <Button size="small" className="ml-auto" onClick={() => setConfirmingAll(true)} data-approve-all="">
               {t('console.queue.approveAll.button', { count: total })}
             </Button>
           ) : null}
         </ChipRow>
-        {gathering ? (
-          <p role="status" className="mb-3 font-semibold">
-            {t('console.queue.approveAll.reading')}
+        {allRunning ? (
+          <p role="status" className="mb-3 font-semibold" data-approve-all-progress="">
+            {t('console.queue.approveMany.progress', { current: allRun.approved + allRun.refused, total: allRun.total })}
           </p>
         ) : null}
+        {approveAll.start.isError ? <ProblemAlert error={approveAll.start.error} codes={{ step_up_required: t('problem.stepUpCancelled') }} /> : null}
+        {allRun?.status === 'finished' && watchedRun !== null && allRun.startedAt === watchedRun ? <ApproveManyResult result={allResult(allRun, t)} onDismiss={() => setWatchedRun(null)} /> : null}
         <Modal open={confirmingAll} onOpenChange={setConfirmingAll} title={t('console.queue.approveAll.title', { count: total })} description={t('console.queue.approveAll.body')}>
           <ButtonBar>
             <Button variant="outline" onClick={() => setConfirmingAll(false)}>
               {t('common.cancel')}
             </Button>
-            <Button onClick={() => void startAll()}>{t('console.queue.approveAll.button', { count: total })}</Button>
+            <Button onClick={startAll}>{t('console.queue.approveAll.button', { count: total })}</Button>
           </ButtonBar>
         </Modal>
 
-        {approveMany.isSuccess ? <ApproveManyResult outcome={approveMany.data} onDismiss={() => approveMany.reset()} /> : null}
+        {approveMany.isSuccess ? <ApproveManyResult result={selectionResult(approveMany.data, t)} onDismiss={() => approveMany.reset()} /> : null}
         {busy || (waiting && chosen.length > 0) ? (
           <div role="region" aria-label={t('console.queue.select.selection')} className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-card border border-fg bg-surface px-3.5 py-2.5" data-approve-many="">
             {busy ? (

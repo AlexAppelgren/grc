@@ -286,27 +286,49 @@ describe('the console queue', () => {
     await waitFor(() => expect(screen.queryByText('1 proposal approved.')).toBeNull());
   });
 
-  it('approves all, reading every page the filters match and leaving what a person reviews alone', async () => {
-    // Two pages of 100 and one more, as the server answers by offset; one of them is yours.
-    const page = (offset: number) => Array.from({ length: offset === 200 ? 1 : 100 }, (_, i) => proposal({ id: `p-${offset + i}`, title: `Add instrument ${offset + i}`, isMine: offset + i === 5 }));
+  it('approves all on the server in one call under the filters, then shows the run as it works and how it ended', async () => {
+    const rows = [proposal({ id: 'p-a', title: 'Add instrument A' })];
+    const idle = { status: 'idle', total: 0, approved: 0, refused: 0, refusals: [], startedAt: null, updatedAt: null };
+    const running = { ...idle, status: 'running', total: 201, approved: 40, startedAt: '2026-11-09T13:10:00Z', updatedAt: '2026-11-09T13:10:05Z' };
+    const finished = {
+      ...running,
+      status: 'finished',
+      approved: 200,
+      refused: 1,
+      refusals: [{ id: 'p-9', title: 'Add instrument 9', code: 'invalid_transition', detail: 'This proposal was already decided.' }],
+    };
+    let run: unknown = idle;
+    let reads = 0;
     const sent = installAdapter((s) => {
       if (s.path === '/api/v1/me') return { status: 200, data: editor };
-      if (s.path === PROPOSALS) return { status: 200, data: { items: page(Number((s.params as Record<string, number>).offset ?? 0)), total: 201 } };
-      if (s.path.endsWith('/approve')) return { status: 200, data: {} };
+      if (s.path === PROPOSALS) return { status: 200, data: { items: rows, total: 201 } };
+      if (s.path === `${PROPOSALS}/approve-all` && s.method === 'post') {
+        run = running;
+        return { status: 202, data: running };
+      }
+      if (s.path === `${PROPOSALS}/approve-all`) {
+        reads += 1;
+        if (run === running && reads > 2) run = finished;
+        return { status: 200, data: run };
+      }
       return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
     });
+    nav.search = 'kind=new_obligation';
     renderScreen();
-    await screen.findByRole('link', { name: /Add instrument 0/ });
+    await screen.findByRole('link', { name: /Add instrument A/ });
     fireEvent.click(screen.getByRole('button', { name: 'Approve all 201 proposals' }));
     const dialog = screen.getByRole('dialog', { name: 'Approve all 201 waiting proposals?' });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Approve all 201 proposals' }));
 
+    expect(await screen.findByText('Approving 40 of 201')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Approve all 201 proposals' })).toBeNull();
+    const started = sent.filter((s) => s.method === 'post');
+    expect(started.map((s) => [s.path, s.body])).toEqual([[`${PROPOSALS}/approve-all`, { kind: 'new_obligation' }]]);
+
     expect(await screen.findByText('200 proposals approved.', {}, { timeout: 10000 })).toBeInTheDocument();
-    const approved = sent.filter((s) => s.method === 'post').map((s) => s.path);
-    expect(approved).toHaveLength(200);
-    expect(approved).not.toContain('/api/v1/proposals/p-5/approve');
-    // Every page was read with the queue's own filters, the open ones only.
-    expect(queueReads(sent).filter((params) => params.status === 'open').map((params) => String(params.offset))).toEqual(expect.arrayContaining(['100', '200']));
+    expect(screen.getByText('This proposal was already decided.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(screen.queryByText('200 proposals approved.')).toBeNull());
   });
 
   it('shows how far the run has got while it works', async () => {

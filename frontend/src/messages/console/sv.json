@@ -340,6 +340,5 @@
   "console.queue.filter.kindNewInstrumentSummary": "Ny sammanfattning",
   "console.queue.approveAll.button": "{count, plural, one {Godkänn alla # förslag} other {Godkänn alla # förslag}}",
   "console.queue.approveAll.title": "{count, plural, one {Godkänna det väntande förslaget?} other {Godkänna alla # väntande förslag?}}",
-  "console.queue.approveAll.body": "Varje väntande förslag som filtren visar, på alla sidor, godkänns i tur och ordning, precis som om du öppnade det för sig. Dina egna, flaggade och batcher lämnas till sin egen granskning. Din nyckel efterfrågas först, och igen om den hinner gå ut.",
-  "console.queue.approveAll.reading": "Läser kön…"
+  "console.queue.approveAll.body": "Varje väntande förslag som filtren visar, på alla sidor, godkänns av servern i bakgrunden, vart och ett precis som om du öppnade det för sig. Dina egna, flaggade och batcher lämnas till sin egen granskning. Din nyckel efterfrågas en gång, och du kan lämna sidan medan det pågår."
 }
