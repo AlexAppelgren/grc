@@ -25,7 +25,8 @@ answer at all logs nothing and is asked again on the next run.
 
 The beat (`LIBRARY_TRANSLATION_MINUTES`, which switches the feature off at 0) queues at most
 `LIBRARY_TRANSLATION_RUN_MAX` records, one worker task each, and an approval that adds an
-obligation or an instrument's summary queues that record at once (apps/proposals/tasks.py).
+obligation or an instrument's summary queues the same fan-out a few seconds later, once per
+approval window (apps/proposals/tasks.py).
 A session advisory lock per record means two tasks never ask about one record together.
 """
 

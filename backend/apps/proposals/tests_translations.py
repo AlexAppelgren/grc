@@ -11,6 +11,7 @@ from typing import Any
 from unittest import mock
 
 from django.core.exceptions import ValidationError
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 
 from apps.agents.models import AgentRun
@@ -162,7 +163,12 @@ class Translator(TestCase):
             event = OutboxEvent(topic="obligation.created", payload={"subjectId": str(added.id)})
             tasks.queue_translation(event)
             self.assertFalse(Proposal.objects.filter(payload__key="obl-added").exists(), "switched off in the test settings")
-            with override_settings(LIBRARY_TRANSLATION_MINUTES=60):
+            cache.clear()
+            with override_settings(LIBRARY_TRANSLATION_MINUTES=10):
                 tasks.queue_translation(event)
+                # A second approval inside the window rides the fan-out already queued.
+                with mock.patch.object(tasks.file_library_translations, "apply_async") as again:
+                    tasks.queue_translation(event)
+                again.assert_not_called()
         self.assertTrue(Proposal.objects.filter(kind="new_translations", payload__key="obl-added").exists())
         self.assertIn("apps.proposals.tasks.file_library_translations", tasks.file_library_translations.app.tasks)

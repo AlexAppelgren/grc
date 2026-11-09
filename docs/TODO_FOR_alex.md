@@ -10,7 +10,7 @@ Built on the defaults in D-129; nothing waits on you to use it.
       the model once for every shared regulation and duty whose title or summary lacks one of
       the five content languages: about 2,400 calls for today's library (544 regulations, about
       1,900 duties), at most `LIBRARY_TRANSLATION_RUN_MAX` (100) per beat, every
-      `LIBRARY_TRANSLATION_MINUTES` (60), so about a day to work through. After that only new
+      `LIBRARY_TRANSLATION_MINUTES` (10), so a few hours to work through. After that only new
       records and new summaries cost a call. Each call is in the AI output log with its cost.
       Default: on. **`LIBRARY_TRANSLATION_MINUTES=0` turns it off**, beat and approvals alike.
 - [ ] **A person approves every translation.** About 2,400 `new_translations` proposals reach

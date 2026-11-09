@@ -78,7 +78,8 @@ files them (`apps/proposals/translations.py`): one logged model call per record 
 screened like any proposal, a record skipped while one of its translation proposals is open
 and never asked again in the same words. The beat queues at most
 `LIBRARY_TRANSLATION_RUN_MAX` records per `LIBRARY_TRANSLATION_MINUTES`, one task each, and an
-approval adding an obligation or an instrument's summary queues that record; 0 minutes
+approval adding an obligation or an instrument's summary queues the same fan-out once per
+approval window; 0 minutes
 switches both off. A translation row names no confirming agent, so an agent's approval is 409
 `person_review_required` (D-79): a person approves, one at a time or with Approve all.
 

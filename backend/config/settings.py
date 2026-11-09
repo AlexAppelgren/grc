@@ -808,12 +808,12 @@ if LIBRARY_BASELINE_ON_APPROVAL_S < 0:
 # How often the beat files machine translations of the shared records whose title or summary
 # lacks a content language, as `new_translations` proposals of `library-translator`, in
 # minutes. Each record costs one model call, so this is the switch for the whole feature: 0
-# turns off both the beat and the filing queued when an approval adds an obligation or an
-# instrument's summary. Off under E2E_MODE and in the test settings; below 0 refuses to boot.
+# turns off both the beat and the fan-out queued after an approval that adds an obligation or
+# an instrument's summary (one per approval window, however many were approved). Off under E2E_MODE and in the test settings; below 0 refuses to boot.
 # At most LIBRARY_TRANSLATION_RUN_MAX records are queued per beat, one task each, and a
 # translated text longer than LIBRARY_TRANSLATION_TEXT_MAX_CHARS is refused, whoever wrote it.
 # ---------------------------------------------------------------------------------------
-LIBRARY_TRANSLATION_MINUTES = env_int("LIBRARY_TRANSLATION_MINUTES", 0 if E2E_MODE else 60)
+LIBRARY_TRANSLATION_MINUTES = env_int("LIBRARY_TRANSLATION_MINUTES", 0 if E2E_MODE else 10)
 LIBRARY_TRANSLATION_RUN_MAX = env_int("LIBRARY_TRANSLATION_RUN_MAX", 100)
 LIBRARY_TRANSLATION_TEXT_MAX_CHARS = env_int("LIBRARY_TRANSLATION_TEXT_MAX_CHARS", 8000)
 if LIBRARY_TRANSLATION_MINUTES < 0 or LIBRARY_TRANSLATION_RUN_MAX < 1 or not 1 <= LIBRARY_TRANSLATION_TEXT_MAX_CHARS <= PROPOSAL_TEXT_MAX_CHARS:
