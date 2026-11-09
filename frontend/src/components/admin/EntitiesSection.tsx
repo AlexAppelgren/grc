@@ -198,7 +198,11 @@ function RegisterFacts({ unit }: { unit: OrgUnitRow }) {
             </ul>
           </Detail>
         ) : null}
-        {facts !== undefined && facts.branches.length > 0 ? <Detail term={t('admin.org.registers.branches')}>{branchesLine(facts.branches, t)}</Detail> : null}
+        {facts !== undefined && !facts.branchesRead ? (
+          <Detail term={t('admin.org.registers.branches')}>{t('admin.org.registers.branchesUnread', { authority: entry?.authority.name ?? '' })}</Detail>
+        ) : facts !== undefined && facts.branches.length > 0 ? (
+          <Detail term={t('admin.org.registers.branches')}>{branchesLine(facts.branches, t)}</Detail>
+        ) : null}
         {entry !== null && entry.unmapped.length > 0 ? (
           <Detail term={t('admin.org.registers.unmapped')}>
             <span className="font-mono">{entry.unmapped.join(' · ')}</span>
@@ -232,6 +236,7 @@ function LookupCompany({ entity, authorityName, chosen, disabled, onToggle }: { 
             {entity.facts !== null ? <span>{entity.facts.mainBusiness}</span> : null}
             {entity.facts !== null ? <span>{t('admin.org.registers.licenceCount', { count: entity.facts.licences.length })}</span> : null}
             {status !== null ? <span>{status}</span> : null}
+            {entity.facts !== null && !entity.facts.branchesRead ? <span>{t('admin.org.registers.branchesUnread', { authority: authorityName })}</span> : null}
           </span>
         }
       />

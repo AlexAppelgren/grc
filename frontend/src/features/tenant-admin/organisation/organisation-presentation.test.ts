@@ -178,6 +178,7 @@ describe('the public registers (TEN-07)', () => {
       { name: 'Example Bank AB, filial i Danmark', countryName: 'Danmark', jurisdiction: 'dk' },
       { name: 'Example Bank AB, filial i Ukraina', countryName: '', jurisdiction: null },
     ],
+    branchesRead: true,
     listed: true,
   };
   const company = (lei: string, overrides: Partial<RegisterLookupEntity> = {}): RegisterLookupEntity => ({

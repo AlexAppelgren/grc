@@ -1070,6 +1070,15 @@ class RegisterFacts(CamelSchema):
     branches: list[RegisterFactsBranch] = Field(
         description="The company's branches abroad as the register lists them; an empty list when it has none or is no longer listed."
     )
+    branches_read: bool = Field(
+        default=True,
+        description=(
+            "False when the register's own page for the company could not be read, so `branches` "
+            "is empty and says nothing about whether it has any: add the countries its branches "
+            "are in to the scope by hand. True when the branches were read, or the company is no "
+            "longer listed."
+        ),
+    )
     listed: bool = Field(
         description=(
             "True while the register lists the company. False when a later read found it gone: its "

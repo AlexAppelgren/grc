@@ -150,6 +150,30 @@ class WhereACompanyGoes(RegistersCase):
         self.assertEqual(changed.after["branchesRemoved"], ["Example Bank AB, filial i Norge"])
 
 
+    def test_a_lookup_whose_branch_pages_were_refused_still_brings_the_licences(self) -> None:
+        # FI turns away a scripted read of its company pages (2026-11-09): the licences come
+        # from its export, and the facts say the branches were not read.
+        read = MockRegisters().licence_facts("fi", "556000-0001")
+        assert read is not None
+        MockRegisters.override("556000-0001", dataclasses.replace(read, branches=(), branches_read=False))
+        self.apply(self.lookup(), [BANK_LEI])
+        facts = RegisterEntry.objects.get().facts
+        self.assertEqual((len(facts["licences"]), facts["branches"], facts["branchesRead"]), (len(read.licences), [], False))
+
+    def test_unread_branch_pages_never_read_as_branches_closed(self) -> None:
+        self.apply(self.lookup(), [BANK_LEI])
+        read = MockRegisters().licence_facts("fi", "556000-0001")
+        assert read is not None
+        MockRegisters.override("556000-0001", dataclasses.replace(read, branches=(), branches_read=False))
+        # A newer lookup and the nightly re-read both keep the stored branches.
+        self.apply(self.lookup(), [BANK_LEI])
+        tasks.recheck_tenant_registers(str(self.tenant.id))
+        tenancy.activate(self.tenant.id)
+        entry = RegisterEntry.objects.get()
+        self.assertEqual((entry.version, len(entry.facts["branches"]), entry.facts["branchesRead"]), (1, len(read.branches), True))
+        self.assertFalse(AuditEvent.objects.filter(action="register_entry.changed").exists())
+
+
 class TheReRead(RegistersCase):
     def test_a_company_gone_from_the_register_is_unlisted_with_its_licences_removed(self) -> None:
         self.apply(self.lookup(), [BANK_LEI])

@@ -8,6 +8,8 @@ failure a `RegisterUnavailable`."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import http.client
 import io
 import json
@@ -117,9 +119,10 @@ def answers() -> dict[str, bytes]:
 
 
 class Opened:
-    """`_open` replaced by a table: an address it does not hold is a test failure, never a read."""
+    """`_open` replaced by a table: an address it does not hold is a test failure, never a read;
+    an error in the table is what that address raises."""
 
-    def __init__(self, table: dict[str, bytes]) -> None:
+    def __init__(self, table: Mapping[str, bytes | Exception]) -> None:
         self.table = table
         self.urls: list[str] = []
 
@@ -127,7 +130,10 @@ class Opened:
         self.urls.append(url)
         if url not in self.table:
             raise AssertionError(f"the adapter read an address the test did not expect: {url}")
-        return self.table[url]
+        answer = self.table[url]
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
 
 
 class LiveGleif(SimpleTestCase):
@@ -247,14 +253,32 @@ class LiveFinansinspektionen(SimpleTestCase):
             "an empty file": (f"{FI}/index?query=556000-0001&format=csv", b""),
             "a short row": (f"{FI}/index?query=556000-0001&format=csv", fi_csv("Example Bank AB;556000-0001")),
             "not utf-8": (f"{FI}/index?query=556000-0001&format=csv", HEADER.encode("utf-16")),
-            "a company page without its number": (f"{FI}/details?id=11", b"<html><h1>Foretagsregistret</h1></html>"),
-            "a branch page without an address": (f"{FI}/details?id=21", "<html><h1>Företagsregistret</h1><h2>Filial</h2></html>".encode()),
-            "a branch page without a name": (f"{FI}/details?id=22", "<html><h1>Företagsregistret</h1><dl><dt>Adress</dt><dd>Norge</dd></dl></html>".encode()),
         }
         for case, (url, body) in cases.items():
             with self.subTest(case), mock.patch.object(registers, "_open", Opened({**answers(), url: body})):
                 with self.assertRaises(RegisterUnavailable):
                     LiveRegisters().licence_facts("fi", "556000-0001")
+
+    def test_an_unreadable_company_page_costs_the_branches_never_the_licences(self) -> None:
+        # FI sends a scripted read of a company page to its 404 page (2026-11-09) while its
+        # export answers; a page of another shape is no guess either.
+        cases: dict[str, tuple[str, bytes | Exception]] = {
+            "the page refused": (f"{FI}/details?id=11", RegisterUnavailable("a register answered 302")),
+            "a company page without its number": (f"{FI}/details?id=11", b"<html><h1>Foretagsregistret</h1></html>"),
+            "a branch page without an address": (f"{FI}/details?id=21", "<html><h1>Företagsregistret</h1><h2>Filial</h2></html>".encode()),
+            "a branch page without a name": (f"{FI}/details?id=22", "<html><h1>Företagsregistret</h1><dl><dt>Adress</dt><dd>Norge</dd></dl></html>".encode()),
+        }
+        for case, (url, answer) in cases.items():
+            with self.subTest(case), mock.patch.object(registers, "_open", Opened({**answers(), url: answer})):
+                facts = LiveRegisters().licence_facts("fi", "556000-0001")
+                assert facts is not None
+                self.assertEqual(len(facts.licences), 3)
+                self.assertEqual((facts.branches, facts.branches_read), ((), False))
+
+    def test_branches_read_is_true_when_the_pages_answer(self) -> None:
+        facts = LiveRegisters().licence_facts("fi", "556000-0001")
+        assert facts is not None
+        self.assertTrue(facts.branches_read)
 
     def test_a_register_text_is_one_clean_line_of_bounded_length(self) -> None:
         row = "Example\u202e Bank\tAB;556000-0001;;Bankaktiebolag;;2001-05-01 - " + "x" * 2000

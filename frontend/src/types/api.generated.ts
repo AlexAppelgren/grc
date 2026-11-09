@@ -26120,6 +26120,12 @@ export interface components {
              */
             branches: components["schemas"]["RegisterFactsBranch"][];
             /**
+             * Branchesread
+             * @description False when the register's own page for the company could not be read, so `branches` is empty and says nothing about whether it has any: add the countries its branches are in to the scope by hand. True when the branches were read, or the company is no longer listed.
+             * @default true
+             */
+            branchesRead: boolean;
+            /**
              * Lei
              * @description The company's legal entity identifier (ISO 17442) as the register writes it; empty when the register gives none.
              */

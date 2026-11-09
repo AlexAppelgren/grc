@@ -183,6 +183,7 @@ describe('filling in from the public registers (TEN-07, TEN-S13)', () => {
     otherBusinesses: [],
     licences: Array.from({ length: licences }, (_, i) => ({ text: `Licence ${i + 1}`, grantedOn: null })),
     branches: [],
+    branchesRead: true,
     listed: true,
   });
   const found = (lei: string, name: string, overrides: Record<string, unknown>) => ({
@@ -310,5 +311,21 @@ describe('filling in from the public registers (TEN-07, TEN-S13)', () => {
     fireEvent.click(show);
     expect(within(block).getByText('Tillstånd att driva bankrörelse')).toBeVisible();
     expect(within(block).getByRole('button', { name: 'Hide licences' })).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it("says when the register would not show a company's branches, so their countries go in the scope by hand", async () => {
+    const entry = {
+      authority: { key: 'fi', name: 'Finansinspektionen' },
+      facts: { ...facts('Example Bank AB', 'Bankaktiebolag', 2), branchesRead: false },
+      sourceUrl: 'https://www.fi.se/',
+      readAt: '2026-10-05T03:17:00Z',
+      changedAt: '2026-10-05T03:17:00Z',
+      unmapped: [],
+    };
+    registers(null, [{ ...bank, licences: [banking], registerEntry: entry, scopeExclusions: [] }]);
+    await renderSection([]);
+    const block = document.querySelector<HTMLElement>('[data-register-facts]')!;
+    expect(block).toHaveTextContent("BranchesFinansinspektionen's register would not show its branches. Add their countries to the regulatory scope by hand.");
+    expect(within(block).getByRole('button', { name: 'Show 2 licences' })).toBeInTheDocument();
   });
 });
