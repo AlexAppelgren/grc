@@ -88,6 +88,9 @@ PLATFORM_ROUTE_REQUESTS: dict[str, tuple[str, str, dict[str, Any] | None]] = {
     "listProposals": ("GET", "/proposals", None),
     "getProposal": ("GET", f"/proposals/{_ANY_ID}", None),
     "approveProposal": ("POST", f"/proposals/{_ANY_ID}/approve", {}),
+    # Approve all, run by the worker (D-128), and the read of its progress.
+    "approveAllProposals": ("POST", "/proposals/approve-all", {}),
+    "readApproveAllProposals": ("GET", "/proposals/approve-all", None),
     "rejectProposal": ("POST", f"/proposals/{_ANY_ID}/reject", {"rejectionCode": "other"}),
     # The console's own view of registered changes, gated by `proposals.review` like the
     # queue beside it: a library editor curates what an agent registered (WAT-01).
