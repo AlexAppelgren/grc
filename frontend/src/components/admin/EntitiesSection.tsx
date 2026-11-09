@@ -169,7 +169,7 @@ export function EntitiesSection() {
   );
 }
 
-/** What the register says about an entity (state "register-facts"): its businesses, its licences behind a disclosure, its branches, what the scope does not use, and the exclusions an approved scope request gave it. */
+/** What the register says about an entity (state "register-facts"): its businesses, its licences behind a disclosure, its branches, and the exclusions an approved scope request gave it. A register code the mapping does not know is the platform's to resolve, never the bank's, so it is not shown here (D-126). */
 function RegisterFacts({ unit }: { unit: OrgUnitRow }) {
   const t = useT();
   const ctx = useFormatContext();
@@ -202,11 +202,6 @@ function RegisterFacts({ unit }: { unit: OrgUnitRow }) {
           <Detail term={t('admin.org.registers.branches')}>{t('admin.org.registers.branchesUnread', { authority: entry?.authority.name ?? '' })}</Detail>
         ) : facts !== undefined && facts.branches.length > 0 ? (
           <Detail term={t('admin.org.registers.branches')}>{branchesLine(facts.branches, t)}</Detail>
-        ) : null}
-        {entry !== null && entry.unmapped.length > 0 ? (
-          <Detail term={t('admin.org.registers.unmapped')}>
-            <span className="font-mono">{entry.unmapped.join(' · ')}</span>
-          </Detail>
         ) : null}
         {outside.length > 0 ? <Detail term={t('admin.org.registers.outside')}>{outside.map((term) => term.label).join(', ')}</Detail> : null}
       </dl>

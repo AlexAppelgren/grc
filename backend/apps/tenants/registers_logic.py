@@ -2,8 +2,9 @@
 
 `register_terms.json` beside this module maps a register's own wording to term keys, per
 authority: `categories` maps a business name exactly as the register writes it (main or
-other business), and `licences` a phrase found in a licence's text, compared
-case-insensitively. A company's derived terms are the union over its categories and its
+other business), and `licences` a phrase found in a licence's text (`contains`), or a bare
+licence code that is the whole of the line (`equals`, so IRK never matches IRKA), each
+compared case-insensitively. A company's derived terms are the union over its categories and its
 licences: what its licences allow, not what it chooses to do. A name or a licence the file
 does not know is listed as unmapped and maps to nothing; nothing is guessed.
 
@@ -39,7 +40,9 @@ _TERM = re.compile(r"([a-z][a-z0-9_]*):([a-z0-9][a-z0-9_]*)")
 @dataclass(frozen=True)
 class _Mapping:
     categories: dict[str, tuple[tuple[str, str], ...]]
-    licences: tuple[tuple[str, tuple[tuple[str, str], ...]], ...]
+    # (phrase, terms, whole line): a `contains` rule matches inside a line, an `equals` rule
+    # only the whole of it.
+    licences: tuple[tuple[str, tuple[tuple[str, str], ...], bool], ...]
 
 
 def _terms(value: object, where: str) -> tuple[tuple[str, str], ...]:
@@ -61,9 +64,11 @@ def _mappings() -> dict[str, _Mapping]:
             raise ImproperlyConfigured(f"{MAPPING_FILE.name}: {authority} must hold `categories` and `licences`")
         licences = []
         for rule in spec["licences"]:
-            if not isinstance(rule, dict) or not isinstance(rule.get("contains"), str) or not rule["contains"].strip():
-                raise ImproperlyConfigured(f"{MAPPING_FILE.name}: every licence rule of {authority} needs a phrase in `contains`")
-            licences.append((rule["contains"].casefold(), _terms(rule.get("terms"), f"{authority} licence {rule['contains']!r}")))
+            exact = isinstance(rule, dict) and "equals" in rule
+            phrase = rule.get("equals" if exact else "contains") if isinstance(rule, dict) else None
+            if not isinstance(phrase, str) or not phrase.strip():
+                raise ImproperlyConfigured(f"{MAPPING_FILE.name}: every licence rule of {authority} needs a phrase in `contains` or a code in `equals`")
+            licences.append((phrase.strip().casefold(), _terms(rule.get("terms"), f"{authority} licence {phrase!r}"), exact))
         mappings[authority] = _Mapping(
             categories={name: _terms(terms, f"{authority} category {name!r}") for name, terms in spec["categories"].items()},
             licences=tuple(licences),
@@ -114,7 +119,8 @@ def split_businesses(authority_key: str, text: str) -> tuple[list[str], list[str
 # ---------------------------------------------------------------------------------------
 def _licence_terms(mapping: _Mapping, text: str) -> list[tuple[str, str]] | None:
     """The terms a licence line gives, or None when it matches no phrase."""
-    hits = [terms for phrase, terms in mapping.licences if phrase in text.casefold()]
+    line = text.strip().casefold()
+    hits = [terms for phrase, terms, exact in mapping.licences if (phrase == line if exact else phrase in line)]
     return [term for terms in hits for term in terms] if hits else None
 
 
@@ -154,7 +160,7 @@ def derivable_terms(authority_key: str) -> dict[str, set[str]]:
     PUBLIC_REGISTERS.md 4.1. A term outside it is a choice no licence answers."""
     mapping = _mapping(authority_key)
     terms = [term for terms in mapping.categories.values() for term in terms]
-    terms.extend(term for _, terms in mapping.licences for term in terms)
+    terms.extend(term for _, terms, _exact in mapping.licences for term in terms)
     return _grouped(terms)
 
 
@@ -197,7 +203,9 @@ def _jurisdictions_by_name() -> dict[str, str]:
     jurisdiction it names. A register writes countries in its own language (`Danmark`), which
     is one of the labels."""
     rows = JurisdictionLabel.objects.filter(vocabulary__active=True, vocabulary__kind=JurisdictionKind.COUNTRY.value)
-    return {text.casefold(): key for text, key in rows.order_by("vocabulary__sort_order", "language").values_list("text", "vocabulary__key")}
+    names = {text.casefold(): key for text, key in rows.order_by("vocabulary__sort_order", "language").values_list("text", "vocabulary__key")}
+    # The EBA's register writes a country as its ISO code (`DK`), which is the jurisdiction's key.
+    return {**{key: key for key in names.values()}, **names}
 
 
 def branch_jurisdictions(facts: RegisterFacts) -> set[str]:

@@ -303,7 +303,7 @@ describe('filling in from the public registers (TEN-07, TEN-S13)', () => {
     const block = document.querySelector<HTMLElement>('[data-register-facts]')!;
     expect(block).toHaveTextContent('BusinessBankaktiebolag · Värdepappersbolag');
     expect(block).toHaveTextContent('BranchesExample Bank AB, filial i Danmark (Danmark)');
-    expect(block).toHaveTextContent('Not used for the scopeIM_MR_SA');
+    expect(block).not.toHaveTextContent('Not used for the scope');
     expect(block).toHaveTextContent("Outside this company's scopeInsurance, Advice");
     expect(screen.getByText(/^Read from Finansinspektionen's register on /)).toBeInTheDocument();
     const show = within(block).getByRole('button', { name: 'Show 2 licences' });
@@ -325,7 +325,7 @@ describe('filling in from the public registers (TEN-07, TEN-S13)', () => {
     registers(null, [{ ...bank, licences: [banking], registerEntry: entry, scopeExclusions: [] }]);
     await renderSection([]);
     const block = document.querySelector<HTMLElement>('[data-register-facts]')!;
-    expect(block).toHaveTextContent("BranchesFinansinspektionen's register would not show its branches. Add their countries to the regulatory scope by hand.");
+    expect(block).toHaveTextContent("BranchesNeither Finansinspektionen's register nor the EBA's would show its branches just now. They are read again tonight.");
     expect(within(block).getByRole('button', { name: 'Show 2 licences' })).toBeInTheDocument();
   });
 });

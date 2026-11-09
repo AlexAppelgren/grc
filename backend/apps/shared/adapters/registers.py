@@ -198,16 +198,16 @@ _OPENER = urllib.request.build_opener(_RefuseRedirects)
 
 def _allowed(url: str) -> bool:
     parts = urllib.parse.urlsplit(url)
-    hosts = {urllib.parse.urlsplit(base).netloc for base in (settings.REGISTERS_GLEIF_URL, settings.REGISTERS_FI_URL)}
+    hosts = {urllib.parse.urlsplit(base).netloc for base in (settings.REGISTERS_GLEIF_URL, settings.REGISTERS_FI_URL, settings.REGISTERS_EBA_URL)}
     return parts.scheme == "https" and parts.netloc in hosts
 
 
 def _open(url: str) -> bytes:
     """The body at `url`, at most REGISTERS_MAX_BYTES of it. Only an https address on one of
-    the two configured hosts is opened; a test replaces this function."""
+    the configured hosts is opened; a test replaces this function."""
     if not _allowed(url):
         raise RegisterUnavailable("only the configured registers are read")
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310 _allowed() admits https on the two configured hosts only
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310 _allowed() admits https on the configured hosts only
     started = time.monotonic()
     try:
         with _OPENER.open(request, timeout=settings.REGISTERS_TIMEOUT_SECONDS) as response:
@@ -450,12 +450,17 @@ class LiveRegisters(RegistersAdapter):
             return None
         licences = tuple(licence for licence in (_licence(cell) for cell in row[5:]) if licence is not None)
         # FI's company pages turn away a scripted read (2026-11-09) while its export answers, so
-        # an unreadable page costs the branches, never the licences.
+        # an unreadable page costs the branches, never the licences. The EBA's register then
+        # answers a credit institution's EEA branches by its LEI (D-126); when that fails too,
+        # the branches are unknown, never reported as none.
         try:
             branches, branches_read = self._branches(registration_number, wanted), True
         except RegisterUnavailable:
-            logger.warning("register branch pages unreadable", extra={"provider": "live"})
-            branches, branches_read = (), False
+            try:
+                branches, branches_read = self._eba_branches(_clean(row[2], 20)), True
+            except RegisterUnavailable:
+                logger.warning("register branch pages unreadable", extra={"provider": "live"})
+                branches, branches_read = (), False
         return LicenceFacts(
             name=_clean(row[0], NAME_MAX),
             registration_number=_clean(row[1], 40),
@@ -489,6 +494,28 @@ class LiveRegisters(RegistersAdapter):
         if not after or address is None:
             raise RegisterUnavailable("FI's register changed its branch page")
         return RegisterBranch(name=_clean(after[0], NAME_MAX), country_name=address[-1] if address else "")
+
+    @staticmethod
+    def _eba_branches(lei: str) -> tuple[RegisterBranch, ...]:
+        """A credit institution's branches in other EEA countries from the EBA's Credit
+        Institutions Register, each with its host country as the ISO code the EBA writes
+        (`DK`). Not a credit institution, or no LEI, is unavailable: the register says nothing
+        about it."""
+        if not LEI.fullmatch(lei):
+            raise RegisterUnavailable("the EBA's register is read by LEI")
+        document = _json(_open(f"{settings.REGISTERS_EBA_URL}/cir-api/relatedEntities/CRD_CRE_INS.{lei}"))
+        children = document.get("children") if isinstance(document, dict) else None
+        if not isinstance(children, list):
+            raise RegisterUnavailable("the EBA's register changed its answer")
+        branches = []
+        for child in children:
+            if not isinstance(child, dict) or child.get("EntityType") != "CRD_EEA_BRA":
+                continue
+            facts = {key: value for item in child.get("Properties", []) if isinstance(item, dict) for key, value in item.items()}
+            name, country = facts.get("ENT_NAM"), facts.get("ENT_COU_RES")
+            if isinstance(name, str) and isinstance(country, str) and re.fullmatch(r"[A-Z]{2}", country):
+                branches.append(RegisterBranch(name=_clean(name, NAME_MAX), country_name=country))
+        return tuple(branches[: settings.REGISTERS_MAX_BRANCHES])
 
     @staticmethod
     def _details(link: str) -> str:

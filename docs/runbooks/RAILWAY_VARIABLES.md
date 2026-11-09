@@ -49,6 +49,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `REGISTERS_PROVIDER` | api, worker | `mock` | `mock` | unset (`live`) | `live` or `mock` (TEN-07, TEN-08). Unset, it is `live` when deployed and `mock` elsewhere, so no deployed variable is needed; `mock` is refused deployed outside `test` (rule 5) |
 | `REGISTERS_GLEIF_URL` | worker | `https://api.gleif.org/api/v1` | same | same | GLEIF's API; must be https. The adapter reads only this host and the next one's |
 | `REGISTERS_FI_URL` | worker | `https://www.fi.se/sv/vara-register/foretagsregistret` | same | same | Finansinspektionen's company register; must be https |
+| `REGISTERS_EBA_URL` | api, worker | `https://euclid.eba.europa.eu/register` | same | same | The EBA's Credit Institutions Register, read by LEI for a credit institution's EEA branches when FI's company pages refuse a scripted read (D-126). An https address, or the app refuses to boot |
 | `REGISTERS_TIMEOUT_SECONDS` | worker | `10` | `10` | `10` | Per socket operation of one register read, 1 to 120; a timeout fails the lookup with `register_unavailable` |
 | `REGISTERS_MAX_BYTES` | worker | `2000000` | `2000000` | `2000000` | The most one register read keeps, 10000 to 50000000; more fails the read |
 | `REGISTERS_MAX_ENTITIES` | worker | `100` | `100` | `100` | The most companies one lookup walks in GLEIF's tree, 1 to 500 |

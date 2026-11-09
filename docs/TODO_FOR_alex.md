@@ -2538,3 +2538,19 @@ Unknown paths on the public host go to the app host, which answers them 404 as t
 not named in either variable, such as the service's own `*.up.railway.app` address, behaves as
 before. `docs/assurance/` held nothing yet, so this package added `network-access.md` there
 alone; chunk 14's `README.md` lists it.
+
+## d126-register-codes: licence codes Finansinspektionen defines nowhere public (2026-11-09, D-126)
+
+Every business name and licence line in FI's register is now mapped from FI's own sources,
+except 18 bare codes that no FI source found defines: FI's code list stops at 2018. They are
+left unmapped rather than guessed, so they add nothing to any bank's scope suggestion.
+
+- [ ] **Ask FI** (finansinspektionen@fi.se, subject "Sökning företagsregistret") for the
+      meaning of: IM_MR_SA, IM_MR_VARSVAR, SAKRVP, HDP, LDP (SEB carries these five), SWPR,
+      12:6, KL2, KL3, KL4U, VPOMA, sNSFR, OASA, FAIF, EU17, LMT1, LMT4, IM_SRW. Send the answer
+      on and they go into `backend/apps/tenants/register_terms.json`.
+- [ ] **Decide the IPS licence** ("Tillstånd att bedriva pensionssparrörelse (IPS)"). It fits
+      `account_type:pension`, but mapping it lets the group-scope rule propose taking pension
+      out of a group company that offers pension through insurance without an IPS licence.
+      Left unmapped until you say which way.
+

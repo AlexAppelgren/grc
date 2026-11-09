@@ -921,6 +921,9 @@ SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
 REGISTERS_PROVIDER = env_str("REGISTERS_PROVIDER", "live" if IS_DEPLOYED_ENVIRONMENT else "mock")  # live | mock
 REGISTERS_GLEIF_URL = env_str("REGISTERS_GLEIF_URL", "https://api.gleif.org/api/v1")
 REGISTERS_FI_URL = env_str("REGISTERS_FI_URL", "https://www.fi.se/sv/vara-register/foretagsregistret")
+# The EBA's Credit Institutions Register: a credit institution's branches in other EEA
+# countries, read by LEI when FI's company pages turn a scripted read away (D-126).
+REGISTERS_EBA_URL = env_str("REGISTERS_EBA_URL", "https://euclid.eba.europa.eu/register")
 REGISTERS_TIMEOUT_SECONDS = env_int("REGISTERS_TIMEOUT_SECONDS", 10)
 REGISTERS_MAX_BYTES = env_int("REGISTERS_MAX_BYTES", 2_000_000)
 REGISTERS_MAX_ENTITIES = env_int("REGISTERS_MAX_ENTITIES", 100)
@@ -929,8 +932,8 @@ REGISTERS_RECHECK_HOUR = env_int("REGISTERS_RECHECK_HOUR", 3)
 REGISTERS_JOB_SECONDS = env_int("REGISTERS_JOB_SECONDS", 300)
 if REGISTERS_PROVIDER not in ("live", "mock"):
     raise ImproperlyConfigured(f"REGISTERS_PROVIDER must be live or mock, got {REGISTERS_PROVIDER!r}")
-if not (REGISTERS_GLEIF_URL.startswith("https://") and REGISTERS_FI_URL.startswith("https://")):
-    raise ImproperlyConfigured("REGISTERS_GLEIF_URL and REGISTERS_FI_URL must be https addresses")
+if not all(url.startswith("https://") for url in (REGISTERS_GLEIF_URL, REGISTERS_FI_URL, REGISTERS_EBA_URL)):
+    raise ImproperlyConfigured("REGISTERS_GLEIF_URL, REGISTERS_FI_URL and REGISTERS_EBA_URL must be https addresses")
 if not 1 <= REGISTERS_TIMEOUT_SECONDS <= 120:
     raise ImproperlyConfigured("REGISTERS_TIMEOUT_SECONDS must be between 1 and 120")
 if not 10_000 <= REGISTERS_MAX_BYTES <= 50_000_000:

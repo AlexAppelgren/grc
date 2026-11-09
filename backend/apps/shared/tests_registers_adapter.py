@@ -35,6 +35,7 @@ from apps.shared.adapters.registers import (
 GLEIF = "https://api.gleif.org/api/v1"
 FI = "https://www.fi.se/sv/vara-register/foretagsregistret"
 BANK_LEI = "549300EXAMPLEBANK001"
+EBA = "https://euclid.eba.europa.eu/register"
 HEADER = "Namn;Org.nummer;LEI kod;Huvudverksamhet;Övriga verksamheter;Tillstånd 1;Tillstånd 2;Tillstånd 3;et.c."
 
 
@@ -90,7 +91,7 @@ BANK_PAGE = details(
 )
 
 
-def answers() -> dict[str, bytes]:
+def answers() -> dict[str, bytes | Exception]:
     """The registers as the live provider reads them, by address."""
     search = urllib.parse.urlencode({"filter[entity.registeredAs]": "556000-0001", "page[size]": 10})
     children = f"{GLEIF}/lei-records/{BANK_LEI}/direct-children"
@@ -115,6 +116,8 @@ def answers() -> dict[str, bytes]:
             name="Example Bank AB, filial i Danmark", number="", address=("Bernstorffsgade 50", "1577 Copenhagen V", "Danmark")
         ),
         f"{FI}/details?id=22": details(name="Example Bank AB, filial i Norge", number="", address=("Postboks 1", "0123 Oslo", "Norge")),
+        # The EBA's register is read only when FI's pages refuse; by default it refuses too.
+        f"{EBA}/cir-api/relatedEntities/CRD_CRE_INS.{BANK_LEI}": RegisterUnavailable("a register answered 403"),
     }
 
 
@@ -274,6 +277,26 @@ class LiveFinansinspektionen(SimpleTestCase):
                 assert facts is not None
                 self.assertEqual(len(facts.licences), 3)
                 self.assertEqual((facts.branches, facts.branches_read), ((), False))
+
+    def test_when_fis_pages_refuse_the_ebas_register_answers_the_eea_branches(self) -> None:
+        """D-126: FI's company page refused, the EBA's Credit Institutions Register is read by
+        LEI and its EEA branches stand in, each with its host country's ISO code; a child of
+        another kind (a payment agent) is left out."""
+        eba = {
+            "children": [
+                {"EntityType": "CRD_EEA_BRA", "Properties": [{"ENT_NAM": "Example Bank AB, filial i Danmark"}, {"ENT_COU_RES": "DK"}]},
+                {"EntityType": "CRD_EEA_BRA", "Properties": [{"ENT_NAM": "Example Bank AB Oslofilialen"}, {"ENT_COU_RES": "NO"}]},
+                {"EntityType": "PSD_AG", "Properties": [{"ENT_NAM": "An agent"}, {"ENT_COU_RES": "SE"}]},
+            ]
+        }
+        table = {**answers(), f"{FI}/details?id=11": RegisterUnavailable("a register answered 302"), f"{EBA}/cir-api/relatedEntities/CRD_CRE_INS.{BANK_LEI}": json.dumps(eba).encode()}
+        with mock.patch.object(registers, "_open", Opened(table)):
+            facts = LiveRegisters().licence_facts("fi", "556000-0001")
+        assert facts is not None
+        self.assertEqual(
+            (facts.branches, facts.branches_read),
+            ((RegisterBranch("Example Bank AB, filial i Danmark", "DK"), RegisterBranch("Example Bank AB Oslofilialen", "NO")), True),
+        )
 
     def test_branches_read_is_true_when_the_pages_answer(self) -> None:
         facts = LiveRegisters().licence_facts("fi", "556000-0001")

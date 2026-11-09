@@ -96,6 +96,21 @@ class DerivedTerms(RegisterWorld):
         odd = self.facts("556000-0001").model_copy(update={"main_business": "Okänt bolag", "other_businesses": ["Värdepappersbolag", "Nytt slag"]})
         self.assertEqual(registers_logic.unmapped(FI, odd), ["Okänt bolag", "Nytt slag", "IM_MR_SA"])
 
+    def test_a_bare_code_matches_only_the_whole_line_and_the_registers_codes_are_read(self) -> None:
+        """FI's full register is mapped from its own sources (D-126): a bare code such as IRK
+        never matches IRKA, a capital-method approval is known and adds no term, insurance
+        mediation (FÖFÖ) and a MiFIR publishing entity give their terms, and a code no FI
+        source defines stays unmapped rather than guessed."""
+        mapping = registers_logic._mapping(FI)
+        self.assertEqual(registers_logic._licence_terms(mapping, "IRK"), [])
+        self.assertEqual(registers_logic._licence_terms(mapping, " IRKA "), [])
+        self.assertIsNone(registers_logic._licence_terms(mapping, "IRKX"))
+        self.assertEqual(registers_logic._licence_terms(mapping, "MVAR"), [])
+        self.assertEqual(set(registers_logic._licence_terms(mapping, "FÖFÖ") or []), {("regime", "insurance"), ("service_type", "insurance_distribution")})
+        publishing = "Anmälan som utsedd publiceringsenhet för vissa klasser av finansiella instrument enligt artikel 21 a i förordning (EU) nr 600/2014 (Mifir)."
+        self.assertEqual(registers_logic._licence_terms(mapping, publishing), [("regime", "securities")])
+        self.assertIsNone(registers_logic._licence_terms(mapping, "SAKRVP"))
+
     def test_the_derivable_terms_are_the_briefs(self) -> None:
         derivable = registers_logic.derivable_terms(FI)
         self.assertEqual(derivable["regime"], {"banking", "securities", "insurance", "payments"})
