@@ -137,14 +137,14 @@ type Server = { pending: unknown; dimensions: unknown[]; markets: ReturnType<typ
 type Mutation = (sent: Sent, server: Server) => Answer;
 
 /** The server for one test: reads answer from `server`, and each write is the test's own script. */
-function serve(me: Me, pending: unknown = null, write: Mutation = () => ({ status: 500 }), taxonomy = TAXONOMY): { sent: Sent[]; server: Server } {
+function serve(me: Me, pending: unknown = null, write: Mutation = () => ({ status: 500 }), taxonomy = TAXONOMY, history: unknown = HISTORY): { sent: Sent[]; server: Server } {
   const server: Server = { pending, dimensions: DIMENSIONS, markets: MARKETS };
   const sent = installAdapter((s) => {
     if (s.path === ME) return { status: 200, data: me };
     if (s.path === FOOTPRINT) return { status: 200, data: scope(server.pending, server.dimensions, server.markets) };
     if (s.path === TERMS) return { status: 200, data: taxonomy };
     if (s.path === JURISDICTIONS) return { status: 200, data: REFERENCE };
-    if (s.method === 'get' && s.path === REQUESTS) return { status: 200, data: HISTORY };
+    if (s.method === 'get' && s.path === REQUESTS) return { status: 200, data: history };
     return write(s, server);
   });
   return { sent, server };
@@ -477,6 +477,16 @@ describe('FootprintScreen: proposing a change', () => {
 });
 
 describe('FootprintScreen: a waiting request', () => {
+  it("offers the bank's only approver Approve on their own request, beside Withdraw (D-125)", async () => {
+    const me = meOf(SARA, REQUEST_AND_APPROVE);
+    serve(me, waiting(SARA), undefined, TAXONOMY, { ...HISTORY, soleApprover: true });
+    open(me);
+    const banner = await findBanner();
+    expect(await within(banner).findByRole('button', { name: 'Approve' })).toBeVisible();
+    expect(within(banner).getByRole('button', { name: 'Withdraw' })).toBeVisible();
+    expect(within(banner).queryByRole('button', { name: 'Reject' })).toBeNull();
+  });
+
   it("shows the requester their request, its marks on the terms and Withdraw, and focuses the status line after withdrawing", async () => {
     const me = meOf(SARA, REQUEST_AND_APPROVE);
     const { sent } = serve(me, waiting(SARA), (s, server) => {

@@ -623,18 +623,19 @@ function PendingBanner({
         <Button variant="ghost" size="small" className="justify-self-start" aria-expanded={previewShown} aria-controls={previewId} onClick={onTogglePreview}>
           {t('footprint.banner.seePreview')}
         </Button>
-        {mine ? (
+        {mine || approver ? (
           <ButtonBar className="mt-2">
-            <Button variant="outline" disabled={withdraw.isPending} onClick={() => withdraw.mutate({ requestId: request.id, version: request.version }, { onSuccess: onWithdrawn })}>
-              {t('footprint.banner.withdraw')}
-            </Button>
-          </ButtonBar>
-        ) : approver ? (
-          <ButtonBar className="mt-2">
-            <Button variant="outline" onClick={onReject}>
-              {t('footprint.banner.reject')}
-            </Button>
-            <Button onClick={onApprove}>{t('footprint.banner.approve')}</Button>
+            {mine ? (
+              <Button variant="outline" disabled={withdraw.isPending} onClick={() => withdraw.mutate({ requestId: request.id, version: request.version }, { onSuccess: onWithdrawn })}>
+                {t('footprint.banner.withdraw')}
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={onReject}>
+                {t('footprint.banner.reject')}
+              </Button>
+            )}
+            {/* The requester approves only as the bank's only approver (D-125). */}
+            {approver ? <Button onClick={onApprove}>{t('footprint.banner.approve')}</Button> : null}
           </ButtonBar>
         ) : null}
       </Notice>
