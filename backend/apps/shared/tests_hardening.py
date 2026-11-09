@@ -287,6 +287,11 @@ REVIEWED_LIBRARY_RECORD_CALLS: dict[str, str] = {
         "platform staff or a platform agent; for a bank's own record the row is written in that "
         "bank's zone. The title is the instrument's stable key either way."
     ),
+    "apps/proposals/apply.py record(texts.target) tenant_id=None actor=actor title=texts.key": (
+        "A shared instrument's or obligation's machine translations applied from an approved "
+        "proposal (D-129): the actor is platform staff, since only a person approves one, and the "
+        "title is the record's stable key, a library fact."
+    ),
     "apps/proposals/apply.py record(SubjectType.INSTRUMENT.value) tenant_id=None actor=actor title=instrument.stable_key": (
         "A shared instrument's summary applied from an approved proposal (INV-09): the actor is "
         "platform staff, since only a person approves one, and the title is the instrument's "

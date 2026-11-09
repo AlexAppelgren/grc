@@ -60,6 +60,7 @@ from apps.library import recurrence
 from apps.library.models import DatePrecision, SubjectType
 from apps.library.reading import (
     InstrumentRefs,
+    RecordTexts,
     active_instrument,
     active_obligation,
     active_provision,
@@ -68,6 +69,7 @@ from apps.library.reading import (
     live_duty_type,
     live_provision_kind,
     parent_provision,
+    record_texts,
     stable_key_taken,
     terms_of,
     unknown_provision_keys,
@@ -88,6 +90,7 @@ from apps.proposals.schemas import (
     ProposalRow,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
+    ProposalTranslationsPayload,
     ProposalVocabularyCreatePayload,
     ProposalVocabularyMergePayload,
     ProposalVocabularyRelabelPayload,
@@ -124,6 +127,7 @@ PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
     ProposalKind.NEW_RECURRING_DUTY.value: ProposalRecurringDutyPayload,
     ProposalKind.NEW_CONTROL.value: ProposalControlPayload,
     ProposalKind.NEW_INSTRUMENT_SUMMARY.value: ProposalInstrumentSummaryPayload,
+    ProposalKind.NEW_TRANSLATIONS.value: ProposalTranslationsPayload,
 }
 VOCABULARY_KINDS = frozenset(
     kind.value
@@ -146,16 +150,24 @@ VERSION_TARGETS = {
 RECORD_TARGETS = {**VERSION_TARGETS, ProposalKind.NEW_RECURRING_DUTY.value: OBLIGATION_TARGET}
 # The kinds that bring a new record into the library. They name no target, since the record
 # does not exist yet, and every fact they carry is sourced by an https link: a new record
-# has no provision of its own to cite (PRO-01).
+# has no provision of its own to cite (PRO-01). A record's translations name it in their
+# payload too, and are sourced by the record's own link (D-129).
 NEW_RECORD_KINDS = frozenset(
     {
         ProposalKind.NEW_INSTRUMENT.value,
         ProposalKind.NEW_OBLIGATION.value,
         ProposalKind.NEW_PROVISION.value,
         ProposalKind.NEW_INSTRUMENT_SUMMARY.value,
+        ProposalKind.NEW_TRANSLATIONS.value,
     }
 )
-NEW_RECORD_PAYLOADS = (ProposalInstrumentPayload, ProposalObligationPayload, ProposalProvisionPayload, ProposalInstrumentSummaryPayload)
+NEW_RECORD_PAYLOADS = (
+    ProposalInstrumentPayload,
+    ProposalObligationPayload,
+    ProposalProvisionPayload,
+    ProposalInstrumentSummaryPayload,
+    ProposalTranslationsPayload,
+)
 # The kinds a bank may file as a record of its own (INV-07, OWN-02, OWN-05): what does not
 # exist in the library yet, and a control of one of the bank's own obligations. A version
 # always targets a shared record, so it is never the bank's own.
@@ -183,16 +195,32 @@ REGIME_DIMENSION = "regime"
 # The fields of a new record's payload that say how it is written rather than what the
 # record says, so they need no source.
 UNSOURCED_FIELDS = frozenset(
-    {"key", "originalLanguage", "isMachine", "effectiveFromPrecision", "inForceFromPrecision", "inForceToPrecision", "sortOrder"}
+    {
+        "key",
+        "originalLanguage",
+        "isMachine",
+        "effectiveFromPrecision",
+        "inForceFromPrecision",
+        "inForceToPrecision",
+        "sortOrder",
+        # A translation's record, its version and the languages it was translated from.
+        "target",
+        "version",
+        "titlesFrom",
+        "summariesFrom",
+    }
 )
 TERM_KINDS = frozenset({ProposalKind.TERM_CREATE.value, ProposalKind.TERM_UPDATE.value})
+# The records a translation is for (D-129).
+TRANSLATION_TARGETS = (SubjectType.INSTRUMENT.value, SubjectType.OBLIGATION.value)
 # The kinds whose applied record can say an agent confirmed it (`verified_origin` and
 # `verified_by_agent`): an obligation version, every library list row and taxonomy term
 # (taxonomy 0007), a new instrument, a new obligation with its first version, and a
 # recurring duty (library 0010), which names its proposing agent too. Only these
 # may an independent agent approve (INV-05, D-62, D-79). A provision and its versions have no
 # such column, so `new_provision` and `new_provision_version` wait for a person, as does any
-# kind added later without that provenance.
+# kind added later without that provenance: an instrument's summary (D-124) and a record's
+# machine translations (D-129), whose translation rows name no confirming agent.
 AGENT_CONFIRMABLE_KINDS = (
     OBLIGATION_KINDS
     | VOCABULARY_KINDS
@@ -325,6 +353,8 @@ def _validate_target(kind: str, payload: pydantic.BaseModel, owner_tenant_id: uu
         validated_provision(payload)
     elif isinstance(payload, ProposalInstrumentSummaryPayload):
         validated_instrument_summary(payload)
+    elif isinstance(payload, ProposalTranslationsPayload):
+        validated_translations(payload)
     elif isinstance(payload, ProposalProvisionVersionPayload):
         _validate_text_payload(payload)
     elif isinstance(payload, ProposalRecurringDutyPayload):
@@ -573,6 +603,63 @@ def validated_instrument_summary(payload: ProposalInstrumentSummaryPayload) -> A
     if has_summary(instrument):
         raise ValidationError(f"{payload.instrument!r} already has a summary.", code="duplicate_key")
     return instrument
+
+
+def validated_translations(payload: ProposalTranslationsPayload) -> RecordTexts:
+    """A record's machine translations (INV-05, I18N-01, D-129): an active shared instrument
+    or obligation (422 `unknown_key` otherwise), at least one text, each in a live content
+    language the record's text does not hold yet (409 `duplicate_key`, which the original's
+    own language always is), translated from that text's original, non-empty and at most
+    `LIBRARY_TRANSLATION_TEXT_MAX_CHARS`. An obligation's summaries are for its version in
+    force today, named by number, so a version that came into force meanwhile is refused
+    rather than given another version's words. Run at creation and again at apply, against
+    the library as it is then; returns the record."""
+    if payload.target not in TRANSLATION_TARGETS:
+        raise ValidationError(f"{payload.target!r} is not a record a translation is for. Valid targets: {', '.join(TRANSLATION_TARGETS)}.", code="unknown_key")
+    record = record_texts(payload.target, timezone.localdate(), key=payload.key)
+    if not payload.titles and not payload.summaries:
+        raise ValidationError("Give at least one translated title or summary.", code="validation_error")
+    payload.titles = _translations(payload.titles, payload.titles_from, record.titles, record.title_original, "title")
+    payload.summaries = _translations(payload.summaries, payload.summaries_from, record.summaries, record.summary_original, "summary")
+    wanted = record.version if payload.summaries and record.target == SubjectType.OBLIGATION.value else None
+    if payload.version != wanted:
+        raise ValidationError(
+            f"version is {wanted} here: the summaries translate the obligation's version in force today, and an instrument's name none."
+            if wanted is not None
+            else "version names the obligation version the summaries translate: leave it out when there are none, and for an instrument.",
+            code="validation_error",
+        )
+    return record
+
+
+def _translations(texts: dict[str, str], source: str, held: dict[str, str], original: str, what: str) -> dict[str, str]:
+    """`texts` stripped, or the refusal naming what is wrong with them (`validated_translations`)."""
+    from apps.taxonomy.tenant_lists_logic import known_languages
+
+    if not texts:
+        if source:
+            raise ValidationError(f"{what}sFrom names the original of translated {what}s: leave it out when there are none.", code="validation_error")
+        return {}
+    if not original:
+        raise ValidationError(f"This record has no original {what} to translate from.", code="validation_error")
+    if source != original:
+        raise ValidationError(f"{what}sFrom is {original!r}: a {what} is translated from the original, never from another translation.", code="validation_error")
+    live = known_languages()
+    unknown = sorted(set(texts) - live)
+    if unknown:
+        raise ValidationError(f"{', '.join(unknown)} is not a content language. Valid languages: {', '.join(sorted(live))}.", code="unknown_key")
+    present = sorted(set(texts) & set(held))
+    if present:
+        raise ValidationError(f"The {what} is already held in {', '.join(present)}.", code="duplicate_key")
+    cleaned = {language: text.strip() for language, text in texts.items()}
+    empty = sorted(language for language, text in cleaned.items() if not text)
+    if empty:
+        raise ValidationError(f"A translated {what} is never blank. Blank: {', '.join(empty)}.", code="validation_error")
+    cap = settings.LIBRARY_TRANSLATION_TEXT_MAX_CHARS
+    long = sorted(language for language, text in cleaned.items() if len(text) > cap)
+    if long:
+        raise ValidationError(f"A translated {what} is at most {cap} characters. Too long: {', '.join(long)}.", code="validation_error")
+    return cleaned
 
 
 def validated_recurring_duty(payload: ProposalRecurringDutyPayload) -> Any:

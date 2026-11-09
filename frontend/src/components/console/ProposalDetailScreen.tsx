@@ -22,6 +22,7 @@ import {
   fieldSourceLabel,
   fieldSourceGroups,
   instrumentSummaryPayloadOf,
+  translationsPayloadOf,
   instrumentPayloadOf,
   isObligationVersion,
   isVocabularyKind,
@@ -296,6 +297,40 @@ function NewSummaryFacts({ proposal, footer }: { proposal: ProposalDetail; foote
   );
 }
 
+// A record's machine translations (D-129): each language block beside the original it was
+// translated from, which the detail read answers, so the reviewer reads the two together.
+function NewTranslationsFacts({ proposal, footer }: { proposal: ProposalDetail; footer: ReactNode }) {
+  const t = useT();
+  const payload = translationsPayloadOf(proposal);
+  if (payload === null) return <Panel>{footer}</Panel>;
+  const blocks = [
+    { field: 'titles', heading: t('console.queue.detail.titles'), texts: payload.titles, original: proposal.originalTitle, from: payload.titlesFrom ?? '' },
+    { field: 'summaries', heading: t('console.queue.detail.summaries'), texts: payload.summaries, original: proposal.originalSummary, from: payload.summariesFrom ?? '' },
+  ].filter((block) => Object.keys(block.texts).length > 0);
+  return (
+    <Panel title={t('console.queue.detail.whatItAdds')} data-proposal-record={proposal.kind}>
+      <dl className={cn(FACTS, 'mb-3')}>
+        <Fact field="key" label={t(payload.target === 'obligation' ? 'console.queue.field.obligation' : 'console.queue.field.instrument')}>
+          {proposal.instrumentShortName === '' ? null : <span className="mr-2">{proposal.instrumentShortName}</span>}
+          <span className="font-mono text-meta text-muted">{payload.key}</span>
+          {proposal.instrumentShortName === '' ? <span className="block text-meta text-muted">{t('console.queue.detail.recordNotHeld')}</span> : null}
+        </Fact>
+      </dl>
+      {blocks.map((block) => (
+        <LanguageTextBlocks
+          key={block.field}
+          heading={block.heading}
+          texts={block.original == null ? block.texts : { ...block.texts, [block.original.language]: block.original.text }}
+          originalLanguage={block.from}
+          isMachine
+          field={block.field}
+        />
+      ))}
+      {footer}
+    </Panel>
+  );
+}
+
 function VocabularyChanges({ proposal, footer }: { proposal: ProposalRow; footer: ReactNode }) {
   const t = useT();
   const payload = vocabularyPayloadOf(proposal);
@@ -442,6 +477,8 @@ export function ProposalDetailScreen({ proposalId }: { proposalId: string }) {
         <NewObligationFacts proposal={proposal} footer={source} />
       ) : proposal.kind === 'new_instrument_summary' ? (
         <NewSummaryFacts proposal={proposal} footer={source} />
+      ) : proposal.kind === 'new_translations' ? (
+        <NewTranslationsFacts proposal={proposal} footer={source} />
       ) : (
         <Panel>{source}</Panel>
       )}

@@ -62,6 +62,7 @@ from apps.proposals.tests_kinds import (
     instrument_body,
     obligation_body,
     provision_body,
+    translations_body,
 )
 from apps.search.models import SearchChunk
 from apps.taxonomy.models import DutyType, Flag, InstrumentLevel, TaxonomyTerm
@@ -1513,3 +1514,57 @@ class ProposalsScenarioTests(ScenarioTestCase):
 
         third = baseline.file()
         self.assertEqual((sum(third.filed.values()), third.runs, sum(third.held.values())), (0, 0, 2))
+
+    def test_pro_s19(self) -> None:
+        """PRO-S19
+
+        A regulation's title and summary reach every content language as labelled machine
+        translations, through the queue (PRO-01, PRO-02, INV-05, I18N-01, D-129).
+        """
+        from apps.agents.models import AgentRun
+        from apps.agents.seeds import seed_agent_definitions
+        from apps.library.models import InstrumentSummary, InstrumentTitle
+        from apps.proposals import translations
+        from apps.proposals.tests_translations import MISSING, Translating
+
+        tenancy.clear_tenant()  # bleqq's agents file in no bank's zone
+        seed_agent_definitions()
+        act = library_build.instrument(key="fffs-2017-2", short_name="FFFS 2017:2", regime="regime:securities", source_url="https://www.fi.se/sv/fffs-2017-2/")
+        with library_write("scenario"):
+            InstrumentSummary.objects.create(instrument=act, language_id="en", text="How a firm runs securities business.", is_original=True)
+        llm = Translating()
+
+        with mock.patch("apps.shared.ai.get_llm", return_value=llm):
+            self.assertEqual(translations.translate("instrument", act.id), "filed")
+            self.assertEqual(translations.translate("instrument", act.id), "skipped", "nothing is asked while the proposal is open")
+        self.assertEqual(len(llm.prompts), 1)
+        proposal = Proposal.objects.get(kind="new_translations")
+        self.assertEqual((proposal.status, getattr(proposal.proposed_by_agent, "key", None)), ("open", "library-translator"))
+        self.assertEqual((sorted(proposal.payload["titles"]), sorted(proposal.payload["summaries"])), (MISSING, MISSING))
+        self.assertEqual(set(proposal.field_sources.values()), {"https://www.fi.se/sv/fffs-2017-2/"})
+        generation = AiGeneration.objects.get(purpose="translation", subject_id=act.id)
+        assert generation.agent_run_id is not None
+        run = AgentRun.objects.get(pk=generation.agent_run_id)
+        self.assertEqual((run.id, run.agent.key), (proposal.agent_run_id, "library-translator"))
+
+        confirmer = agents_testing.reviewer_api_key()
+        tenancy.clear_tenant()
+        refused = self._post(f"/proposals/{proposal.id}/approve", agents_testing.decision(confirmer), {"HTTP_X_API_KEY": confirmer.plain_key})
+        self.assertEqual((refused.status_code, refused.json()["code"]), (409, "person_review_required"), refused.content)
+        approved = self._post(f"/proposals/{proposal.id}/approve", {}, sign_in(self.editor, step_up=True))
+        self.assertEqual((approved.status_code, approved.json()["status"]), (200, "approved"), approved.content)
+
+        tenancy.clear_tenant()
+        for rows in (InstrumentTitle.objects.filter(instrument=act), InstrumentSummary.objects.filter(instrument=act)):
+            self.assertEqual({row.language_id: (row.is_original, row.is_machine) for row in rows}, {"en": (True, False), **{language: (False, True) for language in MISSING}})
+        reader = factories.member_user(self.tenant, roles=("reader",))
+        read = self.client.get(f"{V1}/instruments/{act.id}", **sign_in(reader, tenant=self.tenant))
+        self.assertEqual(read.status_code, 200, read.content)
+        card = read.json()
+        self.assertEqual(card["summary"]["language"], "en")
+        self.assertEqual({(text["language"], text["isOriginal"], text["isMachine"]) for text in card["summaryTranslations"]}, {("en", True, False), *((language, False, True) for language in MISSING)})
+        self.assertEqual(len(card["nameTranslations"]), 5)
+        tenancy.clear_tenant()
+        again = translations_body(key="fffs-2017-2", titles={"sv": "FFFS 2017:2"})
+        filed = self._post("/proposals", again, sign_in(self.second_editor))
+        self.assertEqual((filed.status_code, filed.json()["code"]), (409, "duplicate_key"), filed.content)

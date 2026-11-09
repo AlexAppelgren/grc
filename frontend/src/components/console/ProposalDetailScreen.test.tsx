@@ -273,6 +273,29 @@ describe('the decision panel', () => {
     await waitFor(() => expect(panel.querySelector('[data-proposal-fact="dutyType"]')).toHaveTextContent('conduct'));
   });
 
+  it("shows a record's machine translations beside the original each was made from", async () => {
+    renderWith(
+      detail({
+        kind: 'new_translations',
+        targetType: '',
+        targetId: null,
+        payload: { target: 'instrument', key: 'fffs-2017-2', titles: { da: 'FFFS 2017:2 om værdipapirhandel' }, titlesFrom: 'sv', summaries: {} },
+        instrumentShortName: 'FFFS 2017:2',
+        originalTitle: { text: 'FFFS 2017:2 om värdepappersrörelse', language: 'sv', isOriginal: true, isMachine: false },
+        originalSummary: null,
+      }),
+    );
+    const panel = (await screen.findByRole('heading', { name: 'What it adds' })).closest('section') as HTMLElement;
+    expect(panel.querySelector('[data-proposal-fact="key"]')).toHaveTextContent('FFFS 2017:2fffs-2017-2');
+    const titles = panel.querySelector('[data-proposal-fact="titles"]') as HTMLElement;
+    expect([...titles.querySelectorAll('[data-language]')].map((block) => block.textContent)).toEqual([
+      'Swedish (original)FFFS 2017:2 om värdepappersrörelse',
+      'Danish (machine translation)FFFS 2017:2 om værdipapirhandel',
+    ]);
+    expect(panel.querySelector('[data-proposal-fact="summaries"]')).toBeNull();
+    expect(screen.getByText('New translations')).toBeInTheDocument();
+  });
+
   it('shows no warning for a proposal the screen found nothing in', async () => {
     renderWith(detail({ riskFlags: [] }));
     await screen.findByText('Add version 2 of the research payment obligation');

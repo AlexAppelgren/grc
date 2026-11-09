@@ -68,11 +68,12 @@ def _applied(*, since: datetime.datetime, kind: str | None, outside_footprint: b
     first version its approval wrote."""
     from apps.library.reading import scope_term_ids
 
-    # A regulation's summary describes a record and changes no fact a bank acts on (INV-09).
+    # A regulation's summary describes a record and changes no fact a bank acts on (INV-09),
+    # and neither does a record's machine translation (D-129).
     queryset = (
         logic.filtered(Proposal.objects.all(), status=ProposalStatus.APPROVED.value, kind=kind)
         .filter(applied_at__gte=since)
-        .exclude(kind=ProposalKind.NEW_INSTRUMENT_SUMMARY.value)
+        .exclude(kind__in=(ProposalKind.NEW_INSTRUMENT_SUMMARY.value, ProposalKind.NEW_TRANSLATIONS.value))
     )
     if not outside_footprint:
         inside = Obligation.objects.filter(

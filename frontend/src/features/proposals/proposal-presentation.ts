@@ -31,6 +31,7 @@ const SLOT_ORDER = { kind: 10, status: 20, flagged: 25, yours: 30 } as const;
 const KIND_LABEL: Readonly<Record<ProposalKind, MessageKey>> = {
   new_instrument: 'console.queue.kind.newInstrument',
   new_instrument_summary: 'console.queue.kind.newInstrumentSummary',
+  new_translations: 'console.queue.kind.newTranslations',
   new_obligation: 'console.queue.kind.newObligation',
   new_obligation_version: 'console.queue.kind.newObligationVersion',
   new_provision: 'console.queue.kind.newProvision',
@@ -210,6 +211,23 @@ export interface InstrumentSummaryPayload {
 export function instrumentSummaryPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>): InstrumentSummaryPayload | null {
   const payload = (row.payload ?? {}) as Record<string, unknown>;
   return row.kind === 'new_instrument_summary' && typeof payload.summaries === 'object' && payload.summaries !== null ? (payload as unknown as InstrumentSummaryPayload) : null;
+}
+
+/** A `new_translations` payload: one record's machine translations per language, and the language of each original (D-129). */
+export interface TranslationsPayload {
+  target: string;
+  key: string;
+  titles: Record<string, string>;
+  titlesFrom?: string;
+  summaries: Record<string, string>;
+  summariesFrom?: string;
+}
+
+export function translationsPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>): TranslationsPayload | null {
+  const payload = (row.payload ?? {}) as Record<string, unknown>;
+  if (row.kind !== 'new_translations' || typeof payload.key !== 'string') return null;
+  const texts = (value: unknown) => (typeof value === 'object' && value !== null ? (value as Record<string, string>) : {});
+  return { ...(payload as unknown as TranslationsPayload), titles: texts(payload.titles), summaries: texts(payload.summaries) };
 }
 
 export function newObligationPayloadOf(row: Pick<ProposalRow, 'kind' | 'payload'>): NewObligationPayload | null {

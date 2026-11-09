@@ -29,7 +29,7 @@ from unittest import mock
 
 from django.core.exceptions import ValidationError
 from django.db import migrations
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from apps.agents import testing as agents_testing
 from apps.governance.models import AiGeneration
@@ -39,7 +39,9 @@ from apps.library.models import (
     InstrumentSummary,
     InstrumentTitle,
     Obligation,
+    ObligationSummary,
     ObligationTerm,
+    ObligationTitle,
     ObligationVersion,
     Provision,
     ProvisionText,
@@ -149,6 +151,26 @@ def summary_body(instrument: str = PARENT_KEY) -> dict[str, Any]:
     }
 
 
+def translations_body(target: str = "instrument", key: str = PARENT_KEY, **payload: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper overriding payload fields
+    """Machine translations of the record `target` keyed `key`: its English title into Swedish
+    and Danish, as the translator files them (D-129). `payload` overrides fields."""
+    fields: dict[str, Any] = {
+        "target": target,
+        "key": key,
+        "titles": {"sv": "Finansinspektionens regler om utkontraktering", "da": "Finanstilsynets regler om outsourcing"},
+        "titlesFrom": "en",
+        **payload,
+    }
+    return {
+        "kind": "new_translations",
+        "title": f"Translate {key} into da, sv",
+        "payload": fields,
+        "fieldSources": {field: SOURCE for field in _facts(fields)},
+        "sourceLabel": "FFFS 2017:2",
+        "sourceUrl": SOURCE,
+    }
+
+
 def provision_body(instrument: str = PARENT_KEY, **payload: Any) -> dict[str, Any]:  # compliance: allow-kwargs test helper overriding payload fields
     """A new provision of `instrument` with its first text, every fact sourced."""
     fields: dict[str, Any] = {
@@ -190,6 +212,8 @@ def _facts(fields: dict[str, Any]) -> list[str]:
     """The fields a source is owed for, spelled out here rather than read from the code
     under test, so the test states the rule instead of echoing it."""
     unsourced = {"key", "originalLanguage", "isMachine", "effectiveFromPrecision", "inForceFromPrecision", "inForceToPrecision", "sortOrder"}
+    # Which record a translation is for, its version and the languages it was made from.
+    unsourced |= {"target", "version", "titlesFrom", "summariesFrom"}
     facts: list[str] = []
     for name, value in fields.items():
         if name in unsourced:
@@ -291,6 +315,80 @@ class NewInstrumentSummary(KindsTestCase):
         proposal = self._filed(summary_body())
         response, _confirmer = self._approve_as_agent(proposal["id"])
         self._refused(response, 409, "person_review_required")
+
+
+class NewTranslations(KindsTestCase):
+    """INV-05, I18N-01, D-129: a record's machine translations enter the library through the
+    proposal door, only as rows it lacks, always labelled machine-made, from the original,
+    and approved by a person."""
+
+    def _summarised(self) -> None:
+        with library_write("test"):
+            InstrumentSummary.objects.create(instrument=self.parent, language_id="en", text="The rules on how a bank outsources.", is_original=True)
+
+    def test_a_person_approves_and_every_row_is_a_machine_translation(self) -> None:
+        self._summarised()
+        body = translations_body(summaries={"sv": "Reglerna om hur en bank utkontrakterar."}, summariesFrom="en")
+        proposal = self._filed(body)
+        self.assertEqual((proposal["kind"], proposal["targetId"]), ("new_translations", None))
+        self.assertFalse(InstrumentTitle.objects.filter(instrument=self.parent, language_id="sv").exists(), "nothing changes until approval")
+
+        approved = self._approve(proposal["id"])
+
+        self.assertEqual(approved.status_code, 200, approved.content)
+        titles = {row.language_id: (row.is_original, row.is_machine) for row in InstrumentTitle.objects.filter(instrument=self.parent)}
+        self.assertEqual(titles, {"en": (True, False), "sv": (False, True), "da": (False, True)}, "a person's approval confirms no translation")
+        summary = InstrumentSummary.objects.get(instrument=self.parent, language_id="sv")
+        self.assertEqual((summary.text, summary.is_original, summary.is_machine), ("Reglerna om hur en bank utkontrakterar.", False, True))
+        event = AuditEvent.objects.get(action="instrument.translations_added", subject_id=self.parent.id)
+        self.assertEqual((event.after["titles"], event.after["summaries"], event.tenant_id), (["da", "sv"], ["sv"], None))
+        self.assertIsNotNone(event.step_up_assertion_id)
+        # A language the record holds now is refused when filed, and at approval of one
+        # stored before it was added: never a second row, never skipped.
+        self._refused(self._file(translations_body()), 409, "duplicate_key")
+        self._refused(self._approve(str(self._stored(translations_body()).id)), 409, "duplicate_key")
+
+    def test_what_the_door_refuses(self) -> None:
+        self._refused(self._file(translations_body(key="no-such-act")), 422, "unknown_key")
+        self._refused(self._file(translations_body(target="provision")), 422, "unknown_key")
+        self._refused(self._file(translations_body(titles={"de": "Regeln"})), 422, "unknown_key")
+        self._refused(self._file(translations_body(titles={"en": "FFFS 2017:2"})), 409, "duplicate_key")
+        self._refused(self._file(translations_body(titlesFrom="sv")), 422, "validation_error")
+        self._refused(self._file(translations_body(titles={"sv": " "})), 422, "validation_error")
+        self._refused(self._file(translations_body(titles={})), 422, "validation_error")
+        self._refused(self._file(translations_body(summaries={"sv": "Reglerna."}, summariesFrom="en")), 422, "validation_error")
+        with override_settings(LIBRARY_TRANSLATION_TEXT_MAX_CHARS=10):
+            self._refused(self._file(translations_body()), 422, "validation_error")
+        own = library_build.instrument(key="own-act", regime="regime:securities", owner_tenant=factories.tenant(slug="own-bank"))
+        tenancy.clear_tenant()
+        self._refused(self._file(translations_body(key=own.stable_key)), 422, "unknown_key")
+
+    def test_an_agent_never_approves_one(self) -> None:
+        proposal = self._filed(translations_body())
+        response, _confirmer = self._approve_as_agent(proposal["id"])
+        self._refused(response, 409, "person_review_required")
+
+    def test_an_obligation_s_summaries_translate_its_version_in_force(self) -> None:
+        duty = library_build.obligation(
+            self.parent,
+            key="obl-kinds-translated",
+            versions=[(None, {"en": "Keep a register."}), (datetime.date(2099, 1, 1), {"en": "Keep a longer register."})],
+        )
+        body = translations_body(
+            target="obligation", key=duty.stable_key, titles={"sv": "Förteckning"}, summaries={"sv": "För en förteckning."}, summariesFrom="en"
+        )
+        self._refused(self._file({**body, "payload": {**body["payload"], "version": 2}}), 422, "validation_error")
+        self._refused(self._file(body), 422, "validation_error")
+        proposal = self._filed({**body, "payload": {**body["payload"], "version": 1}})
+
+        approved = self._approve(proposal["id"])
+
+        self.assertEqual(approved.status_code, 200, approved.content)
+        summaries = {(row.version.version_number, row.language_id) for row in ObligationSummary.objects.filter(version__obligation=duty)}
+        self.assertEqual(summaries, {(1, "en"), (1, "sv"), (2, "en")}, "the version in force, never the one to come")
+        self.assertTrue(ObligationTitle.objects.get(obligation=duty, language_id="sv").is_machine)
+        in_force = ObligationVersion.objects.get(obligation=duty, version_number=1)
+        self.assertTrue(SearchChunk.objects.filter(source_id=in_force.id, language_id="sv").exists(), "searchable in Swedish once approved")
 
 
 class NewInstrument(KindsTestCase):

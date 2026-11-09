@@ -2082,6 +2082,14 @@ _SAMPLE_INSTRUMENT_DETAIL: dict[str, Any] = {
     "stableKey": "fffs-2017-2",
     "shortName": "FFFS 2017:2",
     "name": {"text": "FFFS 2017:2 om värdepappersrörelse", "language": "sv", "isOriginal": True, "isMachine": False},
+    "nameTranslations": [
+        {"text": "FFFS 2017:2 om värdepappersrörelse", "language": "sv", "isOriginal": True, "isMachine": False},
+        {"text": "FFFS 2017:2 on securities business", "language": "en", "isOriginal": False, "isMachine": True},
+    ],
+    "summaryTranslations": [
+        {"text": "Finansinspektionen's rules for investment firms on how they conduct securities business.", "language": "en", "isOriginal": True, "isMachine": False},
+        {"text": "Finansinspektionens regler för värdepappersbolag om hur de bedriver värdepappersrörelse.", "language": "sv", "isOriginal": False, "isMachine": True},
+    ],
     "level": {"key": "authority_regulation", "kind": None, "label": "Supervisory regulation"},
     "binding": True,
     "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
@@ -2206,6 +2214,23 @@ class InstrumentDetail(LibraryResponse):
             "library holds no summary for it yet. Written once from the instrument's own source "
             "and entered through an approved proposal (INV-09)."
         )
+    )
+    name_translations: list[LocalizedText] = Field(
+        description=(
+            "Every language the library holds the instrument's official name in, the original marked "
+            "`isOriginal` and each translation not yet confirmed by a person marked `isMachine`, so a "
+            "screen can show the name in any of them and say which is the original. `name` is the one "
+            "picked for this reader; the list is the same for everyone. Empty when the library holds no "
+            "name in any language."
+        ),
+    )
+    summary_translations: list[LocalizedText] = Field(
+        description=(
+            "Every language the library holds the summary in, the original marked `isOriginal` and each "
+            "machine translation marked `isMachine` until a person confirms it (INV-05), so a screen can "
+            "offer the original and label what a machine translated. `summary` is the one picked for "
+            "this reader. Empty when the library holds no summary yet."
+        ),
     )
     implements: list[InstrumentLinkRef] = Field(
         description=(

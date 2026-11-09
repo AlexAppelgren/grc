@@ -47,9 +47,10 @@ export const QUEUE_PAGE = 100;
 
 const OBLIGATION_KIND: ProposalKind = 'new_obligation_version';
 
-// The kind filter's values as the address holds them: two groups of kinds, and the two
-// kinds a new record arrives as (the library baseline's, D-118), which are the route's own.
-const KIND_FILTERS = ['obligation', 'new_instrument', 'new_obligation', 'new_instrument_summary', 'vocabulary'] as const;
+// The kind filter's values as the address holds them: two groups of kinds, and the kinds the
+// platform's agents file by the thousand (the library baseline's, D-118, its summaries, D-124,
+// and the translator's, D-129), which are the route's own.
+const KIND_FILTERS = ['obligation', 'new_instrument', 'new_obligation', 'new_instrument_summary', 'new_translations', 'vocabulary'] as const;
 type KindFilter = '' | (typeof KIND_FILTERS)[number];
 type OriginFilter = '' | 'agent' | 'user';
 
@@ -326,6 +327,7 @@ export function QueueScreen() {
             <option value="new_instrument">{t('console.queue.filter.kindNewInstrument')}</option>
             <option value="new_obligation">{t('console.queue.filter.kindNewObligation')}</option>
             <option value="new_instrument_summary">{t('console.queue.filter.kindNewInstrumentSummary')}</option>
+            <option value="new_translations">{t('console.queue.filter.kindNewTranslations')}</option>
             <option value="vocabulary">{t('console.queue.filter.kindVocabulary')}</option>
           </Select>
           <Select

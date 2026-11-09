@@ -64,6 +64,10 @@ export function textOf(raw: Schemas['LocalizedText'] | null | undefined): Locali
   return { text: raw.text, language: raw.language, isOriginal: raw.isOriginal, isMachine: raw.isMachine };
 }
 
+function translationOf(raw: Schemas['LocalizedText']): LocalizedText {
+  return { text: raw.text, language: raw.language, isOriginal: raw.isOriginal, isMachine: raw.isMachine };
+}
+
 /** A legal date with its precision; a precision the formatter has no rule for is read as the day the string carries. */
 export function partialDateOf(raw: Schemas['PartialDate'] | null | undefined): PartialDate | null {
   if (raw === null || raw === undefined) return null;
@@ -393,6 +397,8 @@ export function instrumentDetailOf(raw: Schemas['InstrumentDetail']): Instrument
     privateToUs: raw.privateToUs,
     lineage: (raw.lineage ?? []).map(lineageOf),
     summary: textOf(raw.summary),
+    nameTranslations: raw.nameTranslations.map(translationOf),
+    summaryTranslations: raw.summaryTranslations.map(translationOf),
     implements: raw.implements.map(linkOf),
     implementedBy: raw.implementedBy.map(linkOf),
     obligationCounts: { ...raw.obligationCounts },

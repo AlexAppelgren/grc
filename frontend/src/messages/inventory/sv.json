@@ -100,6 +100,7 @@
   "inventory.instrument.lineageOutgoing": "{relation}",
   "inventory.instrument.lineageIncoming": "{relation} den här rättsakten",
   "inventory.instrument.summaryTitle": "Vad det är",
+  "inventory.instrument.nameMachine": "Namnet maskinöversatt från {language}",
   "inventory.instrument.implementsTitle": "Genomför",
   "inventory.instrument.obligationsTitle.euRegulation": "Skyldigheter enligt denna förordning",
   "inventory.instrument.obligationsTitle.euDirective": "Skyldigheter enligt detta direktiv",

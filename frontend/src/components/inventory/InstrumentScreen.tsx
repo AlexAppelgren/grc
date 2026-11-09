@@ -8,10 +8,13 @@ import { ScopeControl } from '@/components/inventory/InventoryFilters';
 import { searchOf } from '@/components/inventory/InventoryScreen';
 import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
 import { ObligationRow } from '@/components/inventory/ObligationRow';
+import { languageChoices, originalLanguage, textIn } from '@/components/inventory/ObligationScreen';
 import { ProvisionTree } from '@/components/inventory/ProvisionTree';
 import { RecordProblemReports } from '@/components/inventory/RecordProblemReports';
 import { ReportProblemModal, type ReportContext } from '@/components/inventory/ReportProblemModal';
 import { Button } from '@/components/ui/Button';
+import { Chip, ChipRow } from '@/components/ui/Chip';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
@@ -21,9 +24,9 @@ import { useInstrument, useObligations, useReportInstrumentProblem } from '@/fea
 import { DIRECTIVE_LEVEL, obligationsTitleOf, presentInstrument } from '@/features/library/instrument-presentation';
 import { markPrivateToUs, presentBindingLevel } from '@/features/library/obligation-presentation';
 import type { InstrumentDetail, InstrumentLineageRef, InstrumentLinkRef, ScopeFilter } from '@/features/library/types';
-import { inForceLabel } from '@/features/library/version-presentation';
+import { inForceLabel, languageName } from '@/features/library/version-presentation';
 import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
-import { useT } from '@/shared/i18n/LocaleProvider';
+import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { externalHref } from '@/shared/utils/external-href';
 import { formatDate } from '@/shared/utils/format';
@@ -118,13 +121,46 @@ function InstrumentLinks({ links }: { links: readonly InstrumentLinkRef[] }) {
   );
 }
 
-/** "What it is": the instrument in plain words (INV-09), when the library holds a summary. */
-function SummaryPanel({ instrument }: { instrument: InstrumentDetail }) {
+/**
+ * "What it is": the instrument in plain words (INV-09), when the library holds a summary, in
+ * the language chosen above it. The chips offer every language the summary is held in, the
+ * original named as such, and a machine translation says so above its text (INV-05, D-129).
+ */
+function SummaryPanel({ instrument, selected, onChoose }: { instrument: InstrumentDetail; selected: string; onChoose: (language: string) => void }) {
   const t = useT();
+  const locale = useLocale();
   if (instrument.summary === null) return null;
+  const shown = textIn(instrument.summaryTranslations, selected);
+  const original = originalLanguage(instrument.summaryTranslations);
   return (
     <Panel title={t('inventory.instrument.summaryTitle')} data-summary-panel="">
-      <p className="max-w-[72ch] text-body">{instrument.summary.text}</p>
+      <div data-language-chips="">
+        <ChipRow className="mb-3">
+          {languageChoices(instrument.summaryTranslations, selected, locale, t).map((choice) => (
+            <Chip key={choice.language} pressed={choice.selected} onClick={() => onChoose(choice.language)}>
+              {choice.label}
+            </Chip>
+          ))}
+        </ChipRow>
+      </div>
+      {shown === null ? (
+        <EmptyState
+          title={t('library.noTextTitle', { language: languageName(selected, locale) })}
+          body={t('library.noTextBody')}
+          action={original === null ? undefined : { label: t('library.showOriginal'), href: '#', onClick: () => onChoose(original) }}
+        />
+      ) : (
+        <>
+          {shown.isMachine && original !== null ? (
+            <p data-machine-translation="" className="mb-2 text-meta font-medium text-brass">
+              {t('legal.machineTranslation', { language: languageName(original, locale) })}
+            </p>
+          ) : null}
+          <p lang={shown.language} className="max-w-[72ch] text-body">
+            {shown.text}
+          </p>
+        </>
+      )}
     </Panel>
   );
 }
@@ -253,8 +289,10 @@ function ObligationsPanel({ instrument }: { instrument: InstrumentDetail }) {
 export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
   const t = useT();
   const ctx = useFormatContext();
+  const locale = useLocale();
   const permissions = usePermissions() ?? [];
   const [reporting, setReporting] = useState(false);
+  const [chosen, setChosen] = useState<string | null>(null);
 
   const instrument = useInstrument(instrumentId);
   const record = instrument.data;
@@ -287,7 +325,11 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
   const facts = pills.filter((pill) => !pill.key.startsWith('instrument:'));
   // The bank's own instrument leads its head with "Private to us", as its obligations do (OWN-04).
   const header = record.privateToUs ? markPrivateToUs(facts, t) : facts;
-  const officialTitle = record.name === null || record.name.text === record.shortName ? undefined : record.name.text;
+  // The official name follows the language chosen for the summary, where the library holds it in that one.
+  const selected = chosen ?? record.summary?.language ?? locale;
+  const name = textIn(record.nameTranslations, selected) ?? record.name;
+  const officialTitle = name === null || name.text === record.shortName ? undefined : name.text;
+  const nameOriginal = originalLanguage(record.nameTranslations);
   const context: ReportContext = {};
   const sourceHref = externalHref(record.sourceUrl);
 
@@ -299,6 +341,9 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
       </div>
       <PageHead title={record.shortName} lede={officialTitle} />
       <Meta className="mb-4">
+        {officialTitle !== undefined && name?.isMachine === true && nameOriginal !== null ? (
+          <span data-name-machine="">{t('inventory.instrument.nameMachine', { language: languageName(nameOriginal, locale) })}</span>
+        ) : null}
         <span data-in-force-line="">{inForceLabel(record.inForceFrom, record.inForceTo, t, ctx)}</span>
         {sourceHref === null ? (
           <span className="break-all">{record.sourceUrl}</span>
@@ -311,7 +356,7 @@ export function InstrumentScreen({ instrumentId }: { instrumentId: string }) {
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <SummaryPanel instrument={record} />
+          <SummaryPanel instrument={record} selected={selected} onChoose={setChosen} />
           <ObligationsPanel instrument={record} />
           <ProvisionTree instrumentId={instrumentId} levelKind={record.level.kind} sourceUrl={record.sourceUrl} />
         </div>

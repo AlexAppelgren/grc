@@ -67,7 +67,10 @@ class ProposalKind(enum.StrEnum):
     obligation in force falls due on, its only door into the library (REG-07). `new_control`
     is a control of one of a bank's own obligations (OWN-05, D-99): never a library row, but
     a REG-05 internal item of the control link kind in the bank's zone, linked to that
-    obligation by the same private approval (apps/proposals/private_controls.py)."""
+    obligation by the same private approval (apps/proposals/private_controls.py).
+    `new_translations` adds machine translations of an existing shared record's title and
+    summary in content languages it lacks (INV-05, I18N-01, D-129): rows are only added,
+    always labelled machine-made, and the original stays what it was."""
 
     VOCABULARY_CREATE = "vocabulary_create"
     VOCABULARY_RELABEL = "vocabulary_relabel"
@@ -85,6 +88,7 @@ class ProposalKind(enum.StrEnum):
     NEW_RECURRING_DUTY = "new_recurring_duty"
     NEW_CONTROL = "new_control"
     NEW_INSTRUMENT_SUMMARY = "new_instrument_summary"
+    NEW_TRANSLATIONS = "new_translations"
 
 
 class ProposalStatus(enum.StrEnum):

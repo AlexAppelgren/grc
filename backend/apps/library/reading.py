@@ -499,6 +499,80 @@ def summarised_stable_keys() -> set[str]:
     return {key.lower() for key in InstrumentSummary.objects.values_list("instrument__stable_key", flat=True).distinct()}
 
 
+class RecordTexts(NamedTuple):
+    """A shared record's title and summary per content language (INV-05, D-129), as the
+    translation door and its filer read them. `target` is `instrument` or `obligation`; an
+    obligation's summary is its version in force on the day read (`version`, its number, or
+    None with no summary when none is). `*_original` is the language of the text marked
+    original, or "" when none is; `short_name` is the instrument's, the obligation's own
+    instrument for an obligation."""
+
+    target: str
+    id: uuid.UUID
+    key: str
+    short_name: str
+    source_url: str
+    version: int | None
+    titles: dict[str, str]
+    title_original: str
+    summaries: dict[str, str]
+    summary_original: str
+
+
+def _texts_of(rows: Iterable[Translation]) -> tuple[dict[str, str], str]:
+    listed = list(rows)
+    return {row.language_id: row.text for row in listed}, next((row.language_id for row in listed if row.is_original), "")
+
+
+def translatable_records(on: datetime.date, *, target: str | None = None, key: str | None = None, record_id: uuid.UUID | None = None) -> list[RecordTexts]:
+    """Every active shared instrument and obligation with its texts, in four queries per
+    kind, or the one `target` named by `key` or `record_id`. A bank's own record is never
+    one: it is never a model input (INV-07, D-57)."""
+    found: list[RecordTexts] = []
+    if target in (None, SubjectType.INSTRUMENT.value):
+        instruments = Instrument.objects.filter(owner_tenant__isnull=True, status=RecordStatus.ACTIVE.value).prefetch_related("titles", "summaries")
+        instruments = instruments.filter(stable_key=key) if key is not None else instruments
+        instruments = instruments.filter(pk=record_id) if record_id is not None else instruments
+        for instrument in instruments:
+            titles, title_original = _texts_of(instrument.titles.all())
+            summaries, summary_original = _texts_of(instrument.summaries.all())
+            found.append(
+                RecordTexts(
+                    SubjectType.INSTRUMENT.value, instrument.id, instrument.stable_key, instrument.short_name, instrument.source_url,
+                    None, titles, title_original, summaries, summary_original,
+                )
+            )
+    if target in (None, SubjectType.OBLIGATION.value):
+        obligations = (
+            Obligation.objects.filter(owner_tenant__isnull=True, instrument__owner_tenant__isnull=True, status=RecordStatus.ACTIVE.value)
+            .select_related("instrument")
+            .prefetch_related("titles", "versions__summaries")
+        )
+        obligations = obligations.filter(stable_key=key) if key is not None else obligations
+        obligations = obligations.filter(pk=record_id) if record_id is not None else obligations
+        for obligation in obligations:
+            titles, title_original = _texts_of(obligation.titles.all())
+            current = in_force(list(obligation.versions.all()), on)
+            summaries, summary_original = _texts_of(current.summaries.all()) if current is not None else ({}, "")
+            found.append(
+                RecordTexts(
+                    SubjectType.OBLIGATION.value, obligation.id, obligation.stable_key, obligation.instrument.short_name, obligation.source_url,
+                    None if current is None else current.version_number, titles, title_original, summaries, summary_original,
+                )
+            )
+    return found
+
+
+def record_texts(target: str, on: datetime.date, *, key: str | None = None, record_id: uuid.UUID | None = None) -> RecordTexts:
+    """One active shared instrument or obligation with its texts (`translatable_records`),
+    or 422 `unknown_key`: a retired record, a bank's own and one nobody holds are not
+    translated."""
+    found = translatable_records(on, target=target, key=key, record_id=record_id)
+    if not found:
+        raise ValidationError(f"{key or record_id!s} is not a shared {target} in force the library holds.", code="unknown_key")
+    return found[0]
+
+
 def held_as_own(tenant_id: uuid.UUID, *, instrument: bool, key: str, reference: str, instrument_key: str = "") -> bool:
     """Whether bank `tenant_id` already holds, as a record of its own, the instrument (or
     else the obligation) a finding of its own agent names (OWN-02, D-57): by stable key, or
@@ -1442,6 +1516,8 @@ def instrument_detail(tenant: Tenant, order: list[str], instrument_id: uuid.UUID
         private_to_us=instrument.owner_tenant_id == tenant.id,
         lineage=_lineage(instrument, order, reader),
         summary=localized(instrument.summaries.all(), order),
+        name_translations=[text_of(title) for title in instrument.titles.all()],
+        summary_translations=[text_of(summary) for summary in instrument.summaries.all()],
         implements=implements,
         implemented_by=implemented_by,
         obligation_counts=_counts(instrument, tenant, reader),

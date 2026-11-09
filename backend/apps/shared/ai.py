@@ -139,6 +139,7 @@ def generate(
     max_tokens: int | None = None,
     llm: LlmAdapter | None = None,
     deadline_s: float | None = None,
+    agent_run_id: uuid.UUID | None = None,
 ) -> Generation:
     """Ask the model, then write the row, in the caller's transaction.
 
@@ -150,7 +151,8 @@ def generate(
 
     A subject that is a bank's own library record is refused before anything else
     (`refuse_private`). `deadline_s` shortens the adapter's own deadline for a caller
-    somebody is waiting on. The row carries the call's cost (`cost_minor`).
+    somebody is waiting on. The row carries the call's cost (`cost_minor`), and the run of
+    one of bleqq's agents that made it when `agent_run_id` names one.
     """
     refuse_private(subject_type, subject_id)
     ensure_enabled()
@@ -165,6 +167,7 @@ def generate(
         output=completion.text,
         citations=citations,
         tenant_id=tenant_id,
+        agent_run_id=agent_run_id,
         asker_id=asker_id,
         subject_type=subject_type,
         subject_id=subject_id,

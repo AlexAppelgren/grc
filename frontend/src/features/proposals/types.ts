@@ -37,6 +37,7 @@ export type TenantProposalQuery = Unnulled<Schemas['TenantProposalQuery']>;
 export type ProposalKind =
   | 'new_instrument'
   | 'new_instrument_summary'
+  | 'new_translations'
   | 'new_obligation'
   | 'new_obligation_version'
   | 'new_provision'

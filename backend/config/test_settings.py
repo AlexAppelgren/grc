@@ -27,7 +27,7 @@ os.environ.setdefault("DEBUG", "false")
 os.environ.setdefault("E2E_MODE", "false")
 
 from config.settings import *  # noqa: E402, F403  (1) import everything, override below
-from config.settings import DATABASE_URL, MIGRATOR_DATABASE_URL, env_str  # noqa: E402
+from config.settings import CELERY_BEAT_SCHEDULE, DATABASE_URL, MIGRATOR_DATABASE_URL, env_str  # noqa: E402
 
 # (1) The runner creates the throwaway database as cw_migrator (CREATEDB, owns tables).
 #     `app` mirrors it as cw_app so the RLS and role guards test the production role.
@@ -65,6 +65,9 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 CELERY_TASK_ALWAYS_EAGER = True
 # An approval in a test must not file the whole real baseline; tests_baseline turns it on.
 LIBRARY_BASELINE_ON_APPROVAL_S = 0
+# Nor ask a model to translate what it adds; tests_translations turns it on (D-129).
+LIBRARY_TRANSLATION_MINUTES = 0
+CELERY_BEAT_SCHEDULE.pop("library-translation", None)
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BROKER_URL = "memory://"
 

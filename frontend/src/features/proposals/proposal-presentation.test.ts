@@ -28,6 +28,7 @@ import {
   statusLabel,
   statusTone,
   targetLine,
+  translationsPayloadOf,
   vocabularyPayloadOf,
 } from './proposal-presentation';
 import type { ProposalQueueRow } from './types';
@@ -85,6 +86,8 @@ describe('kind and status', () => {
     expect(kindLabel('new_obligation', t)).toBe('New obligation');
     expect(kindLabel('new_provision', t)).toBe('New provision');
     expect(kindLabel('new_provision_version', t)).toBe('New provision version');
+    expect(kindLabel('new_instrument_summary', t)).toBe('New summary');
+    expect(kindLabel('new_translations', t)).toBe('New translations');
   });
 
   it('falls back for a kind the catalog does not know, rather than throwing', () => {
@@ -263,6 +266,13 @@ describe("a new record's payload", () => {
     expect(instrumentPayloadOf(row({ kind: 'new_instrument', payload: undefined }))).toBeNull();
     expect(newObligationPayloadOf(row({ kind: 'new_obligation', payload: titled }))?.instrument).toBe('celex-1');
     expect(newObligationPayloadOf(row({ kind: 'new_instrument', payload: titled }))).toBeNull();
+  });
+
+  it("reads a record's translations only under their own kind, a part the payload leaves out as none", () => {
+    const translated = { target: 'obligation', key: 'obl-1', titles: { sv: 'Titel' }, titlesFrom: 'en' };
+    expect(translationsPayloadOf(row({ kind: 'new_translations', payload: translated }))).toEqual({ ...translated, summaries: {} });
+    expect(translationsPayloadOf(row({ kind: 'new_obligation', payload: translated }))).toBeNull();
+    expect(translationsPayloadOf(row({ kind: 'new_translations', payload: undefined }))).toBeNull();
   });
 
   it('lists the texts original first, then the rest alphabetically, marking machine translations only when the payload says so', () => {

@@ -78,6 +78,8 @@ const instrumentDetail = {
   verifiedBy: null,
   lineage: [],
   summary: null,
+  nameTranslations: [],
+  summaryTranslations: [],
   implements: [],
   implementedBy: [],
   obligationCounts: { inLibrary: 0, inScope: 0, waitingForReview: 0 },

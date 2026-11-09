@@ -36,6 +36,8 @@ const fffs: InstrumentDetail = {
   verifiedBy: null,
   privateToUs: false,
   summary: null,
+  nameTranslations: [{ text: 'FFFS 2017:2 om värdepappersrörelse', language: 'sv', isOriginal: true, isMachine: false }],
+  summaryTranslations: [],
   implements: [],
   implementedBy: [],
   obligationCounts: { inLibrary: 34, inScope: 34, waitingForReview: 0 },
@@ -260,6 +262,7 @@ describe('InstrumentScreen', () => {
     serve({
       ...fffs,
       summary: { text: "Finansinspektionen's rules for investment services.", language: 'en', isOriginal: true, isMachine: false },
+      summaryTranslations: [{ text: "Finansinspektionen's rules for investment services.", language: 'en', isOriginal: true, isMachine: false }],
       obligationCounts: { inLibrary: 5, inScope: 3, waitingForReview: 2 },
     });
     renderIn(<InstrumentScreen instrumentId="in-1" />);
@@ -269,6 +272,31 @@ describe('InstrumentScreen', () => {
     expect(within(panel).getByRole('heading', { name: 'Obligations from these rules' })).toBeInTheDocument();
     expect(panel.querySelector('[data-applies-counts]')).toHaveTextContent('5 obligations in the library. 3 fall in your scope.');
     expect(panel.querySelector('[data-applies-waiting]')).toHaveTextContent('2 more obligations wait for review before reaching the library.');
+  });
+
+  it('reads the summary and the name in any language the library holds, labels a machine translation and offers the original', async () => {
+    const original = { text: 'Finansinspektionens regler om värdepappersrörelse.', language: 'sv', isOriginal: true, isMachine: false };
+    const swedishName = { text: 'FFFS 2017:2 om värdepappersrörelse', language: 'sv', isOriginal: true, isMachine: false };
+    const english = { text: "Finansinspektionen's rules on securities business.", language: 'en', isOriginal: false, isMachine: true };
+    serve({
+      ...fffs,
+      name: { text: 'FFFS 2017:2 on securities business', language: 'en', isOriginal: false, isMachine: true },
+      nameTranslations: [swedishName, { text: 'FFFS 2017:2 on securities business', language: 'en', isOriginal: false, isMachine: true }],
+      summary: english,
+      summaryTranslations: [original, english],
+    });
+    renderIn(<InstrumentScreen instrumentId="in-1" />);
+    const summary = (await screen.findByText(english.text)).closest('[data-summary-panel]') as HTMLElement;
+    expect(summary.querySelector('[data-machine-translation]')).toHaveTextContent('Machine translation from Swedish. The original is authoritative.');
+    expect(document.querySelector('[data-name-machine]')).toHaveTextContent('Name machine-translated from Swedish');
+    expect(screen.getByText('FFFS 2017:2 on securities business')).toBeInTheDocument();
+
+    fireEvent.click(within(summary).getByRole('button', { name: 'Swedish, original' }));
+
+    expect(within(summary).getByText(original.text)).toHaveAttribute('lang', 'sv');
+    expect(summary.querySelector('[data-machine-translation]')).toBeNull();
+    expect(screen.getByText('FFFS 2017:2 om värdepappersrörelse')).toBeInTheDocument();
+    expect(document.querySelector('[data-name-machine]')).toBeNull();
   });
 
   it('for a directive, says its obligations come from national law and links the laws that implement it', async () => {

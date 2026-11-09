@@ -112,6 +112,7 @@ from apps.proposals.tests_kinds import (
     provision_body,
     provision_version_body,
     summary_body,
+    translations_body,
 )
 from apps.search import eval_sets, indexing
 from apps.search.models import EvalQuestion, EvalRun, SearchChunk
@@ -661,6 +662,7 @@ class TheDoorsWriteAsTheAppRole(TransactionTestCase):
             decided.append(self._approved_body(obligation_body(instrument=INSTRUMENT_KEY)))
             decided.append(self._approved_body(provision_body(instrument=INSTRUMENT_KEY)))
             decided.append(self._approved_body(summary_body(instrument=INSTRUMENT_KEY)))
+            decided.append(self._approved_body(translations_body(key=INSTRUMENT_KEY, titlesFrom="sv", titles={"da": "Finanstilsynets regler om outsourcing"})))
             with transaction.atomic():
                 tenancy.clear_tenant()
                 provision = Provision.objects.get(stable_key=PROVISION_KEY)

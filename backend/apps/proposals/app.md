@@ -66,6 +66,22 @@ proposals of the platform agent `library-baseline`, instruments first and each d
 its instrument is approved (`apps/proposals/baseline.py`). A second principal approves each
 one as any other: a person with a passkey today, the confirming agent once it runs.
 
+The library's translations arrive the same way (D-129, Alex 2026-11-09: "We should probably
+also translate the summary to all languages that the platform supports, while having the
+original language text available as well"). `new_translations` adds machine translations of
+one shared instrument's or obligation's title and summary in the content languages it lacks,
+an obligation's summary being its version in force: rows are only added, each labelled
+machine-made and never the original, whoever approves, and a language the record already
+holds is 409 `duplicate_key` when filed and at apply. The platform agent `library-translator`
+files them (`apps/proposals/translations.py`): one logged model call per record (purpose
+`translation`) under a keyless run of its own, the answer read strictly as untrusted text and
+screened like any proposal, a record skipped while one of its translation proposals is open
+and never asked again in the same words. The beat queues at most
+`LIBRARY_TRANSLATION_RUN_MAX` records per `LIBRARY_TRANSLATION_MINUTES`, one task each, and an
+approval adding an obligation or an instrument's summary queues that record; 0 minutes
+switches both off. A translation row names no confirming agent, so an agent's approval is 409
+`person_review_required` (D-79): a person approves, one at a time or with Approve all.
+
 A bank's own private records travel the same table but never the console: the
 server sets the proposal's owner from the target, and a second person in the
 same bank approves under `private_records.approve` with a passkey, through the
@@ -461,4 +477,18 @@ Then the call answers at once and the worker approves both instruments, each thr
 And the editor's own proposal still waits, since four eyes never lets them decide it
 And the duties the approvals let the next filing add wait for the next decision
 And the queue reads the run as finished, with two approved and none refused
+```
+
+### PRO-S19 — A regulation's title and summary reach every content language as labelled machine translations `@integration` (PRO-01, PRO-02, INV-05, I18N-01)
+```gherkin
+Given a shared regulation whose title and summary the library holds in English only
+When the platform's translator runs
+Then one proposal of the agent library-translator waits in the queue with the title and the summary in Danish, Finnish, Norwegian and Swedish, each sourced by the regulation's own link, from one logged model call in a run of its own
+And running it again asks nothing while that proposal is open
+When an agent approves it
+Then it answers 409 "person_review_required"
+When a library editor approves it with a fresh passkey
+Then every row it adds is labelled a machine translation and the English stays the original
+And the regulation's card lists every language of its name and summary, saying which is the original and which a machine translated
+And a translation into a language the regulation already holds is refused with "duplicate_key"
 ```

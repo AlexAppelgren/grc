@@ -153,6 +153,14 @@ def logged_for(*, agent_run_id: uuid.UUID, purpose: AiPurpose, subject_type: str
     ).exists()
 
 
+def prompt_hashes(*, purpose: AiPurpose, prompt_template: str) -> set[str]:
+    """The prompt hash of every call of this purpose made from one prompt template: what a
+    platform agent asks to tell a question it already put to a model from a new one (D-129).
+    Reads only, the library's rows, never a bank's."""
+    rows = AiGeneration.objects.filter(tenant_id__isnull=True, purpose=purpose.value, prompt_template=prompt_template)
+    return set(rows.values_list("prompt_hash", flat=True))
+
+
 def generations_for(
     *, tenant_id: uuid.UUID | None, filters: AiGenerationQuery, limit: int, offset: int
 ) -> tuple[list[AiGeneration], int]:

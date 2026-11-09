@@ -91,6 +91,14 @@ Priority: MoSCoW (PRD §6). Status: `pending` | `in_progress` | `built` | `verif
 > d89-fe-private's; INV-S15's journey (d89-e2e-journey) reads it on the seeded duty's row and
 > page and finds nothing at its address from tenant B, so OWN-04 is `built`.
 
+> **Note — machine translations (D-129, 2026-11-09).** INV-05's translations now reach every
+> content language: the `new_translations` proposal kind adds a shared regulation's or duty's
+> title and summary in the languages it lacks, every row machine-made and the original kept,
+> filed by the platform agent `library-translator` and approved by a person (PRO-S19). The
+> regulation card's `GET /instruments/{id}` lists its name and summary per language
+> (`nameTranslations`, `summaryTranslations`), and the card offers each language with the
+> original marked and a machine translation labelled, as the duty card does.
+
 > **Note — what the standard clauses still lack (2026-09-23).** Built: the `standard`
 > instrument level with its tier-one kind (D-37), the seeded International jurisdiction of
 > kind `international`, left out of the footprint mirror (D-38), `instrument.regime` NOT

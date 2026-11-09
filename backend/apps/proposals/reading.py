@@ -39,8 +39,8 @@ from django.utils import timezone
 
 from apps.library.logic import in_force, sentence_diff
 from apps.library.models import ObligationVersion
-from apps.library.reading import localized, obligation_headings, obligation_scope_refs, shared_instrument_short_name
-from apps.library.schemas import DiffSegment, LibraryRef
+from apps.library.reading import localized, obligation_headings, obligation_scope_refs, shared_instrument_short_name, translatable_records
+from apps.library.schemas import DiffSegment, LibraryRef, LocalizedText
 from apps.proposals import logic
 from apps.proposals.logic import Reviewer
 from apps.proposals.models import Proposal, ProposalStatus, ProposalTenant
@@ -53,6 +53,7 @@ from apps.proposals.schemas import (
     ProposalQueueRow,
     ProposalSource,
     ProposalTarget,
+    ProposalTranslationsPayload,
     TenantProposalRow,
 )
 from apps.shared.models import AuditEvent
@@ -194,6 +195,8 @@ def detail(proposal: Proposal, order: list[str], *, reviewer: Reviewer) -> Propo
         # (apps/proposals/batch.py); its payload has no single record to compare with.
         return ProposalDetail(**dict(row), sources=_sources(proposal), rejection_reason=_rejection_reason(proposal, order))
     payload = logic.parsed_payload(proposal.kind, proposal.corrected_payload or proposal.payload)
+    if isinstance(payload, ProposalTranslationsPayload):
+        return _translations_detail(proposal, payload, row, order)
     if not isinstance(payload, ProposalObligationVersionPayload) or proposal.target_id is None:
         # No wording to compare: a list row is written by a person, and a new record replaces
         # nothing. Its sources are still what a reviewer checks it against, and a new duty
@@ -224,6 +227,27 @@ def detail(proposal: Proposal, order: list[str], *, reviewer: Reviewer) -> Propo
             if applied is None
             else ProposalAppliedVersion(id=applied.id, version_number=applied.version_number, effective_from=applied.effective_from)
         ),
+    )
+
+
+def _translations_detail(proposal: Proposal, payload: ProposalTranslationsPayload, row: ProposalQueueRow, order: list[str]) -> ProposalDetail:
+    """A record's translations beside the originals they were made from (D-129), as the
+    library holds them now, so a reviewer judges each against its source text."""
+    found = translatable_records(timezone.localdate(), target=payload.target, key=payload.key)
+    record = found[0] if found else None
+
+    def original(texts: dict[str, str], language: str, asked: bool) -> LocalizedText | None:
+        if record is None or not asked or language not in texts:
+            return None
+        return LocalizedText(text=texts[language], language=language, is_original=True, is_machine=False)
+
+    return ProposalDetail(
+        **dict(row),
+        sources=_sources(proposal),
+        rejection_reason=_rejection_reason(proposal, order),
+        instrument_short_name="" if record is None else record.short_name,
+        original_title=None if record is None else original(record.titles, record.title_original, bool(payload.titles)),
+        original_summary=None if record is None else original(record.summaries, record.summary_original, bool(payload.summaries)),
     )
 
 

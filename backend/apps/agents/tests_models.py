@@ -215,7 +215,9 @@ class DefinitionContractTests(SimpleTestCase):
         list is never one: a platform run reads no bank's rows."""
         for name, version in SHIPPED:
             definition = _parsed(name, version)
-            lists = definition["vocabularies_read_at_run_start"]
+            # A definition that reads no list at run start names none: the translator
+            # (D-129) reads the content languages, which are seeded rows and no list.
+            lists = definition.get("vocabularies_read_at_run_start", [])
             self.assertEqual(len(lists), len(set(lists)), f"{name} names a list twice")
             tools = {tool["operation"]: tool for tool in definition["tools"] if "operation" in tool}
             for listed in lists:

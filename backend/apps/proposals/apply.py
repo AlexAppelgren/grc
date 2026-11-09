@@ -68,6 +68,7 @@ from apps.proposals.logic import (
     validated_instrument_summary,
     validated_provision,
     validated_recurring_duty,
+    validated_translations,
 )
 from apps.proposals.models import OriginType, Proposal, ProposalBatchRow, ProposalKind
 from apps.proposals.schemas import (
@@ -82,6 +83,7 @@ from apps.proposals.schemas import (
     ProposalRecurringDutyPayload,
     ProposalTermCreatePayload,
     ProposalTermUpdatePayload,
+    ProposalTranslationsPayload,
     ProposalVocabularyCreatePayload,
     ProposalVocabularyMergePayload,
     ProposalVocabularyRelabelPayload,
@@ -181,6 +183,9 @@ def apply(
         elif proposal.kind == ProposalKind.NEW_INSTRUMENT_SUMMARY.value:
             assert isinstance(payload, ProposalInstrumentSummaryPayload)
             _new_instrument_summary(payload, proposal, actor, reviewer, step_up)
+        elif proposal.kind == ProposalKind.NEW_TRANSLATIONS.value:
+            assert isinstance(payload, ProposalTranslationsPayload)
+            _new_translations(payload, proposal, actor, step_up)
         elif proposal.kind == ProposalKind.NEW_RECURRING_DUTY.value:
             assert isinstance(payload, ProposalRecurringDutyPayload)
             _new_recurring_duty(payload, proposal, actor, reviewer, step_up)
@@ -358,6 +363,51 @@ def _new_instrument_summary(
         summary=f"Added the summary of the instrument {instrument.stable_key} (proposal {proposal.id}).",
         tenant_id=None,
         after={"stableKey": instrument.stable_key, "languages": sorted(payload.summaries), "proposal": str(proposal.id)},
+        step_up_assertion_id=step_up,
+    )
+
+
+def _new_translations(payload: ProposalTranslationsPayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
+    """Add the record's translations the proposal asks for (INV-05, I18N-01, D-129): rows are
+    only added, each labelled machine-made and never the original, whoever approved them, so
+    the original stays the authoritative text and a reader is told the rest is a machine's.
+
+    The record's row is locked, then the payload is checked again by the function creation
+    ran, so a language another approval added meanwhile is 409 `duplicate_key` rather than a
+    second row or a skipped one, and an obligation's summaries still translate its version in
+    force. An obligation is re-indexed inside this transaction, so its new languages are
+    searchable once approved."""
+    shared = Instrument if payload.target == SubjectType.INSTRUMENT.value else Obligation
+    shared.objects.select_for_update().filter(stable_key=payload.key).exists()
+    texts = validated_translations(payload)
+    if texts.target == SubjectType.INSTRUMENT.value:
+        for language, text in payload.titles.items():
+            InstrumentTitle.objects.create(instrument_id=texts.id, language_id=language, text=text, is_original=False, is_machine=True)
+        for language, text in payload.summaries.items():
+            InstrumentSummary.objects.create(instrument_id=texts.id, language_id=language, text=text, is_original=False, is_machine=True)
+    else:
+        for language, text in payload.titles.items():
+            ObligationTitle.objects.create(obligation_id=texts.id, language_id=language, text=text, is_original=False, is_machine=True)
+        if payload.summaries and payload.version is not None:
+            version = ObligationVersion.objects.get(obligation_id=texts.id, version_number=payload.version)
+            for language, text in payload.summaries.items():
+                ObligationSummary.objects.create(version=version, language_id=language, text=text, is_original=False, is_machine=True)
+        reindex(texts.id)
+    record(
+        action=f"{texts.target}.translations_added",
+        actor=actor,
+        subject_type=texts.target,
+        subject_id=texts.id,
+        subject_title=texts.key,
+        summary=f"Added machine translations of the {texts.target} {texts.key} (proposal {proposal.id}).",
+        tenant_id=None,
+        after={
+            "stableKey": texts.key,
+            "titles": sorted(payload.titles),
+            "summaries": sorted(payload.summaries),
+            "version": payload.version,
+            "proposal": str(proposal.id),
+        },
         step_up_assertion_id=step_up,
     )
 

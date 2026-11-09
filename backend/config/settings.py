@@ -804,6 +804,30 @@ if LIBRARY_BASELINE_ON_APPROVAL_S < 0:
     raise ImproperlyConfigured("Refusing to boot: LIBRARY_BASELINE_ON_APPROVAL_S is 0 (off) or more.")
 
 # ---------------------------------------------------------------------------------------
+# ===== INV-05, I18N-01, D-129 the library's machine translations (apps/proposals/translations.py)
+# How often the beat files machine translations of the shared records whose title or summary
+# lacks a content language, as `new_translations` proposals of `library-translator`, in
+# minutes. Each record costs one model call, so this is the switch for the whole feature: 0
+# turns off both the beat and the filing queued when an approval adds an obligation or an
+# instrument's summary. Off under E2E_MODE and in the test settings; below 0 refuses to boot.
+# At most LIBRARY_TRANSLATION_RUN_MAX records are queued per beat, one task each, and a
+# translated text longer than LIBRARY_TRANSLATION_TEXT_MAX_CHARS is refused, whoever wrote it.
+# ---------------------------------------------------------------------------------------
+LIBRARY_TRANSLATION_MINUTES = env_int("LIBRARY_TRANSLATION_MINUTES", 0 if E2E_MODE else 60)
+LIBRARY_TRANSLATION_RUN_MAX = env_int("LIBRARY_TRANSLATION_RUN_MAX", 100)
+LIBRARY_TRANSLATION_TEXT_MAX_CHARS = env_int("LIBRARY_TRANSLATION_TEXT_MAX_CHARS", 8000)
+if LIBRARY_TRANSLATION_MINUTES < 0 or LIBRARY_TRANSLATION_RUN_MAX < 1 or not 1 <= LIBRARY_TRANSLATION_TEXT_MAX_CHARS <= PROPOSAL_TEXT_MAX_CHARS:
+    raise ImproperlyConfigured(
+        "Refusing to boot: LIBRARY_TRANSLATION_MINUTES is 0 (off) or more, LIBRARY_TRANSLATION_RUN_MAX at least 1, "
+        "and LIBRARY_TRANSLATION_TEXT_MAX_CHARS between 1 and PROPOSAL_TEXT_MAX_CHARS."
+    )
+if LIBRARY_TRANSLATION_MINUTES:
+    CELERY_BEAT_SCHEDULE["library-translation"] = {
+        "task": "apps.proposals.tasks.file_library_translations",
+        "schedule": LIBRARY_TRANSLATION_MINUTES * 60,
+    }
+
+# ---------------------------------------------------------------------------------------
 # ===== PRO-02 Approve all, run by the worker (apps/proposals/approve_all.py, D-128) ======
 # How long a reviewer's run keeps its progress readable after it last moved, in seconds,
 # and how long a running run may say nothing before a new start treats its worker as

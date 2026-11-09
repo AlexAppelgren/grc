@@ -195,6 +195,28 @@ class ProposalInstrumentSummaryPayload(WriteBody):
     is_machine: bool = False
 
 
+class ProposalTranslationsPayload(WriteBody):
+    """`new_translations` (INV-05, I18N-01, D-129): machine translations of one shared
+    record's title and summary into content languages it does not hold yet.
+
+    `target` is `instrument` or `obligation` and `key` the record's stable key. `titles` and
+    `summaries` are the new texts per language; each is applied machine-made and never as
+    the original, whoever approves it. `titlesFrom` and `summariesFrom` name the language of
+    the original each was translated from, which must be the record's own original: a title
+    and a summary may have been written in different languages. An obligation's summary is
+    its version in force, named by `version`; an instrument's names none. Each text needs
+    its source, the record's own https link, in `fieldSources`.
+    """
+
+    target: str
+    key: str = Field(max_length=120, pattern=STABLE_KEY_PATTERN)
+    version: int | None = Field(default=None, ge=1)
+    titles: dict[str, str] = Field(default_factory=dict)
+    titles_from: str = ""
+    summaries: dict[str, str] = Field(default_factory=dict)
+    summaries_from: str = ""
+
+
 class ProposalObligationPayload(WriteBody):
     """`new_obligation` (PRO-01, INV-03, INV-04): a duty the library does not hold yet,
     under an instrument it does, with its first version.
@@ -366,7 +388,9 @@ class ProposalRow(CamelSchema):
             "`vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` "
             "points a row's users at another row and retires it, and `term_create` and `term_update` do "
             "the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as "
-            "one batch (`isBatch`). The other kinds of the data model are not built yet, so a "
+            "one batch (`isBatch`). `new_instrument_summary` adds an instrument's plain-language summary, and "
+            "`new_translations` adds machine translations of a record's title and summary in languages it "
+            "lacks, each stored labelled machine-made. The other kinds of the data model are not built yet, so a "
             "reader must not treat this list as the full set for ever."
         )
     )
@@ -811,10 +835,28 @@ class ProposalDetail(ProposalQueueRow):
         description=(
             "For a `new_obligation`, the short name of the shared instrument the duty would sit under, the one "
             "`payload.instrument` names by its stable key, as the library holds it now, for example \"MAR\". "
+            "For a `new_instrument_summary`, the instrument the summary describes, and for `new_translations` the "
+            "instrument translated, or the one the translated obligation sits under. "
             "Empty for every other kind, and empty when the shared library holds no instrument under that key, "
             "in which case approving the proposal answers 422 `unknown_key` and writes nothing."
         ),
         examples=["MAR"],
+    )
+    original_title: LocalizedText | None = Field(
+        default=None,
+        description=(
+            "For `new_translations`, the record's original title, the text its translated titles were made "
+            "from, read from the library now, so a reviewer reads the two side by side. Null for every other "
+            "kind, when the proposal translates no title, and when the library no longer holds the record."
+        ),
+    )
+    original_summary: LocalizedText | None = Field(
+        default=None,
+        description=(
+            "For `new_translations`, the record's original summary, the text its translated summaries were made "
+            "from: an instrument's summary, or the obligation's version in force today. Null for every other "
+            "kind, when the proposal translates no summary, and when the library no longer holds the record."
+        ),
     )
 
 
@@ -1336,7 +1378,10 @@ class ProposalCreateBody(WriteBody):
             "an obligation in force falls due on, as an RFC 5545 rule; `vocabulary_create`, `vocabulary_relabel`, "
             "`vocabulary_retire`, `vocabulary_restore` and `vocabulary_merge` add, reword, turn off, "
             "turn on again or fold together a row of a shared list; `term_create` and `term_update` add "
-            "or reword a taxonomy term. `new_control` is never filed here and answers 422 `validation_error`: "
+            "or reword a taxonomy term; `new_instrument_summary` is an instrument's plain-language summary, "
+            "written once; `new_translations` is machine translations of a shared instrument's or "
+            "obligation's title and summary into content languages it lacks, which a person approves and "
+            "which stay labelled machine-made. `new_control` is never filed here and answers 422 `validation_error`: "
             "a control is a record of a bank's own, filed only by that bank's own agent. Any other value "
             "answers 422 `unknown_key` naming the valid ones."
         ),
@@ -1375,7 +1420,14 @@ class ProposalCreateBody(WriteBody):
             "`provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, "
             "`originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. "
             "`new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and "
-            "`effectiveFromPrecision`. Each summary and each text is at most "
+            "`effectiveFromPrecision`. `new_instrument_summary`: `instrument`, `summaries` per language, "
+            "`originalLanguage` and `isMachine`. `new_translations`: `target` (`instrument` or `obligation`), "
+            "`key` (its stable key), `titles` and `summaries` per language, each in a content language the "
+            "record's text does not hold yet (else 409 `duplicate_key`) and at most "
+            f"{settings.LIBRARY_TRANSLATION_TEXT_MAX_CHARS} characters, `titlesFrom` and `summariesFrom` (the "
+            "language of the original each was translated from, which must be the record's original), and "
+            "for an obligation's summaries `version`, the number of its version in force today; every text "
+            "it adds is stored machine-made. Each summary and each text is at most "
             f"{settings.PROPOSAL_TEXT_MAX_CHARS} characters per language, else 422 `validation_error`. "
             "The vocabulary and term kinds name a "
             "`list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and "

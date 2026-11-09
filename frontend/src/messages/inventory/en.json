@@ -100,6 +100,7 @@
   "inventory.instrument.lineageOutgoing": "{relation}",
   "inventory.instrument.lineageIncoming": "{relation} this regulation",
   "inventory.instrument.summaryTitle": "What it is",
+  "inventory.instrument.nameMachine": "Name machine-translated from {language}",
   "inventory.instrument.implementsTitle": "Implements",
   "inventory.instrument.obligationsTitle.euRegulation": "Obligations from this regulation",
   "inventory.instrument.obligationsTitle.euDirective": "Obligations from this directive",

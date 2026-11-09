@@ -348,6 +348,9 @@ export interface InstrumentDetail {
   lineage: InstrumentLineageRef[];
   /** What it is and what it means for a bank, in plain words (INV-09), or null until the library holds one. */
   summary: LocalizedText | null;
+  /** Every language the official name and the summary are held in, the original marked and machine translations labelled (INV-05, D-129). */
+  nameTranslations: LocalizedText[];
+  summaryTranslations: LocalizedText[];
   /** The instruments its implementsNote names, and those whose note names it (INV-09). */
   implements: InstrumentLinkRef[];
   implementedBy: InstrumentLinkRef[];

@@ -18227,6 +18227,20 @@ export interface components {
          *         "language": "sv",
          *         "text": "FFFS 2017:2 om värdepappersrörelse"
          *       },
+         *       "nameTranslations": [
+         *         {
+         *           "isMachine": false,
+         *           "isOriginal": true,
+         *           "language": "sv",
+         *           "text": "FFFS 2017:2 om värdepappersrörelse"
+         *         },
+         *         {
+         *           "isMachine": true,
+         *           "isOriginal": false,
+         *           "language": "en",
+         *           "text": "FFFS 2017:2 on securities business"
+         *         }
+         *       ],
          *       "officialRef": "FFFS 2017:2",
          *       "privateToUs": false,
          *       "regime": {
@@ -18237,6 +18251,20 @@ export interface components {
          *       "shortName": "FFFS 2017:2",
          *       "sourceUrl": "https://www.fi.se/en/published/regulations/2017/fffs-20172/",
          *       "stableKey": "fffs-2017-2",
+         *       "summaryTranslations": [
+         *         {
+         *           "isMachine": false,
+         *           "isOriginal": true,
+         *           "language": "en",
+         *           "text": "Finansinspektionen's rules for investment firms on how they conduct securities business."
+         *         },
+         *         {
+         *           "isMachine": true,
+         *           "isOriginal": false,
+         *           "language": "sv",
+         *           "text": "Finansinspektionens regler för värdepappersbolag om hur de bedriver värdepappersrörelse."
+         *         }
+         *       ],
          *       "verifiedBy": null
          *     }
          */
@@ -18299,6 +18327,11 @@ export interface components {
             lineage: components["schemas"]["InstrumentLineageRef"][];
             /** @description The instrument's full name, in the best language this reader can be served. The original is the jurisdiction's legal language, so a Swedish regulation read in English usually still answers its Swedish name rather than a translation. Null only when the record carries no name in any language. */
             name: components["schemas"]["LocalizedText"] | null;
+            /**
+             * Nametranslations
+             * @description Every language the library holds the instrument's official name in, the original marked `isOriginal` and each translation not yet confirmed by a person marked `isMachine`, so a screen can show the name in any of them and say which is the original. `name` is the one picked for this reader; the list is the same for everyone. Empty when the library holds no name in any language.
+             */
+            nameTranslations: components["schemas"]["LocalizedText"][];
             /** @description How many duties sit under the instrument: held, in the caller's scope, and waiting for review. */
             obligationCounts: components["schemas"]["InstrumentObligationCounts"];
             /**
@@ -18335,6 +18368,11 @@ export interface components {
             stableKey: string;
             /** @description What the instrument is and what it means for a bank, in two to four plain sentences, in the caller's first content language the summary is written in, or null when the library holds no summary for it yet. Written once from the instrument's own source and entered through an approved proposal (INV-09). */
             summary: components["schemas"]["LocalizedText"] | null;
+            /**
+             * Summarytranslations
+             * @description Every language the library holds the summary in, the original marked `isOriginal` and each machine translation marked `isMachine` until a person confirms it (INV-05), so a screen can offer the original and label what a machine translated. `summary` is the one picked for this reader. Empty when the library holds no summary yet.
+             */
+            summaryTranslations: components["schemas"]["LocalizedText"][];
             /** @description The bleqq platform person who last confirmed this record against its source, by id and name, or null when nobody has. Never a member of a bank: re-verifying a shared fact is bleqq's own check. */
             verifiedBy: components["schemas"]["PersonRef"] | null;
         };
@@ -23395,7 +23433,7 @@ export interface components {
             isBatch: boolean;
             /**
              * Kind
-             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `new_recurring_duty` adds a duty an obligation carries on a schedule, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `new_recurring_duty` adds a duty an obligation carries on a schedule, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). `new_instrument_summary` adds an instrument's plain-language summary, and `new_translations` adds machine translations of a record's title and summary in languages it lacks, each stored labelled machine-made. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
              */
             kind: string;
             /**
@@ -23768,7 +23806,7 @@ export interface components {
             };
             /**
              * Kind
-             * @description What is asked for, which decides the shape of `payload`. A fixed kind, not a vocabulary: `new_obligation_version` is a new summary of one duty in force from a date, with its scope terms; `new_instrument` is a law, regulation, guideline or standard edition the library does not hold yet; `new_obligation` is a duty the library does not hold yet, under an instrument it does, with its first summary; `new_provision` is a node of a law's text with its first verbatim text, and `new_provision_version` a provision's text in force from a date, neither ever under a standard (422 `licensed_text`); `new_recurring_duty` is a schedule an obligation in force falls due on, as an RFC 5545 rule; `vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore` and `vocabulary_merge` add, reword, turn off, turn on again or fold together a row of a shared list; `term_create` and `term_update` add or reword a taxonomy term. `new_control` is never filed here and answers 422 `validation_error`: a control is a record of a bank's own, filed only by that bank's own agent. Any other value answers 422 `unknown_key` naming the valid ones.
+             * @description What is asked for, which decides the shape of `payload`. A fixed kind, not a vocabulary: `new_obligation_version` is a new summary of one duty in force from a date, with its scope terms; `new_instrument` is a law, regulation, guideline or standard edition the library does not hold yet; `new_obligation` is a duty the library does not hold yet, under an instrument it does, with its first summary; `new_provision` is a node of a law's text with its first verbatim text, and `new_provision_version` a provision's text in force from a date, neither ever under a standard (422 `licensed_text`); `new_recurring_duty` is a schedule an obligation in force falls due on, as an RFC 5545 rule; `vocabulary_create`, `vocabulary_relabel`, `vocabulary_retire`, `vocabulary_restore` and `vocabulary_merge` add, reword, turn off, turn on again or fold together a row of a shared list; `term_create` and `term_update` add or reword a taxonomy term; `new_instrument_summary` is an instrument's plain-language summary, written once; `new_translations` is machine translations of a shared instrument's or obligation's title and summary into content languages it lacks, which a person approves and which stay labelled machine-made. `new_control` is never filed here and answers 422 `validation_error`: a control is a record of a bank's own, filed only by that bank's own agent. Any other value answers 422 `unknown_key` naming the valid ones.
              * @example new_obligation_version
              */
             kind: string;
@@ -23781,7 +23819,7 @@ export interface components {
             model: string;
             /**
              * Payload
-             * @description What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`) and `terms` (scope as `dimension:key`, at most 20). `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key`, `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. Each summary and each text is at most 50000 characters per language, else 422 `validation_error`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.
+             * @description What the library should hold, in the shape `kind` names, with camelCase field names. A field the kind does not name, or a value it does not accept, answers 422 `validation_error` naming the fields to fix. `new_obligation_version`: `summaries` (text per content language), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (`day`, `month`, `quarter` or `year`) and `terms` (scope as `dimension:key`, at most 20). `new_instrument`: `key` (a stable key of lowercase words joined by hyphens, at most 120 characters, kept for ever), `titles` per language, `originalLanguage`, `isMachine`, `shortName`, `officialRef`, `eliUri`, `level`, `binding` (left out, the level's default), `jurisdiction`, `authority`, `regime` (a term of the regime dimension as `regime:<key>`, else 422 `not_a_regime`), `inForceFrom`, `inForceTo` and their precisions, and `implementsNote`. `new_obligation`: `key`, `instrument` (the stable key of a shared instrument in force), `titles` and `summaries` per language, `originalLanguage`, `isMachine`, `refLabel`, `dutyType`, `effectiveFrom`, `effectiveFromPrecision` and `terms`; under a standard it is the one conformance obligation, carrying exactly one standard term (else 422 `one_conformance_obligation` or `standard_term_required`), and a law's obligation carries none (422 `standard_term_only_on_standards`). `new_provision`: `key`, `instrument`, `parent` (the stable key of a provision of the same instrument, left out at the top), `provisionKind`, `refLabel`, `heading`, `sortOrder`, `texts` per language, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. `new_provision_version`: `texts`, `originalLanguage`, `isMachine`, `effectiveFrom` and `effectiveFromPrecision`. `new_instrument_summary`: `instrument`, `summaries` per language, `originalLanguage` and `isMachine`. `new_translations`: `target` (`instrument` or `obligation`), `key` (its stable key), `titles` and `summaries` per language, each in a content language the record's text does not hold yet (else 409 `duplicate_key`) and at most 8000 characters, `titlesFrom` and `summariesFrom` (the language of the original each was translated from, which must be the record's original), and for an obligation's summaries `version`, the number of its version in force today; every text it adds is stored machine-made. Each summary and each text is at most 50000 characters per language, else 422 `validation_error`. The vocabulary and term kinds name a `list` or `dimension`, a `key` and `labels`. Level, jurisdiction, authority, duty type and term keys are library rows that change only through proposals; `GET /vocabularies` and `GET /taxonomy/terms` return the live sets.
              */
             payload?: {
                 [key: string]: unknown;
@@ -23945,7 +23983,7 @@ export interface components {
             id: string;
             /**
              * Instrumentshortname
-             * @description For a `new_obligation`, the short name of the shared instrument the duty would sit under, the one `payload.instrument` names by its stable key, as the library holds it now, for example "MAR". Empty for every other kind, and empty when the shared library holds no instrument under that key, in which case approving the proposal answers 422 `unknown_key` and writes nothing.
+             * @description For a `new_obligation`, the short name of the shared instrument the duty would sit under, the one `payload.instrument` names by its stable key, as the library holds it now, for example "MAR". For a `new_instrument_summary`, the instrument the summary describes, and for `new_translations` the instrument translated, or the one the translated obligation sits under. Empty for every other kind, and empty when the shared library holds no instrument under that key, in which case approving the proposal answers 422 `unknown_key` and writes nothing.
              * @default
              * @example MAR
              */
@@ -23966,7 +24004,7 @@ export interface components {
             isMine: boolean;
             /**
              * Kind
-             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `new_recurring_duty` adds a duty an obligation carries on a schedule, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `new_recurring_duty` adds a duty an obligation carries on a schedule, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). `new_instrument_summary` adds an instrument's plain-language summary, and `new_translations` adds machine translations of a record's title and summary in languages it lacks, each stored labelled machine-made. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
              */
             kind: string;
             /**
@@ -23987,6 +24025,10 @@ export interface components {
              * @description Who made it. A fixed kind: `agent` means a watch or research agent drafted it, which is AI output and stays labelled: a person's approval confirms it, and an independent agent's approval leaves the record machine-confirmed, naming both agents, never confirmed by a person. `user` means a person typed it. Neither tells a reader whether the facts are right.
              */
             origin: string;
+            /** @description For `new_translations`, the record's original summary, the text its translated summaries were made from: an instrument's summary, or the obligation's version in force today. Null for every other kind, when the proposal translates no summary, and when the library no longer holds the record. */
+            originalSummary?: components["schemas"]["LocalizedText"] | null;
+            /** @description For `new_translations`, the record's original title, the text its translated titles were made from, read from the library now, so a reviewer reads the two side by side. Null for every other kind, when the proposal translates no title, and when the library no longer holds the record. */
+            originalTitle?: components["schemas"]["LocalizedText"] | null;
             /**
              * Payload
              * @description What was proposed, in the shape its `kind` names (`ProposalPayload`). This is the request as it arrived, kept unchanged for the audit trail even when a reviewer corrected it before approving: it is not necessarily what the library now holds.
@@ -24346,7 +24388,7 @@ export interface components {
             isMine: boolean;
             /**
              * Kind
-             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `new_recurring_duty` adds a duty an obligation carries on a schedule, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `new_recurring_duty` adds a duty an obligation carries on a schedule, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). `new_instrument_summary` adds an instrument's plain-language summary, and `new_translations` adds machine translations of a record's title and summary in languages it lacks, each stored labelled machine-made. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
              */
             kind: string;
             /**
@@ -24631,7 +24673,7 @@ export interface components {
             isBatch: boolean;
             /**
              * Kind
-             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `new_recurring_duty` adds a duty an obligation carries on a schedule, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
+             * @description What the proposal changes, and therefore which fields of `payload` are read. A fixed kind, not a vocabulary row: `new_obligation_version` adds a version to an obligation that exists, `new_instrument` adds an instrument the library does not hold yet, `new_obligation` adds a duty under an instrument it holds, with its first version, `new_provision` adds a node of a law's text with its first verbatim text, `new_provision_version` adds a text to a provision that exists, `new_recurring_duty` adds a duty an obligation carries on a schedule, `vocabulary_create` adds a row to a library list, `vocabulary_relabel` rewords one, `vocabulary_retire` and `vocabulary_restore` turn one off and on again, `vocabulary_merge` points a row's users at another row and retires it, and `term_create` and `term_update` do the same for a taxonomy term, and `obligation_scope` re-tags many obligations' scope terms as one batch (`isBatch`). `new_instrument_summary` adds an instrument's plain-language summary, and `new_translations` adds machine translations of a record's title and summary in languages it lacks, each stored labelled machine-made. The other kinds of the data model are not built yet, so a reader must not treat this list as the full set for ever.
              */
             kind: string;
             /**
