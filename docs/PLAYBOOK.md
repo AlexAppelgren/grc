@@ -823,7 +823,7 @@ D); CI is insurance, not first detection.
 | Frontend lint, typecheck, unit coverage, build | Lint and type errors, coverage drops, broken build |
 | E2E (real stack) | Broken journeys, undeclared API failures, page exceptions |
 | Secret scan (gitleaks, always on push) | Committed secrets. Allowlist entries are exact literals with a stated reason, never a relaxed rule |
-| Dependency CVEs (osv-scanner on the **committed** lockfiles + `npm audit`) | Known-vulnerable dependencies. The scan refuses to run on an empty lockfile, and the step runs under `bash -eo pipefail` so a broken pipe fails instead of passing on the last exit code |
+| Dependency CVEs (osv-scanner on the **committed** lockfiles) | Known-vulnerable dependencies. The scan refuses to run on an empty lockfile, an accepted advisory without an expiry fails it, and the step runs under `bash -eo pipefail` so a broken pipe fails instead of passing on the last exit code |
 | CodeQL (own SARIF gate, medium and above) | Injection, traversal, unsafe deserialisation. Findings are accepted per fingerprint with a reason, never per rule; stale acceptances are reported so the list cannot rot into a mute |
 | Requirements coverage | A PRD requirement with no scenario, or a scenario with no test |
 | Contract drift | A designed operation in `docs/inputs/openapi.yaml` that is missing or reshaped without an entry in `INPUT_DELTAS.md` |

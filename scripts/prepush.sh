@@ -140,8 +140,8 @@ if [ "$lock" = 1 ]; then  # ci.yml `cve` and `licences`
   gate "CVE: lockfiles present and not empty" . test -s backend/poetry.lock -a -s frontend/package-lock.json
   gate "CVE: lockfiles committed" . git ls-files --error-unmatch backend/poetry.lock frontend/package-lock.json
   osv="$(tool osv-scanner-2.6.0 osv-scanner$x "$osv_url" "$osv_sha")"
+  gate "CVE: every accepted advisory has an expiry" . bash -c 'python3 .github/scripts/osv_ignores_gate.py self-test && python3 .github/scripts/osv_ignores_gate.py'
   gate "CVE: osv-scanner" . "$osv" --lockfile=backend/poetry.lock --lockfile=frontend/package-lock.json
-  gate "CVE: npm audit" frontend npm run audit:gate
   gate "Licences: self-test" . python3 scripts/check_licences.py self-test
   gate "Licences: backend" backend bash ./run.sh run python ../scripts/check_licences.py backend
   gate "Licences: frontend" . python3 scripts/check_licences.py frontend
