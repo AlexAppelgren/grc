@@ -29,6 +29,8 @@ const ACTS = 'flex flex-wrap gap-3 max-[700px]:flex-nowrap max-[700px]:justify-e
 const BUTTON =
   'inline-flex h-[3.1rem] items-center gap-2.5 rounded-xs border border-public-paper px-6 font-sans text-title whitespace-nowrap hover:border-public-brass hover:bg-public-brass hover:text-public-deep max-[700px]:px-4 max-[389px]:h-11 max-[389px]:px-3 max-[389px]:text-body';
 const SOLID = 'bg-public-paper text-brand max-[700px]:order-2';
+// The bar's buttons are a step smaller than the page's.
+const BAR = 'h-10 px-[1.1rem] max-[700px]:px-3.5 max-[389px]:h-10';
 const NUMBER = 'font-serif-display text-display font-normal text-public-brass';
 const TERM = 'block font-serif-display text-display font-normal';
 const LINK = 'underline decoration-1 underline-offset-[0.25em] hover:text-public-brass';
@@ -255,12 +257,13 @@ export function PublicPage() {
             </a>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-5 min-[860px]:ml-0 min-[860px]:gap-7">
-          <a href={SIGN_IN} className="hover:underline hover:underline-offset-[0.3em]">
-            {t('public.action.signIn')}
-          </a>
-          <a href="#request" className={cn(BUTTON, SOLID, 'h-10 px-[1.1rem] max-[700px]:px-3.5 max-[389px]:h-10')}>
+        {/* Sign in is the main action, filled and on the right (Alex, 2026-11-11). */}
+        <div className="ml-auto flex items-center gap-3 max-[700px]:gap-2 min-[860px]:ml-0">
+          <a href="#request" className={cn(BUTTON, BAR)}>
             {t('public.action.requestAccess')}
+          </a>
+          <a href={SIGN_IN} className={cn(BUTTON, SOLID, BAR)}>
+            {t('public.action.signIn')}
           </a>
         </div>
       </header>
@@ -453,14 +456,14 @@ export function PublicPage() {
           </h2>
           {writeTo === null ? <p className="mb-8 max-w-[38rem]">{t('public.request.invited')}</p> : null}
           <div className={ACTS}>
+            <a href={SIGN_IN} className={cn(BUTTON, SOLID)}>
+              {t('public.action.signIn')}
+            </a>
             {writeTo === null ? null : (
-              <a href={writeTo} className={cn(BUTTON, SOLID)}>
+              <a href={writeTo} className={BUTTON}>
                 {t('public.action.requestAccess')}
               </a>
             )}
-            <a href={SIGN_IN} className={BUTTON}>
-              {t('public.action.signIn')}
-            </a>
           </div>
         </section>
       </main>

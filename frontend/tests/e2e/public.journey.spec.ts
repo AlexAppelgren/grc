@@ -81,7 +81,7 @@ test.describe('public page', () => {
     const bar = page.getByRole('banner');
     const entry = page.locator('section#bleqq');
     for (const [secondary, main] of [
-      [bar.getByRole('link', { name: 'Sign in' }), bar.getByRole('link', { name: 'Request access' })],
+      [bar.getByRole('link', { name: 'Request access' }), bar.getByRole('link', { name: 'Sign in' })],
       [entry.getByRole('link', { name: 'Request access' }), entry.getByRole('link', { name: 'Try out our demo' })],
     ] as const) {
       await expect(secondary).toBeVisible();

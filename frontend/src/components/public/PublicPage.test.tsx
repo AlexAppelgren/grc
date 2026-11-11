@@ -155,13 +155,18 @@ describe('PublicPage', () => {
     }
   });
 
-  it('keeps Sign in and Request access in the sticky bar, the main action on the right, and every Sign in goes to the passkey flow', async () => {
-    await renderPage();
+  it('makes Sign in the main action, filled and on the right, in the sticky bar and the closing section', async () => {
+    const { container } = await renderPage('hello@example.com');
     const bar = screen.getByRole('banner');
     expect(bar).toHaveClass('sticky');
     const actions = within(bar).getAllByRole('link').slice(-2);
-    expect(actions.map((link) => link.textContent)).toEqual(['Sign in', 'Request access']);
-    expect(actions[1]).toHaveAttribute('href', '#request');
+    expect(actions.map((link) => link.textContent)).toEqual(['Request access', 'Sign in']);
+    expect(actions[0]).toHaveAttribute('href', '#request');
+    expect(actions[0]).not.toHaveClass('bg-public-paper');
+    expect(actions[1]).toHaveClass('bg-public-paper', 'max-[700px]:order-2');
+    const closing = within(container.querySelector('section#request') as HTMLElement);
+    expect(closing.getByRole('link', { name: 'Sign in' })).toHaveClass('bg-public-paper');
+    expect(closing.getByRole('link', { name: 'Request access' })).not.toHaveClass('bg-public-paper');
     for (const link of screen.getAllByRole('link', { name: 'Sign in' })) expect(link).toHaveAttribute('href', '/sign-in');
   });
 

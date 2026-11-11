@@ -73,9 +73,11 @@ them.
 ## Behaviour
 
 - **The bar.** Sticky and 64 px high on the green. The top line and the links Demo, Method and
-  Sources show from 860 px. Sign in and Request access show at every width, with Request access
-  filled on the right. Sign in is a plain link, so a page load reaches the server, which moves it
-  to the app's own host when there is one (`src/proxy.ts`).
+  Sources show from 860 px. Request access and Sign in show at every width as two buttons, with
+  Sign in filled on the right: Alex asked on 2026-11-11 for Sign in to be the main action and
+  Request access the second one, in the bar and in the closing section. Sign in is a plain link,
+  so a page load reaches the server, which moves it to the app's own host when there is one
+  (`src/proxy.ts`).
 - **The ink** (`InkHead.tsx`). An SVG mask cuts `[blɛkː]` out of a green rectangle over a canvas.
   A small fluid simulation on WebGL2 half-float targets carries the ink, so the pointer drags it
   in every direction and the ink settles back in a few seconds. The reference's script is the
@@ -89,8 +91,9 @@ them.
   the screen. As the server sends the page, and under `prefers-reduced-motion`, it is already
   drawn.
 - **Request access.** In the bar and under the deck it jumps to the closing section. There it is
-  the mail link to `NEXT_PUBLIC_SUPPORT_CONTACT` with the subject filled in. While no contact is
-  set, the section says that a bank's administrator sends the invitation and offers Sign in alone.
+  the mail link to `NEXT_PUBLIC_SUPPORT_CONTACT` with the subject filled in, outlined beside a
+  filled Sign in. While no contact is set, the section says that a bank's administrator sends the
+  invitation and offers Sign in alone.
 - **Anchors** land below the bar. The skip link goes to the main content, and the demo's own
   skip link to the two struck entries (`#case`).
 
