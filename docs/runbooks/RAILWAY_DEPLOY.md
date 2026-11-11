@@ -58,6 +58,7 @@ at a role that can bypass row-level security.
    platform admin invitation. Open the emailed link, enter the code, enrol a
    passkey.
 5. In the console, create the first tenant and invite its admin.
-6. Optional: `python manage.py seed_demo` (lands with chunk 3) loads the prototype's sample data
-   into a demo tenant. It refuses to run when `ENVIRONMENT` is a production
-   name.
+6. There is no demo data on a deployed environment: `seed_demo`, `seed_public_demo` and
+   `seed_e2e` refuse every deployed environment and are not in the image at all
+   (`backend/.dockerignore`, review 2026-11-11 B-3). They run from a checkout, on a laptop
+   or in CI.

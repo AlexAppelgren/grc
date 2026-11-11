@@ -12,3 +12,32 @@ htmlcov/
 var/
 .env
 *.log
+
+# Tests, test builders, seeds for E2E and the demo, and the gates' own tools never run in
+# the server, and the seed code holds library writes that only refuse_when_deployed keeps
+# out of production today (review 2026-11-11 B-3). Each command that imports one of these
+# leaves with it. What stays, because a runtime command or route reads it: seed_reference
+# with apps/library/fixtures/prototype_data.json, apps/library/baseline/, apps/taxonomy/seeds
+# and backend/agents/; eval/*.json(l), which the console's evaluation routes read.
+**/tests_*.py
+**/tests.py
+**/testing.py
+perf/
+scripts/
+run.sh
+run.ps1
+apps/shared/factories.py
+apps/shared/demo_seed.py
+apps/shared/e2e_seed.py
+apps/shared/e2e_logins.py
+apps/shared/e2e_passkeys.py
+apps/watch/e2e_seed.py
+apps/agents/seeds/e2e.py
+apps/library/fixtures/e2e_*
+apps/library/fixtures/check_prototype_data.py
+apps/shared/management/commands/seed_e2e.py
+apps/shared/management/commands/e2e_*.py
+apps/shared/management/commands/seed_demo.py
+apps/shared/management/commands/seed_public_demo.py
+apps/search/eval.py
+apps/search/management/commands/record_eval_run.py
