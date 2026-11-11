@@ -371,12 +371,14 @@ SCOPE_RESEARCH_TEXT_MAX_CHARS = env_int("SCOPE_RESEARCH_TEXT_MAX_CHARS", 2000)
 if SCOPE_RESEARCH_TEXT_MAX_CHARS < 1:
     raise ImproperlyConfigured("SCOPE_RESEARCH_TEXT_MAX_CHARS must be at least 1")
 
-MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp
+MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp | resend
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
 MAIL_SMTP_PORT = env_int("MAIL_SMTP_PORT", 587)
 MAIL_SMTP_USER = env_str("MAIL_SMTP_USER", "")
 MAIL_SMTP_PASSWORD = env_str("MAIL_SMTP_PASSWORD", "")
+RESEND_API_KEY = env_str("RESEND_API_KEY", "")  # read only when MAIL_PROVIDER=resend
+MAIL_TIMEOUT_SECONDS = float(env_str("MAIL_TIMEOUT_SECONDS", "8"))  # a slow code mail is a failed sign-in
 # E4: the reranker over the fused top window (SRC-01, D-09). `none` is the contracted
 # state until a model is chosen, and leaves the fused order as the answer.
 RERANKER_PROVIDER = env_str("RERANKER_PROVIDER", "mock")  # mock | none | <chosen per D-09>
@@ -1351,6 +1353,8 @@ if IS_DEPLOYED_ENVIRONMENT and ENVIRONMENT != MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT
             f"{ENVIRONMENT!r}. Only ENVIRONMENT={MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT!r} "
             "may run a mock. Rule 5."
         )
+if IS_DEPLOYED_ENVIRONMENT and MAIL_PROVIDER == "resend" and not RESEND_API_KEY:
+    _refuse(f"MAIL_PROVIDER=resend with no RESEND_API_KEY on deployed environment {ENVIRONMENT!r}.")
 if IS_DEPLOYED_ENVIRONMENT and STORAGE_BACKEND == "local":
     _refuse(f"STORAGE_BACKEND=local on deployed environment {ENVIRONMENT!r}. Rule 6.")
 if IS_DEPLOYED_ENVIRONMENT and (

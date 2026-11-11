@@ -40,7 +40,8 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 |---|---|---|---|---|---|
 | `STORAGE_BACKEND` | api, worker | `local` | `local` | `s3` | `local` is refused when deployed |
 | `STORAGE_*` (`STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `STORAGE_REGION`) | api, worker | unset | unset | the private bucket's values | Only read when `STORAGE_BACKEND=s3` |
-| `MAIL_PROVIDER` | api, worker | `mock` | `mock` | `smtp` | A mock mailer is refused when deployed except in `test` |
+| `MAIL_PROVIDER` | api, worker | `mock` | `mock` | `resend` (or `smtp`) | A mock mailer is refused when deployed except in `test`. `resend` also needs `RESEND_API_KEY`, and the app refuses to boot deployed without it |
+| `RESEND_API_KEY` | api, worker | unset | unset | the Resend key | Only read when `MAIL_PROVIDER=resend`. `MAIL_FROM` must be an address on a domain verified in Resend (SPF, DKIM, DMARC) |
 | `MAIL_*` (`MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`) | api, worker | unset | unset | the EU transactional sender | SPF and DKIM on the sending domain |
 | `SCANNER_PROVIDER` | api, worker | `mock` | `mock` | `clamd` | `mock` or `clamd` (CAS-05, D-101). The mock is refused at the first scan on every deployed environment, `test` included, so evidence upload answers 503 until clamd is set |
 | `SCANNER_HOST` | api, worker | `localhost` | `localhost` | the clamd service's private host (`clamav.railway.internal`) | Private network only; clamd has no authentication |
