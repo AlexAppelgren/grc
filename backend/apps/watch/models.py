@@ -1,34 +1,20 @@
-"""Models of the watch app (WAT-01 to WAT-04, WAT-07, AGT-01; schema v0.3 section 4;
-INPUT_DELTAS §1, §5).
+"""Models of the watch app (WAT-01 to WAT-04, WAT-07, AGT-01; INPUT_DELTAS §1, §5).
 
-Seven library tables, all `LibraryModel`: the source registry and its coverage log, one
-`regulatory_change` per reform with its timeline, its source pages, its classification
-and its obligation links. None of them carries a tenant column — a bank's triage, its
-"So what?" and its decision live on `change_case`, which the cases app owns — and none of
-them is written outside `watch_write()` (apps/watch/write.py, the chunk 5 plan's ruling H).
+Seven library tables (`LibraryModel`): the source registry and coverage log, and one
+`regulatory_change` per reform with its timeline, pages, classification and obligation
+links. No tenant column (a bank's judgement lives on `change_case`), and none is written
+outside `watch_write()` (apps/watch/write.py).
 
-What the designed schema has differently (INPUT_DELTAS §1, recorded there):
-
-- `change_type`, `source_kind` and `urgency` are library vocabulary rows, not enums, so
-  an admin adds one without a deploy. `check_status`, `change_status`, `source_check_kind`
-  and `check_frequency` stay kinds in code: the rules branch on them.
-- `regulatory_change.flags` is not a `text[]`. A flag and a scope term are both rows of
-  `change_term`, each with the agent's `confidence` and a `suggested` marker until it is
-  confirmed (WAT-03). `change_document.risk_flags` stays the designed array: its values
-  are the screen's own findings (apps/agents/screen.py), not a list an admin curates.
-- A curated fact — the change's type, a flag or scope term, an obligation link — says who
-  suggested it and who confirmed it (D-74, watch 0002). The suggester is copied from the
-  run, the key or the person that filed it; the confirmer is a person holding
-  `proposals.review`, or an agent-bound platform key holding `proposals:review`, never
-  both. A check constraint keeps the confirming person, key and agent from being the
-  suggesting ones, so nobody settles a fact they filed, two keys of one agent cannot
-  confirm each other and an unbound key cannot pass on a null.
-  That is scope separation, not four eyes: there is no proposal row here, and an agent's
-  confirmation reads machine-confirmed, never as a person's verification.
-- `source_check` gains `kind`, `subject_type` and `subject_id`, which the library
-  re-check writes when it re-checks one record against its source (AGT-01, item 3).
-- `source.owner_tenant` is WAT-06's tenant-private source, unused in R1 and left NULL;
-  the column exists now so the row-level shape is final (INPUT_DELTAS §5).
+- `change_type`, `source_kind` and `urgency` are vocabulary rows; the check, status, kind
+  and frequency enums stay kinds because the rules branch on them.
+- Flags and scope terms are `change_term` rows with `confidence` and `suggested` (WAT-03);
+  `change_document.risk_flags` stays an array of the screen's own findings.
+- A curated fact names who suggested and who confirmed it (D-74, watch 0002): the confirmer
+  is a `proposals.review` person or an agent-bound key with `proposals:review`, never both,
+  and a check constraint keeps it from being the suggester. Scope separation, not four eyes;
+  an agent's confirmation reads machine-confirmed.
+- `source_check` names a subject when the library re-check writes it (AGT-01).
+- `source.owner_tenant` (WAT-06) stays NULL for now (INPUT_DELTAS §5).
 """
 
 from __future__ import annotations
@@ -62,14 +48,11 @@ def _person() -> models.ForeignKey:
 
 
 def _curation_constraints(table: str, prefix: str = "", *, suggested: bool = True) -> list[models.CheckConstraint]:
-    """The two rules every curated fact carries (D-74), for a table whose columns are named
-    `<prefix>confirmed_by` and so on.
-
-    A confirmation names a person, or an agent-bound key and its agent, with the time; a
-    suggestion names neither. `suggested`, where the table has it, moves with them. And the
-    confirmer is never the suggester — not the same person, not the same key, not the same
-    agent: the key and the agent are compared both ways because a key that files a
-    suggestion may be bound to no agent, and then only the key tells the two apart."""
+    """The two rules every curated fact carries (D-74), for columns named
+    `<prefix>confirmed_by` and so on: a confirmation names a person, or an agent-bound key and
+    its agent, with the time, and a suggestion neither (`suggested` moves with them); and the
+    confirmer is never the suggester by person, key or agent, compared both ways because a
+    suggesting key may be bound to no agent."""
 
     def isnull(column: str, value: bool) -> models.Q:
         return models.Q(**{f"{prefix}{column}__isnull": value})
@@ -101,9 +84,7 @@ def _curation_constraints(table: str, prefix: str = "", *, suggested: bool = Tru
     ]
 
 
-# ---------------------------------------------------------------------------------------
-# Kinds (tier one, apps/shared/kinds.py)
-# ---------------------------------------------------------------------------------------
+# --- Kinds (tier one, apps/shared/kinds.py) ---
 class CheckStatus(enum.StrEnum):
     """WAT-01: how a source check ended. The coverage report and the stale rule branch."""
 
@@ -113,8 +94,7 @@ class CheckStatus(enum.StrEnum):
 
 class SourceCheckKind(enum.StrEnum):
     """What a check was for: the sweep for new documents, or the re-check of one library
-    record against the source it came from (AGT-01, Alex's item 3). A re-check names its
-    subject; a sweep names none."""
+    record against its source (AGT-01), which names its subject."""
 
     SWEEP = "sweep"
     RECHECK = "recheck"
@@ -137,9 +117,7 @@ class ChangeStatus(enum.StrEnum):
     WITHDRAWN = "withdrawn"
 
 
-# ---------------------------------------------------------------------------------------
-# WAT-01: the source registry and the coverage log
-# ---------------------------------------------------------------------------------------
+# --- WAT-01: the source registry and the coverage log ---
 class Source(LibraryModel):
     """A place the agents check (schema v0.3 `source`). `active` false is a source that is
     registered but never checked automatically — how a standards body is seeded until its
@@ -201,9 +179,7 @@ class SourceCheck(LibraryModel):
         return f"{self.source_id}:{self.checked_at:%Y-%m-%d}"
 
 
-# ---------------------------------------------------------------------------------------
-# WAT-02, WAT-07: one record per reform
-# ---------------------------------------------------------------------------------------
+# --- WAT-02, WAT-07: one record per reform ---
 class RegulatoryChange(LibraryModel):
     """What happened, sourced facts only (schema v0.3 `regulatory_change`). `stable_key`
     is the merge key: posting a known one adds pages to this row instead of creating a
@@ -246,10 +222,8 @@ class RegulatoryChange(LibraryModel):
 
     class Meta:
         db_table = "regulatory_change"
-        # The feed's order: the key date first, then when we first saw it, newest first,
-        # with a stable tiebreak so a page boundary never drops or repeats a row. A change
-        # with no key date yet sorts last, not first: PostgreSQL puts nulls first on a
-        # descending sort, which would open the feed with the changes that have no date.
+        # The feed's order: key date, then first sighting, newest first, with a stable
+        # tiebreak. No key date sorts last (PostgreSQL puts nulls first on a descending sort).
         ordering = [models.F("key_date").desc(nulls_last=True), "-first_seen_at", "id"]
         indexes = [
             models.Index(
@@ -319,9 +293,7 @@ class ChangeDocument(LibraryModel):
         return f"{self.change_id}:{self.url}"
 
 
-# ---------------------------------------------------------------------------------------
-# WAT-03, WAT-04: what the change touches, suggested until it is confirmed (D-74)
-# ---------------------------------------------------------------------------------------
+# --- WAT-03, WAT-04: what the change touches, suggested until confirmed (D-74) ---
 class ChangeTerm(LibraryModel):
     """A flag or a scope term on a change (WAT-03). Exactly one of the two: a flag is a
     row of the `flag` list and a scope term a row of a dimension, and neither is ever a
@@ -386,9 +358,7 @@ class ChangeObligation(LibraryModel):
 
     class Meta:
         db_table = "change_obligation"
-        # Most confident first; a link with no confidence — a person's own — sorts after
-        # the agent's scored ones rather than ahead of them, which is where PostgreSQL's
-        # nulls-first default on a descending sort would put it.
+        # Most confident first; an unscored link (a person's) sorts after the scored ones.
         ordering = [models.F("confidence").desc(nulls_last=True), "obligation__stable_key"]
         constraints = [
             models.UniqueConstraint(fields=["change", "obligation"], name="change_obligation_unique"),

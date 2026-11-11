@@ -1,40 +1,21 @@
 """The watch reads: the bank's feed, one change, an obligation's related changes and the
 console's Change facts queue (WAT-02, WAT-03, WAT-04, CAS-01, FP-03, FP-04).
 
-`c5-watch-feed-read` built the feed and the console list, `c5-watch-change-reads` the
-change read and the obligation's related changes.
+Reads only. The library's change and the reader's own case are joined with a
+`FilteredRelation` (the condition on the JOIN, so a change without a case still answers a
+row), the case under row-level security with the caller's tenant activated. The console list
+leaves the join out and its row has no `case` member at all, since a console session belongs
+to no bank.
 
-A read module: nothing here writes, so it neither opens the watch door nor calls
-`library_write()`. What it joins is two zones at once — the library's change beside the
-reader's own case — and the tenant half is read under row-level security with the caller's
-tenant activated, never by filtering in Python. The one join is a `FilteredRelation`: the
-condition sits on the JOIN rather than in the WHERE, so a change this bank has no case for
-still answers a row, with a null case.
+Nothing is a settled fact until confirmed: type, classification and links are suggestions
+with confidence until an independent agent or a person confirms them (WAT-03, WAT-04, D-74),
+and an agent's confirmation reads machine-confirmed. `inFootprint` says only that the change
+deserves attention, never that it applies or that the bank complies (REG-01, REG-02).
 
-The console list is the same read with that join left out. A platform console session
-belongs to no tenant, so there is no case to join and `WatchConsoleChangeRow` carries no
-`case` member at all — a member that were merely null would invite a console screen to
-render one bank's judgement.
-
-Nothing here is a settled fact until somebody confirms it. A change is what an agent
-sighted: its type and classification carry the agent's confidence and a `suggested` marker
-until an independent agent or a person confirms them (WAT-03, D-74), a link is a
-suggestion until then (WAT-04), each fact names who suggested and who confirmed it, an
-agent's confirmation reads machine-confirmed and never as a person's verification, and
-`inFootprint` says only that the change is worth this bank's attention — never that an
-obligation applies to it or that it complies, which are separate facts (REG-01, REG-02).
-
-The footprint rule is the one in `apps/library/reading.py` and the SQL function behind it,
-used exactly as the obligations list uses them: `taxonomy_in_footprint` narrows the query
-and `outside_reasons()` gives the verdict on the rows that come back. There is no second
-rule here. A change's scope is its own terms plus the jurisdictions its authority reaches,
-derived at match time by the instruments' own `reaching()` and never stored (FP-04, D-28,
-D-29); a change with no authority is not restricted by jurisdiction.
-
-"Markets we watch" (`footprint=watched`) shows only what watching adds: a change outside
-the footprint whose own terms still match it and whose authority reaches a market this bank
-watches. Watching sets no urgency and opens nothing (D-30): the view reads the cases, it
-never writes one.
+The footprint rule is `apps/library/reading.py`'s, used as the obligations list uses it. A
+change's scope is its own terms plus the jurisdictions its authority reaches, derived at
+match time (FP-04, D-28, D-29). `footprint=watched` shows only what watching adds; watching
+sets no urgency and opens nothing (D-30).
 """
 
 from __future__ import annotations
@@ -119,12 +100,9 @@ from apps.watch.schemas import (
     WatchObligationLink,
 )
 
-# The columns of the reader's own case the feed answers, read off the one left join, by
-# the name each is read under and its path from the case. A foreign key is named without
-# its `_id` suffix on purpose: `F("own_case__urgency")` resolves to the column on
-# `change_case` and adds no second join. The confirming person's name is the one path that
-# does join, a left join to `app_user` in the same query, so naming them costs no query
-# per row (WAT-05).
+# The reader's case columns the feed answers, read off the one left join. A foreign key is
+# named without `_id` so `F("own_case__urgency")` adds no join; the confirming person's name
+# is the one left join to `app_user` (WAT-05).
 _CASE_COLUMNS = {
     "id": "id",
     "status": "status",
@@ -144,11 +122,8 @@ _JURISDICTION = "authority_jurisdiction_id"
 _WATCHED_TERM = "watched_term_id"
 
 
-# ---------------------------------------------------------------------------------------
-# The pieces both lists are built from
-# ---------------------------------------------------------------------------------------
-# What every change row is loaded with: its type, and the two agents behind the type's
-# suggestion and confirmation, so a row names them without a query of its own (D-74).
+# --- The pieces both lists are built from ---
+# Every change row's joins: its type and the two agents behind it (D-74).
 _CHANGE_JOINS = ("change_type", *keys.CHANGE_TYPE_AGENTS)
 
 
@@ -162,9 +137,8 @@ def _own_term_ids() -> ArraySubquery:
 
 
 def _scope_term_ids() -> Func:
-    """A change's scope term ids as one `uuid[]`, for the database's footprint function: its
-    own terms and the jurisdiction terms its authority reaches (`reaching()`), none without
-    an authority. The SQL twin of `_Scopes`."""
+    """A change's scope term ids as one `uuid[]` for the database's footprint function: own
+    terms plus the jurisdiction terms its authority reaches. The SQL twin of `_Scopes`."""
     reached = ArraySubquery(
         TaxonomyTerm.objects.filter(reaching(OuterRef("authority__jurisdiction_id"))).order_by().values("id"),
         output_field=ArrayField(UUIDField()),
@@ -180,16 +154,10 @@ def _in_footprint(tenant: Tenant, term_ids: Func | ArraySubquery) -> Func:
 def urgency_refs(ids: Collection[uuid.UUID], order: list[str]) -> dict[uuid.UUID, LibraryRef]:
     """`{key, kind, label}` per urgency row named by a page, from two queries.
 
-    `kind` is null on purpose. An urgency row's own `kind` column is its pill tone, and a
-    tone is nobody's to send (NFR-03): the screen takes the tone from the key's fixed
-    severity order. This is why the urgency reference is built here rather than through
-    `vocabulary_refs()`, which answers the row's stored kind.
-
-    Public because it is the one rule, and every surface that shows an urgency has to obey
-    it: the feed and the change page here, the roadmap and Today's "Coming up" through
-    `apps/home/roadmap.py`, and the public list of dates through `apps/home/calendar.py`.
-    Reaching for `vocabulary_refs()` instead is how a pill tone leaves the API, which it did
-    on the roadmap until 2026-09-21.
+    `kind` is null on purpose: an urgency row's own `kind` is its pill tone, and a tone is
+    nobody's to send (NFR-03); the screen takes it from the key's severity order. The one
+    rule every surface showing an urgency uses (feed, change page, roadmap, Today, the public
+    list); `vocabulary_refs()` would leak the tone.
     """
     rows = list(Urgency.objects.filter(id__in=ids))
     labels = Labels.for_rows(UrgencyLabel, rows)
@@ -216,9 +184,8 @@ class _Classification:
         )
         self.flags: dict[uuid.UUID, list[WatchFact]] = {}
         self.terms: dict[uuid.UUID, list[WatchFact]] = {}
-        # What the footprint is matched against: the change's taxonomy terms by dimension,
-        # exactly as `apps/cases/reading.py` reads them for a case. A flag is a
-        # `change_term` row too and never scopes the change.
+        # The change's taxonomy terms by dimension, as `apps/cases/reading.py` reads them.
+        # A flag never scopes a change.
         self.scope: dict[uuid.UUID, dict[str, set[str]]] = {}
         self.unconfirmed: dict[uuid.UUID, int] = {}
         for link in links:
@@ -239,14 +206,10 @@ class _Classification:
 
 
 class _Scopes:
-    """The footprint verdict of a page of changes and, beside it, the market this bank
-    watches that each one comes from, from one query for the jurisdictions the page's
-    authorities reach (FP-04). The watched market's term came with the page itself
-    (`_with_own_case()`).
-
-    A change's scope is its own terms plus those jurisdictions, as `_scope_term_ids()` hands
-    them to the database. `market` is set only where watching adds the row: outside the
-    footprint, inside it on the change's own terms, and reaching a watched market."""
+    """The footprint verdict of a page of changes and the watched market each comes from,
+    with one query for the jurisdictions the authorities reach (FP-04). `market` is set only
+    where watching adds the row: outside the footprint, inside it on the change's own terms,
+    reaching a watched market."""
 
     def __init__(self, tenant: Tenant, page: Sequence[RegulatoryChange], classification: _Classification) -> None:
         footprint, restricting = matching.footprint_of(tenant.id), matching.restricting_dimensions()
@@ -270,9 +233,8 @@ class _Scopes:
 
 
 def _change_type_fact(change: RegulatoryChange, refs: Mapping[uuid.UUID, LibraryRef]) -> WatchFact:
-    """The change's type as a fact with its provenance, read off the type's own columns
-    (watch 0002, D-74) exactly as a flag's are read off its link. The change must be loaded
-    with `keys.CHANGE_TYPE_AGENTS`, so naming the agents costs no query."""
+    """The change's type as a fact with its provenance (watch 0002, D-74), read like a flag's.
+    The change must be loaded with `keys.CHANGE_TYPE_AGENTS`."""
     confidence = change.change_type_confidence
     return WatchFact(
         ref=refs[change.change_type_id],
@@ -283,12 +245,8 @@ def _change_type_fact(change: RegulatoryChange, refs: Mapping[uuid.UUID, Library
 
 
 class _SuggestedLinks:
-    """The obligation links of a page of changes, with the title, instrument and reference
-    label a reader needs, from two queries and grouped by change once.
-
-    Most confident first, which is `ChangeObligation.Meta`'s own order: a link nobody
-    scored — a person's own — sorts after the agent's scored ones rather than ahead of
-    them."""
+    """The obligation links of a page of changes with title, instrument and reference label,
+    from two queries, in `ChangeObligation.Meta`'s order."""
 
     def __init__(self, change_ids: Collection[uuid.UUID], order: list[str]) -> None:
         links = list(
@@ -318,26 +276,18 @@ class _SuggestedLinks:
 
 
 def _week_window(week: datetime.date, tenant: Tenant) -> tuple[datetime.datetime, datetime.datetime]:
-    """The ISO week `week` falls in, Monday to Sunday, in the bank's own time zone. A
-    sighting is a timestamp, which is why the week needs a zone to be resolved at all; a
-    key date is a plain date and needs none."""
+    """The ISO week `week` falls in, Monday to Sunday, in the bank's own time zone."""
     zone = ZoneInfo(tenant.timezone)
     monday = week - datetime.timedelta(days=week.weekday())
     start = datetime.datetime.combine(monday, datetime.time.min, tzinfo=zone)
     return start, start + datetime.timedelta(days=7)
 
 
-# ---------------------------------------------------------------------------------------
-# The reader's own case, joined once
-# ---------------------------------------------------------------------------------------
+# --- The reader's own case, joined once ---
 def _with_own_case(tenant: Tenant) -> QuerySet[RegulatoryChange]:
-    """Every change with this bank's own case beside it, in one left join. The condition
-    sits on the JOIN, so a change the bank has no case for is still a row; the tenant is
-    named as well as left to row-level security, which is the belt to the policy's
-    braces.
-
-    Beside the case, where the change's jurisdiction comes from (its authority's) and the
-    first term it reaches that mirrors a market this bank watches, or null (FP-04)."""
+    """Every change with this bank's own case beside it, in one left join (the tenant named
+    on top of row-level security), plus the change's jurisdiction and the first term it
+    reaches that mirrors a watched market, or null (FP-04)."""
     watched = WatchedMarket.objects.filter(tenant=tenant).values("jurisdiction")
     queryset: QuerySet[RegulatoryChange] = RegulatoryChange.objects.annotate(
         own_case=FilteredRelation("cases", condition=Q(cases__tenant=tenant)),
@@ -353,13 +303,9 @@ def _with_own_case(tenant: Tenant) -> QuerySet[RegulatoryChange]:
     return queryset
 
 
-# ---------------------------------------------------------------------------------------
-# GET /changes: one bank's feed
-# ---------------------------------------------------------------------------------------
+# --- GET /changes: one bank's feed ---
 def _feed_queryset(tenant: Tenant, query: WatchChangeQuery) -> QuerySet[RegulatoryChange]:
-    """The feed's rows, with every filter applied in the database. The order is the
-    model's own (`RegulatoryChange.Meta`): the key date, then when the reform was first
-    seen, both newest first, with the row id as a stable tiebreak and no key date last."""
+    """The feed's rows, every filter in the database, in `RegulatoryChange.Meta`'s order."""
     queryset = _with_own_case(tenant)
     if query.tab != "all":
         queryset = queryset.filter(Q(own_case__status=query.tab))
@@ -377,8 +323,7 @@ def _feed_queryset(tenant: Tenant, query: WatchChangeQuery) -> QuerySet[Regulato
     if query.owner_id:
         queryset = queryset.filter(Q(own_case__owner=query.owner_id))
     if query.term_id:
-        # A change matches when it carries any one of them. `Exists` rather than a join, so
-        # a change carrying two of the wanted terms is still one row.
+        # Any one of them; `Exists` keeps a change with two of them one row.
         queryset = queryset.filter(Exists(ChangeTerm.objects.filter(change=OuterRef("pk"), term_id__in=query.term_id)))
     if query.week:
         seen_from, seen_until = _week_window(query.week, tenant)
@@ -390,9 +335,7 @@ def _feed_queryset(tenant: Tenant, query: WatchChangeQuery) -> QuerySet[Regulato
     if query.footprint == "in":
         queryset = queryset.filter(_in_footprint(tenant, _scope_term_ids()))
     elif query.footprint == "watched":
-        # FP-04's "Markets we watch": only what watching adds, the rule `_Scopes` gives
-        # each row its market by. Outside the footprint, inside it on the change's own terms,
-        # and from an authority whose jurisdiction reaches a market this bank watches.
+        # FP-04's "Markets we watch": only what watching adds, by the rule of `_Scopes`.
         queryset = queryset.filter(Q(**{f"{_WATCHED_TERM}__isnull": False}), _in_footprint(tenant, _own_term_ids()))
         queryset = queryset.exclude(_in_footprint(tenant, _scope_term_ids()))
     return queryset
@@ -476,16 +419,9 @@ def _decisions_by_case(case_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, list[
 
 def change_rows(tenant: Tenant, order: list[str], change_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, WatchChangeRow]:
     """The feed's own row for each of `change_ids`, keyed by change id so the caller keeps
-    its own order (WAT-02, HOM-01, HOM-02).
-
-    Today's lead card and the weekly briefing show a change as the feed shows it, and one
-    shape has one owner (API_DOCUMENTATION §4b): they choose *which* changes by their own
-    rule and ask here for the rows, rather than building a second feed row that could drift
-    from this one. A change the caller cannot see is simply absent from the answer, which is
-    row-level security doing its job rather than a filter in Python.
-
-    The same fixed number of queries whatever is asked for, exactly as a page of the feed
-    costs (NFR-02).
+    its order (WAT-02, HOM-01, HOM-02). Today and the briefing choose their changes and ask
+    here for the rows, so one shape has one owner. A change the caller cannot see is absent.
+    A fixed number of queries (NFR-02).
     """
     page = list(_with_own_case(tenant).select_related(*_CHANGE_JOINS).filter(id__in=change_ids))
     return {row.id: row for row in _feed_rows(tenant, page, order)}
@@ -502,9 +438,8 @@ def list_changes(tenant: Tenant, order: list[str], query: WatchChangeQuery) -> W
 
 
 def _feed_rows(tenant: Tenant, page: Sequence[RegulatoryChange], order: list[str]) -> list[WatchChangeRow]:
-    """One page of feed rows, each the library's facts about a reform beside the reader's
-    own case. The same number of queries for the page, whatever its size (NFR-02): one more
-    for the markets' labels when a row comes from a watched market."""
+    """One page of feed rows in a fixed number of queries (NFR-02), plus one for the market
+    labels when a row comes from a watched market."""
     ids = [change.id for change in page]
     classification = _Classification(ids, order)
     scopes = _Scopes(tenant, page, classification)
@@ -546,17 +481,14 @@ def _feed_rows(tenant: Tenant, page: Sequence[RegulatoryChange], order: list[str
     ]
 
 
-# ---------------------------------------------------------------------------------------
-# GET /console/changes: the library editor's queue
-# ---------------------------------------------------------------------------------------
+# --- GET /console/changes: the library editor's queue ---
 def _console_queryset(query: WatchConsoleChangeQuery) -> QuerySet[RegulatoryChange]:
     """The queue, newest sighting first. No case is joined: a console session belongs to no
     bank (NFR-01)."""
     queryset = RegulatoryChange.objects.all()
     if query.confirmed == "false":
         queryset = queryset.filter(
-            # The type, the flags, the scope terms and the links each say on their own
-            # columns whether anybody has stood behind them yet (D-74).
+            # Each fact says on its own columns whether anybody has stood behind it (D-74).
             Q(change_type_suggested=True)
             | Exists(ChangeTerm.objects.filter(change=OuterRef("pk"), suggested=True))
             | Exists(ChangeObligation.objects.filter(change=OuterRef("pk"), confirmed_at__isnull=True))
@@ -579,8 +511,7 @@ def list_console_changes(order: list[str], query: WatchConsoleChangeQuery) -> Wa
 
 def console_change(order: list[str], change_id: uuid.UUID) -> WatchConsoleChangeRow:
     """One change as the console's queue shows it, which is what a curation confirmation
-    answers: the facts with who suggested and who confirmed each (D-74). No case is joined,
-    because the confirmer is a platform key or a console session and belongs to no bank."""
+    answers (D-74). No case is joined: the confirmer belongs to no bank."""
     change = RegulatoryChange.objects.select_related(*_CHANGE_JOINS).get(pk=change_id)
     return _console_rows([change], order)[0]
 
@@ -619,17 +550,11 @@ def _console_rows(page: Sequence[RegulatoryChange], order: list[str]) -> list[Wa
     ]
 
 
-# ---------------------------------------------------------------------------------------
-# GET /changes/{changeId}: the whole change page
-# ---------------------------------------------------------------------------------------
+# --- GET /changes/{changeId}: the whole change page ---
 def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID, reader: uuid.UUID | None) -> WatchChangeDetail:
-    """`GET /changes/{changeId}`: the reform's sourced facts — its type, its flags, its
-    scope, its timeline, the pages it was found on and the obligations it affects — and
-    beside them the reader's own bank's case with its workflow block (WAT-02, WAT-03,
-    WAT-04, CAS-01 to CAS-08). `reader` is the person reading, for the moves open to them.
-
-    A change nobody registered and a change the caller cannot see answer the same 404, so
-    no id can be probed for."""
+    """`GET /changes/{changeId}`: the reform's sourced facts beside the reader's bank's case
+    and its workflow block (WAT-02 to WAT-04, CAS-01 to CAS-08); `reader` decides the moves
+    offered. Unregistered and invisible changes are the same 404."""
     change = _with_own_case(tenant).select_related(*_CHANGE_JOINS).filter(pk=change_id).first()  # ordering: pk lookup, at most one row
     if change is None:
         raise ValidationError(NOT_FOUND, code="not_found")
@@ -665,9 +590,8 @@ def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID, reader: u
         key_date_precision=change.key_date_precision,
         key_date_label=change.key_date_label or None,
         recurrence_rule=change.recurrence_rule or None,
-        # The same facts the feed row carries, provenance and all. The change page is where
-        # a person judges the change, so an individual flag or scope term an agent
-        # suggested has to read as a suggestion here too (WAT-03).
+        # The feed row's facts, provenance and all: an agent's flag reads as a suggestion here
+        # too (WAT-03).
         flags=classification.flags.get(change.id, []),
         source_label=change.source_label,
         source_url=change.source_url,
@@ -709,22 +633,14 @@ def get_change(tenant: Tenant, order: list[str], change_id: uuid.UUID, reader: u
     )
 
 
-# ---------------------------------------------------------------------------------------
-# GET /obligations/{obligationId}/changes: the related-changes panel
-# ---------------------------------------------------------------------------------------
+# --- GET /obligations/{obligationId}/changes: the related-changes panel ---
 def list_obligation_changes(tenant: Tenant, order: list[str], obligation_id: uuid.UUID, page_query: PageQuery) -> WatchObligationChangePage:
     """`GET /obligations/{obligationId}/changes`: the changes linked to one obligation,
-    the library editor's confirmed links first, and how many of them still have work open
-    for this bank (WAT-04, WAT-S6).
+    confirmed links first, and how many still have work open for this bank (WAT-04, WAT-S6).
 
-    `openCount` is counted by the database over every linked change and never over the
-    page, so paging cannot change it. It counts this bank's own cases that are neither
-    closed nor dismissed: it says the work is open, never that the bank does not comply,
-    which is a separate fact in the register (REG-02).
-
-    A change this bank removed the link to — "not related to us" on its own case — is left
-    out of the items, the total and the open count alike. Its removal is this bank's alone:
-    the library link stays, and another bank still sees the change (WAT-04, ruling C)."""
+    `openCount` is counted over every linked change, never the page, and counts this bank's
+    open cases: open work, never non-compliance (REG-02). A link this bank removed on its own
+    case is left out of everything; the library link stays (ruling C)."""
     obligation = obligation_subject(obligation_id)
     removed = CaseObligationLink.objects.filter(
         tenant=tenant, obligation=obligation, decision=CaseLinkDecisionKind.REMOVED.value
