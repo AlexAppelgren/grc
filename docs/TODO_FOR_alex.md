@@ -2517,7 +2517,8 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       comment what the service is, that access is by invitation and that `bleqq.com` is the
       public page. Broadcom gives 24 to 48 hours for an accepted change. SEB IT allowing
       `*.bleqq.com` (`r2f-host-split`, step 7) does not wait for it.
-- [ ] **Two Cloudflare switches that change the sign-in page (2026-11-11).** Broadcom's rater
+- [x] **Two Cloudflare switches that change the sign-in page (2026-11-11; both off, checked from
+      outside at 07:44 UTC the same day).** Broadcom's rater
       votes on what a page loads, and names "obfuscated scripts" on a new, low-traffic site as a
       reason for a higher risk level. Cloudflare adds two scripts to our pages that the repo does
       not contain. (1) **Email Address Obfuscation**, on by default: on sign-in and enrolment it
@@ -2528,21 +2529,23 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       third-party analytics inside the application, which a bank's vendor review will ask about.
       Turn it off: Web Analytics › Manage site › Disable. Then ask an agent to check from outside
       that both scripts are gone.
-- [ ] **Where a visitor without a session lands on the app host.** Today `https://app.bleqq.com/`
-      shows "Loading your session…" and then moves to the public page on `bleqq.com`. Since
-      2026-11-11 that move is a page load the server answers (before, the router's own request
-      for it was refused by the browser first, on the sign-in page too). Default taken: the
-      destination is unchanged. Say if such a visitor should land on `/sign-in` on the app host
-      instead, which is what a person with a bookmark wants and leaves no move between hosts.
-- [ ] **The app host's front page is three words without JavaScript.** `https://app.bleqq.com/`
-      and every signed-in address answer "Compliance Watch, Loading your session…" first: the
-      server cannot see a session (the token is in the browser's memory, the refresh cookie
-      belongs to the API host), so the page waits for `POST /api/v1/auth/refresh`. Sign-in and
-      enrolment were given a readable first byte in `r2f-host-split`; this page was not. Default
-      taken: left as it is, because Broadcom's label names reputation and not content. If a
-      reviewer or another filter still flags the app host after the review, say so and an agent
-      gives that waiting state a `noscript` line saying what the service is, with links to
-      sign-in and the public page.
+- [ ] **The app host's front door is now the public page for a visitor (2026-11-11).** From
+      SEB's network `bleqq.com` opened and `app.bleqq.com` was denied, on the same addresses and
+      the same service, so the difference was what each host answers. `https://app.bleqq.com/`
+      now answers a browser without a session with the public page, rendered on the server; a
+      signed-in browser gets the app, told apart by a marker cookie that holds no secret
+      (`cw_signed_in`). Defaults taken: the same page as on `bleqq.com`, which stays its
+      canonical address; a marker of one day; sign-in and every other app address unchanged. It
+      is not proven to change Broadcom's rating, so the review request above and SEB's allowlist
+      are still needed. `docs/runbooks/DNS_DOMAINS.md` ("The app host's front door") has the rule.
+- [ ] **One host, as in the owner's two other apps, is the larger step, and yours to decide.**
+      ESC-App and the older bleqq serve their pages and their API from one host (`/api` is
+      rewritten on the server) and keep a session cookie the web server can read. Compliance
+      Watch has two public hosts, and a filter has to rate both: with `api.bleqq.com` denied,
+      a person sees "Loading your session…" and then "Try again". Putting the API under
+      `app.bleqq.com/api` removes the second host and lets the server answer every first
+      request. It changes where the refresh cookie lives (D-06) and how the API sees a
+      person's address, so it needs your word and its own ADR.
 
 Defaults taken: the sitemap lists `/welcome` only, since `/` is the signed-in home that sends a
 visitor on to `/welcome`; robots.txt allows `/` so a crawler that starts there follows on, and `/`

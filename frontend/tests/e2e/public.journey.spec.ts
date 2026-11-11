@@ -319,7 +319,7 @@ test.describe('the public site and the app on hosts of their own', () => {
   });
 
   test('the app host keeps the app, marks every page noindex, and sends the public page to the public host', async ({ request }) => {
-    for (const path of ['/', '/sign-in', '/enrol', '/inventory']) {
+    for (const path of ['/sign-in', '/enrol', '/inventory']) {
       const response = await request.get(path, { maxRedirects: 0 });
       expect(response.status(), path).toBe(200);
       expect(response.headers()['x-robots-tag'], path).toBe('noindex');
@@ -327,6 +327,36 @@ test.describe('the public site and the app on hosts of their own', () => {
     const welcome = await request.get('/welcome', { maxRedirects: 0 });
     expect(welcome.status()).toBe(301);
     expect(welcome.headers().location).toBe(`${PUBLIC}/`);
+  });
+
+  // A bank's filter let the public host through and rated the app host Suspicious: the public host answered a
+  // whole page, the app host's front door the session gate's waiting text. So the app host answers a visitor
+  // with the same page, and only a browser that says it holds a session gets the app there.
+  test('the front door of the app host is the public page for a visitor and a crawler, and the app for a signed-in browser', async ({ request }) => {
+    const visitor = await request.get('/', { maxRedirects: 0 });
+    expect(visitor.status()).toBe(200);
+    const html = await visitor.text();
+    for (const text of ['>bleqq</h1>', 'To check each regulator and law gazette on a schedule, in the language it publishes in.', 'Access is by invitation.']) expect(html).toContain(text);
+    expect(html).not.toContain('Loading your session');
+    expect(html).toMatch(/<meta name="robots" content="index, follow"/);
+    // The page's own address is the public host's, and no shared cache may keep an answer that turns on the visitor.
+    expect(visitor.headers().link).toBe(`<${PUBLIC}/>; rel="canonical"`);
+    expect(visitor.headers()['x-robots-tag']).toBeUndefined();
+    expect(visitor.headers()['cache-control']).toBe('private, no-cache');
+
+    // The marker is a hint and no proof: with it the app loads, and the session gate asks the API as before.
+    const signedIn = await request.get('/', { maxRedirects: 0, headers: { Cookie: 'cw_signed_in=1' } });
+    expect(signedIn.status()).toBe(200);
+    const shell = await signedIn.text();
+    expect(shell).toContain('Loading your session');
+    expect(shell).not.toContain('>bleqq</h1>');
+    expect(signedIn.headers()['x-robots-tag']).toBe('noindex');
+    expect(signedIn.headers()['cache-control']).toBe('private, no-cache');
+
+    // The demo's frame, and the app's own fetches, still get the app at / without the marker.
+    const frame = await request.get('/', { maxRedirects: 0, headers: { 'Sec-Fetch-Dest': 'iframe' } });
+    expect(await frame.text()).toContain('Loading your session');
+    expect(frame.headers()['x-robots-tag']).toBe('noindex');
   });
 
   test('the sign-in and enrolment pages say what the service is and who runs it before any script runs', async ({ browser }) => {
@@ -376,10 +406,12 @@ test.describe('the public site and the app on hosts of their own', () => {
     await expect(page).toHaveURL(`${PUBLIC}/`);
     await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
 
-    // Without a session the app host's front door goes on to the public host, as it goes to /welcome today.
+    // Without a session the app host's front door is the public page itself, and its Sign in stays on the app host.
     await page.goto('/');
-    await expect(page).toHaveURL(`${PUBLIC}/`);
+    await expect(page).toHaveURL(`${APP}/`);
     await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
+    await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(`${APP}/sign-in`);
 
     // The sign-in page at rest asks for nothing that is refused either: its back link is not fetched ahead.
     await page.goto('/sign-in');
@@ -388,12 +420,19 @@ test.describe('the public site and the app on hosts of their own', () => {
     expect(refused).toEqual([]);
   });
 
-  test('a passkey signs in on the app host', async ({ page, apiGuard }) => {
+  test('a passkey signs in on the app host', async ({ page, context, apiGuard }) => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
     expect(new URL(page.url()).origin).toBe(APP);
     await page.reload();
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+
+    // Signing in left the marker, so a page load of the front door is the app and never the public page.
+    expect((await context.cookies(APP)).map((cookie) => cookie.name)).toContain('cw_signed_in');
+    await page.goto('/');
+    await expect(page).toHaveURL(`${APP}/`);
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+    await expect(page.getByRole('heading', HEADWORD)).toBeHidden();
   });
 
   test('the demo runs the app in its frame on the public host', async ({ page, apiGuard }) => {

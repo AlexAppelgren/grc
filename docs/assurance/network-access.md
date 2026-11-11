@@ -38,6 +38,11 @@ a contact.
   `HttpOnly`, `Secure`, `SameSite=Strict`), and WebAuthn: a passkey is the only
   way in, so a proxy that strips or blocks the WebAuthn prompt, or a browser
   policy that disables passkeys, stops sign-in.
+- One more cookie, on the application host itself: `cw_signed_in`, a marker
+  that says the browser holds a session. It holds no secret and grants nothing;
+  the web server reads it only to choose between the public page and the
+  application at the host's front door (`docs/runbooks/DNS_DOMAINS.md`, "The app
+  host's front door").
 - No TLS interception is required. Passkeys need a secure page, so a proxy
   that intercepts TLS must present a certificate the browser trusts.
 

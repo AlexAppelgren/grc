@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 
+import { clearSignedIn, markSignedIn } from '@/shared/navigation/session-marker';
 import type { components } from '@/types/api.generated';
 
 // The single axios instance (playbook 2.3, 6.1). Never a second one, never
@@ -44,15 +45,19 @@ interface TokenStore {
   clear(): void;
 }
 
+// Gaining or dropping the token also sets or clears the session marker, the
+// hint the web server reads to choose the app host's front door.
 function createTokenStore(): TokenStore {
   let token: string | null = null;
   return {
     get: () => token,
     set: (value) => {
       token = value;
+      markSignedIn();
     },
     clear: () => {
       token = null;
+      clearSignedIn();
     },
   };
 }
