@@ -3204,7 +3204,7 @@ export interface paths {
         };
         /**
          * Read what bleqq's own agents have been doing
-         * @description Returns the runs of bleqq's own agents, oldest first, one page at a time, with the
+         * @description Returns the runs of bleqq's own agents, newest first, one page at a time, with the
          *     version each ran, what it cost and how it ended, for the console's agent pages. A
          *     platform run reads no bank's row, so no bank's name or figure is in it.
          *

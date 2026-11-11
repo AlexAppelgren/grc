@@ -44,19 +44,18 @@ describe('agents api', () => {
     expect(sent[0]?.path).toBe('/api/v1/agent-definitions/a%2Fb');
   });
 
-  it('reads the newest platform runs from the end of the oldest-first list', async () => {
-    const sent = installAdapter((s, i) => (i === 0 ? { status: 200, data: { items: [{ id: 'r0' }], total: 130 } } : { status: 200, data: { items: [], total: 130 } }));
-    await agents.listRecentPlatformRuns();
-    expect(sent.map((s) => [s.path, s.params])).toEqual([
-      ['/api/v1/console/agent-runs', { limit: 1, offset: 0 }],
-      ['/api/v1/console/agent-runs', { limit: 100, offset: 30 }],
-    ]);
+  // Review 2026-11-11, defect 2.5: the route answers newest first, so the newest
+  // runs are its first page; reading the last page showed the oldest.
+  it('reads the newest platform runs as the first page of the newest-first list', async () => {
+    const sent = installAdapter(() => ({ status: 200, data: { items: [{ id: 'r-new' }, { id: 'r-old' }], total: 130 } }));
+    expect((await agents.listRecentPlatformRuns()).items.map((run) => run.id)).toEqual(['r-new', 'r-old']);
+    expect(sent.map((s) => [s.path, s.params])).toEqual([['/api/v1/console/agent-runs', { limit: 100, offset: 0 }]]);
   });
 
-  it('reads the whole list from the start while it fits on one page', async () => {
+  it('reads one page whatever the total, never learning it first', async () => {
     const sent = installAdapter(() => ({ status: 200, data: { items: [], total: 12 } }));
     await agents.listRecentPlatformRuns();
-    expect(sent[1]?.params).toEqual({ limit: 100, offset: 0 });
+    expect(sent).toHaveLength(1);
   });
 
   it("works a bank's own agents, their runs, its cap and its research requests", async () => {

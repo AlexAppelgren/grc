@@ -424,7 +424,7 @@ def update_platform_agent_settings(
 @requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
 @answers_problems
 def list_platform_runs(request: HttpRequest, page: Query[PageQuery]) -> Any:
-    """Returns the runs of bleqq's own agents, oldest first, one page at a time, with the
+    """Returns the runs of bleqq's own agents, newest first, one page at a time, with the
     version each ran, what it cost and how it ended, for the console's agent pages. A
     platform run reads no bank's row, so no bank's name or figure is in it.
 

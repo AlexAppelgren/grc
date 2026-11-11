@@ -69,14 +69,9 @@ export async function listPlatformRuns(page: PageParams = {}): Promise<AgentRunP
   return (await api.get<AgentRunPage>(`${V1}/console/agent-runs`, { params: page })).data;
 }
 
-/**
- * The newest runs of bleqq's own agents. The route answers oldest first, so
- * the newest page sits at the end: one small read learns the total, and the
- * second reads the last page at the route's maximum.
- */
+/** The newest runs of bleqq's own agents: the route answers newest first, so they are its first page at the route's maximum. */
 export async function listRecentPlatformRuns(): Promise<AgentRunPage> {
-  const { total } = await listPlatformRuns({ limit: 1, offset: 0 });
-  return listPlatformRuns({ limit: MAX_PAGE, offset: Math.max(total - MAX_PAGE, 0) });
+  return listPlatformRuns({ limit: MAX_PAGE, offset: 0 });
 }
 
 // ---------------------------------------------------------------------------

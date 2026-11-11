@@ -48,8 +48,8 @@ function RunRow({ run }: { run: AgentRun }) {
 export function PlatformRunsPanel({ agentKey }: { agentKey: string }) {
   const t = useT();
   const runs = useRecentPlatformRuns();
-  // The platform's own runs of this agent only: a bank's run of a definition is that bank's.
-  const mine = (runs.data?.items ?? []).filter((run) => run.agent === agentKey && run.tenantAgentId === null).reverse().slice(0, SHOWN);
+  // The platform's own runs of this agent only, newest first as the route answers them: a bank's run of a definition is that bank's.
+  const mine = (runs.data?.items ?? []).filter((run) => run.agent === agentKey && run.tenantAgentId === null).slice(0, SHOWN);
 
   return (
     <Panel title={t('console.agents.runs.title')} data-platform-runs="">
