@@ -26,11 +26,10 @@ from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.agents.models import AgentAccess
-from apps.identity import api_keys_logic, tokens
-from apps.identity.models import ApiKey, CredentialKind, LoginEventKind, LoginMethod, User
-from apps.identity.security_log import log_event
+from apps.identity import api_keys_logic
+from apps.identity.models import ApiKey, CredentialKind, User
 from apps.shared import permissions as perms
-from apps.shared.audit import Actor, record
+from apps.shared.audit import Actor
 from apps.shared.models import Tenant
 
 
@@ -92,61 +91,25 @@ def mint(
         entry = AgentAccess.objects.filter(pk=agent_access_id, tenant=tenant, active=True).first()  # ordering: pk lookup, at most one row
         if entry is None:
             raise ValidationError("Your bank has no live agent access entry with that id.", code="unknown_key")
-    plain, prefix, key_hash = tokens.new_api_key()
-    key = ApiKey.objects.create(
+    return api_keys_logic.mint_key(
         tenant=tenant,
-        kind=CredentialKind.PERSONAL.value,
-        acts_as_user=user,
-        agent_access=entry,
-        name=cleaned_name,
-        key_prefix=prefix,
-        key_hash=key_hash,
-        scopes=granted,
-        created_by=user,
-        expires_at=expiry,
-    )
-    log_event(
-        event=LoginEventKind.TOKEN_CREATED, method=LoginMethod.PERSONAL_TOKEN, success=True, request=None, tenant_id=tenant.id, user=user, api_key=key
-    )
-    record(
-        action="personal_token.created",
         actor=actor,
-        subject_type="api_key",
-        subject_id=key.id,
-        subject_title=key.name,
-        summary=f"Personal access token {key.key_prefix} created with scopes {', '.join(granted)}.",
-        tenant_id=tenant.id,
-        after={
-            "keyPrefix": key.key_prefix,
-            "scopes": granted,
-            "agentAccessId": str(entry.id) if entry is not None else None,
-            "expiresAt": expiry.isoformat(),
-        },
+        created_by=user,
+        name=cleaned_name,
+        scopes=granted,
+        expires_at=expiry,
         step_up_assertion_id=step_up_assertion_id,
+        action="personal_token.created",
+        kind=CredentialKind.PERSONAL,
+        agent_access_id=entry.id if entry is not None else None,
+        acts_as_user=user,
+        after={"agentAccessId": str(entry.id) if entry is not None else None},
     )
-    return key, plain
 
 
 def revoke_own(*, tenant: Tenant, user: User, actor: Actor, token_id: uuid.UUID) -> ApiKey:
-    """One of the member's own tokens. Revoking twice is a safe retry: nothing changes, and
-    it is still audited with `before` equal to `after`."""
+    """One of the member's own tokens."""
     key = _own(tenant.id, user.id).filter(pk=token_id).first()  # ordering: pk lookup, at most one row
-    if key is None:
-        raise ValidationError("You have no personal access token with that id.", code="not_found")
-    before = key.revoked_at
-    if before is None:
-        api_keys_logic.revoke_credential(key, user=user, now=timezone.now())
-    record(
-        action="personal_token.revoked",
-        actor=actor,
-        subject_type="api_key",
-        subject_id=key.id,
-        subject_title=key.name,
-        summary=f"Personal access token {key.key_prefix} revoked."
-        if before is None
-        else f"Personal access token {key.key_prefix} was already revoked; nothing changed.",
-        tenant_id=tenant.id,
-        before={"revokedAt": before.isoformat() if before else None},
-        after={"revokedAt": key.revoked_at.isoformat() if key.revoked_at else None},
+    return api_keys_logic.revoke_key(
+        key, actor=actor, revoked_by=user, action="personal_token.revoked", missing="You have no personal access token with that id."
     )
-    return key
