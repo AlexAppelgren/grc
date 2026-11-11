@@ -17,7 +17,7 @@ NAME = "footprint_change_request_four_eyes"
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("taxonomy", "0014_footprint_sole_approver"),
+        ("taxonomy", "0002_squashed_0014_links_and_rules"),
     ]
 
     operations = [

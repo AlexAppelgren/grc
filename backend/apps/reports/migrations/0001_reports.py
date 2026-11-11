@@ -13,8 +13,8 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("identity", "0005_login_event_key_created_and_withheld"),
-        ("shared", "0008_library_write_guard"),
+        ("identity", "0002_squashed_0011_links_and_rules"),
+        ("shared", "0002_squashed_0010_links_and_rules"),
     ]
 
     operations = [

@@ -58,7 +58,7 @@ def policy_operations(
 
     `library_fence=True` keeps one FOR ALL policy on the two tables mixed on
     `owner_tenant_id` (instrument, obligation); there the library fence (PRO-01) and the door
-    trigger stand between a bank session and a shared record (H16, shared 0008, ADR 0058).
+    trigger stand between a bank session and a shared record (H16, ADR 0058).
     """
     if library_fence:
         mixed_read = f"{column} IS NULL OR {column} = {TENANT_EXPRESSION}"
@@ -122,6 +122,76 @@ def rls_operations(
     ]
 
 
+PARENT_READ_POLICY = "parent_visible"
+PARENT_WRITE_POLICY = "parent_owned"
+
+
+def _parent_exists(child: str, column: str, parent: str, *, owned: list[tuple[str, str]] | None = None) -> str:
+    """`EXISTS` the row of `parent` that `child.column` names, visible under its own policy.
+    With `owned`, the rest of the path is joined to the root and the root must be the
+    session's own zone."""
+    joins = ""
+    where = f'p0.id = "{child}"."{column}"'
+    if owned is not None:
+        for depth, (hop_column, hop_table) in enumerate(owned, start=1):
+            joins += f' JOIN "{hop_table}" p{depth} ON p{depth}.id = p{depth - 1}."{hop_column}"'
+        where += f" AND p{len(owned)}.owner_tenant_id IS NOT DISTINCT FROM {TENANT_EXPRESSION}"
+    return f'EXISTS (SELECT 1 FROM "{parent}" p0{joins} WHERE {where})'
+
+
+def parent_policy_operations(
+    child: str, path: list[tuple[str, str]], references: list[tuple[str, str]] | None = None
+) -> list[migrations.RunSQL]:
+    """A child of an instrument or an obligation lives in its parent's zone (library 0001,
+    OWN-04, D-57, ADR 0050): ENABLE and FORCE row-level security, `parent_visible` FOR SELECT
+    (the parent is visible, so a child reads exactly as far as its parent does) and
+    `parent_owned` FOR ALL (the root's `owner_tenant_id` is the session's own zone).
+
+    `path` runs from the child to its root, each hop a column and the table it names;
+    `references` are a link row's referenced ends, which must be visible too."""
+    (column, parent), rest = path[0], path[1:]
+    seen = [_parent_exists(child, ref_column, ref_table) for ref_column, ref_table in references or []]
+    read = " AND ".join([_parent_exists(child, column, parent), *seen])
+    write = " AND ".join([_parent_exists(child, column, parent, owned=rest), *seen])
+    return [
+        migrations.RunSQL(
+            sql=f'ALTER TABLE "{child}" ENABLE ROW LEVEL SECURITY',
+            reverse_sql=f'ALTER TABLE "{child}" DISABLE ROW LEVEL SECURITY',
+        ),
+        migrations.RunSQL(
+            sql=f'ALTER TABLE "{child}" FORCE ROW LEVEL SECURITY',
+            reverse_sql=f'ALTER TABLE "{child}" NO FORCE ROW LEVEL SECURITY',
+        ),
+        _create_policy(child, PARENT_READ_POLICY, "SELECT", read),
+        _create_policy(child, PARENT_WRITE_POLICY, "ALL", write, with_check=write),
+    ]
+
+
+def tenant_id_unique(table: str, *, name: str | None = None) -> migrations.RunSQL:
+    """`UNIQUE (tenant_id, id)` on a tenant table, the target of `same_tenant_key`."""
+    name = name or f"{table}_tenant_id_id_unique"
+    return migrations.RunSQL(
+        sql=f'ALTER TABLE "{table}" ADD CONSTRAINT {name} UNIQUE (tenant_id, id)',
+        reverse_sql=f'ALTER TABLE "{table}" DROP CONSTRAINT IF EXISTS {name}',
+    )
+
+
+def same_tenant_key(
+    table: str, column: str, target: str, target_column: str, *, name: str | None = None
+) -> migrations.RunSQL:
+    """A second foreign key on `(tenant_id, column)`: PostgreSQL checks a foreign key without
+    row-level security, so a plain key would let one bank's row point at another bank's. The
+    target is `tenant_id_unique` (or `membership (tenant_id, user_id)` for a person)."""
+    name = name or f"{table}_{column}_same_tenant"
+    return migrations.RunSQL(
+        sql=(
+            f'ALTER TABLE "{table}" ADD CONSTRAINT {name} FOREIGN KEY (tenant_id, {column}) '
+            f'REFERENCES "{target}" (tenant_id, {target_column})'
+        ),
+        reverse_sql=f'ALTER TABLE "{table}" DROP CONSTRAINT IF EXISTS {name}',
+    )
+
+
 APPEND_ONLY_FUNCTION = "cw_append_only_guard"
 OUTBOX_GUARD_FUNCTION = "cw_outbox_guard"
 MAINTENANCE_SETTING = "cw.maintenance"
@@ -178,9 +248,9 @@ $$;
 
 
 def append_only_function_operations() -> list[migrations.RunSQL]:
-    """The trigger functions. Created once (shared 0001) and replaced in place whenever their
-    text changes (shared 0003, then shared 0005); the migrations in between attach them to
-    tables, and a replacement reaches every trigger already attached."""
+    """The trigger functions, created in shared 0001 before any app attaches them. A later
+    change to their text replaces them in place in a migration of its own, which reaches
+    every trigger already attached."""
     return [
         migrations.RunSQL(
             sql=APPEND_ONLY_FUNCTION_SQL,
@@ -225,7 +295,7 @@ REFERENCE_DOORS = ("seed",)
 # statement that touches no row; TRUNCATE included, not resting on the grant alone. The door
 # is a setting the app role sets through `library_door()`, so this refuses a write that
 # entered no door (an ORM bypass, raw SQL, a cascade); ADR 0058 says what the lint and AST
-# guards cover. The schema owner passes by `session_user`, never `current_user` (shared 0005).
+# guards cover. The schema owner passes by `session_user`, never `current_user`.
 LIBRARY_DOOR_FUNCTION_SQL = f"""
 CREATE OR REPLACE FUNCTION {LIBRARY_DOOR_FUNCTION}() RETURNS trigger
 LANGUAGE plpgsql AS $$
@@ -244,8 +314,8 @@ $$;
 
 
 def library_door_function_operations() -> list[migrations.RunSQL]:
-    """The trigger function (shared 0008). A later change to its text replaces it in place
-    in a migration of its own, which reaches every trigger already attached."""
+    """The trigger function, created in shared 0001. A later change to its text replaces it
+    in place in a migration of its own, which reaches every trigger already attached."""
     return [
         migrations.RunSQL(
             sql=LIBRARY_DOOR_FUNCTION_SQL,

@@ -99,7 +99,7 @@ LIBRARY_DOOR_HOMES = frozenset(
         "apps/shared/tenancy.py",  # the setting, library_door() and library_write()
         "apps/search/indexing.py",  # index_write(), the index door
         "apps/watch/write.py",  # the watch door's re-point inside a merge approval
-        "apps/search/eval_sets.py",  # the evaluation door (search 0003)
+        "apps/search/eval_sets.py",  # the evaluation door (search 0001)
         "apps/shared/migration_helpers.py",  # the trigger that reads it
     }
 )

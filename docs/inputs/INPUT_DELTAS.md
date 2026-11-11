@@ -1195,7 +1195,8 @@ the drift gate and the next reader agree.
 ## 11. The AI output log, and who reports what a model was (2026-09-21)
 
 `ai_generation` (schema v0.3 line 794) is built as designed with four departures, all
-additive, in `apps/governance/models.py` and `governance/0001_ai_generation.py`:
+additive, in `apps/governance/models.py` and `governance/0001_ai_generation.py` (squashed into
+0001):
 
 - `input jsonb` is not built. The designed column holds "question, as_of, ids of the chunks
   given to the model", which is the prompt in pieces; the build stores `prompt_template`
@@ -1330,7 +1331,7 @@ that may never exist.
 `Answer.model` is empty when no model was asked: a question no library passage supports is
 answered `noAnswer` at once, with no model call and so no `ai_generation` row.
 
-`ai_generation` gains `stop_reason` (`governance/0003_ai_generation_stop_reason.py`) and
+`ai_generation` gains `stop_reason` (`governance/0003_ai_generation_stop_reason.py`, squashed into 0001) and
 `AiGenerationRow` gains `stopReason`, neither of which the designed table or contract has:
 how a call bleqq made ended, the provider's own stop reason when the model finished,
 `aborted` when the caller stopped reading first and `failed` when the model failed once

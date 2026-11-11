@@ -1,11 +1,11 @@
-"""Two credential kinds on one `api_key` table (identity 0007; ACC-03, D-77, ADRs 0055 and
+"""Two credential kinds on one `api_key` table (identity 0007, squashed into 0001; ACC-03, D-77, ADRs 0055 and
 0056), proved as cw_app on committed rows.
 
 A personal access token acts as a member of its own bank, always expires and is never one
 of our agents; only a token acts as a person. A key bound to an agent access entry is a
 bank's key and never an agent definition's. Both read and nothing else. Every rule is a
 CHECK or a composite key the database holds, so no code path can mint a credential that
-breaks it. The keys minted before identity 0007 become service keys.
+breaks it.
 
 The composite keys were proven to fail 2026-09-25 by leaving `SAME_TENANT_KEYS` out of a
 scratch copy of the migration: the cross-tenant entry and person below went through."""
@@ -16,8 +16,7 @@ from collections.abc import Callable
 from datetime import timedelta
 from typing import Any
 
-from django.db import DEFAULT_DB_ALIAS, IntegrityError, connection, transaction
-from django.db.migrations.executor import MigrationExecutor
+from django.db import DEFAULT_DB_ALIAS, IntegrityError, transaction
 from django.test import TransactionTestCase
 from django.utils import timezone
 
@@ -30,8 +29,6 @@ from apps.shared.models import Tenant
 from apps.taxonomy.models import Team
 
 APP = "app"
-BEFORE = ("identity", "0006_retire_applicability_request")
-AFTER = ("identity", "0007_credential_kinds")
 
 
 class Bank:
@@ -171,38 +168,3 @@ class CredentialKindsInTheDatabase(TransactionTestCase):
                 )
             logged = list(LoginEvent.objects.using(APP).filter(api_key=token).values_list("method", "event"))
         self.assertEqual(logged, [(LoginMethod.PERSONAL_TOKEN.value, event.value) for event in events])
-
-
-class KeysBeforeTheKindBecomeServiceKeys(TransactionTestCase):
-    """Unapplies identity 0007, writes a platform and a bank's key the way they were written
-    before it, and applies it again: both read `service`. The reverse migration is proven
-    in passing."""
-
-    databases = {DEFAULT_DB_ALIAS, APP}
-
-    def tearDown(self) -> None:
-        executor = MigrationExecutor(connection)
-        executor.migrate(executor.loader.graph.leaf_nodes())
-
-    def test_existing_keys_migrate_to_service(self) -> None:
-        tenant = factories.tenant(slug="credential-before")
-        executor = MigrationExecutor(connection)
-        executor.migrate([BEFORE])
-        with connection.cursor() as cursor:
-            for tenant_id in (None, tenant.id):
-                with transaction.atomic():
-                    if tenant_id is not None:
-                        tenancy.activate(tenant_id)
-                    _, prefix, key_hash = tokens.new_api_key()
-                    cursor.execute(
-                        "INSERT INTO api_key (id, tenant_id, name, key_prefix, key_hash, scopes, created_at) "
-                        "VALUES (gen_random_uuid(), %s, 'Before the kind', %s, %s, ARRAY['library:read'], now())",
-                        [tenant_id, prefix, key_hash],
-                    )
-        executor = MigrationExecutor(connection)
-        executor.loader.build_graph()
-        executor.migrate([AFTER])
-        with transaction.atomic():
-            tenancy.activate(tenant.id)
-            kinds = list(ApiKey.objects.filter(name="Before the kind").values_list("tenant_id", "kind"))
-        self.assertCountEqual(kinds, [(None, CredentialKind.SERVICE.value), (tenant.id, CredentialKind.SERVICE.value)])

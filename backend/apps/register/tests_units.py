@@ -42,7 +42,7 @@ from apps.shared.testing import ScenarioTestCase, sign_in, stub_session, user_pr
 from apps.taxonomy.models import ComplianceStatus, FootprintTerm, GapSource, GapStatus, RiskRating
 from apps.tenants.models import OrgUnit, OrgUnitKind
 
-COMPOSITE_KEYS = importlib.import_module("apps.register.migrations.0003_soa_unit").COMPOSITE_KEYS
+COMPOSITE_KEYS = importlib.import_module("apps.register.migrations.0001_squashed_0004_schema").UNIT_KEYS
 V1 = "/api/v1"
 
 

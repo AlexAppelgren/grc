@@ -1,10 +1,10 @@
-"""The participant table and its logic (collab 0002, `collab/participants.py`; COL-04, D-18,
+"""The participant table and its logic (collab 0002, squashed into 0001; `collab/participants.py`; COL-04, D-18,
 D-19). The scenarios themselves are COL-S6 to COL-S8 in tests_scenarios.py; these pin what
 they rest on.
 
 The table: the database refuses every reference to another bank's register entry, case,
 team or person, and anyone who is not a member (walking the migration's own
-`COMPOSITE_KEYS`, so a key added there is proved here without a line of its own); a row
+`PARTICIPANT_KEYS`, so a key added there is proved here without a line of its own); a row
 names exactly one subject and exactly one participant; one live row per subject and
 participant; a row is never deleted.
 
@@ -46,7 +46,7 @@ from apps.watch import testing as watch_build
 from config.api import api
 from apps.collab.testing import PARTICIPANTS, participant_body, participant_url, participants_url
 
-COMPOSITE_KEYS = importlib.import_module("apps.collab.migrations.0002_participant").COMPOSITE_KEYS
+COMPOSITE_KEYS = importlib.import_module("apps.collab.migrations.0001_squashed_0002_schema").PARTICIPANT_KEYS
 
 
 class Bank:

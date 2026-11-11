@@ -7,7 +7,7 @@ transaction.
 
 The cross-tenant proof walks the migrations' own `COMPOSITE_KEYS`, so a key added there is
 proved here without a line of its own. Proven to fail 2026-09-25: with the composite-key
-operations left out of a scratch copy of 0002 every gap, interpretation and link key went
+operations left out of a scratch copy of 0002 (squashed into 0001) every gap, interpretation and link key went
 through; with `gap_four_eyes` removed the four-eyes test named it; and with
 `TenantObligation.objects.create(...)` planted in apps/register/api.py the AST guard named
 the file and line."""
@@ -62,10 +62,7 @@ REGISTER_MODELS: tuple[type[Model], ...] = (
     Interpretation,
     InternalLink,
 )
-COMPOSITE_KEYS = (
-    *importlib.import_module("apps.register.migrations.0001_register").COMPOSITE_KEYS,
-    *importlib.import_module("apps.register.migrations.0002_gaps_history_links").COMPOSITE_KEYS,
-)
+COMPOSITE_KEYS = importlib.import_module("apps.register.migrations.0001_squashed_0004_schema").REGISTER_KEYS
 # A scope row and a gap are owned by a person or a team, never both, so pointing one at
 # another bank's team clears the person first, and the other way round.
 OTHER_OWNER = {"owner_id": "owner_team_id", "owner_team_id": "owner_id"}
