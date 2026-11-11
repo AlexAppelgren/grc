@@ -1,33 +1,23 @@
 """Reference seeds of the library app, run by `manage.py seed_reference` on every deploy
 (playbook 12): idempotent, matched on the immutable key.
 
-Languages (I18N-01, INPUT_DELTAS §3): the five content languages of R1 with the
-PostgreSQL text search configuration their search chunks use (chunk 7). Without this
-seed no label can be stored, every picker is empty and a tenant cannot set a default
-language.
+Languages (I18N-01): the five content languages with their PostgreSQL text search
+configuration. Jurisdictions (I18N-01, playbook 17): EU, SE, DK, NO, FI with a parent, a kind
+and a legal language, so no code names a country, and International (D-38) for standards
+bodies.
 
-Jurisdictions (I18N-01, playbook 17, chunk 2): EU, SE, DK, NO, FI as rows with a parent,
-a kind and the language their legal texts are written in, so no column or branch ever
-names a country, and International (D-38) for standards bodies. Without this seed no
-instrument can be filed (chunk 3).
-
-Neither is a `LibraryModel`, but every bank reads both, so the database holds them behind
-its doors (H16, shared 0008, ADR 0058): each seed opens the seed door through
-`library_write()`, and the app role's write outside a door is refused. A jurisdiction is also
-relabelled, retired and restored through an approved proposal (D-94, shared 0010), so the
-seed writes its labels, sort order and `active` only when it files the row."""
+Every bank reads both, so the database holds them behind its doors (H16, ADR 0058): each
+seed writes through `library_write()`. A jurisdiction's labels, sort order and `active` are
+written only when the row is filed, since a proposal may change them (D-94)."""
 
 from __future__ import annotations
 
 from apps.library.models import Jurisdiction, JurisdictionKind, JurisdictionLabel, Language
 from apps.shared.tenancy import library_write
 
-# key -> (name in its own language, PostgreSQL text search configuration)
-# en: the original of every seeded label and the fallback in label_for().
-# sv: Swedish, the prototype's first language and R1's second UI language.
-# da: Danish, tenant B's language (Copenhagen).
-# nb: Norwegian Bokmål; PostgreSQL ships one `norwegian` configuration.
-# fi: Finnish, TEN-S1's language order.
+# key -> (name in its own language, PostgreSQL text search configuration). en is the
+# original of every seeded label and label_for()'s fallback; PostgreSQL ships one
+# `norwegian` configuration, used for nb.
 LANGUAGES: dict[str, tuple[str, str]] = {
     "en": ("English", "english"),
     "sv": ("Svenska", "swedish"),
@@ -36,11 +26,9 @@ LANGUAGES: dict[str, tuple[str, str]] = {
     "fi": ("Suomi", "finnish"),
 }
 
-# key -> (kind, parent key, default language key, labels). Keys follow the fixture's codes
-# lowercased (docs/inputs/schema.sql `jurisdiction`). The parent is the jurisdiction whose
-# rules reach this one (D-28, ADR 0026), which is why Norway points at the EU: it is outside
-# the Union but inside the internal market under the EEA Agreement, so EU financial rules
-# reach it. A bank operating only in Norway must still see EU law.
+# key -> (kind, parent key, default language key, labels). The parent is the jurisdiction
+# whose rules reach this one (D-28, ADR 0026): Norway points at the EU because EU financial
+# rules reach it through the EEA Agreement.
 JURISDICTIONS: dict[str, tuple[JurisdictionKind, str | None, str, dict[str, str]]] = {
     "eu": (JurisdictionKind.SUPRANATIONAL, None, "en", {"en": "European Union", "sv": "Europeiska unionen"}),
     "se": (JurisdictionKind.COUNTRY, "eu", "sv", {"en": "Sweden", "sv": "Sverige"}),

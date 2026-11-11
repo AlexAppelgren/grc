@@ -1,26 +1,18 @@
 #!/usr/bin/env python
-"""Referential integrity check for prototype_data.json (chunk 3 seeds load this file) and
-e2e_standard.json, the E2E-only standard that seed_e2e loads beside it.
+"""Referential integrity check for prototype_data.json and e2e_standard.json, the E2E-only
+standard seed_e2e loads beside it.
 
-Every reference in the fixture must resolve: instruments to authorities, regimes (a term
-of the `regime` dimension, required on every instrument, D-39) and jurisdictions;
-obligations to instruments; terms to taxonomy terms; changes to authorities and
-obligations; proposals to targets, changes and runs; sources to authorities; audit rows to
-their subjects; tenant rows to users and obligations; every vocabulary key used to the
-`vocabularies` section; every date to ISO 8601. Every obligation carries a verified date
-and every version a summary in its original language, no provision sits under an
-instrument whose level's kind is `standard` (D-35: a standard's text is licensed), and
-`_meta.anchor_date` (an instrument's verified date when nothing else gives one) is a
-date. A standard holds exactly one obligation, its conformance duty, carrying a term of the
-`standard` dimension (INV-08, D-35).
+Every reference in the fixture must resolve (instruments, regimes (D-39), jurisdictions,
+obligations, terms, changes, proposals, sources, audit subjects, tenant rows, vocabulary
+keys) and every date is ISO 8601. Every obligation carries a verified date and every version
+a summary in its original language; no provision sits under a standard (D-35: a standard's
+text is licensed), and a standard holds exactly one conformance duty on a `standard` term
+(INV-08).
 
-prototype_data.json holds no standard at all: seed_demo loads it, and until Alex answers
-docs/TODO_FOR_alex.md "Legal, before any standard is seeded" a standard lives only in
-e2e_standard.json. That file is checked merged into the prototype's rows, whose
-vocabularies and terms it references, plus the held terms its `_meta.held_terms` names
-(authored in apps/taxonomy/seeds, never listed in the prototype). With `--eval` it
-also checks that backend/eval/retrieval.jsonl and classification.jsonl only name keys that
-exist here, so the evaluation sets cannot drift from the corpus.
+prototype_data.json holds no standard (docs/TODO_FOR_alex.md "Legal, before any standard is
+seeded"); e2e_standard.json is checked merged into the prototype's rows plus its
+`_meta.held_terms`. `--eval` also checks that backend/eval/retrieval.jsonl and
+classification.jsonl name only keys that exist here.
 
 Exit 0 when clean, 1 with every problem listed. No Django, no database: plain Python.
 
@@ -68,7 +60,7 @@ class Checker:
         self.tenants = {data["tenant"]["key"]}
         self.kinds = {name: set(values) for name, values in data["_meta"]["kinds_used"].items()}
 
-    # -- helpers ---------------------------------------------------------------------
+    # --- helpers ---
     def problem(self, where: str, message: str) -> None:
         self.problems.append(f"{where}: {message}")
 
@@ -127,7 +119,7 @@ class Checker:
                 self.problem(table, f"duplicate {field} {value!r}")
             seen.add(value)
 
-    # -- tables ----------------------------------------------------------------------
+    # --- tables ---
     def run(self) -> list[str]:
         d = self.d
         self.date("_meta.anchor_date", d["_meta"]["anchor_date"], optional=False)
@@ -424,7 +416,7 @@ class Checker:
             self.datetime(where, r["started_at"], optional=False)
         return self.problems
 
-    # -- evaluation sets -------------------------------------------------------------
+    # --- evaluation sets ---
     def check_eval_sets(self) -> None:
         corpus = self.obligations | self.provisions | self.changes
         for row in read_jsonl(EVAL_DIR / "retrieval.jsonl"):

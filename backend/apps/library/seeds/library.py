@@ -1,23 +1,16 @@
-"""The prototype's library as rows (chunk 3, INV-01..INV-06): authorities, instruments with
-their titles and lineage, provisions with their own verbatim text versions (T8), obligations
-with titles, versions, summaries, scope terms, tags, cited provisions and relations, from
+"""The prototype's library as rows (INV-01..INV-06), from
 apps/library/fixtures/prototype_data.json.
 
-`seed_authorities` is a reference seed (INPUT_DELTAS §3: jurisdictions come with their
-authorities) and runs on every deploy. `load_library` is demo data: `seed_demo` and
-`seed_e2e` call it, never a deploy. Both are idempotent by stable key: an existing row is
-left as it is (nothing overwritten; a proposal changes it), and every record created
-leaves one audit row through record().
+`seed_authorities` is a reference seed and runs on every deploy. `load_library` is demo data
+for `seed_demo` and `seed_e2e`, never a deploy. Both are idempotent by stable key: an
+existing row is left as it is, and every record created leaves one audit row through
+record().
 
-The research payment obligation's second version (in force 2026-10-01) exists in the
-fixture only as the payload of the open proposal `prop-research-payments-v2`. The loader
-files it as version 2 so "as of" and the diff have a future version to show
-(data-model §4, INV-S4); the proposal row itself is not seeded here.
-
-Every record carries a verified date (INV-06). The fixture dates obligations only, so an
-instrument without its own date takes the latest of its obligations', or the fixture's
-anchor date when it has none. `verified_by` is never loaded: the fixture's verifier is a
-tenant user, and a library record is verified by a library editor (INV-S8)."""
+The research payment obligation's second version exists in the fixture only as the payload
+of the open proposal `prop-research-payments-v2`; the loader files it as version 2 so "as
+of" and the diff have a future version to show (INV-S4). An instrument without its own
+verified date takes its obligations' latest, else the fixture's anchor date. `verified_by`
+is never loaded: a library record is verified by a library editor (INV-S8)."""
 
 from __future__ import annotations
 
@@ -61,8 +54,7 @@ SUMMARY_PREFIX = "summary_"
 # The provision tree's own text versions carry this prefix instead (T8), never a summary:
 # a provision's verbatim text is not an obligation's plain-language duty.
 PROVISION_TEXT_PREFIX = "text_"
-# The fixture's proposal kind for a new obligation version (schema v0.3 `proposal_kind`);
-# chunk 4 adds it to ProposalKind.
+# The fixture's proposal kind for a new obligation version.
 NEW_OBLIGATION_VERSION = "new_obligation_version"
 
 

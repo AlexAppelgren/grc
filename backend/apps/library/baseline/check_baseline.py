@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 """Shape and reference check for the library baseline (backend/apps/library/baseline/*.json).
 
-Every entry is a proposal the filing command files (`manage.py file_library_baseline`), so
-this checks what the proposal door will ask of it, before any database is involved: the
-payload's fields and their limits, every key in the seeded vocabularies and taxonomy, a
-source on every entry, languages, dates and precisions, and stable keys unique across the
-whole baseline and apart from the sample library's obligations. The authority is the
-backend test that files and approves every entry through the real proposal code
-(apps/proposals/tests_baseline.py); this script is the quick answer a researcher runs on one
-file while writing it.
+Every entry is a proposal `manage.py file_library_baseline` files, so this checks, without a
+database, what the proposal door will ask of it: fields and limits, vocabulary and taxonomy
+keys, a source on every entry, languages, dates and precisions, and stable keys unique across
+the baseline and the sample library. The authority is apps/proposals/tests_baseline.py; this
+is the quick answer while writing one file.
 
 Exit 0 when clean, 1 with every problem listed. No Django, no database: plain Python.
 
