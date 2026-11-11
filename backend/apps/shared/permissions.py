@@ -356,7 +356,6 @@ _CAPABILITY_VOCAB_READ = "Any session reads the list of lists; pickers, filters 
 _LOGIC_LIBRARY_READ = "A person's session, or an agent's key holding library:read; pickers and agents read one endpoint (AGT-02)."
 _LOGIC_VOCAB_WRITE = "vocab.manage writes a tenant list; a library list write is a proposal from proposals.create or library_vocab.manage (VOC-07)."
 _LOGIC_PROPOSE = "A term change is a proposal from proposals.create (tenant) or library_vocab.manage (console); never a direct write (VOC-07)."
-_LOGIC_RUN_LOG = "agents.manage in a tenant reads the library's runs and its own; system.health reads them in the console (AGT-01, item 14). The gate is the `require_any(AGENTS_MANAGE, SYSTEM_HEALTH)` call in apps/agents/api.py:list_agent_runs, which refuses a session holding neither with the structured 403."
 _LOGIC_WATCH_READER = "watch.read in the caller's tenant, an agent's key with library:read, because a run must know which sources to check, or sources.manage in the console, which has no tenant and so no watch.read, for the read-only Sources page (WAT-01, AGT-02, ruling 3). The gate is apps/watch/api.py:require_watch_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_CHANGE_FACTS = "An agent's key with changes:write, or a library editor with proposals.review; a change's facts are library facts and no tenant role holds that (WAT-02, WAT-03, PRO-01). The gate is apps/watch/api.py:require_change_writer, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_CURATION_CONFIRM = "A platform key bound to an agent definition and holding the scope `proposals:review`, or a person holding `proposals.review` with a fresh passkey assertion, confirms a change's curated facts for the shared library, because one decorator cannot express 'a session or a key' (WAT-03, WAT-04, D-74). The gate is apps/watch/api.py:require_curation_confirmer, which refuses a tenant-carrying key and a key bound to no agent (`agent_not_bound`), names the scope it wanted to a key and the permission it wanted to a person, and calls `enforce_step_up` for the person; the write refuses an agent confirming what it or another key of its agent suggested."
@@ -390,10 +389,6 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("DELETE", "/me/tokens/{token_id}"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("POST", "/auth/step-up/options"): Ungated(UngatedReason.SELF, _SELF_STEP_UP),
     ("POST", "/auth/step-up/verify"): Ungated(UngatedReason.SELF, _SELF_STEP_UP),
-    ("GET", "/reference/product"): Ungated(
-        UngatedReason.BOOTSTRAP,
-        "The sign-in page needs the product name before anyone has signed in.",
-    ),
     ("POST", "/auth/invitations/open"): Ungated(
         UngatedReason.PUBLIC_TOKEN, "The single-use invitation token, in the body, is the grant; rate limited (ID-01)."
     ),
@@ -441,7 +436,6 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         UngatedReason.CAPABILITY,
         "Any member may suggest a value; it lands with vocab.manage holders or in the proposal queue (VOC-03).",
     ),
-    ("GET", "/taxonomy/dimensions"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_READ),
     ("GET", "/taxonomy/terms"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_READ),
     ("POST", "/taxonomy/terms"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSE),
     ("PATCH", "/taxonomy/terms/{term_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSE),
@@ -475,12 +469,11 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/instruments/{instrument_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/instruments/{instrument_id}/provisions"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/provisions/{provision_id}/diff"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
-    # Chunk 5 (the agent API). Eight routes serve more than one kind of principal, so
+    # Chunk 5 (the agent API). Seven routes serve more than one kind of principal, so
     # apps/watch/api.py and apps/agents/api.py decide and still answer the structured 403
     # with requiredPermission. Everything else the chunk declares carries a single gate.
-    # The chunk 5 brief's "none is added to UNGATED_BY_DESIGN" is amended for these eight,
+    # The chunk 5 brief's "none is added to UNGATED_BY_DESIGN" is amended for these seven,
     # each naming the dual-principal gate it defers to (CHUNK5_TASKS.md, c5-contract-api-agent).
-    ("GET", "/agent-runs"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_RUN_LOG),
     ("GET", "/sources"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_WATCH_READER),
     ("GET", "/sources/coverage"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_WATCH_READER),
     ("POST", "/changes"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
@@ -532,10 +525,8 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # and who from the platform may look in are read by every member: the pickers, the
     # department view and the Support access panel need them. Writes keep their permission.
     ("GET", "/tenant/org-units"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
-    ("GET", "/tenant/org-units/{org_unit_id}/licences"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
     ("GET", "/tenant/products"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
     ("GET", "/tenant/teams"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
-    ("GET", "/tenant/teams/{key}/members"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
     ("GET", "/tenant/support-access"): Ungated(
         UngatedReason.CAPABILITY,
         "Every member may see who from the platform asked to look in, and who was let in (TEN-06, D-49).",
@@ -582,10 +573,6 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         "itself searches; an agent access credential's search is narrowed to its entry's scope (SRC-01, ACC-04). "
         "The gate is apps/search/api.py:require_searcher, which branches on the principal kind and names the "
         "scope it wanted to a key and the permission it wanted to a person.",
-    ),
-    # d89-scope-items-logic (OWN-01): one of the bank's own scope items, read as the scope is.
-    ("GET", "/tenant/footprint/scope-items/{scope_item_id}"): Ungated(
-        UngatedReason.CAPABILITY, "Every member reads the regulatory scope and the scope items in it (FP-03, OWN-01)."
     ),
 }
 

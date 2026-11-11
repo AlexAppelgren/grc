@@ -684,10 +684,10 @@ test.describe('tenants journeys', () => {
     await expect(page.locator('main')).not.toContainText(A_ONLY.entryName);
 
     const asBAdmin = await bearerOf(page);
-    await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/tenant/org-units/${aEntityId}/licences`);
-    await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/tenant/org-units/${aDepartmentId}/licences`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/tenant/org-units/${aEntityId}/licences`, { licenceType: 'bank' });
+    await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/tenant/org-units/${aDepartmentId}`, {});
     await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/tenant/products/${aProductId}`, {});
-    await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/tenant/teams/${A_ONLY.team}/members`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/vocab/team/${A_ONLY.team}`, {});
     await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/tenant/support-access/${aGrantId}/decline`);
     await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/agents/${aTenantAgentId}`, {});
     await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/agents/${aTenantAgentId}/pause`);

@@ -1,8 +1,7 @@
-"""The run log as a person reads it (AGT-01, AGT-04, ruling 9): `GET /agent-runs`, with the
-chunk 11 filters and fields.
+"""A bank's run log as a person reads it (AGT-04, ruling 9): `GET /agent-runs`, with the
+chunk 11 filters and fields. The console reads bleqq's runs from `platform.list_runs`.
 
-A caller reads the runs of its own zone and no other: a bank's session its own runs, a
-console session the library's. bleqq's runs reach a bank as watch items and proposals,
+A bank's session reads its own runs and no other zone's. bleqq's runs reach a bank as watch items and proposals,
 never as run rows, so no platform cost, token count or model is on a bank's page (the
 TODO default on what a bank sees of bleqq's watch). Row-level security already keeps
 another bank's runs out; the zone filter narrows a bank's session further, past the library
@@ -24,14 +23,11 @@ from apps.shared.authentication import Principal
 from apps.taxonomy.schemas import PersonRef
 
 
-def list_runs(*, who: Principal, query: TenantRunQuery) -> AgentRunListPage:
-    """The runs of the caller's own zone, newest first with a stable tiebreak on id, one page
-    at a time."""
-    queryset = AgentRun.objects.select_related("agent", "agent_version", "requested_by").order_by("-started_at", "-id")
-    if who.tenant_id is None:
-        queryset = queryset.filter(tenant__isnull=True)
-    else:
-        queryset = queryset.filter(tenant_id=who.tenant_id)
+def list_runs(*, tenant_id: uuid.UUID, who: Principal, query: TenantRunQuery) -> AgentRunListPage:
+    """The bank's own runs, newest first with a stable tiebreak on id, one page at a time."""
+    queryset = (
+        AgentRun.objects.select_related("agent", "agent_version", "requested_by").filter(tenant_id=tenant_id).order_by("-started_at", "-id")
+    )
     if query.tenant_agent_id is not None:
         queryset = queryset.filter(tenant_agent_id=query.tenant_agent_id)
     if query.mine:

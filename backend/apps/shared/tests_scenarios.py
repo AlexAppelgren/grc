@@ -150,7 +150,6 @@ BOUNDED_BY_DESIGN = {
     "listPermissions": "The fixed permission catalogue in code.",
     "listRoles": "One bank's roles: the system roles and the few it adds.",
     "listSources": "The platform-curated source registry: tens of rows until a bank's own sources arrive (WAT-06).",
-    "listTaxonomyDimensions": "The taxonomy's dimensions: a handful of seeded rows.",
     "listTerms": "One vocabulary's rows (the taxonomy's terms), managed by an admin and read whole by pickers.",
     "listVocabularies": "The fixed set of vocabulary lists in code.",
     "listVocabularyRows": "One vocabulary's rows, managed by an admin and read whole by pickers.",
@@ -437,15 +436,15 @@ class SharedScenarioTests(ScenarioTestCase):
         budget_log.addHandler(handler)
         try:
             with override_settings(API_BUDGET_MS=0):
-                slow = timed("/reference/product")
+                slow = timed("/me")
             with override_settings(API_BUDGET_MS=60_000):
-                timed("/reference/product")
+                timed("/me")
         finally:
             budget_log.removeHandler(handler)
         warnings = [record for record in captured if record.levelno == logging.WARNING]
         self.assertEqual(len(warnings), 1, "one warning, for the request over budget only")
         self.assertEqual(getattr(warnings[0], "request_id"), slow["X-Request-ID"])  # noqa: B009
-        self.assertEqual(getattr(warnings[0], "route"), "api/v1/reference/product")  # noqa: B009
+        self.assertEqual(getattr(warnings[0], "route"), "api/v1/me")  # noqa: B009
 
         # Every list in the exported contract takes PageQuery or is bounded by design.
         openapi = api.get_openapi_schema(path_prefix=V1)

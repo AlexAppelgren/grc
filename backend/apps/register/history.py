@@ -71,13 +71,6 @@ def assessments_page(*, order: list[str], obligation_id: uuid.UUID, limit: int, 
     )
 
 
-def read_interpretation(*, tenant: Tenant, obligation_id: uuid.UUID) -> RegisterInterpretation:
-    """The reading in force and every earlier one, newest first. An obligation the bank
-    cannot see is 404; one without a reading has `current` null."""
-    _visible(obligation_id)
-    return interpretation_out(obligation_id)
-
-
 def save_interpretation(
     *,
     tenant: Tenant,

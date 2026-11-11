@@ -300,14 +300,19 @@ class ReadingTheRunLog(TestCase):
         with stub_session(principal):
             return self.client.get(f"{RUNS}{query}", HTTP_AUTHORIZATION="Bearer test-session-token")
 
+    def read_console(self, query: str = "") -> Any:
+        """bleqq's runs, on the console's own route (review 2026-11-11 B-1)."""
+        with stub_session(user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE})):
+            return self.client.get(f"/api/v1/console/agent-runs{query}", HTTP_AUTHORIZATION="Bearer test-session-token")
+
     def test_a_bank_never_reads_a_library_run(self) -> None:
         """bleqq's runs reach a bank as watch items and proposals, never as run rows."""
         response = self.read(user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=self.tenant.id))
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json(), {"items": [], "total": 0})
 
-    def test_the_console_reads_them_with_system_health(self) -> None:
-        response = self.read(user_principal(permissions={perms.SYSTEM_HEALTH}))
+    def test_the_console_reads_them_on_its_own_route(self) -> None:
+        response = self.read_console()
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json()["total"], 1)
 
@@ -330,20 +335,19 @@ class ReadingTheRunLog(TestCase):
         # this an assertion about the order the contract promises rather than about a race.
         AgentRun.objects.filter(pk=self.platform_run.pk).update(started_at=FIRST_SWEEP)
         AgentRun.objects.filter(pk=later.pk).update(started_at=SECOND_SWEEP)
-        principal = user_principal(permissions={perms.SYSTEM_HEALTH})
-        first_page = self.read(principal, "?limit=1").json()
+        first_page = self.read_console("?limit=1").json()
         self.assertEqual(first_page["total"], 2, "total counts what the caller may see, not the page")
         self.assertEqual(first_page["items"][0]["id"], str(later.id), "newest first")
-        second_page = self.read(principal, "?limit=1&offset=1").json()
+        second_page = self.read_console("?limit=1&offset=1").json()
         self.assertEqual(second_page["items"][0]["id"], str(self.platform_run.id))
 
     def test_a_page_size_above_the_maximum_is_refused(self) -> None:
-        response = self.read(user_principal(permissions={perms.SYSTEM_HEALTH}), "?limit=1000")
+        response = self.read_console("?limit=1000")
         self.assertEqual(response.status_code, 422, response.content)
 
     def test_nothing_has_run_yet_is_a_200_with_an_empty_list(self) -> None:
         AgentRun.objects.all().delete()
-        response = self.read(user_principal(permissions={perms.SYSTEM_HEALTH}))
+        response = self.read_console()
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json(), {"items": [], "total": 0})
 

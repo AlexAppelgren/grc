@@ -1,4 +1,4 @@
-"""The three auth classes and the /me and /reference/product routes (playbook 4.2, ID-02,
+"""The three auth classes and the /me route (playbook 4.2, ID-02,
 AC-ID2). The contract pinned here: a missing or unknown credential is 401 in the problem
 shape, an enrolment token on any other route is 403 enrolment_only, SessionAuth accepts
 only user principals, EnrolmentAuth only enrolment principals, ApiKeyAuth only agent
@@ -162,16 +162,6 @@ class MeRoute(TestCase):
         with stub_api_key(agent_principal()):
             response = self.client.get("/api/v1/me", HTTP_X_API_KEY=API_KEY_FOR_TESTS)
         self.assertEqual(response.status_code, 401)
-
-
-class ProductRoute(TestCase):
-    def test_product_name_is_public_and_comes_from_settings(self) -> None:
-        with self.settings(PRODUCT_NAME="bleqq compliance"):
-            response = self.client.get("/api/v1/reference/product")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"productName": "bleqq compliance"})
-        self.assertIn("Server-Timing", response)
-        self.assertIn("X-Request-ID", response)
 
 
 class SessionAuthNeverAcceptsAToken(TestCase):

@@ -53,7 +53,7 @@ describe('footprint hooks', () => {
       ['/api/v1/tenant/footprint/requests', { limit: REQUEST_HISTORY_PAGE, offset: 0 }],
       ['/api/v1/taxonomy/terms', { dimension: 'service_type' }],
       ['/api/v1/taxonomy/terms', {}],
-      ['/api/v1/taxonomy/dimensions', null],
+      ['/api/v1/vocab/term_dimension', null],
       ['/api/v1/reference/jurisdictions', null],
     ]);
     expect(referenceKeys.terms(null, false)).toEqual(['taxonomy', 'terms', 'all', false]);

@@ -32,7 +32,6 @@ import type {
 const FOOTPRINT = '/api/v1/tenant/footprint';
 const REQUESTS = `${FOOTPRINT}/requests`;
 const WATCHING = `${FOOTPRINT}/watching`;
-const TAXONOMY = '/api/v1/taxonomy';
 
 type Schemas = components['schemas'];
 
@@ -190,6 +189,6 @@ export async function listTerms(dimension?: string): Promise<TaxonomyTerm[]> {
 
 /** Dimensions are vocabulary rows; `restrictsFootprint` rides in their list-specific facts. */
 export async function listDimensions(): Promise<TaxonomyDimension[]> {
-  const rows = (await api.get<Schemas['TaxonomyDimensionPage']>(`${TAXONOMY}/dimensions`)).data.items;
+  const rows = (await api.get<Schemas['VocabularyRowPage']>('/api/v1/vocab/term_dimension')).data.items;
   return rows.map((row) => ({ key: row.key, kind: row.kind ?? null, label: row.label, restrictsFootprint: row.extra?.restrictsFootprint === true }));
 }

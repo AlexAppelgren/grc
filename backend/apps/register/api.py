@@ -626,29 +626,6 @@ def list_assessments(
     )
 
 
-@router.get(
-    "/obligations/{obligation_id}/interpretation",
-    response=RegisterInterpretation,
-    auth=SESSION,
-    operation_id="getInterpretation",
-    by_alias=True,
-    summary="Read how your bank reads a rule, and how it read it before",
-)
-@requires_permission(perms.REGISTER_READ)
-@answers_problems
-def get_interpretation(request: HttpRequest, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)) -> Any:
-    """"How we read this rule": the bank's current reading of the obligation with its author
-    and date, and every earlier reading unchanged. Internal legal judgement that never leaves
-    the bank. An obligation with no reading is a 200 with `current` null.
-
-    A person's session holding `register.read`. A read.
-
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-    `not_found` (404) for an obligation the bank cannot see.
-    """
-    return history.read_interpretation(tenant=caller_tenant(request), obligation_id=obligation_id)
-
-
 @router.put(
     "/obligations/{obligation_id}/interpretation",
     response=RegisterInterpretation,

@@ -354,11 +354,6 @@
     "p95Ms": 26.8,
     "queries": 12
   },
-  "getInterpretation": {
-    "medianMs": 9.9,
-    "p95Ms": 10.8,
-    "queries": 7
-  },
   "getMe": {
     "medianMs": 11.7,
     "p95Ms": 12.9,
@@ -399,11 +394,6 @@
     "p95Ms": 7.9,
     "queries": 5
   },
-  "getProduct": {
-    "medianMs": 0.4,
-    "p95Ms": 0.6,
-    "queries": 2
-  },
   "getProposal": {
     "medianMs": 16.5,
     "p95Ms": 17.6,
@@ -428,11 +418,6 @@
     "medianMs": 99.0,
     "p95Ms": 110.2,
     "queries": 41
-  },
-  "getResearchRequest": {
-    "medianMs": 8.1,
-    "p95Ms": 9.3,
-    "queries": 6
   },
   "getRetagRequest": {
     "medianMs": 7.7,
@@ -644,11 +629,6 @@
     "p95Ms": 59.3,
     "queries": 20
   },
-  "listLicences": {
-    "medianMs": 14.2,
-    "p95Ms": 16.8,
-    "queries": 9
-  },
   "listMemberSessions": {
     "medianMs": 9.9,
     "p95Ms": 10.9,
@@ -788,16 +768,6 @@
     "medianMs": 18.6,
     "p95Ms": 21.5,
     "queries": 12
-  },
-  "listTaxonomyDimensions": {
-    "medianMs": 14.6,
-    "p95Ms": 15.9,
-    "queries": 6
-  },
-  "listTeamMembers": {
-    "medianMs": 9.1,
-    "p95Ms": 12.1,
-    "queries": 7
   },
   "listTeams": {
     "medianMs": 9.7,

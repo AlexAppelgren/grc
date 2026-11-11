@@ -61,10 +61,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # c8-tenants-contract (TEN-02, TEN-03, TEN-05, TEN-06). The licence create is proved in
     # apps/tenants/tests_api_contract.py: it refuses this guard's empty body before it loads.
     ("PATCH", "/tenant/org-units/{org_unit_id}", "tenants.OrgUnit", "org_unit"),
-    ("GET", "/tenant/org-units/{org_unit_id}/licences", "tenants.OrgUnit", "org_unit"),
     ("PATCH", "/tenant/licences/{licence_id}", "tenants.Licence", "licence"),
     ("PATCH", "/tenant/products/{product_id}", "tenants.TenantProduct", "tenant_product"),
-    ("GET", "/tenant/teams/{key}/members", "taxonomy.Team", "team_key"),
     ("GET", "/tenant/members/{user_id}/open-work", "identity.Membership", "member_user"),
     ("POST", "/tenant/members/{user_id}/remove", "identity.Membership", "member_user"),
     ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
@@ -123,8 +121,6 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/agent-access/{uuidstr:entry_id}/revoke", "agents.AgentAccess", "agent_access_entry"),
     ("POST", "/agent-access/{uuidstr:entry_id}/keys/{uuidstr:key_id}/revoke", "identity.ApiKey", "agent_access_key"),
     ("GET", "/agent-access/{uuidstr:entry_id}/calls", "agents.AgentAccess", "agent_access_entry"),
-    # d89-scope-items-logic (OWN-01): one of the bank's own scope items.
-    ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
     # security-review-c10: the two chunk 10 id routes that take no body, a comment of tenant A
     # on its own case and a notification of one of its members.
     ("DELETE", "/comments/{comment_id}", "collab.Comment", "comment"),
@@ -155,7 +151,6 @@ SUPPORT_READ_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/library-updates"),
         ("GET", "/sources"),
         ("GET", "/sources/coverage"),
-        ("GET", "/taxonomy/dimensions"),
         ("GET", "/taxonomy/terms"),
         # watch.read: the feed, a change and the weekly briefing.
         ("GET", "/changes"),

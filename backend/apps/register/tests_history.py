@@ -7,7 +7,7 @@ approval step; the text never reaches an audit value, a log or the outbox; asses
 newest first and paged; another bank's history is invisible; both reads cost a fixed number
 of queries. The append-only trigger on assessments is proved as cw_app in tests_models.py.
 
-Operations exercised: listAssessments, getInterpretation, saveInterpretation.
+Operations exercised: listAssessments, getRegisterEntry (its `interpretation`), saveInterpretation.
 """
 
 from __future__ import annotations
@@ -33,8 +33,8 @@ from apps.taxonomy.models import ComplianceStatus, RiskRating
 
 V1_OBLIGATIONS = "/api/v1/obligations"
 READING = "We read this as covering every client account the bank holds, custody included."
-# The obligation and its titles, then the versions with their authors.
-INTERPRETATION_QUERIES = 3
+# The versions with their authors, in one query (the entry read checks the obligation first).
+INTERPRETATION_QUERIES = 1
 # The obligation and its titles, the page, the statuses' and the ratings' labels, the total.
 ASSESSMENT_QUERIES = 6
 
@@ -96,7 +96,7 @@ class History(RegisterWorld):
         one, two = Interpretation.objects.order_by("version_number")
         self.assertIsNotNone(one.superseded_at)
         self.assertEqual((one.body, two.superseded_at), ("First reading.", None))
-        read = self.client.get(self.url("interpretation"), **sign_in(self.w.reader, tenant=self.w.bank)).json()
+        read = self.client.get(self.url("register"), **sign_in(self.w.reader, tenant=self.w.bank)).json()["interpretation"]
         self.assertEqual(read, body)
 
     def test_a_stale_if_match_is_409_stale_write_and_stores_nothing(self) -> None:
@@ -160,7 +160,7 @@ class History(RegisterWorld):
         headers = sign_in(self.w.other_officer, tenant=self.w.other_bank)
         self.assertEqual(self.client.get(self.url("assessments"), **headers).json(), {"items": [], "total": 0})
         self.assertEqual(
-            self.client.get(self.url("interpretation"), **headers).json(),
+            self.client.get(self.url("register"), **headers).json()["interpretation"],
             {"obligationId": str(self.w.obligation.id), "current": None, "earlier": []},
         )
         theirs = self.put(self.w.other_officer, self.w.other_bank, "Their own reading.", 0)
@@ -173,7 +173,7 @@ class History(RegisterWorld):
         self.put(self.w.officer, self.w.bank, READING, 1)
         headers = sign_in(self.w.reader, tenant=self.w.bank)
         entry = self.client.get(self.url("register"), **headers).json()
-        self.assertEqual(entry["interpretation"], self.client.get(self.url("interpretation"), **headers).json())
+        self.assertEqual([row["versionNo"] for row in [entry["interpretation"]["current"], *entry["interpretation"]["earlier"]]], [2, 1])
         self.assertEqual(entry["interpretation"]["current"]["text"], READING)
         theirs = self.client.get(self.url("register"), **sign_in(self.w.other_officer, tenant=self.w.other_bank)).json()
         self.assertEqual(theirs["interpretation"], {"obligationId": str(self.w.obligation.id), "current": None, "earlier": []})
@@ -184,7 +184,7 @@ class History(RegisterWorld):
             self.put(self.w.officer, self.w.bank, f"Reading {n}.", n)
         self.activate(self.w.bank)
         with self.assertNumQueries(INTERPRETATION_QUERIES):
-            history.read_interpretation(tenant=self.w.bank, obligation_id=self.w.obligation.id)
+            history.interpretation_out(self.w.obligation.id)
         with self.assertNumQueries(ASSESSMENT_QUERIES):
             history.list_assessments(tenant=self.w.bank, order=["en"], obligation_id=self.w.obligation.id, limit=20, offset=0)
         for n in range(2, 5):
@@ -192,7 +192,7 @@ class History(RegisterWorld):
             self.put(self.w.officer, self.w.bank, f"Reading {n}.", n)
         self.activate(self.w.bank)
         with self.assertNumQueries(INTERPRETATION_QUERIES):
-            reading = history.read_interpretation(tenant=self.w.bank, obligation_id=self.w.obligation.id)
+            reading = history.interpretation_out(self.w.obligation.id)
         with self.assertNumQueries(ASSESSMENT_QUERIES):
             page = history.list_assessments(tenant=self.w.bank, order=["en"], obligation_id=self.w.obligation.id, limit=20, offset=0)
         self.assertEqual((reading.current and reading.current.version_no, len(reading.earlier), page.total), (5, 4, 5))
@@ -204,9 +204,8 @@ class History(RegisterWorld):
             owner_tenant=self.w.other_bank,
         )
         headers = sign_in(self.w.officer, tenant=self.w.bank)
-        for suffix in ("assessments", "interpretation"):
-            response = self.client.get(f"{V1_OBLIGATIONS}/{private.id}/{suffix}", **headers)
-            self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"), suffix)
+        response = self.client.get(f"{V1_OBLIGATIONS}/{private.id}/assessments", **headers)
+        self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"))
         saved = self.client.put(
             f"{V1_OBLIGATIONS}/{private.id}/interpretation", data={"text": READING}, content_type="application/json", **headers
         )

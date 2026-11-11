@@ -140,7 +140,7 @@ describe('footprint api', () => {
       { key: 'theme', label: 'Theme', kind: 'classification', extra: { restrictsFootprint: false } },
       { key: 'other', label: 'Other' },
     ];
-    const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/dimensions') ? { items: dimensions, total: 3 } : { items: [term], total: 1 } }));
+    const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('/term_dimension') ? { items: dimensions, total: 3 } : { items: [term], total: 1 } }));
     const expected = [{ dimension: 'service_type', key: 'advice', kind: null, label: 'Advice', usageNote: '', sortOrder: 0, active: true, mirrored: false }];
     expect(await footprint.listTerms()).toEqual(expected);
     expect(await footprint.listTerms('service_type')).toEqual(expected);
@@ -154,7 +154,7 @@ describe('footprint api', () => {
     expect(sent.map((s) => [s.path, s.params])).toEqual([
       ['/api/v1/taxonomy/terms', {}],
       ['/api/v1/taxonomy/terms', { dimension: 'service_type' }],
-      ['/api/v1/taxonomy/dimensions', null],
+      ['/api/v1/vocab/term_dimension', null],
     ]);
   });
 

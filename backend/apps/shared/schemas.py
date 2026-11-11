@@ -116,23 +116,6 @@ def _no_chosen_tone(extra: dict[str, Any]) -> dict[str, Any]:
 VocabularyExtra = Annotated[dict[str, Any], AfterValidator(_no_chosen_tone)]
 
 
-class ProductInfo(CamelSchema):
-    """What a sign-in page needs before anyone has signed in: the product's own name."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"productName": "Compliance Watch"}]})
-
-    product_name: str = Field(
-        description=(
-            "The name this deployment of the product goes by, for a sign-in page to show "
-            "before anyone has signed in; a passkey prompt names the service by the same "
-            "name. The platform operator sets it for each deployment, so a rebrand changes "
-            "it without a new release: show what this returns rather than a name of your "
-            "own. It is the product's name and never a bank's; nothing about any bank or "
-            "person is in it."
-        )
-    )
-
-
 class PageQuery(Schema):
     """Pagination on every list (playbook 10): `limit` default 20, max 100, `offset`.
     The numbers come from settings; a value above the maximum is a 422, not a clamp.

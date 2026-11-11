@@ -243,7 +243,7 @@ class ScopeDimension(LibraryResponse):
             "Which facet of the taxonomy this entry is about, as key, kind and label. The "
             "dimensions are vocabulary rows and never a closed set: a platform admin may "
             "extend, relabel, reorder or retire the list without a deploy, so read "
-            "`GET /taxonomy/dimensions` for the live set and match on the key. Seeded on day "
+            "`GET /vocab/term_dimension` for the live set and match on the key. Seeded on day "
             "one: `regime`, `legal_entity`, `service_type`, `account_type`, "
             "`client_category`, `channel` and `lifecycle_stage`. Every active dimension is "
             "listed on every record, including the ones a record carries no term in."
@@ -283,7 +283,7 @@ class OutsideReason(LibraryResponse):
             "The facet in which the record's terms and the bank's footprint have nothing in "
             "common, which is the reason the record would be hidden. The dimensions are "
             "vocabulary rows a platform admin may extend or retire without a deploy, so read "
-            "`GET /taxonomy/dimensions` for the live set and match on the key. Only a "
+            "`GET /vocab/term_dimension` for the live set and match on the key. Only a "
             "dimension that narrows the footprint appears here: `channel` and "
             "`lifecycle_stage` describe a record and never hide it."
         ),

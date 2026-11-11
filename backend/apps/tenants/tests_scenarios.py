@@ -549,8 +549,8 @@ class TenantsScenarioTests(ScenarioTestCase):
             membership = Membership.objects.get(tenant=self.tenant, user=person)
             event = AuditEvent.objects.get(action="member.teams_changed", subject_id=membership.id)
             self.assertEqual((event.before, event.after), ({"teams": []}, {"teams": ["retail_compliance"]}))
-        members = self.client.get("/api/v1/tenant/teams/retail_compliance/members", **admin).json()
-        self.assertEqual([row["name"] for row in members["items"]], ["Anna Berg", "Johan Ek"])
+        members = self.client.get("/api/v1/tenant/members?limit=100", **admin).json()
+        self.assertEqual(sorted(row["name"] for row in members["items"] if "retail_compliance" in row["teams"]), ["Anna Berg", "Johan Ek"])
 
         stranger = factories.member_user(other)
         refused = self.client.put(
@@ -627,8 +627,8 @@ class TenantsScenarioTests(ScenarioTestCase):
             **headers,
         )
         self.assertEqual(created.status_code, 201, created.content)
-        listed = self.client.get(f"/api/v1/tenant/org-units/{entity['id']}/licences", **headers).json()
-        [row] = [row for row in listed["items"] if row["id"] == created.json()["id"]]
+        listed = self._licences(entity["id"], headers)
+        [row] = [row for row in listed if row["id"] == created.json()["id"]]
         self.assertEqual({key: row[key] for key in dates}, dates)
         self.assertEqual((row["issuer"], row["number"], row["owner"]["id"], row["withdrawnOn"]), ("Example Certification AB", "EC-2026-0142", str(owner.id), None))
         # The write is audited with before and after values, and nothing else moved.
@@ -645,11 +645,16 @@ class TenantsScenarioTests(ScenarioTestCase):
             f"/api/v1/tenant/licences/{row['id']}", data={"withdrawnOn": withdrawn_on}, content_type="application/json", HTTP_IF_MATCH='"1"', **headers
         )
         self.assertEqual((withdrawn.status_code, withdrawn.json()["withdrawnOn"]), (200, withdrawn_on))
-        listed = self.client.get(f"/api/v1/tenant/org-units/{entity['id']}/licences", **headers).json()
-        self.assertEqual([(item["id"], item["withdrawnOn"]) for item in listed["items"]], [(row["id"], withdrawn_on)])
+        listed = self._licences(entity["id"], headers)
+        self.assertEqual([(item["id"], item["withdrawnOn"]) for item in listed], [(row["id"], withdrawn_on)])
         self.activate(self.tenant)
         update = AuditEvent.objects.get(tenant=self.tenant, subject_id=row["id"], action="licence.updated")
         self.assertEqual((update.before, update.after), ({"withdrawnOn": None}, {"withdrawnOn": withdrawn_on, "rewritten": []}))
+
+    def _licences(self, unit_id: str, headers: dict[str, Any]) -> list[dict[str, Any]]:
+        """The licences one unit holds, as the organisation list carries them on its row."""
+        units = self.client.get("/api/v1/tenant/org-units?limit=100", **headers).json()["items"]
+        return next(unit["licences"] for unit in units if unit["id"] == unit_id)
 
     def _enter(self, platform: Any, grant: str) -> dict[str, Any]:
         """Headers of the support session `platform` opens under `grant`, with a fresh step-up."""

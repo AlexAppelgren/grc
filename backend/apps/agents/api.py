@@ -61,7 +61,7 @@ from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope, requires_step_up
 from apps.shared.schemas import PageQuery
 from apps.governance import access_log
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, principal, require_any
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, principal
 from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Agents"])
@@ -201,35 +201,32 @@ def finish_agent_run(
     by_alias=True,
     summary="Read what the agents have been doing",
 )
+@requires_permission(perms.AGENTS_MANAGE)
 @answers_problems
 def list_agent_runs(request: HttpRequest, query: Query[TenantRunQuery]) -> Any:
-    """Returns the agent runs the caller may see, newest first, one page at a time: when
-    each ran, which agent, which version and which model, what started it and who asked,
-    how it ended, what it counted and what it cost. Call it to show a bank what its own
-    agents have done and what that cost, the history of one of them with `tenantAgentId`,
-    the runs a person asked for with `mine`, and to investigate a run whose findings are
-    being questioned.
+    """Returns the bank's own agent runs, newest first, one page at a time: when each ran,
+    which agent, which version and which model, what started it and who asked, how it
+    ended, what it counted and what it cost. Call it to page the whole history behind the
+    latest runs `GET /agents` shows beside each agent, the history of one of them with
+    `tenantAgentId`, the runs a person asked for with `mine`, and to investigate a run whose
+    findings are being questioned.
 
-    A person's session only; an API key cannot read this, so an agent cannot read its own
-    history. Inside a bank it needs `agents.manage`, in the platform console
-    `system.health`; a member with neither is refused. A bank sees its own runs and nothing
-    else; the platform console sees the runs of bleqq's own agents. bleqq's runs reach a
-    bank as watch items and proposals rather than as run rows, so no platform cost, token
-    count or model is ever on a bank's page: `GET /agents/platform` shows what bleqq's
-    agents watch, when each next runs and how its last run ended. No bank sees another
-    bank's runs; the two filters only narrow that, and naming another bank's agent matches
-    no run rather than answering an error. Runs that started in the same instant keep one
-    stable order, so paging never skips or repeats one. It changes nothing and writes
-    nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
-    run yet, not that something is wrong.
+    A person's session in a bank holding `agents.manage`; an API key cannot read this, so an
+    agent cannot read its own history. The platform console reads bleqq's own runs with
+    `GET /console/agent-runs`. bleqq's runs reach a bank as watch items and proposals rather
+    than as run rows, so no platform cost, token count or model is ever on a bank's page:
+    `GET /agents/platform` shows what bleqq's agents watch, when each next runs and how its
+    last run ended. No bank sees another bank's runs; the two filters only narrow that, and
+    naming another bank's agent matches no run rather than answering an error. Runs that
+    started in the same instant keep one stable order, so paging never skips or repeats one.
+    It changes nothing and writes nothing to the audit log. An empty list is a 200 with
+    `total` 0 and means nothing has run yet, not that something is wrong.
 
     Errors: `validation_error` when `limit` is above 100, `offset` beyond the accepted
-    depth or `tenantAgentId` is not a UUID; `permission_denied` with neither
-    `agents.manage` nor `system.health`; `unauthenticated` without a session.
+    depth or `tenantAgentId` is not a UUID; `not_found` for a session that belongs to no
+    bank; `permission_denied` without `agents.manage`; `unauthenticated` without a session.
     """
-    # Ungated by design: logic-gate (agents.manage in a tenant, or system.health in the console).
-    who = require_any(request, perms.AGENTS_MANAGE, perms.SYSTEM_HEALTH)
-    return runs_read.list_runs(who=who, query=query)
+    return runs_read.list_runs(tenant_id=caller_tenant(request).id, who=principal(request), query=query)
 
 
 # ---------------------------------------------------------------------------------------
@@ -488,7 +485,7 @@ def get_retag_request(
     and decide in the queue. Poll it while `status` is `queued` or `running`.
 
     A person's session in the platform console holding `proposals.review`; a bank reads its
-    own requests with `GET /research-requests/{requestId}`. It reads and writes nothing to
+    own requests with `GET /research-requests`. It reads and writes nothing to
     the audit log.
 
     Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
@@ -827,7 +824,7 @@ def list_research_requests(request: HttpRequest, page: Query[PageQuery]) -> Any:
 def create_research_request(request: HttpRequest, body: ResearchRequestInput) -> Any:
     """Asks one of the bank's own agents to run now, check a registered source or a web
     address now, or research a topic. The request is a job: its run opens at once and the
-    request is returned with it; read its status from `GET /research-requests/{requestId}`.
+    request is returned with it; read its status from `GET /research-requests`.
     It runs under the bank's monthly cap, and what the agent finds stays in the bank's own
     zone. A web address is fetched once, here, over https from a public host, and what came
     back is kept as text for the agent, never shown as a page. The topic is the bank's own
@@ -855,32 +852,6 @@ def create_research_request(request: HttpRequest, body: ResearchRequestInput) ->
     """
     tenant = caller_tenant(request)
     return requests.create_request(who=principal(request), tenant=tenant, body=body)
-
-
-@router.get(
-    "/research-requests/{request_id}",
-    response=ResearchRequestOut,
-    auth=SESSION,
-    operation_id="getResearchRequest",
-    by_alias=True,
-    summary="See where one of your bank's research requests stands",
-)
-@requires_permission(perms.AGENTS_MANAGE)
-@answers_problems
-def get_research_request(
-    request: HttpRequest,
-    request_id: uuid.UUID = Path(..., description="The research request, as a UUID. Another bank's request answers 404."),
-) -> Any:
-    """Returns one of the bank's research requests with its status, for a screen following
-    it until its run finishes.
-
-    A person's session in a bank holding `agents.manage`; no API key. It reads and writes
-    nothing to the audit log.
-
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for a request the bank does not have.
-    """
-    return requests.get_request(tenant=caller_tenant(request), request_id=request_id)
 
 
 # ---------------------------------------------------------------------------------------

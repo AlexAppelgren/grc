@@ -331,8 +331,8 @@ class RegisterEntry(CamelSchema):
     interpretation: RegisterInterpretation = Field(
         description=(
             "\"How we read this rule\": the bank's current reading and every earlier one, "
-            "exactly as `GET /obligations/{obligationId}/interpretation` answers it, carried "
-            "here so the obligation page reads both in one call. `current` is null when the "
+            "exactly as `PUT /obligations/{obligationId}/interpretation` answers after a save, "
+            "so the obligation page reads both in one call. `current` is null when the "
             "bank has written none. Internal legal judgement that never leaves the bank."
         )
     )

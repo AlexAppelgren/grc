@@ -378,7 +378,7 @@ class RegisterScenarioTests(TestCase):
             self.assertEqual(saved.status_code, 200, saved.content)
         # When a user opens the obligation
         reader = sign_in(w.reader, tenant=w.bank)
-        reading = self.client.get(f"{url}/interpretation", **reader).json()
+        reading = self.client.get(f"{url}/register", **reader).json()["interpretation"]
         assessments = self.client.get(f"{url}/assessments", **reader).json()
         # Then "How we read this rule" shows the current interpretation with its author and date
         self.assertEqual(reading["current"]["text"], "We read this as covering every client account, custody included.")

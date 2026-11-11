@@ -112,7 +112,7 @@ class WaveARefusals(TestCase):
     def test_another_banks_ids_are_not_found_and_never_ride_along(self) -> None:
         headers = sign_in(self.user, tenant=self.tenant)
         self.assertEqual(self.client.get(f"{V1}/obligations/{self.their_duty.id}/register", **headers).status_code, 404)
-        self.assertEqual(self.client.get(f"{V1}/tenant/org-units/{self.their_entity.id}/licences", **headers).status_code, 404)
+        self.assertEqual(self.client.post(f"{V1}/tenant/org-units/{self.their_entity.id}/licences", data={"licenceType": "bank"}, content_type="application/json", **headers).status_code, 404)
         answer = {"obligationId": str(self.duty.id), "orgUnitId": str(self.their_entity.id), "applicability": "applies", "reason": "x"}
         self.assertEqual(self.call("post", f"{V1}/applicability", {"rows": [answer]}, headers).status_code, 404)
         units = self.client.get(f"{V1}/tenant/org-units", **headers).json()["items"]

@@ -872,12 +872,6 @@ def _open_run() -> Call:
     return Call(params={"run_id": run.id})
 
 
-def _research_request() -> Call:
-    agent = _tenant_agent()
-    request = ResearchRequest.objects.create(tenant=agent.tenant, tenant_agent=agent, requested_by=_user(ADMIN), kind="research_topic", topic="DORA subcontracting")
-    return Call(params={"request_id": request.id})
-
-
 def _retag_request() -> Call:
     tenancy.clear_tenant()
     request = ResearchRequest.objects.create(requested_by=_user(EDITOR), kind=ResearchRequestKind.RETAG.value, topic="Re-tag custody records with Client money.")
@@ -1090,7 +1084,6 @@ ROUTES: list[PerfRoute] = [
     # budget a person waits on.
     #
     # --- sign-in, the ceremonies before a session and the session itself ---
-    PerfRoute("getProduct", anonymous),
     PerfRoute("openInvitation", anonymous, lambda: Call(body={"token": E2E_INVITATION_TOKEN_ANNA}), status=202),
     PerfRoute("verifyInvitationCode", anonymous, _verify_invitation_code),
     PerfRoute("requestCode", anonymous, lambda: Call(body={"email": ANNA}), status=202),
@@ -1179,7 +1172,7 @@ ROUTES: list[PerfRoute] = [
         status=202,
     ),
     PerfRoute("listAgentDefinitions", platform),
-    PerfRoute("listAgentRuns", platform),
+    PerfRoute("listAgentRuns", admin),
     # --- the library ---
     PerfRoute("getObligation", reader, _obligation_call),
     PerfRoute("getObligationDiff", reader, _obligation_call),
@@ -1236,7 +1229,6 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("retireVocabularyRow", officer, lambda: Call(params={"list_name": TAG_LIST, "key": "whistleblowing"}, body={"confirm": True})),
     PerfRoute("restoreVocabularyRow", officer, _retired_row),
     PerfRoute("mergeVocabularyRow", officer, lambda: Call(params={"list_name": TAG_LIST, "key": "whistleblowing"}, body={"into": "follow_up"})),
-    PerfRoute("listTaxonomyDimensions", reader),
     PerfRoute("listTerms", reader),
     PerfRoute(
         "createTerm",
@@ -1392,7 +1384,6 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("reopenGap", officer, _closed_gap),
     # assessment history, how we read the rule and linked internal items
     PerfRoute("listAssessments", officer, _on_obligation(HISTORY_OBLIGATION)),
-    PerfRoute("getInterpretation", officer, _on_obligation(HISTORY_OBLIGATION)),
     PerfRoute(
         "saveInterpretation",
         officer,
@@ -1451,7 +1442,6 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("listOrgUnits", reader),
     PerfRoute("createOrgUnit", admin, lambda: Call(body={"kind": "business_unit", "name": "Savings", "parentId": str(_org_unit(RETAIL_DEPARTMENT).id)}), status=201),
     PerfRoute("updateOrgUnit", admin, lambda: Call(params={"org_unit_id": _org_unit(RETAIL_DEPARTMENT).id}, body={"name": "Retail and Private Banking"})),
-    PerfRoute("listLicences", reader, lambda: Call(params={"org_unit_id": _org_unit().id})),
     PerfRoute(
         "createLicence",
         admin,
@@ -1472,7 +1462,6 @@ ROUTES: list[PerfRoute] = [
     ),
     PerfRoute("updateProduct", admin, lambda: Call(params={"product_id": TenantProduct.objects.get(tenant=_tenant(), name="Guided investing").id}, body={"status": "live"})),
     PerfRoute("listTeams", reader),
-    PerfRoute("listTeamMembers", reader, _on(key=RETAIL_TEAM)),
     PerfRoute("setMemberTeams", admin, lambda: Call(params={"user_id": _user("teams@example-bank.test").id}, body={"teams": [RETAIL_TEAM]})),
     PerfRoute("listPeople", officer, lambda: Call(query={"permission": "cases.signoff"})),
     PerfRoute("getMemberOpenWork", admin, _member(LEAVER)),
@@ -1581,7 +1570,6 @@ ROUTES: list[PerfRoute] = [
         _research_topic,
         status=202,
     ),
-    PerfRoute("getResearchRequest", admin, _research_request),
     # the bank's own queue (D-89)
     PerfRoute("listPrivateProposals", approver, _own_proposal()),
     PerfRoute("approvePrivateProposal", stepped_up(APPROVER, TENANT_A_SLUG), _own_proposal({"note": "Checked against FFFS 2026:9, 4 kap. 5 §."})),

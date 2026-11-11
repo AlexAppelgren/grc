@@ -1348,8 +1348,7 @@ class TenantOrgUnitRow(TenantOrgUnit):
     licences: list[TenantLicence] = Field(
         description=(
             "Every licence and certificate the legal entity holds, withdrawn ones included and "
-            "marked, by grant date: the same rows `GET /tenant/org-units/{orgUnitId}/licences` "
-            "pages. Always empty for a group or a department, which hold none."
+            "marked, by grant date; this row is the one place the API lists them. Always empty for a group or a department, which hold none."
         )
     )
     register_entry: TenantRegisterEntry | None = Field(
@@ -1379,15 +1378,6 @@ class TenantOrgUnitPage(CamelSchema):
 
     items: list[TenantOrgUnitRow] = Field(description="The units on this page, by name; an empty list is a 200 and means the bank has recorded none.")
     total: int = Field(description="How many units the bank has in total, active and deactivated, not how many are on this page.")
-
-
-class TenantLicencePage(CamelSchema):
-    """One page of a legal entity's licences and certificates."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_LICENCE], "total": 1}]})
-
-    items: list[TenantLicence] = Field(description="The licences and certificates on this page, withdrawn ones included; an empty list is a 200.")
-    total: int = Field(description="How many the legal entity holds in total, not how many are on this page.")
 
 
 _TERM_KEY = (
@@ -1539,15 +1529,6 @@ class TenantTeamPage(CamelSchema):
 
     items: list[TenantTeam] = Field(description="The teams on this page, in the list's order; an empty list is a 200.")
     total: int = Field(description="How many teams the bank has in total, not how many are on this page.")
-
-
-class TenantPeoplePage(CamelSchema):
-    """One page of people: ids and names, nothing else about them."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"items": [_EXAMPLE_PERSON], "total": 1}]})
-
-    items: list[PersonRef] = Field(description="The people on this page, by name; an empty list is a 200 and means nobody is in it.")
-    total: int = Field(description="How many people there are in total, not how many are on this page.")
 
 
 class TenantOpenWork(CamelSchema):

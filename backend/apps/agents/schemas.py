@@ -1434,7 +1434,7 @@ class WhatAppliesOutsideTerm(CamelSchema):
             "The taxonomy dimension the term sits in, as `{key, kind, label}`, such as "
             "`licensed_activity`, Licensed activity. Dimensions are vocabulary rows, not a closed "
             "enum: a platform admin may extend, relabel or retire them without a deploy, so read "
-            "`GET /taxonomy/dimensions` for the live set and match on the key, never the label. "
+            "`GET /vocab/term_dimension` for the live set and match on the key, never the label. "
             "The `kind` is one of three kinds fixed in code: `scope`, `classification` or `opt_in`."
         )
     )

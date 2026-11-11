@@ -1,7 +1,7 @@
 """A bank's teams, who is in them, putting a member in teams and the departments a person
 heads (TEN-02, TEN-03, HOM-05, D-21; `c8-ten-teams-people`).
 
-`GET /tenant/teams` and `GET /tenant/teams/{key}/members` are any member's reads;
+`GET /tenant/teams` is any member's read, and who is in a team is on each member row;
 `PUT /tenant/members/{userId}/teams` needs `members.manage` and writes one audit event with
 the team keys before and after; `GET /me` names the departments the caller heads. Written
 before the logic: every read answered 501 `not_built` and the write 404 until it existed.
@@ -109,24 +109,6 @@ class ListTeams(Bank):
         everything = self.get("/tenant/teams").json()
         page = self.get("/tenant/teams?limit=1&offset=1").json()
         self.assertEqual(page, {"items": everything["items"][1:2], "total": everything["total"]})
-
-
-class ListTeamMembers(Bank):
-    def test_a_teams_active_members_by_name_as_ids_and_names_only(self) -> None:
-        response = self.get("/tenant/teams/retail-compliance/members")
-        self.assertEqual(response.status_code, 200, response.content)
-        self.assertEqual(
-            response.json(),
-            {"items": [{"id": str(self.anna.id), "name": "Anna Berg"}, {"id": str(self.johan.id), "name": "Johan Ek"}], "total": 2},
-        )
-
-    def test_an_empty_team_is_a_200_with_nobody(self) -> None:
-        self.assertEqual(self.get("/tenant/teams/compliance/members").json(), {"items": [], "total": 0})
-
-    def test_another_banks_team_is_404(self) -> None:
-        response = self.get("/tenant/teams/their-team/members")
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json()["code"], "not_found")
 
 
 class SetMemberTeams(Bank):
@@ -310,7 +292,6 @@ class TeamDepartment(Bank):
         )
         for response in (self.create({"orgUnitId": str(theirs.id)}), self.patch("retail-compliance", {"orgUnitId": str(theirs.id)}), renamed):
             self.assertEqual((response.status_code, response.json()["code"]), (404, "not_found"))
-        self.assertEqual(self.get("/tenant/teams/retail-compliance/members").status_code, 200)
         labels = {row["key"]: row["label"] for row in self.get("/tenant/teams").json()["items"]}
         self.assertEqual(labels["retail-compliance"], "Retail compliance", "a refused department leaves the name as it was")
         self.assertFalse(Team.objects.filter(key="payments_compliance").exists())

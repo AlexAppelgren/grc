@@ -53,12 +53,10 @@ from apps.taxonomy.schemas import (
     JurisdictionRow,
     MarketRow,
     MarketWatchBody,
-    ScopeItemRow,
     TaggingBatchBody,
     TaggingBatchOutcome,
     TaggingBody,
     TaggingRecordTags,
-    TaxonomyDimensionPage,
     TaxonomyTermCreateBody,
     TaxonomyTermPage,
     TaxonomyTermQuery,
@@ -713,37 +711,6 @@ def merge_vocabulary_row(
 # Taxonomy dimensions and terms (library; writes are proposals, VOC-07)
 # ---------------------------------------------------------------------------------------
 @router.get(
-    "/taxonomy/dimensions",
-    response=TaxonomyDimensionPage,
-    auth=SESSION_OR_KEY,
-    operation_id="listTaxonomyDimensions",
-    by_alias=True,
-    summary="See the groups a regulatory scope and a record's tags are organised in",
-)
-@answers_problems
-def list_taxonomy_dimensions(request: HttpRequest) -> TaxonomyDimensionPage:
-    """Every active dimension of the shared library's taxonomy, such as the regime, the
-    service or the client category, in picker order, with its kind and whether its terms
-    narrow what a bank sees. Call it to build a scope editor or a filter, then
-    `GET /taxonomy/terms?dimension=<key>` for the terms of one. Dimensions are library facts:
-    new ones arrive through an approved proposal, never through this route.
-
-    A short reference list that never paginates: `total` is the length of `items`, and an
-    empty taxonomy is a 200 with an empty list. Labels read in the caller's language.
-
-    A read: it changes nothing and writes no audit event. Open to any person's session and
-    to an agent's API key with the `library:read` scope.
-
-    Errors to branch on: `unauthenticated` (401) without a session or a valid key;
-    `permission_denied` (403) for an API key without `library:read`.
-    """
-    # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
-    require_library_reader(request)
-    items = lists.rows_of("term_dimension", None, reading.language_order(request))
-    return TaxonomyDimensionPage(items=items, total=len(items))
-
-
-@router.get(
     "/taxonomy/terms",
     response=TaxonomyTermPage,
     auth=SESSION_OR_KEY,
@@ -1237,59 +1204,6 @@ def withdraw_footprint_request(request: HttpRequest, request_id: _FootprintReque
         tenant=tenant, request=found, requester=user, actor=actor_for(request, user), expected_version=if_match(request)
     )
     return footprint_logic.request_row(withdrawn, reading.language_order(request, tenant=tenant))
-
-
-_ScopeItemId = Annotated[
-    str,
-    Path(
-        description=(
-            "The `id` of the scope item, a UUID as `GET /tenant/footprint` or a regulatory scope change request "
-            "returns it. One of another organisation, one that does not exist, or anything that is not a UUID "
-            "answers 404 `not_found`."
-        )
-    ),
-]
-
-
-@router.get(
-    "/tenant/footprint/scope-items/{scope_item_id}",
-    response=ScopeItemRow,
-    auth=SESSION,
-    operation_id="getScopeItem",
-    by_alias=True,
-    summary="See one regulation we added to our regulatory scope",
-    openapi_extra={"responses": {200: {"content": {"application/json": {"example": {
-        "id": "0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34",
-        "key": "local_crypto_asset_rules",
-        "name": "Local crypto-asset rules",
-        "description": "",
-        "jurisdiction": {"key": "se", "kind": "country", "label": "Sweden"},
-        "regimeTerm": {"key": "securities", "kind": None, "label": "Securities", "dimension": "regime"},
-        "officialReference": "FFFS 2026:1",
-        "sourceUrl": "https://www.fi.se/sv/vara-register/",
-        "status": "in_scope",
-        "research": "waiting_for_agent",
-    }}}}}},
-)
-@answers_problems
-def get_scope_item(request: HttpRequest, scope_item_id: _ScopeItemId) -> ScopeItemRow:
-    """One scope item of the organisation's own, whatever its status: a regulation the
-    shared library does not cover that someone asked to put into the regulatory scope, with
-    where its request stands and how its research stands. Call it to open an item from the
-    Regulatory scope screen or from a request in its history.
-
-    A read: it changes nothing and writes no audit event. Any member may call it, as any
-    member reads the regulatory scope; it needs a person's session and no permission beyond
-    membership, and an API key is refused. Another organisation's item answers 404, exactly
-    as one that does not exist.
-
-    Errors to branch on: `not_found` (404) for an item that is not this organisation's or
-    not an id; `unauthenticated` (401) without a session.
-    """
-    # Ungated by design: capability (any member reads the regulatory scope and its items, FP-03, OWN-01).
-    tenant = caller_tenant(request)
-    item = footprint_logic.scope_item(tenant.id, uuid_or_404(scope_item_id))
-    return footprint_logic.scope_item_rows([item], reading.language_order(request, tenant=tenant))[0]
 
 
 _MARKET_WATCH_EXAMPLE = {

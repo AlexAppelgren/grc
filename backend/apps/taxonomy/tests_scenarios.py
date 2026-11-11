@@ -2094,11 +2094,9 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual((added.actor_id, str(added.subject_id)), (self.approver.id, in_scope["id"]))
         self.assertIsNotNone(added.step_up_assertion_id)
         self.assertEqual(OutboxEvent.objects.get(audit_event=added).payload["key"], "local_crypto_asset_rules")
-        # Tenant B's fetch of the item answers 404.
+        # Tenant B's regulatory scope carries none of it.
         other = factories.tenant(slug="bank-b")
         member_of_b = sign_in(factories.member(other, roles=("admin",)).user, tenant=other)
-        fetched = self._get(f"/tenant/footprint/scope-items/{in_scope['id']}", member_of_b)
-        self.assertEqual((fetched.status_code, fetched.json()["code"]), (404, "not_found"))
         self.assertEqual(self._footprint(member_of_b)["scopeItems"], [])
 
     def test_acc_s2(self) -> None:

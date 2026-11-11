@@ -167,7 +167,7 @@ class TaxonomyDimensionRef(CamelSchema):
             "The dimension's immutable key, such as `service_type` or `standard`, and the only part of this "
             "reference to store, compare or send back. Dimensions are rows of the shared library's "
             "`term_dimension` vocabulary, which an administrator may extend through an approved proposal, "
-            "so a key you have not seen before is new data and not an error; `GET /taxonomy/dimensions` "
+            "so a key you have not seen before is new data and not an error; `GET /vocab/term_dimension` "
             "lists the live set."
         ),
         examples=["service_type"],
@@ -1101,7 +1101,7 @@ class TaxonomyTermRow(CamelSchema):
         description=(
             "The dimension the term belongs to: its key, its kind (`scope`, `classification` or `opt_in`) "
             "and its label. Dimensions are rows of the shared library's `term_dimension` vocabulary, which "
-            "an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists the "
+            "an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists the "
             "live set."
         ),
     )
@@ -1253,7 +1253,7 @@ class TaxonomyTermCreateBody(WriteBody):
         description=(
             "The key of the dimension the term joins, such as `service_type` or `client_category`. "
             "Dimensions are rows of the shared library's `term_dimension` vocabulary, which an "
-            "administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists the "
+            "administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists the "
             "live set. An unknown or retired dimension answers 422 `unknown_key`, and the `jurisdiction` "
             "dimension, whose terms mirror the jurisdiction list, answers 422 `jurisdiction_term_mirrored`."
         ),
@@ -1294,65 +1294,6 @@ class TaxonomyTermCreateBody(WriteBody):
             "`unknown_key` with the valid keys."
         ),
         examples=[None],
-    )
-
-
-class TaxonomyDimensionPage(CamelSchema):
-    """`GET /taxonomy/dimensions`: every active dimension of the taxonomy, in picker order.
-    A reference list, not a page: it is short and never paginates."""
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "items": [
-                        {
-                            "key": "service_type",
-                            "kind": "scope",
-                            "label": "Service",
-                            "labels": {"en": "Service", "sv": "Tjänst"},
-                            "usageNote": "The investment or insurance service offered.",
-                            "sortOrder": 4,
-                            "active": True,
-                            "isSystem": True,
-                            "isDefault": False,
-                            "usageCount": 6,
-                            "version": 1,
-                            "extra": {"restrictsFootprint": True},
-                        },
-                        {
-                            "key": "theme",
-                            "kind": "classification",
-                            "label": "Theme",
-                            "labels": {"en": "Theme", "sv": "Tema"},
-                            "usageNote": "What the rule is about, for browsing and briefings. Never narrows the footprint.",
-                            "sortOrder": 9,
-                            "active": True,
-                            "isSystem": True,
-                            "isDefault": False,
-                            "usageCount": 0,
-                            "version": 1,
-                            "extra": {"restrictsFootprint": False},
-                        },
-                    ],
-                    "total": 2,
-                }
-            ]
-        }
-    )
-
-    items: list[VocabularyRow] = Field(
-        description=(
-            "The dimensions, each a row of the shared library's `term_dimension` vocabulary, which an "
-            "administrator may extend through an approved proposal. Its `kind` is `scope` (the dimension "
-            "says who or what a rule covers), `classification` (it only describes a record and never "
-            "narrows a regulatory scope) or `opt_in` (the standards a bank follows: a record carrying one "
-            "shows only to a bank whose scope names it). `extra.restrictsFootprint` says whether the terms "
-            "chosen in it narrow what a bank sees. Only active dimensions, in picker order."
-        )
-    )
-    total: int = Field(
-        description="How many dimensions `items` holds: the whole answer, since this list never paginates."
     )
 
 
@@ -1433,7 +1374,7 @@ class FootprintDimension(CamelSchema):
             "terms shows only when this group names that term, so an empty group means none followed "
             "rather than no restriction. Dimensions are rows of the shared library's `term_dimension` "
             "vocabulary, which an administrator may extend through an approved proposal; "
-            "`GET /taxonomy/dimensions` lists the live set."
+            "`GET /vocab/term_dimension` lists the live set."
         )
     )
     restricts_footprint: bool = Field(
@@ -1471,7 +1412,7 @@ class FootprintTermRef(TermRef):
         description=(
             "The key of the term's dimension, such as `service_type`; with `key` it names the term. "
             "Dimensions are rows of the shared library's `term_dimension` vocabulary, which an "
-            "administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists them."
+            "administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists them."
         ),
         examples=["service_type"],
     )
@@ -1519,8 +1460,8 @@ class ScopeItemRow(CamelSchema):
     id: UUID | None = Field(
         default=None,
         description=(
-            "The scope item's identifier, a UUID that never changes; `GET /tenant/footprint/scope-items/{scopeItemId}` "
-            "takes it. Null by default only in a dry run's preview, where nothing is stored yet."
+            "The scope item's identifier, a UUID that never changes, under which the regulatory scope "
+            "and a request's history carry it. Null by default only in a dry run's preview, where nothing is stored yet."
         ),
         examples=["0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34"],
     )
@@ -2200,7 +2141,7 @@ class FootprintTermSelector(CamelSchema):
         description=(
             "The key of the term's dimension, such as `service_type`. Dimensions are rows of the shared "
             "library's `term_dimension` vocabulary, which an administrator may extend through an approved "
-            "proposal; `GET /taxonomy/dimensions` lists them. An unknown or retired one answers 422 "
+            "proposal; `GET /vocab/term_dimension` lists them. An unknown or retired one answers 422 "
             "`unknown_key` with the valid keys."
         ),
         examples=["service_type"],
@@ -2457,7 +2398,7 @@ class TaxonomyTermQuery(CamelSchema):
             "Only the terms of this dimension, by its key, such as `service_type`; left out by default, "
             "every dimension's terms. Dimensions are rows of the shared library's `term_dimension` "
             "vocabulary, which an administrator may extend through an approved proposal; "
-            "`GET /taxonomy/dimensions` lists them. An unknown or retired dimension answers 422 "
+            "`GET /vocab/term_dimension` lists them. An unknown or retired dimension answers 422 "
             "`unknown_key` with the valid keys."
         ),
     )

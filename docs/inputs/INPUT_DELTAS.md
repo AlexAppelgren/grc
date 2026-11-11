@@ -2090,3 +2090,25 @@ before the job succeeded). `GET /tenant/org-units` gains `registerEntry` on each
   change does: an invitation grants roles, `admin` included, and a new bank's invitation
   grants its administrator role. The assertion is stored on the `invitation.created` and
   `tenant.created` audit events.
+
+## review-2026-11-11-b1. Reads another route already answers are gone (2026-11-11, B-1)
+
+- `GET /agent-runs` (`listAgentRuns`) is a bank's run log only, behind `agents.manage` as a
+  decorator: a console session is refused it, `system.health` included, and reads bleqq's
+  runs from `GET /console/agent-runs` under `agent_definitions.manage`, which counts what
+  each run filed from the rows it filed (H41). The console branch of the shared route had no
+  caller. The bank keeps the paged history behind the latest runs `GET /agents` carries
+  (AGT-04 "history with findings and cost").
+- Seven built-only reads are removed because another route answers them and no screen,
+  agent definition or MCP tool called them: `GET /obligations/{id}/interpretation` (the
+  register entry's `interpretation`), `GET /tenant/footprint/scope-items/{id}` (the
+  regulatory scope's `scopeItems` and a request's rows), `GET /tenant/org-units/{id}/licences`
+  (each organisation row's `licences`), `GET /taxonomy/dimensions` (`GET /vocab/term_dimension`,
+  the same rows behind the same gate), `GET /tenant/teams/{key}/members` (each member row's
+  `teams`), `GET /research-requests/{id}` (`GET /research-requests`) and
+  `GET /reference/product` (the web app's own `shared/brand.ts`). None is in the designed
+  contract. A support session no longer lists the taxonomy's dimensions; no screen it opens
+  read them.
+- `GET /vocab/{list}/{key}` stays, although the review counted it redundant: it is the only
+  read that carries `originalLanguage` and `machineLanguages`, which say which labels a
+  machine wrote and no person has confirmed (I18N-01, INV-05).

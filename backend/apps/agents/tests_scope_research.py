@@ -156,8 +156,9 @@ class OpeningResearch(ScopeResearchCase):
                 self.assertFalse(ResearchRequest.objects.filter(scope_item=item).exists())
                 waiting = AuditEvent.objects.get(action="scope_item.research_waiting", subject_id=item.id)
                 self.assertEqual(waiting.after, {"scopeItem": item.key, "reason": "no_tenant_agent"})
-                read = self.client.get(f"{V1}/tenant/footprint/scope-items/{item.id}", **sign_in(self.w.officer, tenant=self.w.bank))
-                self.assertEqual(read.json()["research"], "waiting_for_agent")
+                scope = self.client.get(f"{V1}/tenant/footprint", **sign_in(self.w.officer, tenant=self.w.bank)).json()
+                read = next(row for row in scope["scopeItems"] if row["id"] == str(item.id))
+                self.assertEqual(read["research"], "waiting_for_agent")
 
     def test_ai_off_or_the_cap_holds_the_research(self) -> None:
         Tenant.objects.filter(pk=self.w.bank.pk).update(ai_enabled=False)

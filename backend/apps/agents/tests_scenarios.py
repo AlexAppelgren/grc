@@ -954,7 +954,7 @@ class AgentsScenarioTests(TestCase):
         """AGT-S12
 
         Out-of-scope documents are counted and never registered, and the eval set gates it (AGT-08, SRC-05).
-        Operations: `startAgentRun`, `recordSourceCheck`, `finishAgentRun`, `listAgentRuns`.
+        Operations: `startAgentRun`, `recordSourceCheck`, `finishAgentRun`, `listPlatformRuns`.
         """
         gate = _search_eval()
         rows = gate.load_jsonl(gate.EVAL / "classification.jsonl")
@@ -1061,8 +1061,8 @@ class AgentsScenarioTests(TestCase):
         # Then the run history shows the count 2 and no change and no proposal counted; the two
         # source checks are the rows logged against the run, and nothing was registered or
         # proposed under it. The server's own refusal of a change with no regime is WAT-S11's.
-        with stub_session(user_principal(permissions={perms.SYSTEM_HEALTH})):
-            history = self.client.get("/api/v1/agent-runs", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
+        with stub_session(user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE})):
+            history = self.client.get("/api/v1/console/agent-runs", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
         self.assertEqual(history.status_code, 200, history.content)
         run = next(item for item in history.json()["items"] if item["id"] == run_id)
         self.assertEqual(run["status"], "succeeded")

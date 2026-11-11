@@ -115,7 +115,7 @@ class WaveBRefusals(TestCase):
     def test_another_banks_id_is_not_found(self) -> None:
         headers = sign_in(self.user, tenant=self.tenant)
         self.assertEqual(self.client.get(f"{V1}/obligations/{self.their_duty.id}/register", **headers).status_code, 404)
-        self.assertEqual(self.client.get(f"{V1}/tenant/org-units/{self.their_entity.id}/licences", **headers).status_code, 404)
+        self.assertEqual(self.client.post(f"{V1}/tenant/org-units/{self.their_entity.id}/licences", data={"licenceType": "bank"}, content_type="application/json", **headers).status_code, 404)
         panels = self.client.get(f"{V1}/obligations/{self.duty.id}/register", **headers).content.decode()
         self.assertNotIn(str(self.other.id), panels)
         self.assertNotIn(str(self.their_entity.id), panels)

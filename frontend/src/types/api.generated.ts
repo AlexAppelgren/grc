@@ -561,29 +561,27 @@ export interface paths {
         };
         /**
          * Read what the agents have been doing
-         * @description Returns the agent runs the caller may see, newest first, one page at a time: when
-         *     each ran, which agent, which version and which model, what started it and who asked,
-         *     how it ended, what it counted and what it cost. Call it to show a bank what its own
-         *     agents have done and what that cost, the history of one of them with `tenantAgentId`,
-         *     the runs a person asked for with `mine`, and to investigate a run whose findings are
-         *     being questioned.
+         * @description Returns the bank's own agent runs, newest first, one page at a time: when each ran,
+         *     which agent, which version and which model, what started it and who asked, how it
+         *     ended, what it counted and what it cost. Call it to page the whole history behind the
+         *     latest runs `GET /agents` shows beside each agent, the history of one of them with
+         *     `tenantAgentId`, the runs a person asked for with `mine`, and to investigate a run whose
+         *     findings are being questioned.
          *
-         *     A person's session only; an API key cannot read this, so an agent cannot read its own
-         *     history. Inside a bank it needs `agents.manage`, in the platform console
-         *     `system.health`; a member with neither is refused. A bank sees its own runs and nothing
-         *     else; the platform console sees the runs of bleqq's own agents. bleqq's runs reach a
-         *     bank as watch items and proposals rather than as run rows, so no platform cost, token
-         *     count or model is ever on a bank's page: `GET /agents/platform` shows what bleqq's
-         *     agents watch, when each next runs and how its last run ended. No bank sees another
-         *     bank's runs; the two filters only narrow that, and naming another bank's agent matches
-         *     no run rather than answering an error. Runs that started in the same instant keep one
-         *     stable order, so paging never skips or repeats one. It changes nothing and writes
-         *     nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
-         *     run yet, not that something is wrong.
+         *     A person's session in a bank holding `agents.manage`; an API key cannot read this, so an
+         *     agent cannot read its own history. The platform console reads bleqq's own runs with
+         *     `GET /console/agent-runs`. bleqq's runs reach a bank as watch items and proposals rather
+         *     than as run rows, so no platform cost, token count or model is ever on a bank's page:
+         *     `GET /agents/platform` shows what bleqq's agents watch, when each next runs and how its
+         *     last run ended. No bank sees another bank's runs; the two filters only narrow that, and
+         *     naming another bank's agent matches no run rather than answering an error. Runs that
+         *     started in the same instant keep one stable order, so paging never skips or repeats one.
+         *     It changes nothing and writes nothing to the audit log. An empty list is a 200 with
+         *     `total` 0 and means nothing has run yet, not that something is wrong.
          *
          *     Errors: `validation_error` when `limit` is above 100, `offset` beyond the accepted
-         *     depth or `tenantAgentId` is not a UUID; `permission_denied` with neither
-         *     `agents.manage` nor `system.health`; `unauthenticated` without a session.
+         *     depth or `tenantAgentId` is not a UUID; `not_found` for a session that belongs to no
+         *     bank; `permission_denied` without `agents.manage`; `unauthenticated` without a session.
          */
         get: operations["listAgentRuns"];
         put?: never;
@@ -3312,7 +3310,7 @@ export interface paths {
          *     and decide in the queue. Poll it while `status` is `queued` or `running`.
          *
          *     A person's session in the platform console holding `proposals.review`; a bank reads its
-         *     own requests with `GET /research-requests/{requestId}`. It reads and writes nothing to
+         *     own requests with `GET /research-requests`. It reads and writes nothing to
          *     the audit log.
          *
          *     Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
@@ -5508,18 +5506,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Read how your bank reads a rule, and how it read it before
-         * @description "How we read this rule": the bank's current reading of the obligation with its author
-         *     and date, and every earlier reading unchanged. Internal legal judgement that never leaves
-         *     the bank. An obligation with no reading is a 200 with `current` null.
-         *
-         *     A person's session holding `register.read`. A read.
-         *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-         *     `not_found` (404) for an obligation the bank cannot see.
-         */
-        get: operations["getInterpretation"];
+        get?: never;
         /**
          * Write down how your bank reads a rule
          * @description Writes a new version of the bank's reading of the rule. The previous version is kept,
@@ -6839,34 +6826,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/reference/product": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Read the product's name before anyone has signed in
-         * @description Returns the name this deployment of the product goes by. Call it when a screen needs
-         *     the name before any session exists, such as a sign-in page, so it shows the name the
-         *     operator configured for this deployment rather than one built into the client; the
-         *     same name is what a passkey prompt shows as the service the passkey belongs to.
-         *
-         *     No credential is needed and none is read: the answer is the same for every caller,
-         *     says nothing about any bank or person, and is safe to keep for the life of a page. It
-         *     changes nothing and writes nothing to the audit log. The call takes no input, so there
-         *     is no error for a caller to branch on.
-         */
-        get: operations["getProduct"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/register-entries": {
         parameters: {
             query?: never;
@@ -6963,7 +6922,7 @@ export interface paths {
          * Ask your bank's agent to check a source or research a topic
          * @description Asks one of the bank's own agents to run now, check a registered source or a web
          *     address now, or research a topic. The request is a job: its run opens at once and the
-         *     request is returned with it; read its status from `GET /research-requests/{requestId}`.
+         *     request is returned with it; read its status from `GET /research-requests`.
          *     It runs under the bank's monthly cap, and what the agent finds stays in the bank's own
          *     zone. A web address is fetched once, here, over https from a public host, and what came
          *     back is kept as text for the agent, never shown as a page. The topic is the bank's own
@@ -6990,33 +6949,6 @@ export interface paths {
          *     fetched in the last hour, failed fetches included.
          */
         post: operations["createResearchRequest"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/research-requests/{request_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * See where one of your bank's research requests stands
-         * @description Returns one of the bank's research requests with its status, for a screen following
-         *     it until its run finishes.
-         *
-         *     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
-         *     nothing to the audit log.
-         *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `not_found` (404) for a request the bank does not have.
-         */
-        get: operations["getResearchRequest"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7452,39 +7384,6 @@ export interface paths {
          *     session; `validation_error` (422) for a body the schema rejects.
          */
         post: operations["untagRecord"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/taxonomy/dimensions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * See the groups a regulatory scope and a record's tags are organised in
-         * @description Every active dimension of the shared library's taxonomy, such as the regime, the
-         *     service or the client category, in picker order, with its kind and whether its terms
-         *     narrow what a bank sees. Call it to build a scope editor or a filter, then
-         *     `GET /taxonomy/terms?dimension=<key>` for the terms of one. Dimensions are library facts:
-         *     new ones arrive through an approved proposal, never through this route.
-         *
-         *     A short reference list that never paginates: `total` is the length of `items`, and an
-         *     empty taxonomy is a 200 with an empty list. Labels read in the caller's language.
-         *
-         *     A read: it changes nothing and writes no audit event. Open to any person's session and
-         *     to an agent's API key with the `library:read` scope.
-         *
-         *     Errors to branch on: `unauthenticated` (401) without a session or a valid key;
-         *     `permission_denied` (403) for an API key without `library:read`.
-         */
-        get: operations["listTaxonomyDimensions"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8049,37 +7948,6 @@ export interface paths {
          *     `If-Match` that is not a version; `unauthenticated` (401) without a session.
          */
         post: operations["withdrawFootprintRequest"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/tenant/footprint/scope-items/{scope_item_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * See one regulation we added to our regulatory scope
-         * @description One scope item of the organisation's own, whatever its status: a regulation the
-         *     shared library does not cover that someone asked to put into the regulatory scope, with
-         *     where its request stands and how its research stands. Call it to open an item from the
-         *     Regulatory scope screen or from a request in its history.
-         *
-         *     A read: it changes nothing and writes no audit event. Any member may call it, as any
-         *     member reads the regulatory scope; it needs a person's session and no permission beyond
-         *     membership, and an API key is refused. Another organisation's item answers 404, exactly
-         *     as one that does not exist.
-         *
-         *     Errors to branch on: `not_found` (404) for an item that is not this organisation's or
-         *     not an id; `unauthenticated` (401) without a session.
-         */
-        get: operations["getScopeItem"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8679,21 +8547,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * See the licences and certificates a legal entity holds
-         * @description The licences and certificates one legal entity holds, withdrawn ones included and
-         *     marked: the type as a term, the authority's reference, the grant and withdrawal dates,
-         *     and a certificate's issuer, number, scope, validity, next audit and owner. A certificate's
-         *     validity and next audit are the bank's own deadlines on its roadmap; they carry no term
-         *     and change no obligation's scope.
-         *
-         *     Any member of the bank may call it. It changes nothing and writes no audit event. A unit
-         *     that holds none is a 200 with `total` 0.
-         *
-         *     Errors: `not_found` (404) for a unit that is not the bank's own; `validation_error` (422)
-         *     for a page size above 100; `unauthenticated` (401).
-         */
-        get: operations["listLicences"];
+        get?: never;
         put?: never;
         /**
          * Record a licence or certificate a legal entity holds
@@ -9415,33 +9269,6 @@ export interface paths {
          *     session that belongs to no bank; `unauthenticated` (401).
          */
         get: operations["listTeams"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/tenant/teams/{key}/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * See who is in a team
-         * @description The active members of one team, by name, as ids and names only. Call it to show a team
-         *     on the organisation screen or to preview what a member's removal ends.
-         *
-         *     Any member of the bank may call it. It changes nothing and writes no audit event. A team
-         *     with nobody in it is a 200 with `total` 0.
-         *
-         *     Errors: `not_found` (404) for a team key the bank does not have; `validation_error` (422)
-         *     for a page size above 100; `unauthenticated` (401).
-         */
-        get: operations["listTeamMembers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15677,7 +15504,7 @@ export interface components {
              * @default false
              */
             allSelected: boolean;
-            /** @description The taxonomy dimension this group covers: its key, its kind and its label in the caller's language. The kind is `scope` for a dimension that says who or what a rule covers, `classification` for one that only describes a record and never narrows the scope, and `opt_in` for the standards a bank follows, where a record carrying one of the dimension's terms shows only when this group names that term, so an empty group means none followed rather than no restriction. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists the live set. */
+            /** @description The taxonomy dimension this group covers: its key, its kind and its label in the caller's language. The kind is `scope` for a dimension that says who or what a rule covers, `classification` for one that only describes a record and never narrows the scope, and `opt_in` for the standards a bank follows, where a record carrying one of the dimension's terms shows only when this group names that term, so an empty group means none followed rather than no restriction. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists the live set. */
             dimension: components["schemas"]["TaxonomyDimensionRef"];
             /**
              * Restrictsfootprint
@@ -16378,7 +16205,7 @@ export interface components {
         FootprintTermRef: {
             /**
              * Dimension
-             * @description The key of the term's dimension, such as `service_type`; with `key` it names the term. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists them.
+             * @description The key of the term's dimension, such as `service_type`; with `key` it names the term. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists them.
              * @example service_type
              */
             dimension: string;
@@ -16408,7 +16235,7 @@ export interface components {
         FootprintTermSelector: {
             /**
              * Dimension
-             * @description The key of the term's dimension, such as `service_type`. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists them. An unknown or retired one answers 422 `unknown_key` with the valid keys.
+             * @description The key of the term's dimension, such as `service_type`. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists them. An unknown or retired one answers 422 `unknown_key` with the valid keys.
              * @example service_type
              */
             dimension: string;
@@ -21755,7 +21582,7 @@ export interface components {
          * @description A dimension in which none of the record's terms is in the footprint (FP-03).
          */
         OutsideReason: {
-            /** @description The facet in which the record's terms and the bank's footprint have nothing in common, which is the reason the record would be hidden. The dimensions are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /taxonomy/dimensions` for the live set and match on the key. Only a dimension that narrows the footprint appears here: `channel` and `lifecycle_stage` describe a record and never hide it. */
+            /** @description The facet in which the record's terms and the bank's footprint have nothing in common, which is the reason the record would be hidden. The dimensions are vocabulary rows a platform admin may extend or retire without a deploy, so read `GET /vocab/term_dimension` for the live set and match on the key. Only a dimension that narrows the footprint appears here: `channel` and `lifecycle_stage` describe a record and never hide it. */
             dimension: components["schemas"]["LibraryRef"];
             /**
              * Terms
@@ -22970,20 +22797,6 @@ export interface components {
              * @example 2
              */
             versionNumber: number | null;
-        };
-        /**
-         * ProductInfo
-         * @description What a sign-in page needs before anyone has signed in: the product's own name.
-         * @example {
-         *       "productName": "Compliance Watch"
-         *     }
-         */
-        ProductInfo: {
-            /**
-             * Productname
-             * @description The name this deployment of the product goes by, for a sign-in page to show before anyone has signed in; a passkey prompt names the service by the same name. The platform operator sets it for each deployment, so a rebrand changes it without a new release: show what this returns rather than a name of your own. It is the product's name and never a bank's; nothing about any bank or person is in it.
-             */
-            productName: string;
         };
         /**
          * ProposalAccepted
@@ -26224,7 +26037,7 @@ export interface components {
             evidenceLocation: string | null;
             /** @description The first-line member who owns meeting the obligation; null when nobody does yet. */
             firstLineOwner: components["schemas"]["RegisterPersonRef"] | null;
-            /** @description "How we read this rule": the bank's current reading and every earlier one, exactly as `GET /obligations/{obligationId}/interpretation` answers it, carried here so the obligation page reads both in one call. `current` is null when the bank has written none. Internal legal judgement that never leaves the bank. */
+            /** @description "How we read this rule": the bank's current reading and every earlier one, exactly as `PUT /obligations/{obligationId}/interpretation` answers after a save, so the obligation page reads both in one call. `current` is null when the bank has written none. Internal legal judgement that never leaves the bank. */
             interpretation: components["schemas"]["RegisterInterpretation"];
             /**
              * Nextreviewdate
@@ -26424,7 +26237,7 @@ export interface components {
             evidenceLocation: string | null;
             /** @description The first-line member who owns meeting the obligation; null when nobody does yet. */
             firstLineOwner: components["schemas"]["RegisterPersonRef"] | null;
-            /** @description "How we read this rule": the bank's current reading and every earlier one, exactly as `GET /obligations/{obligationId}/interpretation` answers it, carried here so the obligation page reads both in one call. `current` is null when the bank has written none. Internal legal judgement that never leaves the bank. */
+            /** @description "How we read this rule": the bank's current reading and every earlier one, exactly as `PUT /obligations/{obligationId}/interpretation` answers after a save, so the obligation page reads both in one call. `current` is null when the bank has written none. Internal legal judgement that never leaves the bank. */
             interpretation: components["schemas"]["RegisterInterpretation"];
             /**
              * Nextreviewdate
@@ -28638,7 +28451,7 @@ export interface components {
              * @example false
              */
             allSelected: boolean;
-            /** @description Which facet of the taxonomy this entry is about, as key, kind and label. The dimensions are vocabulary rows and never a closed set: a platform admin may extend, relabel, reorder or retire the list without a deploy, so read `GET /taxonomy/dimensions` for the live set and match on the key. Seeded on day one: `regime`, `legal_entity`, `service_type`, `account_type`, `client_category`, `channel` and `lifecycle_stage`. Every active dimension is listed on every record, including the ones a record carries no term in. */
+            /** @description Which facet of the taxonomy this entry is about, as key, kind and label. The dimensions are vocabulary rows and never a closed set: a platform admin may extend, relabel, reorder or retire the list without a deploy, so read `GET /vocab/term_dimension` for the live set and match on the key. Seeded on day one: `regime`, `legal_entity`, `service_type`, `account_type`, `client_category`, `channel` and `lifecycle_stage`. Every active dimension is listed on every record, including the ones a record carries no term in. */
             dimension: components["schemas"]["LibraryRef"];
             /**
              * Terms
@@ -28738,7 +28551,7 @@ export interface components {
             description: string;
             /**
              * Id
-             * @description The scope item's identifier, a UUID that never changes; `GET /tenant/footprint/scope-items/{scopeItemId}` takes it. Null by default only in a dry run's preview, where nothing is stored yet.
+             * @description The scope item's identifier, a UUID that never changes, under which the regulatory scope and a request's history carry it. Null by default only in a dry run's preview, where nothing is stored yet.
              * @example 0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34
              */
             id?: string | null;
@@ -29717,66 +29530,6 @@ export interface components {
             label: string;
         };
         /**
-         * TaxonomyDimensionPage
-         * @description `GET /taxonomy/dimensions`: every active dimension of the taxonomy, in picker order.
-         *     A reference list, not a page: it is short and never paginates.
-         * @example {
-         *       "items": [
-         *         {
-         *           "active": true,
-         *           "extra": {
-         *             "restrictsFootprint": true
-         *           },
-         *           "isDefault": false,
-         *           "isSystem": true,
-         *           "key": "service_type",
-         *           "kind": "scope",
-         *           "label": "Service",
-         *           "labels": {
-         *             "en": "Service",
-         *             "sv": "Tjänst"
-         *           },
-         *           "sortOrder": 4,
-         *           "usageCount": 6,
-         *           "usageNote": "The investment or insurance service offered.",
-         *           "version": 1
-         *         },
-         *         {
-         *           "active": true,
-         *           "extra": {
-         *             "restrictsFootprint": false
-         *           },
-         *           "isDefault": false,
-         *           "isSystem": true,
-         *           "key": "theme",
-         *           "kind": "classification",
-         *           "label": "Theme",
-         *           "labels": {
-         *             "en": "Theme",
-         *             "sv": "Tema"
-         *           },
-         *           "sortOrder": 9,
-         *           "usageCount": 0,
-         *           "usageNote": "What the rule is about, for browsing and briefings. Never narrows the footprint.",
-         *           "version": 1
-         *         }
-         *       ],
-         *       "total": 2
-         *     }
-         */
-        TaxonomyDimensionPage: {
-            /**
-             * Items
-             * @description The dimensions, each a row of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal. Its `kind` is `scope` (the dimension says who or what a rule covers), `classification` (it only describes a record and never narrows a regulatory scope) or `opt_in` (the standards a bank follows: a record carrying one shows only to a bank whose scope names it). `extra.restrictsFootprint` says whether the terms chosen in it narrow what a bank sees. Only active dimensions, in picker order.
-             */
-            items: components["schemas"]["VocabularyRow"][];
-            /**
-             * Total
-             * @description How many dimensions `items` holds: the whole answer, since this list never paginates.
-             */
-            total: number;
-        };
-        /**
          * TaxonomyDimensionRef
          * @description A taxonomy dimension as a reference: the group a term or a regulatory scope group
          *     belongs to (FP-01).
@@ -29784,7 +29537,7 @@ export interface components {
         TaxonomyDimensionRef: {
             /**
              * Key
-             * @description The dimension's immutable key, such as `service_type` or `standard`, and the only part of this reference to store, compare or send back. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal, so a key you have not seen before is new data and not an error; `GET /taxonomy/dimensions` lists the live set.
+             * @description The dimension's immutable key, such as `service_type` or `standard`, and the only part of this reference to store, compare or send back. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal, so a key you have not seen before is new data and not an error; `GET /vocab/term_dimension` lists the live set.
              * @example service_type
              */
             key: string;
@@ -29819,7 +29572,7 @@ export interface components {
         TaxonomyTermCreateBody: {
             /**
              * Dimension
-             * @description The key of the dimension the term joins, such as `service_type` or `client_category`. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists the live set. An unknown or retired dimension answers 422 `unknown_key`, and the `jurisdiction` dimension, whose terms mirror the jurisdiction list, answers 422 `jurisdiction_term_mirrored`.
+             * @description The key of the dimension the term joins, such as `service_type` or `client_category`. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists the live set. An unknown or retired dimension answers 422 `unknown_key`, and the `jurisdiction` dimension, whose terms mirror the jurisdiction list, answers 422 `jurisdiction_term_mirrored`.
              * @example service_type
              */
             dimension: string;
@@ -29924,7 +29677,7 @@ export interface components {
         TaxonomyTermQuery: {
             /**
              * Dimension
-             * @description Only the terms of this dimension, by its key, such as `service_type`; left out by default, every dimension's terms. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists them. An unknown or retired dimension answers 422 `unknown_key` with the valid keys.
+             * @description Only the terms of this dimension, by its key, such as `service_type`; left out by default, every dimension's terms. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists them. An unknown or retired dimension answers 422 `unknown_key` with the valid keys.
              */
             dimension?: string | null;
             /**
@@ -29950,7 +29703,7 @@ export interface components {
             active: boolean;
             /** @description The independent agent that confirmed the approval `verifiedOrigin` describes, by its definition key, when `verifiedOrigin` is `agent`: the latest agent approval that reworded the row. Null whenever `verifiedOrigin` is not `agent`, which is a row a person approved, a seeded row and every row of a bank's own list. It names a platform agent definition, never a person or a bank. */
             confirmedByAgent?: components["schemas"]["AgentRef"] | null;
-            /** @description The dimension the term belongs to: its key, its kind (`scope`, `classification` or `opt_in`) and its label. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists the live set. */
+            /** @description The dimension the term belongs to: its key, its kind (`scope`, `classification` or `opt_in`) and its label. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists the live set. */
             dimension: components["schemas"]["TaxonomyDimensionRef"];
             /**
              * Id
@@ -30617,52 +30370,6 @@ export interface components {
             withdrawnOn?: string | null;
         };
         /**
-         * TenantLicencePage
-         * @description One page of a legal entity's licences and certificates.
-         * @example {
-         *       "items": [
-         *         {
-         *           "grantedOn": "2014-03-01",
-         *           "id": "5b7d9e1f-3a2c-4e6b-8d0f-2a4c6e8b0d13",
-         *           "issuedOn": null,
-         *           "issuer": "",
-         *           "licenceType": {
-         *             "key": "bank",
-         *             "kind": null,
-         *             "label": "Bank"
-         *           },
-         *           "nextAuditOn": null,
-         *           "number": "",
-         *           "orgUnitId": "3f6a2c1d-8b4e-4d7a-9c5f-0e1d2c3b4a59",
-         *           "owner": {
-         *             "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
-         *             "name": "Karin Holm"
-         *           },
-         *           "reference": "FI 12-3456",
-         *           "scopeNote": "",
-         *           "scopeStatement": "",
-         *           "serviceTerms": [],
-         *           "validUntil": null,
-         *           "version": 1,
-         *           "withdrawnOn": null
-         *         }
-         *       ],
-         *       "total": 1
-         *     }
-         */
-        TenantLicencePage: {
-            /**
-             * Items
-             * @description The licences and certificates on this page, withdrawn ones included; an empty list is a 200.
-             */
-            items: components["schemas"]["TenantLicence"][];
-            /**
-             * Total
-             * @description How many the legal entity holds in total, not how many are on this page.
-             */
-            total: number;
-        };
-        /**
          * TenantLicencePatch
          * @description A change to a licence or certificate. Send only the fields you are changing.
          * @example {
@@ -31244,7 +30951,7 @@ export interface components {
             lei: string;
             /**
              * Licences
-             * @description Every licence and certificate the legal entity holds, withdrawn ones included and marked, by grant date: the same rows `GET /tenant/org-units/{orgUnitId}/licences` pages. Always empty for a group or a department, which hold none.
+             * @description Every licence and certificate the legal entity holds, withdrawn ones included and marked, by grant date; this row is the one place the API lists them. Always empty for a group or a department, which hold none.
              */
             licences: components["schemas"]["TenantLicence"][];
             /**
@@ -31442,31 +31149,6 @@ export interface components {
              * @description A new IANA timezone for the organisation, such as `Europe/Copenhagen`, at most 64 characters. Omit the field to leave it alone. The name is checked against the IANA database the server runs on and an unknown one is refused with `unknown_key`. Changing it moves the local day every deadline is counted in, so dates already on screen are re-read in the new zone; the stored instants themselves do not move.
              */
             timezone?: string | null;
-        };
-        /**
-         * TenantPeoplePage
-         * @description One page of people: ids and names, nothing else about them.
-         * @example {
-         *       "items": [
-         *         {
-         *           "id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60",
-         *           "name": "Karin Holm"
-         *         }
-         *       ],
-         *       "total": 1
-         *     }
-         */
-        TenantPeoplePage: {
-            /**
-             * Items
-             * @description The people on this page, by name; an empty list is a 200 and means nobody is in it.
-             */
-            items: components["schemas"]["PersonRef"][];
-            /**
-             * Total
-             * @description How many people there are in total, not how many are on this page.
-             */
-            total: number;
         };
         /**
          * TenantProductBody
@@ -36654,7 +36336,7 @@ export interface components {
          *     leaves out, named by label and never by any record carrying it.
          */
         WhatAppliesOutsideTerm: {
-            /** @description The taxonomy dimension the term sits in, as `{key, kind, label}`, such as `licensed_activity`, Licensed activity. Dimensions are vocabulary rows, not a closed enum: a platform admin may extend, relabel or retire them without a deploy, so read `GET /taxonomy/dimensions` for the live set and match on the key, never the label. The `kind` is one of three kinds fixed in code: `scope`, `classification` or `opt_in`. */
+            /** @description The taxonomy dimension the term sits in, as `{key, kind, label}`, such as `licensed_activity`, Licensed activity. Dimensions are vocabulary rows, not a closed enum: a platform admin may extend, relabel or retire them without a deploy, so read `GET /vocab/term_dimension` for the live set and match on the key, never the label. The `kind` is one of three kinds fixed in code: `scope`, `classification` or `opt_in`. */
             dimension: components["schemas"]["LibraryRef"];
             /** @description The term itself, as `{key, kind, label}`, such as `card_issuing`, Card issuing. Terms are vocabulary rows, not a closed enum: a platform admin may add one through an approved proposal, and relabel or retire one, without a deploy, so read `GET /taxonomy/terms` for the live set and match on the key, never the label. A term has no kind of its own, so `kind` is always null: its dimension is its kind. */
             term: components["schemas"]["LibraryRef"];
@@ -41499,29 +41181,6 @@ export interface operations {
             };
         };
     };
-    getInterpretation: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The library obligation whose register row this is, as a UUID. The obligation is a shared library fact; everything this route reads or writes about it is the caller's bank's own. */
-                obligation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RegisterInterpretation"];
-                };
-            };
-        };
-    };
     saveInterpretation: {
         parameters: {
             query?: never;
@@ -42640,26 +42299,6 @@ export interface operations {
             };
         };
     };
-    getProduct: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProductInfo"];
-                };
-            };
-        };
-    };
     listRegisterEntries: {
         parameters: {
             query?: {
@@ -42760,29 +42399,6 @@ export interface operations {
         responses: {
             /** @description Accepted */
             202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResearchRequestOut"];
-                };
-            };
-        };
-    };
-    getResearchRequest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The research request, as a UUID. Another bank's request answers 404. */
-                request_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -43207,30 +42823,10 @@ export interface operations {
             };
         };
     };
-    listTaxonomyDimensions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TaxonomyDimensionPage"];
-                };
-            };
-        };
-    };
     listTerms: {
         parameters: {
             query?: {
-                /** @description Only the terms of this dimension, by its key, such as `service_type`; left out by default, every dimension's terms. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /taxonomy/dimensions` lists them. An unknown or retired dimension answers 422 `unknown_key` with the valid keys. */
+                /** @description Only the terms of this dimension, by its key, such as `service_type`; left out by default, every dimension's terms. Dimensions are rows of the shared library's `term_dimension` vocabulary, which an administrator may extend through an approved proposal; `GET /vocab/term_dimension` lists them. An unknown or retired dimension answers 422 `unknown_key` with the valid keys. */
                 dimension?: string | null;
                 /** @description True also returns retired terms, marked `active: false`, for an editor or for reading an old record. False, the default, returns only the terms a scope or a record can use today. */
                 includeRetired?: boolean;
@@ -43660,52 +43256,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FootprintRequestRow"];
-                };
-            };
-        };
-    };
-    getScopeItem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The `id` of the scope item, a UUID as `GET /tenant/footprint` or a regulatory scope change request returns it. One of another organisation, one that does not exist, or anything that is not a UUID answers 404 `not_found`. */
-                scope_item_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "description": "",
-                     *       "id": "0d9e3b52-7c41-4f8a-b6e2-5a1c9d0e7f34",
-                     *       "jurisdiction": {
-                     *         "key": "se",
-                     *         "kind": "country",
-                     *         "label": "Sweden"
-                     *       },
-                     *       "key": "local_crypto_asset_rules",
-                     *       "name": "Local crypto-asset rules",
-                     *       "officialReference": "FFFS 2026:1",
-                     *       "regimeTerm": {
-                     *         "dimension": "regime",
-                     *         "key": "securities",
-                     *         "kind": null,
-                     *         "label": "Securities"
-                     *       },
-                     *       "research": "waiting_for_agent",
-                     *       "sourceUrl": "https://www.fi.se/sv/vara-register/",
-                     *       "status": "in_scope"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ScopeItemRow"];
                 };
             };
         };
@@ -44225,40 +43775,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TenantOrgUnit"];
-                };
-            };
-        };
-    };
-    listLicences: {
-        parameters: {
-            query?: {
-                /**
-                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-                 * @example 20
-                 */
-                limit?: number;
-                /**
-                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-                 * @example 0
-                 */
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description The unit of the bank's organisation, as a UUID. Another bank's unit answers 404, never 403. */
-                org_unit_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TenantLicencePage"];
                 };
             };
         };
@@ -44940,40 +44456,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TenantTeamPage"];
-                };
-            };
-        };
-    };
-    listTeamMembers: {
-        parameters: {
-            query?: {
-                /**
-                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-                 * @example 20
-                 */
-                limit?: number;
-                /**
-                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-                 * @example 0
-                 */
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description The team's key, a row of the bank's `team` vocabulary, which an administrator may extend at `GET /vocab/team`, such as `compliance`. A key the bank has no team for answers 404. At most 80 characters. */
-                key: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TenantPeoplePage"];
                 };
             };
         };

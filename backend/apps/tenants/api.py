@@ -58,7 +58,6 @@ from apps.tenants.schemas import (
     TenantAiBody,
     TenantLicence,
     TenantLicenceBody,
-    TenantLicencePage,
     TenantLicencePatch,
     TenantMemberOpenWork,
     TenantMemberRemoveBody,
@@ -68,7 +67,6 @@ from apps.tenants.schemas import (
     TenantOrgUnitPatch,
     TenantOut,
     TenantPatch,
-    TenantPeoplePage,
     TenantProductBody,
     TenantProductOut,
     TenantProductPage,
@@ -579,36 +577,6 @@ def update_org_unit(
     )
 
 
-@router.get(
-    "/tenant/org-units/{org_unit_id}/licences",
-    response=TenantLicencePage,
-    auth=SessionAuth(),
-    operation_id="listLicences",
-    by_alias=True,
-    summary="See the licences and certificates a legal entity holds",
-)
-def list_licences(
-    request: HttpRequest, org_unit_id: uuid.UUID = Path(..., description=_ORG_UNIT_ID), page: PageQuery = Query(...)
-) -> Any:
-    """The licences and certificates one legal entity holds, withdrawn ones included and
-    marked: the type as a term, the authority's reference, the grant and withdrawal dates,
-    and a certificate's issuer, number, scope, validity, next audit and owner. A certificate's
-    validity and next audit are the bank's own deadlines on its roadmap; they carry no term
-    and change no obligation's scope.
-
-    Any member of the bank may call it. It changes nothing and writes no audit event. A unit
-    that holds none is a 200 with `total` 0.
-
-    Errors: `not_found` (404) for a unit that is not the bank's own; `validation_error` (422)
-    for a page size above 100; `unauthenticated` (401).
-    """
-    # Ungated by design: capability (any member of the tenant).
-    tenant = caller_tenant(request)
-    return organisation.list_licences(
-        tenant=tenant, order=language_order(request, tenant=tenant), org_unit_id=org_unit_id, limit=page.limit, offset=page.offset
-    )
-
-
 @router.post(
     "/tenant/org-units/{org_unit_id}/licences",
     response={201: TenantLicence},
@@ -905,30 +873,6 @@ def list_teams(request: HttpRequest, page: PageQuery = Query(...)) -> Any:
     # Ungated by design: capability (any member of the tenant).
     tenant = caller_tenant(request)
     return teams.list_teams(tenant=tenant, order=language_order(request, tenant=tenant), limit=page.limit, offset=page.offset)
-
-
-@router.get(
-    "/tenant/teams/{key}/members",
-    response=TenantPeoplePage,
-    auth=SessionAuth(),
-    operation_id="listTeamMembers",
-    by_alias=True,
-    summary="See who is in a team",
-)
-def list_team_members(
-    request: HttpRequest, key: str = Path(..., max_length=80, description=_TEAM_KEY + " At most 80 characters."), page: PageQuery = Query(...)
-) -> Any:
-    """The active members of one team, by name, as ids and names only. Call it to show a team
-    on the organisation screen or to preview what a member's removal ends.
-
-    Any member of the bank may call it. It changes nothing and writes no audit event. A team
-    with nobody in it is a 200 with `total` 0.
-
-    Errors: `not_found` (404) for a team key the bank does not have; `validation_error` (422)
-    for a page size above 100; `unauthenticated` (401).
-    """
-    # Ungated by design: capability (any member of the tenant).
-    return teams.list_team_members(tenant=caller_tenant(request), key=key, limit=page.limit, offset=page.offset)
 
 
 @router.get(

@@ -5,8 +5,8 @@ LEI, country and head, and the licences and certificates a legal entity holds. W
 audited with the fields they changed before and after. A unit is deactivated and a licence
 withdrawn; neither is ever deleted. TEN-S2 and TEN-S10 are in tests_scenarios.py.
 
-Operations exercised: listOrgUnits, createOrgUnit, updateOrgUnit, listLicences,
-createLicence, updateLicence.
+Operations exercised: listOrgUnits (each entity's licences ride on its row), createOrgUnit,
+updateOrgUnit, createLicence, updateLicence.
 """
 
 from __future__ import annotations
@@ -194,7 +194,7 @@ class UnitWrites(OrganisationCase):
         other_admin = self.other_admin()
         self.assertEqual(self.client.get(UNITS, **other_admin).json(), {"items": [], "total": 0})
         self.problem(self.patch(f"{UNITS}/{unit['id']}", {"name": "Taken"}, headers=other_admin), 404, "not_found")
-        self.problem(self.client.get(f"{UNITS}/{unit['id']}/licences", **other_admin), 404, "not_found")
+        self.problem(self.post(f"{UNITS}/{unit['id']}/licences", {"licenceType": "bank"}, headers=other_admin), 404, "not_found")
 
 
 class LicenceWrites(OrganisationCase):
@@ -251,8 +251,8 @@ class LicenceWrites(OrganisationCase):
         self.assertEqual((response.json()["withdrawnOn"], response.json()["version"]), (withdrawn_on.isoformat(), 2))
         self.assertEqual([term["key"] for term in response.json()["serviceTerms"]], ["advice"])
         self.problem(self.patch(url, {"reference": "late"}, version=1), 409, "stale_write")
-        listed = self.client.get(self.licences(unit), **self.headers).json()
-        self.assertEqual([(row["id"], row["withdrawnOn"]) for row in listed["items"]], [(created["id"], withdrawn_on.isoformat())])
+        listed = next(row for row in self.client.get(UNITS, **self.headers).json()["items"] if row["id"] == unit["id"])["licences"]
+        self.assertEqual([(row["id"], row["withdrawnOn"]) for row in listed], [(created["id"], withdrawn_on.isoformat())])
         [event] = self.events("licence.updated")
         self.assertEqual(event.before, {"withdrawnOn": None, "serviceTerms": ["custody"]})
         self.assertEqual(event.after, {"withdrawnOn": withdrawn_on.isoformat(), "serviceTerms": ["advice"], "rewritten": []})
@@ -268,7 +268,6 @@ class LicenceWrites(OrganisationCase):
         theirs = self.post(UNITS, {"kind": "legal_entity", "name": "Theirs", "entityTerm": "bank"}, headers=other_admin).json()
         self.post(f"{UNITS}/{theirs['id']}/licences", {"licenceType": "bank"}, headers=other_admin)
         rows = {row["id"]: row for row in self.client.get(UNITS, **self.headers).json()["items"]}
-        self.assertEqual(rows[unit["id"]]["licences"], self.client.get(self.licences(unit), **self.headers).json()["items"])
         self.assertEqual([row["id"] for row in rows[unit["id"]]["licences"]], [created["id"]])
         self.assertEqual(rows[department["id"]]["licences"], [])
         self.assertNotIn(theirs["id"], rows)

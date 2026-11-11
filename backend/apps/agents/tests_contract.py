@@ -177,12 +177,14 @@ class AgentRoutesAnswerFromTheirLogic(TestCase):
                     if code is not None:
                         self.assertEqual(response.json()["code"], code)
 
-    def test_system_health_also_reads_the_run_list(self) -> None:
-        """The run log is served now, so the proof is that `system.health` passes its gate;
-        what it returns is `tests_runs.py`'s."""
+    def test_the_console_reads_bleqqs_runs_on_its_own_route_only(self) -> None:
+        """Review 2026-11-11 B-1: a bank's run log is a bank's. A console session, even one
+        holding `system.health`, is refused it with `agents.manage` named, and reads bleqq's
+        runs from `GET /console/agent-runs` under `agent_definitions.manage`."""
         with stub_session(user_principal(permissions={perms.SYSTEM_HEALTH})):
             response = _call(self.client, "get", RUNS, None, AS_SESSION)
-        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.status_code, 403, response.content)
+        self.assertEqual(response.json()["requiredPermission"], perms.AGENTS_MANAGE)
 
 
 # ---------------------------------------------------------------------------------------
@@ -227,7 +229,6 @@ TENANT_ROUTES: list[tuple[str, str, str, Any, str]] = [
     ("putAgentBudget", "put", BUDGET, {"monthlyCap": "500.00"}, perms.AGENTS_MANAGE),
     ("listResearchRequests", "get", REQUESTS, None, perms.AGENTS_MANAGE),
     ("createResearchRequest", "post", REQUESTS, REQUEST_BODY, perms.AGENTS_MANAGE),
-    ("getResearchRequest", "get", f"{REQUESTS}/{{id}}", None, perms.AGENTS_MANAGE),
     ("listPlatformWatch", "get", f"{TENANT_AGENTS}/platform", None, perms.WATCH_READ),
 ]
 # The operations served for real, which answer from their logic and no longer 501:
@@ -242,7 +243,7 @@ SERVED = {
     "interruptAgentRun",
 }
 # c11-research-requests (tests_requests.py).
-SERVED |= {"listResearchRequests", "createResearchRequest", "getResearchRequest"}
+SERVED |= {"listResearchRequests", "createResearchRequest"}
 # Which record each id route addresses: a bank's own agent, its run, or its request.
 ID_KIND = {
     "updateTenantAgent": "agent",
@@ -250,7 +251,6 @@ ID_KIND = {
     "pauseTenantAgent": "agent",
     "resumeTenantAgent": "agent",
     "interruptAgentRun": "run",
-    "getResearchRequest": "request",
 }
 
 
