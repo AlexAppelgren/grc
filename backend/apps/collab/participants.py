@@ -1,38 +1,22 @@
-"""People and teams taking part in a register entry or a case (COL-04, CAS-03, D-18 to
-D-20; MY_WORK_AND_MARKETS 3.2). Both subjects go through the same list, add and remove below;
-only what names the subject, and the permission that reads and edits it, differ.
+"""People and teams taking part in a register entry or a case (COL-04, CAS-03, D-18 to D-20).
+Both subjects share the list, add and remove below.
 
-Participation is attention, never access. It puts a record on a person's My work and in
-their notifications and grants nothing: whatever a participant may read or do is still
-their role's alone, which is why no route here reads a participant row to decide anything
-else.
+Participation is attention, never access: it puts a record on My work and in notifications
+and grants nothing, so no route reads a participant row to decide anything else.
 
-Five rules hold it to that:
+- The subject is read under row-level security first: another bank's, a missing case and an
+  unknown id are the same 404. A shared obligation lands on the bank's register entry,
+  created on the first add by `ensure_register_entry()` with its own audit event.
+- Only a member who can read the record is added: another bank's user, a deactivated member
+  and an unknown id are one `unknown_member`; a member without the read permission is
+  `participant_cannot_read`. A team is not checked; its members' permissions filter.
+- A closed or dismissed case takes nobody new (`invalid_transition`).
+- Removal is a stamp. A person may always leave; removing anyone else needs `register.edit`
+  or `cases.contribute`.
+- Ids only in the audit.
 
-- **The subject is read under row-level security first.** Another bank's private
-  obligation, a change this bank has no case for and an id that never existed are the same
-  404. A shared obligation lands on the caller's own bank's register entry, created on the
-  first add by the register's one `ensure_register_entry()`, with its own audit event in the
-  same transaction; a shared change lands on the bank's own case.
-- **Only a member who can read the record is added.** A user of another bank, a
-  deactivated member and an unknown id are one answer, `unknown_member`, so nothing can be
-  probed; a member whose roles lack the subject's read permission (`register.read`,
-  `cases.read`) is `participant_cannot_read`. A team is not checked, because each member's
-  own read permission already filters what they see.
-- **A closed case takes nobody new.** A case that is closed or dismissed answers
-  `invalid_transition`, from `state.is_open()`; a participation on it may still end.
-- **Removal is a stamp.** `removed_at` and `removed_by` are set and the row stays, so the
-  history and the case file show who took part until when. A person may always leave their
-  own row; removing anyone else needs the subject's edit permission (`register.edit`,
-  `cases.contribute`).
-- **Ids only in the audit.** Each add, removal and leave records one event holding ids, and
-  the title is the library's.
-
-An add also tells the person added, or the team's members, in the same transaction
-(`producers.participant_added`, COL-02); the adder is never told.
-
-A case's contributor teams are its team participants (D-20): the assessment stores no list,
-and each change to them is one add or one remove here, never a replacement of the whole.
+An add notifies the person or team members (`producers.participant_added`), never the adder.
+A case's contributor teams are its team participants (D-20).
 """
 
 from __future__ import annotations
@@ -94,9 +78,7 @@ class _Subject:
         return Participant.objects.filter(tenant_obligation_id=self.entry_id, case_id=self.case_id)
 
 
-# ---------------------------------------------------------------------------------------
-# The shared steps
-# ---------------------------------------------------------------------------------------
+# --- The shared steps ---
 def _out(row: Participant, order: list[str]) -> CollabParticipant:
     return CollabParticipant(
         id=row.id,
@@ -238,9 +220,7 @@ def _remove(
     )
 
 
-# ---------------------------------------------------------------------------------------
-# A register entry
-# ---------------------------------------------------------------------------------------
+# --- A register entry ---
 def _title(obligation_id: uuid.UUID) -> str:
     """The obligation's library title for the audit row, read under row-level security: an
     obligation this bank cannot see is `not_found`, exactly as one that never existed."""
@@ -322,9 +302,7 @@ def remove_participant(
     )
 
 
-# ---------------------------------------------------------------------------------------
-# A case
-# ---------------------------------------------------------------------------------------
+# --- A case ---
 def _case_subject(tenant: Tenant, change_id: uuid.UUID, *, for_update: bool = False) -> tuple[_Subject, CaseStatusCategory]:
     """The bank's case for the change, through the case workflow's own loader, so a change
     this bank has no case for is the same 404 as another bank's case; `for_update` locks

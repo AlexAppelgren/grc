@@ -1,40 +1,20 @@
 """Reminders before and after a due date, and before a next review, on the bank's own clock
-(COL-02, HOM-05, playbook 12).
+(COL-02, HOM-05, playbook 12). `tasks.send_reminders` hands on each bank whose local time
+just reached `REMINDER_SEND_HOUR`; this module is what its task computes.
 
-One hourly beat entry (`tasks.send_reminders`) hands on the banks whose local wall time has
-just reached `REMINDER_SEND_HOUR`, one `@tenant_task` each; this module is what that task
-computes. A daylight saving change moves the UTC hour a bank is served at, never its local
-hour, because the hour is read in the bank's own zone.
+- Triage: a `new` case whose `triage_due_at` is today plus a `reminder_days_before` is
+  `due_soon`; one that passed since the previous send is `overdue`, once. Told: members who
+  triage cases.
+- Actions: an open action due today plus a lead day is `due_soon`; due yesterday, `overdue`,
+  once. Told: the owner and the owner's teams (D-109).
+- Reviews: an entry or entity row whose `next_review_date` is today plus a
+  `review_reminder_days_before` is `review_due`, whatever its status. Told once per entry:
+  the owners and owning teams.
 
-Three branches, each read straight off its rows:
-
-- **Triage.** A case still `new` whose `triage_due_at` falls on the bank's local today plus
-  one of its `reminder_days_before` is `due_soon`; one whose due time passed since the
-  previous send moment is `overdue`, once. The people responsible are the members whose
-  roles triage cases, since a new case has no owner yet.
-- **Actions.** An open action (not done, not removed) due on local today plus a lead day is
-  `due_soon`; one whose due date was yesterday is `overdue`, once. Its owner is told, and
-  so is every member of the owner's teams (D-109, c10-reminders-escalation-reviews: an
-  action has no team of its own).
-- **Reviews.** A register entry, or one of its rows for a legal entity, whose
-  `next_review_date` is local today plus one of `review_reminder_days_before` is
-  `review_due`, whatever its compliance status: a compliant obligation is reviewed too. The
-  entry's first-line owner and owning team, and the row's owner or owning team, are told
-  once per entry, however many of them are due.
-
-`notify()` decides who is told (and routes work to a delegate), and each person told is
-mailed through `collab/mail.py`, in their own language.
-
-**Once.** The `email_message` row is the idempotency key: a reminder about a record whose
-mail already has a row for this template on the bank's local today is not sent again, so
-a second run the same day is silent. Because that row is written by the delivery task after
-commit, today's notification of the same kind counts too, and a per-bank advisory lock
-makes an overlapping run wait for the first one's rows. A person who muted reminders gets no row and no mail.
-Every notification whose mail was queued carries `emailed_at`, in the same transaction.
-
-The query count per bank does not grow with the number of lead days, nor with the number of
-people told: every due window of a branch is one clause of one query, and the people of
-every team are read at once.
+`notify()` decides who is told; each is mailed in their language. Once: the day's
+`email_message` row, or today's notification while its mail is queued, is the key, and a
+per-bank advisory lock serialises overlapping runs. Query count is flat in lead days and
+people.
 """
 
 from __future__ import annotations
@@ -85,8 +65,7 @@ def link(path: str) -> str:
 def send_reminders(tenant: Tenant) -> list[Notification]:
     """Every reminder the bank is owed today, and return the rows written. Runs inside the
     tenant task's transaction."""
-    # Overlapping runs for one bank (a redelivered task) wait here for each other, so the
-    # second finds the first one's rows below.
+    # Overlapping runs for one bank wait here, so the second finds the first one's rows.
     with connection.cursor() as cursor:
         cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [f"collab-reminders:{tenant.id}"])
     sends = [*_triage(tenant), *_actions(tenant), *_reviews(tenant)]
