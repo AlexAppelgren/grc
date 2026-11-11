@@ -821,6 +821,10 @@ if LIBRARY_TRANSLATION_MINUTES < 0 or LIBRARY_TRANSLATION_RUN_MAX < 1 or not 1 <
         "Refusing to boot: LIBRARY_TRANSLATION_MINUTES is 0 (off) or more, LIBRARY_TRANSLATION_RUN_MAX at least 1, "
         "and LIBRARY_TRANSLATION_TEXT_MAX_CHARS between 1 and PROPOSAL_TEXT_MAX_CHARS."
     )
+# Review 2026-11-11 S-9: after this many failed calls with one prompt the translator stops asking for that record until its text or the languages change.
+LIBRARY_TRANSLATION_MAX_FAILURES = env_int("LIBRARY_TRANSLATION_MAX_FAILURES", 3)
+if not 1 <= LIBRARY_TRANSLATION_MAX_FAILURES <= 100:
+    raise ImproperlyConfigured("LIBRARY_TRANSLATION_MAX_FAILURES must be between 1 and 100")
 if LIBRARY_TRANSLATION_MINUTES:
     CELERY_BEAT_SCHEDULE["library-translation"] = {
         "task": "apps.proposals.tasks.file_library_translations",

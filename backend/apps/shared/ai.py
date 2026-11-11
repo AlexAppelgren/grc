@@ -2,8 +2,9 @@
 
 `apps/shared/adapters/llm.py` moves prompts and knows nothing about logging. This module is
 the only code allowed to call it, and every call it makes leaves an `ai_generation` row:
-`generate` in the caller's own transaction once the model has answered, and `stream`, whose
-words reach somebody as they arrive, in a transaction of its own however the call ends.
+`generate` in the caller's own transaction once the model has answered, or in a block of its
+own when the model failed once asked, and `stream`, whose words reach somebody as they
+arrive, in a transaction of its own however the call ends.
 `apps/shared/tests_ai_wrapper.py` walks the production tree
 and fails on any other module that imports or calls the adapter, so "every model call is
 logged" is a fact a test keeps true rather than a habit a new caller can forget.
@@ -48,6 +49,7 @@ from dataclasses import dataclass
 from django.conf import settings
 from django.db import transaction
 
+from apps.governance import ai_log
 from apps.governance.ai_log import log_generation
 from apps.governance.models import AiGeneration, AiPurpose
 from apps.governance.schemas import AiCitation
@@ -63,7 +65,11 @@ from apps.shared.models import Tenant
 # D-82): the caller stopped reading first, or the model failed once asked. A call the model
 # finished carries the provider's own stop reason instead.
 ABORTED = "aborted"
-FAILED = "failed"
+FAILED = ai_log.FAILED
+# How many characters of a prompt one input token stands for, to estimate what a failed call
+# cost when the provider reported no usage (S-9): the usual rule of thumb for the languages the
+# library is written in, so a failure counts against a cap rather than as free.
+CHARS_PER_TOKEN = 4
 
 
 @dataclass(frozen=True)
@@ -143,11 +149,16 @@ def generate(
 ) -> Generation:
     """Ask the model, then write the row, in the caller's transaction.
 
-    The adapter raises `LlmError` when the model cannot answer; nothing is logged then:
-    no word of the output reached anybody, and the row would share the caller's
-    transaction, which the caller keeps or rolls back as that failure decides for its own
-    work. The model and the version on the row are the provider's own, read off the
-    response, which is what `modelMetadataReportedByAgent = False` means to a reader.
+    The adapter raises `LlmError` when the model cannot answer. The call was sent and may
+    have cost tokens, so it is logged all the same (review 2026-11-11 S-9): a row with
+    `stop_reason = failed`, no output, the model it was addressed to and the input cost
+    estimated from the prompt's length (`CHARS_PER_TOKEN`), written in an atomic block of its
+    own, and then the error is raised again. Outside a transaction the row commits at once;
+    inside one it is a savepoint the caller keeps by catching the error inside its own
+    transaction, which every caller does, so a bank's monthly cap counts a failed what-applies
+    summary and a translator's failed call names its prompt. The model and the version on a
+    finished call's row are the provider's own, read off the response, which is what
+    `modelMetadataReportedByAgent = False` means to a reader.
 
     A subject that is a bank's own library record is refused before anything else
     (`refuse_private`). `deadline_s` shortens the adapter's own deadline for a caller
@@ -157,9 +168,31 @@ def generate(
     refuse_private(subject_type, subject_id)
     ensure_enabled()
     engine = llm if llm is not None else get_llm()
-    completion = engine.complete(
-        system=system, prompt=prompt, max_tokens=max_tokens or settings.LLM_MAX_TOKENS, deadline_s=deadline_s
-    )
+    try:
+        completion = engine.complete(
+            system=system, prompt=prompt, max_tokens=max_tokens or settings.LLM_MAX_TOKENS, deadline_s=deadline_s
+        )
+    except LlmError:
+        model, model_version = engine.asked_model()
+        with transaction.atomic():
+            log_generation(
+                purpose=purpose,
+                model=model,
+                model_version=model_version,
+                output="",
+                citations=citations,
+                tenant_id=tenant_id,
+                agent_run_id=agent_run_id,
+                asker_id=asker_id,
+                subject_type=subject_type,
+                subject_id=subject_id,
+                prompt_template=prompt_template,
+                prompt_hash=prompt_hash(system, prompt),
+                cost_minor=cost_minor(math.ceil(len(system + prompt) / CHARS_PER_TOKEN), 0),
+                metadata_reported_by_agent=False,
+                stop_reason=FAILED,
+            )
+        raise
     row = log_generation(
         purpose=purpose,
         model=completion.model,

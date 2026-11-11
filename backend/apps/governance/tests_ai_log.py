@@ -9,6 +9,7 @@ and the three facts a reader must be able to trust about the row.
 
 from __future__ import annotations
 
+import math
 import uuid
 from collections.abc import Iterator
 from datetime import datetime, timedelta
@@ -69,6 +70,9 @@ class _RecordingLlm(LlmAdapter):
 
 class _FailingLlm(LlmAdapter):
     name = "failing"
+
+    def asked_model(self) -> tuple[str, str]:
+        return "claude-opus-5", "2026-05-01"
 
     def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
         raise LlmError("the model API could not be reached")
@@ -232,17 +236,27 @@ class AiWrapperTests(ScenarioTestCase):
             )
         self.assertFalse(AiGeneration.objects.get().model_metadata_reported_by_agent)
 
-    def test_a_model_failure_writes_no_row(self) -> None:
-        with self.assertRaises(LlmError), transaction.atomic():
-            ai.generate(
-                purpose=AiPurpose.ANSWER,
-                system="s",
-                prompt="p",
-                prompt_template="ask/answer/v1",
-                citations=[],
-                llm=_FailingLlm(),
-            )
-        self.assertEqual(AiGeneration.objects.count(), 0)
+    def test_a_model_failure_is_logged_with_its_estimated_cost_and_raised(self) -> None:
+        """Review 2026-11-11 S-9: a call that was sent and failed leaves a row, `failed`, with
+        the model it was addressed to and an input cost estimated from the prompt, so a cap
+        counts it; the error still reaches the caller, who keeps the row by catching it."""
+        prompt = "p" * 4000
+        with transaction.atomic():
+            with self.assertRaises(LlmError):
+                ai.generate(
+                    purpose=AiPurpose.WHAT_APPLIES,
+                    system="s",
+                    prompt=prompt,
+                    prompt_template="agent-access/what-applies/v1",
+                    citations=[CITATION],
+                    tenant_id=None,
+                    llm=_FailingLlm(),
+                )
+        row = AiGeneration.objects.get()
+        self.assertEqual((row.stop_reason, row.output, row.model, row.model_version), ("failed", "", "claude-opus-5", "2026-05-01"))
+        self.assertEqual(row.prompt_hash, ai.prompt_hash("s", prompt))
+        self.assertEqual(row.cost_minor, ai.cost_minor(math.ceil(len("s" + prompt) / ai.CHARS_PER_TOKEN), 0))
+        self.assertGreater(row.cost_minor, 0)
 
 
 class AiGenerationsReadTests(ScenarioTestCase):

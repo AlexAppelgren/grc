@@ -31,12 +31,15 @@ from collections.abc import Sequence
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import connection
-from django.db.models import Case, CharField, DateTimeField, Exists, F, OuterRef, Q, QuerySet, Subquery, Sum, UUIDField, Value, When
+from django.db.models import Case, CharField, Count, DateTimeField, Exists, F, OuterRef, Q, QuerySet, Subquery, Sum, UUIDField, Value, When
 from django.db.models.functions import Left
 
 from apps.cases.models import ChangeCase
 from apps.governance.models import AiGeneration, AiPurpose, AiStatus
 from apps.governance.schemas import AiCitation, AiGenerationQuery, AiGenerationReviewer, AiGenerationRow
+
+# The stop reason of a call the model failed once asked (apps/shared/ai.py).
+FAILED = "failed"
 
 
 class NotInTransaction(RuntimeError):
@@ -153,12 +156,19 @@ def logged_for(*, agent_run_id: uuid.UUID, purpose: AiPurpose, subject_type: str
     ).exists()
 
 
-def prompt_hashes(*, purpose: AiPurpose, prompt_template: str) -> set[str]:
-    """The prompt hash of every call of this purpose made from one prompt template: what a
-    platform agent asks to tell a question it already put to a model from a new one (D-129).
-    Reads only, the library's rows, never a bank's."""
+def prompt_hashes(*, purpose: AiPurpose, prompt_template: str, failures_allowed: int) -> set[str]:
+    """The prompt hash of every call of this purpose made from one prompt template that is
+    settled: what a platform agent asks to tell a question it already put to a model from a
+    new one (D-129). A call the model answered settles its prompt; a failed one (`stop_reason`
+    `failed`) only once `failures_allowed` failed rows share the prompt, so a model that keeps
+    failing on one question is not asked it forever (review 2026-11-11 S-9). Reads only, the
+    library's rows, never a bank's."""
     rows = AiGeneration.objects.filter(tenant_id__isnull=True, purpose=purpose.value, prompt_template=prompt_template)
-    return set(rows.values_list("prompt_hash", flat=True))
+    answered = rows.exclude(stop_reason=FAILED).values_list("prompt_hash", flat=True)
+    given_up = (
+        rows.filter(stop_reason=FAILED).values("prompt_hash").annotate(failed=Count("id")).filter(failed__gte=failures_allowed).values_list("prompt_hash", flat=True)
+    )
+    return set(answered) | set(given_up)
 
 
 def generations_for(

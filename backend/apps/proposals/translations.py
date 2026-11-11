@@ -20,8 +20,10 @@ What one record costs is one model call, and a record is asked once in the same 
 call is skipped while a translation proposal of the record is open, and when a call with the
 same prompt was already made, which is the content hash of what was asked (the originals and
 the languages wanted) and also the proposal's retry key. So a rejected or unusable answer is
-not asked for again until the original changes or a language is added; a model that did not
-answer at all logs nothing and is asked again on the next run.
+not asked for again until the original changes or a language is added. A model that did not
+answer logs a failed row and is asked again on the next run, until
+`LIBRARY_TRANSLATION_MAX_FAILURES` calls with the same prompt have failed; then the record waits
+for its original or the languages to change (review 2026-11-11 S-9).
 
 The beat (`LIBRARY_TRANSLATION_MINUTES`, which switches the feature off at 0) queues at most
 `LIBRARY_TRANSLATION_RUN_MAX` records, one worker task each, and an approval that adds an
@@ -116,7 +118,9 @@ def _settled() -> tuple[set[tuple[str, str]], set[str]]:
     """The records a translation proposal is open for, and the content hash of every call
     this agent's prompt has made."""
     open_rows = Proposal.objects.filter(kind=KIND, status=ProposalStatus.OPEN.value).values_list("payload__target", "payload__key")
-    return set(open_rows), ai_log.prompt_hashes(purpose=AiPurpose.TRANSLATION, prompt_template=PROMPT_TEMPLATE)
+    return set(open_rows), ai_log.prompt_hashes(
+        purpose=AiPurpose.TRANSLATION, prompt_template=PROMPT_TEMPLATE, failures_allowed=settings.LIBRARY_TRANSLATION_MAX_FAILURES
+    )
 
 
 def _due(ask: Ask | None, open_records: set[tuple[str, str]], made: set[str]) -> bool:
@@ -231,8 +235,11 @@ def translate(target: str, record_id: uuid.UUID) -> str:
             return "skipped"
         with transaction.atomic():
             run = agent_tasks.open_baseline_run(AGENT_KEY, actor=RUN_ACTOR)
-        try:
-            with transaction.atomic():
+        # The failed call's row is written in a block of its own and kept, so the error is caught
+        # inside the transaction rather than rolling it back (`ai.generate`).
+        generated: ai.Generation | None
+        with transaction.atomic():
+            try:
                 generated = ai.generate(
                     purpose=AiPurpose.TRANSLATION,
                     system=system_prompt(),
@@ -243,8 +250,10 @@ def translate(target: str, record_id: uuid.UUID) -> str:
                     subject_id=record.id,
                     agent_run_id=run.id,
                 )
-        except ai.LlmError:
-            _close(run, RunStatus.FAILED, filed=0, error="The model did not answer; the record is asked again on the next run.")
+            except ai.LlmError:
+                generated = None
+        if generated is None:
+            _close(run, RunStatus.FAILED, filed=0, error="The model did not answer; the record is asked again on a later run, up to the failure limit.")
             logger.warning("library translation not answered", extra={"record_id": str(record.id), "agent_run_id": str(run.id)})
             return "failed"
         try:
