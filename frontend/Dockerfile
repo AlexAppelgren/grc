@@ -1,13 +1,17 @@
 # Compliance Watch frontend. Multi-stage, non-root, production Next server
 # (playbook 2.3, 12; DECISIONS D-16: container-only, nothing Railway-specific).
 # Build context is the frontend/ directory.
+#
+# Every stage names Node 22.23.2 (CLAUDE.md section 4) by digest, so a rebuild of the same
+# commit gets the same base and a new upstream image arrives as a reviewed Dependabot pull
+# request (`docker` ecosystem in .github/dependabot.yml), never silently (review L-12).
 
-FROM node:22-alpine AS deps
+FROM node:22.23.2-alpine@sha256:b6f26b36c8ff49624cfdac716b8ea1138d606df02586a77d364bb5536a634f85 AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
-FROM node:22-alpine AS builder
+FROM node:22.23.2-alpine@sha256:b6f26b36c8ff49624cfdac716b8ea1138d606df02586a77d364bb5536a634f85 AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
@@ -21,7 +25,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL NEXT_PUBLIC_PRODUCT_NAME=$NEXT_PUBL
 ENV NEXT_OUTPUT_STANDALONE=1
 RUN npm run build:tokens && npm run build
 
-FROM node:22-alpine AS runner
+FROM node:22.23.2-alpine@sha256:b6f26b36c8ff49624cfdac716b8ea1138d606df02586a77d364bb5536a634f85 AS runner
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 # The runtime needs node alone: the standalone server is plain JavaScript. The npm that
