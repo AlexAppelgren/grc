@@ -908,15 +908,10 @@ class TheObligationScopeKind(TestCase):
         self.assertEqual(ProposalKind.OBLIGATION_SCOPE.value, "obligation_scope")
         self.assertIn("obligation_scope", {value for value, _ in Proposal._meta.get_field("kind").choices or []})
 
-    def test_the_migration_widens_the_stored_choices(self) -> None:
-        migration = importlib.import_module("apps.proposals.migrations.0008_proposal_batches").Migration
-        altered = [
-            operation
-            for operation in migration.operations
-            if isinstance(operation, migrations.AlterField) and operation.name == "kind"
-        ]
-        self.assertEqual(len(altered), 1)
-        self.assertIn(("obligation_scope", "obligation_scope"), list(altered[0].field.choices or []))
+    def test_the_migration_stores_the_choice(self) -> None:
+        migration = importlib.import_module("apps.proposals.migrations.0001_squashed_0001_tables").Migration
+        proposal = next(op for op in migration.operations if isinstance(op, migrations.CreateModel) and op.name == "Proposal")
+        self.assertIn(("obligation_scope", "obligation_scope"), list(dict(proposal.fields)["kind"].choices or []))
 
     def test_every_kind_round_trips(self) -> None:
         proposer = factories.user()
