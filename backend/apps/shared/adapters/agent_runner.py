@@ -4,13 +4,13 @@ executor that writes no row. What a runner may tell the app is a `RunnerEvent` a
 else; `apps/agents/runner_events.apply_event` validates each one and applies it to its run
 through `record()`.
 
-`mock` starts a run that completes at once with no findings and reports it in events seeded
-from the run id, so a test never depends on the clock. `managed_agents` stays named and
-unbuilt: D-54 and ADR 0047 refuse it on every deployed environment. `none` starts nothing."""
+`mock` starts a run that completes at once with no findings, so a test never depends on the
+clock (`apps/agents/testing.mock_run_events` is what such a run reports). `none` starts
+nothing. There is no `managed_agents`: D-54 and ADR 0047 refuse a runner outside the EU, and
+the settings refuse any value but these two."""
 
 from __future__ import annotations
 
-import random
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, replace
@@ -56,9 +56,6 @@ class AgentRunnerAdapter(ABC):
     def start(self, *, run_id: uuid.UUID, definition_key: str, definition_version: int) -> RunHandle: ...
 
     @abstractmethod
-    def poll(self, handle: RunHandle) -> list[RunnerEvent]: ...
-
-    @abstractmethod
     def interrupt(self, handle: RunHandle) -> RunHandle: ...
 
 
@@ -67,8 +64,8 @@ MOCK_EPOCH = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 class MockAgentRunner(AgentRunnerAdapter):
-    """Completes a run at once with no findings: one progress event, then success. Every
-    number is drawn from a generator seeded with the run id."""
+    """Starts a run that is running at once, at an instant drawn from the run id; what it
+    then reports is `apps/agents/testing.mock_run_events`."""
 
     name = "mock"
 
@@ -76,48 +73,8 @@ class MockAgentRunner(AgentRunnerAdapter):
         started_at = MOCK_EPOCH + timedelta(seconds=run_id.int % 86_400)
         return RunHandle(run_id=run_id, external_id=f"mock-{run_id}", status=RunStatus.RUNNING, started_at=started_at)
 
-    def poll(self, handle: RunHandle) -> list[RunnerEvent]:
-        seeded = random.Random(handle.run_id.int)  # noqa: S311 - a test double's numbers, not a secret
-        tokens_in, tokens_out, cents = seeded.randint(1_000, 50_000), seeded.randint(100, 5_000), seeded.randint(1, 500)
-        progress = RunnerEvent(
-            run_id=handle.run_id,
-            status=RunStatus.RUNNING,
-            cost=Decimal(cents) / 200,
-            tokens_in=tokens_in // 2,
-            tokens_out=tokens_out // 2,
-        )
-        final = replace(progress, cost=Decimal(cents) / 100, tokens_in=tokens_in, tokens_out=tokens_out)
-        if handle.status is RunStatus.INTERRUPTED:
-            return [replace(progress, status=RunStatus.INTERRUPTED)]
-        return [progress, replace(final, status=RunStatus.SUCCEEDED)]
-
     def interrupt(self, handle: RunHandle) -> RunHandle:
         return replace(handle, status=RunStatus.INTERRUPTED)
-
-
-# Ruling 4 of docs/plans/briefs/CHUNK11_TASKS.md, pinned by apps/agents/tests_runner_events.py.
-MANAGED_AGENTS_REFUSED = (
-    "The Managed Agents runner is not built: D-54 and ADR 0047 refuse managed_agents on every "
-    "deployed environment but test, so production agents run in our own worker on an EU endpoint."
-)
-
-
-class ManagedAgentsRunner(AgentRunnerAdapter):
-    """Named and never the first real runner (ruling 4): D-54 and ADR 0047 refuse
-    `managed_agents` on every deployed environment except `ENVIRONMENT=test`, because
-    Managed Agents follows the workspace geography and no EU location is offered. The real
-    runner is the Agent SDK in our own worker, a later package with its own ADR amendment."""
-
-    name = "managed_agents"
-
-    def start(self, *, run_id: uuid.UUID, definition_key: str, definition_version: int) -> RunHandle:
-        raise NotImplementedError(MANAGED_AGENTS_REFUSED)
-
-    def poll(self, handle: RunHandle) -> list[RunnerEvent]:
-        raise NotImplementedError(MANAGED_AGENTS_REFUSED)
-
-    def interrupt(self, handle: RunHandle) -> RunHandle:
-        raise NotImplementedError(MANAGED_AGENTS_REFUSED)
 
 
 NO_RUNNER = "No agent runner is configured (AGENT_RUNNER=none), so no agent run can start."
@@ -125,7 +82,7 @@ NO_RUNNER = "No agent runner is configured (AGENT_RUNNER=none), so no agent run 
 
 class NoAgentRunner(AgentRunnerAdapter):
     """`none` (ADR 0047): the value a deployed environment sets until the in-worker EU
-    runner exists, since D-54 refuses `managed_agents` and rule 5 refuses `mock`. A start
+    runner exists, since D-54 refuses Managed Agents and rule 5 refuses `mock`. A start
     raises, so the opener closes the recorded run as failed and nothing reads as running;
     a stop succeeds, because nothing runs anywhere."""
 
@@ -134,16 +91,12 @@ class NoAgentRunner(AgentRunnerAdapter):
     def start(self, *, run_id: uuid.UUID, definition_key: str, definition_version: int) -> RunHandle:
         raise NotImplementedError(NO_RUNNER)
 
-    def poll(self, handle: RunHandle) -> list[RunnerEvent]:
-        raise NotImplementedError(NO_RUNNER)
-
     def interrupt(self, handle: RunHandle) -> RunHandle:
         return replace(handle, status=RunStatus.INTERRUPTED)
 
 
 PROVIDERS: dict[str, type[AgentRunnerAdapter]] = {
     "mock": MockAgentRunner,
-    "managed_agents": ManagedAgentsRunner,
     "none": NoAgentRunner,
 }
 

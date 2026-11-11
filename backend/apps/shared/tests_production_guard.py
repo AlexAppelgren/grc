@@ -381,7 +381,7 @@ class ProductionGuard(TestCase):
                 "demo refuses the managed agents runner",
                 self._good_deployed("demo", AGENT_RUNNER="managed_agents"),
                 False,
-                "Rule 10",
+                "AGENT_RUNNER",
                 "rule 10",
             ),
             Case(
@@ -404,15 +404,23 @@ class ProductionGuard(TestCase):
                 True,
             ),
             Case(
-                "deployed test keeps anthropic, managed agents and any Sentry host",
+                "deployed test keeps anthropic and any Sentry host",
                 self._good_deployed(
                     "test",
                     RAILWAY_ENVIRONMENT_NAME="test",
                     LLM_PROVIDER="anthropic",
-                    AGENT_RUNNER="managed_agents",
                     SENTRY_DSN="https://key@o1.ingest.us.sentry.io/2",
                 ),
                 True,
+            ),
+            # Review 2026-11-11 B-15: the managed agents runner was never built and is no
+            # value at all, so even the deployed test environment refuses it.
+            Case(
+                "deployed test refuses the managed agents runner too",
+                self._good_deployed("test", RAILWAY_ENVIRONMENT_NAME="test", AGENT_RUNNER="managed_agents"),
+                False,
+                "AGENT_RUNNER",
+                "rule 10",
             ),
             # Rule 11 (review 2026-11-11 L-18): behind the edge, 0 hops puts every caller
             # in the proxy's one per-IP bucket. A deployed environment defaults to 1.

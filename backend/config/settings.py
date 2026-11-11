@@ -256,7 +256,8 @@ LLM_PROVIDER = env_choice("LLM_PROVIDER", "mock", ("mock", "anthropic", "bedrock
 ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "")
 EMBEDDER_PROVIDER = env_choice("EMBEDDER_PROVIDER", "mock", ("mock", "none"))  # a model joins per D-09
 EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024, min=1, max=16000)  # D-09
-AGENT_RUNNER = env_choice("AGENT_RUNNER", "mock", ("mock", "managed_agents", "none"))
+# No `managed_agents`: a runner outside the EU (D-54) was never built and is no value at all.
+AGENT_RUNNER = env_choice("AGENT_RUNNER", "mock", ("mock", "none"))
 RERANKER_PROVIDER = env_choice("RERANKER_PROVIDER", "mock", ("mock", "none"))  # none keeps the fused order
 RERANKER_TOP_K = env_int("RERANKER_TOP_K", 50, min=1, max=1000)
 MAIL_PROVIDER = env_choice("MAIL_PROVIDER", "mock", ("mock", "smtp"))
@@ -653,8 +654,9 @@ if SENTRY_DSN:
 #  9. RATE_LIMITING_ENABLED=false switches every bucket off at once; laptops and tests only
 #     (security-review-c7, M2). Each bucket's own size already refuses to boot below 1.
 # 10. Processors outside the EU (D-54, ADR 0047). On every deployed environment but `test`,
-#     the `anthropic` provider and the `managed_agents` runner are refused, and Sentry only
-#     on a host ending `.ingest.de.sentry.io`. The lists are code, never variables.
+#     the `anthropic` provider is refused, and Sentry only on a host ending
+#     `.ingest.de.sentry.io`. The lists are code, never variables. The `managed_agents`
+#     runner is refused everywhere: AGENT_RUNNER names no such value.
 # 11. TRUSTED_PROXY_HOPS=0 behind the edge keys every per-IP limit and security log row on
 #     the proxy's address. A deployed environment defaults to 1 and refuses 0 (L-18).
 # ---------------------------------------------------------------------------------------
@@ -694,11 +696,8 @@ if IS_DEPLOYED_ENVIRONMENT and (
 if IS_DEPLOYED_ENVIRONMENT and not RATE_LIMITING_ENABLED:
     _refuse(f"RATE_LIMITING_ENABLED=false on deployed environment {ENVIRONMENT!r}. Rule 9.")
 if IS_DEPLOYED_ENVIRONMENT and ENVIRONMENT != MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT:
-    if LLM_PROVIDER == "anthropic" or AGENT_RUNNER == "managed_agents":
-        _refuse(
-            f"LLM_PROVIDER={LLM_PROVIDER!r} / AGENT_RUNNER={AGENT_RUNNER!r} on deployed environment "
-            f"{ENVIRONMENT!r}: anthropic and managed_agents process outside the EU. Rule 10 (D-54)."
-        )
+    if LLM_PROVIDER == "anthropic":
+        _refuse(f"LLM_PROVIDER='anthropic' on deployed environment {ENVIRONMENT!r}: it processes outside the EU. Rule 10 (D-54).")
     if SENTRY_DSN and not (urlsplit(SENTRY_DSN).hostname or "").endswith(".ingest.de.sentry.io"):
         _refuse(f"SENTRY_DSN is not on ingest.de.sentry.io on deployed environment {ENVIRONMENT!r}. Rule 10 (D-54).")
 if IS_DEPLOYED_ENVIRONMENT and TRUSTED_PROXY_HOPS < 1:

@@ -808,7 +808,7 @@ class AgentsScenarioTests(TestCase):
         from apps.agents import runner_events
         from apps.agents.tests_tasks import WEDNESDAY
         from apps.shared import tests_production_guard as boot_guard
-        from apps.shared.adapters.agent_runner import MockAgentRunner, RunHandle
+        from apps.shared.adapters.agent_runner import RunHandle
 
         # Given AGENT_RUNNER=mock
         self.assertEqual(settings.AGENT_RUNNER, "mock")
@@ -839,7 +839,7 @@ class AgentsScenarioTests(TestCase):
         # When the mock runner emits events
         tenancy.activate(world.bank.id)
         handle = RunHandle(run_id=run.id, external_id=run.external_session_id, status=RunStatus.RUNNING, started_at=None)
-        events = MockAgentRunner().poll(handle)
+        events = agent_build.mock_run_events(handle)
         for event in events:
             runner_events.apply_event(event)
 
