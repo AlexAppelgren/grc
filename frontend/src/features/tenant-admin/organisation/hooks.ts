@@ -13,14 +13,12 @@ import type {
   OrgUnitRow,
   OrgUnitBody,
   OrgUnitPatch,
-  PersonRef,
   Product,
   ProductBody,
   ProductPatch,
   RegisterApply,
   RegisterLookup,
-  VersionedPatch,
-} from '@/features/tenant-admin/organisation/types';
+  VersionedPatch } from '@/features/tenant-admin/organisation/types';
 import { scopeTermGroups, type TermGroup } from '@/features/tenant-admin/organisation/organisation-presentation';
 import { usePermissions } from '@/shared/navigation/require-permission';
 
@@ -31,7 +29,6 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 export const orgKeys = {
   units: ['tenant', 'org-units'] as const,
   products: ['tenant', 'products'] as const,
-  people: ['reference', 'people'] as const,
   lookup: (lookupId: string) => ['tenant', 'register-lookups', lookupId] as const,
   authorities: ['library', 'authorities'] as const,
 };
@@ -46,10 +43,6 @@ export function useOrgUnits(): UseQueryResult<OrgUnitRow[]> {
 
 export function useProducts(): UseQueryResult<Product[]> {
   return useQuery({ queryKey: orgKeys.products, queryFn: org.listProducts });
-}
-
-export function usePeople(): UseQueryResult<PersonRef[]> {
-  return useQuery({ queryKey: orgKeys.people, queryFn: org.listPeople, staleTime: 60_000 });
 }
 
 function useWrite<V, R>(write: (vars: V) => Promise<R>, key: (vars: V) => readonly unknown[]): UseMutationResult<R, unknown, V> {

@@ -13,11 +13,8 @@ import type {
   ProposalRow,
   RetagRequest,
   RetagRequestInput,
-  TaxonomyTerm,
-  TaxonomyTermPage,
   TenantProposalPage,
-  TenantProposalQuery,
-} from './types';
+  TenantProposalQuery } from './types';
 
 // Thin typed wrappers returning `.data` (playbook 6.1): the console queue's
 // four real routes (PRO-01, PRO-02, PRO-03, AC-PRO2). GET /proposals pages
@@ -97,7 +94,3 @@ export async function getRetagRequest(requestId: string): Promise<RetagRequest> 
   return (await api.get<RetagRequest>(`${RETAG_REQUESTS}/${requestId}`)).data;
 }
 
-/** Every live taxonomy term, across dimensions, for the re-tag form's near match. */
-export async function listTaxonomyTerms(): Promise<TaxonomyTerm[]> {
-  return (await api.get<TaxonomyTermPage>('/api/v1/taxonomy/terms')).data.items;
-}

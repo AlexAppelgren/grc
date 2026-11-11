@@ -13,7 +13,7 @@ import { languageName } from '@/features/library/version-presentation';
 import { useApproveProposal, useScopeTermLabels } from '@/features/proposals/hooks';
 import { obligationPayloadOf } from '@/features/proposals/proposal-presentation';
 import type { ProposalRow } from '@/features/proposals/types';
-import { termRowsQuery } from '@/features/footprint/hooks';
+import { termRowsQuery } from '@/features/shared/reference';
 import { scopeTermsOf, type ScopeTerm } from '@/features/watch/api';
 import { useT } from '@/shared/i18n/LocaleProvider';
 

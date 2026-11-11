@@ -1,4 +1,4 @@
-import type { Member, Page } from '@/features/tenant-admin/types';
+import type { Member } from '@/features/tenant-admin/types';
 import type { components } from '@/types/api.generated';
 import { api, segment } from '@/shared/utils/api-client';
 
@@ -15,11 +15,6 @@ const TEAM_LIST = '/api/v1/vocab/team';
 /** A team's name per content language; Swedish only when one was given. */
 export function teamLabels(en: string, sv: string): Record<string, string> {
   return sv.trim() === '' ? { en: en.trim() } : { en: en.trim(), sv: sv.trim() };
-}
-
-/** Every team, active and retired, in the list's order: one page at the server's maximum. */
-export async function listTeams(): Promise<Team[]> {
-  return (await api.get<Page<Team>>(`${TENANT}/teams`, { params: { limit: 100 } })).data.items;
 }
 
 /** What the team form writes: its names, and the department it sits in (`orgUnitId`, null for none), one of the list's own columns. */

@@ -25,10 +25,8 @@ export type AgentKey = Schemas['AgentKeyOut'];
 export type AgentKeyPage = Schemas['AgentKeysPage'];
 export type AgentKeyCreate = Schemas['AgentKeyCreate'];
 export type AgentKeyCreated = Schemas['AgentKeyCreated'];
-export type AgentDefinitionPage = Schemas['AgentDefinitionPage'];
 
 const AGENT_KEYS = '/api/v1/agent-keys';
-const AGENT_DEFINITIONS = '/api/v1/agent-definitions';
 
 /**
  * The scopes an agent's key may hold. None of them writes to the library
@@ -44,11 +42,6 @@ export async function listAgentKeys(): Promise<AgentKeyPage> {
   return (await api.get<AgentKeyPage>(AGENT_KEYS, { params: { limit: AGENT_KEYS_PAGE, offset: 0 } })).data;
 }
 
-/** The platform ships a handful of agents; one page at the route's maximum holds them all. */
-export async function listAgentDefinitions(): Promise<AgentDefinitionPage> {
-  return (await api.get<AgentDefinitionPage>(AGENT_DEFINITIONS, { params: { limit: AGENT_KEYS_PAGE, offset: 0 } })).data;
-}
-
 export async function createAgentKey(body: AgentKeyCreate): Promise<AgentKeyCreated> {
   return (await api.post<AgentKeyCreated>(AGENT_KEYS, body)).data;
 }
@@ -59,15 +52,10 @@ export async function revokeAgentKey(keyId: string): Promise<AgentKey> {
 
 export const agentKeyKeys = {
   keys: ['console', 'agent-keys'] as const,
-  definitions: ['console', 'agent-definitions'] as const,
 };
 
 export function useAgentKeys(): UseQueryResult<AgentKeyPage> {
   return useQuery({ queryKey: agentKeyKeys.keys, queryFn: listAgentKeys });
-}
-
-export function useAgentDefinitions(): UseQueryResult<AgentDefinitionPage> {
-  return useQuery({ queryKey: agentKeyKeys.definitions, queryFn: listAgentDefinitions });
 }
 
 export function useCreateAgentKey(): UseMutationResult<AgentKeyCreated, unknown, AgentKeyCreate> {

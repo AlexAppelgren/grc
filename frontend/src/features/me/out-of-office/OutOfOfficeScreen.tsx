@@ -14,7 +14,9 @@ import { formatLongDate, tenantToday } from '@/shared/utils/format';
 import { problemFrom } from '@/shared/utils/problem';
 
 import type { OutOfOffice, Person } from './api';
-import { useOutOfOffice, usePeople, useSetOutOfOffice } from './hooks';
+import { usePeople } from '@/features/shared/reference';
+
+import { useOutOfOffice, useSetOutOfOffice } from './hooks';
 
 // Out of office (design/screens/me-out-of-office.html; TEN-04, TEN-S4): the
 // person's own last day away and the delegate who receives their approval

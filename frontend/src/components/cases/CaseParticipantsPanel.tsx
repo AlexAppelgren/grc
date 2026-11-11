@@ -3,7 +3,8 @@
 import { Facts } from '@/components/inventory/ObligationPanels';
 import { AddParticipantDialog, ParticipantsPanel } from '@/components/participants/ParticipantsPanel';
 import type { CasePanelProps } from '@/features/cases/types';
-import { useAddCaseParticipant, useCaseParticipants, usePeople, useRemoveCaseParticipant } from '@/features/participants/hooks';
+import { useAddCaseParticipant, useCaseParticipants, useRemoveCaseParticipant } from '@/features/participants/hooks';
+import { usePeople } from '@/features/shared/reference';
 import { CASE_PARTICIPANT_READ_PERMISSION, CASE_PARTICIPANTS_EDIT_PERMISSION, caseAddRefusals } from '@/features/participants/participants-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
 

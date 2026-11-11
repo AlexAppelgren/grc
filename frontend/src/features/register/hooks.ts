@@ -31,7 +31,6 @@ import type {
   RegisterPageQuery,
   RegisterPanels,
   RegisterPatch,
-  RegisterPerson,
   RegisterRiskAcceptanceBody,
   RegisterSpannedEntity,
   RegisterStatementOfApplicability,
@@ -40,8 +39,7 @@ import type {
   RegisterUnitPage,
   RegisterUnitPaste,
   RegisterUnitPasteBody,
-  RegisterUnitPatch,
-} from './types';
+  RegisterUnitPatch } from './types';
 
 // Query keys and invalidation for the register (playbook 6.1). Every panel on
 // the obligation page reads through these hooks, so a write in one panel
@@ -238,6 +236,3 @@ export function useSpannedEntities(obligationId: string): UseQueryResult<Registe
   return useQuery({ queryKey: spanKey(obligationId), queryFn: () => register.listSpannedEntities(obligationId) });
 }
 
-export function usePeople(enabled = true): UseQueryResult<RegisterPerson[]> {
-  return useQuery({ queryKey: ['reference', 'people'], queryFn: register.listPeople, enabled });
-}

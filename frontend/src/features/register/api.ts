@@ -21,7 +21,6 @@ import type {
   RegisterInterpretationBody,
   RegisterPageQuery,
   RegisterPatch,
-  RegisterPerson,
   RegisterRiskAcceptanceBody,
   RegisterSpannedEntity,
   RegisterStatementOfApplicability,
@@ -30,8 +29,7 @@ import type {
   RegisterUnitPage,
   RegisterUnitPaste,
   RegisterUnitPasteBody,
-  RegisterUnitPatch,
-} from './types';
+  RegisterUnitPatch } from './types';
 
 // Every register call the screens make, one thin typed wrapper per operation
 // returning `.data` (playbook 6.1; backend/apps/register/api.py). A write to a
@@ -159,6 +157,3 @@ export async function listSpannedEntities(obligationId: string): Promise<Registe
   return (await api.get<RegisterSpannedEntity[]>(`${obligation(obligationId)}/register/entities`)).data;
 }
 
-export async function listPeople(): Promise<RegisterPerson[]> {
-  return (await api.get<RegisterPerson[]>(`${V1}/reference/people`)).data;
-}

@@ -16,12 +16,12 @@ import {
   presentSource,
   registryRows,
   sourceMeta,
-  useSourceCoverage,
   useSources,
   type RegistryRow,
 } from '@/features/console-watch/sources';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { useSourceCoverage } from '@/features/watch/hooks';
 
 // Sources (design/screens/console-sources.html, WAT-01, ADM-02): every place
 // bleqq watches, with how its last check went and whether it has gone stale.
@@ -55,7 +55,7 @@ function SourceRow({ row }: { row: RegistryRow }) {
 export function SourcesScreen() {
   const t = useT();
   const sources = useSources();
-  const coverage = useSourceCoverage();
+  const coverage = useSourceCoverage(true);
   const [kind, setKind] = useState('');
   const [failingOnly, setFailingOnly] = useState(false);
 

@@ -10,4 +10,3 @@ export type ParticipantPage = Schemas['CollabParticipantPage'];
 export type ParticipantInput = Schemas['CollabParticipantInput'];
 export type PersonRef = Schemas['PersonRef'];
 export type Team = Schemas['TenantTeam'];
-export type TeamPage = Schemas['TenantTeamPage'];

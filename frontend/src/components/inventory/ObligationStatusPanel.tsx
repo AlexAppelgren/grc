@@ -10,7 +10,7 @@ import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
 import { FormDialog } from '@/components/ui/Dialogs';
 import { useFormatContext } from '@/features/identity/hooks';
-import { isStaleWrite, usePeople, useRegisterEntry, useReloadRegister, useUpdateRegister, useUpdateRegisterEntity } from '@/features/register/hooks';
+import { isStaleWrite, useRegisterEntry, useReloadRegister, useUpdateRegister, useUpdateRegisterEntity } from '@/features/register/hooks';
 import { presentCompliance, presentComplianceHeader } from '@/features/register/register-presentation';
 import type { RegisterEntityPatch, RegisterEntityStatus, RegisterEntry, RegisterPatch, RegisterVocabRef } from '@/features/register/types';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
@@ -18,6 +18,7 @@ import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { formatDate, type FormatContext } from '@/shared/utils/format';
+import { usePeople } from '@/features/shared/reference';
 
 // "Where we stand" and "How we handle it" (REG-02, D-42). Per legal entity where
 // the obligation applies to several, each row with its own pill, note, risk,
@@ -246,7 +247,7 @@ function EditDialog({ obligationId, entry, editing, onClose }: { obligationId: s
   const statuses = useVocabularyValues('compliance_status', false, standingForm);
   const risks = useVocabularyValues('risk_rating', false, standingForm);
   const teams = useVocabularyValues('team', false, standingForm);
-  const people = usePeople(standingForm);
+  const people = usePeople(null, standingForm);
   const saveWhole = useUpdateRegister(obligationId);
   const saveEntity = useUpdateRegisterEntity(obligationId);
   const reload = useReloadRegister();

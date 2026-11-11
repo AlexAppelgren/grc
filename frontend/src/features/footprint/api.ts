@@ -1,5 +1,6 @@
 import type { components } from '@/types/api.generated';
 import { api, segment } from '@/shared/utils/api-client';
+import { listTermRows } from '@/features/shared/reference';
 
 import type {
   EntityTermLine,
@@ -183,14 +184,8 @@ export async function listJurisdictions(): Promise<JurisdictionRef[]> {
   return rows.map((row) => ({ key: row.key, kind: row.kind ?? null, label: row.label, parentKey: row.parentKey ?? null }));
 }
 
-/** The terms as the route answers them, ids included: one read that every screen maps its own way. */
-export async function listTermRows(dimension?: string): Promise<Schemas['TaxonomyTermRow'][]> {
-  const params = dimension === undefined ? {} : { dimension };
-  return (await api.get<Schemas['TaxonomyTermPage']>(`${TAXONOMY}/terms`, { params })).data.items;
-}
-
 export async function listTerms(dimension?: string): Promise<TaxonomyTerm[]> {
-  return (await listTermRows(dimension)).map(taxonomyTermOf);
+  return (await listTermRows(dimension ?? null)).map(taxonomyTermOf);
 }
 
 /** Dimensions are vocabulary rows; `restrictsFootprint` rides in their list-specific facts. */

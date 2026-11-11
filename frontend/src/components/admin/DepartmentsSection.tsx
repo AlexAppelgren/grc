@@ -11,9 +11,9 @@ import { orgFormCodes, PersonSelect } from '@/features/tenant-admin/organisation
 import { useCanEditOrganisation, useCreateOrgUnit, useOrgUnits, useUpdateOrgUnit } from '@/features/tenant-admin/organisation/hooks';
 import { changedFields, DEPARTMENT_KINDS, fieldErrorsOf, isDepartment, orNull, type DepartmentKind } from '@/features/tenant-admin/organisation/organisation-presentation';
 import type { OrgUnit } from '@/features/tenant-admin/organisation/types';
-import { useTeams } from '@/features/tenant-admin/teams/hooks';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { useTeams } from '@/features/shared/reference';
 
 // Departments (design/screens/admin-organisation.html, TEN-02, TEN-S8): the org
 // units of kind business area, business unit or function, each with its head,

@@ -10,9 +10,9 @@ import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { LoadingState, ProblemAlert, QueryState } from '@/components/ui/States';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
-import { useTeams } from '@/features/participants/hooks';
+import { useTeams, type ReferencePerson } from '@/features/shared/reference';
 import { participantName, pickerOptions, presentParticipant, rowAction, type PickerOption } from '@/features/participants/participants-presentation';
-import type { Participant, ParticipantInput, ParticipantPage, PersonRef } from '@/features/participants/types';
+import type { Participant, ParticipantInput, ParticipantPage } from '@/features/participants/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { cn } from '@/shared/utils/cn';
@@ -40,7 +40,7 @@ export function AddParticipantDialog({
 }: {
   title: string;
   findLabel: string;
-  people: UseQueryResult<PersonRef[]> | null;
+  people: UseQueryResult<ReferencePerson[]> | null;
   add: UseMutationResult<Participant, unknown, ParticipantInput>;
   refusals: (name: string) => Readonly<Record<string, string>>;
   onOpenChange: (open: boolean) => void;
@@ -54,7 +54,7 @@ export function AddParticipantDialog({
     add.mutate(picked.kind === 'person' ? { userId: picked.value } : { teamKey: picked.value }, { onSuccess: () => onOpenChange(false) });
   };
   const peopleList = people === null ? [] : people.data;
-  const options = peopleList !== undefined && teams.data !== undefined ? pickerOptions(peopleList, teams.data.items, query) : [];
+  const options = peopleList !== undefined && teams.data !== undefined ? pickerOptions(peopleList, teams.data, query) : [];
   const failed = people?.isError ? people.error : teams.isError ? teams.error : null;
   const loading = (people?.isPending ?? false) || teams.isPending;
 

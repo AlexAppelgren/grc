@@ -3,7 +3,7 @@
 import { skipToken, useMutation, useQueries, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
-import { termRowsQuery } from '@/features/footprint/hooks';
+import { termRowsQuery } from '@/features/shared/reference';
 import { scopeTermsOf } from '@/features/watch/api';
 import { STEP_UP_REQUIRED_CODE } from '@/shared/utils/api-client';
 import { hasProblemCode } from '@/shared/utils/problem';
@@ -213,9 +213,5 @@ export function useRetagRequest(requestId: string | null): UseQueryResult<RetagR
 
 /** Every live term the re-tag may name: a term of a dimension that mirrors the jurisdiction list is refused by the batch. */
 export function useRetagTerms(): UseQueryResult<TaxonomyTerm[]> {
-  return useQuery({
-    queryKey: ['proposals', 'retag-terms'],
-    queryFn: async () => (await proposals.listTaxonomyTerms()).filter((term) => term.active !== false && term.mirrored !== true),
-    staleTime: 5 * 60_000,
-  });
+  return useQuery({ ...termRowsQuery(), select: (rows) => rows.filter((term) => term.active !== false && term.mirrored !== true) });
 }

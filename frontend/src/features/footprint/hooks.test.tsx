@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { useScopeTerms } from '@/features/watch/hooks';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { referenceKeys } from '@/features/shared/reference';
 
 import {
   footprintKeys,
@@ -55,7 +56,7 @@ describe('footprint hooks', () => {
       ['/api/v1/taxonomy/dimensions', null],
       ['/api/v1/reference/jurisdictions', null],
     ]);
-    expect(footprintKeys.terms()).toEqual(['taxonomy', 'terms', 'all']);
+    expect(referenceKeys.terms(null, false)).toEqual(['taxonomy', 'terms', 'all', false]);
   });
 
   it('reads a dimension\'s terms once for the footprint and the watch feed, each in its own shape', async () => {

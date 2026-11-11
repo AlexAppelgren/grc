@@ -7,13 +7,11 @@ import type {
   OrgUnitBody,
   OrgUnitPatch,
   OrgUnitRow,
-  PersonRef,
   Product,
   ProductBody,
   ProductPatch,
   RegisterApply,
-  RegisterLookup,
-} from '@/features/tenant-admin/organisation/types';
+  RegisterLookup } from '@/features/tenant-admin/organisation/types';
 import type { Page } from '@/features/tenant-admin/types';
 import { api, segment } from '@/shared/utils/api-client';
 
@@ -56,11 +54,6 @@ export async function createProduct(body: ProductBody): Promise<Product> {
 
 export async function updateProduct(productId: string, body: ProductPatch, version: number): Promise<Product> {
   return (await api.patch<Product>(`${TENANT}/products/${segment(productId)}`, body, { version })).data;
-}
-
-/** The bank's active members as ids and names: every owner and head picker reads it. */
-export async function listPeople(): Promise<PersonRef[]> {
-  return (await api.get<PersonRef[]>('/api/v1/reference/people')).data;
 }
 
 /** Starts a lookup in the public registers (202): only the number or LEI leaves the bank. */

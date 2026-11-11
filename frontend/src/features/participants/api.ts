@@ -1,6 +1,6 @@
 import { api, segment } from '@/shared/utils/api-client';
 
-import type { ParticipantInput, Participant, ParticipantPage, PersonRef, TeamPage } from './types';
+import type { ParticipantInput, Participant, ParticipantPage } from './types';
 
 // The participant calls (backend/apps/collab/api.py), on a register entry and
 // on a case, and the people and team
@@ -42,11 +42,5 @@ export async function removeCaseParticipant(changeId: string, participantId: str
 }
 
 /** The bank's active members who hold `permission`, as ids and names only. */
-export async function listPeople(permission: string): Promise<PersonRef[]> {
-  return (await api.get<PersonRef[]>(`${V1}/reference/people`, { params: { permission } })).data;
-}
 
 /** The bank's teams, active and retired; a bank keeps far fewer than a page of the maximum. */
-export async function listTeams(): Promise<TeamPage> {
-  return (await api.get<TeamPage>(`${V1}/tenant/teams`, { params: { limit: PARTICIPANTS_PAGE } })).data;
-}

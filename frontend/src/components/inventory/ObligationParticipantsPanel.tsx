@@ -2,9 +2,10 @@
 
 import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
 import { AddParticipantDialog, ParticipantsPanel } from '@/components/participants/ParticipantsPanel';
-import { useAddObligationParticipant, useObligationParticipants, usePeople, useRemoveObligationParticipant } from '@/features/participants/hooks';
+import { useAddObligationParticipant, useObligationParticipants, useRemoveObligationParticipant } from '@/features/participants/hooks';
 import { addRefusals, PARTICIPANT_READ_PERMISSION, PARTICIPANTS_EDIT_PERMISSION } from '@/features/participants/participants-presentation';
 import { useRegisterEntry } from '@/features/register/hooks';
+import { usePeople } from '@/features/shared/reference';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
 // "Participants" (COL-04; design/screens/tenant-obligation.html): the people

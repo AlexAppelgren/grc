@@ -11,9 +11,10 @@ import { orgFormCodes } from '@/features/tenant-admin/organisation/fields';
 import { useCanEditOrganisation, useOrgUnits } from '@/features/tenant-admin/organisation/hooks';
 import { fieldErrorsOf, teamDepartments } from '@/features/tenant-admin/organisation/organisation-presentation';
 import { teamLabels, type Team } from '@/features/tenant-admin/teams/api';
-import { useCreateTeam, useTeams, useUpdateTeam } from '@/features/tenant-admin/teams/hooks';
+import { useCreateTeam, useUpdateTeam } from '@/features/tenant-admin/teams/hooks';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { useTeams } from '@/features/shared/reference';
 
 // Teams (design/screens/admin-organisation.html, TEN-02, TEN-03, TEN-S8): each
 // team with its department and how many active members it has. A team is a row

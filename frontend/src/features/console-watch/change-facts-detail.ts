@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient, type UseMutationResult, type Use
 import { listConsoleChanges, type ChangeFact, type ConsoleChangeRow, type ObligationLink } from '@/features/console-watch/change-facts';
 import { api } from '@/shared/utils/api-client';
 import type { components } from '@/types/api.generated';
+import { termRowsQuery } from '@/features/shared/reference';
 
 // The write half of the Change facts card (WAT-03, WAT-04): reading one change
 // in the console, correcting what an agent got wrong, and confirming what it
@@ -45,7 +46,6 @@ export async function confirmCuration(changeId: string, body: CurationConfirmInp
 
 export const consoleChangeDetailKeys = {
   lookup: ['console', 'changes', 'lookup'] as const,
-  terms: ['console', 'taxonomy', 'terms'] as const,
 };
 
 /** Every change the console can reach, whether or not anything is left to confirm. */
@@ -132,12 +132,7 @@ export function confirmationOf(change: ConsoleChangeRow, part: ConfirmPart, term
  * together, and a pair that matches two terms resolves to neither.
  */
 export function useScopeTermIds(enabled: boolean): (term: ChangeFact) => string | undefined {
-  const terms = useQuery({
-    queryKey: consoleChangeDetailKeys.terms,
-    queryFn: async () => (await api.get<Schemas['TaxonomyTermPage']>('/api/v1/taxonomy/terms', { params: { includeRetired: true } })).data.items,
-    enabled,
-    staleTime: 5 * 60_000,
-  });
+  const terms = useQuery({ ...termRowsQuery(undefined, true), enabled });
   const ids = new Map<string, string | null>();
   for (const term of terms.data ?? []) {
     const pair = `${term.key}\u0000${term.label}`;

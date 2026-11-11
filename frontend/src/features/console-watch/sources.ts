@@ -24,29 +24,19 @@ export type Source = Schemas['WatchSourceOut'];
 export type SourceCoverage = Schemas['WatchSourceCoverage'];
 
 const SOURCES = '/api/v1/sources';
-const COVERAGE = '/api/v1/sources/coverage';
 
 /** The registry, ordered by name and unpaged: one row per registered source. */
 export async function listSources(): Promise<Source[]> {
   return (await api.get<Source[]>(SOURCES)).data;
 }
 
-/** The coverage log's bottom line: when each source was last swept, how it ended, whether it is stale. */
-export async function getSourceCoverage(): Promise<SourceCoverage[]> {
-  return (await api.get<SourceCoverage[]>(COVERAGE)).data;
-}
-
 export const consoleSourceKeys = {
   sources: ['console', 'sources'] as const,
-  coverage: ['console', 'sources', 'coverage'] as const,
+
 };
 
 export function useSources(): UseQueryResult<Source[]> {
   return useQuery({ queryKey: consoleSourceKeys.sources, queryFn: listSources });
-}
-
-export function useSourceCoverage(): UseQueryResult<SourceCoverage[]> {
-  return useQuery({ queryKey: consoleSourceKeys.coverage, queryFn: getSourceCoverage });
 }
 
 // ---------------------------------------------------------------------------

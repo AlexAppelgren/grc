@@ -15,7 +15,6 @@ import {
   AGENT_KEY_SCOPES,
   isLive,
   presentAgentKey,
-  useAgentDefinitions,
   useAgentKeys,
   useCreateAgentKey,
   useRevokeAgentKey,
@@ -25,6 +24,7 @@ import {
 import { useFormatContext } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { formatDate, formatDateTime, humaniseKey } from '@/shared/utils/format';
+import { useAgentDefinitions } from '@/features/agents/hooks';
 
 // Agent keys (design/screens/console-agent-keys.html, ID-10, AGT-01): the keys
 // bleqq's own agents run on, each bound to the agent everything it writes is

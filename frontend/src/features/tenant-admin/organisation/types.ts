@@ -21,8 +21,6 @@ export type ProductStatus = Product['status'];
 export type ProductBody = Schemas['TenantProductBody'];
 export type ProductPatch = Schemas['TenantProductPatch'];
 
-export type PersonRef = Schemas['PersonRef'];
-
 /** A lookup in the public registers (TEN-07): a job, and once it succeeded the companies it found. */
 export type RegisterLookup = Schemas['RegisterLookupOut'];
 export type RegisterLookupEntity = Schemas['RegisterLookupEntity'];

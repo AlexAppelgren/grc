@@ -4,13 +4,14 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import OutOfOfficePage from '@/app/(tenant)/me/out-of-office/page';
 import type { Me } from '@/features/identity/types';
+import { referenceKeys } from '@/features/shared/reference';
 import { findDestination } from '@/shared/navigation/registry';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH } from '@/shared/utils/api-client';
 import { defaultFormatContext, formatLongDate, tenantToday } from '@/shared/utils/format';
 
 import type { OutOfOffice } from './api';
-import { outOfOfficeKeys } from './hooks';
+
 
 // Out of office (design/screens/me-out-of-office.html): the last day away on
 // the bank's calendar, the delegate picked from the bank's people, End now,
@@ -323,7 +324,7 @@ describe('out of office', () => {
     );
     await fillForm(tenantToday(TZ), ERIKA.name);
     people = [ERIK, SELF];
-    await act(() => queryClient.refetchQueries({ queryKey: outOfOfficeKeys.people }));
+    await act(() => queryClient.refetchQueries({ queryKey: referenceKeys.people(null) }));
     fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
     const error = await screen.findByText(/cannot approve, so they cannot stand in for you\./);
     expect(error).toHaveAttribute('id', 'ooo-delegate-error');

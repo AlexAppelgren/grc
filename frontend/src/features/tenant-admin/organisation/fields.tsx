@@ -3,7 +3,7 @@
 import { Chip } from '@/components/ui/Chip';
 import { Field, Select } from '@/components/ui/Field';
 import type { TermGroup } from '@/features/tenant-admin/organisation/organisation-presentation';
-import { usePeople } from '@/features/tenant-admin/organisation/hooks';
+import { usePeople } from '@/features/shared/reference';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 

@@ -17,19 +17,8 @@ type Schemas = components['schemas'];
 export type LibraryRef = Schemas['LibraryRef'];
 /** One text in one language, labelled so the screen can say a machine wrote it (INV-05). */
 export type LocalizedText = Schemas['LocalizedText'];
-/** A summary version by number and the date it takes effect; a null date means "since it began" (INV-04). */
-export type ObligationVersion = Schemas['ObligationVersionRef'];
-/** The record's terms in one dimension; an empty list means no restriction in it (FP-01). */
-export type ScopeDimension = Schemas['ScopeDimension'];
-/** A dimension in which none of the record's terms is in the footprint (FP-03). */
-export type OutsideReason = Schemas['OutsideReason'];
-export type InstrumentRef = Schemas['ObligationInstrumentRef'];
 /** One row of GET /obligations (INV-03), with the bank's register overlay (REG-01, REG-02). */
 export type Obligation = Schemas['ObligationRow'];
-/** A person the library names, by id and name; never a member of a bank (INV-06). */
-export type PersonRef = Schemas['PersonRef'];
-/** A platform research agent, named by its definition key; never a person or a bank (D-62). */
-export type AgentRef = Schemas['AgentRef'];
 /**
  * Who confirmed the approval that wrote a version, and which agent proposed it
  * (INV-05, PRO-02). `verifiedOrigin` 'agent' is an independent agent's
@@ -38,8 +27,6 @@ export type AgentRef = Schemas['AgentRef'];
 export type VersionConfirmation = Schemas['VersionConfirmation'];
 /** One version of a summary with the dates it runs between; `effectiveTo` is derived, never stored (INV-04). */
 export type ObligationVersionRow = Schemas['ObligationVersionRow'];
-/** The instrument the duty was broken out of, as the detail read summarises it. */
-export type InstrumentSummary = Schemas['ObligationInstrumentSummary'];
 /** Where the record came from and when a person last held it against its source (INV-06). */
 export type ObligationProvenance = Schemas['ObligationProvenance'];
 /** A duty the library files beside this one; `relation` is a vocabulary row. */
@@ -58,24 +45,16 @@ export type VersionDiff = Schemas['VersionDiff'];
 /** POST …/problem-reports: what the reader was looking at, in their own words. */
 export type ProblemReportBody = Schemas['ProblemReportBody'];
 export type ProblemReportCreated = Schemas['ProblemReportCreated'];
-/** Who issued an instrument, in full (INV-01). */
-export type InstrumentAuthorityRef = Schemas['InstrumentAuthorityRef'];
 /** One row of GET /instruments (INV-01). `obligationCount` follows the same footprint filter the row itself does. */
 export type Instrument = Schemas['InstrumentRow'];
 /** One instrument-to-instrument relation, from either side (INV-01). */
 export type InstrumentLineageRef = Schemas['InstrumentLineageRef'];
-/** One text version of a provision (INV-02, INV-04): `effectiveTo` is derived, never stored. */
-export type ProvisionVersionRow = Schemas['ProvisionVersionRow'];
-/** An obligation that cites a provision, as the tree's own row names it. */
-export type ProvisionCitedObligation = Schemas['ProvisionCitedObligation'];
 /** One node of the provision tree (INV-02): a chapter, a section, a paragraph or whatever `kind` names. */
 export type ProvisionNode = Schemas['ProvisionNode'];
 /** GET /instruments/{id} (INV-01, INV-06, INV-09). */
 export type InstrumentDetail = Schemas['InstrumentDetail'];
 /** Another instrument tied to this one by implementation, as the card links to it. */
 export type InstrumentLinkRef = Schemas['InstrumentLinkRef'];
-/** The duties under an instrument: held, in the reader's scope, and waiting for review. */
-export type InstrumentObligationCounts = Schemas['InstrumentObligationCounts'];
 /**
  * What tagging a selection would do (the preview) or did (the commit), in one shape.
  * Records the reader may not read are only counted: the server never names them.
