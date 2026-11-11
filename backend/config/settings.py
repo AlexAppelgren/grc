@@ -365,6 +365,10 @@ RESEARCH_URL_MAX_REDIRECTS = env_int("RESEARCH_URL_MAX_REDIRECTS", 3)
 RESEARCH_URL_TOTAL_SECONDS = env_int("RESEARCH_URL_TOTAL_SECONDS", 15)
 if min(RESEARCH_REQUESTS_PER_MONTH, RESEARCH_URL_TIMEOUT_SECONDS, RESEARCH_URL_MAX_BYTES, RESEARCH_URL_TOTAL_SECONDS) < 1 or RESEARCH_URL_MAX_REDIRECTS < 0:
     raise ImproperlyConfigured("The RESEARCH_* settings must be positive, and RESEARCH_URL_MAX_REDIRECTS at least 0")
+# Review 2026-11-11 S-10: how many web addresses one bank's check_url requests may fetch in an hour, failed fetches included (429 `rate_limited`).
+RESEARCH_URL_RATE_PER_HOUR = env_int("RESEARCH_URL_RATE_PER_HOUR", 20)
+if not 1 <= RESEARCH_URL_RATE_PER_HOUR <= 1000:
+    raise ImproperlyConfigured("RESEARCH_URL_RATE_PER_HOUR must be between 1 and 1000")
 # d89-agent-research (OWN-02, D-98, ADR 0061): the longest each of a scope item's text fields
 # (its name, official reference and source address) may be when it reaches the bank's own
 # agent; each is cut to it before it leaves the worker.
@@ -822,6 +826,10 @@ if LIBRARY_TRANSLATION_MINUTES < 0 or LIBRARY_TRANSLATION_RUN_MAX < 1 or not 1 <
         "Refusing to boot: LIBRARY_TRANSLATION_MINUTES is 0 (off) or more, LIBRARY_TRANSLATION_RUN_MAX at least 1, "
         "and LIBRARY_TRANSLATION_TEXT_MAX_CHARS between 1 and PROPOSAL_TEXT_MAX_CHARS."
     )
+# Review 2026-11-11 S-9: after this many failed calls with one prompt the translator stops asking for that record until its text or the languages change.
+LIBRARY_TRANSLATION_MAX_FAILURES = env_int("LIBRARY_TRANSLATION_MAX_FAILURES", 3)
+if not 1 <= LIBRARY_TRANSLATION_MAX_FAILURES <= 100:
+    raise ImproperlyConfigured("LIBRARY_TRANSLATION_MAX_FAILURES must be between 1 and 100")
 if LIBRARY_TRANSLATION_MINUTES:
     CELERY_BEAT_SCHEDULE["library-translation"] = {
         "task": "apps.proposals.tasks.file_library_translations",
@@ -982,6 +990,10 @@ if not 0 <= REGISTERS_RECHECK_HOUR <= 23:
     raise ImproperlyConfigured("REGISTERS_RECHECK_HOUR must be an hour from 0 to 23")
 if not 30 <= REGISTERS_JOB_SECONDS <= 3600:
     raise ImproperlyConfigured("REGISTERS_JOB_SECONDS must be between 30 and 3600")
+# Review 2026-11-11 S-11: how many register lookups one bank may start in an hour (429 `rate_limited`); one at a time besides.
+REGISTERS_LOOKUPS_PER_HOUR = env_int("REGISTERS_LOOKUPS_PER_HOUR", 10)
+if not 1 <= REGISTERS_LOOKUPS_PER_HOUR <= 100:
+    raise ImproperlyConfigured("REGISTERS_LOOKUPS_PER_HOUR must be between 1 and 100")
 CELERY_BEAT_SCHEDULE["registers-recheck"] = {
     "task": "apps.tenants.tasks.recheck_registers",
     "schedule": crontab(minute="17", hour=str(REGISTERS_RECHECK_HOUR)),

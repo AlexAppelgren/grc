@@ -743,7 +743,9 @@ def create_request(
     so two requests sent at the same moment cannot both wait; the savepoint keeps the
     caller's transaction usable after the refusal. The scope items it adds are stored with
     it as `requested`, so the approver decides on exactly what was asked (D-91). Company lines
-    are stored as they were asked for (FP-05)."""
+    are stored as they were asked for (FP-05). Whether the requester was then the bank's only
+    member able to approve is stored with it (`requester_sole_approver`, review 2026-11-11
+    S-5): the D-125 exception is decided on the bank as it stood when the request was made."""
     _validate_change(adds, removes, item_adds, item_removes, entity_excludes, entity_includes)
     try:
         with transaction.atomic():
@@ -751,6 +753,7 @@ def create_request(
                 tenant=tenant,
                 requested_by=requester,
                 preview=preview_of(tenant.id, adds, removes).model_dump(by_alias=True),
+                requester_sole_approver=sole_approver(tenant, requester),
             )
     except IntegrityError as exc:
         # Only our constraint means "a change already waits"; any other refusal is a fault.
@@ -868,8 +871,11 @@ def _decidable(request: FootprintChangeRequest, expected_version: int | None) ->
 def sole_approver(tenant: Tenant, user: Any) -> bool:
     """Whether `user` may approve their own scope request as the bank's only member able to
     approve one (D-125): the setting allows it, they hold `footprint.approve` themselves, and
-    no other active member of the bank does. Permissions, never role names."""
-    from apps.identity.models import Membership, UserStatus
+    no other member of the bank does. Permissions, never role names. A member counts whatever
+    their account's status: a colleague whose enrolment was re-issued (`invited`) is still
+    the bank's second approver, so re-issuing it cannot make the requester the only one
+    (review 2026-11-11 S-5)."""
+    from apps.identity.models import Membership
 
     if not settings.FOOTPRINT_SOLE_APPROVER_ALLOWED:
         return False
@@ -877,7 +883,6 @@ def sole_approver(tenant: Tenant, user: Any) -> bool:
         Membership.objects.filter(
             tenant=tenant,
             deactivated_at__isnull=True,
-            user__status=UserStatus.ACTIVE.value,
             roles__permissions__contains=[perms.FOOTPRINT_APPROVE],
         ).values_list("user_id", flat=True)
     )
@@ -897,10 +902,13 @@ def approve(
     """The second person's decision (FP-02, AC-FP1). Four eyes is checked here and by the
     `footprint_change_request_four_eyes` check constraint, which is the database's word on
     it; the API answers 409 `four_eyes_violation`. The one exception (D-125): the bank's
-    only member able to approve may approve their own request, marked `sole_approver`."""
+    only member able to approve may approve their own request, marked `sole_approver`, when
+    they were the only one both when they asked and now (review 2026-11-11 S-5): removing
+    the other approver, changing their roles or re-issuing their enrolment after asking
+    does not open it."""
     _decidable(request, expected_version)
     if request.requested_by_id == decider.id:
-        if not sole_approver(tenant, decider):
+        if not (request.requester_sole_approver and sole_approver(tenant, decider)):
             raise ValidationError(
                 "A regulatory scope change is approved by someone other than the person who asked for it.",
                 code="four_eyes_violation",

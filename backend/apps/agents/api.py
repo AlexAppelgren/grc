@@ -848,7 +848,10 @@ def create_research_request(request: HttpRequest, body: ResearchRequestInput) ->
     within `RESEARCH_URL_MAX_REDIRECTS` redirects; `feature_off` (422) when the bank has
     switched its AI features off; `budget_cap_reached` (422) when the bank has set no cap or
     this month's spend has reached it; `plan_limit_reached` (429) past the bank's
-    `RESEARCH_REQUESTS_PER_MONTH` requests this month.
+    `RESEARCH_REQUESTS_PER_MONTH` requests this month; `research_in_progress` (429) while
+    another request of the bank is still being made, so try again when it has finished;
+    `rate_limited` (429) when the bank has had `RESEARCH_URL_RATE_PER_HOUR` web addresses
+    fetched in the last hour, failed fetches included.
     """
     tenant = caller_tenant(request)
     return requests.create_request(who=principal(request), tenant=tenant, body=body)

@@ -24,7 +24,11 @@ answer turns each number into the obligation's stable key and drops any it never
 model is asked when there is nothing a model may read (`nothing_to_summarise`), the bank
 switched its AI off (`ai_off`) or its cap is reached or unset (`budget_cap`); a model that
 fails (`model_failed`) or does not answer within `WHAT_APPLIES_SUMMARY_DEADLINE_MS`
-(`timeout`) leaves the slot empty with that reason. Nothing here writes but the log row.
+(`timeout`) leaves the slot empty with that reason. Nothing here writes but the log row, which
+a failed call leaves too, with its estimated cost, so the cap counts what was sent (review
+2026-11-11 S-9). The cap is read under the bank's spend lock (`budget.SPEND_LOCK`), held to
+the end of the request, so summaries asked at once are counted one after another and cannot
+all pass a cap their costs together exceed.
 """
 
 from __future__ import annotations
@@ -38,6 +42,7 @@ from django.conf import settings
 
 from apps.agents import budget
 from apps.agents.schemas import WHAT_APPLIES_NOTICE, WhatAppliesSummary
+from apps.agents.tenant_agents import lock_tenant
 from apps.governance.models import AiPurpose
 from apps.governance.schemas import AiCitation
 from apps.library.models import Obligation
@@ -123,6 +128,7 @@ def draft(*, tenant: Tenant, description: str, ranked: list[uuid.UUID], order: l
         if refused.code != "feature_off":
             raise
         return _not_drafted("ai_off")
+    lock_tenant(tenant, budget.SPEND_LOCK)
     if budget.at_cap(tenant):
         return _not_drafted("budget_cap")
     deadline_s = settings.WHAT_APPLIES_SUMMARY_DEADLINE_MS / 1000

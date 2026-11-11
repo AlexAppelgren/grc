@@ -1220,7 +1220,13 @@ def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
     same principal twice by construction, whichever pair of columns it shows up on; a
     reviewing key that names no agent is refused too, so an unbound platform key can never
     stand in for independence (PRO-S13, PRO-S14, D-62, ADR 0054). The API's gate refuses
-    that key first, with `agent_not_bound`; this is the same rule for any other caller."""
+    that key first, with `agent_not_bound`; this is the same rule for any other caller.
+
+    A key is a credential a person made, so the person behind a reviewing key is its
+    creator: a key created by the proposing person, or by the person who created the
+    proposing key, is that person deciding their own proposal, refused the same way (review
+    2026-11-11 S-6). The check constraint cannot read a key's creator, so this one rule is
+    the application's alone (apps/proposals/tests_decide.py, `KeyCreatorFourEyes`)."""
     proposal.refresh_from_db(from_queryset=Proposal.objects.select_for_update())
     if proposal.status != ProposalStatus.OPEN.value:
         raise ValidationError("This proposal has already been decided.", code="invalid_transition")
@@ -1232,11 +1238,25 @@ def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
     same_user = reviewer.user is not None and proposal.proposed_by_user_id == reviewer.user.id
     same_key = reviewer.api_key_id is not None and proposal.proposed_by_api_key_id == reviewer.api_key_id
     same_agent = reviewer.agent_id is not None and proposal.proposed_by_agent_id == reviewer.agent_id
-    if same_user or same_key or same_agent:
+    if same_user or same_key or same_agent or _key_made_by_proposer(proposal, reviewer):
         raise ValidationError(
             "A proposal is decided by someone other than the person, key or agent who made it.",
             code="four_eyes_violation",
         )
+
+
+def _key_made_by_proposer(proposal: Proposal, reviewer: Reviewer) -> bool:
+    """Whether the reviewing key was created by the proposing person, or by the person who
+    created the proposing key (S-6). A key with no creator on record, a seeded one, names no
+    person and so matches nobody."""
+    from apps.identity.models import ApiKey
+
+    if reviewer.api_key_id is None:
+        return False
+    creators = dict(ApiKey.objects.filter(pk__in=[reviewer.api_key_id, proposal.proposed_by_api_key_id]).values_list("id", "created_by_id"))
+    made_by = creators.get(reviewer.api_key_id)
+    proposing_key_creator = None if proposal.proposed_by_api_key_id is None else creators.get(proposal.proposed_by_api_key_id)
+    return made_by is not None and made_by in (proposal.proposed_by_user_id, proposing_key_creator)
 
 
 def _not_a_batch(proposal: Proposal) -> None:
@@ -1352,10 +1372,8 @@ def corrected(
     proposal keeps the fresh source for that field from then on. Returns the proposer's
     sources the fresh ones replaced, for the approval's audit row.
 
-    An agent's correction may reword a summary but not move `originalLanguage`: the
-    original is the one text stored without the machine label, so moving it would store a
-    machine translation as unlabelled and label the source-language text machine-made
-    (INV-05). It is compared as parsed, whichever spelling of the field arrived.
+    Only a person corrects: `approve` refuses an agent's correction before this runs
+    (review 2026-11-11 S-3).
     """
     if proposal.kind not in CORRECTABLE_KINDS:
         raise ValidationError(
@@ -1383,11 +1401,6 @@ def corrected(
             code="validation_error",
         )
     check_field_sources(parsed, sources)
-    if reviewer.user is None and stored.get("originalLanguage") != proposal.payload.get("originalLanguage"):
-        raise ValidationError(
-            "An agent cannot change which language a summary was written in. Reject it with a reason instead.",
-            code="validation_error",
-        )
     replaced = {field: proposal.field_sources[field] for field in fresh if field in proposal.field_sources}
     proposal.corrected_payload = stored
     proposal.corrected_by = reviewer.user
@@ -1439,6 +1452,15 @@ def approve(
     provision's new text, is refused to an agent with 409 `person_review_required` and waits
     for a person. Rejecting writes no library row, so an agent may reject any kind.
 
+    An agent approves only what a platform agent or a platform person filed, and only as it
+    was filed (review 2026-11-11 S-3), each refusal 409 `person_review_required`. A proposal
+    filed from a bank (`proposed_in_tenant`) cites pages its proposer chose, so a machine
+    that finds the same words on them confirms nothing independent. A correction is a
+    person's: an agent that rewrites and approves in one call would be the only author of
+    the applied text. `field_sources` alone is refused to an agent too: a fresh source
+    belongs only to a value the correction changes, so without `payload_overrides` it could
+    only swap the record's provenance, which no agent decides alone.
+
     A bank's own proposal (`owner_tenant_id`, INV-07, OWN-03) is approved the same way, here,
     by a person of that bank holding `private_records.approve`
     (apps/proposals/private_approval.py): never by an agent, whatever its kind (ADR 0059),
@@ -1456,6 +1478,16 @@ def approve(
             "A record of an organisation's own is approved by a person there, never by an agent.",
             code="person_review_required",
         )
+    if reviewer.user is None and proposal.proposed_in_tenant:
+        raise ValidationError(
+            "A proposal filed from an organisation is approved by a person, never by an agent.",
+            code="person_review_required",
+        )
+    if reviewer.user is None and (payload_overrides or field_sources):
+        raise ValidationError(
+            "An agent approves a proposal as it was filed. To change it, reject it with a reason or leave it for a person.",
+            code="person_review_required",
+        )
     # The block's rows are written as it ends, inside the transaction (ADR 0063).
     with transaction.atomic(), batched():
         run = _decision_run(reviewer, decision, agent_run_id)
@@ -1465,7 +1497,7 @@ def approve(
                 "An agent cannot approve this kind of change: a person has to approve it.",
                 code="person_review_required",
             )
-        if reviewer.user is None and (proposal.risk_flags or screen_all(_texts(payload_overrides))):
+        if reviewer.user is None and proposal.risk_flags:
             raise ValidationError(
                 "This proposal carries text the injection screen flagged, so an agent cannot "
                 "approve it: a person reads the flag and decides.",

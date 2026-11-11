@@ -590,8 +590,9 @@ def approve_proposal(
     obligation version, a new instrument, a new obligation, a library list row and a
     taxonomy term (D-79). What it confirmed never reads as a person's check: the record
     names the confirming agent, a translation it approves stays labelled machine-made,
-    every list or term label it writes is stored machine-made, and its correction may
-    reword a summary but never move `originalLanguage`, which answers `validation_error`.
+    and every list or term label it writes is stored machine-made. An agent approves a
+    proposal only as it was filed, and only one a platform agent or a platform person filed:
+    a correction, and a proposal filed from an organisation, wait for a person.
 
     An agent's approval is a model call, and every model call is logged: a key sends the
     call behind its approval in `decision` and the open run of its own key it was made in
@@ -605,11 +606,12 @@ def approve_proposal(
     `run_not_open` (422) when a key names no run in `agentRunId`, or a run it has closed;
     `not_found` (404) when that run is one another key opened, or when there is no such
     proposal; `four_eyes_violation` when the reviewer is the person, key or agent who made
-    the proposal; `person_review_required` when an agent approves a kind whose record
-    cannot name its confirming agent, a new provision or a provision's new text, which
-    waits for a person; `risk_flagged` (409) when an agent approves a proposal whose
-    `riskFlags` is not empty, or corrects it with text the injection screen flags, which
-    waits for a person who reads the flag; `invalid_transition` when the proposal was
+    the proposal, or when a key was created by the person who made the proposal or created
+    the proposing key; `person_review_required` (409) when an agent approves a kind whose
+    record cannot name its confirming agent (a new provision or a provision's new text), a
+    proposal filed from an organisation, or sends `payloadOverrides` or `fieldSources`,
+    each of which waits for a person; `risk_flagged` (409) when an agent approves a proposal
+    whose `riskFlags` is not empty, which waits for a person who reads the flag; `invalid_transition` when the proposal was
     already approved or rejected, which is also what a repeated or simultaneous second call
     answers, since nothing is ever applied twice, and for a batch, which is decided row by
     row through `POST /proposal-batches/{batchId}/decide`; `source_missing` when a correction

@@ -143,13 +143,22 @@ class RegistersAdapter(ABC):
         record, a number every company registered under it. Empty when none is."""
 
     @abstractmethod
-    def children(self, lei: str) -> list[LeiCompany]:
+    def children(self, lei: str, *, deadline: float | None = None) -> list[LeiCompany]:
         """The companies directly under `lei`, each with `parent_lei=lei`; no funds, no
-        branches."""
+        branches. `deadline` is a `time.monotonic()` reading no page is asked for after."""
 
     @abstractmethod
-    def licence_facts(self, authority_key: str, registration_number: str) -> LicenceFacts | None:
-        """The authority's register on one company, or None when it has no such company."""
+    def licence_facts(self, authority_key: str, registration_number: str, *, deadline: float | None = None) -> LicenceFacts | None:
+        """The authority's register on one company, or None when it has no such company.
+        `deadline` is a `time.monotonic()` reading no page is asked for after."""
+
+
+def _in_time(deadline: float | None) -> None:
+    """Refuse to read another page once the job's deadline has passed (REGISTERS_JOB_SECONDS,
+    review 2026-11-11 S-11): a group or a company's branches are walked a page at a time, and
+    the deadline is checked before each one, not only between companies."""
+    if deadline is not None and time.monotonic() > deadline:
+        raise RegisterUnavailable("the registers took longer than REGISTERS_JOB_SECONDS")
 
 
 def _source_url(registration_number: str) -> str:
@@ -416,12 +425,13 @@ class LiveRegisters(RegistersAdapter):
         address = f"{base}/lei-records?{urllib.parse.urlencode({'filter[entity.registeredAs]': query, 'page[size]': 10})}"
         return [_company(record, None) for record in _records(_json(_open(address)))]
 
-    def children(self, lei: str) -> list[LeiCompany]:
+    def children(self, lei: str, *, deadline: float | None = None) -> list[LeiCompany]:
         if not LEI.fullmatch(lei):
             raise ValueError("an LEI is 20 letters and digits, ending in two digits")
         found: list[LeiCompany] = []
         page, last = 1, 1
         while page <= last and len(found) < settings.REGISTERS_MAX_ENTITIES:
+            _in_time(deadline)
             query = urllib.parse.urlencode({"page[size]": GLEIF_PAGE_SIZE, "page[number]": page})
             document = _json(_open(f"{settings.REGISTERS_GLEIF_URL}/lei-records/{lei}/direct-children?{query}"))
             records = _records(document)
@@ -437,13 +447,14 @@ class LiveRegisters(RegistersAdapter):
         return found
 
     # --- Finansinspektionen ------------------------------------------------------------
-    def licence_facts(self, authority_key: str, registration_number: str) -> LicenceFacts | None:
+    def licence_facts(self, authority_key: str, registration_number: str, *, deadline: float | None = None) -> LicenceFacts | None:
         if authority_key not in self.authorities:
             raise ValueError(f"no register is read for the authority {authority_key!r}")
         _require_number(registration_number)
         wanted = digits(registration_number)
         if not wanted:
             return None
+        _in_time(deadline)
         source = _source_url(registration_number)
         row = next((row for row in _fi_rows(_open(source)) if digits(row[1]) == wanted), None)
         if row is None:
@@ -454,9 +465,10 @@ class LiveRegisters(RegistersAdapter):
         # answers a credit institution's EEA branches by its LEI (D-126); when that fails too,
         # the branches are unknown, never reported as none.
         try:
-            branches, branches_read = self._branches(registration_number, wanted), True
+            branches, branches_read = self._branches(registration_number, wanted, deadline), True
         except RegisterUnavailable:
             try:
+                _in_time(deadline)
                 branches, branches_read = self._eba_branches(_clean(row[2], 20)), True
             except RegisterUnavailable:
                 logger.warning("register branch pages unreadable", extra={"provider": "live"})
@@ -473,20 +485,23 @@ class LiveRegisters(RegistersAdapter):
             branches_read=branches_read,
         )
 
-    def _branches(self, registration_number: str, wanted: str) -> tuple[RegisterBranch, ...]:
+    def _branches(self, registration_number: str, wanted: str, deadline: float | None) -> tuple[RegisterBranch, ...]:
+        _in_time(deadline)
         search = _page(_open(f"{settings.REGISTERS_FI_URL}/index?{urllib.parse.urlencode({'query': registration_number})}"))
         candidates = list(dict.fromkeys(line.link for line in search if line.link))[:DETAIL_CANDIDATES]
         for candidate in candidates:
+            _in_time(deadline)
             page = _page(_open(self._details(candidate)))
             number = _value(page, "Organisationsnummer")
             if number is None:
                 raise RegisterUnavailable("FI's register changed its company page")
             if number and digits(number[0]) == wanted:
                 links = _links_under(page, "Filialer")[: settings.REGISTERS_MAX_BRANCHES]
-                return tuple(self._branch(link) for link in links)
+                return tuple(self._branch(link, deadline) for link in links)
         return ()
 
-    def _branch(self, link: str) -> RegisterBranch:
+    def _branch(self, link: str, deadline: float | None) -> RegisterBranch:
+        _in_time(deadline)
         page = _page(_open(self._details(link)))
         headings = [line.text for line in page if line.heading]
         after = headings[headings.index("Företagsregistret") + 1 :] if "Företagsregistret" in headings else []
@@ -621,10 +636,10 @@ class MockRegisters(RegistersAdapter):
             if query.upper() == company.lei or (digits(query) and digits(query) == digits(company.registration_number))
         ]
 
-    def children(self, lei: str) -> list[LeiCompany]:
+    def children(self, lei: str, *, deadline: float | None = None) -> list[LeiCompany]:
         return [company for company in MOCK_COMPANIES.values() if company.parent_lei == lei]
 
-    def licence_facts(self, authority_key: str, registration_number: str) -> LicenceFacts | None:
+    def licence_facts(self, authority_key: str, registration_number: str, *, deadline: float | None = None) -> LicenceFacts | None:
         if authority_key not in self.authorities:
             raise ValueError(f"no register is read for the authority {authority_key!r}")
         _require_number(registration_number)

@@ -340,7 +340,7 @@ runs on its own stack, booted with `seed_reference` alone (`E2E_COLD_START=1` in
 Given a proposal an independent agent approved with its review scope
 Then the audit event names the agent, its definition version and the key it used, not the key's id alone
 And the event carries no step-up assertion, because a key cannot step up
-And a rejection or a correction by that agent is recorded the same way, with its reason
+And a rejection by that agent is recorded the same way, with its reason (an agent corrects nothing: review 2026-11-11 S-3)
 And the model call behind the decision is in the AI output log with its citations and review state
 And the audit rows stay append-only: the decision cannot be edited afterwards
 ```

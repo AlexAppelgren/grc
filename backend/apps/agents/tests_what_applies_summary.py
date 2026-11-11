@@ -187,7 +187,24 @@ class TheListSurvives(TestCase):
         self.fallback(llm, "budget_cap")
         self.assertEqual(llm.calls, [])
 
-    def test_no_fallback_writes_a_log_row(self) -> None:
+    def test_a_failed_call_is_logged_and_counted_and_no_refusal_writes_a_row(self) -> None:
+        """Review 2026-11-11 S-9: a call the model failed once asked costs tokens, so it leaves
+        a `failed` row with its estimated cost, which the monthly cap counts; a fallback that
+        asks no model writes nothing."""
+        before = budget.spend(self.bank.tenant)
         self.fallback(Failing(), "model_failed")
         tenancy.activate(self.bank.tenant.id)
-        self.assertEqual(AiGeneration.objects.filter(purpose="what_applies").count(), 1, "only the drafted answer's")
+        failed = AiGeneration.objects.get(purpose="what_applies", stop_reason="failed")
+        self.assertEqual((failed.tenant_id, failed.output, failed.model), (self.bank.tenant.id, "", "mock"))
+        self.assertGreater(failed.cost_minor, 0)
+        self.assertEqual(budget.spend(self.bank.tenant) - before, Decimal(failed.cost_minor) / 100)
+        cap(self.bank.tenant, "0.00")
+        self.fallback(Recording(), "budget_cap")
+        tenancy.activate(self.bank.tenant.id)
+        self.assertEqual(AiGeneration.objects.filter(purpose="what_applies").count(), 2, "the drafted answer's and the failed call's")
+
+    def test_the_cap_is_read_under_the_banks_spend_lock(self) -> None:
+        """Review 2026-11-11 S-9: summaries asked at once read the cap one after another."""
+        with patch("apps.agents.what_applies_summary.lock_tenant") as locked:
+            self.fallback(Failing(), "model_failed")
+        locked.assert_called_once_with(self.bank.tenant, budget.SPEND_LOCK)

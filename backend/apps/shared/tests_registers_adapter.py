@@ -188,6 +188,14 @@ class LiveGleif(SimpleTestCase):
                 with self.assertRaises(RegisterUnavailable):
                     LiveRegisters().find("556000-0001")
 
+    def test_children_read_no_page_past_the_deadline(self) -> None:
+        """Review 2026-11-11 S-11: the deadline is checked before every page of the walk."""
+        with mock.patch.object(registers.time, "monotonic", return_value=1_000.0):
+            with self.assertRaises(RegisterUnavailable):
+                LiveRegisters().children(BANK_LEI, deadline=999.0)
+            self.assertEqual(self.opened.urls, [])
+            self.assertTrue(LiveRegisters().children(BANK_LEI, deadline=1_000.0))
+
     def test_a_number_that_is_not_one_never_reaches_a_url(self) -> None:
         for query in ("55/../x", "a", "556000-0001&format=x"):
             with self.subTest(query), self.assertRaises(ValueError):
@@ -204,6 +212,19 @@ class LiveFinansinspektionen(SimpleTestCase):
         patcher = mock.patch.object(registers, "_open", self.opened)
         patcher.start()
         self.addCleanup(patcher.stop)
+
+    def test_branch_pages_are_not_read_past_the_deadline(self) -> None:
+        """Review 2026-11-11 S-11: the register's export is read in time, and its company and
+        branch pages, each checked before it is opened, are not: the licences come back with
+        the branches unknown, never with none."""
+        readings = iter([0.0, 0.0])  # the export's check, then the branches' first; every later one is late
+
+        with mock.patch.object(registers.time, "monotonic", side_effect=lambda: next(readings, 10.0)):
+            facts = LiveRegisters().licence_facts("fi", "556000-0001", deadline=5.0)
+        assert facts is not None
+        self.assertTrue(facts.licences)
+        self.assertEqual((facts.branches, facts.branches_read), ((), False))
+        self.assertFalse(any("details?id=" in url for url in self.opened.urls), "no company or branch page was opened")
 
     def test_the_row_with_the_numbers_digits_is_the_company_and_its_cells_are_read_strictly(self) -> None:
         facts = LiveRegisters().licence_facts("fi", "556000-0001")

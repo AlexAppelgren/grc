@@ -1247,22 +1247,18 @@ class AgentsScenarioTests(TestCase):
         )
         agent_flow.assert_refused(self, own_side, 409, "four_eyes_violation")
 
-        # And it may correct and approve one, and reject the other, each with the model call
-        # behind its decision, in the run it opened.
-        corrected = "The institution pays for third-party research from its own resources or a research payment account."
+        # And it may approve one as filed, and reject the other, each with the model call
+        # behind its decision, in the run it opened. It corrects nothing: a correction waits
+        # for a person (review 2026-11-11 S-3).
         approved = self.client.post(
             f"/api/v1/proposals/{to_approve}/approve",
-            data={
-                "payloadOverrides": {"summaries": {"en": corrected}},
-                "fieldSources": {"summaries.en": agent_build.DECISION["citations"][0]["url"]},
-                "decision": agent_build.DECISION,
-                "agentRunId": review_id,
-            },
+            data={"decision": agent_build.DECISION, "agentRunId": review_id},
             content_type="application/json",
             **as_confirmer,
         )
         self.assertEqual(approved.status_code, 200, approved.content)
-        self.assertEqual(approved.json()["correctedByAgent"]["key"], "library-confirmer")
+        self.assertEqual(approved.json()["reviewedByAgent"]["key"], "library-confirmer")
+        self.assertIsNone(approved.json()["correctedByAgent"])
         rejected = self.client.post(
             f"/api/v1/proposals/{to_reject}/reject",
             data={

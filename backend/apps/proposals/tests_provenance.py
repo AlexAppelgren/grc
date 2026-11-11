@@ -331,12 +331,13 @@ class ListAndTermProvenance(ScenarioTestCase):
     def test_a_proposal_made_in_a_bank_names_no_proposing_agent(self) -> None:
         """PRO-03: the queue withholds who proposed on a bank's behalf, and so does every
         read of what that proposal wrote. A key bound to an agent is the platform's in R1;
-        R2's bank agents are the case this pins."""
+        R2's bank agents are the case this pins. Since review 2026-11-11 S-3 no agent decides a
+        proposal filed from a bank, so the mark is set after the agent's decision: what is pinned
+        is the read, which withholds the proposer whoever decided."""
         for kind, payload in (("vocabulary_create", FLAG), ("term_create", TERM)):
             proposal = self._agent_proposes(kind, payload)
-            Proposal.objects.filter(pk=proposal.pk).update(proposed_in_tenant=True)
-            proposal.refresh_from_db()
             self._agent_confirms(proposal)
+            Proposal.objects.filter(pk=proposal.pk).update(proposed_in_tenant=True)
         withheld = {**self._agents(), "proposedByAgent": None}
         self.assertEqual(self._provenance(self._read(f"/vocab/flag/{FLAG['key']}")), withheld)
         self.assertEqual(self._provenance(self._listed(FLAG["key"])), withheld)

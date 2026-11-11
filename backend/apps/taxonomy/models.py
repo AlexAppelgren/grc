@@ -764,6 +764,10 @@ class FootprintChangeRequest(TenantModel):
     # The requester approved it as the bank's only member able to (D-125): the one case the
     # four-eyes check constraint lets through.
     sole_approver = models.BooleanField(default=False)
+    # The requester was the bank's only member able to approve when they asked (review
+    # 2026-11-11 S-5): the exception holds only for a request made in that state, so removing
+    # the other approver after asking opens nothing. The constraint requires it with the mark.
+    requester_sole_approver = models.BooleanField(default=False)
     version = models.PositiveIntegerField(default=1)
 
     class Meta:
@@ -782,7 +786,8 @@ class FootprintChangeRequest(TenantModel):
         ]
         # The four-eyes check constraint `footprint_change_request_four_eyes` is created by
         # RunSQL in migration 0001 as `decided_by_id IS NULL OR decided_by_id <> requested_by_id`,
-        # widened by taxonomy 0014 with `OR sole_approver` (D-125).
+        # widened by taxonomy 0014 with `OR sole_approver` (D-125) and narrowed by taxonomy 0015
+        # to `OR (sole_approver AND requester_sole_approver)` (review 2026-11-11 S-5).
         # Django can only spell "not equal" as NOT (a = b AND a IS NOT NULL), which is the
         # same rule but not the definition the four-eyes guard reads back from pg_constraint
         # (apps/shared/tests_four_eyes.py), so the database states it in its own words.
