@@ -105,7 +105,13 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertEqual(denied.status_code, 403)
         self.assertEqual(denied.json()["requiredPermission"], perms.SECURITY_MANAGE)
         # Inviting a member and an admin enrolling a passkey tick their steps.
-        self.client.post("/api/v1/tenant/members", data={"email": "new@bank.example", "roleKeys": ["reader"]}, content_type="application/json", **headers)
+        invited = self.client.post(
+            "/api/v1/tenant/members",
+            data={"email": "new@bank.example", "roleKeys": ["reader"]},
+            content_type="application/json",
+            **sign_in(self.admin, tenant=self.tenant, step_up=True),
+        )
+        self.assertEqual(invited.status_code, 201, invited.content)
         factories.passkey(self.admin)
         steps = {step["key"]: step["done"] for step in self.client.get("/api/v1/tenant", **headers).json()["onboarding"]["steps"]}
         self.assertTrue(steps["members"])
@@ -303,7 +309,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         Removing a member with open work offers bulk reassignment (TEN-05). Erik owns register
         entries, an entity's row, a gap and an internal item, and two open cases with an
         action each (the case half, `c9-owner-team-and-reassign`).
-        Operations: `getMemberOpenWork`, `removeMember`, `deactivateMember`.
+        Operations: `getMemberOpenWork`, `removeMember`.
         """
         erik, anna, work, headers = self._erik()
         cases = self._cases(erik)
@@ -312,8 +318,8 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertEqual(preview.status_code, 200)
         owned = {row["kind"]: row["count"] for row in preview.json()["items"]}
         self.assertEqual({k: owned[k] for k in kinds}, {"register_entry": 3, "register_entity": 1, "gap": 1, "internal_item": 1, "case": 2, "action": 2})
-        # Nothing changes until the admin confirms: the plain removal is refused with the counts.
-        refused = self.client.delete(f"/api/v1/tenant/members/{erik.id}", **headers)
+        # Nothing changes until the admin names a new owner for each kind: refused with the counts.
+        refused = self._remove(erik, [], headers)
         self.assertEqual((refused.status_code, refused.json()["code"]), (422, "reassignment_required"))
         self.activate(self.tenant)
         self.assertEqual(TenantObligation.objects.filter(first_line_owner=erik).count(), 2)
@@ -675,7 +681,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         refusals = [
             ("POST", f"/api/v1/tenant/support-access/{grant}/revoke"),
             ("PATCH", "/api/v1/tenant"),
-            ("DELETE", f"/api/v1/tenant/members/{self.admin.id}"),
+            ("POST", f"/api/v1/tenant/members/{self.admin.id}/remove"),
             ("GET", f"/api/v1/evidence/{grant}/download"),
             # Search and Ask would spend the bank's AI budget.
             ("POST", "/api/v1/search"),

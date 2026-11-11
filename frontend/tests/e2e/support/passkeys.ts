@@ -36,6 +36,8 @@ export const E2E_PASSKEYS: Readonly<Record<string, SeededPasskey>> = E2E_PASSKEY
 
 export const E2E_RP_ID = process.env.E2E_RP_ID ?? 'localhost';
 export const BACKEND_URL = process.env.E2E_BACKEND_URL ?? `http://localhost:${process.env.E2E_BACKEND_PORT ?? '8000'}`;
+/** The refresh cookie: `Secure` in every run (DEBUG is off), so it carries the `__Secure-` prefix. */
+export const REFRESH_COOKIE = '__Secure-cw_refresh';
 
 // The seeded logins (apps/shared/e2e_seed.py): one per system role in tenant
 // A, the admin of tenant B, the one user awaiting enrolment, and the logins a

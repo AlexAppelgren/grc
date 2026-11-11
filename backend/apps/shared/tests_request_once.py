@@ -35,6 +35,7 @@ from apps.watch import testing as watch_build
 from apps.shared.tests_support_session import grant
 
 V1 = "/api/v1"
+COOKIE = session_logic.refresh_cookie_name()
 # A session request's cost before its route (the savepoint pair of the test's transaction
 # aside): the signed bank activated, then the session with its person, its bank, the grants
 # and the latest step-up in one read. Eight in all on 2026-09-28, six of them the auth
@@ -248,6 +249,6 @@ class RefreshAnswersMe(ScenarioTestCase):
         row = grant(self.tenant, platform, admin)
         entered = self.client.post(f"{V1}/console/support-access/{row.id}/enter", **sign_in(platform, tenant=None, step_up=True))
         self.assertEqual(entered.status_code, 200, entered.content)
-        refreshed = self.client.post(f"{V1}/auth/refresh", HTTP_COOKIE=f"cw_refresh={entered.cookies['cw_refresh'].value}")
+        refreshed = self.client.post(f"{V1}/auth/refresh", HTTP_COOKIE=f"{COOKIE}={entered.cookies[COOKIE].value}")
         self.assertEqual(refreshed.status_code, 200, refreshed.content)
         self.assertIsNone(refreshed.json()["me"])

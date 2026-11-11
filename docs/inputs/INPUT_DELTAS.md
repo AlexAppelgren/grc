@@ -2075,3 +2075,18 @@ Three routes the designed contract does not name, session only under `vocab.mana
 /tenant/register-lookups/{lookupId}/apply` (`applyRegisterLookup`, 409 `lookup_not_done`
 before the job succeeded). `GET /tenant/org-units` gains `registerEntry` on each row.
 
+
+## review-2026-11-11-s4. A member is removed in one way, and invitations need a passkey (2026-11-11, S-4, B-1)
+
+- The designed `DELETE /tenant/members/{userId}` (`removeMember`) is not built. A member is
+  removed with `POST /tenant/members/{userId}/remove` (`removeMember`), which hands on the
+  work they hold and removes them in one step behind a passkey step-up (TEN-05, D-108). The
+  `DELETE` route the build carried until 2026-11-11 (`deactivateMember`) did the same for a
+  member who held nothing, without the step-up, and no screen called it: the security
+  review of 2026-11-11 (S-4) removed it, so the removal has one door and it asks for a
+  passkey. A member who holds nothing is removed through `/remove` with an empty body.
+- `POST /tenant/members` (`inviteMember`) and `POST /console/tenants`
+  (`createConsoleTenant`) need a fresh passkey step-up (403 `step_up_required`), as a role
+  change does: an invitation grants roles, `admin` included, and a new bank's invitation
+  grants its administrator role. The assertion is stored on the `invitation.created` and
+  `tenant.created` audit events.

@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import type { Browser, Page } from '@playwright/test';
 
+import { confirmWithPasskey } from './support/agent-access-screens';
 import { expect, test, type ApiGuard } from './support/api-guard';
 import { allowFreshContext, E2E_FIXED_CODE, installAuthenticator, inviteLink, inviteLinkFrom, mailOutbox, mailsTo } from './support/passkeys';
 
@@ -28,7 +29,7 @@ const BANK_APPROVER = `approver@coldstart-${RUN}.test`;
 const BANK_NAME = `Cold Start Bank ${RUN}`;
 
 /**
- * FIRST_RUN_SETUP step 4: `manage.py bootstrap_platform` on the api service, as a person
+ * FIRST_RUN_SETUP step 4: `manage.py bootstrap_platform --role platform_admin` on the api service, as a person
  * runs it — the same database, the same app role, the same environment the server has
  * (tests/e2e/support/start-backend.sh `manage`). It prints the one-time invitation link;
  * the enrolment path starts there, never at a token this test minted.
@@ -39,7 +40,7 @@ function bootstrapPlatformAdmin(email: string): string {
   const script = path.join(test.info().project.testDir, 'support', 'start-backend.sh').split(path.sep).join('/');
   let printed: string;
   try {
-    printed = execFileSync('bash', [script, 'manage', 'bootstrap_platform', '--admin-email', email], { encoding: 'utf8' });
+    printed = execFileSync('bash', [script, 'manage', 'bootstrap_platform', '--admin-email', email, '--role', 'platform_admin'], { encoding: 'utf8' });
   } catch (failure) {
     // A command that refuses on a fresh database is exactly what this journey exists to
     // catch, so its own words are the failure, not "command failed with exit code 1".
@@ -95,6 +96,8 @@ test.describe('cold start', () => {
     test.setTimeout(240_000);
     allowFreshContext(apiGuard);
     apiGuard.allow(/\/tenant\/footprint\/requests\/[^/]+\/approve$/, 403, 'the first approval answers step_up_required and opens the passkey prompt');
+    apiGuard.allow(/\/api\/v1\/console\/tenants$/, 403, 'creating a bank answers step_up_required first and opens the passkey prompt');
+    apiGuard.allow(/\/api\/v1\/tenant\/members$/, 403, 'an invitation answers step_up_required first and opens the passkey prompt');
 
     // ——— steps 4 and 5: the first platform administrator ————————————————————
     await enrol(page, bootstrapPlatformAdmin(PLATFORM_ADMIN));
@@ -112,6 +115,7 @@ test.describe('cold start', () => {
     await form.getByLabel('Their title').fill('Head of compliance');
     const created = page.waitForResponse((r) => r.url().endsWith('/api/v1/console/tenants') && r.request().method() === 'POST' && r.ok());
     await form.getByRole('button', { name: 'Create tenant', exact: true }).click();
+    await confirmWithPasskey(page, page.getByText(`${BANK_NAME} is ready. Its first administrator has been invited.`));
     const { id: tenantId } = (await (await created).json()) as { id: string };
     // Pinned by id, never by a short name: nobody types one any more, it is derived.
     await expect(page.locator(`[data-tenant-id="${tenantId}"]`)).toHaveAttribute('data-tenant-slug', /.+/);
@@ -136,7 +140,7 @@ test.describe('cold start', () => {
     await invite.getByLabel('Title', { exact: true }).fill('Head of risk');
     await invite.locator('label', { hasText: /^Approver/ }).getByRole('checkbox').check();
     await invite.getByRole('button', { name: 'Send invitation' }).click();
-    await expect(admin.getByText(`Invitation sent to ${BANK_APPROVER}.`)).toBeVisible();
+    await confirmWithPasskey(admin, admin.getByText(`Invitation sent to ${BANK_APPROVER}.`));
 
     const approver = await otherPerson(browser, apiGuard);
     await enrol(approver, await invitationEmailedTo(admin, BANK_APPROVER));

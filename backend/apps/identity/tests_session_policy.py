@@ -10,7 +10,6 @@ from __future__ import annotations
 from datetime import timedelta
 from unittest import mock
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.test import TestCase, override_settings
@@ -50,7 +49,7 @@ class SessionPolicy(TestCase):
     def _cookie_max_age(self, value: str) -> int:
         response = HttpResponse()
         session_logic.set_refresh_cookie(response, value)
-        return int(response.cookies[settings.REFRESH_COOKIE_NAME]["max-age"])
+        return int(response.cookies[session_logic.refresh_cookie_name()]["max-age"])
 
     def _assert_ends(self, bundle: session_logic.SessionBundle, after: timedelta, reason: str, value: str | None = None) -> None:
         with self.assertRaises(ValidationError) as caught:

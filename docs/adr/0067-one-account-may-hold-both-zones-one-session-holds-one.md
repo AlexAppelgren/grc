@@ -63,6 +63,7 @@ with a toggle between the two.
 | A dual account asks for support access to its own bank as platform staff and approves it as the bank's admin | 409: four eyes compares the account id |
 | A dual account files a library proposal from its bank and approves it in the console | 409: four eyes compares the account id |
 | A platform role is granted to a bank member | The bank's audit log shows `platform_role.assigned`; Members marks them |
+| A bank administrator re-issues enrolment for a member who is also in another bank or holds a platform role (review 2026-11-11 S-2) | 409 `account_held_elsewhere` from the bank route and the console route, and nothing is written: passkeys have no bank, so only the platform owner re-enrols such an account, with `bootstrap_platform --reenrol`, which ends its sessions and tokens in every zone. A full session of an account that is not `active` resolves to nothing in any zone |
 
 ## Consequences
 

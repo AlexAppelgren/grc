@@ -35,7 +35,6 @@ describe('tenant-admin api', () => {
     expect(await admin.listMembers({ limit: 100, offset: 0 })).toEqual({ items: [], total: 0 });
     await admin.inviteMember({ email: 'x@y.z', roleKeys: ['reader'], title: '' });
     await admin.updateMember('u1', { roleKeys: ['reader', 'auditor'] });
-    await admin.deactivateMember('u1');
     await admin.reissueEnrolment('u1');
     await admin.listMemberSessions('u1');
     await admin.revokeMemberSessions('u1');
@@ -43,7 +42,6 @@ describe('tenant-admin api', () => {
       ['get', '/api/v1/tenant/members'],
       ['post', '/api/v1/tenant/members'],
       ['patch', '/api/v1/tenant/members/u1'],
-      ['delete', '/api/v1/tenant/members/u1'],
       ['post', '/api/v1/tenant/members/u1/reissue-enrolment'],
       ['get', '/api/v1/tenant/members/u1/sessions'],
       ['delete', '/api/v1/tenant/members/u1/sessions'],

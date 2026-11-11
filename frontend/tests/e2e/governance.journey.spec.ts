@@ -354,6 +354,7 @@ test.describe('governance journeys', () => {
 
   test("ADM-S6: A tenant is created from the console with its first administrator invited", async ({ page, request, apiGuard }, testInfo) => {
     allowFreshContext(apiGuard);
+    apiGuard.allow(/\/api\/v1\/console\/tenants$/, 403, 'creating a bank answers step_up_required first and opens the passkey prompt');
     // A name carries the attempt, so a retry and a parallel run never collide and nothing
     // seeded is touched. The short name is derived from it, never typed here.
     const name = `ADM-S6 Bank AB ${Date.now().toString(36)}-${testInfo.retry}`;
@@ -377,6 +378,7 @@ test.describe('governance journeys', () => {
     await form.getByLabel('Their title').fill('Head of compliance');
     const created = page.waitForResponse((r) => r.url().endsWith('/api/v1/console/tenants') && r.request().method() === 'POST' && r.ok());
     await form.getByRole('button', { name: 'Create tenant', exact: true }).click();
+    await confirmWithPasskey(page, page.getByText(`${name} is ready. Its first administrator has been invited.`));
     const { id: tenantId } = (await (await created).json()) as { id: string };
     await expect(form).toBeHidden();
 
@@ -399,6 +401,7 @@ test.describe('governance journeys', () => {
     await again.getByLabel("First administrator's email").fill(`second-${email}`);
     const createdAgain = page.waitForResponse((r) => r.url().endsWith('/api/v1/console/tenants') && r.request().method() === 'POST' && r.ok());
     await again.getByRole('button', { name: 'Create tenant', exact: true }).click();
+    await confirmWithPasskey(page, page.getByText(`${name} is ready. Its first administrator has been invited.`));
     const { id: secondTenantId, slug: secondSlug } = (await (await createdAgain).json()) as { id: string; slug: string };
     await expect(again).toBeHidden();
     await expect(page.locator(`[data-tenant-id="${secondTenantId}"]`)).toHaveAttribute('data-tenant-slug', secondSlug);
@@ -407,6 +410,7 @@ test.describe('governance journeys', () => {
 
   test("ADM-S19: The console shows whether a bank's first administrator has joined, and sends the invitation again", async ({ page, request, apiGuard }, testInfo) => {
     allowFreshContext(apiGuard);
+    apiGuard.allow(/\/api\/v1\/console\/tenants$/, 403, 'creating a bank answers step_up_required first and opens the passkey prompt');
     // Fresh names per attempt, so a retry or a parallel run never meets another's bank.
     const stamp = `${Date.now().toString(36)}-${testInfo.retry}`;
     const name = `ADM-S19 Bank AB ${stamp}`;
@@ -423,6 +427,7 @@ test.describe('governance journeys', () => {
     await form.getByLabel("First administrator's email").fill(email);
     const created = page.waitForResponse((r) => r.url().endsWith('/api/v1/console/tenants') && r.request().method() === 'POST' && r.ok());
     await form.getByRole('button', { name: 'Create tenant', exact: true }).click();
+    await confirmWithPasskey(page, page.getByText(`${name} is ready. Its first administrator has been invited.`));
     const { id: tenantId } = (await (await created).json()) as { id: string };
     await expect(form).toBeHidden();
 

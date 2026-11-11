@@ -678,7 +678,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         MockMailer.reset()
         seed_languages()
         platform_admin = factories.platform_user(roles=("platform_admin",))
-        headers = sign_in(platform_admin)
+        headers = sign_in(platform_admin, step_up=True)
         created = self._post(
             "/console/tenants",
             {"name": "Example Bank AB", "firstAdminEmail": "admin@example-bank.test", "firstAdminTitle": "Head of Compliance"},
@@ -736,7 +736,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         MockMailer.reset()
         seed_languages()
         platform_admin = factories.platform_user(roles=("platform_admin",))
-        headers = sign_in(platform_admin)
+        headers = sign_in(platform_admin, step_up=True)
         created = self._post("/console/tenants", {"name": "Joining Bank AB", "firstAdminEmail": "Head@Joining-Bank.test"}, headers)
         self.assertEqual(created.status_code, 201, created.content)
         tenant_id = created.json()["id"]
@@ -820,7 +820,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         # ready-to-use tenant with English already set, which is exactly what this
         # scenario proves a console-created one does not have.
         tenant = tenants_logic.create_tenant(
-            actor=actor_of(platform_admin), name="Example Bank AB", first_admin_email="admin@example-bank.test", first_admin_title=""
+            actor=actor_of(platform_admin), name="Example Bank AB", first_admin_email="admin@example-bank.test", first_admin_title="", step_up_assertion_id=None
         )
         admin = factories.member(tenant, roles=("admin",)).user
         headers = sign_in(admin, tenant=tenant)

@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import Case, Q, Value, When
 from django.http import HttpRequest
 from django.utils import timezone
 
@@ -27,6 +27,7 @@ from apps.identity.models import (
     LoginMethod,
     Membership,
     MembershipRole,
+    PlatformRoleAssignment,
     TenantRole,
     User,
     UserStatus,
@@ -41,6 +42,13 @@ from apps.shared.models import Tenant
 
 class InvitationExpired(ValidationError):
     """Opened after expiry, after acceptance or after revocation (410 invitation_expired)."""
+
+
+def mailbox(email: str) -> str:
+    """What a bank's audit trail names an invitee by until they accept: the address's own
+    mailbox, never an account's name or id, which an existing account would otherwise show
+    to every bank that invites it (review 2026-11-11 L-2)."""
+    return email.split("@")[0]
 
 
 def normalise_email(email: str) -> str:
@@ -82,12 +90,19 @@ def find_by_token(token: str) -> Invitation | None:
 
 
 def find_open_for_email(email: str) -> Invitation | None:
+    """The open invitation the "First time here?" address path enrols through, chosen by a
+    fixed rule and never by which bank invited the address last (review 2026-11-11 L-3):
+    a re-enrolment or a platform invitation first, as it restores what the person already
+    held; otherwise the oldest open bank invitation. Each tenant holds at most one open
+    invitation per address (`create_invitation` supersedes the earlier one), and a person
+    who wants another bank uses that bank's link, which names its invitation."""
     now = timezone.now()
+    first = Case(When(Q(kind=InvitationKind.REENROLMENT.value) | Q(tenant__isnull=True), then=Value(0)), default=Value(1))
     with tenancy.identity_lookup():
         return (
             Invitation.objects.select_related("tenant")
             .filter(email=email, accepted_at__isnull=True, revoked_at__isnull=True, expires_at__gt=now)
-            .order_by("-created_at", "-id")
+            .order_by(first, "created_at", "id")
             .first()
         )
 
@@ -181,10 +196,10 @@ def create_invitation(
         actor=actor,
         subject_type="invitation",
         subject_id=invitation.id,
-        subject_title=user.name,
+        subject_title=mailbox(cleaned),
         summary=f"{'Invitation' if kind is InvitationKind.INVITE else 'Re-enrolment'} sent with roles {', '.join(role_keys) or 'none'}.",
         tenant_id=tenant.id if tenant else None,
-        after={"userId": str(user.id), "roles": role_keys, "kind": kind.value, "expiresAt": expires_at.isoformat()},
+        after={"roles": role_keys, "kind": kind.value, "expiresAt": expires_at.isoformat()},
         step_up_assertion_id=step_up_assertion_id,
     )
     return IssuedInvitation(invitation=invitation, token=token)
@@ -202,7 +217,7 @@ def resend_invitation(*, tenant: Tenant, invitation: Invitation, actor: Actor) -
         actor=actor,
         subject_type="invitation",
         subject_id=invitation.id,
-        subject_title=invitation.email.split("@")[0],
+        subject_title=mailbox(invitation.email),
         summary="Invitation resent with a new token.",
         tenant_id=tenant.id,
         after={"expiresAt": invitation.expires_at.isoformat()},
@@ -211,15 +226,20 @@ def resend_invitation(*, tenant: Tenant, invitation: Invitation, actor: Actor) -
 
 
 def revoke_invitation(*, tenant: Tenant, invitation: Invitation, actor: Actor) -> Invitation:
+    """Close the invitation and end every enrolment session the address holds in this bank,
+    so an enrolment in progress stops with it (review 2026-11-11 S-1)."""
     if invitation.revoked_at is None and invitation.accepted_at is None:
         invitation.revoked_at = timezone.now()
         invitation.save(update_fields=["revoked_at"])
+        invitee = User.objects.filter(email=invitation.email).first()  # ordering: email is unique, at most one row
+        if invitee is not None:
+            session_logic.revoke_enrolment_sessions(invitee, tenant_id=tenant.id, reason="invitation_revoked", actor=actor)
     record(
         action="invitation.revoked",
         actor=actor,
         subject_type="invitation",
         subject_id=invitation.id,
-        subject_title=invitation.email.split("@")[0],
+        subject_title=mailbox(invitation.email),
         summary="Invitation revoked.",
         tenant_id=tenant.id,
     )
@@ -246,7 +266,9 @@ def open_invitation(token: str, request: HttpRequest | None) -> Invitation:
     if has_live_passkey(user):
         # An address that holds a passkey is sent nothing, as on the code request (AC-ID1):
         # since D-122 a bank may invite one, and it joins with its passkey through
-        # `accept_signed_in`. The answer and the hashing work are the same either way.
+        # `accept_signed_in`. The answer and the hashing work are the same either way, and
+        # so is the inviting bank's audit row: the refusal names an account, so it goes to
+        # the platform's security log, not the bank's (review 2026-11-11 L-2).
         tokens.hash_code(tokens.new_code(), tokens.new_salt())
         log_event(
             event=LoginEventKind.CODE_REFUSED_ENROLLED,
@@ -254,20 +276,18 @@ def open_invitation(token: str, request: HttpRequest | None) -> Invitation:
             success=False,
             request=request,
             user=user,
-            tenant_id=invitation.tenant_id,
+            tenant_id=None,
             failure_reason="passkey_enrolled",
         )
-        summary = "Invitation opened; no code: the account holds a passkey."
     else:
         code_logic.issue_code(user=user, tenant_id=invitation.tenant_id, request=request)
-        summary = "Invitation opened; a code was sent."
     record(
         action="invitation.opened",
         actor=Actor.system("invitee"),
         subject_type="invitation",
         subject_id=invitation.id,
-        subject_title=user.name,
-        summary=summary,
+        subject_title=mailbox(invitation.email),
+        summary="Invitation opened.",
         tenant_id=invitation.tenant_id,
     )
     return invitation
@@ -376,6 +396,23 @@ def other_admin_emails(tenant: Tenant, *, excluding: User) -> list[str]:
     return emails
 
 
+def assert_reenrolment_here(tenant: Tenant, user: User) -> None:
+    """A bank re-enrols only an account that is in no other place. Passkeys and the
+    account's status have no tenant, so a re-enrolment from one bank would retire the
+    passkeys that open another bank or the console, while row-level security hides the
+    sessions there from it (review 2026-11-11 S-2, closing F16). An account holding a
+    platform role or an active membership in another bank answers 409
+    `account_held_elsewhere`; the platform owner re-enrols it with `bootstrap_platform
+    --reenrol`, which ends its sessions and tokens in every place it holds."""
+    elsewhere = any(bank != tenant.id for bank, _ in session_logic.held_banks(user))
+    if elsewhere or PlatformRoleAssignment.objects.filter(user=user).exists():
+        raise ValidationError(
+            "This person also works in another bank or in the platform console, so only the platform owner can "
+            "re-issue their enrolment.",
+            code="account_held_elsewhere",
+        )
+
+
 @batched()
 def reissue_enrolment(
     *,
@@ -390,8 +427,9 @@ def reissue_enrolment(
     membership = Membership.objects.filter(tenant=tenant, user=user, deactivated_at__isnull=True).first()  # ordering: unique (tenant, user), at most one row
     if membership is None:
         raise ValidationError("Not found.", code="not_found")
+    assert_reenrolment_here(tenant, user)
     now = timezone.now()
-    revoked = session_logic.revoke_all(user, tenant_id=None, reason="reenrolment", actor=actor, request=request)
+    revoked = session_logic.revoke_all(user, tenant_id=tenant.id, reason="reenrolment", actor=actor, request=request)
     retired = WebAuthnCredential.objects.filter(user=user, retired_at__isnull=True).update(retired_at=now)
     tokens_revoked = api_keys_logic.revoke_person_tokens(tenant_id=tenant.id, person=user, revoked_by=actor_user, now=now)
     # Awaiting enrolment again: the next passkey registration sets her active.

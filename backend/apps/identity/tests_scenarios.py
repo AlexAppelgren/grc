@@ -7,7 +7,7 @@ Operations exercised (the audit-on-write guard reads these names): openInvitatio
 verifyInvitationCode, requestCode, verifyCode, passkeyRegisterOptions, passkeyRegisterVerify,
 passkeyAuthenticateOptions, passkeyAuthenticateVerify, stepUpOptions, stepUpVerify,
 refreshSession, signOut, updateMe, renameMyPasskey, removeMyPasskey, revokeMySession,
-inviteMember, updateMember, deactivateMember, revokeMemberSessions, reissueEnrolment,
+inviteMember, updateMember, revokeMemberSessions, reissueEnrolment,
 resendInvitation, revokeInvitation, createRole, updateRole, retireRole, createApiKey,
 revokeApiKey, markVisit, createAgentAccessKey, createMyToken, revokeMyToken, switchContext,
 acceptInvitation.
@@ -37,7 +37,7 @@ from django.db import DatabaseError, connection, transaction
 from django.test import RequestFactory, override_settings
 from django.utils import timezone
 
-from apps.identity import api_keys_logic, invitation_logic, roles_logic, tokens
+from apps.identity import api_keys_logic, invitation_logic, roles_logic, session_logic, tokens
 from apps.identity.models import (
     ApiKey,
     Invitation,
@@ -69,7 +69,7 @@ ANNA = "anna@bank.example"
 CHROME_ON_WINDOWS = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 LINK = re.compile(r"/invite#(\S+)")
 CODE = re.compile(r"Your code is (\d+)")
-COOKIE = settings.REFRESH_COOKIE_NAME
+COOKIE = session_logic.refresh_cookie_name()
 # The library bookmark of ID-S32 starts here, months before any test runs: the move is
 # proven by the stamp leaving this anchor, never by comparing it with today (CLAUDE.md §11).
 SEEN_BEFORE = datetime(2026, 6, 1, 9, 0, tzinfo=UTC)
@@ -124,7 +124,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         return self.client.post(f"/api/v1{path}", data=body or {}, content_type="application/json", **extra)
 
     def _invite(self, email: str = ANNA, roles: tuple[str, ...] = ("compliance_officer", "reader")) -> tuple[Invitation, str]:
-        response = self._post("/tenant/members", {"email": email, "roleKeys": list(roles)}, **sign_in(self.admin, tenant=self.tenant))
+        response = self._post("/tenant/members", {"email": email, "roleKeys": list(roles)}, **sign_in(self.admin, tenant=self.tenant, step_up=True))
         self.assertEqual(response.status_code, 201, response.content)
         token = _find(LINK, MockMailer.sent[-1].body)
         self.activate(self.tenant)
@@ -716,7 +716,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         demoted = self.client.patch(f"/api/v1/tenant/members/{only_admin.id}", data={"roleKeys": ["reader"]}, content_type="application/json", **headers)
         self.assertEqual(demoted.status_code, 409)
         self.assertEqual(demoted.json()["code"], "last_admin")
-        removed = self.client.delete(f"/api/v1/tenant/members/{only_admin.id}", **headers)
+        removed = self.client.post(f"/api/v1/tenant/members/{only_admin.id}/remove", data={}, content_type="application/json", **headers)
         self.assertEqual(removed.status_code, 409)
         self.assertEqual(removed.json()["code"], "last_admin")
         self.activate(lonely)
@@ -936,7 +936,8 @@ class IdentityScenarioTests(ScenarioTestCase):
         signin = next(item for item in items if item["event"] == "signin")
         self.assertEqual((signin["method"], signin["userId"], signin["success"]), ("passkey", str(user.id), True))
         # Only security.manage reads it; and the table refuses update and delete.
-        self.assertEqual(self.client.get("/api/v1/tenant/security-log", **sign_in(user, tenant=self.tenant)).status_code, 403)
+        reader = factories.member(self.tenant, roles=("reader",)).user  # the re-enrolled person signs in to nothing until she enrols again
+        self.assertEqual(self.client.get("/api/v1/tenant/security-log", **sign_in(reader, tenant=self.tenant)).status_code, 403)
         row = LoginEvent.objects.filter(tenant=self.tenant).order_by("id").first()
         assert row is not None
         with connection.cursor() as cursor:
@@ -1009,7 +1010,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         # At invitation: an address that already holds a platform role is invited like
         # anyone else.
         staff = factories.platform_user(roles=("library_editor",), email="editor@platform.example")
-        invited = self._post("/tenant/members", {"email": staff.email, "roleKeys": ["reader"]}, **sign_in(self.admin, tenant=self.tenant))
+        invited = self._post("/tenant/members", {"email": staff.email, "roleKeys": ["reader"]}, **sign_in(self.admin, tenant=self.tenant, step_up=True))
         self.assertEqual(invited.status_code, 201, invited.content)
         self.assertEqual(MockMailer.sent[-1].to, staff.email)
         self.activate(self.tenant)
@@ -1400,7 +1401,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         sign_in(anna, tenant=self.tenant)
         MockMailer.reset()
         out = StringIO()
-        call_command("bootstrap_platform", "--admin-email", ANNA, "--role", "library_editor", stdout=out)
+        call_command("bootstrap_platform", "--admin-email", ANNA, "--role", "library_editor", "--yes", stdout=out)
         self.assertEqual(list(PlatformRoleAssignment.objects.filter(user=anna).values_list("role__key", flat=True)), ["library_editor"])
         self.assertEqual(MockMailer.sent, [], "an enrolled member switches; no invitation is needed")
         self.assertIn("no invitation sent", out.getvalue())
@@ -1426,7 +1427,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.activate(self.tenant)
         self.assertFalse(UserSession.objects.filter(user=anna, tenant=self.tenant, revoked_at__isnull=True).exists())
         reissued = AuditEvent.objects.get(action="platform_staff.enrolment_reissued", subject_id=anna.id, tenant=self.tenant)
-        self.assertEqual(reissued.after, {"sessionsRevoked": 1, "passkeysRetired": 1})
+        self.assertEqual(reissued.after, {"sessionsRevoked": 1, "passkeysRetired": 1, "tokensRevoked": 0})
 
     def test_id_s38(self) -> None:
         """ID-S38
@@ -1495,8 +1496,12 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(self._post("/auth/invitations/open", {"token": token}).status_code, 202)
         self.assertEqual(self._post("/auth/code/request", {"email": staff.email}).status_code, 202)
         self.assertEqual(MockMailer.sent, [])
+        # The refusal names an account, so it goes to the platform's security log and never
+        # to the inviting bank's (review 2026-11-11 L-2).
         self.activate(self.tenant)
-        self.assertTrue(LoginEvent.objects.filter(user=staff, tenant=self.tenant, event="code_refused_enrolled").exists())
+        self.assertFalse(LoginEvent.objects.filter(user=staff, tenant=self.tenant, event="code_refused_enrolled").exists())
+        tenancy.clear_tenant()
+        self.assertTrue(LoginEvent.objects.filter(user=staff, tenant__isnull=True, event="code_refused_enrolled").exists())
 
         # Signed in with the passkey, the session is the console's; joining needs a step-up.
         tenancy.clear_tenant()  # a sign-in starts in no bank, as a request does

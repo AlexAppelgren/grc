@@ -65,6 +65,7 @@ from apps.identity import invitation_logic, passkey_names, rate_limit, session_l
 from apps.identity.models import (
     AuthChallenge,
     ChallengeKind,
+    Invitation,
     LoginEventKind,
     LoginMethod,
     SessionKind,
@@ -186,9 +187,33 @@ def passkey_out(row: WebAuthnCredential) -> dict[str, Any]:
 # ---------------------------------------------------------------------------------------
 # Registration (enrolment or an added passkey)
 # ---------------------------------------------------------------------------------------
+def _enrolment_invitation(principal: Principal, user: User, session: UserSession) -> Invitation | None:
+    """The invitation an enrolment session enrols through: the one open for the address in
+    the session's tenant, never whichever tenant invited the address last (finding F8).
+    None for a full session. An enrolment session stops at the account's first passkey and
+    at its invitation's end, revoked or closed: either answers 410 `invitation_expired`, so
+    an earlier code's session can never add a passkey of its own (review 2026-11-11 S-1)."""
+    if principal.kind is not PrincipalKind.ENROLMENT:
+        return None
+    invitation = invitation_logic.find_open_for_tenant(user.email, session.tenant_id)
+    if invitation is not None:
+        # Locked and read again, so two sessions enrolling at once through one invitation
+        # are taken in turn, and the second finds it accepted and the passkey there.
+        invitation = (
+            Invitation.objects.select_for_update(of=("self",))
+            .select_related("tenant")
+            .filter(pk=invitation.pk, accepted_at__isnull=True, revoked_at__isnull=True)
+            .first()
+        )  # ordering: pk lookup, at most one row
+    if invitation is None or invitation_logic.has_live_passkey(user):
+        raise invitation_logic.InvitationExpired("This invitation link has expired or was already used.", code="invitation_expired")
+    return invitation
+
+
 def registration_options(principal: Principal) -> dict[str, Any]:
     user = User.objects.get(pk=principal.subject_id)
     session = _session_of(principal)
+    _enrolment_invitation(principal, user, session)
     options = generate_registration_options(
         rp_id=settings.WEBAUTHN_RP_ID,
         rp_name=settings.WEBAUTHN_RP_NAME,
@@ -234,13 +259,8 @@ def verify_registration(principal: Principal, credential: dict[str, Any], nickna
     user = User.objects.get(pk=principal.subject_id)
     session = _session_of(principal)
     now = timezone.now()
-    enrolling = principal.kind is PrincipalKind.ENROLMENT
-    invitation = None
-    if enrolling:
-        # The invitation this enrolment session came from: the one open for the address
-        # in the session's tenant, never whichever tenant invited the address last
-        # (finding F8).
-        invitation = invitation_logic.find_open_for_tenant(user.email, session.tenant_id)
+    invitation = _enrolment_invitation(principal, user, session)
+    enrolling = invitation is not None
     challenge = _consume_challenge(ChallengeKind.REGISTRATION, _challenge_from_credential(credential), user=user, session=session)
     try:
         verified = verify_registration_response(
@@ -275,13 +295,15 @@ def verify_registration(principal: Principal, credential: dict[str, Any], nickna
     except IntegrityError as exc:
         raise ValidationError("The passkey could not be registered. Try again.", code="registration_failed") from exc
     bundle: session_logic.SessionBundle | None = None
-    if enrolling:
-        if invitation is not None:
-            invitation_logic.accept_invitation(invitation, user, now)
+    if invitation is not None:
+        invitation_logic.accept_invitation(invitation, user, now)
         user.status = UserStatus.ACTIVE.value
         user.last_seen_at = now
         user.save(update_fields=["status", "last_seen_at"])
-        session_logic.revoke_session(session, reason="enrolment_completed", actor=session_logic.actor_of(user), request=request)
+        # This session and every other enrolment session of the account in this zone (one
+        # per code verified) end with the first passkey (S-1); one in another zone is
+        # refused by `_enrolment_invitation`, which reads the passkey across zones.
+        session_logic.revoke_enrolment_sessions(user, tenant_id=session.tenant_id, reason="enrolment_completed", actor=session_logic.actor_of(user), request=request)
         tenant_id = session.tenant_id if session.tenant_id is not None else session_logic.choose_tenant(user)
         # No step-up assertion (F9, narrowed): the second-passkey prompt rides on the new
         # session's age; every `@requires_step_up` action still needs its own ceremony.

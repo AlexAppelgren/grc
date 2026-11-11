@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import type { Page } from '@playwright/test';
 
+import { confirmWithPasskey } from './support/agent-access-screens';
 import { expect, test, type ApiGuard } from './support/api-guard';
 import { openCase } from './support/cases-signoff';
 import { allowRegisterEntryPending } from './support/obligation-page';
@@ -824,7 +825,7 @@ test.describe('tenants journeys', () => {
     test("ADM-S2: The members screen invites, assigns roles, re-issues enrolment and revokes sessions", async ({ page, apiGuard }) => {
       // pending: ADM-S2 (ADM-01) -> built in chunk 1
       allowFreshContext(apiGuard);
-      apiGuard.allow(/\/tenant\/members\/[^/]+$/, 403, 'the role change answers step_up_required first and opens the prompt');
+      apiGuard.allow(/\/tenant\/members(\/[^/]+)?$/, 403, 'the invitation and the role change answer step_up_required first and open the prompt');
       await signInAs(page, LOGINS.admin);
       await page.goto('/admin/members');
 
@@ -835,8 +836,9 @@ test.describe('tenants journeys', () => {
       await dialog.getByLabel('Title', { exact: true }).fill('Compliance analyst');
       await dialog.locator('label', { hasText: /^Reader/ }).getByRole('checkbox').check();
       await dialog.locator('label', { hasText: /^Auditor/ }).getByRole('checkbox').check();
-      const invited = page.waitForResponse((r) => r.url().endsWith('/api/v1/tenant/members') && r.request().method() === 'POST');
+      const invited = page.waitForResponse((r) => r.url().endsWith('/api/v1/tenant/members') && r.request().method() === 'POST' && r.ok());
       await dialog.getByRole('button', { name: 'Send invitation' }).click();
+      await confirmWithPasskey(page, page.getByText('Invitation sent to new.person@example-bank.test.'));
       // Pinned by the id this run created: a revoked invitation stays listed, so an
       // earlier attempt's row for the same address must not match (playbook 8.3 rule 4).
       const { id: invitationId } = (await (await invited).json()) as { id: string };

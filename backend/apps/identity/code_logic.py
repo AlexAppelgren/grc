@@ -122,8 +122,9 @@ def _claim_attempt(row: OtpCode) -> bool:
 
 
 def verify_code(email: str, code: str, request: HttpRequest | None) -> session_logic.SessionBundle:
-    """The sign-in page's "First time here?" path: the address names the code, and its
-    newest open invitation the tenant."""
+    """The sign-in page's "First time here?" path: the address names the code, and the
+    invitation `invitation_logic.find_open_for_email` chooses by its fixed rule (a
+    re-enrolment or platform invitation, else the oldest open bank invitation) the tenant."""
     _limit_verify(request)
     cleaned = email.strip().lower()
     return _verify(cleaned, code, invitation_logic.find_open_for_email(cleaned), request)

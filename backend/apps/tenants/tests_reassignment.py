@@ -1,8 +1,7 @@
 """Removing a member who owns open work (TEN-05, TEN-03, COL-04; `c8-ten-reassignment`).
 
 `GET /tenant/members/{userId}/open-work` counts what a member owns by kind, the items they
-take part in and their teams, and changes nothing. `DELETE /tenant/members/{userId}` refuses
-a member with open work, 422 `reassignment_required` with the counts. `POST
+take part in and their teams, and changes nothing. `POST
 /tenant/members/{userId}/remove` names a new owner per kind and, with a fresh step-up, moves
 every item, ends the member's participations and team memberships and deactivates them in
 one transaction: one audit event per item and one for the removal. A team keeps what it
@@ -189,18 +188,11 @@ class Removal(TestCase):
         self.assertEqual(self.open_work(self.erik, user=self.officer).status_code, 403)
         self.assertEqual(self.open_work(self.stranger).status_code, 404)
 
-    # -- the plain removal -----------------------------------------------------------------
-    def test_a_plain_removal_of_a_member_with_open_work_answers_reassignment_required_with_the_counts(self) -> None:
-        before = self.snapshot()
-        response = self.client.delete(f"{V1}/tenant/members/{self.erik.id}", **sign_in(self.admin, tenant=self.tenant))
-        self.assertEqual(response.status_code, 422, response.content)
-        problem = response.json()
-        self.assertEqual(problem["code"], "reassignment_required")
-        self.assertEqual({row["field"]: row["count"] for row in problem["errors"]}, EVERY_KIND)
-        self.assertEqual(self.snapshot(), before)
-
-    def test_a_plain_removal_of_a_member_who_holds_nothing_still_deactivates_them(self) -> None:
-        response = self.client.delete(f"{V1}/tenant/members/{self.anna.id}", **sign_in(self.admin, tenant=self.tenant))
+    # -- a member who holds nothing -------------------------------------------------------
+    def test_a_member_who_holds_nothing_is_removed_with_an_empty_body(self) -> None:
+        """Review 2026-11-11 S-4: `/remove` is the one door since the plain `DELETE` without a
+        step-up was removed, and it serves a member who owns nothing as well."""
+        response = self.remove([], person=self.anna)
         self.assertEqual(response.status_code, 204, response.content)
         tenancy.activate(self.tenant.id)
         self.assertIsNotNone(Membership.objects.get(user=self.anna).deactivated_at)

@@ -313,7 +313,10 @@ def console_reissue_enrolment(
     and is never returned here.
 
     Errors: a 422 when the reason or the out-of-band check is blank; `not_found` when the
-    bank does not exist or the person is not an active member of it; `step_up_required`
+    bank does not exist or the person is not an active member of it;
+    `account_held_elsewhere` (409) when the person is also an active member of another bank
+    or holds a platform role, whose enrolment only the platform owner re-issues, and nothing
+    is written; `step_up_required`
     when no fresh passkey assertion accompanies the call; `permission_denied` without
     `support_access.grant`.
     """
@@ -372,12 +375,15 @@ def list_console_tenants(request: HttpRequest, page: PageQuery = Query(...)) -> 
     summary="Open a new bank and invite its first administrator",
 )
 @requires_permission(perms.TENANTS_MANAGE)
+@requires_step_up
 def create_console_tenant(request: HttpRequest, body: ConsoleTenantCreateBody) -> tuple[int, ConsoleTenantRow]:
     """Creates an organisation and, in the same transaction, invites the person who will
     run it. Call it once per bank, when a new customer is being onboarded; there is no
     second step that turns the bank on.
 
-    Needs the platform permission `tenants.manage`. One call writes the organisation with
+    Needs the platform permission `tenants.manage` and a passkey step-up on this session
+    younger than the step-up window, since the invitation grants the bank's administrator
+    role; the creation and the invitation carry the assertion. One call writes the organisation with
     its name and a short name derived from it; gives it the system roles and the starting
     set of its own lists, which its administrator may extend afterwards; and sends the
     first administrator an enrolment invitation carrying the system role that can invite
@@ -394,9 +400,10 @@ def create_console_tenant(request: HttpRequest, body: ConsoleTenantCreateBody) -
     account may be a bank's member and platform staff, each session holding one zone's
     permissions only, and the bank's member list marks them.
 
-    Answers 201 with the new bank's console row. Errors: a 422 for a blank name or a
-    malformed address, each with its own `code` and a message to show;
-    `permission_denied` without `tenants.manage`.
+    Answers 201 with the new bank's console row. Errors: `step_up_required` (403) without a
+    fresh passkey assertion, which the screen answers by opening the passkey prompt and
+    retrying; a 422 for a blank name or a malformed address, each with its own `code` and a
+    message to show; `permission_denied` without `tenants.manage`.
     """
     platform_user = User.objects.get(pk=_principal(request).subject_id)
     tenant = logic.create_tenant(
@@ -404,6 +411,7 @@ def create_console_tenant(request: HttpRequest, body: ConsoleTenantCreateBody) -
         name=body.name,
         first_admin_email=body.first_admin_email,
         first_admin_title=body.first_admin_title,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return 201, ConsoleTenantRow.model_validate(logic.console_tenant_out(tenant))
 

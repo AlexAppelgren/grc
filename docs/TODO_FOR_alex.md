@@ -2519,7 +2519,7 @@ the rules and why. Do the steps in this order; each check tells you the step wor
 - [ ] **5. Re-enrol.** The RP ID changed, so everyone re-enrols (default taken: the runbook's
       rule, the exact app host; keeping `bleqq.com` as the RP ID would spare the re-enrolment but
       let every bleqq.com site ask for the passkeys, and production moves host anyway). Yourself:
-      `python manage.py bootstrap_platform --admin-email <a new address of yours>` on the api
+      `python manage.py bootstrap_platform --admin-email <a new address of yours> --role platform_admin` on the api
       shell (it refuses your old address, which still holds its dead passkey), then enrol from
       the email. A test bank's first admin: the platform re-issues it with
       `POST /api/v1/console/tenants/{tenantId}/members/{userId}/reissue-enrolment`, for which the
