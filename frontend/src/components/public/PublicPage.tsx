@@ -27,10 +27,10 @@ const ANCHOR = 'scroll-mt-20';
 // The two actions share one row on a phone, with the main action on the right.
 const ACTS = 'flex flex-wrap gap-3 max-[700px]:flex-nowrap max-[700px]:justify-end max-[700px]:gap-2';
 const BUTTON =
-  'inline-flex h-[3.1rem] items-center gap-2.5 rounded-xs border border-public-paper px-6 font-sans text-title whitespace-nowrap hover:border-public-brass hover:bg-public-brass hover:text-public-deep max-[700px]:px-4 max-[389px]:h-11 max-[389px]:px-3 max-[389px]:text-body';
+  'inline-flex h-[3.1rem] items-center gap-2.5 rounded-xs border border-public-paper px-6 font-sans text-title whitespace-nowrap hover:border-public-brass hover:bg-public-brass hover:text-public-deep max-[700px]:px-4 max-[409px]:h-11 max-[409px]:px-3 max-[409px]:text-body max-[359px]:px-2.5';
 const SOLID = 'bg-public-paper text-brand max-[700px]:order-2';
 // The bar's buttons are a step smaller than the page's.
-const BAR = 'h-10 px-[1.1rem] max-[700px]:px-3.5 max-[389px]:h-10';
+const BAR = 'h-10 px-[1.1rem] max-[700px]:px-3.5 max-[409px]:h-10';
 const NUMBER = 'font-serif-display text-display font-normal text-public-brass';
 const TERM = 'block font-serif-display text-display font-normal';
 const LINK = 'underline decoration-1 underline-offset-[0.25em] hover:text-public-brass';
@@ -95,7 +95,8 @@ const QUESTIONS: readonly (readonly [MessageKey, MessageKey])[] = [
 
 function PlayIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 14 14" fill="currentColor" className="size-3.5 shrink-0">
+    // Below 360 px the two actions only fit in one row without it.
+    <svg aria-hidden="true" viewBox="0 0 14 14" fill="currentColor" className="size-3.5 shrink-0 max-[359px]:hidden">
       <path d="M3 1.5v11l9-5.5z" />
     </svg>
   );
@@ -226,9 +227,13 @@ export function PublicPage() {
   const verb = t('public.label.verb');
   return (
     // `dark` keeps the demo's own tokens and pictures dark on the green page.
+    // The gutter is where the logo's brackets start and end (Alex, 2026-11-11), so the bar, the
+    // entries and the demo line up with them. The logo keeps the reference's size: its frame sat
+    // 0.55 of the reference margin (--margin) in from each side, and the brackets span 87.72 % of
+    // that frame (InkHead.tsx). Percentages resolve against the page's width.
     <div
       data-public-page=""
-      className="dark relative min-h-dvh bg-brand font-serif text-sense text-public-paper [--gutter:max(clamp(1.25rem,5vw,5.5rem),env(safe-area-inset-left),env(safe-area-inset-right))]"
+      className="dark relative min-h-dvh bg-brand font-serif text-sense text-public-paper [--margin:clamp(1.25rem,5vw,5.5rem)] [--gutter:max(calc((100%_-_0.8772*(100%_-_1.1*var(--margin)))/2),env(safe-area-inset-left),env(safe-area-inset-right))]"
     >
       {/* The paper's grain, over the whole page and its bar, as in the reference; the demo's dialog sits above it. */}
       <div aria-hidden="true" className="grain pointer-events-none fixed inset-0 z-30 opacity-[0.22] mix-blend-overlay" />

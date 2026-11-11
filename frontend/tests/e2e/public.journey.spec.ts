@@ -96,6 +96,7 @@ test.describe('public page', () => {
     await page.goto('/welcome');
     const bar = page.getByRole('banner');
     const entry = page.locator('section#bleqq');
+    const inside = await page.locator('[data-ink]').evaluate((head) => head.getBoundingClientRect());
     for (const [secondary, main] of [
       [bar.getByRole('link', { name: 'Request access' }), bar.getByRole('link', { name: 'Sign in' })],
       [entry.getByRole('link', { name: 'Request access' }), entry.getByRole('link', { name: 'Try out our demo' })],
@@ -108,6 +109,9 @@ test.describe('public page', () => {
       expect(right).not.toBeNull();
       expect(Math.abs((left?.y ?? 0) + (left?.height ?? 0) / 2 - ((right?.y ?? 0) + (right?.height ?? 0) / 2))).toBeLessThan(2);
       expect(left?.x ?? 0).toBeLessThan(right?.x ?? 0);
+      // Both stay inside the page's margins, which are where the logo's brackets start and end.
+      expect(left?.x ?? 0).toBeGreaterThanOrEqual(inside.left - 1);
+      expect((right?.x ?? 0) + (right?.width ?? 0)).toBeLessThanOrEqual(inside.right + 1);
     }
     await page.getByRole('contentinfo').scrollIntoViewIfNeeded();
     await expect(bar.getByRole('link', { name: 'Sign in' })).toBeInViewport();

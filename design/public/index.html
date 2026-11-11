@@ -26,7 +26,9 @@
   --display:'Libre Caslon Display','Libre Caslon Text',Georgia,serif;
   --sans:'Hanken Grotesk',system-ui,sans-serif;
   --mono:'Noto Sans Mono',ui-monospace,monospace;
-  --gutter:clamp(1.25rem,5vw,5.5rem);
+  --margin:clamp(1.25rem,5vw,5.5rem);
+  /* where the logo's brackets start and end, with the logo at its size of 2026-11-11: its frame sat 0.55 of the margin in, and the brackets span 87.72 % of it */
+  --gutter:calc((100% - .8772 * (100% - 1.1 * var(--margin))) / 2);
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;background:var(--green)}

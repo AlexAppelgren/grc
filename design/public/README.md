@@ -49,7 +49,7 @@ the inventory and attestera for a sign-off; every other catalog uses the same tw
 | The text colour | Everything a visitor reads runs in the paper colour, and grey is left to short labels: the pronunciation, a source's languages, the top line and the footer (Alex, 2026-09-25). Nothing on the page is italic |
 | Paper | A noise tile at 22 % with the overlay blend lies over the whole page, as the paper's grain |
 | One layout | Every entry is `Entry` in `PublicPage.tsx`: the headword and its part of speech on the left, sticky from 860 px, the senses on the right, and an optional row across both columns. The page's own entry under the logo is the one exception (Alex, 2026-11-11): the logo already shows the name, so its h1 is for screen readers and search engines, the pronunciation is not repeated, and the deck takes the wide column on the left with the name's origin on the right |
-| Two actions on a phone | They share one row, with the main action on the right. Below 390 px they take a smaller size, so they still fit at 320 |
+| Two actions on a phone | They share one row, with the main action on the right. Below 410 px they take a smaller size and below 360 px the play icon goes, so they still fit inside the margins at 320 |
 
 ## Type
 
@@ -79,8 +79,12 @@ them.
   (`src/proxy.ts`).
 - **The ink** (`InkHead.tsx`). An SVG mask cuts `[blɛkː]` out of a green rectangle over a canvas.
   Its view is cropped to the ink of the two brackets (61.6 to 938.8 of the line's 1000 units in
-  Noto Sans Mono at 700), and the logo takes the page's gutter, so the brackets start and end
-  where the bar, the deck, the entries and the demo do, at every width (Alex, 2026-11-11).
+  Noto Sans Mono at 700), and the page's gutter is set to where they start and end, so the bar,
+  the deck, the entries and the demo line up with the brackets at every width (Alex,
+  2026-11-11: the text narrows, the logo keeps its size). The gutter is
+  `(100% - 0.8772 × (100% - 1.1 × margin)) / 2`, the margin being the reference's
+  `clamp(1.25rem, 5vw, 5.5rem)`: the logo's frame used to sit 0.55 of that margin in from each
+  side, and the brackets span 87.72 % of it.
   A small fluid simulation on WebGL2 half-float targets carries the ink, so the pointer drags it
   in every direction and the ink settles back in a few seconds. The reference's script is the
   specification, and the component ports it with no new dependency. When the simulation cannot
