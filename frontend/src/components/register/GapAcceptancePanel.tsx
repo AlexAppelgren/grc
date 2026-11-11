@@ -9,7 +9,7 @@ import { Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ProblemAlert } from '@/components/ui/States';
 import { ConfirmDialog, FormDialog } from '@/components/ui/Dialogs';
-import { GAPS_EDIT, gapActions, gapKind, gapProblemCopy, ownerName, statusKeyOf, waitingPill } from '@/features/gaps/gap-view';
+import { GAPS_EDIT, gapActions, gapKind, gapProblemCopy, ownerName, statusKeyOf, waitingPill } from '@/features/register/gaps/gap-view';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { isStaleWrite, useApproveRiskAcceptance, useReloadRegister, useReopenGap, useRequestRiskAcceptance, useUpdateGap } from '@/features/register/hooks';
 import type { RegisterGap } from '@/features/register/types';

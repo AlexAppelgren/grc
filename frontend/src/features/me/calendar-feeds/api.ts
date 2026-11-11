@@ -1,4 +1,4 @@
-import type { CalendarFeed, CalendarFeedCreated } from '@/features/calendar-feeds/types';
+import type { CalendarFeed, CalendarFeedCreated } from '@/features/me/calendar-feeds/types';
 import { api } from '@/shared/utils/api-client';
 
 // Thin typed wrappers returning `.data` (playbook 6.1): home's calendar-feed

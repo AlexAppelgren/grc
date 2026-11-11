@@ -9,7 +9,7 @@ import { tokenStore } from '@/shared/utils/api-client';
 import { COLLAB_PAGE, useComments } from '@/features/collab/hooks';
 import { PARTICIPANTS_PAGE } from '@/features/participants/api';
 import { useObligationParticipants } from '@/features/participants/hooks';
-import { RECORD_REPORTS_PAGE, useRecordProblemReports } from '@/features/problem-reports/hooks';
+import { RECORD_REPORTS_PAGE, useRecordProblemReports } from '@/features/library/problem-reports/hooks';
 import { CHANGE_PAGE, useObligationChanges } from '@/features/watch/hooks';
 
 import * as hooks from './hooks';

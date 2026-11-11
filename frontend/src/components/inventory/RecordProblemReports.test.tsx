@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { ProblemReport } from '@/features/problem-reports/types';
+import type { ProblemReport } from '@/features/library/problem-reports/types';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';

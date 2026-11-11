@@ -1,4 +1,4 @@
-import type { CalendarFeed } from '@/features/calendar-feeds/types';
+import type { CalendarFeed } from '@/features/me/calendar-feeds/types';
 import type { PresentedPill } from '@/features/shared/presentation-types';
 import type { Translate } from '@/shared/i18n';
 

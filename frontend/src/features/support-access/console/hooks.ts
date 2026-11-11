@@ -2,8 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
-import * as supportAccess from '@/features/console-support-access/api';
-import type { ConsoleSupportGrant, ConsoleSupportGrantPage, ConsoleSupportRequest, SupportSessionTokens } from '@/features/console-support-access/types';
+import * as supportAccess from '@/features/support-access/console/api';
+import type { ConsoleSupportGrant, ConsoleSupportGrantPage, ConsoleSupportRequest, SupportSessionTokens } from '@/features/support-access/console/types';
 import { tokenStore } from '@/shared/utils/api-client';
 
 export const consoleSupportAccessKeys = { mine: ['console', 'support-access'] as const };

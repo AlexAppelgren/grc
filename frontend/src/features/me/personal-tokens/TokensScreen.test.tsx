@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { TokensScreen } from '@/features/personal-tokens/TokensScreen';
+import { TokensScreen } from '@/features/me/personal-tokens/TokensScreen';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';

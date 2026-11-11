@@ -6,9 +6,9 @@ import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, TextInput } from '@/components/ui/Field';
 import { Panel } from '@/components/ui/Panel';
 import { ProblemAlert, StatusLine } from '@/components/ui/States';
-import { useSetSecurityPolicy } from '@/features/security-policy/hooks';
-import { draftOf, fieldsAboveMaximum, parseLimit, type LimitField, type LimitsDraft } from '@/features/security-policy/session-limits';
-import type { SecurityPolicy } from '@/features/security-policy/types';
+import { useSetSecurityPolicy } from '@/features/tenant-admin/security-policy/hooks';
+import { draftOf, fieldsAboveMaximum, parseLimit, type LimitField, type LimitsDraft } from '@/features/tenant-admin/security-policy/session-limits';
+import type { SecurityPolicy } from '@/features/tenant-admin/security-policy/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
 // Sessions (design/screens/admin-security.html, ID-08): the idle and the

@@ -1,7 +1,7 @@
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { describe, expect, it } from 'vitest';
 
-import { draftOf, fieldsAboveMaximum, parseLimit } from '@/features/security-policy/session-limits';
+import { draftOf, fieldsAboveMaximum, parseLimit } from '@/features/tenant-admin/security-policy/session-limits';
 
 const policy = {
   sessionIdleMinutes: null,

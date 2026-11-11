@@ -5,7 +5,7 @@ import { SessionPolicyPanel } from '@/components/admin/SessionPolicyPanel';
 import { TenantReachPanel } from '@/components/admin/TenantReachPanel';
 import { PageHead } from '@/components/ui/PageHead';
 import { QueryState } from '@/components/ui/States';
-import { useSecurityPolicy } from '@/features/security-policy/hooks';
+import { useSecurityPolicy } from '@/features/tenant-admin/security-policy/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
 // Security (design/screens/admin-security.html, ID-08, ADM-01), for a holder of

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient, type UseMutati
 
 import { collabKeys } from '@/features/collab/hooks';
 import { participantKeys } from '@/features/participants/hooks';
-import { problemReportKeys } from '@/features/problem-reports/hooks';
+import { problemReportKeys } from '@/features/library/problem-reports/hooks';
 import { CHANGE_PAGE, watchKeys } from '@/features/watch/hooks';
 import { hasProblemCode } from '@/shared/utils/problem';
 

@@ -1,4 +1,4 @@
-import type { SecurityPolicy } from '@/features/security-policy/types';
+import type { SecurityPolicy } from '@/features/tenant-admin/security-policy/types';
 import { problemFrom } from '@/shared/utils/problem';
 
 // The session-limit form's pure rules (ID-08, ADM-01). A field holds the text

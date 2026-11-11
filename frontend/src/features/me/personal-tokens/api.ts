@@ -1,4 +1,4 @@
-import type { PersonalTokenCreate, PersonalTokenCreated, PersonalTokensPage } from '@/features/personal-tokens/types';
+import type { PersonalTokenCreate, PersonalTokenCreated, PersonalTokensPage } from '@/features/me/personal-tokens/types';
 import { api } from '@/shared/utils/api-client';
 
 // Thin typed wrappers returning `.data` (playbook 6.1): a member's own personal

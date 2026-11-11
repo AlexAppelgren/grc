@@ -1,4 +1,4 @@
-import type { SecurityPolicy, SecurityPolicyBody } from '@/features/security-policy/types';
+import type { SecurityPolicy, SecurityPolicyBody } from '@/features/tenant-admin/security-policy/types';
 import { api } from '@/shared/utils/api-client';
 
 // Thin typed wrappers returning `.data` (playbook 6.1). Step-up is the api

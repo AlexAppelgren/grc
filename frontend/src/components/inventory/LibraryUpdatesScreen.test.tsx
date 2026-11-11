@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { LibraryUpdateRow, LibraryUpdatesPage } from '@/features/library-updates/types';
+import type { LibraryUpdateRow, LibraryUpdatesPage } from '@/features/library/updates/types';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';

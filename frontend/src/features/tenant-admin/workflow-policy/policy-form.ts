@@ -1,4 +1,4 @@
-import type { WorkflowPolicy, WorkflowPolicyPatch } from '@/features/workflow-policy/types';
+import type { WorkflowPolicy, WorkflowPolicyPatch } from '@/features/tenant-admin/workflow-policy/types';
 import { problemFrom } from '@/shared/utils/problem';
 
 // The workflow form's rules, kept out of the component. The client checks

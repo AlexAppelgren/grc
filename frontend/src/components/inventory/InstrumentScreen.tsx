@@ -26,7 +26,7 @@ import { DIRECTIVE_LEVEL, obligationsTitleOf, presentInstrument } from '@/featur
 import { markPrivateToUs, presentBindingLevel } from '@/features/library/obligation-presentation';
 import type { InstrumentDetail, InstrumentLineageRef, InstrumentLinkRef, ScopeFilter } from '@/features/library/types';
 import { inForceLabel, languageName } from '@/features/library/version-presentation';
-import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
+import { useRefreshProblemReports } from '@/features/library/problem-reports/hooks';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { externalHref } from '@/shared/utils/external-href';

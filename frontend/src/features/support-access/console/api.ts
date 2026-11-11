@@ -1,4 +1,4 @@
-import type { ConsoleSupportGrant, ConsoleSupportGrantPage, ConsoleSupportRequest, SupportSessionTokens } from '@/features/console-support-access/types';
+import type { ConsoleSupportGrant, ConsoleSupportGrantPage, ConsoleSupportRequest, SupportSessionTokens } from '@/features/support-access/console/types';
 import { api, segment } from '@/shared/utils/api-client';
 
 // Thin typed wrappers returning `.data` (playbook 6.1). Entering needs a

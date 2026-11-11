@@ -2,8 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
-import { createCalendarFeed, listCalendarFeeds, revokeCalendarFeed } from '@/features/calendar-feeds/api';
-import type { CalendarFeed, CalendarFeedCreated } from '@/features/calendar-feeds/types';
+import { createCalendarFeed, listCalendarFeeds, revokeCalendarFeed } from '@/features/me/calendar-feeds/api';
+import type { CalendarFeed, CalendarFeedCreated } from '@/features/me/calendar-feeds/types';
 
 // Query keys and invalidation (playbook 6.1). Screens call these and render.
 

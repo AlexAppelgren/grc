@@ -1,5 +1,5 @@
 import { isExpired } from '@/features/agent-access/presentation';
-import type { PersonalToken } from '@/features/personal-tokens/types';
+import type { PersonalToken } from '@/features/me/personal-tokens/types';
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { humaniseKey } from '@/shared/utils/format';

@@ -10,7 +10,7 @@ import { Panel } from '@/components/ui/Panel';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
 import { useRoles, useTenant } from '@/features/tenant-admin/hooks';
 import type { RoleRef, Tenant, TenantRole } from '@/features/tenant-admin/types';
-import { useUpdateWorkflowPolicy } from '@/features/workflow-policy/hooks';
+import { useUpdateWorkflowPolicy } from '@/features/tenant-admin/workflow-policy/hooks';
 import {
   addDay,
   bodyFrom,
@@ -25,7 +25,7 @@ import {
   type DayListField,
   type FieldErrors,
   type WorkflowDraft,
-} from '@/features/workflow-policy/policy-form';
+} from '@/features/tenant-admin/workflow-policy/policy-form';
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';

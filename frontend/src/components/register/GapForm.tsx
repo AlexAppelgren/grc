@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { Field, Select, TextArea, TextInput } from '@/components/ui/Field';
 import { FormDialog } from '@/components/ui/Dialogs';
-import { gapProblemCopy } from '@/features/gaps/gap-view';
+import { gapProblemCopy } from '@/features/register/gaps/gap-view';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useCreateGap, useUpdateGap } from '@/features/register/hooks';
 import type { RegisterGap } from '@/features/register/types';

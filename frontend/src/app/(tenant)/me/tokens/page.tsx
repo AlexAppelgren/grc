@@ -1,4 +1,4 @@
-import { TokensScreen } from '@/features/personal-tokens/TokensScreen';
+import { TokensScreen } from '@/features/me/personal-tokens/TokensScreen';
 
 // /me/tokens (design/screens/me-tokens.html; ACC-03). Every member's own page:
 // without tokens.create it lists and revokes what they hold and says why

@@ -7,7 +7,7 @@ import { GapRecord, GapSummary } from '@/components/register/GapsScreen';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Panel, Row, Rows } from '@/components/ui/Panel';
 import { QueryState } from '@/components/ui/States';
-import { GAPS_EDIT, REGISTER_READ } from '@/features/gaps/gap-view';
+import { GAPS_EDIT, REGISTER_READ } from '@/features/register/gaps/gap-view';
 import { useObligation } from '@/features/library/hooks';
 import { OBLIGATION_GAPS_PAGE, useObligationGaps } from '@/features/register/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';

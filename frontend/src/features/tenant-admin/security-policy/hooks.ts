@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
-import * as securityPolicy from '@/features/security-policy/api';
-import type { SecurityPolicy, SecurityPolicyBody } from '@/features/security-policy/types';
+import * as securityPolicy from '@/features/tenant-admin/security-policy/api';
+import type { SecurityPolicy, SecurityPolicyBody } from '@/features/tenant-admin/security-policy/types';
 
 export const securityPolicyKey = ['tenant', 'security-policy'] as const;
 

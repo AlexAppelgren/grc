@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isLiveToken, presentToken } from '@/features/personal-tokens/presentation';
+import { isLiveToken, presentToken } from '@/features/me/personal-tokens/presentation';
 import type { Translate } from '@/shared/i18n';
 
 // A token's pills from its own facts (me-tokens.html): no kind pill, Revoked

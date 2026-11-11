@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient, type UseMutationResult, type Use
 
 import { listEntries } from '@/features/agent-access/api';
 import type { AccessEntryPage } from '@/features/agent-access/types';
-import { createMyToken, listMyTokens, revokeMyToken } from '@/features/personal-tokens/api';
-import type { PersonalTokenCreate, PersonalTokenCreated, PersonalTokensPage } from '@/features/personal-tokens/types';
+import { createMyToken, listMyTokens, revokeMyToken } from '@/features/me/personal-tokens/api';
+import type { PersonalTokenCreate, PersonalTokenCreated, PersonalTokensPage } from '@/features/me/personal-tokens/types';
 
 // Query keys and invalidation (playbook 6.1). Screens call these and render.
 

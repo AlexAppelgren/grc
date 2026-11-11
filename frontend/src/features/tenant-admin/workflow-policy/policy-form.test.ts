@@ -1,7 +1,7 @@
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { describe, expect, it } from 'vitest';
 
-import { addDay, bodyFrom, checkDraft, draftFrom, serverFieldErrors, wholeNumber } from '@/features/workflow-policy/policy-form';
+import { addDay, bodyFrom, checkDraft, draftFrom, serverFieldErrors, wholeNumber } from '@/features/tenant-admin/workflow-policy/policy-form';
 
 // The workflow form's rules (COL-02): the client refuses what the server
 // would refuse before sending, and reads the server's 422 field by field

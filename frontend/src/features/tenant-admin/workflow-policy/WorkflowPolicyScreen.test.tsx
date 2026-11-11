@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AdminGate } from '@/components/admin/AdminGate';
-import { roleOptions, WorkflowPolicyScreen } from '@/features/workflow-policy/WorkflowPolicyScreen';
+import { roleOptions, WorkflowPolicyScreen } from '@/features/tenant-admin/workflow-policy/WorkflowPolicyScreen';
 import { childDestinations } from '@/shared/navigation/registry';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
