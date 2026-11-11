@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { datePrecisionOf, formatDate, formatDateTime, formatLongDate, formatPartialDate, type FormatContext } from './format';
+import { datePrecisionOf, formatDate, formatDateTime, formatLongDate, formatPartialDate, tenantToday, type FormatContext } from './format';
 
 const stockholm: FormatContext = { locale: 'en', timeZone: 'Europe/Stockholm' };
 const swedish: FormatContext = { locale: 'sv', timeZone: 'Europe/Stockholm' };
@@ -80,5 +80,27 @@ describe('datePrecisionOf', () => {
     expect(datePrecisionOf('decade')).toBe('day');
     // The formatter narrows what the server sent the same way, never crashing on a precision it has no rule for.
     expect(formatPartialDate('2026-10-01', 'decade', stockholm)).toBe(formatPartialDate('2026-10-01', 'day', stockholm));
+  });
+});
+
+// One helper for the bank's today: the case actions, the gap form, the
+// comments' day labels, out of office and my work all count from it.
+describe('tenantToday', () => {
+  it('is the calendar day in the tenant’s zone, not the machine’s', () => {
+    const lateEvening = new Date('2026-09-19T22:30:00Z');
+    expect(tenantToday('Europe/Stockholm', lateEvening)).toBe('2026-09-20');
+    expect(tenantToday('UTC', lateEvening)).toBe('2026-09-19');
+  });
+
+  it('is the calendar day in the given zone, west of UTC too', () => {
+    const instant = new Date('2026-09-25T22:30:00Z');
+    expect(tenantToday('Europe/Stockholm', instant)).toBe('2026-09-26');
+    expect(tenantToday('America/New_York', instant)).toBe('2026-09-25');
+  });
+
+  it('is the date in the bank time zone, not UTC', () => {
+    // 23:30 UTC on 18 September is already 19 September in Stockholm.
+    expect(tenantToday('Europe/Stockholm', new Date('2026-09-18T23:30:00Z'))).toBe('2026-09-19');
+    expect(tenantToday('UTC', new Date('2026-09-18T23:30:00Z'))).toBe('2026-09-18');
   });
 });

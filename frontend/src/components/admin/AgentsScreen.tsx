@@ -12,8 +12,9 @@ import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
 import { useTenant } from '@/features/tenant-admin/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { humanisePermission, usePermissions } from '@/shared/navigation/require-permission';
+import { usePermissions } from '@/shared/navigation/require-permission';
 import { cn } from '@/shared/utils/cn';
+import { humaniseKey } from '@/shared/utils/format';
 
 // /admin/agents (design/screens/admin-agents.html; AGT-03, AGT-04, AGT-05,
 // ADM-01). The shell of the page and one mount point per panel. What bleqq
@@ -94,7 +95,7 @@ export function AgentsScreen() {
           <OurAgentsPanel agents={agents} aiEnabled={tenant.data?.aiEnabled ?? true} />
         </>
       ) : (
-        <Notice data-agents-read-only="">{t('adminAgents.readOnly', { permission: humanisePermission(MANAGE) })}</Notice>
+        <Notice data-agents-read-only="">{t('adminAgents.readOnly', { permission: humaniseKey(MANAGE) })}</Notice>
       )}
     </>
   );

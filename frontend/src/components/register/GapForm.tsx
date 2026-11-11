@@ -10,6 +10,7 @@ import { useCreateGap, useUpdateGap } from '@/features/register/hooks';
 import type { RegisterGap } from '@/features/register/types';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { tenantToday } from '@/shared/utils/format';
 
 // "Record a gap" and its Edit (design/screens/tenant-gaps.html, state 13;
 // REG-03). The obligation is fixed; the lists are the bank's own rows and the
@@ -34,11 +35,6 @@ function ownerBody(owner: Owner): { ownerId?: string; ownerTeam?: string } {
   return {};
 }
 
-/** Today in the bank's zone, as the plain date a date input speaks. */
-function localToday(timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-}
-
 const nullIfBlank = (value: string) => (value.trim() === '' ? null : value.trim());
 
 export function GapForm({
@@ -58,7 +54,7 @@ export function GapForm({
   const t = useT();
   const { me } = useSession();
   const meId = me?.user.id ?? null;
-  const today = localToday(useFormatContext().timeZone);
+  const today = tenantToday(useFormatContext().timeZone);
   const severities = useVocabularyValues('risk_rating');
   const sources = useVocabularyValues('gap_source', false, gap === null);
   const teams = useVocabularyValues('team');

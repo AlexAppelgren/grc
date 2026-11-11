@@ -10,7 +10,7 @@ import type {
   TenantReach,
   TenantReachRequest,
 } from '@/features/agent-access/types';
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
 
 // Thin typed wrappers returning `.data` (playbook 6.1) over the agent access
 // routes (docs/plans/briefs/AGENT_ACCESS.md) and tenant reach (ACC-08). Every
@@ -25,7 +25,6 @@ export const MAX_PAGE = 100;
 /** The access log's page (design/screens/admin-agent-access.html, "1 to 20 of 146"). */
 export const CALLS_PAGE = 20;
 
-const id = (value: string) => encodeURIComponent(value);
 const versioned = (version: number) => ({ version });
 
 export async function listEntries(): Promise<AccessEntryPage> {
@@ -33,7 +32,7 @@ export async function listEntries(): Promise<AccessEntryPage> {
 }
 
 export async function getEntry(entryId: string): Promise<AccessEntry> {
-  return (await api.get<AccessEntry>(`${ACCESS}/${id(entryId)}`)).data;
+  return (await api.get<AccessEntry>(`${ACCESS}/${segment(entryId)}`)).data;
 }
 
 export async function registerEntry(body: AccessEntryInput): Promise<AccessEntry> {
@@ -41,27 +40,27 @@ export async function registerEntry(body: AccessEntryInput): Promise<AccessEntry
 }
 
 export async function updateEntry(entryId: string, version: number, body: AccessEntryUpdate): Promise<AccessEntry> {
-  return (await api.patch<AccessEntry>(`${ACCESS}/${id(entryId)}`, body, versioned(version))).data;
+  return (await api.patch<AccessEntry>(`${ACCESS}/${segment(entryId)}`, body, versioned(version))).data;
 }
 
 export async function revokeEntry(entryId: string, version: number): Promise<AccessEntry> {
-  return (await api.post<AccessEntry>(`${ACCESS}/${id(entryId)}/revoke`, {}, versioned(version))).data;
+  return (await api.post<AccessEntry>(`${ACCESS}/${segment(entryId)}/revoke`, {}, versioned(version))).data;
 }
 
 export async function setEntryReach(entryId: string, version: number, enabled: boolean): Promise<AccessEntry> {
-  return (await api.put<AccessEntry>(`${ACCESS}/${id(entryId)}/tenant-reach`, { enabled }, versioned(version))).data;
+  return (await api.put<AccessEntry>(`${ACCESS}/${segment(entryId)}/tenant-reach`, { enabled }, versioned(version))).data;
 }
 
 export async function createKey(entryId: string, body: AccessKeyInput): Promise<AccessKeyCreated> {
-  return (await api.post<AccessKeyCreated>(`${ACCESS}/${id(entryId)}/keys`, body)).data;
+  return (await api.post<AccessKeyCreated>(`${ACCESS}/${segment(entryId)}/keys`, body)).data;
 }
 
 export async function revokeKey(entryId: string, keyId: string): Promise<AccessKey> {
-  return (await api.post<AccessKey>(`${ACCESS}/${id(entryId)}/keys/${id(keyId)}/revoke`, {})).data;
+  return (await api.post<AccessKey>(`${ACCESS}/${segment(entryId)}/keys/${segment(keyId)}/revoke`, {})).data;
 }
 
 export async function listCalls(entryId: string, offset: number): Promise<AccessCallPage> {
-  return (await api.get<AccessCallPage>(`${ACCESS}/${id(entryId)}/calls`, { params: { limit: CALLS_PAGE, offset } })).data;
+  return (await api.get<AccessCallPage>(`${ACCESS}/${segment(entryId)}/calls`, { params: { limit: CALLS_PAGE, offset } })).data;
 }
 
 export async function getReach(): Promise<TenantReach> {
@@ -73,11 +72,11 @@ export async function requestReach(): Promise<TenantReachRequest> {
 }
 
 export async function approveReach(request: TenantReachRequest): Promise<TenantReachRequest> {
-  return (await api.post<TenantReachRequest>(`${REACH}/requests/${id(request.id)}/approve`, {}, versioned(request.version))).data;
+  return (await api.post<TenantReachRequest>(`${REACH}/requests/${segment(request.id)}/approve`, {}, versioned(request.version))).data;
 }
 
 export async function rejectReach(request: TenantReachRequest): Promise<TenantReachRequest> {
-  return (await api.post<TenantReachRequest>(`${REACH}/requests/${id(request.id)}/reject`, {}, versioned(request.version))).data;
+  return (await api.post<TenantReachRequest>(`${REACH}/requests/${segment(request.id)}/reject`, {}, versioned(request.version))).data;
 }
 
 export async function switchOffReach(): Promise<TenantReach> {

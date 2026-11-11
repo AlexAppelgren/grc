@@ -16,7 +16,7 @@ import { useFormatContext } from '@/features/identity/hooks';
 import { CASES_WORK } from '@/features/watch/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
-import { formatDate } from '@/shared/utils/format';
+import { formatDate, tenantToday } from '@/shared/utils/format';
 import { hasProblemCode, problemFrom } from '@/shared/utils/problem';
 
 // The case's actions (design/screens/tenant-change.html, "Actions"; CAS-04).
@@ -31,12 +31,6 @@ export const CASES_CONTRIBUTE = 'cases.contribute';
 
 /** The categories whose actions can change; from sign-off on they are locked. */
 export const WORKED: readonly CaseCategory[] = ['assessing', 'implementing'];
-
-/** The tenant-local calendar day, as UTC midnight, for `daysUntil`. */
-export function tenantToday(timeZone: string, now: Date = new Date()): Date {
-  const [year, month, day] = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now).split('-').map(Number);
-  return new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1));
-}
 
 /** A write the server refused: a lock or a stale version offers a reload, anything else is its own answer. */
 function WriteRefusal({ error, changeId }: { error: unknown; changeId: string }) {
@@ -174,7 +168,8 @@ export function ActionsPanel({ change, workflow }: CasePanelProps) {
   const worked = WORKED.includes(workflow.category);
   const canWork = worked && permissions.includes(CASES_WORK);
   const canComplete = worked && permissions.includes(CASES_CONTRIBUTE);
-  const today = tenantToday(ctx.timeZone);
+  // The tenant-local calendar day, as UTC midnight, for `daysUntil`.
+  const today = new Date(`${tenantToday(ctx.timeZone)}T00:00:00Z`);
 
   function confirmRemove() {
     if (removing === null) return;

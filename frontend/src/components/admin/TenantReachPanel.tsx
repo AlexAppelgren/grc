@@ -13,8 +13,8 @@ import type { TenantReach, TenantReachRequest } from '@/features/agent-access/ty
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import type { MessageKey } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { humanisePermission, usePermissions } from '@/shared/navigation/require-permission';
-import { formatDateTime } from '@/shared/utils/format';
+import { usePermissions } from '@/shared/navigation/require-permission';
+import { formatDateTime, humaniseKey } from '@/shared/utils/format';
 import { problemFrom } from '@/shared/utils/problem';
 
 // Tenant reach (design/screens/admin-security.html, states 1 and 5 to 12;
@@ -206,7 +206,7 @@ export function TenantReachPanel() {
   if (!canManage) {
     return (
       <Panel title={t('agentAccess.tenantReach.title')} data-tenant-reach="read-only">
-        <p className="text-muted">{t('agentAccess.tenantReach.readOnly', { permission: humanisePermission(SECURITY_MANAGE) })}</p>
+        <p className="text-muted">{t('agentAccess.tenantReach.readOnly', { permission: humaniseKey(SECURITY_MANAGE) })}</p>
       </Panel>
     );
   }

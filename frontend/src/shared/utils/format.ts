@@ -59,6 +59,20 @@ export function formatLongDate(value: string | Date, ctx: FormatContext = defaul
   return formatWith(date, { ...options, timeZone: ctx.timeZone }, ctx);
 }
 
+/**
+ * A key read as words: `cases.signoff` is "cases signoff", `search:read` is
+ * "search read", `tenant_role` is "tenant role". For a grant, a scope or a
+ * list nobody has worded yet, never a role name.
+ */
+export function humaniseKey(key: string): string {
+  return key.replace(/[._:-]/g, ' ');
+}
+
+/** The calendar day `now` falls on in `timeZone`, as YYYY-MM-DD: the bank's today, never the device's. */
+export function tenantToday(timeZone: string, now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone }).format(now);
+}
+
 // A partial date is a string plus its precision: "2026" / year,
 // "2026-09" / month or quarter, "2026-09-12" / day. Precision beyond what the
 // string carries is treated as what the string carries, and a precision the

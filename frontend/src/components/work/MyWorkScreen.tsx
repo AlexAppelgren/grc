@@ -13,10 +13,11 @@ import { ErrorState, LoadingState } from '@/components/ui/States';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useMyWork } from '@/features/my-work/hooks';
 import { MyCommentsPanel } from '@/features/my-work/MyCommentsPanel';
-import { SECTIONS, kindLabel, permissionLimitedLines, presentWorkItem, tenantToday, workHref, workReasons, workWhen } from '@/features/my-work/my-work-presentation';
+import { SECTIONS, kindLabel, permissionLimitedLines, presentWorkItem, workHref, workReasons, workWhen } from '@/features/my-work/my-work-presentation';
 import { initialScope, storedScope, storeScope } from '@/features/my-work/scope';
 import type { WorkItem, WorkScope } from '@/features/my-work/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { tenantToday } from '@/shared/utils/format';
 
 // /work (design/screens/tenant-my-work.html; HOM-05, AC-HOM1, COL-04, J-9).
 // Four sections in a fixed order, each row in the first it qualifies for;
@@ -111,7 +112,7 @@ export function MyWorkScreen() {
     const limited = permissionLimitedLines(first?.permissionLimited ?? [], t);
     const counts = first?.counts ?? { overdue: 0, dueSoon: 0, aware: 0, open: 0 };
     const nothing = counts.overdue + counts.dueSoon + counts.aware + counts.open === 0 && limited.length === 0;
-    const today = tenantToday(new Date(), ctx.timeZone);
+    const today = tenantToday(ctx.timeZone);
     body = nothing ? (
       <EmptyState title={t('work.empty.title')} body={t('work.empty.body')} action={{ label: t('work.decide.action'), href: '/' }} />
     ) : (

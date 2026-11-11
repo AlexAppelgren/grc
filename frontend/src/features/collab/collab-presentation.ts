@@ -3,7 +3,7 @@ import type { PresentedPill } from '@/features/shared/presentation-types';
 import { notificationKindTone } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { localeTags } from '@/shared/i18n';
-import { formatDateTime, type FormatContext } from '@/shared/utils/format';
+import { type FormatContext, formatDateTime, tenantToday } from '@/shared/utils/format';
 
 import type { Comment, NotificationKind, PersonRef } from './types';
 
@@ -44,11 +44,6 @@ export function presentNotification(notification: { kind: string }, t: Translate
   return [{ key: 'kind', label: notificationKindLabel(notification.kind, t), tone: notificationTone(notification.kind), order: 0 }];
 }
 
-// The calendar day an instant falls on in the bank's timezone, as YYYY-MM-DD.
-function dayOf(date: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone }).format(date);
-}
-
 /**
  * "Today 14:20", "Yesterday 09:02", then the date and time, in the bank's
  * timezone. Days are counted on the calendar, so a daylight saving change
@@ -56,7 +51,7 @@ function dayOf(date: Date, timeZone: string): string {
  */
 export function formatCollabTime(value: string, now: Date, ctx: FormatContext, t: Translate): string {
   const date = new Date(value);
-  const days = (Date.parse(dayOf(now, ctx.timeZone)) - Date.parse(dayOf(date, ctx.timeZone))) / 86_400_000;
+  const days = (Date.parse(tenantToday(ctx.timeZone, now)) - Date.parse(tenantToday(ctx.timeZone, date))) / 86_400_000;
   if (days !== 0 && days !== 1) return formatDateTime(date, ctx);
   const time = new Intl.DateTimeFormat(localeTags[ctx.locale], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: ctx.timeZone }).format(date);
   return t(days === 0 ? 'collab.time.today' : 'collab.time.yesterday', { time });

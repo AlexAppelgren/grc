@@ -2,6 +2,7 @@ import type { PillTone } from '@/components/ui/pill-tones';
 import type { Invitation, InvitationStatus, LoginEvent, Member, MemberStatus, TenantRole } from '@/features/tenant-admin/types';
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
 import type { MessageKey, Translate } from '@/shared/i18n';
+import { humaniseKey } from '@/shared/utils/format';
 
 // Pills for the tenant admin screens (design/screens/admin-*.html). Role
 // labels come from the rows, never from code; tone comes from the slot
@@ -73,12 +74,6 @@ export function presentInvitation(invitation: InvitationFacts, t: Translate): Pr
 
 export function presentRole(role: RoleFacts, t: Translate): PresentedPill[] {
   return role.isSystem ? [{ key: 'role:system', label: t('admin.roles.systemRole'), tone: 'information', order: ORDER.kind }] : [];
-}
-
-// `cases.signoff` reads "cases signoff", `search:read` reads "search read":
-// the grant or scope name in plain words, never a role name.
-export function humaniseKey(key: string): string {
-  return key.replace(/[._:-]/g, ' ');
 }
 
 export function presentPermissions(permissions: readonly string[]): PresentedPill[] {

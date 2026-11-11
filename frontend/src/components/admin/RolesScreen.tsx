@@ -11,9 +11,10 @@ import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { useCreateRole, usePermissionsReference, useRetireRole, useRoles, useUpdateRole } from '@/features/tenant-admin/hooks';
-import { humaniseKey, presentPermissions, presentRole } from '@/features/tenant-admin/members-presentation';
+import { presentPermissions, presentRole } from '@/features/tenant-admin/members-presentation';
 import type { PermissionRef, TenantRole } from '@/features/tenant-admin/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { humaniseKey } from '@/shared/utils/format';
 
 // Roles from permissions (design/screens/admin-roles.html, ID-09): a role is
 // a row of permission constants; the editor lists the constants from

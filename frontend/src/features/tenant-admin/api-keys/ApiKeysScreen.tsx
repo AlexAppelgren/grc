@@ -16,11 +16,10 @@ import { useFormatContext } from '@/features/identity/hooks';
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from '@/features/tenant-admin/hooks';
 import { isExpired, isLive, presentCredential } from '@/features/agent-access/presentation';
 import { readsAs } from '@/features/tenant-admin/api-keys/presentation';
-import { humaniseKey } from '@/features/tenant-admin/members-presentation';
 import type { ApiKey, ApiKeyCreated } from '@/features/tenant-admin/types';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { formatDate, formatDateTime } from '@/shared/utils/format';
+import { formatDate, formatDateTime, humaniseKey } from '@/shared/utils/format';
 
 // API keys (design/screens/admin-api-keys.html, ID-10, ACC-03): every
 // credential of the bank in one list, our integrations' keys, our agent access

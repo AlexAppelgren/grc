@@ -4,6 +4,7 @@ import { byOrder, type PresentedPill } from '@/features/shared/presentation-type
 import { complianceTone, proposalStatusTone, severityTone, slotTone } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { problemFrom } from '@/shared/utils/problem';
+import { humaniseKey } from '@/shared/utils/format';
 
 import type { NearDuplicateCandidate, VocabularyListSummary, VocabularyRow } from './types';
 
@@ -232,20 +233,16 @@ export const listMarker: Readonly<Record<string, MessageKey>> = {
   rejection_reason: 'admin.vocabularies.marker.rejection_reason',
 };
 
-export function humaniseListKey(list: string): string {
-  return list.replace(/[._:-]/g, ' ');
-}
-
 export function listLabel(list: string, t: Translate): string {
   const key = listTitle[list];
-  return key === undefined ? humaniseListKey(list) : t(key);
+  return key === undefined ? humaniseKey(list) : t(key);
 }
 
 // One marker pill per list in the list's own slot tone, so an admin sees the
 // tone before opening it, plus the computed "N suggestions" when any wait.
 export function presentListSummary(summary: VocabularyListSummary, t: Translate): PresentedPill[] {
   const markerKey = listMarker[summary.list];
-  const label = markerKey === undefined ? humaniseListKey(summary.list) : t(markerKey);
+  const label = markerKey === undefined ? humaniseKey(summary.list) : t(markerKey);
   const { tone, outlined } = valueTone(summary.list, { key: summary.list, kind: null, label, extra: {} });
   const pills: PresentedPill[] = [{ key: `list:${summary.list}`, label, tone, order: 0, outlined }];
   const pending = summary.pendingSuggestions ?? 0;

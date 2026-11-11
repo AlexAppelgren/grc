@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { NETWORK_PROBLEM_CODE, problemFrom } from '@/shared/utils/problem';
-import { humanisePermission } from '@/shared/navigation/require-permission';
+import { humaniseKey } from '@/shared/utils/format';
 
 // The states every screen has (playbook 4.4, design/README.md): loading,
 // error with retry, not found. The Restricted screen lives in
@@ -85,7 +85,7 @@ export function ProblemAlert({ error, codes = {}, className }: { error: unknown;
     text = t('problem.network');
   } else if (problem.status === 403) {
     const detail = problem.detail.length > 0 ? problem.detail : t('restricted.body');
-    text = problem.requiredPermission === undefined ? detail : `${detail} ${t('restricted.needs', { permission: humanisePermission(problem.requiredPermission) })}`;
+    text = problem.requiredPermission === undefined ? detail : `${detail} ${t('restricted.needs', { permission: humaniseKey(problem.requiredPermission) })}`;
   } else {
     text = problem.detail.length > 0 ? problem.detail : t('problem.generic');
   }

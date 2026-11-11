@@ -59,6 +59,11 @@ function createTokenStore(): TokenStore {
 
 export const tokenStore: TokenStore = createTokenStore();
 
+/** A value as one path segment: an id, a key or a number with `/` or `?` in it stays one segment. */
+export function segment(value: string | number): string {
+  return encodeURIComponent(String(value));
+}
+
 export function pathOf(config: AxiosRequestConfig): string {
   const url = config.url ?? '';
   try {

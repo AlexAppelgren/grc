@@ -1,7 +1,8 @@
-import { isExpired, scopeLabel } from '@/features/agent-access/presentation';
+import { isExpired } from '@/features/agent-access/presentation';
 import type { PersonalToken } from '@/features/personal-tokens/types';
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
 import type { MessageKey, Translate } from '@/shared/i18n';
+import { humaniseKey } from '@/shared/utils/format';
 
 // What the tokens screen reads from a token's facts (design/screens/me-tokens.html;
 // design/system/pills-and-labels.md). Every row here is personal, so no kind
@@ -32,7 +33,7 @@ export const SCOPE_HINT: Record<TokenScope, MessageKey> = {
 
 /** A token's state first, then what it may read. */
 export function presentToken(token: Pick<PersonalToken, 'scopes' | 'revokedAt' | 'expiresAt'>, t: Translate, now: Date): PresentedPill[] {
-  const pills: PresentedPill[] = token.scopes.map((scope, i) => ({ key: `scope:${scope}`, label: scopeLabel(scope), tone: 'information', order: ORDER.scopes + i }));
+  const pills: PresentedPill[] = token.scopes.map((scope, i) => ({ key: `scope:${scope}`, label: humaniseKey(scope), tone: 'information', order: ORDER.scopes + i }));
   if (token.revokedAt !== null) pills.push({ key: 'state:revoked', label: t('me.tokens.revoked'), tone: 'information', order: ORDER.state });
   else if (isExpired(token, now)) pills.push({ key: 'state:expired', label: t('me.tokens.expired'), tone: 'warning', order: ORDER.state });
   return pills.sort(byOrder);

@@ -80,9 +80,9 @@ import type {
 } from '@/features/footprint/types';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { humanisePermission, usePermissions } from '@/shared/navigation/require-permission';
+import { usePermissions } from '@/shared/navigation/require-permission';
 import { externalHref } from '@/shared/utils/external-href';
-import { formatDate } from '@/shared/utils/format';
+import { formatDate, humaniseKey } from '@/shared/utils/format';
 import { hasProblemCode } from '@/shared/utils/problem';
 
 // /admin/footprint, shown as Regulatory scope (design/screens/admin-footprint.html,
@@ -818,7 +818,7 @@ function MarketsPanel({ markets, canWatch }: { markets: readonly Market[]; canWa
   const reach = reachLines(markets, jurisdictions.data ?? [], t);
   return (
     <Panel title={t('footprint.markets.title')} data-markets="">
-      {canWatch ? null : <Notice className="mb-3">{t('footprint.markets.approverOnly', { permission: humanisePermission(FOOTPRINT_REQUEST) })}</Notice>}
+      {canWatch ? null : <Notice className="mb-3">{t('footprint.markets.approverOnly', { permission: humaniseKey(FOOTPRINT_REQUEST) })}</Notice>}
       <p className="mb-3 text-meta text-muted">{t('footprint.markets.intro')}</p>
       <ul className="m-0 list-none p-0" aria-busy={busy}>
         {markets.map((market) => (

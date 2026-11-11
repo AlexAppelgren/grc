@@ -19,7 +19,7 @@ import type {
   TenantAgentPage,
   TenantAgentUpdate,
 } from '@/features/agents/types';
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
 
 // Thin typed wrappers returning `.data` (playbook 6.1) over every operation a
 // person's session makes on the agents app. The run writes an agent makes with
@@ -35,8 +35,6 @@ const RESEARCH = `${V1}/research-requests`;
 
 /** The routes' maximum page, where a screen wants one page to hold everything. */
 export const MAX_PAGE = 100;
-
-const segment = (value: string | number) => encodeURIComponent(String(value));
 
 // ---------------------------------------------------------------------------
 // The console: the platform's definitions, versions, settings and runs

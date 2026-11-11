@@ -1,4 +1,4 @@
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
 
 import type {
   RegisterApplicability,
@@ -42,8 +42,7 @@ import type {
 
 const V1 = '/api/v1';
 
-const id = (value: string) => encodeURIComponent(value);
-const obligation = (obligationId: string) => `${V1}/obligations/${id(obligationId)}`;
+const obligation = (obligationId: string) => `${V1}/obligations/${segment(obligationId)}`;
 
 // The register entry and its legal entities (REG-02).
 
@@ -57,7 +56,7 @@ export async function updateRegister(obligationId: string, body: RegisterPatch, 
 }
 
 export async function updateRegisterEntity(obligationId: string, orgUnitId: string, body: RegisterEntityPatch, version: number): Promise<RegisterEntityStatus> {
-  return (await api.patch<RegisterEntityStatus>(`${obligation(obligationId)}/register/entities/${id(orgUnitId)}`, body, { version })).data;
+  return (await api.patch<RegisterEntityStatus>(`${obligation(obligationId)}/register/entities/${segment(orgUnitId)}`, body, { version })).data;
 }
 
 // Applicability (REG-01): one person, a confirmation, no step-up (D-75).
@@ -81,19 +80,19 @@ export async function listGaps(filters: RegisterGapQuery = {}, page: RegisterPag
 }
 
 export async function updateGap(gapId: string, body: RegisterGapPatch, version: number): Promise<RegisterGap> {
-  return (await api.patch<RegisterGap>(`${V1}/gaps/${id(gapId)}`, body, { version })).data;
+  return (await api.patch<RegisterGap>(`${V1}/gaps/${segment(gapId)}`, body, { version })).data;
 }
 
 export async function requestRiskAcceptance(gapId: string, body: RegisterRiskAcceptanceBody): Promise<RegisterGap> {
-  return (await api.post<RegisterGap>(`${V1}/gaps/${id(gapId)}/accept-risk`, body)).data;
+  return (await api.post<RegisterGap>(`${V1}/gaps/${segment(gapId)}/accept-risk`, body)).data;
 }
 
 export async function approveRiskAcceptance(gapId: string): Promise<RegisterGap> {
-  return (await api.post<RegisterGap>(`${V1}/gaps/${id(gapId)}/accept-risk/approve`, {})).data;
+  return (await api.post<RegisterGap>(`${V1}/gaps/${segment(gapId)}/accept-risk/approve`, {})).data;
 }
 
 export async function reopenGap(gapId: string): Promise<RegisterGap> {
-  return (await api.post<RegisterGap>(`${V1}/gaps/${id(gapId)}/reopen`, {})).data;
+  return (await api.post<RegisterGap>(`${V1}/gaps/${segment(gapId)}/reopen`, {})).data;
 }
 
 // Assessment history and how we read the rule (REG-04).
@@ -117,7 +116,7 @@ export async function addInternalLink(obligationId: string, body: RegisterIntern
 }
 
 export async function removeInternalLink(linkId: string): Promise<void> {
-  await api.delete(`${V1}/internal-links/${id(linkId)}`);
+  await api.delete(`${V1}/internal-links/${segment(linkId)}`);
 }
 
 /** The bank's active items whose name or reference holds `q`, for the link dialog to pick. */
@@ -136,11 +135,11 @@ export async function createUnit(obligationId: string, body: RegisterUnitBody): 
 }
 
 export async function updateUnit(unitId: string, body: RegisterUnitPatch, version: number): Promise<RegisterUnit> {
-  return (await api.patch<RegisterUnit>(`${V1}/units/${id(unitId)}`, body, { version })).data;
+  return (await api.patch<RegisterUnit>(`${V1}/units/${segment(unitId)}`, body, { version })).data;
 }
 
 export async function removeUnit(unitId: string, version: number): Promise<void> {
-  await api.delete(`${V1}/units/${id(unitId)}`, { version });
+  await api.delete(`${V1}/units/${segment(unitId)}`, { version });
 }
 
 export async function pasteUnits(obligationId: string, body: RegisterUnitPasteBody): Promise<RegisterUnitPaste> {

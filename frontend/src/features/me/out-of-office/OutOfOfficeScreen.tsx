@@ -10,7 +10,7 @@ import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';
-import { formatLongDate } from '@/shared/utils/format';
+import { formatLongDate, tenantToday } from '@/shared/utils/format';
 import { problemFrom } from '@/shared/utils/problem';
 
 import type { OutOfOffice, Person } from './api';
@@ -23,11 +23,6 @@ import { useOutOfOffice, usePeople, useSetOutOfOffice } from './hooks';
 // choice are the bank's today, never the device's. Refusals render from the
 // problem's code under the field they belong to; the delegate gains nothing,
 // the server checks what they may approve.
-
-/** The calendar day it is now in `timeZone`, as YYYY-MM-DD. */
-export function todayIn(timeZone: string, now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone }).format(now);
-}
 
 type FieldErrors = { untilDate?: string; delegateId?: string };
 
@@ -134,7 +129,7 @@ function SetForm({ selfId, onAlreadyAway }: { selfId: string | undefined; onAlre
   const save = useSetOutOfOffice();
   const [until, setUntil] = useState('');
   const [delegate, setDelegate] = useState<Person | null>(null);
-  const today = todayIn(ctx.timeZone);
+  const today = tenantToday(ctx.timeZone);
 
   const refusedField = save.isError ? fieldOf(save.error) : null;
   const errors: FieldErrors = {};

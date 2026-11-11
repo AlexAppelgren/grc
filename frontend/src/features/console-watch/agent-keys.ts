@@ -4,10 +4,10 @@ import { useMutation, useQuery, useQueryClient, type UseMutationResult, type Use
 
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
 import { apiKeyStateTone, slotTone, type ApiKeyStateKind } from '@/features/shared/tone-by-kind';
-import { humaniseKey } from '@/features/tenant-admin/members-presentation';
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { api } from '@/shared/utils/api-client';
 import type { components } from '@/types/api.generated';
+import { humaniseKey } from '@/shared/utils/format';
 
 // Platform agent keys (ID-10, AGT-01, ADM-02): the keys bleqq's own research
 // agents run on. They are the platform's alone — the agents are platform-owned

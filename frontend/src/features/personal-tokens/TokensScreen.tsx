@@ -12,14 +12,14 @@ import { PillRow } from '@/components/ui/PillRow';
 import { QueryState, StatusLine } from '@/components/ui/States';
 import { SecretOnce } from '@/components/ui/SecretOnce';
 import { ConfirmDialog, FormDialog } from '@/components/ui/Dialogs';
-import { isExpired, scopeLabel } from '@/features/agent-access/presentation';
+import { isExpired } from '@/features/agent-access/presentation';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useCreateMyToken, useMyTokens, useRevokeMyToken, useTokenEntries } from '@/features/personal-tokens/hooks';
 import { isLiveToken, mintRefusals, presentToken, SCOPE_HINT, SCOPE_PERMISSION, TOKEN_SCOPES } from '@/features/personal-tokens/presentation';
 import type { PersonalToken, PersonalTokenCreated } from '@/features/personal-tokens/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { humanisePermission, usePermissions } from '@/shared/navigation/require-permission';
-import { formatDate, formatDateTime } from '@/shared/utils/format';
+import { usePermissions } from '@/shared/navigation/require-permission';
+import { formatDate, formatDateTime, humaniseKey } from '@/shared/utils/format';
 
 // My access tokens (design/screens/me-tokens.html, ACC-03): a member mints a
 // token that reads as them, behind a passkey, sees it once, lists and revokes
@@ -85,12 +85,12 @@ function CreateDialog({ permissions, onClose, onCreated }: { permissions: readon
           const held = permissions.includes(SCOPE_PERMISSION[scope]);
           // tenant:read reads only through a named entry, which needs the entry list.
           const reachable = scope !== 'tenant:read' || canNameEntry;
-          const hint = !held ? t('me.tokens.scopeNotHeld', { permission: humanisePermission(SCOPE_PERMISSION[scope]) }) : reachable ? t(SCOPE_HINT[scope]) : t('me.tokens.entryRequired');
+          const hint = !held ? t('me.tokens.scopeNotHeld', { permission: humaniseKey(SCOPE_PERMISSION[scope]) }) : reachable ? t(SCOPE_HINT[scope]) : t('me.tokens.entryRequired');
           return (
             <CheckRow
               key={scope}
               id={`token-scope-${scope}`}
-              label={scopeLabel(scope)}
+              label={humaniseKey(scope)}
               hint={hint}
               checked={scopes.includes(scope)}
               disabled={!held || !reachable}
@@ -190,14 +190,14 @@ export function TokensScreen() {
   return (
     <>
       <PageHead title={t('me.tokens.title')} lede={t('me.tokens.lede')} actions={canCreate ? <Button onClick={open}>{t('me.tokens.create')}</Button> : undefined} />
-      {canCreate ? null : <Notice>{t('me.tokens.cannotCreate', { permission: humanisePermission(TOKENS_CREATE) })}</Notice>}
+      {canCreate ? null : <Notice>{t('me.tokens.cannotCreate', { permission: humaniseKey(TOKENS_CREATE) })}</Notice>}
       {created !== null ? <NewToken created={created} onDone={() => setCreated(null)} /> : null}
       <QueryState query={tokens} errorTitle={t('me.tokens.errorTitle')}>
         {(data) =>
           data.items.length === 0 ? (
             <EmptyState
               title={t('me.tokens.emptyTitle')}
-              body={canCreate ? t('me.tokens.emptyBody') : t('me.tokens.cannotCreate', { permission: humanisePermission(TOKENS_CREATE) })}
+              body={canCreate ? t('me.tokens.emptyBody') : t('me.tokens.cannotCreate', { permission: humaniseKey(TOKENS_CREATE) })}
               action={canCreate ? { label: t('me.tokens.create'), href: '#', onClick: open } : undefined}
             />
           ) : (

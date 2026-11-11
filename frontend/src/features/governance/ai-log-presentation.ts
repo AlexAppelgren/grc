@@ -1,7 +1,7 @@
 import type { PresentedPill } from '@/features/shared/presentation-types';
 import { aiFeedbackTone, aiReviewTone, slotTone, type AiFeedbackKind, type AiReviewKind } from '@/features/shared/tone-by-kind';
-import { humaniseKey } from '@/features/tenant-admin/members-presentation';
 import type { MessageKey, Translate } from '@/shared/i18n';
+import { humaniseKey } from '@/shared/utils/format';
 
 import type { AiGeneration } from './types';
 

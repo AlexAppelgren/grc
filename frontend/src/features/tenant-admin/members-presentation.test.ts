@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
+import { humaniseKey } from '@/shared/utils/format';
 
 import {
-  humaniseKey,
   loginMethodText,
   presentInvitation,
   presentLoginEvent,

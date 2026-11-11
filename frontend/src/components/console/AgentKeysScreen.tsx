@@ -23,9 +23,8 @@ import {
   type AgentKeyCreated,
 } from '@/features/console-watch/agent-keys';
 import { useFormatContext } from '@/features/identity/hooks';
-import { humaniseKey } from '@/features/tenant-admin/members-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { formatDate, formatDateTime } from '@/shared/utils/format';
+import { formatDate, formatDateTime, humaniseKey } from '@/shared/utils/format';
 
 // Agent keys (design/screens/console-agent-keys.html, ID-10, AGT-01): the keys
 // bleqq's own agents run on, each bound to the agent everything it writes is

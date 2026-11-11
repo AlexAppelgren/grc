@@ -7,8 +7,9 @@ import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { tenantToday } from '@/shared/utils/format';
 
-import { ActionsPanel, tenantToday } from './ActionsPanel';
+import { ActionsPanel } from './ActionsPanel';
 
 // The Actions panel (design/screens/tenant-change.html, "Actions"; CAS-04):
 // days left in tabular numerals and overdue as a negative pill; the add row,
@@ -24,7 +25,7 @@ const READER = ['cases.read'];
 
 /** A plain date `offset` days from the tenant-local today. */
 function day(offset: number): string {
-  const today = tenantToday(ZONE);
+  const today = new Date(`${tenantToday(ZONE)}T00:00:00Z`);
   return new Date(today.getTime() + offset * 86_400_000).toISOString().slice(0, 10);
 }
 
@@ -83,14 +84,6 @@ beforeEach(() => {
   cleanup();
   resetApiForTests();
   tokenStore.set('tok');
-});
-
-describe('tenantToday', () => {
-  it('is the calendar day in the tenant’s zone, not the machine’s', () => {
-    const lateEvening = new Date('2026-09-19T22:30:00Z');
-    expect(tenantToday('Europe/Stockholm', lateEvening).toISOString()).toBe('2026-09-20T00:00:00.000Z');
-    expect(tenantToday('UTC', lateEvening).toISOString()).toBe('2026-09-19T00:00:00.000Z');
-  });
 });
 
 describe('the list', () => {

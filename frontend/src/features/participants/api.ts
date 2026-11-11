@@ -1,4 +1,4 @@
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
 
 import type { ParticipantInput, Participant, ParticipantPage, PersonRef, TeamPage } from './types';
 
@@ -10,9 +10,8 @@ import type { ParticipantInput, Participant, ParticipantPage, PersonRef, TeamPag
 
 const V1 = '/api/v1';
 
-const id = (value: string) => encodeURIComponent(value);
-const participants = (obligationId: string) => `${V1}/obligations/${id(obligationId)}/participants`;
-const caseParticipants = (changeId: string) => `${V1}/changes/${id(changeId)}/participants`;
+const participants = (obligationId: string) => `${V1}/obligations/${segment(obligationId)}/participants`;
+const caseParticipants = (changeId: string) => `${V1}/changes/${segment(changeId)}/participants`;
 
 /** A register entry or a case holds at most 50 participants unless configured otherwise, so one page of the maximum shows them all. */
 export const PARTICIPANTS_PAGE = 100;
@@ -26,7 +25,7 @@ export async function addObligationParticipant(obligationId: string, body: Parti
 }
 
 export async function removeObligationParticipant(obligationId: string, participantId: string): Promise<void> {
-  await api.delete(`${participants(obligationId)}/${id(participantId)}`);
+  await api.delete(`${participants(obligationId)}/${segment(participantId)}`);
 }
 
 // c9-fe-case-participants: the bank's case for a change, addressed by the change's id.
@@ -39,7 +38,7 @@ export async function addCaseParticipant(changeId: string, body: ParticipantInpu
 }
 
 export async function removeCaseParticipant(changeId: string, participantId: string): Promise<void> {
-  await api.delete(`${caseParticipants(changeId)}/${id(participantId)}`);
+  await api.delete(`${caseParticipants(changeId)}/${segment(participantId)}`);
 }
 
 /** The bank's active members who hold `permission`, as ids and names only. */

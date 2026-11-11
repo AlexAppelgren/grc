@@ -7,11 +7,10 @@ import type { Me } from '@/features/identity/types';
 import { findDestination } from '@/shared/navigation/registry';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH } from '@/shared/utils/api-client';
-import { defaultFormatContext, formatLongDate } from '@/shared/utils/format';
+import { defaultFormatContext, formatLongDate, tenantToday } from '@/shared/utils/format';
 
 import type { OutOfOffice } from './api';
 import { outOfOfficeKeys } from './hooks';
-import { todayIn } from './OutOfOfficeScreen';
 
 // Out of office (design/screens/me-out-of-office.html): the last day away on
 // the bank's calendar, the delegate picked from the bank's people, End now,
@@ -93,14 +92,6 @@ async function fillForm(day: string, name: string) {
   fireEvent.mouseDown(within(screen.getByRole('listbox', { name: 'People' })).getByRole('option', { name }));
 }
 
-describe('todayIn', () => {
-  it('is the calendar day in the given zone, not the device’s', () => {
-    const instant = new Date('2026-09-25T22:30:00Z');
-    expect(todayIn('Europe/Stockholm', instant)).toBe('2026-09-26');
-    expect(todayIn('America/New_York', instant)).toBe('2026-09-25');
-  });
-});
-
 describe('out of office', () => {
   beforeEach(() => {
     resetApiForTests();
@@ -114,7 +105,7 @@ describe('out of office', () => {
     server();
     renderIn(<OutOfOfficePage />);
     expect(await screen.findByRole('heading', { level: 1, name: 'Out of office' })).toBeInTheDocument();
-    await waitFor(() => expect(until()).toHaveAttribute('min', todayIn(TZ)));
+    await waitFor(() => expect(until()).toHaveAttribute('min', tenantToday(TZ)));
     expect(screen.getByText(`Your last day away, in your organisation's timezone (${TZ}). Everything comes back to you the day after.`)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Set out of office' })).toBeDisabled();
 
@@ -128,7 +119,7 @@ describe('out of office', () => {
   it('sets the absence with the chosen day and delegate, then shows it with End now', async () => {
     const sent = server();
     renderIn(<OutOfOfficePage />);
-    const day = todayIn(TZ);
+    const day = tenantToday(TZ);
     await fillForm(day, ERIK.name);
     expect(delegate()).toHaveValue(ERIK.name);
     fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
@@ -151,7 +142,7 @@ describe('out of office', () => {
   it('says so from already_delegated, and Show it reads the absence set meanwhile', async () => {
     server({ put: { status: 409, data: { code: 'already_delegated', detail: 'Server words.' } } });
     renderIn(<OutOfOfficePage />);
-    await fillForm(todayIn(TZ), ERIK.name);
+    await fillForm(tenantToday(TZ), ERIK.name);
     fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('You are already away. End that first to set a new one.');
     expect(screen.queryByText('Server words.')).toBeNull();
@@ -164,7 +155,7 @@ describe('out of office', () => {
   it('puts delegate_cannot_approve under the delegate, naming them', async () => {
     server({ put: { status: 422, data: { code: 'delegate_cannot_approve', detail: 'x', errors: [{ field: 'delegateId', message: 'x' }] } } });
     renderIn(<OutOfOfficePage />);
-    await fillForm(todayIn(TZ), ERIKA.name);
+    await fillForm(tenantToday(TZ), ERIKA.name);
     fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
     const error = await screen.findByText('Erika Ström cannot approve, so they cannot stand in for you. Choose someone whose role can approve.');
     expect(error).toHaveAttribute('id', 'ooo-delegate-error');
@@ -175,7 +166,7 @@ describe('out of office', () => {
   it('puts a validation error under the field it names', async () => {
     server({ put: { status: 422, data: { code: 'validation_error', detail: 'x', errors: [{ field: 'untilDate', message: 'x' }] } } });
     renderIn(<OutOfOfficePage />);
-    await fillForm(todayIn(TZ), ERIK.name);
+    await fillForm(tenantToday(TZ), ERIK.name);
     fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
     expect(await screen.findByText('Choose today or a later date.')).toHaveAttribute('id', 'ooo-until-error');
     expect(until()).toHaveAttribute('aria-invalid', 'true');
@@ -191,7 +182,7 @@ describe('out of office', () => {
   it('moves through the people with the arrow keys, wrapping, and Enter chooses', async () => {
     server();
     renderIn(<OutOfOfficePage />);
-    fireEvent.change(await screen.findByLabelText('Away until'), { target: { value: todayIn(TZ) } });
+    fireEvent.change(await screen.findByLabelText('Away until'), { target: { value: tenantToday(TZ) } });
     const input = delegate();
     // Enter while the list is closed chooses nothing.
     fireEvent.keyDown(input, { key: 'Enter' });
@@ -244,7 +235,7 @@ describe('out of office', () => {
   it('puts a validation error naming the delegate under the delegate, skipping entries that name nothing', async () => {
     server({ put: { status: 422, data: { code: 'validation_error', detail: 'x', errors: ['untilDate', null, { message: 'x' }, { field: 'delegateId', message: 'x' }] } } });
     renderIn(<OutOfOfficePage />);
-    await fillForm(todayIn(TZ), ERIK.name);
+    await fillForm(tenantToday(TZ), ERIK.name);
     fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
     expect(await screen.findByText('Choose another active member of your organisation.')).toHaveAttribute('id', 'ooo-delegate-error');
     expect(until()).toHaveAttribute('aria-invalid', 'false');
@@ -255,7 +246,7 @@ describe('out of office', () => {
   it('shows a validation error that names no field of the form as the form’s alert', async () => {
     server({ put: { status: 422, data: { code: 'validation_error', detail: 'The request was not valid.', errors: [{ field: 'other', message: 'x' }] } } });
     renderIn(<OutOfOfficePage />);
-    await fillForm(todayIn(TZ), ERIK.name);
+    await fillForm(tenantToday(TZ), ERIK.name);
     fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('The request was not valid.');
     expect(until()).toHaveAttribute('aria-invalid', 'false');
@@ -265,7 +256,7 @@ describe('out of office', () => {
   it('shows any other refusal as the form’s alert, by its code', async () => {
     server({ put: { status: 503, data: { code: 'unavailable', detail: 'Try later.' } } });
     renderIn(<OutOfOfficePage />);
-    await fillForm(todayIn(TZ), ERIK.name);
+    await fillForm(tenantToday(TZ), ERIK.name);
     fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
     expect(await screen.findByRole('alert')).toHaveAttribute('data-problem-code', 'unavailable');
     expect(screen.queryByRole('button', { name: 'Show it' })).toBeNull();
@@ -301,7 +292,7 @@ describe('out of office', () => {
     const form = (await screen.findByLabelText('Away until')).closest('form');
     expect(form).not.toBeNull();
     fireEvent.submit(form as HTMLFormElement);
-    fireEvent.change(until(), { target: { value: todayIn(TZ) } });
+    fireEvent.change(until(), { target: { value: tenantToday(TZ) } });
     fireEvent.submit(form as HTMLFormElement);
     expect(puts(sent)).toEqual([]);
   });
@@ -309,7 +300,7 @@ describe('out of office', () => {
   it('shows a validation error without field entries as the form’s alert', async () => {
     server({ put: { status: 422, data: { code: 'validation_error', detail: 'Not valid.' } } });
     renderIn(<OutOfOfficePage />);
-    await fillForm(todayIn(TZ), ERIK.name);
+    await fillForm(tenantToday(TZ), ERIK.name);
     fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));
     expect(await screen.findByRole('alert')).toHaveAttribute('data-problem-code', 'validation_error');
     expect(until()).toHaveAttribute('aria-invalid', 'false');
@@ -330,7 +321,7 @@ describe('out of office', () => {
         <OutOfOfficePage />
       </Query>,
     );
-    await fillForm(todayIn(TZ), ERIKA.name);
+    await fillForm(tenantToday(TZ), ERIKA.name);
     people = [ERIK, SELF];
     await act(() => queryClient.refetchQueries({ queryKey: outOfOfficeKeys.people }));
     fireEvent.click(screen.getByRole('button', { name: 'Set out of office' }));

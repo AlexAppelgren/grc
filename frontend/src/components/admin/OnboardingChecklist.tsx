@@ -7,6 +7,7 @@ import type { Tenant } from '@/features/tenant-admin/types';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { findDestination } from '@/shared/navigation/registry';
+import { humaniseKey } from '@/shared/utils/format';
 
 // "Getting started" (TEN-01): the onboarding checklist the server computes, on the
 // Organisation screen and on Today for whoever can work through it. An open step's title
@@ -25,7 +26,7 @@ function stepLabel(key: string, t: Translate): string {
     case 'passkey':
       return t('admin.organisation.step.passkey');
     default:
-      return key.replace(/_/g, ' ');
+      return humaniseKey(key);
   }
 }
 

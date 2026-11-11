@@ -10,11 +10,11 @@ import { SecretOnce } from '@/components/ui/SecretOnce';
 import { ConfirmDialog, FormDialog } from '@/components/ui/Dialogs';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useCreateKey, useRevokeKey } from '@/features/agent-access/hooks';
-import { isExpired, isLive, presentCredential, refusals, scopeLabel } from '@/features/agent-access/presentation';
+import { isExpired, isLive, presentCredential, refusals } from '@/features/agent-access/presentation';
 import type { AccessEntry, AccessKey, AccessKeyCreated } from '@/features/agent-access/types';
 import type { MessageKey } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { formatDate, formatDateTime } from '@/shared/utils/format';
+import { formatDate, formatDateTime, humaniseKey } from '@/shared/utils/format';
 
 // An entry's credentials (design/screens/admin-agent-access.html, states 6
 // and 9 to 12; ACC-01, ACC-03). A key holds the four read scopes only and
@@ -79,7 +79,7 @@ function IssueDialog({ entry, onClose, onIssued }: { entry: AccessEntry; onClose
           <CheckRow
             key={scope}
             id={`issue-scope-${scope}`}
-            label={scopeLabel(scope)}
+            label={humaniseKey(scope)}
             hint={t(SCOPE_HINT[scope])}
             checked={scopes.includes(scope)}
             onChange={(on) => setScopes((current) => (on ? [...current, scope] : current.filter((s) => s !== scope)))}

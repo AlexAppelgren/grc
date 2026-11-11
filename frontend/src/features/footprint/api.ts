@@ -1,5 +1,5 @@
 import type { components } from '@/types/api.generated';
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
 
 import type {
   EntityTermLine,
@@ -32,8 +32,6 @@ const FOOTPRINT = '/api/v1/tenant/footprint';
 const REQUESTS = `${FOOTPRINT}/requests`;
 const WATCHING = `${FOOTPRINT}/watching`;
 const TAXONOMY = '/api/v1/taxonomy';
-
-const id = (value: string) => encodeURIComponent(value);
 
 type Schemas = components['schemas'];
 
@@ -155,15 +153,15 @@ export async function createFootprintRequest(body: FootprintRequestCreate): Prom
 }
 
 export async function approveFootprintRequest(requestId: string, version?: number): Promise<FootprintChangeRequest> {
-  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${id(requestId)}/approve`, {}, version === undefined ? {} : { version })).data);
+  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${segment(requestId)}/approve`, {}, version === undefined ? {} : { version })).data);
 }
 
 export async function rejectFootprintRequest(requestId: string, body: FootprintRejectBody, version?: number): Promise<FootprintChangeRequest> {
-  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${id(requestId)}/reject`, body, version === undefined ? {} : { version })).data);
+  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${segment(requestId)}/reject`, body, version === undefined ? {} : { version })).data);
 }
 
 export async function withdrawFootprintRequest(requestId: string, version?: number): Promise<FootprintChangeRequest> {
-  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${id(requestId)}/withdraw`, {}, version === undefined ? {} : { version })).data);
+  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${segment(requestId)}/withdraw`, {}, version === undefined ? {} : { version })).data);
 }
 
 /** What the public registers suggest (FP-05): a read, nothing changes until a request is approved. */
