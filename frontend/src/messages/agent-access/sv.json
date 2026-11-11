@@ -172,6 +172,5 @@
   "agentAccess.tenantReach.readOnly": "Om våra egna agenter får läsa vårt register ändras av en medlem med {permission}.",
   "agentAccess.tenantReach.errorTitle": "Det gick inte att läsa in om vårt register får läsas",
   "agentAccess.tenantReach.requestPending": "En begäran väntar redan på beslut.",
-  "agentAccess.tenantReach.alreadyDecided": "Någon beslutade först. Panelen visar nu läget.",
-  "agentAccess.readOnly": "Att registrera och ändra dessa agenter kräver {permission}."
+  "agentAccess.tenantReach.alreadyDecided": "Någon beslutade först. Panelen visar nu läget."
 }

@@ -1,8 +1,5 @@
 {
   "brand.logoName": "bleqq, uttalas bläck",
-  "brand.legal": "Juridisk information",
-  "brand.privacy": "Integritet",
-  "brand.support": "Support",
   "restricted.title": "Den här sidan är inte tillgänglig för dig",
   "restricted.body": "Din roll saknar det sidan kräver. Fråga din administratör om du tycker att den borde ha det.",
   "restricted.needs": "Kräver {permission}",
@@ -41,7 +38,6 @@
   "pill.changePending": "Ändring på väg: {date}",
   "pill.allServices": "Alla tjänster",
   "pill.ourDeadline": "Vår deadline",
-  "pill.you": "Du",
   "pill.lead": "Huvudpunkt",
   "format.quarter": "kv. {quarter} {year}",
   "diff.addedStart": "Tillagd text:",

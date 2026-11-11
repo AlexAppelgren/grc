@@ -10,9 +10,6 @@ type Schemas = components['schemas'];
 
 export type { Page, PageQuery };
 
-/** Who did it: a user, an agent or the system. `id` is empty for the system. */
-export type AuditActor = Schemas['AuditActorRef'];
-
 /** The audited record's fields at the time, keyed by field name. */
 export type AuditSnapshot = Schemas['AuditSnapshot'];
 

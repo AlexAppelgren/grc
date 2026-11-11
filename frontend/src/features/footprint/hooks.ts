@@ -2,7 +2,6 @@
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type UseInfiniteQueryResult, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
-import type { ProposalRef } from '@/features/vocabularies/types';
 import type { components } from '@/types/api.generated';
 
 import * as footprint from './api';
@@ -17,7 +16,6 @@ import type {
   Market,
   TaxonomyDimension,
   TaxonomyTerm,
-  TermSuggest,
 } from './types';
 
 // Query keys and invalidation for the footprint screen (playbook 6.1). The
@@ -123,8 +121,4 @@ export function useWatchMarket(): UseMutationResult<Market, unknown, string> {
 export function useUnwatchMarket(): UseMutationResult<Market, unknown, string> {
   const queryClient = useQueryClient();
   return useMutation({ mutationFn: (key) => footprint.unwatchMarket(key), onSettled: () => queryClient.invalidateQueries({ queryKey: footprintKeys.footprint, exact: true }) });
-}
-
-export function useSuggestTerm(): UseMutationResult<ProposalRef, unknown, TermSuggest> {
-  return useMutation({ mutationFn: (body) => footprint.suggestTerm(body) });
 }

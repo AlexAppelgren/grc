@@ -1,8 +1,5 @@
 {
   "brand.logoName": "bleqq, pronounced bläck",
-  "brand.legal": "Legal notice",
-  "brand.privacy": "Privacy",
-  "brand.support": "Support",
   "restricted.title": "This page is not available to you",
   "restricted.body": "Your role does not include what this page needs. Ask your administrator if you think it should.",
   "restricted.needs": "Needs {permission}",
@@ -41,7 +38,6 @@
   "pill.changePending": "Change pending: {date}",
   "pill.allServices": "All services",
   "pill.ourDeadline": "Our deadline",
-  "pill.you": "You",
   "pill.lead": "Lead",
   "format.quarter": "Q{quarter} {year}",
   "diff.addedStart": "Added text:",

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
 import type { FormatContext } from '@/shared/utils/format';
+import type { components } from '@/types/api.generated';
 
 import {
   SECTIONS,
@@ -14,7 +15,9 @@ import {
   workReasons,
   workWhen,
 } from './my-work-presentation';
-import type { WorkDate, WorkItem, WorkReason } from './types';
+import type { WorkDate, WorkItem } from './types';
+
+type WorkReason = components['schemas']['HomeWorkReason'];
 
 // Every section, reason and date kind has its words in both languages, and a
 // day count is taken against the bank's own today, never the browser's.

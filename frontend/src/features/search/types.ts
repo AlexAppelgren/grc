@@ -10,10 +10,7 @@ type Schemas = components['schemas'];
 /** One ranked result. `matchKind` is on every hit (SRC-02). */
 export type SearchHit = Schemas['SearchHit'];
 export type SearchResponse = Schemas['SearchResponse'];
-export type SearchHitType = Schemas['SearchHitType'];
 export type SearchMatchKind = Schemas['SearchMatchKind'];
-/** The filters `POST /search` takes: every one of them a key, never a label. */
-export type ApiSearchFilters = Schemas['SearchFilters'];
 
 /** The body `POST /search` takes, exactly as the route declares it. */
 export type SearchRequestBody = operations['search']['requestBody']['content']['application/json'];

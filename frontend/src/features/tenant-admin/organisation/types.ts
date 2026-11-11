@@ -9,7 +9,6 @@ type Schemas = components['schemas'];
 export type OrgUnit = Schemas['TenantOrgUnit'];
 /** A unit as `GET /tenant/org-units` lists it: a legal entity carries its licences. */
 export type OrgUnitRow = Schemas['TenantOrgUnitRow'];
-export type OrgUnitKind = OrgUnit['kind'];
 export type OrgUnitBody = Schemas['TenantOrgUnitBody'];
 export type OrgUnitPatch = Schemas['TenantOrgUnitPatch'];
 

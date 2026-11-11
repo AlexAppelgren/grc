@@ -3,12 +3,7 @@ import { api } from '@/shared/utils/api-client';
 import type {
   RegisterApplicability,
   RegisterApplicabilityBody,
-  RegisterApplicabilityMany,
-  RegisterApplicabilityManyBody,
   RegisterAssessmentPage,
-  RegisterDutyCompleteBody,
-  RegisterDutyCompletion,
-  RegisterDutyPage,
   RegisterEntityPatch,
   RegisterEntityStatus,
   RegisterEntry,
@@ -69,10 +64,6 @@ export async function updateRegisterEntity(obligationId: string, orgUnitId: stri
 
 export async function setApplicability(obligationId: string, body: RegisterApplicabilityBody, version: number): Promise<RegisterApplicability> {
   return (await api.put<RegisterApplicability>(`${obligation(obligationId)}/applicability`, body, { version })).data;
-}
-
-export async function setApplicabilityMany(body: RegisterApplicabilityManyBody): Promise<RegisterApplicabilityMany> {
-  return (await api.post<RegisterApplicabilityMany>(`${V1}/applicability`, body)).data;
 }
 
 // Gaps and risk acceptance (REG-03).
@@ -161,14 +152,6 @@ export async function getStatementOfApplicability(obligationId: string, entity: 
 }
 
 // Recurring duties (REG-07).
-
-export async function listDuties(obligationId: string, page: RegisterPageQuery = {}): Promise<RegisterDutyPage> {
-  return (await api.get<RegisterDutyPage>(`${obligation(obligationId)}/duties`, { params: page })).data;
-}
-
-export async function completeDutyOccurrence(occurrenceId: string, body: RegisterDutyCompleteBody): Promise<RegisterDutyCompletion> {
-  return (await api.post<RegisterDutyCompletion>(`${V1}/duty-occurrences/${id(occurrenceId)}/complete`, body)).data;
-}
 
 // c8-ui-applicability-status: the legal entities an obligation spans (REG-01, D-42), and the
 // bank's active members for the owner and contact pickers.

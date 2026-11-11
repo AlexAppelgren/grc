@@ -185,15 +185,6 @@ describe('footprint api', () => {
     expect(sent.map((s) => [s.method, s.path])).toEqual([['get', '/api/v1/reference/jurisdictions']]);
   });
 
-  it('suggests a term and reads the proposal back, nested or flat', async () => {
-    let flat = false;
-    const sent = installAdapter(() => ({ status: 202, data: flat ? { id: 'p2', kind: 'term_create', status: 'open', title: 'T+1' } : { proposal: { id: 'p1', kind: 'term_create', status: 'open', title: 'Robo' } } }));
-    expect(await footprint.suggestTerm({ dimension: 'channel', labels: { en: 'Robo' } })).toEqual({ id: 'p1', kind: 'term_create', status: 'open', title: 'Robo' });
-    flat = true;
-    expect(await footprint.suggestTerm({ dimension: 'channel', labels: { en: 'T+1' } })).toEqual({ id: 'p2', kind: 'term_create', status: 'open', title: 'T+1' });
-    expect(sent[0]).toMatchObject({ method: 'post', path: '/api/v1/taxonomy/terms', body: { dimension: 'channel', labels: { en: 'Robo' } } });
-  });
-
   it('reads a scope item and the item lists of a request, with a null id, kind or research as null', () => {
     const row = {
       id: null,

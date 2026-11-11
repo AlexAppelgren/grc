@@ -112,7 +112,6 @@
   "console.queue.detail.original": "original",
   "console.queue.detail.effectiveDate": "Ikraftträdandedatum",
   "console.queue.detail.scope": "Omfattning",
-  "console.queue.detail.scopeSuggested": "Föreslagen omfattning",
   "console.queue.detail.scopeUnchanged": "Det här förslaget ändrar inte omfattningen.",
   "console.queue.detail.whatItAdds": "Vad som läggs till",
   "console.queue.detail.titles": "Titel",

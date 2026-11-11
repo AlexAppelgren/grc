@@ -5,7 +5,7 @@ import type { MessageKey, Translate } from '@/shared/i18n';
 import { localeTags } from '@/shared/i18n';
 import { formatDateTime, type FormatContext } from '@/shared/utils/format';
 
-import type { Comment, NotificationKind, NotificationPrefs, PersonRef } from './types';
+import type { Comment, NotificationKind, PersonRef } from './types';
 
 // The collab records on screen (COL-01, COL-02). A notification's kind turns
 // into its catalog label and its tone by kind; a comment turns into its
@@ -97,12 +97,3 @@ const LIMITED_KIND = new Map<string, MessageKey>([
 export function permissionLimitedLines(kinds: readonly string[], t: Translate): string[] {
   return kinds.map((kind) => t(LIMITED_KIND.get(kind) ?? 'collab.comments.limited.other'));
 }
-
-/** The switches a person may turn off, in the card's order. Escalations have none: the bank sets them. */
-export const NOTIFICATION_SWITCHES: readonly { key: keyof NotificationPrefs; label: MessageKey; hint: MessageKey }[] = [
-  { key: 'mentions', label: 'collab.prefs.mentions', hint: 'collab.prefs.mentionsHint' },
-  { key: 'assignments', label: 'collab.prefs.assignments', hint: 'collab.prefs.assignmentsHint' },
-  { key: 'reminders', label: 'collab.prefs.reminders', hint: 'collab.prefs.remindersHint' },
-  { key: 'weeklyDigest', label: 'collab.prefs.weeklyDigest', hint: 'collab.prefs.weeklyDigestHint' },
-  { key: 'weeklyBriefing', label: 'collab.prefs.weeklyBriefing', hint: 'collab.prefs.weeklyBriefingHint' },
-];

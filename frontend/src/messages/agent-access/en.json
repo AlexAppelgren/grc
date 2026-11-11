@@ -172,6 +172,5 @@
   "agentAccess.tenantReach.readOnly": "Whether our own agents may read our register is changed by a member holding {permission}.",
   "agentAccess.tenantReach.errorTitle": "Could not load whether our register can be read",
   "agentAccess.tenantReach.requestPending": "A request already waits for a decision.",
-  "agentAccess.tenantReach.alreadyDecided": "Someone decided this first. The panel now shows where it stands.",
-  "agentAccess.readOnly": "Registering and changing these agents needs {permission}."
+  "agentAccess.tenantReach.alreadyDecided": "Someone decided this first. The panel now shows where it stands."
 }

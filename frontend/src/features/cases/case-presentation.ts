@@ -1,7 +1,6 @@
 import type { PresentedPill } from '@/features/shared/presentation-types';
-import { scanStateTone, slotTone, urgencyTone } from '@/features/shared/tone-by-kind';
-import { CHANGE_SLOT_ORDER, daysUntil, urgencyOf, workflowStatusOf, type CaseStatusFacts } from '@/features/watch/change-presentation';
-import type { LibraryRef } from '@/features/watch/api';
+import { scanStateTone, slotTone } from '@/features/shared/tone-by-kind';
+import { CHANGE_SLOT_ORDER, daysUntil, workflowStatusOf, type CaseStatusFacts } from '@/features/watch/change-presentation';
 import type { MessageKey, Translate } from '@/shared/i18n';
 
 import type { CaseAction, CaseWorkflow, CloseReasonKind, ScanState } from './types';
@@ -19,16 +18,6 @@ import type { CaseAction, CaseWorkflow, CloseReasonKind, ScanState } from './typ
 export function presentCaseStatus(caseFacts: CaseStatusFacts, t: Translate): PresentedPill {
   const status = workflowStatusOf(caseFacts, t);
   return { key: `status:${status.key}`, label: status.label, tone: slotTone.workflowStatus, order: CHANGE_SLOT_ORDER.workflowStatus };
-}
-
-/**
- * The urgency pill, its tone from the level's own fixed row (D-48). A key
- * outside the five fixed levels gets no pill rather than a guessed tone.
- */
-export function presentCaseUrgency(urgency: LibraryRef | null | undefined): PresentedPill | null {
-  const level = urgencyOf(urgency);
-  if (level === null) return null;
-  return { key: `urgency:${level.key}`, label: level.label, tone: urgencyTone[level.kind], order: CHANGE_SLOT_ORDER.urgency };
 }
 
 const SCAN_STATE_KEY = {
@@ -83,11 +72,4 @@ export function closeKindOf(caseFacts: Closing): CloseReasonKind | null {
   if (caseFacts.category !== 'closed') return null;
   const kind = caseFacts.closeReason?.kind;
   return (CLOSE_REASON_KINDS as readonly (string | null | undefined)[]).includes(kind) ? (kind as CloseReasonKind) : null;
-}
-
-/** Why a case was closed or dismissed, in the bank's own words from its list; null while it is open. */
-export function closeReasonLabel(caseFacts: Closing): string | null {
-  if (caseFacts.category === 'closed') return caseFacts.closeReason?.label ?? null;
-  if (caseFacts.category === 'dismissed') return caseFacts.dismissedReason?.label ?? null;
-  return null;
 }

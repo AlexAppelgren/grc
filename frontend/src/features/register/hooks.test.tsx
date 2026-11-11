@@ -38,7 +38,6 @@ describe('register hooks', () => {
         hooks.useInternalLinks('ob1'),
         hooks.useUnits('ob1', 'e1'),
         hooks.useStatementOfApplicability('ob1', 'e1'),
-        hooks.useDuties('ob1'),
         hooks.useInternalItems('reconc', true),
       ],
       { wrapper },
@@ -53,7 +52,6 @@ describe('register hooks', () => {
         '/api/v1/obligations/ob1/internal-links',
         '/api/v1/obligations/ob1/units',
         '/api/v1/obligations/ob1/statement-of-applicability',
-        '/api/v1/obligations/ob1/duties',
         '/api/v1/internal-items',
       ]),
     );
@@ -73,7 +71,6 @@ describe('register hooks', () => {
         updateRegister: hooks.useUpdateRegister('ob1'),
         updateEntity: hooks.useUpdateRegisterEntity('ob1'),
         setApplicability: hooks.useSetApplicability('ob1'),
-        setMany: hooks.useSetApplicabilityMany(),
         createGap: hooks.useCreateGap('ob1'),
         updateGap: hooks.useUpdateGap(),
         requestRisk: hooks.useRequestRiskAcceptance(),
@@ -86,7 +83,6 @@ describe('register hooks', () => {
         updateUnit: hooks.useUpdateUnit(),
         removeUnit: hooks.useRemoveUnit(),
         pasteUnits: hooks.usePasteUnits('ob1'),
-        completeDuty: hooks.useCompleteDutyOccurrence(),
       }),
       { wrapper },
     );
@@ -95,7 +91,6 @@ describe('register hooks', () => {
       await w.updateRegister.mutateAsync({ body: { statusNote: 'Daily' }, version: 1 });
       await w.updateEntity.mutateAsync({ orgUnitId: 'e1', body: { complianceStatus: 'gap' }, version: 0 });
       await w.setApplicability.mutateAsync({ body: { applicability: 'applies', reason: 'Licensed' }, version: 2 });
-      await w.setMany.mutateAsync({ rows: [{ obligationId: 'ob1', applicability: 'applies', reason: 'Licensed' }] });
       await w.createGap.mutateAsync({ severity: 'high', source: 'assessment', title: 'No yearly review' });
       await w.updateGap.mutateAsync({ gapId: 'g1', body: { status: 'remediating' }, version: 1 });
       await w.requestRisk.mutateAsync({ gapId: 'g1', body: { reason: 'cost_exceeds_benefit' } });
@@ -108,10 +103,9 @@ describe('register hooks', () => {
       await w.updateUnit.mutateAsync({ unitId: 'u1', body: { title: 'Policies' }, version: 1 });
       await w.removeUnit.mutateAsync({ unitId: 'u1', version: 2 });
       await w.pasteUnits.mutateAsync({ orgUnitId: 'e1', lines: [{ reference: 'A.5.1', title: 'Policies' }], dryRun: true });
-      await w.completeDuty.mutateAsync({ occurrenceId: 'o1', body: {} });
     });
     const written = sent.filter((s) => s.method !== 'get');
-    expect(written).toHaveLength(17);
+    expect(written).toHaveLength(15);
     // The entry was read once, then again after the writes invalidated it.
     await waitFor(() => expect(sent.filter((s) => s.method === 'get').length).toBeGreaterThan(1));
   });

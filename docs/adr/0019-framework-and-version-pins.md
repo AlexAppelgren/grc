@@ -45,13 +45,13 @@ eslint-plugin-react-hooks 7.1.1, eslint-plugin-react 7.37.5 (added for
 `overrides` entry rather than `legacy-peer-deps`), openapi-typescript 7.13.0,
 @sebgroup/green-tokens 3.1.8, @sebgroup/green-core 3.23.0,
 @radix-ui/react-dialog 1.1.23, @radix-ui/react-dropdown-menu 2.1.24,
-@radix-ui/react-tooltip 1.2.16, @radix-ui/react-select 2.3.7,
-@radix-ui/react-popover 1.1.23, @radix-ui/react-tabs 1.1.21,
-@radix-ui/react-checkbox 1.3.11, @radix-ui/react-switch 1.3.7,
+@radix-ui/react-tooltip 1.2.16,
 class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0,
 @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, jsdom 30.1.0,
 @fontsource-variable/hanken-grotesk 5.3.0,
-@fontsource-variable/noto-sans-mono 5.3.0.
+@fontsource-variable/noto-sans-mono 5.3.0. (Amended 2026-11-11: the Radix
+select, popover, tabs, checkbox and switch pins were removed, because no
+screen imports them.)
 
 **Infrastructure.** `pgvector/pgvector:pg16`, `redis:7-alpine`.
 

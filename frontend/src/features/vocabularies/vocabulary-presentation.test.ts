@@ -4,9 +4,6 @@ import { describe, expect, it } from 'vitest';
 import { createT } from '@/shared/i18n';
 
 import {
-  changeSummary,
-  isLibraryList,
-  keyFromLabel,
   listLabel,
   listMarker,
   listTitle,
@@ -154,21 +151,6 @@ describe('listLabel and list summaries', () => {
     ]);
     expect(presentListSummary(library, t).map((p) => [p.label, p.tone])).toEqual([['Flag', 'brand']]);
     expect(presentListSummary({ ...library, list: 'urgency' }, t).map((p) => [p.label, p.tone])).toEqual([['Urgency', 'information']]);
-    expect(isLibraryList(tenant)).toBe(false);
-    expect(isLibraryList(library)).toBe(true);
-  });
-});
-
-describe('keyFromLabel and changeSummary', () => {
-  it('slugs a label into a stable key', () => {
-    expect(keyFromLabel('Client money')).toBe('client_money');
-    expect(keyFromLabel('  Förvaring / Custody  ')).toBe('forvaring_custody');
-    expect(keyFromLabel('T+1')).toBe('t_1');
-    expect(keyFromLabel('***')).toBe('');
-  });
-
-  it('describes a proposal that came back from a library-list write', () => {
-    expect(changeSummary({ title: 'Add "Client money"' }, t)).toBe('Add "Client money" is waiting for review.');
   });
 });
 

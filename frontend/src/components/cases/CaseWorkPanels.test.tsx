@@ -1,11 +1,14 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import type { CaseVocabularyRef, CaseWorkflow } from '@/features/cases/types';
+import type { CaseWorkflow } from '@/features/cases/types';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { installAdapter, queryWrapper } from '@/shared/testing/api-adapter';
+import type { components } from '@/types/api.generated';
 
 import { CaseWorkPanels, casePanelsFor } from './CaseWorkPanels';
+
+type CaseVocabularyRef = components['schemas']['CasesVocabularyRef'];
 
 // Which panels a case shows, from its fixed category and, once closed, from
 // its close reason's fixed kind (design/screens/tenant-change.html, "Shown

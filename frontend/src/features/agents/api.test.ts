@@ -24,7 +24,6 @@ describe('agents api', () => {
     await agents.retireAgentVersion('watch-sweeper', 2);
     await agents.getPlatformAgentSettings('watch-sweeper');
     await agents.updatePlatformAgentSettings('watch-sweeper', { cadence: 'daily', jurisdictions: ['eu', 'se'], monthlyBudget: '250.00' });
-    await agents.createRetagRequest({ topic: 'Re-tag custody records' });
 
     expect(sent.map((s) => [s.method, s.path])).toEqual([
       ['get', '/api/v1/agent-definitions'],
@@ -33,12 +32,10 @@ describe('agents api', () => {
       ['post', '/api/v1/agent-definitions/watch-sweeper/versions/2/retire'],
       ['get', '/api/v1/agent-definitions/watch-sweeper/settings'],
       ['put', '/api/v1/agent-definitions/watch-sweeper/settings'],
-      ['post', '/api/v1/console/research-requests'],
     ]);
     expect(sent[0]?.params).toEqual({ limit: 100, offset: 0 });
     expect(sent[2]?.body).toEqual({ versionNo: 4, changeNote: 'Reads the consultation feed.' });
     expect(sent[5]?.body).toEqual({ cadence: 'daily', jurisdictions: ['eu', 'se'], monthlyBudget: '250.00' });
-    expect(sent[6]?.body).toEqual({ topic: 'Re-tag custody records' });
   });
 
   it('puts a key into a path as one segment', async () => {
@@ -71,13 +68,11 @@ describe('agents api', () => {
     await agents.runTenantAgentNow('ta1');
     await agents.pauseTenantAgent('ta1');
     await agents.resumeTenantAgent('ta1');
-    await agents.listAgentRuns({ tenantAgentId: 'ta1', mine: true, limit: 20, offset: 0 });
     await agents.interruptAgentRun('r1');
     await agents.getAgentBudget();
     await agents.putAgentBudget({ monthlyCap: '100.00' });
     await agents.listResearchRequests({ offset: 20 });
     await agents.createResearchRequest({ kind: 'research_topic', tenantAgentId: 'ta1', topic: 'Custody', sourceId: null, url: null });
-    await agents.getResearchRequest('rq1');
 
     expect(sent.map((s) => [s.method, s.path])).toEqual([
       ['get', '/api/v1/agents/platform'],
@@ -87,21 +82,18 @@ describe('agents api', () => {
       ['post', '/api/v1/agents/ta1/runs'],
       ['post', '/api/v1/agents/ta1/pause'],
       ['delete', '/api/v1/agents/ta1/pause'],
-      ['get', '/api/v1/agent-runs'],
       ['post', '/api/v1/agent-runs/r1/interrupt'],
       ['get', '/api/v1/tenant/agent-budget'],
       ['put', '/api/v1/tenant/agent-budget'],
       ['get', '/api/v1/research-requests'],
       ['post', '/api/v1/research-requests'],
-      ['get', '/api/v1/research-requests/rq1'],
     ]);
     expect(sent[0]?.params).toEqual({ limit: 20 });
     expect(sent[2]?.body).toEqual({ agent: 'source-checker', cadence: 'weekly', runWeekday: 1, runHour: 6, scope });
     expect(sent[3]?.body).toEqual({ enabled: false });
-    expect(sent[7]?.params).toEqual({ tenantAgentId: 'ta1', mine: true, limit: 20, offset: 0 });
-    expect(sent[10]?.body).toEqual({ monthlyCap: '100.00' });
-    expect(sent[11]?.params).toEqual({ offset: 20 });
-    expect(sent[12]?.body).toEqual({ kind: 'research_topic', tenantAgentId: 'ta1', topic: 'Custody', sourceId: null, url: null });
+    expect(sent[9]?.body).toEqual({ monthlyCap: '100.00' });
+    expect(sent[10]?.params).toEqual({ offset: 20 });
+    expect(sent[11]?.body).toEqual({ kind: 'research_topic', tenantAgentId: 'ta1', topic: 'Custody', sourceId: null, url: null });
   });
 
   it('passes a refusal on to the caller as an error', async () => {

@@ -1,5 +1,5 @@
 import type { PillTone } from '@/components/ui/pill-tones';
-import type { ApiKey, Invitation, InvitationStatus, LoginEvent, Member, MemberStatus, TenantRole } from '@/features/tenant-admin/types';
+import type { Invitation, InvitationStatus, LoginEvent, Member, MemberStatus, TenantRole } from '@/features/tenant-admin/types';
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
 import type { MessageKey, Translate } from '@/shared/i18n';
 
@@ -13,7 +13,6 @@ export type MemberFacts = Pick<Member, 'status' | 'roles' | 'platformStaff'>;
 export type InvitationFacts = Pick<Invitation, 'kind' | 'roles' | 'status'>;
 // The roles list returns active roles only, so a role row has no retired state.
 export type RoleFacts = Pick<TenantRole, 'isSystem'>;
-export type ApiKeyFacts = Pick<ApiKey, 'scopes' | 'revokedAt' | 'expiresAt'>;
 export type LoginEventFacts = Pick<LoginEvent, 'event' | 'success'>;
 
 function rolePills(roles: readonly { key: string; label: string }[]): PresentedPill[] {
@@ -84,16 +83,6 @@ export function humaniseKey(key: string): string {
 
 export function presentPermissions(permissions: readonly string[]): PresentedPill[] {
   return permissions.map((permission, i) => ({ key: `permission:${permission}`, label: humaniseKey(permission), tone: 'information' as const, order: ORDER.roles + i }));
-}
-
-export function presentApiKey(key: ApiKeyFacts, t: Translate, now: Date): PresentedPill[] {
-  const pills: PresentedPill[] = key.scopes.map((scope, i) => ({ key: `scope:${scope}`, label: humaniseKey(scope), tone: 'information' as const, order: ORDER.scopes + i }));
-  if (key.revokedAt !== null) {
-    pills.push({ key: 'status:revoked', label: t('admin.apiKeys.revoked'), tone: 'information', order: ORDER.kind });
-  } else if (key.expiresAt !== null && new Date(key.expiresAt).getTime() < now.getTime()) {
-    pills.push({ key: 'status:expired', label: t('admin.apiKeys.expired'), tone: 'warning', order: ORDER.kind });
-  }
-  return pills.sort(byOrder);
 }
 
 // Login event kinds (identity app.md, ID-11). Success is positive, a failure

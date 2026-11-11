@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { groupSupportGrants, presentSupportGrant, supportSessionProblemCopy, supportStateTone } from '@/features/support-access/support-access-presentation';
+import { groupSupportGrants, presentSupportGrant, supportStateTone } from '@/features/support-access/support-access-presentation';
 import type { SupportAccessGrant, SupportAccessState } from '@/features/support-access/types';
 import { createT } from '@/shared/i18n';
 
@@ -27,10 +27,4 @@ describe('support access presentation', () => {
     expect(history.map((g) => g.id)).toEqual(['ended', 'revoked', 'declined', 'lapsed', 'recovery']);
   });
 
-  it('words the two refusals a support session meets from their codes', () => {
-    expect(supportSessionProblemCopy(t)).toEqual({
-      support_read_only: 'A support session can only read. Nothing was changed.',
-      support_access_ended: 'Support access has ended. Nothing more can be read.',
-    });
-  });
 });

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { SupportAccessEnded, SupportSessionBanner } from '@/components/shell/SupportSessionBanner';
+import { SupportSessionBanner } from '@/components/shell/SupportSessionBanner';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH } from '@/shared/utils/api-client';
 
@@ -29,10 +29,4 @@ describe('the support session banner', () => {
     expect(onLeave).toHaveBeenCalledTimes(1);
   });
 
-  it('ends with the bank named and a way back to the console', () => {
-    render(<SupportAccessEnded tenantName="Example Bank AB" />);
-    expect(screen.getByRole('alert')).toHaveTextContent('Support access has ended');
-    expect(screen.getByText('Example Bank AB revoked the access, or its window closed. Nothing more can be read.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Back to the console' })).toHaveAttribute('href', '/console');
-  });
 });

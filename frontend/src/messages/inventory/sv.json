@@ -67,7 +67,6 @@
   "inventory.obligation.createdLabel": "Skapad",
   "inventory.obligation.createdByAgent": "{date} av {model}, genom förslagsgranskning",
   "inventory.obligation.createdByPerson": "{date}, genom förslagsgranskning",
-  "inventory.obligation.versionsLabel": "Versioner",
   "inventory.obligation.asOfBanner": "Visar version {number}, som gällde den {date}.",
   "inventory.obligation.asOfNoVersion": "Ingen version av den här skyldigheten gällde den {date}.",
   "inventory.obligation.showWhatChanged": "Visa vad som ändrats",

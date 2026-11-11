@@ -112,7 +112,6 @@
   "console.queue.detail.original": "original",
   "console.queue.detail.effectiveDate": "Effective date",
   "console.queue.detail.scope": "Scope",
-  "console.queue.detail.scopeSuggested": "Suggested scope",
   "console.queue.detail.scopeUnchanged": "This proposal does not change the scope.",
   "console.queue.detail.whatItAdds": "What it adds",
   "console.queue.detail.titles": "Title",

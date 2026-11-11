@@ -37,7 +37,6 @@ describe('register api', () => {
     await register.listUnits('ob1');
     await register.listUnits('ob1', 'e1', { limit: 100 });
     await register.getStatementOfApplicability('ob1', 'e1');
-    await register.listDuties('ob1');
     expect(sent.map((s) => [s.method, s.path, s.params])).toEqual([
       ['get', '/api/v1/obligations/ob%201/register', null],
       ['get', '/api/v1/obligations/ob1/gaps', { limit: 50 }],
@@ -48,7 +47,6 @@ describe('register api', () => {
       ['get', '/api/v1/obligations/ob1/units', {}],
       ['get', '/api/v1/obligations/ob1/units', { entity: 'e1', limit: 100 }],
       ['get', '/api/v1/obligations/ob1/statement-of-applicability', { entity: 'e1' }],
-      ['get', '/api/v1/obligations/ob1/duties', {}],
     ]);
   });
 
@@ -75,8 +73,6 @@ describe('register api', () => {
 
   it('sends the unversioned writes without If-Match', async () => {
     const { sent, ifMatch } = record();
-    const rows = [{ obligationId: 'ob1', applicability: 'not_applicable' as const, reason: 'No client money' }];
-    await register.setApplicabilityMany({ rows });
     await register.createGap('ob1', { severity: 'high', source: 'assessment', title: 'No yearly review' });
     await register.requestRiskAcceptance('g1', { reason: 'cost_exceeds_benefit' });
     await register.approveRiskAcceptance('g1');
@@ -85,9 +81,7 @@ describe('register api', () => {
     await register.removeInternalLink('l1');
     await register.createUnit('ob1', { orgUnitId: 'e1', reference: 'A.5.1', title: 'Policies' });
     await register.pasteUnits('ob1', { orgUnitId: 'e1', lines: [{ reference: 'A.5.1', title: 'Policies' }], dryRun: true });
-    await register.completeDutyOccurrence('o1', { note: 'Filed' });
     expect(sent.map((s) => [s.method, s.path])).toEqual([
-      ['post', '/api/v1/applicability'],
       ['post', '/api/v1/obligations/ob1/gaps'],
       ['post', '/api/v1/gaps/g1/accept-risk'],
       ['post', '/api/v1/gaps/g1/accept-risk/approve'],
@@ -96,9 +90,8 @@ describe('register api', () => {
       ['delete', '/api/v1/internal-links/l1'],
       ['post', '/api/v1/obligations/ob1/units'],
       ['post', '/api/v1/obligations/ob1/units/paste'],
-      ['post', '/api/v1/duty-occurrences/o1/complete'],
     ]);
-    expect(sent[0]?.body).toEqual({ rows });
+    expect(sent[0]?.body).toEqual({ severity: 'high', source: 'assessment', title: 'No yearly review' });
     expect(ifMatch.every((value) => value === null)).toBe(true);
   });
 });

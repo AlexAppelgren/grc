@@ -15,7 +15,6 @@ import {
   useFootprintRequests,
   useFootprintSuggestions,
   useRejectFootprintRequest,
-  useSuggestTerm,
   useJurisdictions,
   useTerms,
   useUnwatchMarket,
@@ -136,14 +135,12 @@ describe('footprint hooks', () => {
     await renderHook(() => useApproveFootprintRequest(), { wrapper }).result.current.mutateAsync({ requestId: 'r1', version: 1 });
     await renderHook(() => useRejectFootprintRequest(), { wrapper }).result.current.mutateAsync({ requestId: 'r1', body: { note: 'no' } });
     await renderHook(() => useWithdrawFootprintRequest(), { wrapper }).result.current.mutateAsync({ requestId: 'r1' });
-    expect(await renderHook(() => useSuggestTerm(), { wrapper }).result.current.mutateAsync({ dimension: 'channel', labels: { en: 'Robo' } })).toEqual({ id: 'r1', kind: '', status: 'pending', title: '' });
     await waitFor(() => expect(sent.filter((s) => s.method === 'get' && s.path === '/api/v1/tenant/footprint').length).toBeGreaterThanOrEqual(2));
     expect(sent.filter((s) => s.method !== 'get').map((s) => [s.method, s.path])).toEqual([
       ['post', '/api/v1/tenant/footprint/requests'],
       ['post', '/api/v1/tenant/footprint/requests/r1/approve'],
       ['post', '/api/v1/tenant/footprint/requests/r1/reject'],
       ['post', '/api/v1/tenant/footprint/requests/r1/withdraw'],
-      ['post', '/api/v1/taxonomy/terms'],
     ]);
   });
 });

@@ -20,7 +20,6 @@ export type ProposalApproveBody = Schemas['ProposalApproveBody'];
 export type ProposalApproveAllBody = Schemas['ProposalApproveAllBody'];
 export type ProposalApproveAll = Schemas['ProposalApproveAll'];
 export type ProposalRejectBody = Schemas['ProposalRejectBody'];
-export type TenantProposalRow = Schemas['TenantProposalRow'];
 export type TenantProposalPage = Schemas['TenantProposalPage'];
 
 /** Which end of the queue comes first (`ProposalQuery.order`): the route's two values. */
@@ -53,7 +52,6 @@ export type ProposalKind =
 
 export type ProposalStatus = 'open' | 'approved' | 'rejected' | 'superseded';
 
-export const OBLIGATION_KINDS: readonly ProposalKind[] = ['new_obligation_version'];
 export const VOCABULARY_KINDS: readonly ProposalKind[] = [
   'vocabulary_create',
   'vocabulary_relabel',
@@ -135,7 +133,6 @@ export type ProposalBatch = Schemas['ProposalBatch'];
 export type ProposalBatchRow = Schemas['ProposalBatchRow'];
 /** POST /proposal-batches/{batchId}/decide: decisions on named rows, and one for the rest. */
 export type ProposalBatchDecision = Schemas['ProposalBatchDecision'];
-export type ProposalBatchRowDecision = Schemas['ProposalBatchRowDecision'];
 
 // Local: the fixed kinds a batch row's `decision` carries (apps/proposals/models.py).
 export type BatchRowDecision = 'pending' | 'approved' | 'rejected';

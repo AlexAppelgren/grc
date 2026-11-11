@@ -14,8 +14,6 @@ import type {
   ResearchRequest,
   ResearchRequestInput,
   ResearchRequestPage,
-  RetagRequestInput,
-  RunQuery,
   TenantAgent,
   TenantAgentInput,
   TenantAgentPage,
@@ -83,10 +81,6 @@ export async function listRecentPlatformRuns(): Promise<AgentRunPage> {
   return listPlatformRuns({ limit: MAX_PAGE, offset: Math.max(total - MAX_PAGE, 0) });
 }
 
-export async function createRetagRequest(body: RetagRequestInput): Promise<ResearchRequest> {
-  return (await api.post<ResearchRequest>(`${V1}/console/research-requests`, body)).data;
-}
-
 // ---------------------------------------------------------------------------
 // A bank: what bleqq watches, its own agents, their runs, its cap and requests
 // ---------------------------------------------------------------------------
@@ -119,11 +113,6 @@ export async function resumeTenantAgent(tenantAgentId: string): Promise<TenantAg
   return (await api.delete<TenantAgent>(`${TENANT_AGENTS}/${segment(tenantAgentId)}/pause`)).data;
 }
 
-/** The runs a session may see: a bank's own and the platform's library runs, or the console's. */
-export async function listAgentRuns(query: RunQuery = {}): Promise<AgentRunPage> {
-  return (await api.get<AgentRunPage>(`${V1}/agent-runs`, { params: query })).data;
-}
-
 export async function interruptAgentRun(runId: string): Promise<AgentRun> {
   return (await api.post<AgentRun>(`${V1}/agent-runs/${segment(runId)}/interrupt`, {})).data;
 }
@@ -142,8 +131,4 @@ export async function listResearchRequests(page: PageParams = {}): Promise<Resea
 
 export async function createResearchRequest(body: ResearchRequestInput): Promise<ResearchRequest> {
   return (await api.post<ResearchRequest>(RESEARCH, body)).data;
-}
-
-export async function getResearchRequest(requestId: string): Promise<ResearchRequest> {
-  return (await api.get<ResearchRequest>(`${RESEARCH}/${segment(requestId)}`)).data;
 }

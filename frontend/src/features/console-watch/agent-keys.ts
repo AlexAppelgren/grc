@@ -25,7 +25,6 @@ export type AgentKey = Schemas['AgentKeyOut'];
 export type AgentKeyPage = Schemas['AgentKeysPage'];
 export type AgentKeyCreate = Schemas['AgentKeyCreate'];
 export type AgentKeyCreated = Schemas['AgentKeyCreated'];
-export type AgentDefinition = Schemas['AgentDefinitionOut'];
 export type AgentDefinitionPage = Schemas['AgentDefinitionPage'];
 
 const AGENT_KEYS = '/api/v1/agent-keys';

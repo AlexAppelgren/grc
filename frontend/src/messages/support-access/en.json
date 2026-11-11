@@ -42,10 +42,5 @@
   "supportAccess.stale": "This request was already decided or has lapsed. The list now shows where it stands.",
   "supportAccess.banner.title": "Support access to {tenant}.",
   "supportAccess.banner.until": "Read only, until {time}.",
-  "supportAccess.banner.leave": "Leave",
-  "supportAccess.ended.title": "Support access has ended",
-  "supportAccess.ended.body": "{tenant} revoked the access, or its window closed. Nothing more can be read.",
-  "supportAccess.ended.back": "Back to the console",
-  "supportAccess.problem.readOnly": "A support session can only read. Nothing was changed.",
-  "supportAccess.problem.ended": "Support access has ended. Nothing more can be read."
+  "supportAccess.banner.leave": "Leave"
 }

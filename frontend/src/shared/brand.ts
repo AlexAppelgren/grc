@@ -18,5 +18,3 @@ export const securityContact = 'security@bleqq.com';
 
 // The accessible name of the phonetic wordmark, in the user's language.
 export const logoNameKey: MessageKey = 'brand.logoName';
-
-export const legalFooterKeys: readonly MessageKey[] = ['brand.legal', 'brand.privacy', 'brand.support'];

@@ -5,7 +5,7 @@ import { complianceTone, proposalStatusTone, severityTone, slotTone } from '@/fe
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { problemFrom } from '@/shared/utils/problem';
 
-import type { NearDuplicateCandidate, ProposalRef, VocabularyListSummary, VocabularyRow } from './types';
+import type { NearDuplicateCandidate, VocabularyListSummary, VocabularyRow } from './types';
 
 // Pills and derived facts for the vocabulary screens
 // (design/screens/admin-vocabularies.html, admin-vocabulary.html; VOC-01,
@@ -19,7 +19,6 @@ export const NEAR_DUPLICATE_CODE = 'near_duplicate';
 /** 409: the same label once case and surrounding space are set aside; `force` cannot override it. */
 export const DUPLICATE_KEY_CODE = 'duplicate_key';
 export const IN_USE_CODE = 'in_use';
-export const SYSTEM_ROW_CODE = 'system_row';
 
 // Lists whose keys the reference seed alone files and nothing merges away (D-94): a
 // proposal relabels, retires or restores one of their values, a seeded one included.
@@ -242,10 +241,6 @@ export function listLabel(list: string, t: Translate): string {
   return key === undefined ? humaniseListKey(list) : t(key);
 }
 
-export function isLibraryList(summary: Pick<VocabularyListSummary, 'tier'>): boolean {
-  return summary.tier === 'library';
-}
-
 // One marker pill per list in the list's own slot tone, so an admin sees the
 // tone before opening it, plus the computed "N suggestions" when any wait.
 export function presentListSummary(summary: VocabularyListSummary, t: Translate): PresentedPill[] {
@@ -256,20 +251,6 @@ export function presentListSummary(summary: VocabularyListSummary, t: Translate)
   const pending = summary.pendingSuggestions ?? 0;
   if (pending > 0) pills.push({ key: 'list:suggestions', label: t('admin.vocabularies.suggestions', { count: pending }), tone: slotTone.waitingForApproval, order: 10 });
   return pills;
-}
-
-// A key from a typed label: lower case, ASCII letters and digits, underscores.
-export function keyFromLabel(label: string): string {
-  return label
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-}
-
-export function changeSummary(proposal: Pick<ProposalRef, 'title'>, t: Translate): string {
-  return t('admin.vocabularies.proposed', { title: proposal.title });
 }
 
 /** A proposal this bank made on a library list and is still waiting on: the open status's tone. */

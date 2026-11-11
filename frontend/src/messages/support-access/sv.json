@@ -42,10 +42,5 @@
   "supportAccess.stale": "Begäran var redan avgjord eller har förfallit. Listan visar nu hur det står.",
   "supportAccess.banner.title": "Supportåtkomst till {tenant}.",
   "supportAccess.banner.until": "Endast läsning, till {time}.",
-  "supportAccess.banner.leave": "Lämna",
-  "supportAccess.ended.title": "Supportåtkomsten har upphört",
-  "supportAccess.ended.body": "{tenant} återkallade åtkomsten, eller så stängdes tidsfönstret. Inget mer kan läsas.",
-  "supportAccess.ended.back": "Tillbaka till konsolen",
-  "supportAccess.problem.readOnly": "En supportsession kan bara läsa. Ingenting ändrades.",
-  "supportAccess.problem.ended": "Supportåtkomsten har upphört. Inget mer kan läsas."
+  "supportAccess.banner.leave": "Lämna"
 }

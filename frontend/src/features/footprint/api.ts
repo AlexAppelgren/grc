@@ -1,4 +1,3 @@
-import type { ProposalRef } from '@/features/vocabularies/types';
 import type { components } from '@/types/api.generated';
 import { api } from '@/shared/utils/api-client';
 
@@ -19,7 +18,6 @@ import type {
   ScopeItem,
   TaxonomyDimension,
   TaxonomyTerm,
-  TermSuggest,
 } from './types';
 
 // Thin typed wrappers returning `.data` (playbook 6.1). Paths are the
@@ -201,11 +199,4 @@ export async function listTerms(dimension?: string): Promise<TaxonomyTerm[]> {
 export async function listDimensions(): Promise<TaxonomyDimension[]> {
   const rows = (await api.get<Schemas['TaxonomyDimensionPage']>(`${TAXONOMY}/dimensions`)).data.items;
   return rows.map((row) => ({ key: row.key, kind: row.kind ?? null, label: row.label, restrictsFootprint: row.extra?.restrictsFootprint === true }));
-}
-
-/** A term nobody can add directly: the write becomes a proposal (VOC-07). */
-export async function suggestTerm(body: TermSuggest): Promise<ProposalRef> {
-  const data = (await api.post<{ proposal?: ProposalRef } | ProposalRef>(`${TAXONOMY}/terms`, body)).data;
-  const nested = 'proposal' in data && data.proposal !== undefined ? data.proposal : (data as ProposalRef);
-  return { id: nested.id ?? '', kind: nested.kind ?? '', status: nested.status ?? '', title: nested.title ?? '' };
 }
