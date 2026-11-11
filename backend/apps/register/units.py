@@ -60,9 +60,7 @@ WIRE_APPLICABILITY = {
 }
 
 
-# ---------------------------------------------------------------------------------------
-# Where a unit may exist
-# ---------------------------------------------------------------------------------------
+# --- Where a unit may exist ---
 def conformance_scope(obligation_id: uuid.UUID, org_unit_id: uuid.UUID) -> TenantObligationScope:
     """The entity's conformance scope row a unit is listed under, checked in the order a
     caller can act on: an obligation the bank cannot see is 404, one outside a standard 422
@@ -93,9 +91,7 @@ def _standard(obligation_id: uuid.UUID) -> None:
         )
 
 
-# ---------------------------------------------------------------------------------------
-# Reads
-# ---------------------------------------------------------------------------------------
+# --- Reads ---
 def _live_units() -> QuerySet[SoaUnit]:
     """Live units with everything a row shows, in a constant number of queries."""
     return (
@@ -162,9 +158,7 @@ def units_page(*, order: list[str], obligation_id: uuid.UUID, entity: uuid.UUID 
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Writes
-# ---------------------------------------------------------------------------------------
+# --- Writes ---
 def create_unit(
     *, tenant: Tenant, actor: Actor, order: list[str], obligation_id: uuid.UUID, body: RegisterUnitBody
 ) -> RegisterUnit:
@@ -290,9 +284,7 @@ def remove_unit(*, tenant: Tenant, actor: Actor, unit_id: uuid.UUID, expected_ve
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Paste
-# ---------------------------------------------------------------------------------------
+# --- Paste ---
 def paste_units(
     *,
     tenant: Tenant,
@@ -342,9 +334,8 @@ def paste_units(
 
     with batched():  # one statement of audit and outbox rows for every event of the paste
         created = _insert_many(tenant=tenant, actor=actor, scope=scope, lines=[(row.reference, row.title) for row in rows])
-        # Plain dicts, not schema instances: ninja re-reads a nested schema through its
-        # attribute getter, whose missed camelCase lookups fall back to Django's template
-        # resolver, a cost per field and line that a 93-line paste feels (r2-perf, NFR-02).
+        # Plain dicts, not schema instances: ninja re-reads a nested schema through a getter
+        # whose missed camelCase lookups cost per field and line (NFR-02).
         answers = [
             {"obligationId": obligation_id, "unitId": unit.id, "applicability": pasted.applicability, "reason": (pasted.reason or "").strip()}
             for unit, pasted in zip(created, body.lines, strict=True)

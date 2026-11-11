@@ -1,11 +1,10 @@
 """Linked internal items (REG-05): the bank's own policies, procedures and controls, with the
 references an outside GRC system knows them by. A removal is soft; the item survives the link.
 
-Every link points at an `InternalItem`, which carries the kind (INPUT_DELTAS, c8-register-models):
-the call either picks one of the bank's items or creates it from the same body, so there is
-no separate internal-items screen in R2. The link keeps its own label, url and external
-reference, taken from the item unless the call names its own. An audit row names ids and
-keys only (R2_CROSS_CUTTING (m)); the url is stored as given and never fetched.
+Every link points at an `InternalItem`, which carries the kind (INPUT_DELTAS): the call picks
+one of the bank's items or creates it from the same body. The link keeps its own label, url
+and external reference. Audit rows name ids and keys only (R2_CROSS_CUTTING (m)); the url is
+stored as given and never fetched.
 """
 
 from __future__ import annotations

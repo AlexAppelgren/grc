@@ -1,12 +1,10 @@
-"""The obligation page's read (perf-obligation-page): the register entry and what every panel
-shows on load, in one request instead of one per panel.
+"""The obligation page's read: the register entry and every panel's first page in one
+request.
 
-Each part is the first page the panel's own route reads, built by that route's own function,
-so it holds exactly what the route would answer the same caller. A part behind a permission
-the route's gate does not already demand (`register.read`) is read only when the caller holds
-that permission, and is null otherwise: the reports need `problems.report`, the changes
-`watch.read` and the comments `library.read`. A read writes nothing, and the query count is
-fixed however many rows each part holds.
+Each part is built by its own route's function, so it holds what that route would answer.
+A part behind a permission the gate does not demand (`register.read`) is null without it:
+reports need `problems.report`, changes `watch.read`, comments `library.read`. Reads only;
+fixed query count.
 """
 
 from __future__ import annotations

@@ -53,12 +53,11 @@ def local_day(tenant: Tenant, at: datetime.datetime) -> datetime.date:
 
 
 def next_due(rule: str, start: datetime.date, *, inclusive: bool) -> datetime.date | None:
-    """The first date of `rule`, its series anchored at `start`: on or after `start` when
-    `inclusive`, else strictly after it, within the library's ten-year horizon. None when the
-    rule has ended, has no date in that span from this start, or is refused; the library's
-    proposal validates a rule before it is stored, so the last is logged. Expanded through
-    `recurrence.expand`, which bounds the walk, never dateutil directly: a rule validated
-    from another day can match nothing from this one (security-review-c8 M4)."""
+    """The first date of `rule`, its series anchored at `start` (on or after when
+    `inclusive`, else after), within the library's ten-year horizon. None when the rule has
+    ended, has no date in that span, or is refused (logged; the proposal validated it).
+    Always through `recurrence.expand`, which bounds the walk, never dateutil directly: a rule
+    valid from one day can match nothing from another (M4)."""
     try:
         days = recurrence.expand(rule, start, start + recurrence.HORIZON)
     except ValidationError:
@@ -67,9 +66,7 @@ def next_due(rule: str, start: datetime.date, *, inclusive: bool) -> datetime.da
     return next((due for due in days if inclusive or due > start), None)
 
 
-# ---------------------------------------------------------------------------------------
-# The one writer
-# ---------------------------------------------------------------------------------------
+# --- The one writer ---
 def schedule_first(
     *,
     tenant: Tenant,
@@ -156,9 +153,7 @@ def _audit_scheduled(tenant: Tenant, actor: Actor, duty: DutyRule, occurrence: D
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Routes
-# ---------------------------------------------------------------------------------------
+# --- Routes ---
 def list_duties(*, tenant: Tenant, order: list[str], obligation_id: uuid.UUID, limit: int, offset: int) -> RegisterDutyPage:
     """`GET /obligations/{obligationId}/duties`: the obligation's active recurring duties,
     by next due date, each with the bank's earliest open occurrence. Writes nothing; an
@@ -233,11 +228,9 @@ def complete_occurrence(
             tenant_id=tenant.id,
             before={"status": before},
             after={
-                # The note is the person's own words: it stays on the occurrence and never
-                # reaches the audit value (R2 cross-cutting rule m, CHUNK10 rule 13).
+                # Keys and dates only: the note stays on the occurrence (R2 cross-cutting rule m).
                 "status": DutyStatus.DONE.value,
-                # The note is the bank's own words: the row says one was left, never what it
-                # says (R2_CROSS_CUTTING (m); security-review-c8 M1).
+                # The audit row says a note was left, never what it says (M1).
                 "noted": bool(occurrence.note),
                 "nextOccurrenceId": None if following is None else str(following.id),
                 "nextDueDate": None if following is None else following.due_date.isoformat(),

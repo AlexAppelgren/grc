@@ -1,22 +1,17 @@
-"""Models of the register app (chunk 8; REG-01 to REG-05, TEN-03): the bank's judgement laid
-over the shared library, every table a tenant table under forced row-level security.
+"""Models of the register app (REG-01 to REG-05, REG-07, REG-08, TEN-03): the bank's
+judgement over the shared library, every table a tenant table under forced row-level
+security.
 
-A register entry (`TenantObligation`) is keyed on the obligation's id, so a bank-private
-obligation joins unchanged later, and it is created by `logic.ensure_register_entry()` alone.
-"Applies" and "we comply" are separate columns and neither derives from the other (CLAUDE.md
-section 5). Statuses, scales, sources and reasons are the tenant's own list rows; the
-applicability and the assessment method are kinds, because the rules branch on them.
+A register entry (`TenantObligation`) is keyed on the obligation's id and created by
+`logic.ensure_register_entry()` alone. "Applies" and "we comply" are separate columns.
+Statuses, scales, sources and reasons are the tenant's list rows; applicability and
+assessment method are kinds.
 
 PostgreSQL checks a foreign key without row-level security, so every reference to another
-tenant row is also a composite `(tenant_id, …)` key, written as SQL in the migrations: to
-`UNIQUE (tenant_id, id)` on the target, and to `membership_tenant_user_unique` for a person,
-which makes every person named here a member of the same bank.
-
-Nothing is overwritten: an assessment is an append-only ledger row with a trigger, and an
-internal link is removed by stamping `removed_at` and `removed_by`, never deleted. Risk
-acceptance is the one four-eyes step here (`gap_four_eyes`); applicability has none (D-75).
-The Statement of Applicability's units (`SoaUnit`, REG-08, D-41) are register 0003, and the
-dated occurrences of a library recurring duty (`DutyOccurrence`, REG-07) register 0004."""
+tenant row is also a composite `(tenant_id, …)` key in SQL, a person's to
+`membership_tenant_user_unique`. Nothing is overwritten: assessments are append-only by
+trigger, links are removed by stamp. Risk acceptance is four eyes (`gap_four_eyes`);
+applicability is not (D-75)."""
 
 from __future__ import annotations
 
@@ -259,11 +254,9 @@ class Gap(TenantModel):
                 name="gap_one_owner_kind",
             ),
         ]
-        # The four-eyes check constraint `gap_four_eyes` is created by RunSQL in register 0002
-        # as `accepted_by_id IS NULL OR accepted_by_id <> acceptance_requested_by_id`. Django
-        # can only spell "not equal" as NOT (a = b), which is the same rule but not the
-        # definition the four-eyes guard reads back from pg_constraint
-        # (apps/shared/tests_four_eyes.py), so the database states it in its own words.
+        # `gap_four_eyes` is created by RunSQL in register 0002 as `accepted_by_id IS NULL OR
+        # accepted_by_id <> acceptance_requested_by_id`, the words the four-eyes guard reads
+        # back from pg_constraint (apps/shared/tests_four_eyes.py); Django would spell NOT (a = b).
 
     def __str__(self) -> str:
         return self.title

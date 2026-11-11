@@ -1,24 +1,17 @@
 """Applicability per obligation, per legal entity and per unit (REG-01, D-75, D-42, AC-REG1).
 
-One person holding `applicability.approve` sets the answer after a confirmation dialog: no
-request, no second approver, no step-up. The value and the reason are stored at once with the
-decision time and the person, and one `record()` per row names the value before and after and
-the reason. Its subject is the register entry; an entity's answer names the entity in its
-title and its `orgUnitId`. A unit's answer is stored on the unit and its subject is the unit,
-so the unit's history is its own events (REG-08, D-41); the unit must be live under the
-obligation, 404 otherwise, and its entity must still follow the standard (422
-`scope_not_applicable`). Many answers are one call, all stored or none, capped by
+One `applicability.approve` holder answers after a confirmation dialog: no request, no
+second approver, no step-up. Value, reason, time and person are stored with one `record()`
+per row. A unit's answer is stored on and audited as the unit (REG-08, D-41); the unit must
+be live under the obligation (404) and its entity still follow the standard (422
+`scope_not_applicable`). Many answers are one call, all or none, capped by
 `REGISTER_BULK_MAX`.
 
-"Applies" and "we comply" are separate facts (CLAUDE.md section 5): nothing here reads or
-writes a compliance status or a gap. A read writes nothing: the register entry is created by
-`ensure_register_entries()` and an entity's scope row here, both only in the transaction of
-the write that needs them, and each in one statement however many the call needs.
+"Applies" and "we comply" are separate facts: nothing here touches a status or a gap. A read
+writes nothing; entries and scope rows are created only by the write that needs them.
 
-An obligation spans the bank's active legal entities whose entity term it carries, or all of
-them when it carries no term in that entity's dimension, as a standard's conformance
-obligation carries none (D-42). Only the entity's own dimension is compared, so an opt-in
-term such as the standard's never narrows the span.
+An obligation spans the active legal entities whose entity term it carries, or all of them
+when it carries none in that dimension (D-42); an opt-in term never narrows the span.
 """
 
 from __future__ import annotations
@@ -99,8 +92,8 @@ def set_applicability_many(
     answers = [_Answer(row.obligation_id, row.org_unit_id, row.unit_id, row.applicability, row.reason) for row in body.rows]
     if len({answer[:3] for answer in answers}) < len(answers):
         raise ValidationError("Each obligation, legal entity or unit may be answered once in a call.", code="validation_error")
-    # Built, not validated again: every item is already a validated answer, and ninja re-reads
-    # a nested schema through a getter whose missed camelCase lookups cost per field and row.
+    # Built, not validated again: ninja re-reads a nested schema through a getter whose
+    # missed camelCase lookups cost per field and row.
     return RegisterApplicabilityMany.model_construct(items=_store(tenant=tenant, actor=actor, order=order, answers=answers, expected_version=None))
 
 
@@ -228,9 +221,8 @@ def _store(
                 applied.append((entry, scope))
         _update(written, person, decided_at)
         if applied:
-            # REG-07 (c8-duty-occurrences): an answer "applies" writes the first occurrence of
-            # each recurring duty that has none, in this transaction. A Statement of
-            # Applicability unit carries no duty of its own, so its answer schedules none.
+            # REG-07: an answer "applies" writes each recurring duty's first occurrence in this
+            # transaction. A Statement of Applicability unit carries no duty of its own.
             duties.schedule_first(tenant=tenant, actor=actor, targets=applied, at=decided_at)
     return stored
 
@@ -374,7 +366,7 @@ def _write(
     )
 
 
-# c8-ui-applicability-status: the legal entities an answer can be given for (REG-01, D-42).
+# The legal entities an answer can be given for (REG-01, D-42).
 def list_spanned(*, obligation_id: uuid.UUID) -> list[RegisterSpannedEntity]:
     """`GET /obligations/{obligationId}/register/entities`: `entities_spanned()` for one
     obligation the bank can see, so the screen offers exactly the entities the write accepts."""

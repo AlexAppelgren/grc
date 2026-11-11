@@ -1,23 +1,16 @@
 """Gaps and risk acceptance (REG-03).
 
-A gap is a fact about how the bank complies, never about whether a rule applies: it is
-recorded on a register entry, optionally for one legal entity, and it stays readable whatever
-the entry's applicability later becomes. Only recording one on an obligation that does not
-apply is refused. Its status, severity, source and acceptance reason are rows of the bank's
-own lists, stored and compared by key.
+A gap is a fact about how the bank complies, never about whether a rule applies: recorded on
+a register entry (optionally for one entity), it stays readable whatever the applicability
+becomes; only recording one where the obligation does not apply is refused. Status,
+severity, source and acceptance reason are the bank's list rows, by key.
 
-The status moves between the `open` and `remediating` categories and on to `closed` through
-`PATCH`; the `risk_accepted` category is reached only through the acceptance, and a closed or
-accepted gap goes back to `open` only through the reopen. Accepting a gap's risk keeps its
-four eyes: a second person holding `risk.accept.approve`, with a fresh passkey step-up, who is
-not the person who asked (`gap_four_eyes` backs the check below). Every write locks the gap's
-row first, so two decisions at once land one.
-
-A gap may name a live Statement of Applicability unit under its own register entry (D-41), 422
-`unknown_unit` otherwise: the gap is then in the unit's legal entity, the unit is locked while
-the gap is recorded so a rename cannot slip past it, and its reference and title are fixed
-from then on (`units.py`). Audit rows carry ids, keys and dates, never a title, note or plan a person typed
-(R2_CROSS_CUTTING (m)).
+`PATCH` moves between `open` and `remediating` and on to `closed`; `risk_accepted` is reached
+only through the acceptance, and back to `open` only through the reopen. Acceptance is four
+eyes: a second `risk.accept.approve` holder with a passkey step-up (`gap_four_eyes` backs
+it). Every write locks the gap first. A gap may name a live unit under its entry (D-41; 422
+`unknown_unit`), locked while recorded. Audit rows carry ids, keys and dates, never typed
+text (R2_CROSS_CUTTING (m)).
 """
 
 from __future__ import annotations
@@ -55,7 +48,7 @@ PATCH_TARGETS = MOVABLE | {GapCategory.CLOSED.value}
 REOPENABLE = {GapCategory.CLOSED.value, GapCategory.RISK_ACCEPTED.value}
 # The fields a person types. An audit row names which of them changed, never their text.
 TYPED_FIELDS = ("title", "description", "remediation")
-# What a risk acceptance is given on (security-review-c8 M2).
+# What a risk acceptance is given on (M2).
 ACCEPTED_FACTS = (*TYPED_FIELDS, "severity", "target_date")
 
 _RELATED = (
@@ -73,9 +66,7 @@ _RELATED = (
 _LABELS = ("severity__labels", "source__labels", "status__labels", "owner_team__labels", "acceptance_reason__labels")
 
 
-# ---------------------------------------------------------------------------------------
-# Reads
-# ---------------------------------------------------------------------------------------
+# --- Reads ---
 def _gaps() -> QuerySet[Gap]:
     """Every gap with what its answer shows, in a fixed number of queries per page."""
     return Gap.objects.select_related(*_RELATED).prefetch_related(*_LABELS)
@@ -169,9 +160,7 @@ def list_gaps(*, tenant: Tenant, order: list[str], filters: RegisterGapQuery, li
     return _page(gaps, order, limit, offset)
 
 
-# ---------------------------------------------------------------------------------------
-# What a write names
-# ---------------------------------------------------------------------------------------
+# --- What a write names ---
 def _row(model: type[TenantListVocabulary], key: str, list_name: str) -> Any:
     """An active row of one of the bank's lists by key, or 422 `unknown_key` naming the keys
     the list holds."""
@@ -284,9 +273,7 @@ def _facts(gap: Gap) -> dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------------------------
-# Record and amend
-# ---------------------------------------------------------------------------------------
+# --- Record and amend ---
 def create_gap(
     *, tenant: Tenant, actor: Actor, order: list[str], obligation_id: uuid.UUID, body: RegisterGapBody
 ) -> dict[str, Any]:
@@ -389,9 +376,7 @@ def update_gap(
     return _answer(gap.id, order)
 
 
-# ---------------------------------------------------------------------------------------
-# Risk acceptance behind four eyes
-# ---------------------------------------------------------------------------------------
+# --- Risk acceptance behind four eyes ---
 def _no_acceptance() -> dict[str, Any]:
     return {
         "acceptance_reason_id": None,
