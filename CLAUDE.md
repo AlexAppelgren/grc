@@ -141,7 +141,7 @@ or tool names. The owner deploys; never deploy yourself.
 `main`, and push only with `bash scripts/ship.sh` (`prepush.sh --all` runs every gate locally). It mirrors CI and CodeQL with the same tools,
 versions, flags and thresholds, so a green run predicts a green CI run: CodeQL
 (`security-extended`, then `.github/scripts/codeql_gate.py` with the accepted
-fingerprints), gitleaks, osv-scanner and `npm audit`, licences, the backend and
+fingerprints), gitleaks, osv-scanner (both lockfiles), licences, the backend and
 frontend gates below, OpenAPI drift, E2E and Trivy on both images. It is tiered
 by what changed since `origin/main` like CI, downloads its scanners once into
 `<main checkout>/.tools/`, and stops at the first red gate with the command
