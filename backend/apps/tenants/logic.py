@@ -70,7 +70,7 @@ def onboarding(tenant: Tenant) -> dict[str, Any]:
         "profile": profile_done,
         "members": members_done,
         "footprint": FootprintTerm.objects.filter(tenant=tenant).exists(),
-        "vocabularies": False,  # chunk 2
+        "vocabularies": False,  # not tracked yet
         "passkey": passkey_done,
     }
     steps = [{"key": key, "done": done[key]} for key in ONBOARDING_STEPS]

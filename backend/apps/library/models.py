@@ -412,7 +412,7 @@ class ObligationVersion(LibraryModel):
     version_number = models.PositiveIntegerField()
     effective_from = models.DateField(null=True, blank=True)
     effective_from_precision = _precision()
-    caused_by_change = models.UUIDField(null=True, blank=True)  # the regulatory change; a foreign key from chunk 5
+    caused_by_change = models.UUIDField(null=True, blank=True)  # the regulatory change, by id
     applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_at = models.DateTimeField(null=True, blank=True)
