@@ -110,86 +110,80 @@ PROVISION_TARGET = "provision"
 # The library list a rejection's reason is a row of (PRO-01, VOC-07).
 REJECTION_REASON_LIST = "rejection_reason"
 
-# The named payload schema per kind (PRO-01): apply() never reads a free-form dictionary.
-PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
-    ProposalKind.VOCABULARY_CREATE.value: ProposalVocabularyCreatePayload,
-    ProposalKind.VOCABULARY_RELABEL.value: ProposalVocabularyRelabelPayload,
-    ProposalKind.VOCABULARY_RETIRE.value: ProposalVocabularyRetirePayload,
-    ProposalKind.VOCABULARY_RESTORE.value: ProposalVocabularyRetirePayload,
-    ProposalKind.VOCABULARY_MERGE.value: ProposalVocabularyMergePayload,
-    ProposalKind.TERM_CREATE.value: ProposalTermCreatePayload,
-    ProposalKind.TERM_UPDATE.value: ProposalTermUpdatePayload,
-    ProposalKind.NEW_OBLIGATION_VERSION.value: ProposalObligationVersionPayload,
-    ProposalKind.NEW_INSTRUMENT.value: ProposalInstrumentPayload,
-    ProposalKind.NEW_OBLIGATION.value: ProposalObligationPayload,
-    ProposalKind.NEW_PROVISION.value: ProposalProvisionPayload,
-    ProposalKind.NEW_PROVISION_VERSION.value: ProposalProvisionVersionPayload,
-    ProposalKind.NEW_RECURRING_DUTY.value: ProposalRecurringDutyPayload,
-    ProposalKind.NEW_CONTROL.value: ProposalControlPayload,
-    ProposalKind.NEW_INSTRUMENT_SUMMARY.value: ProposalInstrumentSummaryPayload,
-    ProposalKind.NEW_TRANSLATIONS.value: ProposalTranslationsPayload,
+@dataclass(frozen=True)
+class KindRule:
+    """What one proposal kind is (PRO-01). Every flag defaults to off, so a kind added later
+    names no target, is not a bank's own and waits for a person."""
+
+    payload: type[pydantic.BaseModel]  # the named schema: apply() never reads a free dict
+    family: str = ""  # "vocabulary", "term" or "obligation"
+    target: str | None = None  # the record type it names: every version and a recurring duty
+    version: bool = False  # versions a record which exists
+    new_record: bool = False  # brings a record in: names no target, sourced by https links
+    named: bool = False  # names a row by key with labels: the key its own slug, real languages
+    private: bool = False  # a bank may file it as a record of its own (INV-07, OWN-02, OWN-05)
+    private_only: bool = False  # only ever a bank's own record (OWN-05, D-99)
+    # The applied record can say an agent confirmed it (`verified_origin` and
+    # `verified_by_agent`), so an independent agent may approve it (INV-05, D-62, D-79).
+    agent_confirmable: bool = False
+
+
+_K = ProposalKind
+# The one table of proposal kinds; every set below is derived from it. A provision and its
+# versions have no provenance column, nor an instrument's summary (D-124) nor a record's
+# machine translations (D-129), whose rows name no confirming agent, so they wait for a person.
+KINDS: dict[str, KindRule] = {
+    _K.VOCABULARY_CREATE.value: KindRule(ProposalVocabularyCreatePayload, family="vocabulary", named=True, agent_confirmable=True),
+    _K.VOCABULARY_RELABEL.value: KindRule(ProposalVocabularyRelabelPayload, family="vocabulary", named=True, agent_confirmable=True),
+    _K.VOCABULARY_RETIRE.value: KindRule(ProposalVocabularyRetirePayload, family="vocabulary", agent_confirmable=True),
+    _K.VOCABULARY_RESTORE.value: KindRule(ProposalVocabularyRetirePayload, family="vocabulary", agent_confirmable=True),
+    _K.VOCABULARY_MERGE.value: KindRule(ProposalVocabularyMergePayload, family="vocabulary", agent_confirmable=True),
+    _K.TERM_CREATE.value: KindRule(ProposalTermCreatePayload, family="term", named=True, agent_confirmable=True),
+    _K.TERM_UPDATE.value: KindRule(ProposalTermUpdatePayload, family="term", named=True, agent_confirmable=True),
+    _K.NEW_OBLIGATION_VERSION.value: KindRule(
+        ProposalObligationVersionPayload, family="obligation", target=OBLIGATION_TARGET, version=True, agent_confirmable=True
+    ),
+    _K.NEW_INSTRUMENT.value: KindRule(ProposalInstrumentPayload, new_record=True, private=True, agent_confirmable=True),
+    _K.NEW_OBLIGATION.value: KindRule(ProposalObligationPayload, new_record=True, private=True, agent_confirmable=True),
+    _K.NEW_PROVISION.value: KindRule(ProposalProvisionPayload, new_record=True),
+    _K.NEW_PROVISION_VERSION.value: KindRule(ProposalProvisionVersionPayload, target=PROVISION_TARGET, version=True),
+    # Added to an obligation in force (REG-07); names its proposing agent too (library 0010).
+    _K.NEW_RECURRING_DUTY.value: KindRule(ProposalRecurringDutyPayload, target=OBLIGATION_TARGET, agent_confirmable=True),
+    # Names its bank's own obligation by key in its payload, and is read from a public page.
+    _K.NEW_CONTROL.value: KindRule(ProposalControlPayload, private=True, private_only=True),
+    _K.NEW_INSTRUMENT_SUMMARY.value: KindRule(ProposalInstrumentSummaryPayload, new_record=True),
+    _K.NEW_TRANSLATIONS.value: KindRule(ProposalTranslationsPayload, new_record=True),
 }
-VOCABULARY_KINDS = frozenset(
-    kind.value
-    for kind in (
-        ProposalKind.VOCABULARY_CREATE,
-        ProposalKind.VOCABULARY_RELABEL,
-        ProposalKind.VOCABULARY_RETIRE,
-        ProposalKind.VOCABULARY_RESTORE,
-        ProposalKind.VOCABULARY_MERGE,
-    )
-)
-OBLIGATION_KINDS = frozenset({ProposalKind.NEW_OBLIGATION_VERSION.value})
-# The kinds that version a record which exists, by the target type each one names.
-VERSION_TARGETS = {
-    ProposalKind.NEW_OBLIGATION_VERSION.value: OBLIGATION_TARGET,
-    ProposalKind.NEW_PROVISION_VERSION.value: PROVISION_TARGET,
-}
-# The kinds that name the record they are for, by its target type: every version, and a
-# recurring duty, which is added to an obligation in force (REG-07).
-RECORD_TARGETS = {**VERSION_TARGETS, ProposalKind.NEW_RECURRING_DUTY.value: OBLIGATION_TARGET}
-# The kinds that bring a new record into the library. They name no target, since the record
-# does not exist yet, and every fact they carry is sourced by an https link: a new record
-# has no provision of its own to cite (PRO-01). A record's translations name it in their
-# payload too, and are sourced by the record's own link (D-129).
-NEW_RECORD_KINDS = frozenset(
-    {
-        ProposalKind.NEW_INSTRUMENT.value,
-        ProposalKind.NEW_OBLIGATION.value,
-        ProposalKind.NEW_PROVISION.value,
-        ProposalKind.NEW_INSTRUMENT_SUMMARY.value,
-        ProposalKind.NEW_TRANSLATIONS.value,
-    }
-)
-NEW_RECORD_PAYLOADS = (
-    ProposalInstrumentPayload,
-    ProposalObligationPayload,
-    ProposalProvisionPayload,
-    ProposalInstrumentSummaryPayload,
-    ProposalTranslationsPayload,
-)
-# The kinds a bank may file as a record of its own (INV-07, OWN-02, OWN-05): what does not
-# exist in the library yet, and a control of one of the bank's own obligations. A version
-# always targets a shared record, so it is never the bank's own.
-PRIVATE_RECORD_KINDS = frozenset(
-    {ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_CONTROL.value}
-)
-# The kinds that are only ever a record of a bank's own: a control (OWN-05, D-99) is never
-# a proposal to the shared library.
-PRIVATE_ONLY_KINDS = frozenset({ProposalKind.NEW_CONTROL.value})
-# The kinds that name no target: a new record, and a control, which names its bank's own
-# obligation by key in its payload.
+
+
+def _kinds(flag: str) -> frozenset[str]:
+    return frozenset(kind for kind, rule in KINDS.items() if getattr(rule, flag))
+
+
+def _payloads(kinds: frozenset[str]) -> tuple[type[pydantic.BaseModel], ...]:
+    return tuple(dict.fromkeys(rule.payload for kind, rule in KINDS.items() if kind in kinds))
+
+
+PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {kind: rule.payload for kind, rule in KINDS.items()}
+VOCABULARY_KINDS = frozenset(kind for kind, rule in KINDS.items() if rule.family == "vocabulary")
+TERM_KINDS = frozenset(kind for kind, rule in KINDS.items() if rule.family == "term")
+OBLIGATION_KINDS = frozenset(kind for kind, rule in KINDS.items() if rule.family == "obligation")
+VERSION_TARGETS = {kind: rule.target for kind, rule in KINDS.items() if rule.version and rule.target}
+RECORD_TARGETS = {kind: rule.target for kind, rule in KINDS.items() if rule.target}
+NEW_RECORD_KINDS = _kinds("new_record")
+NEW_RECORD_PAYLOADS = _payloads(NEW_RECORD_KINDS)
+PRIVATE_RECORD_KINDS = _kinds("private")
+PRIVATE_ONLY_KINDS = _kinds("private_only")
 UNTARGETED_KINDS = NEW_RECORD_KINDS | PRIVATE_ONLY_KINDS
-# The payloads whose sources are https links only: a new record has no provision of its own
-# to cite, and a control is read from a public page.
-LINK_SOURCED_PAYLOADS = (*NEW_RECORD_PAYLOADS, ProposalControlPayload)
+LINK_SOURCED_PAYLOADS = _payloads(UNTARGETED_KINDS)
+# A reviewer checks a record kind's sourced facts against the same source (PRO-02).
+CORRECTABLE_KINDS = frozenset(RECORD_TARGETS) | NEW_RECORD_KINDS
+AGENT_CONFIRMABLE_KINDS = _kinds("agent_confirmable")
+NAMED_PAYLOADS = _payloads(_kinds("named"))
 # Why a provision is refused under a bank's own instrument, filed privately or not.
 PRIVATE_PROVISIONS = "An instrument of your organisation's own holds no provisions: propose its duties as obligations."
 # The two uniqueness constraints on a proposer's retry key (models.py).
 IDEMPOTENCY_CONSTRAINTS = frozenset({"proposal_idempotency_per_user", "proposal_idempotency_per_key"})
-# The kinds a reviewer may correct: each carries sourced facts from an authority, which a
-# reviewer checks against the same source (PRO-02).
-CORRECTABLE_KINDS = frozenset(RECORD_TARGETS) | NEW_RECORD_KINDS
 # The dimension an instrument's regime is a term of (D-39).
 REGIME_DIMENSION = "regime"
 # The fields of a new record's payload that say how it is written rather than what the
@@ -210,31 +204,8 @@ UNSOURCED_FIELDS = frozenset(
         "summariesFrom",
     }
 )
-TERM_KINDS = frozenset({ProposalKind.TERM_CREATE.value, ProposalKind.TERM_UPDATE.value})
 # The records a translation is for (D-129).
 TRANSLATION_TARGETS = (SubjectType.INSTRUMENT.value, SubjectType.OBLIGATION.value)
-# The kinds whose applied record can say an agent confirmed it (`verified_origin` and
-# `verified_by_agent`): an obligation version, every library list row and taxonomy term
-# (taxonomy 0007), a new instrument, a new obligation with its first version, and a
-# recurring duty (library 0010), which names its proposing agent too. Only these
-# may an independent agent approve (INV-05, D-62, D-79). A provision and its versions have no
-# such column, so `new_provision` and `new_provision_version` wait for a person, as does any
-# kind added later without that provenance: an instrument's summary (D-124) and a record's
-# machine translations (D-129), whose translation rows name no confirming agent.
-AGENT_CONFIRMABLE_KINDS = (
-    OBLIGATION_KINDS
-    | VOCABULARY_KINDS
-    | TERM_KINDS
-    | frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_RECURRING_DUTY.value})
-)
-# The payloads that name a row by key and carry labels: the key must be its own slug and
-# the labels real languages, as the vocabulary routes make them.
-NAMED_PAYLOADS = (
-    ProposalVocabularyCreatePayload,
-    ProposalVocabularyRelabelPayload,
-    ProposalTermCreatePayload,
-    ProposalTermUpdatePayload,
-)
 
 
 @dataclass(frozen=True)
@@ -369,9 +340,10 @@ def _validate_target(kind: str, payload: pydantic.BaseModel, owner_tenant_id: uu
         payload.labels = lists.validated_labels(payload.labels)
     elif isinstance(payload, ProposalVocabularyRelabelPayload | ProposalTermUpdatePayload) and payload.labels:
         payload.labels = lists.validated_labels(payload.labels)
-    if isinstance(payload, NAMED_PAYLOADS) and (not payload.key or lists.key_for(payload.labels, payload.key) != payload.key):
+    keyed: Any = payload  # one of NAMED_PAYLOADS, each with a key and labels, when the test below holds
+    if isinstance(payload, NAMED_PAYLOADS) and (not keyed.key or lists.key_for(keyed.labels, keyed.key) != keyed.key):
         raise ValidationError(
-            f"{payload.key!r} is not a key: use lowercase letters, digits and underscores.", code="validation_error"
+            f"{keyed.key!r} is not a key: use lowercase letters, digits and underscores.", code="validation_error"
         )
 
 

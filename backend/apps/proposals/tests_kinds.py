@@ -29,7 +29,7 @@ from unittest import mock
 
 from django.core.exceptions import ValidationError
 from django.db import migrations
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from apps.agents import testing as agents_testing
 from apps.governance.models import AiGeneration
@@ -220,6 +220,38 @@ def _facts(fields: dict[str, Any]) -> list[str]:
             continue
         facts += [f"{name}.{language}" for language in value] if isinstance(value, dict) else [name]
     return facts
+
+
+class TheKindTable(SimpleTestCase):
+    """Every proposal kind is one row of `logic.KINDS`, and the sets the rules read are
+    derived from it (review 2026-11-11 B-9 item 6)."""
+
+    def test_the_kinds_an_agent_may_approve_are_pinned(self) -> None:
+        """INV-05, D-62, D-79: only kinds whose applied record can name its confirming agent.
+        Widening this set is a decision, and this pin makes it a visible one."""
+        self.assertEqual(
+            logic.AGENT_CONFIRMABLE_KINDS,
+            {
+                "vocabulary_create",
+                "vocabulary_relabel",
+                "vocabulary_retire",
+                "vocabulary_restore",
+                "vocabulary_merge",
+                "term_create",
+                "term_update",
+                "new_obligation_version",
+                "new_instrument",
+                "new_obligation",
+                "new_recurring_duty",
+            },
+        )
+
+    def test_every_kind_has_a_row_and_a_new_row_waits_for_a_person(self) -> None:
+        # The re-tag batch is the one kind outside the table: `batch.create_batch()` files it.
+        self.assertEqual(set(logic.KINDS), {kind.value for kind in ProposalKind} - {ProposalKind.OBLIGATION_SCOPE.value})
+        rule = logic.KindRule(ProposalObligationPayload)
+        self.assertFalse(rule.agent_confirmable, "a kind added later is approved by a person")
+        self.assertFalse(rule.private or rule.new_record or rule.target, "and names nothing it was not given")
 
 
 class KindsTestCase(ScenarioTestCase):
