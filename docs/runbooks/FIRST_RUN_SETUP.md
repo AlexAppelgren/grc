@@ -37,7 +37,7 @@ roles and its own vocabularies when it is created, not from the deploy.
 | # | Step | Where | Grant needed | Depends on |
 |---|---|---|---|---|
 | 1 | Create the database roles and extensions (`RAILWAY_DEPLOY.md` role script) and set every variable (`RAILWAY_VARIABLES.md`) | Railway console | Project owner | Nothing |
-| 2 | Deploy `api`; confirm `/health/` answers 200 with every component named | Railway | Project owner | 1 |
+| 2 | Deploy `api`; confirm `/health/` answers 200 `{"status": "ok"}`; on 503 the api log line `health check failing` names the component | Railway | Project owner | 1 |
 | 3 | Deploy `worker`, `beat`, `web`; attach the test host to `web` and set `WEBAUTHN_RP_ID` to it (`DNS_DOMAINS.md`) | Railway | Project owner | 2 |
 | 4 | `python manage.py bootstrap_platform --admin-email you@…` on the `api` service. It creates the first platform admin invitation, emails the link and also prints it. **The printed link is a one-time enrolment secret**: do not paste it anywhere, and close the shell session afterwards. It is there so the first admin can enrol before the mail sender is proven | `api` shell | None (a management command; it refuses a person who already holds a passkey; a bank member may also be platform staff, and each of their banks gets an audit row for the grant (D-122)) | 3, a working mail sender |
 | 5 | Open the emailed link, enter the code, enrol a passkey, add a second passkey when prompted | Browser | The enrolment session only | 4 |

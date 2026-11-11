@@ -1096,6 +1096,12 @@ CELERY_BEAT_SCHEDULE["collab-digests"] = {
 # ---------------------------------------------------------------------------------------
 HEALTH_WORKER_PING_TIMEOUT_S = float(env_str("HEALTH_WORKER_PING_TIMEOUT_S", "1.0"))
 HEALTH_WORKER_PING_LIMIT = 1
+# `/health/` reuses its last answer for this many seconds, per process, so the open route
+# cannot be made to ping the worker and query the database on every request (L-8). 0 runs
+# the checks on every call.
+HEALTH_CACHE_SECONDS = float(env_str("HEALTH_CACHE_SECONDS", "5"))
+if not 0 <= HEALTH_CACHE_SECONDS <= 60:
+    raise ImproperlyConfigured("Refusing to boot: HEALTH_CACHE_SECONDS is 0 to 60.")
 
 # ---------------------------------------------------------------------------------------
 # ===== ID-02, ID-03 enrolment code and invitation windows (playbook 4.2) ===============

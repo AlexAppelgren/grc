@@ -118,6 +118,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 |---|---|---|---|---|---|
 | `E2E_MODE` | api (E2E only) | set by Playwright's `webServer` | set by the E2E job | never | Makes the enrolment code deterministic and enables `seed_e2e`. Refused on two independent legs when deployed |
 | `SENTRY_DSN` | all | unset | unset | optional, EU region DSN | `send_default_pii=False`, bodies never sent, scrubbers on events and transactions, no outbound-request spans and no trace headers to other hosts. A host not ending `.ingest.de.sentry.io` is refused on every deployed environment but `test` (D-54, rule 10) |
+| `HEALTH_CACHE_SECONDS` | api | `5` | `5` | `5` | `/health/` reuses its last answer this many seconds per process, 0 to 60, so the open route cannot make every request ping the worker. The body is the status alone; failing components go to the log |
 | `API_BUDGET_MS` | api | `250` | `250` | `250` | A WARNING with the request ID above it |
 | `SEARCH_BUDGET_MS` | api | `800` | `800` | `800` | Hybrid search's budget without the reranker, in `Server-Timing` (NFR-02). The search tests hold the route to it, and a performance pass names it as the budget of the search rows it adds to `backend/perf/routes.py` |
 | `SEARCH_RERANKED_BUDGET_MS` | api | `1500` | `1500` | `1500` | The same with the reranker on (NFR-02) |
