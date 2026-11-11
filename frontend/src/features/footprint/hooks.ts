@@ -78,8 +78,8 @@ export function useFootprintSuggestions(enabled: boolean): UseQueryResult<Footpr
   return useQuery({ queryKey: footprintKeys.suggestions, queryFn: footprint.getFootprintSuggestions, enabled });
 }
 
-export function useJurisdictions(): UseQueryResult<JurisdictionRef[]> {
-  return useQuery({ queryKey: footprintKeys.jurisdictions, queryFn: footprint.listJurisdictions, staleTime: 5 * 60_000 });
+export function useJurisdictions(enabled = true): UseQueryResult<JurisdictionRef[]> {
+  return useQuery({ queryKey: footprintKeys.jurisdictions, queryFn: footprint.listJurisdictions, staleTime: 5 * 60_000, enabled });
 }
 
 function useInvalidateFootprint(): () => Promise<void> {

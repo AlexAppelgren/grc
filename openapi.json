@@ -17048,7 +17048,7 @@
         "type": "object"
       },
       "ObligationQuery": {
-        "description": "The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is\n`dimension:key` and repeats, every term must be in the obligation's scope; `tag` and\n`tenantTag` repeat, every tag must be on the obligation. `applicability`,\n`complianceStatus`, `owner` and `ownerTeam` filter on the bank's register overlay. Each\nstring is at most 80 characters (H27). `asOf`\ndefaults to today in the tenant's time zone. `footprint` is one value: `in`, `all`, which\nlifts the footprint filter and reports why each hidden row would be hidden, or\n`watched`, which lists only what the watched markets add (FP-03, FP-04).",
+        "description": "The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is\n`dimension:key` and repeats, every term must be in the obligation's scope; `tag` and\n`tenantTag` repeat, every tag must be on the obligation; `jurisdiction` repeats, and the\ninstrument's jurisdiction must be one of them. `applicability`,\n`complianceStatus`, `owner` and `ownerTeam` filter on the bank's register overlay. Each\nstring is at most 80 characters (H27). `asOf`\ndefaults to today in the tenant's time zone. `footprint` is one value: `in`, `all`, which\nlifts the footprint filter and reports why each hidden row would be hidden, or\n`watched`, which lists only what the watched markets add (FP-03, FP-04).",
         "properties": {
           "applicability": {
             "anyOf": [
@@ -17147,6 +17147,22 @@
               "fffs-2017-2"
             ],
             "title": "Instrument"
+          },
+          "jurisdiction": {
+            "description": "Only the duties of instruments filed under one of these jurisdictions, by key: `se` for a Swedish law, `eu` for a Union act. Repeat the parameter for more than one; unlike the other repeated filters they are combined with OR, so `jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland) on day one, which its editors relabel and retire through approved proposals without changing a key; read `GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not an error: it matches nothing. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`. Do not read `se` as everything a Swedish bank must follow: an EU regulation is filed under `eu`, so send `eu` as well to keep it.",
+            "examples": [
+              [
+                "se",
+                "no"
+              ]
+            ],
+            "items": {
+              "maxLength": 80,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Jurisdiction",
+            "type": "array"
           },
           "outsideFootprint": {
             "deprecated": true,
@@ -29137,10 +29153,19 @@
                 "type": "string"
               },
               {
+                "items": {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
                 "type": "null"
               }
             ],
-            "description": "Narrow the search to the law of one jurisdiction, by key. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds them and its library editors relabel, retire and restore them through approved proposals, never changing a key, and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.",
+            "description": "Narrow the search to the law of one jurisdiction, by key, or of any of several: a list of 1 to 20 keys (`LIBRARY_TERM_FILTER_MAX`) is combined with OR, so `[\"se\", \"no\"]` finds Swedish and Norwegian law, each key at most 80 characters; an empty list, a longer list or a longer key is refused with 422 `validation_error`. A key no jurisdiction has matches nothing. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds them and its library editors relabel, retire and restore them through approved proposals, never changing a key, and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.",
             "title": "Jurisdiction"
           },
           "term": {
@@ -50467,7 +50492,7 @@
     },
     "/api/v1/obligations": {
       "get": {
-        "description": "The obligations inventory: every duty of the shared library whose scope overlaps this\nbank's footprint, as it stood on a date, narrowed by instrument, duty type, scope terms,\nthe library's tags, the bank's own tags or a phrase. Call it for the inventory screen, for a picker that has to name a duty, and\nfrom an agent run that needs the duties an instrument carries.\n\nA read: it changes nothing and writes no audit row. It takes a person's session holding\n`library.read` in their bank, or an agent's key carrying the `library:read` scope. The\nrows are shared library facts, the same for every bank and changed only through an\napproved proposal. A row appearing here decides nothing for the bank: each row also\ncarries the bank's own register overlay, which no other bank sees \u2014 whether the bank\ndecided the duty applies, how it judges its compliance where it applies, and who owns it\n\u2014 beside the bank's own tags and whether the record is the bank's own rather than a\nshared fact. The overlay filters (applicability, complianceStatus, owner, ownerTeam)\nnarrow on those. The overlay is the bank's register, so only a person holding\n`register.read` reads it; for anyone else, an agent's key included, every row reads\nunder_assessment with no status and no owner.\n\nAn agent the bank runs itself, whose key or personal token belongs to an agent access\nentry, reads narrower: only shared duties, never the bank's own; only inside the bank's\nfootprint, so footprint stays in; and only inside the departments and products its entry\nnames. Its rows carry the bank's overlay and tags only when it holds `tenant:read` and\ntenant reach is on for the bank and for the entry, and never on a duty under a standard; otherwise they read as not\nassessed, with no status, owner or tag.\n\nPaginated: 20 rows by default and 100 at most, with a larger limit refused rather than\nquietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing\nmatching the filters is a 200 with an empty items list and a total of 0, never a 404.\nSetting footprint to all adds the duties the footprint hides and says in outsideReason\nwhy each of them would have been hidden; setting it to watched lists only what the\nmarkets the bank watches add, each row naming its jurisdiction.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope, or for an overlay filter sent by a\ncaller in a bank who does not hold `register.read`; `unknown_filter` (422) when a\ncaller that belongs to no bank, such as a platform key, sends tenantTag or an overlay\nfilter, since it has no tags or register of its own; `not_found` (404) when such a caller\nreads the list at all; `unknown_filter` (422) when an agent access credential sends\nfootprint all or watched; `tenant_reach_off` (403) when one sends an overlay or tenantTag\nfilter while it may not read the bank's register (it lacks `tenant:read`, or tenant reach\nis off for the bank or its entry); `validation_error` (422) when a term filter is not written\ndimension:key, when instrument, dutyType, complianceStatus, ownerTeam or any term, tag or\ntenantTag value is longer than 80 characters, when applicability is not applies,\nnot_applicable or under_assessment, when owner is not a UUID, when more than 20 terms, tags or\ntenant tags are sent, when footprint is not in, all or watched, when the retired\noutsideFootprint is sent, when the phrase is longer than 200 characters or when the page\nsize or offset is out of range; `unknown_key` (422) when a term filter names no active\nterm, a tag filter no library tag or a tenantTag filter none of the bank's own tags,\nlisting every one that was not found.",
+        "description": "The obligations inventory: every duty of the shared library whose scope overlaps this\nbank's footprint, as it stood on a date, narrowed by instrument, the jurisdictions the\ninstruments are filed under, duty type, scope terms, the library's tags, the bank's own\ntags or a phrase. Call it for the inventory screen, for a picker that has to name a duty, and\nfrom an agent run that needs the duties an instrument carries.\n\nA read: it changes nothing and writes no audit row. It takes a person's session holding\n`library.read` in their bank, or an agent's key carrying the `library:read` scope. The\nrows are shared library facts, the same for every bank and changed only through an\napproved proposal. A row appearing here decides nothing for the bank: each row also\ncarries the bank's own register overlay, which no other bank sees \u2014 whether the bank\ndecided the duty applies, how it judges its compliance where it applies, and who owns it\n\u2014 beside the bank's own tags and whether the record is the bank's own rather than a\nshared fact. The overlay filters (applicability, complianceStatus, owner, ownerTeam)\nnarrow on those. The overlay is the bank's register, so only a person holding\n`register.read` reads it; for anyone else, an agent's key included, every row reads\nunder_assessment with no status and no owner.\n\nAn agent the bank runs itself, whose key or personal token belongs to an agent access\nentry, reads narrower: only shared duties, never the bank's own; only inside the bank's\nfootprint, so footprint stays in; and only inside the departments and products its entry\nnames. Its rows carry the bank's overlay and tags only when it holds `tenant:read` and\ntenant reach is on for the bank and for the entry, and never on a duty under a standard; otherwise they read as not\nassessed, with no status, owner or tag.\n\nPaginated: 20 rows by default and 100 at most, with a larger limit refused rather than\nquietly trimmed, and rows ordered by their stable key so paging is repeatable. Nothing\nmatching the filters is a 200 with an empty items list and a total of 0, never a 404.\nSetting footprint to all adds the duties the footprint hides and says in outsideReason\nwhy each of them would have been hidden; setting it to watched lists only what the\nmarkets the bank watches add, each row naming its jurisdiction.\n\nErrors to branch on: `unauthenticated` (401) without a credential; `permission_denied`\n(403) without library.read or the library:read scope, or for an overlay filter sent by a\ncaller in a bank who does not hold `register.read`; `unknown_filter` (422) when a\ncaller that belongs to no bank, such as a platform key, sends tenantTag or an overlay\nfilter, since it has no tags or register of its own; `not_found` (404) when such a caller\nreads the list at all; `unknown_filter` (422) when an agent access credential sends\nfootprint all or watched; `tenant_reach_off` (403) when one sends an overlay or tenantTag\nfilter while it may not read the bank's register (it lacks `tenant:read`, or tenant reach\nis off for the bank or its entry); `validation_error` (422) when a term filter is not written\ndimension:key, when instrument, dutyType, complianceStatus, ownerTeam or any term, tag,\ntenantTag or jurisdiction value is longer than 80 characters, when applicability is not\napplies, not_applicable or under_assessment, when owner is not a UUID, when more than 20\nterms, tags, tenant tags or jurisdictions are sent, when footprint is not in, all or watched, when the retired\noutsideFootprint is sent, when the phrase is longer than 200 characters or when the page\nsize or offset is out of range; `unknown_key` (422) when a term filter names no active\nterm, a tag filter no library tag or a tenantTag filter none of the bank's own tags,\nlisting every one that was not found.",
         "operationId": "listObligations",
         "parameters": [
           {
@@ -50597,6 +50622,34 @@
               },
               "maxItems": 20,
               "title": "Tenanttag",
+              "type": "array"
+            }
+          },
+          {
+            "description": "Only the duties of instruments filed under one of these jurisdictions, by key: `se` for a Swedish law, `eu` for a Union act. Repeat the parameter for more than one; unlike the other repeated filters they are combined with OR, so `jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland) on day one, which its editors relabel and retire through approved proposals without changing a key; read `GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not an error: it matches nothing. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`. Do not read `se` as everything a Swedish bank must follow: an EU regulation is filed under `eu`, so send `eu` as well to keep it.",
+            "examples": [
+              [
+                "se",
+                "no"
+              ]
+            ],
+            "in": "query",
+            "name": "jurisdiction",
+            "required": false,
+            "schema": {
+              "description": "Only the duties of instruments filed under one of these jurisdictions, by key: `se` for a Swedish law, `eu` for a Union act. Repeat the parameter for more than one; unlike the other repeated filters they are combined with OR, so `jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland) on day one, which its editors relabel and retire through approved proposals without changing a key; read `GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not an error: it matches nothing. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`. Do not read `se` as everything a Swedish bank must follow: an EU regulation is filed under `eu`, so send `eu` as well to keep it.",
+              "examples": [
+                [
+                  "se",
+                  "no"
+                ]
+              ],
+              "items": {
+                "maxLength": 80,
+                "type": "string"
+              },
+              "maxItems": 20,
+              "title": "Jurisdiction",
               "type": "array"
             }
           },

@@ -1004,6 +1004,30 @@ class LibraryScenarioTests(ScenarioTestCase):
         self.assertFalse(InstrumentRelation.objects.filter(Q(from_instrument=shared) | Q(to_instrument=shared)).exists())
         self.assertTrue(self.card("inv-s15-own-duty")["privateToUs"])
 
+    def test_inv_s17(self) -> None:
+        """INV-S17
+
+        The inventory narrows to one country or several (SRC-02, FP-04, INV-01).
+        """
+        self.activate(self.tenant)
+        marker = "INV-S17 country"
+        for key in ("eu", "se", "dk", "no"):
+            build.obligation(
+                build.instrument(key=f"inv-s17-{key}", regime="regime:securities", jurisdiction=key), key=f"obl-inv-s17-{key}", ref_label=f"{marker} {key}"
+            )
+
+        def listed(jurisdiction: str | list[str]) -> list[str]:
+            page = self.read(URL, {"footprint": "all", "q": marker, "jurisdiction": jurisdiction})
+            return [row["stableKey"] for row in page["items"]]
+
+        self.assertEqual(listed("se"), ["obl-inv-s17-se"], "a Union rule reaching Sweden is not a Swedish rule")
+        self.assertEqual(listed(["se", "no"]), ["obl-inv-s17-no", "obl-inv-s17-se"], "any one of them is enough")
+        self.assertEqual(listed("eu"), ["obl-inv-s17-eu"])
+        self.assertEqual(listed("atlantis"), [], "an unknown key matches nothing")
+        for refused in (["se"] * (settings.LIBRARY_TERM_FILTER_MAX + 1), "x" * 81):
+            response = self.client.get(URL, {"jurisdiction": refused}, **sign_in(self.reader, tenant=self.tenant))
+            self.assertEqual((response.status_code, response.json()["code"]), (422, "validation_error"))
+
     def _found_and_approved(self, filing: dict[str, Any], approver: User) -> Any:
         """`filing` found by the bank's own agent in the worker, then approved in the bank's
         own queue by `approver` with a passkey."""

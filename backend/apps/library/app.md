@@ -314,4 +314,15 @@ Then the answer leaves it out and says how many of the bank's own records it lef
 When the shared library later approves an instrument with the same official reference
 Then tenant A's own record, its register rows and its label are unchanged, and nothing links or merges them automatically
 ```
+### INV-S17 — The inventory narrows to one country or several `@integration` `@e2e` (SRC-02, FP-04, INV-01)
+```gherkin
+Given duties of instruments filed under the European Union, Sweden, Denmark and Norway
+When a reader lists the inventory with the jurisdiction "se"
+Then only the Swedish duties come back, and the Union duty that reaches Sweden does not
+When the reader names "se" and "no"
+Then the Swedish and the Norwegian duties come back, either one being enough
+And "eu" alone lists only the Union duty
+And a key no jurisdiction has matches nothing, while more than 20 keys or a key longer than 80 characters is refused with validation_error
+And on the screen Country is the first filter in the sheet, each chosen country is its own chip, and removing one keeps the rest
+```
 

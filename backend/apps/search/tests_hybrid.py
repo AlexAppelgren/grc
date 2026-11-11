@@ -26,6 +26,7 @@ import uuid
 from typing import Any, ClassVar
 from unittest import mock
 
+import pydantic
 from django.conf import settings
 from django.contrib.postgres.search import SearchQuery
 from django.core.exceptions import ValidationError
@@ -406,6 +407,16 @@ class SearchFilterTests(CorpusMixin, TestCase):
         )
 
         self.assertEqual(titles_of(response), [REPORTING_TITLE])
+
+    def test_several_jurisdictions_are_combined_with_or_and_one_key_still_works(self) -> None:
+        swedish = titles_of(search("report", tenant=self.tenant, filters=SearchFilters(jurisdiction="se")))
+        union = titles_of(search("report", tenant=self.tenant, filters=SearchFilters(jurisdiction=["eu"])))
+        both = titles_of(search("report", tenant=self.tenant, filters=SearchFilters(jurisdiction=["se", "eu"])))
+
+        self.assertTrue(swedish and union, "each key matches something on its own")
+        self.assertEqual(sorted(both), sorted(swedish + union))
+        with self.assertRaises(pydantic.ValidationError):
+            SearchFilters(jurisdiction=[])
 
     def test_a_renamed_vocabulary_label_changes_nothing(self) -> None:
         before = titles_of(search("report", tenant=self.tenant, filters=SearchFilters(duty_type="reporting")))

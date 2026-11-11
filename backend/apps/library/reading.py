@@ -1020,6 +1020,8 @@ def obligation_page(
         queryset = queryset.filter(instrument__stable_key=query.instrument)
     if query.duty_type:
         queryset = queryset.filter(duty_type__key=query.duty_type)
+    if query.jurisdiction:
+        queryset = queryset.filter(instrument__jurisdiction__key__in=query.jurisdiction)
     if query.term:
         wanted = Value([term.id for term in terms_of(query.term)], output_field=ArrayField(UUIDField()))
         queryset = queryset.filter(DataContains(scope_ids, wanted))

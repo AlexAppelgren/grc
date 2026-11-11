@@ -4,6 +4,7 @@
   "inventory.instrumentCount": "{count, plural, one {# regulation} other {# regulations}}",
   "inventory.tabs.obligations": "Obligations",
   "inventory.tabs.instruments": "Regulations",
+  "inventory.filter.country": "Country",
   "inventory.filter.instrument": "Regulation",
   "inventory.filter.allInstruments": "All regulations",
   "inventory.filter.instrumentOption": "{name} ({count})",

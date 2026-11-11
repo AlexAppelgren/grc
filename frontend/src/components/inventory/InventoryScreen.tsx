@@ -71,10 +71,11 @@ import { problemFrom } from '@/shared/utils/problem';
 export type InventoryTab = 'obligations' | 'instruments';
 
 /**
- * The inventory's filters plus the obligations' own: "Our tags", one of the bank's tag
- * keys, and the register overlay's; each empty or absent means not filtered.
+ * The inventory's filters plus the obligations' own: the countries, any number of
+ * jurisdiction keys, "Our tags", one of the bank's tag keys, and the register overlay's;
+ * each empty or absent means not filtered.
  */
-export type ScreenFilters = InventoryFilters & { tenantTag?: string } & Partial<OverlayFilters>;
+export type ScreenFilters = InventoryFilters & { jurisdiction?: string[]; tenantTag?: string } & Partial<OverlayFilters>;
 
 /** The overlay filters in the order the URL carries them. */
 const OVERLAY_KEYS = ['applicability', 'complianceStatus', 'owner', 'ownerTeam'] as const;
@@ -92,7 +93,7 @@ function scopeFrom(value: string | null): ScopeFilter {
 }
 
 /** The URL's filters. Unknown or missing parameters read as "not filtered". */
-export function filtersFrom(params: { get(name: string): string | null }): ScreenFilters {
+export function filtersFrom(params: { get(name: string): string | null; getAll(name: string): string[] }): ScreenFilters {
   return {
     instrument: params.get('instrument') ?? '',
     regime: params.get('regime') ?? '',
@@ -100,6 +101,8 @@ export function filtersFrom(params: { get(name: string): string | null }): Scree
     dutyType: params.get('dutyType') ?? '',
     asOf: params.get('asOf') ?? '',
     scope: scopeFrom(params.get('scope')),
+    // Repeated, `jurisdiction=se&jurisdiction=no`, as the route reads it.
+    jurisdiction: params.getAll('jurisdiction').filter((key) => key !== ''),
     tenantTag: params.get('tenantTag') ?? '',
     applicability: APPLICABILITY_VALUES.find((value) => value === params.get('applicability')) ?? '',
     complianceStatus: params.get('complianceStatus') ?? '',
@@ -118,6 +121,7 @@ export function searchOf(tab: InventoryTab, filters: ScreenFilters): string {
   if (filters.dutyType !== '') search.set('dutyType', filters.dutyType);
   if (filters.asOf !== '') search.set('asOf', filters.asOf);
   if (filters.scope !== 'in') search.set('scope', filters.scope);
+  for (const key of filters.jurisdiction ?? []) search.append('jurisdiction', key);
   if (filters.tenantTag !== undefined && filters.tenantTag !== '') search.set('tenantTag', filters.tenantTag);
   for (const key of OVERLAY_KEYS) {
     const value = filters[key];
@@ -138,6 +142,7 @@ export function queryOf(filters: ScreenFilters): ObligationQuery {
   if (filters.instrument !== '') query.instrument = filters.instrument;
   if (term.length > 0) query.term = term;
   if (filters.dutyType !== '') query.dutyType = filters.dutyType;
+  if ((filters.jurisdiction ?? []).length > 0) query.jurisdiction = filters.jurisdiction;
   if (filters.asOf !== '') query.asOf = filters.asOf;
   if (filters.scope !== 'in') query.footprint = filters.scope;
   if (filters.tenantTag !== undefined && filters.tenantTag !== '') query.tenantTag = [filters.tenantTag];
@@ -149,8 +154,9 @@ export function queryOf(filters: ScreenFilters): ObligationQuery {
 }
 
 /** The search the bar runs: the list's own filters and scope, over obligations and provisions only. */
-export function searchRequestOf(filters: InventoryFilters, q: string): SearchRequestBody {
+export function searchRequestOf(filters: InventoryFilters & { jurisdiction?: string[] }, q: string): SearchRequestBody {
   const term = termsOf(filters);
+  const countries = filters.jurisdiction ?? [];
   const body: SearchRequestBody = {
     q,
     limit: 20,
@@ -160,6 +166,7 @@ export function searchRequestOf(filters: InventoryFilters, q: string): SearchReq
       ...(filters.instrument === '' ? {} : { instrument: filters.instrument }),
       ...(term.length === 0 ? {} : { term }),
       ...(filters.dutyType === '' ? {} : { dutyType: filters.dutyType }),
+      ...(countries.length === 0 ? {} : { jurisdiction: countries }),
     },
   };
   if (filters.asOf !== '') body.asOf = filters.asOf;
@@ -183,6 +190,7 @@ export function isNarrowed(filters: ScreenFilters): boolean {
     filters.service !== '' ||
     filters.dutyType !== '' ||
     filters.asOf !== '' ||
+    (filters.jurisdiction ?? []).length > 0 ||
     (filters.tenantTag ?? '') !== '' ||
     OVERLAY_KEYS.some((key) => (filters[key] ?? '') !== '')
   );
@@ -495,6 +503,7 @@ function ObligationsTab({ filters, apply, pathname, bar, query }: { filters: Scr
             owner: filters.owner ?? '',
             ownerTeam: filters.ownerTeam ?? '',
             tenantTag: filters.tenantTag ?? '',
+            jurisdiction: filters.jurisdiction ?? [],
           }}
           onChange={apply}
         />

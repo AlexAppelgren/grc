@@ -1403,7 +1403,8 @@ class VersionDiffQuery(CamelSchema):
 class ObligationQuery(CamelSchema):
     """The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is
     `dimension:key` and repeats, every term must be in the obligation's scope; `tag` and
-    `tenantTag` repeat, every tag must be on the obligation. `applicability`,
+    `tenantTag` repeat, every tag must be on the obligation; `jurisdiction` repeats, and the
+    instrument's jurisdiction must be one of them. `applicability`,
     `complianceStatus`, `owner` and `ownerTeam` filter on the bank's register overlay. Each
     string is at most 80 characters (H27). `asOf`
     defaults to today in the tenant's time zone. `footprint` is one value: `in`, `all`, which
@@ -1483,6 +1484,25 @@ class ObligationQuery(CamelSchema):
             "with 422 `unknown_filter` when the caller belongs to no bank, such as a platform key."
         ),
         examples=[["custody"]],
+    )
+    jurisdiction: list[FilterKey] = Field(
+        default_factory=list,
+        max_length=settings.LIBRARY_TERM_FILTER_MAX,
+        description=(
+            "Only the duties of instruments filed under one of these jurisdictions, by key: "
+            "`se` for a Swedish law, `eu` for a Union act. Repeat the parameter for more than "
+            "one; unlike the other repeated filters they are combined with OR, so "
+            "`jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and "
+            "at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the "
+            "shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` "
+            "(Denmark), `no` (Norway) and `fi` (Finland) on day one, which its editors relabel "
+            "and retire through approved proposals without changing a key; read "
+            "`GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not "
+            "an error: it matches nothing. Each value is at most 80 characters; a longer one is "
+            "refused with 422 `validation_error`. Do not read `se` as everything a Swedish bank "
+            "must follow: an EU regulation is filed under `eu`, so send `eu` as well to keep it."
+        ),
+        examples=[["se", "no"]],
     )
     q: str | None = Field(
         default=None,

@@ -8,7 +8,7 @@ import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent 
 import { tokenStore } from '@/shared/utils/api-client';
 
 import { InstrumentRow } from './InstrumentRow';
-import { InventoryScreen, filtersFrom, isNarrowed, queryOf, searchOf, selectedInView } from './InventoryScreen';
+import { InventoryScreen, filtersFrom, isNarrowed, queryOf, searchOf, searchRequestOf, selectedInView } from './InventoryScreen';
 import { ObligationRow, factsOf, metaOf, pillsOf } from './ObligationRow';
 import type { Instrument, Obligation } from '@/features/library/types';
 import type { SearchHit } from '@/features/search/types';
@@ -119,15 +119,41 @@ const services = [
   { dimension: { key: 'service_type' }, key: 'advice', kind: null, label: 'Advice' },
   { dimension: { key: 'service_type' }, key: 'custody', kind: null, label: 'Custody' },
 ];
-/** The bank's regulatory scope: securities only; services restrict nothing, so every one is offered. */
+/**
+ * The bank's regulatory scope: securities only; services restrict nothing, so every one is offered.
+ * It operates in Sweden and Denmark, watches Norway and does not follow Finland.
+ */
 const footprint = {
   dimensions: [
     { dimension: { key: 'regime', kind: null, label: 'Regime' }, restrictsFootprint: true, terms: [{ key: 'securities', kind: null, label: 'Securities' }], allSelected: false },
     { dimension: { key: 'service_type', kind: null, label: 'Service' }, restrictsFootprint: true, terms: [], allSelected: false },
+    {
+      dimension: { key: 'jurisdiction', kind: null, label: 'Jurisdiction' },
+      restrictsFootprint: true,
+      terms: [
+        { key: 'se', kind: null, label: 'Sweden' },
+        { key: 'dk', kind: null, label: 'Denmark' },
+      ],
+      allSelected: false,
+    },
   ],
   pendingRequest: null,
-  markets: [],
+  markets: [
+    { jurisdiction: { key: 'se', kind: 'country', label: 'Sweden' }, level: 'operating' },
+    { jurisdiction: { key: 'dk', kind: 'country', label: 'Denmark' }, level: 'operating' },
+    { jurisdiction: { key: 'no', kind: 'country', label: 'Norway' }, level: 'watching' },
+    { jurisdiction: { key: 'fi', kind: 'country', label: 'Finland' }, level: 'not_followed' },
+  ],
 };
+/** The library's jurisdictions in its own order: the Union, the Nordics and the standards bodies. */
+const jurisdictions = [
+  { key: 'eu', kind: 'supranational', label: 'European Union', parentKey: null, defaultLanguage: { key: 'en', kind: null, label: 'English' } },
+  { key: 'se', kind: 'country', label: 'Sweden', parentKey: 'eu', defaultLanguage: { key: 'sv', kind: null, label: 'Svenska' } },
+  { key: 'dk', kind: 'country', label: 'Denmark', parentKey: 'eu', defaultLanguage: { key: 'da', kind: null, label: 'Dansk' } },
+  { key: 'no', kind: 'country', label: 'Norway', parentKey: 'eu', defaultLanguage: { key: 'nb', kind: null, label: 'Norsk bokmål' } },
+  { key: 'fi', kind: 'country', label: 'Finland', parentKey: 'eu', defaultLanguage: { key: 'fi', kind: null, label: 'Suomi' } },
+  { key: 'intl', kind: 'international', label: 'International', parentKey: null, defaultLanguage: { key: 'en', kind: null, label: 'English' } },
+];
 
 const obligationHit: SearchHit = {
   type: 'obligation',
@@ -164,6 +190,7 @@ function serve(
   return installAdapter((sent) => {
     if (sent.path === '/api/v1/search') return { status: 200, data: { items: hits, asOf: '2026-09-25' } };
     if (sent.path === '/api/v1/tenant/footprint') return { status: 200, data: footprint };
+    if (sent.path === '/api/v1/reference/jurisdictions') return { status: 200, data: jurisdictions };
     if (sent.path === '/api/v1/obligations') return page === 'error' ? { status: 500 } : { status: 200, data: page };
     if (sent.path === '/api/v1/instruments') {
       const outside = (sent.params as { footprint?: string } | null)?.footprint === 'all';
@@ -187,6 +214,7 @@ describe('inventory filters in the URL', () => {
       dutyType: 'conduct',
       asOf: '2026-09-16',
       scope: 'all',
+      jurisdiction: [],
       tenantTag: '',
       applicability: '',
       complianceStatus: '',
@@ -200,6 +228,7 @@ describe('inventory filters in the URL', () => {
       dutyType: '',
       asOf: '',
       scope: 'in',
+      jurisdiction: [],
       tenantTag: '',
       applicability: '',
       complianceStatus: '',
@@ -233,6 +262,18 @@ describe('inventory filters in the URL', () => {
     expect(isNarrowed({ instrument: '', regime: 'securities', service: '', dutyType: '', asOf: '', scope: 'in' })).toBe(true);
     expect(isNarrowed({ instrument: '', regime: '', service: 'advice', dutyType: '', asOf: '', scope: 'in' })).toBe(true);
     expect(isNarrowed({ instrument: 'fffs-2017-2', regime: '', service: '', dutyType: '', asOf: '', scope: 'in' })).toBe(true);
+  });
+
+  it('carries any number of countries as repeated keys, into the list, the search and the URL', () => {
+    const filters = filtersFrom(new URLSearchParams('jurisdiction=se&jurisdiction=no'));
+    expect(filters.jurisdiction).toEqual(['se', 'no']);
+    expect(searchOf('obligations', filters)).toBe('jurisdiction=se&jurisdiction=no');
+    expect(queryOf(filters)).toEqual({ jurisdiction: ['se', 'no'] });
+    expect(isNarrowed(filters)).toBe(true);
+    expect(searchRequestOf(filters, 'aml').filters).toEqual({ footprint: 'in', jurisdiction: ['se', 'no'] });
+    // None chosen sends nothing, so an empty list never reaches a route that refuses one.
+    expect(searchRequestOf(filtersFrom(new URLSearchParams('')), 'aml').filters).toEqual({ footprint: 'in' });
+    expect(queryOf(filtersFrom(new URLSearchParams('')))).toEqual({});
   });
 });
 
@@ -466,6 +507,50 @@ describe('InventoryScreen', () => {
     renderIn(<InventoryScreen />);
     regime = within(await openFilters()).getByRole('group', { name: 'Regime' });
     await waitFor(() => expect(within(regime).getAllByRole('button').map((chip) => chip.textContent)).toEqual(['Securities', 'Insurance']));
+  });
+
+  it('offers the countries first in the sheet, only those inside the scope, and any number of them', async () => {
+    serve({ items: [research], total: 1 });
+    const { unmount } = renderIn(<InventoryScreen />);
+    const sheet = await openFilters();
+    const country = within(sheet).getByRole('group', { name: 'Country' });
+    expect(sheet.querySelector('fieldset')).toBe(country);
+    // Norway is only watched and Finland not followed; the Union and the standards bodies stay.
+    await waitFor(() => expect(within(country).getAllByRole('button').map((chip) => chip.textContent)).toEqual(['European Union', 'Sweden', 'Denmark', 'International']));
+    fireEvent.click(within(country).getByRole('button', { name: 'Sweden' }));
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory?jurisdiction=se');
+    unmount();
+
+    nav.search = 'jurisdiction=se';
+    const second = renderIn(<InventoryScreen />);
+    let chips = within(await openFilters()).getByRole('group', { name: 'Country' });
+    await waitFor(() => expect(within(chips).getByRole('button', { name: 'Sweden' })).toHaveAttribute('aria-pressed', 'true'));
+    fireEvent.click(within(chips).getByRole('button', { name: 'Denmark' }));
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory?jurisdiction=se&jurisdiction=dk');
+    fireEvent.click(within(chips).getByRole('button', { name: 'Sweden' }));
+    expect(nav.replace).toHaveBeenLastCalledWith('/inventory');
+    second.unmount();
+
+    nav.search = 'scope=watched';
+    const watched = renderIn(<InventoryScreen />);
+    chips = within(await openFilters()).getByRole('group', { name: 'Country' });
+    await waitFor(() => expect(within(chips).getAllByRole('button').map((chip) => chip.textContent)).toEqual(['Norway']));
+    watched.unmount();
+
+    nav.search = 'scope=all';
+    renderIn(<InventoryScreen />);
+    chips = within(await openFilters()).getByRole('group', { name: 'Country' });
+    await waitFor(() => expect(within(chips).getAllByRole('button')).toHaveLength(jurisdictions.length));
+  });
+
+  it('asks the list for the chosen countries and shows one removable chip for each', async () => {
+    nav.search = 'jurisdiction=se&jurisdiction=no';
+    const sent = serve({ items: [research], total: 1 });
+    renderIn(<InventoryScreen />);
+    await waitFor(() => expect([...document.querySelectorAll('[data-set-filter]')].map((chip) => chip.textContent)).toEqual(['Sweden', 'Norway']));
+    expect((sent.find((s) => s.path === '/api/v1/obligations')?.params as { jurisdiction?: string[] }).jurisdiction).toEqual(['se', 'no']);
+    fireEvent.click(screen.getByRole('button', { name: 'Remove the Country filter, Norway' }));
+    expect(nav.replace).toHaveBeenCalledWith('/inventory?jurisdiction=se');
   });
 
   it('shows each set filter as a chip that removes it, then "Clear filters" for all of them', async () => {

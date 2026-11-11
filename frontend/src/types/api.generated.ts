@@ -5100,8 +5100,9 @@ export interface paths {
         /**
          * Browse the duties the bank has to keep
          * @description The obligations inventory: every duty of the shared library whose scope overlaps this
-         *     bank's footprint, as it stood on a date, narrowed by instrument, duty type, scope terms,
-         *     the library's tags, the bank's own tags or a phrase. Call it for the inventory screen, for a picker that has to name a duty, and
+         *     bank's footprint, as it stood on a date, narrowed by instrument, the jurisdictions the
+         *     instruments are filed under, duty type, scope terms, the library's tags, the bank's own
+         *     tags or a phrase. Call it for the inventory screen, for a picker that has to name a duty, and
          *     from an agent run that needs the duties an instrument carries.
          *
          *     A read: it changes nothing and writes no audit row. It takes a person's session holding
@@ -5139,10 +5140,10 @@ export interface paths {
          *     footprint all or watched; `tenant_reach_off` (403) when one sends an overlay or tenantTag
          *     filter while it may not read the bank's register (it lacks `tenant:read`, or tenant reach
          *     is off for the bank or its entry); `validation_error` (422) when a term filter is not written
-         *     dimension:key, when instrument, dutyType, complianceStatus, ownerTeam or any term, tag or
-         *     tenantTag value is longer than 80 characters, when applicability is not applies,
-         *     not_applicable or under_assessment, when owner is not a UUID, when more than 20 terms, tags or
-         *     tenant tags are sent, when footprint is not in, all or watched, when the retired
+         *     dimension:key, when instrument, dutyType, complianceStatus, ownerTeam or any term, tag,
+         *     tenantTag or jurisdiction value is longer than 80 characters, when applicability is not
+         *     applies, not_applicable or under_assessment, when owner is not a UUID, when more than 20
+         *     terms, tags, tenant tags or jurisdictions are sent, when footprint is not in, all or watched, when the retired
          *     outsideFootprint is sent, when the phrase is longer than 200 characters or when the page
          *     size or offset is out of range; `unknown_key` (422) when a term filter names no active
          *     term, a tag filter no library tag or a tenantTag filter none of the bank's own tags,
@@ -21346,7 +21347,8 @@ export interface components {
          * ObligationQuery
          * @description The filters of `GET /obligations`. `instrument` and `dutyType` are keys; `term` is
          *     `dimension:key` and repeats, every term must be in the obligation's scope; `tag` and
-         *     `tenantTag` repeat, every tag must be on the obligation. `applicability`,
+         *     `tenantTag` repeat, every tag must be on the obligation; `jurisdiction` repeats, and the
+         *     instrument's jurisdiction must be one of them. `applicability`,
          *     `complianceStatus`, `owner` and `ownerTeam` filter on the bank's register overlay. Each
          *     string is at most 80 characters (H27). `asOf`
          *     defaults to today in the tenant's time zone. `footprint` is one value: `in`, `all`, which
@@ -21392,6 +21394,15 @@ export interface components {
              * @example fffs-2017-2
              */
             instrument?: string | null;
+            /**
+             * Jurisdiction
+             * @description Only the duties of instruments filed under one of these jurisdictions, by key: `se` for a Swedish law, `eu` for a Union act. Repeat the parameter for more than one; unlike the other repeated filters they are combined with OR, so `jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland) on day one, which its editors relabel and retire through approved proposals without changing a key; read `GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not an error: it matches nothing. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`. Do not read `se` as everything a Swedish bank must follow: an EU regulation is filed under `eu`, so send `eu` as well to keep it.
+             * @example [
+             *       "se",
+             *       "no"
+             *     ]
+             */
+            jurisdiction?: string[];
             /**
              * Outsidefootprint
              * @deprecated
@@ -28824,9 +28835,9 @@ export interface components {
             instrument?: string | null;
             /**
              * Jurisdiction
-             * @description Narrow the search to the law of one jurisdiction, by key. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds them and its library editors relabel, retire and restore them through approved proposals, never changing a key, and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.
+             * @description Narrow the search to the law of one jurisdiction, by key, or of any of several: a list of 1 to 20 keys (`LIBRARY_TERM_FILTER_MAX`) is combined with OR, so `["se", "no"]` finds Swedish and Norwegian law, each key at most 80 characters; an empty list, a longer list or a longer key is refused with 422 `validation_error`. A key no jurisdiction has matches nothing. The keys are rows in the shared library's `jurisdiction` vocabulary; the platform seeds them and its library editors relabel, retire and restore them through approved proposals, never changing a key, and on day one they are `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland). Source: the shared library. Do not read `se` as excluding EU law that binds a Swedish bank: an EU regulation is filed under `eu` and still applies, so filtering to one jurisdiction hides law the bank must follow.
              */
-            jurisdiction?: string | null;
+            jurisdiction?: string | string[] | null;
             /**
              * Term
              * @description Narrow the search to records whose scope carries every one of these taxonomy terms, each written `dimension:key` as `GET /obligations` takes them, such as `regime:securities` or `service_type:advice`, combined with AND. A record's scope is the one the inventory judges it by: an obligation's own terms plus its instrument's regime and the jurisdictions its rules reach, and a provision's its instrument's alone, so a service term keeps no provision. Terms are rows in the shared library's taxonomy, which an administrator may extend through an approved proposal; the dimensions seeded on day one are `regime`, `account_type`, `legal_entity`, `service_type`, `client_category`, `channel` and `lifecycle_stage`. At most 20 terms in one call; more answers 422. A value with no colon answers 422 `validation_error`, and one that names no active term 422 `unknown_key` naming every such term. Source: the shared library. Do not read the terms on a record as the bank's own scope: whether the record applies to this bank is a separate fact the bank decides.
@@ -41107,6 +41118,14 @@ export interface operations {
                  *     ]
                  */
                 tenantTag?: string[];
+                /**
+                 * @description Only the duties of instruments filed under one of these jurisdictions, by key: `se` for a Swedish law, `eu` for a Union act. Repeat the parameter for more than one; unlike the other repeated filters they are combined with OR, so `jurisdiction=se&jurisdiction=no` lists the Swedish and the Norwegian duties, and at most 20 are accepted (`LIBRARY_TERM_FILTER_MAX`). The keys are rows of the shared library's jurisdiction list, `eu` (European Union), `se` (Sweden), `dk` (Denmark), `no` (Norway) and `fi` (Finland) on day one, which its editors relabel and retire through approved proposals without changing a key; read `GET /reference/jurisdictions` for the live set. A key no jurisdiction has is not an error: it matches nothing. Each value is at most 80 characters; a longer one is refused with 422 `validation_error`. Do not read `se` as everything a Swedish bank must follow: an EU regulation is filed under `eu`, so send `eu` as well to keep it.
+                 * @example [
+                 *       "se",
+                 *       "no"
+                 *     ]
+                 */
+                jurisdiction?: string[];
                 /**
                  * @description Find the duties whose title or citation contains these words, ignoring case: a phrase to look for, never a document. At most 200 characters (`MAX_QUERY_LENGTH`); a longer one is refused with 422 `validation_error`. It narrows this list and is not the product's search: ranking, synonyms and the text of the summaries belong to `GET /search`.
                  * @example research

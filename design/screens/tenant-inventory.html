@@ -330,6 +330,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     <div class="sheet" role="dialog" aria-label="Filters">
       <div class="barwrap" style="justify-content:space-between"><h2>Filters</h2><button class="btn ghost small" aria-label="Close filters">Close</button></div>
       <p class="meta" style="margin:0">Only values in your scope are offered. Choose Show all items to see everything.</p>
+      <div><p class="micro">Country</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="false">European Union</button><button class="chip" aria-pressed="true">Sweden</button><button class="chip" aria-pressed="true">Norway</button><button class="chip" aria-pressed="false">International</button></div></div>
       <div><p class="micro">Instrument</p><label class="searchbar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input aria-label="Find an instrument" placeholder="Find an instrument"></label>
         <div class="opts"><button aria-pressed="true">All instruments</button><button aria-pressed="false">FFFS 2017:2 <span class="meta">4</span></button><button aria-pressed="false">LVM <span class="meta">2</span></button><button aria-pressed="false">ESMA guidelines <span class="meta">1</span></button></div></div>
       <div><p class="micro">Regime</p><div class="filters" style="margin:0"><button class="chip" aria-pressed="true">Securities</button><button class="chip" aria-pressed="false">AML</button></div></div>
@@ -504,7 +505,7 @@ mark{background:var(--sand-3);color:inherit;border-radius:3px;padding:0 2px}
     own filters narrow the list and not yet the search, which POST /search does not take. What is typed stays
     in the component and never reaches the address bar, and Enter runs it. Clearing it
     returns the list. On the Instruments tab the bar finds instruments by reference or name.
-    The sheet holds Instrument, Regime, Service and Duty type on the Obligations tab, then the
+    The sheet holds Country first (any number on, D-131), then Instrument, Regime, Service and Duty type on the Obligations tab, then the
     bank's own filters (Applies to us, Compliance status, Owner, Owning team and Our tags, every
     role reads them), then As of; the Instruments tab's holds Regime. Instrument and Owner are
     long lists, so each has a find field; the rest are toggles. Nothing is added to the row

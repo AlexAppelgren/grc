@@ -344,7 +344,8 @@ def _filtered(
     if filters.instrument is not None:
         rows = rows.filter(Exists(Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id"), stable_key=filters.instrument)))
     if filters.jurisdiction is not None:
-        rows = rows.filter(metadata__jurisdiction=filters.jurisdiction)
+        keys = [filters.jurisdiction] if isinstance(filters.jurisdiction, str) else filters.jurisdiction
+        rows = rows.filter(metadata__jurisdiction__in=keys)
     if filters.duty_type is not None:
         rows = rows.filter(metadata__duty_type=filters.duty_type)
     if filters.binding is not None:

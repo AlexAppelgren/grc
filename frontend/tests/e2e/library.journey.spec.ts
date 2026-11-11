@@ -212,6 +212,46 @@ test.describe('library journeys', () => {
     await expect(obligations.locator('[data-applies-counts]')).toContainText('in the library.');
   });
 
+  test("INV-S17: The inventory narrows to one country or several", async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await signInAs(page, LOGINS.complianceOfficer);
+    await openInventory(page);
+
+    /** The next list read with these countries, as the server answered it. */
+    const listed = (keys: string) =>
+      page.waitForResponse((response) => response.url().includes('/api/v1/obligations?') && new URL(response.url()).searchParams.getAll('jurisdiction').join(',') === keys);
+    const keysOf = async (answer: Awaited<ReturnType<typeof listed>>) => {
+      const body = (await answer.json()) as { items: { jurisdiction: { key: string } }[]; total: number };
+      return { keys: new Set(body.items.map((row) => row.jurisdiction.key)), total: body.total };
+    };
+
+    // Country is the sheet's first filter. Sweden alone lists Swedish law only.
+    await page.getByRole('button', { name: 'Filters', exact: true }).click();
+    const sheet = page.getByRole('dialog', { name: 'Filters' });
+    await expect(sheet.locator('fieldset').first()).toHaveAccessibleName('Country');
+    const country = sheet.getByRole('group', { name: 'Country' });
+    const swedish = listed('se');
+    await country.getByRole('button', { name: 'Sweden', exact: true }).click();
+    const sweden = await keysOf(await swedish);
+    expect(sweden.total).toBeGreaterThan(0);
+    expect([...sweden.keys]).toEqual(['se']);
+    await expect(page).toHaveURL(/[?&]jurisdiction=se(&|$)/);
+
+    // Adding the Union keeps Sweden: either one is enough.
+    const both = listed('se,eu');
+    await country.getByRole('button', { name: 'European Union', exact: true }).click();
+    const union = await keysOf(await both);
+    expect(union.total).toBeGreaterThan(sweden.total);
+    expect([...union.keys].every((key) => key === 'se' || key === 'eu')).toBe(true);
+
+    // Each country is its own chip, and removing one keeps the other.
+    await page.getByRole('button', { name: 'Done' }).click();
+    await expect(page.locator('[data-set-filter]')).toHaveText(['Sweden', 'European Union']);
+    await page.getByRole('button', { name: 'Remove the Country filter, Sweden' }).click();
+    await expect(page.locator('[data-set-filter]')).toHaveText(['European Union']);
+    await expect(page).toHaveURL(/[?&]jurisdiction=eu(&|$)/);
+  });
+
   test("INV-S3: An obligation states the duty and its facets", async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.complianceOfficer);

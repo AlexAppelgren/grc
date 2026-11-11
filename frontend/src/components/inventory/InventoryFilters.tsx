@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
 import { TextInput } from '@/components/ui/Field';
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useFootprint, useTerms } from '@/features/footprint/hooks';
-import type { TaxonomyTerm } from '@/features/footprint/types';
+import { useFootprint, useJurisdictions, useTerms } from '@/features/footprint/hooks';
+import type { JurisdictionRef, TaxonomyTerm } from '@/features/footprint/types';
 import { INSTRUMENT_OPTIONS, useInstruments } from '@/features/library/hooks';
 import type { Obligation, ScopeFilter } from '@/features/library/types';
 import { usePeople } from '@/features/register/hooks';
@@ -28,8 +28,14 @@ import { cn } from '@/shared/utils/cn';
 // duty applies, how the bank stands, the first-line owner, the owning team and "Our
 // tags". Statuses, teams and tags are the bank's rows, read live, so a relabel never
 // changes what a view means; the owner is a member's id.
+//
+// Country comes first (Alex, 2026-11-11: "a country filter option quite high up in the
+// list, so I can filter on only Sweden or Sweden and Norway"). Any number may be on, and
+// a duty matches when its instrument is filed under one of them, as the search's
+// jurisdiction filter reads it: a Union act is the European Union's, not Sweden's.
 
 export const REGIME = 'regime';
+const JURISDICTION = 'jurisdiction';
 export const SERVICE = 'service_type';
 export const DUTY_TYPE = 'duty_type';
 
@@ -56,8 +62,8 @@ export interface OverlayFilters {
   ownerTeam: string;
 }
 
-/** The Obligations tab's filters: the library's, and the bank's own. */
-export type ObligationFilters = InventoryFilters & OverlayFilters & { tenantTag: string };
+/** The Obligations tab's filters: the library's, the countries, and the bank's own. */
+export type ObligationFilters = InventoryFilters & OverlayFilters & { tenantTag: string; jurisdiction: string[] };
 
 export const APPLICABILITY_VALUES: readonly Obligation['applicability'][] = ['applies', 'not_applicable', 'under_assessment'];
 
@@ -119,6 +125,24 @@ function useScopedTerms(dimension: string, scope: ScopeFilter): TaxonomyTerm[] {
 }
 
 /**
+ * The countries the Country filter offers, by the scope (D-104). "Show all items" offers
+ * every jurisdiction and "Markets we watch" the markets the bank watches. "My scope"
+ * leaves out the countries the bank does not operate in, when its scope names any; the
+ * European Union, whose rules reach the countries it does, and the international bodies,
+ * which no market restricts, stay (D-28, D-38).
+ */
+function useScopedJurisdictions(scope: ScopeFilter): JurisdictionRef[] {
+  const all = useJurisdictions().data ?? [];
+  const footprint = useFootprint().data;
+  if (scope === 'all' || footprint === undefined) return all;
+  const level = new Map(footprint.markets.map((market) => [market.jurisdiction.key, market.level]));
+  if (scope === 'watched') return all.filter((row) => level.get(row.key) === 'watching');
+  const chosen = footprint.dimensions.find((row) => row.dimension.key === JURISDICTION);
+  if (chosen === undefined || !chosen.restrictsFootprint || chosen.allSelected || chosen.terms.length === 0) return all;
+  return all.filter((row) => (level.get(row.key) ?? 'operating') === 'operating');
+}
+
+/**
  * The instruments with obligations inside the scope, at the route's maximum page, each
  * with its count (INV-01). Read only while the picker is open or an instrument is set,
  * so the list never asks for a hundred instruments it does not show (NFR-02).
@@ -159,6 +183,23 @@ function ToggleGroup({ label, values, value, onChange, empty }: { label: string;
           ))}
         </ChipRow>
       )}
+    </fieldset>
+  );
+}
+
+/** A filter whose values combine (Country): any number on, and pressing one again takes it off. */
+function MultiToggleGroup({ label, values, value, onChange }: { label: string; values: readonly { key: string; label: string }[]; value: readonly string[]; onChange: (next: string[]) => void }) {
+  if (values.length === 0) return null;
+  return (
+    <fieldset className="m-0 min-w-0 border-0 p-0">
+      <legend className="microlabel mb-2 text-muted">{label}</legend>
+      <ChipRow>
+        {values.map((row) => (
+          <Chip key={row.key} pressed={value.includes(row.key)} onClick={() => onChange(value.includes(row.key) ? value.filter((key) => key !== row.key) : [...value, row.key])}>
+            {row.label}
+          </Chip>
+        ))}
+      </ChipRow>
     </fieldset>
   );
 }
@@ -269,7 +310,8 @@ function SetFilters({ chips, onClear }: { chips: { filter: string; value: string
   return (
     <>
       {chips.map((chip) => (
-        <SetFilterChip key={chip.filter} {...chip} />
+        // A filter of several values (Country) sets one chip per value.
+        <SetFilterChip key={`${chip.filter}:${chip.value}`} {...chip} />
       ))}
       <button type="button" onClick={onClear} className="px-1 text-meta text-muted underline underline-offset-[3px] hover:text-fg">
         {t('inventory.filters.clear')}
@@ -285,19 +327,21 @@ function SetFilters({ chips, onClear }: { chips: { filter: string; value: string
  */
 export function InventoryFilterBar({ filters, onChange }: { filters: ObligationFilters; onChange: (next: Partial<ObligationFilters>) => void }) {
   const cleared = { instrument: '', regime: '', service: '', dutyType: '', applicability: '', complianceStatus: '', owner: '', ownerTeam: '', tenantTag: '' } as const;
-  const anySet = Object.keys(cleared).some((key) => filters[key as keyof typeof cleared] !== '');
+  const anySet = filters.jurisdiction.length > 0 || Object.keys(cleared).some((key) => filters[key as keyof typeof cleared] !== '');
+  const clear = { ...cleared, jurisdiction: [] };
   return (
     <>
-      <FilterSheet onClear={() => onChange({ ...cleared, asOf: '' })}>
+      <FilterSheet onClear={() => onChange({ ...clear, asOf: '' })}>
         <InventorySheetBody filters={filters} onChange={onChange} />
       </FilterSheet>
-      {anySet ? <InventoryChips filters={filters} onChange={onChange} onClear={() => onChange(cleared)} /> : null}
+      {anySet ? <InventoryChips filters={filters} onChange={onChange} onClear={() => onChange(clear)} /> : null}
     </>
   );
 }
 
 function InventorySheetBody({ filters, onChange }: { filters: ObligationFilters; onChange: (next: Partial<ObligationFilters>) => void }) {
   const t = useT();
+  const countries = useScopedJurisdictions(filters.scope);
   const regimes = useScopedTerms(REGIME, filters.scope);
   const services = useScopedTerms(SERVICE, filters.scope);
   const dutyTypes = useVocabularyValues(DUTY_TYPE).data ?? [];
@@ -309,6 +353,7 @@ function InventorySheetBody({ filters, onChange }: { filters: ObligationFilters;
   const applicability = APPLICABILITY_VALUES.map((key) => ({ key, label: t(APPLICABILITY_LABEL[key]) }));
   return (
     <>
+      <MultiToggleGroup label={t('inventory.filter.country')} values={countries} value={filters.jurisdiction} onChange={(jurisdiction) => onChange({ jurisdiction })} />
       <FindList
         label={t('inventory.filter.instrument')}
         findLabel={t('inventory.filters.findInstrument')}
@@ -363,11 +408,18 @@ function InventoryChips({ filters, onChange, onClear }: { filters: ObligationFil
   const teams = useVocabularyValues(TEAM, false, filters.ownerTeam !== '').data ?? [];
   const tags = useVocabularyValues(TENANT_TAG, false, filters.tenantTag !== '').data ?? [];
   const instrumentName = useInstrumentName(filters.instrument, filters.scope);
+  const countries = useJurisdictions(filters.jurisdiction.length > 0).data ?? [];
   const labelOf = (rows: readonly { key: string; label: string }[], key: string) => rows.find((row) => row.key === key)?.label ?? key;
   // A chip for each set filter; its Remove clears that filter alone.
-  const chip = (key: Exclude<keyof ObligationFilters, 'asOf' | 'scope'>, filter: string, value: string) =>
+  const chip = (key: Exclude<keyof ObligationFilters, 'asOf' | 'scope' | 'jurisdiction'>, filter: string, value: string) =>
     filters[key] === '' ? [] : [{ filter, value, onRemove: () => onChange({ [key]: '' }) }];
   const chips = [
+    // One chip per country; its Remove takes that country alone off.
+    ...filters.jurisdiction.map((key) => ({
+      filter: t('inventory.filter.country'),
+      value: labelOf(countries, key),
+      onRemove: () => onChange({ jurisdiction: filters.jurisdiction.filter((other) => other !== key) }),
+    })),
     ...chip('instrument', t('inventory.filter.instrument'), instrumentName),
     ...chip('regime', t('inventory.filter.regime'), labelOf(regimes, filters.regime)),
     ...chip('service', t('inventory.filter.service'), labelOf(services, filters.service)),

@@ -35,10 +35,13 @@ from uuid import UUID
 from django.conf import settings
 from pydantic import ConfigDict, Field
 
-from apps.library.schemas import FootprintFilter
+from apps.library.schemas import FilterKey, FootprintFilter
 from apps.shared.schemas import CamelSchema, WriteBody
 from apps.taxonomy.schemas import TermRef
 from apps.watch.schemas import DatePrecision
+
+# Several jurisdictions at once, combined with OR: 1 to 20 keys of at most 80 characters.
+JurisdictionKeys = Annotated[list[FilterKey], Field(min_length=1, max_length=settings.LIBRARY_TERM_FILTER_MAX)]
 
 __all__ = ["CamelSchema"]
 
@@ -179,10 +182,14 @@ class SearchFilters(WriteBody):
         ),
         examples=["fffs-2017-2"],
     )
-    jurisdiction: str | None = Field(
+    jurisdiction: str | JurisdictionKeys | None = Field(
         default=None,
         description=(
-            "Narrow the search to the law of one jurisdiction, by key. The keys are rows "
+            "Narrow the search to the law of one jurisdiction, by key, or of any of several: "
+            "a list of 1 to 20 keys (`LIBRARY_TERM_FILTER_MAX`) is combined with OR, so "
+            "`[\"se\", \"no\"]` finds Swedish and Norwegian law, each key at most 80 "
+            "characters; an empty list, a longer list or a longer key is refused with 422 "
+            "`validation_error`. A key no jurisdiction has matches nothing. The keys are rows "
             "in the shared library's `jurisdiction` vocabulary; the platform seeds them and "
             "its library editors relabel, retire and restore them through approved proposals, "
             "never changing a key, and on day one they "

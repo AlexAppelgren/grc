@@ -106,6 +106,8 @@ export interface ObligationQuery {
   /** Library tag keys and the bank's own tag keys; every one named must be on the record. */
   tag?: string[];
   tenantTag?: string[];
+  /** Jurisdiction keys; the instrument's jurisdiction must be one of them. */
+  jurisdiction?: string[];
   q?: string;
   asOf?: string;
   footprint?: ScopeFilter;

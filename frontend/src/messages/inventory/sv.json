@@ -4,6 +4,7 @@
   "inventory.instrumentCount": "{count, plural, one {# rättsakt} other {# rättsakter}}",
   "inventory.tabs.obligations": "Skyldigheter",
   "inventory.tabs.instruments": "Rättsakter",
+  "inventory.filter.country": "Land",
   "inventory.filter.instrument": "Rättsakt",
   "inventory.filter.allInstruments": "Alla rättsakter",
   "inventory.filter.instrumentOption": "{name} ({count})",
