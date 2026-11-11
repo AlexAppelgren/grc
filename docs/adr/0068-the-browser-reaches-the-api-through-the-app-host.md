@@ -1,6 +1,6 @@
 # ADR 0068 — The browser reaches the API through the app host
 
-**Date:** 2026-11-11 · **Status:** proposed, on the branch; the owner decides before it ships (D-134)
+**Date:** 2026-11-11 · **Status:** accepted (Alex, 2026-11-11, in chat, asked whether to ship it: "yeah lets do that"; D-134)
 
 ## Context
 

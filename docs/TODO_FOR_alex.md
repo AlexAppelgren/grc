@@ -2571,7 +2571,8 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       canonical address; a marker of one day; sign-in and every other app address unchanged. It
       is not proven to change Broadcom's rating, so the review request above and SEB's allowlist
       are still needed. `docs/runbooks/DNS_DOMAINS.md` ("The app host's front door") has the rule.
-- [ ] **The browser reaches the API through the app host: built, yours to ship (D-134, ADR 0068).**
+- [ ] **The browser reaches the API through the app host: shipped on your word, to confirm from
+      SEB's network (D-134, ADR 0068).**
       On 2026-11-11 SEB's filter let `app.bleqq.com` through, the sign-in page loaded, and the
       passkey button answered "The server could not be reached": the page's calls to the second
       host, `api.bleqq.com`, did not get through on the bank's network, while the same calls
