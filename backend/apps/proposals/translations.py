@@ -1,35 +1,19 @@
 """The library's machine translations, filed through the proposal door (INV-05, I18N-01,
-D-129; Alex, 2026-11-09: "translate the summary to all languages that the platform
-supports, while having the original language text available as well").
+D-129).
 
-Most of the library is written in one language. This module asks a model, once per record,
-for the title and the summary of a shared instrument or obligation in every live content
-language the record lacks, and files the answer as one `new_translations` proposal of the
-platform agent `library-translator`, under a run of that agent it opens with no key and
-hands to no runner, as the library baseline's filer does (apps/proposals/baseline.py). It
-decides nothing: a person approves each proposal in the console queue, and the rows it adds
-are machine-made whoever approves them, with the original kept as the authoritative text.
+A model is asked, once per record, for a shared instrument's or obligation's title and
+summary in every live content language it lacks; the answer is filed as one
+`new_translations` proposal of the platform agent `library-translator`. A person approves
+it, and the rows stay machine-made, the original authoritative.
 
-The model's answer is untrusted text off a network. It is read strictly (one JSON object,
-exactly the languages asked for, no blank text, none longer than
-`LIBRARY_TRANSLATION_TEXT_MAX_CHARS`) and anything else files nothing; what it says is then
-checked by the proposal door like any proposal, the injection screen included, whose flags
-keep the decision for a person.
+The answer is untrusted: one JSON object, exactly the languages asked, no blank text, at most
+`LIBRARY_TRANSLATION_TEXT_MAX_CHARS`, or nothing is filed; then the proposal door checks it,
+the injection screen included.
 
-What one record costs is one model call, and a record is asked once in the same words: a
-call is skipped while a translation proposal of the record is open, and when a call with the
-same prompt was already made, which is the content hash of what was asked (the originals and
-the languages wanted) and also the proposal's retry key. So a rejected or unusable answer is
-not asked for again until the original changes or a language is added. A model that did not
-answer logs a failed row and is asked again on the next run, until
-`LIBRARY_TRANSLATION_MAX_FAILURES` calls with the same prompt have failed; then the record waits
-for its original or the languages to change (review 2026-11-11 S-9).
-
-The beat (`LIBRARY_TRANSLATION_MINUTES`, which switches the feature off at 0) queues at most
-`LIBRARY_TRANSLATION_RUN_MAX` records, one worker task each, and an approval that adds an
-obligation or an instrument's summary queues the same fan-out a few seconds later, once per
-approval window (apps/proposals/tasks.py).
-A session advisory lock per record means two tasks never ask about one record together.
+A record is asked once in the same words: skipped while a proposal is open or a call with the
+same prompt hash (also the retry key) was made. A failed call is retried until
+`LIBRARY_TRANSLATION_MAX_FAILURES` (review 2026-11-11 S-9). The beat queues at most
+`LIBRARY_TRANSLATION_RUN_MAX` records; a per-record advisory lock keeps two tasks apart.
 """
 
 from __future__ import annotations

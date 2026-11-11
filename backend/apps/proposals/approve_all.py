@@ -1,31 +1,19 @@
 """Approve all: one reviewer's decision to approve every proposal waiting in the console
 queue under the filters they chose, carried out by the worker (PRO-02, D-128).
 
-Approving the library baseline one call at a time from the browser took a round trip per
-proposal, about an hour for 2,400. Here the reviewer steps up once and names the filters;
-`start` reads the ids of what is waiting at that moment, writes one audit row for the
-decision under that assertion, and queues `tasks.approve_listed`, which approves each id
-through `logic.approve`, the one door into the library, in a transaction of its own. Every
-approval writes its own audit rows with the same assertion id, four eyes is checked row by
-row as always, and a refused row is counted with its reason while the rest go on.
+The reviewer steps up once; `start` reads the ids waiting at that moment, writes one audit
+row under that assertion and queues `tasks.approve_listed`, which approves each id through
+`logic.approve`, the one door, in its own transaction. Four eyes is checked row by row and a
+refused row is counted with its reason. Proposals filed during the run, the reviewer's own,
+flagged ones and batches wait for their own review.
 
-Only what was waiting when the reviewer confirmed is approved: a proposal filed during the
-run, such as the duties of a regulation the run just approved, waits for the next decision.
-What the page selection would refuse is never read: the reviewer's own proposals, flagged
-ones and batches, each for its own review.
+Progress lives in the cache under the reviewer's id. One run per reviewer: a second start
+answers 409 `approval_running` unless the running one is silent past
+`PROPOSALS_APPROVE_ALL_STALE_S`.
 
-The run's progress lives in the cache under the reviewer's id, the only reader being the
-reviewer's own queue screen; the audit trail and the queue are the record of what happened.
-One run per reviewer at a time: a second start while one is running answers 409
-`approval_running`, unless the running one has said nothing for
-`PROPOSALS_APPROVE_ALL_STALE_S`, which means its worker stopped.
-
-The run acts on the reviewer's step-up for minutes, so it checks before its first approval and
-again every `PROGRESS_EVERY` rows that the reviewer could still start it: their account is
-active, their platform grants still hold `proposals.review`, and the session they stepped up
-in is not revoked. When any of these is gone the run stops, writes `proposal.approve_all_stopped`
-with the reason, and leaves the rest waiting (review 2026-11-11 L-1). A revoked session is
-how a person, or an administrator for them, ends a run they no longer want.
+Every `PROGRESS_EVERY` rows the run checks that the reviewer could still start it (account
+active, `proposals.review` held, step-up session not revoked) and otherwise stops with
+`proposal.approve_all_stopped` (review 2026-11-11 L-1). Revoking the session ends a run.
 """
 
 from __future__ import annotations

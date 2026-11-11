@@ -2,27 +2,18 @@
 one proposal with a row per record.
 
 A batch is a `proposal` with `is_batch` set, so four eyes, the rejection reason, the audit
-row and the queue are the ones every proposal has: the queue lists a batch once. Each
-`proposal_batch_row` carries the preview the reviewer decides on, computed here when the
-batch is filed and never again, so a reviewer decides on what was proposed rather than on
-what the library says now. A row whose record moved since is `stale` when read, and cannot be
-approved: the `If-Match` rule, applied to a batch.
+row and the queue are every proposal's. Each `proposal_batch_row` carries the preview the
+reviewer decides on, computed once when filed; a row whose record moved since reads `stale`
+and cannot be approved: `If-Match`, applied to a batch.
 
-`create_batch()` is the one writer: the console route, the re-tag request's platform run and
-the seed all file through it. It writes proposal rows only; a preview writes nothing into
-the library, whose rows are read through apps/library/reading.py. Re-tagging is the
-platform's (AGT-05): a bank's session or key never reaches it, and the rows carry no tenant
-content.
+`create_batch()` is the one writer and writes proposal rows only. Re-tagging is the
+platform's (AGT-05): no bank session or key reaches it.
 
-`decide()` is the decision half (PRO-S8): a second person holding `proposals.review`, with a
-fresh passkey, approves or rejects rows one by one and gives every row left pending one
-decision. Approved rows are written by `apply.apply()` inside the proposal door; a rejected
-row names a live reason from the `rejection_reason` list. One audit row per row and one more
-naming every row's outcome, the library writes and their re-index commit together or not at
-all. Who decides is a person: an agent reviewer is refused with 409
-`person_review_required`, and the proposer with 409 `four_eyes_violation` before a single
-row moves, beside the row trigger and the parent's `proposal_four_eyes` check, which stay
-the database's word on it.
+`decide()` (PRO-S8): a person holding `proposals.review`, with a fresh passkey, approves or
+rejects rows; approved rows are written by `apply.apply()`, and everything commits together.
+An agent reviewer is 409 `person_review_required` and the proposer 409
+`four_eyes_violation` before a row moves; the row trigger and `proposal_four_eyes` stay the
+database's word on it.
 """
 
 from __future__ import annotations
@@ -90,12 +81,10 @@ def _normalized(payload: ObligationScopePayload) -> ObligationScopePayload:
 
 
 def _preview(payload: ObligationScopePayload, source_label: str) -> list[ProposalBatchRow]:
-    """One unsaved row per obligation, its scope before (the live `obligation_term` rows) and
-    after, once every rule a proposal's scope answers to has passed: live shared obligations,
-    live terms, no term of a dimension mirroring the jurisdiction list, a source a reader can
-    follow, and the standards rule (a standard's term only on a standard's obligation, which
-    keeps exactly one, and only links as a standard's sources). An entry that would change
-    nothing is refused rather than queued."""
+    """One unsaved row per obligation, its scope before and after, once every rule a
+    proposal's scope answers to has passed: live shared obligations, live terms, no mirrored
+    jurisdiction term, a followable source, and the standards rule. An entry that would
+    change nothing is refused rather than queued."""
     ids = [change.obligation_id for change in payload.changes]
     obligations = active_shared_obligations(ids)
     missing = [str(obligation_id) for obligation_id in ids if obligation_id not in obligations]
@@ -163,12 +152,10 @@ def create_batch(
     """File a batch, or answer the one an earlier identical submission filed. Returns
     `(proposal, created)`.
 
-    A key names an open run of its own (AGT-01), checked first, as for a single proposal;
-    a person names none. The same `Idempotency-Key` from the same proposer with the same
-    body answers the batch it already made and records the retry; with another body it is
-    409 `idempotency_conflict`. Every text the proposer sent is read by the injection screen
-    and stored as it arrived. The proposal, its rows and its audit row are written in one
-    transaction."""
+    A key names an open run of its own (AGT-01). The same `Idempotency-Key` from the same
+    proposer with the same body answers the batch it made; with another body it is 409
+    `idempotency_conflict`. Every text is read by the injection screen and stored as it
+    arrived. Proposal, rows and audit row commit together."""
     if tenancy.database_tenant_id() is not None:
         # AGT-05: re-tagging the library is the platform console's; the route refuses a bank
         # first, and this refuses any other caller writing from inside a bank.
@@ -351,19 +338,15 @@ def _requested_by(proposal: Proposal) -> uuid.UUID | None:
 def decide(*, proposal: Proposal, decision: ProposalBatchDecision, reviewer: Reviewer, step_up_assertion_id: uuid.UUID | None) -> Proposal:
     """Decide a batch whole or row by row (PRO-04, PRO-S8), in one transaction of its own.
 
-    Refused before anything is locked or written: an agent reviewer (409
-    `person_review_required`: a re-tag batch is decided by a person), a caller inside a bank
-    (403), and a malformed body. Then, under the batch's lock, a decided batch is 409
-    `invalid_transition`, and the batch's proposer is 409 `four_eyes_violation`, the call
-    deciding nothing at all. So is the person who asked for the re-tag whose run filed the
-    batch (`_requested_by`): the agent only carried out their request. A row named that does not belong to the batch is
-    422 `unknown_key`, and one already decided is 409 `invalid_transition`.
+    Refused before anything is written: an agent reviewer (409 `person_review_required`), a
+    caller inside a bank (403), a malformed body. Under the batch's lock: a decided batch is
+    409 `invalid_transition`; the proposer, or the person whose re-tag request filed it
+    (`_requested_by`), 409 `four_eyes_violation`. A row not in the batch is 422 `unknown_key`,
+    one already decided 409 `invalid_transition`.
 
-    A pending row whose record was retired or moved since the batch was filed is stale: named
-    for approval it is 409 `stale_write` and nothing is decided; under an approved `rest` it
-    is left pending, so the others still apply and the reviewer rejects it. The batch closes
-    only when no row is pending: approved if any row was, else rejected with the rows' shared
-    reason. The note stays on the proposal row, never in an audit value."""
+    A stale pending row named for approval is 409 `stale_write`; under an approved `rest` it
+    stays pending. The batch closes when no row is pending: approved if any row was, else
+    rejected with the rows' shared reason. The note never enters an audit value."""
     from apps.proposals import apply
 
     if reviewer.user is None:

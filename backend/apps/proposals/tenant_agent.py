@@ -1,35 +1,20 @@
 """What a bank's own agent found, filed as the bank's own proposals (OWN-02, INV-07, PRO-01;
 D-57, D-89, D-91, ADR 0059).
 
-The one door a bank's own run files through, and it is reached only from the worker:
-`apps.agents.runner_events.apply_finding` has already checked that the run is a running
-scope-item research run of the bank's own agent, in the zone applying it. No route and no
-API key reaches this module, so no key gains a proposal scope and `refuse_tenant_key` is
-unchanged.
+Reached only from the worker (`apps.agents.runner_events.apply_finding` has checked the
+run); no route or API key reaches it. Each finding becomes one proposal through
+`logic.create()`, the shared door's creation check. Before it:
 
-Each finding becomes one proposal through `logic.create()`, the same creation check the
-shared door uses: the payload's schema, a source per field, the https source, the injection
-screen (AGT-07) and the run's proposal budget. Here, before it:
+- **Only a new record of the bank's own**: a `new_instrument`, `new_obligation` or
+  `new_control` (OWN-05, D-99); anything else is `not_own_record`.
+- **Owned by the run's bank**: `private=True`, checked against the run.
+- **Never a duplicate**: a record or control the bank holds is 409
+  `already_in_our_library`, answered by the database (`library.reading.held_as_own`), so
+  the agent never reads the bank's records (D-57).
+- **Once per run and event**: the event id is the idempotency key.
 
-- **Only a new record of the bank's own.** A `new_instrument` or `new_obligation` naming no
-  target, or a `new_control` of one of the bank's own obligations (OWN-05, D-99), which names
-  that obligation by key and no target. A finding that names a shared record, any other kind (a re-tag, a version of a
-  shared duty, a vocabulary row) or anything of the regulatory scope is refused with
-  `not_own_record` and nothing is stored.
-- **Owned by the run's bank.** `private=True` makes `logic.owner_of()` take the bank the
-  database is scoped to, which is the run's; the finding never names an owner, and the
-  result is checked against the run all the same.
-- **Never a duplicate of what the bank holds.** A record the bank already holds as its own,
-  by stable key or official reference, or a control of that name already linked to that
-  obligation (`private_controls.held`), is 409 `already_in_our_library`, answered by a
-  database lookup (`library.reading.held_as_own`), so the agent never reads the bank's
-  records back (D-57).
-- **Once per run and event.** The event's id is the proposal's idempotency key within the
-  run, so a finding the runner reports twice answers the proposal it already filed.
-
-The proposal names the agent (`proposed_by_agent`), the run and so the version it ran
-(`agent_run.agent_version`), and the model the runner reported (`model`); its origin is
-`agent`, which the bank's own queue reads as proposed by our agent until a person decides it.
+The proposal names the agent, the run and the model; its origin is `agent` until a person
+decides it.
 """
 
 from __future__ import annotations
