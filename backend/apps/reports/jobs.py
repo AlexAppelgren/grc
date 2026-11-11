@@ -1,14 +1,10 @@
-"""Export jobs (REP-02, CAS-07; CHUNK12_TASKS c12-exports-contract-b).
+"""Export jobs (REP-02, CAS-07).
 
-`create` writes the job and hands it to the worker once the request's transaction commits,
-so a request never builds a file. A kind nobody registered answers 501 `not_built` and a
-format its exporter does not offer answers 422, both before a row is written. `download`
-streams the file back through the same permission, writes one audit row per download and
-stamps the first one. Every read and write names the caller's own tenant on top of
-row-level security, so another bank's job is a plain 404.
-
-Nothing here logs; the audit rows name the export's kind and format and the person, never
-anything from the file.
+`create` writes the job and queues it after commit, so a request never builds a file; an
+unregistered kind answers 501 `not_built` and an unoffered format 422, both before a row is
+written. `download` streams through the same permission, writes one audit row per download
+and stamps the first. Every query names the caller's tenant on top of row-level security.
+Nothing here logs; audit rows name kind, format and person, never file content.
 """
 
 from __future__ import annotations

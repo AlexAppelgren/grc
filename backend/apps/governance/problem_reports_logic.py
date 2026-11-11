@@ -1,19 +1,11 @@
 """A bank reads and closes its own problem reports (AUD-03, PRO-03, INV-06, D-50).
 
-A report is filed on a library record by any member (`apps/library/reports.py`) and stays
-inside that bank: row-level security on `problem_report` has already cut every query here
-to the caller's tenant, so another bank's report is simply not found, and no platform role
-holds `problems.report` to get this far (Alex, 2026-09-19, item 3).
-
-Inside the bank, `proposals.create` decides reach, as docs/TODO_FOR_alex.md's default for
-item 3 says: its holder (the compliance officer) lists and closes every report of the
-bank; every other member lists and closes the reports they filed. No permission is added.
-
-A close sets `answered`, `fixed` or `rejected` with a required note, once. It is not a
-library change: the correction of a wrong record reaches the library through the watch
-agents' re-check and a proposal, which carries no bank's words. The report's text and the
-closing note are tenant content (playbook 4.7): they stay in the row, and the audit row and
-the outbox event carry the report's id and its states only.
+Row-level security cuts every query to the caller's tenant, and no platform role holds
+`problems.report`. Inside the bank, a `proposals.create` holder lists and closes every
+report; every other member only their own. A close sets `answered`, `fixed` or `rejected`
+with a required note, once, and is not a library change: a correction reaches the library
+through the watch agents and a proposal. Report text and closing note are tenant content
+(playbook 4.7): audit and outbox carry ids and states only.
 """
 
 from __future__ import annotations
@@ -91,8 +83,7 @@ def close(
     note = body.resolution_note.strip()
     if not note:
         raise ValidationError("Say why you are closing it, so the reporter knows.", code="note_required")
-    # A close is a row change and an audit row kept for ten years: one person's closes
-    # are bounded per hour, apart from their filing (ACC-09, hardening H39).
+    # A close is an audit row kept for ten years: bounded per person per hour (ACC-09, H39).
     enforce(BUCKET, str(closer.id), settings.PROBLEM_REPORTS_PER_USER_PER_HOUR, HOUR)
     report.status = body.status
     report.resolution_note = note
