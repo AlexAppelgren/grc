@@ -43,7 +43,8 @@ export type DiffOp = 'equal' | 'insert' | 'delete';
 /** Two versions of one duty or provision compared sentence by sentence. */
 export type VersionDiff = Schemas['VersionDiff'];
 /** POST …/problem-reports: what the reader was looking at, in their own words. */
-export type ProblemReportBody = Schemas['ProblemReportBody'];
+/** What a reader writes; the record it is about is the call's own subject. */
+export type ProblemReportBody = Omit<Schemas['ProblemReportBody'], 'subjectType' | 'subjectId'>;
 export type ProblemReportCreated = Schemas['ProblemReportCreated'];
 /** One row of GET /instruments (INV-01). `obligationCount` follows the same footprint filter the row itself does. */
 export type Instrument = Schemas['InstrumentRow'];

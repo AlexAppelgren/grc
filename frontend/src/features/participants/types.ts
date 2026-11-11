@@ -7,6 +7,9 @@ type Schemas = components['schemas'];
 
 export type Participant = Schemas['CollabParticipant'];
 export type ParticipantPage = Schemas['CollabParticipantPage'];
-export type ParticipantInput = Schemas['CollabParticipantInput'];
+/** Who to add; the record is the call's own subject. */
+export type ParticipantInput = Omit<Schemas['CollabParticipantInput'], 'subjectType' | 'subjectId'>;
+/** The record participants take part in: an obligation's register entry, or the case for a change. */
+export type ParticipantSubject = { subjectType: Schemas['CollabParticipantInput']['subjectType']; subjectId: string };
 export type PersonRef = Schemas['NamedRef'];
 export type Team = Schemas['TenantTeam'];

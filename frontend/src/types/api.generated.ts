@@ -888,11 +888,14 @@ export interface paths {
         /**
          * Switch your bank's agent on or off, or change its cadence or scope
          * @description Changes what the body sends on one of the bank's own agents: its switch, cadence,
-         *     run day and hour, or scope, and nothing else. Its instructions and tools are never the
-         *     bank's to change. Switching an agent on needs the bank's monthly cap to be set first.
+         *     run day and hour, scope, or pause, and nothing else. Its instructions and tools are never
+         *     the bank's to change. Switching an agent on needs the bank's monthly cap to be set first.
+         *     A paused agent answers with `pausedAt`, `pausedBy` naming the person and no `nextRunAt`;
+         *     a resumed one with its next run.
          *
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-         *     event with the fields before and after.
+         *     event with the fields before and after, and one more for a pause, naming the person who
+         *     paused, or for a resume. Nothing is deleted: a lifted pause stays in the audit log.
          *
          *     Errors: `not_found` (404) for an agent the bank does not have; `unknown_key` (422) for a
          *     scope key the vocabulary does not hold, with the valid keys in `validKeys`;
@@ -903,52 +906,6 @@ export interface paths {
          *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
          */
         patch: operations["updateTenantAgent"];
-        trace?: never;
-    };
-    "/api/v1/agents/{tenant_agent_id}/pause": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Pause your bank's agent
-         * @description Pauses one of the bank's own agents: it starts no run until someone resumes it, and
-         *     it keeps its settings and its history. A run already open is not stopped; use
-         *     `POST /agent-runs/{runId}/interrupt` for that. Returns the agent, with `pausedAt`,
-         *     `pausedBy` naming the person and no `nextRunAt`. Pausing an agent that is already paused
-         *     changes nothing and returns it as it is.
-         *
-         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-         *     event naming the person.
-         *
-         *     Errors: `not_found` (404) for an agent the bank does not have.
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
-         */
-        post: operations["pauseTenantAgent"];
-        /**
-         * Resume your bank's paused agent
-         * @description Lifts the pause on one of the bank's own agents, whether a person or the monthly cap
-         *     paused it, so it runs on its cadence again, and returns it with its next run. Nothing is
-         *     deleted: the pause stays in the audit log. Resuming an agent that is not paused changes
-         *     nothing and returns it as it is. An agent resumed while the month's cap is still reached
-         *     is paused again by the cap when its next run is due.
-         *
-         *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-         *     event naming the person.
-         *
-         *     Errors: `not_found` (404) for an agent the bank does not have.
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
-         */
-        delete: operations["resumeTenantAgent"];
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/v1/agents/{tenant_agent_id}/runs": {
@@ -2858,106 +2815,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/changes/{change_id}/participants": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * See who takes part in a case
-         * @description The people and teams taking part in the bank's case for a change, in the order they
-         *     were added, for the case's participants and the assessment's contributor teams, which are
-         *     the team participants (D-20).
-         *
-         *     A read: it changes nothing and writes no audit row. Needs a person's session in a bank
-         *     holding `cases.read`; no API key reaches it. Taking part grants nothing, so the list says
-         *     who is involved and nothing about what they may do.
-         *
-         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A case nobody takes
-         *     part in is a 200 with an empty `items`.
-         *
-         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-         *     finish enrolling, `permission_denied` without `cases.read` (naming it in
-         *     `requiredPermission`), `not_found` for a platform session and for a change the bank has
-         *     no case for, and `validation_error` for a `limit` outside 1 to 100.
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
-         */
-        get: operations["listCaseParticipants"];
-        put?: never;
-        /**
-         * Add a person or a team to a case
-         * @description Name a person or a team on the bank's case for a change, so it reaches their My work
-         *     and their notifications. Adding a team is how the assessment records a contributor team
-         *     (D-20): one call per team, never a list, so a form loaded earlier cannot undo someone
-         *     else's add. It grants them nothing: a participant still gets 403 on anything their role
-         *     lacks.
-         *
-         *     Needs a person's session in a bank holding `cases.contribute`; no API key reaches it, and
-         *     no step-up is asked, because taking part approves nothing. Records one audit event on the
-         *     case holding the participation's, the person's or the team's ids and never a name. A
-         *     shared change lands on this bank's own case and changes nothing another bank sees. The
-         *     case's `version` is not raised. Answers 201 with the participant.
-         *
-         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-         *     finish enrolling, `permission_denied` without `cases.contribute` (naming it in
-         *     `requiredPermission`), `not_found` for a platform session and for a change the bank has
-         *     no case for, `invalid_transition` (409) for a case that is closed or dismissed,
-         *     `validation_error` for a body naming both or neither of `userId` and `teamKey`, or a
-         *     field it does not name, `unknown_member` for a person who is not an active member of this
-         *     bank, whether from another bank, deactivated or unknown, `unknown_key` for a team the bank
-         *     has no active row for, `participant_cannot_read` for a member whose roles cannot read
-         *     cases, `already_participant` (409) when they already take part, and
-         *     `too_many_participants` when the case already holds as many as the deployment allows (50
-         *     unless configured otherwise).
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.contribute`, named in `requiredPermission`.
-         */
-        post: operations["addCaseParticipant"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/changes/{change_id}/participants/{participant_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Remove a participant, or leave a case
-         * @description End one participation on the bank's case for a change: "Leave" on the caller's own
-         *     row, or "Remove" on anyone else's, a contributor team included.
-         *
-         *     Any person's session in a bank may leave their own participation, whatever their role,
-         *     and the audit event is `participant.left`; removing anyone else needs `cases.contribute`,
-         *     and the audit event is `participant.removed`. Either holds ids only. The participation is
-         *     ended with its time and who ended it, never deleted, so the case file still shows who took
-         *     part until when; it may end on a closed case too. No API key reaches it and no step-up is
-         *     asked. Answers 204 with no body.
-         *
-         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-         *     finish enrolling, `permission_denied` for removing someone else without
-         *     `cases.contribute` (naming it in `requiredPermission`), and `not_found` for a platform
-         *     session, for a change the bank has no case for and for a participation that is not live
-         *     on this bank's case for it.
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
-         */
-        delete: operations["removeCaseParticipant"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/changes/{change_id}/restore": {
         parameters: {
             query?: never;
@@ -4359,38 +4216,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/instruments/{instrument_id}/problem-reports": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Tell us an instrument or one of its provisions looks wrong
-         * @description Files a reader's "this looks wrong" report against one instrument of the shared library. Call it when someone reading a record believes a public fact is wrong. Nothing in the library changes here: a proposal is the only door into it.
-         *
-         *     A provision is reported through the instrument whose card shows it, so there is no separate provision route; say which provision in the text. The instrument has to be one this caller can already read: a shared record, or one their own bank owns privately.
-         *
-         *     The report is created inside the bank the caller is signed in to and stays there. No bleqq editor, no other bank, no agent and no model ever reads it, and no console surface lists it (Alex, 2026-09-19). The loop back to the library is closed the other way round: bleqq's watch agents re-check library records against their sources on every run, find the deviation themselves, and propose the correction for a second, independent principal to approve.
-         *
-         *     The reporter and the bank are taken from the caller's session and never from the body, so do not send them; versionNumber and language record which words were on screen.
-         *
-         *     Needs the `problems.report` permission, which every member of a bank holds and no platform role does. Answers 201 with the report's id, its status and when it was filed, and never reads the reader's own words back. Writes one audit event, library.problem_reported, carrying the record, the report's id and the version and language on screen, and never the text itself.
-         *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the instrument is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or holds a NUL character, or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language; `rate_limited` (429) when this person has filed 30 reports in the last hour (`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry.
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `problems.report`, named in `requiredPermission`.
-         */
-        post: operations["reportInstrumentProblem"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/instruments/{instrument_id}/provisions": {
         parameters: {
             query?: never;
@@ -5721,136 +5546,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/obligations/{obligation_id}/participants": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * See who takes part in an obligation
-         * @description The people and teams taking part in the bank's register entry for an obligation, in
-         *     the order they were added, for the obligation page's participants panel.
-         *
-         *     A read: it changes nothing, writes no audit row and never creates a register entry. Needs
-         *     a person's session in a bank holding `register.read`; no API key reaches it. Taking part
-         *     grants nothing, so the list says who is involved and nothing about what they may do.
-         *
-         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. An obligation nobody
-         *     takes part in, or that the bank has not worked on yet, is a 200 with an empty `items`.
-         *
-         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-         *     finish enrolling, `permission_denied` without `register.read` (naming it in
-         *     `requiredPermission`), `not_found` for a platform session and for an obligation the bank
-         *     cannot see, and `validation_error` for a `limit` outside 1 to 100.
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
-         */
-        get: operations["listObligationParticipants"];
-        put?: never;
-        /**
-         * Add a person or a team to an obligation
-         * @description Name a person or a team on the bank's register entry for an obligation, so it reaches
-         *     their My work and their notifications. It grants them nothing: a participant still gets
-         *     403 on anything their role lacks.
-         *
-         *     Needs a person's session in a bank holding `register.edit`; no API key reaches it, and no
-         *     step-up is asked, because taking part approves nothing. The first add on an obligation the
-         *     bank has not worked on creates its register entry, with its own audit event. Records one
-         *     audit event holding the participation's, the person's or the team's ids and never a name.
-         *     A shared obligation lands on this bank's own entry and changes nothing another bank sees.
-         *     Answers 201 with the participant.
-         *
-         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-         *     finish enrolling, `permission_denied` without `register.edit` (naming it in
-         *     `requiredPermission`), `not_found` for a platform session and for an obligation the bank
-         *     cannot see, `validation_error` for a body naming both or neither of `userId` and
-         *     `teamKey`, or a field it does not name, `unknown_member` for a person who is not an active
-         *     member of this bank, whether from another bank, deactivated or unknown, `unknown_key` for
-         *     a team the bank has no active row for, `participant_cannot_read` for a member whose roles
-         *     cannot read the register, `already_participant` (409) when they already take part, and
-         *     `too_many_participants` when the entry already holds as many as the deployment allows (50
-         *     unless configured otherwise).
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`.
-         */
-        post: operations["addObligationParticipant"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/obligations/{obligation_id}/participants/{participant_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Remove a participant, or leave an obligation
-         * @description End one participation on the bank's register entry for an obligation: "Leave" on the
-         *     caller's own row, or "Remove" on anyone else's.
-         *
-         *     Needs a person's session in a bank holding `register.read`, which every participant held
-         *     when they were added. With it, a person may always leave their own participation, and
-         *     the audit event is `participant.left`; removing anyone else, a team included, also needs
-         *     `register.edit`, and the audit event is `participant.removed`. Either holds ids only. The
-         *     participation is ended with its time and who ended it, never deleted, so the record's
-         *     history still shows who took part until when. No API key reaches it and no step-up is
-         *     asked. Answers 204 with no body.
-         *
-         *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-         *     finish enrolling, `permission_denied` without `register.read`, or for removing someone
-         *     else without `register.edit` (naming the permission in `requiredPermission`), and `not_found` for a platform session, for an
-         *     obligation the bank cannot see and for a participation that is not live on this bank's
-         *     entry for it.
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`.
-         */
-        delete: operations["removeObligationParticipant"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/obligations/{obligation_id}/problem-reports": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Tell us an obligation looks wrong
-         * @description Files a reader's "this looks wrong" report against one obligation of the shared library. Call it when someone reading a record believes a public fact is wrong. Nothing in the library changes here: a proposal is the only door into it.
-         *
-         *     The obligation has to be one this caller can already read: a shared record, or one their own bank owns privately.
-         *
-         *     The report is created inside the bank the caller is signed in to and stays there. No bleqq editor, no other bank, no agent and no model ever reads it, and no console surface lists it (Alex, 2026-09-19). The loop back to the library is closed the other way round: bleqq's watch agents re-check library records against their sources on every run, find the deviation themselves, and propose the correction for a second, independent principal to approve.
-         *
-         *     The reporter and the bank are taken from the caller's session and never from the body, so do not send them; versionNumber and language record which words were on screen.
-         *
-         *     Needs the `problems.report` permission, which every member of a bank holds and no platform role does. Answers 201 with the report's id, its status and when it was filed, and never reads the reader's own words back. Writes one audit event, library.problem_reported, carrying the record, the report's id and the version and language on screen, and never the text itself.
-         *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the obligation is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or holds a NUL character, or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language; `rate_limited` (429) when this person has filed 30 reports in the last hour (`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry.
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `problems.report`, named in `requiredPermission`.
-         */
-        post: operations["reportObligationProblem"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/obligations/{obligation_id}/register": {
         parameters: {
             query?: never;
@@ -6181,6 +5876,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * See who takes part in an obligation or a case
+         * @description The people and teams taking part in the bank's register entry for an obligation, or in
+         *     its case for a change, in the order they were added, for the participants panel; on a case
+         *     the team participants are also the assessment's contributor teams (D-20).
+         *
+         *     A read: it changes nothing, writes no audit row and never creates a register entry. Needs
+         *     a person's session in a bank holding `register.read` for an obligation or `cases.read`
+         *     for a change; no API key reaches it. Taking part grants nothing, so the list says who is
+         *     involved and nothing about what they may do.
+         *
+         *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A record nobody takes
+         *     part in, or an obligation the bank has not worked on yet, is a 200 with an empty `items`.
+         *
+         *     Errors: `permission_denied` (403) without the subject's read permission, named in
+         *     `requiredPermission`; `enrolment_only` (403) for a session that may only finish enrolling;
+         *     `not_found` (404) for a platform session, for an obligation the bank cannot see and for a
+         *     change the bank has no case for.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
+         */
+        get: operations["listParticipants"];
+        put?: never;
+        /**
+         * Add a person or a team to an obligation or a case
+         * @description Name a person or a team on the bank's register entry for an obligation or on its case
+         *     for a change, so it reaches their My work and their notifications. Adding a team to a
+         *     case is how the assessment records a contributor team (D-20): one call per team, never a
+         *     list, so a form loaded earlier cannot undo someone else's add. It grants them nothing: a
+         *     participant still gets 403 on anything their role lacks.
+         *
+         *     Needs a person's session in a bank holding `register.edit` for an obligation or
+         *     `cases.contribute` for a change; no API key reaches it, and no step-up is asked, because
+         *     taking part approves nothing. The first add on an obligation the bank has not worked on
+         *     creates its register entry, with its own audit event. Records one audit event holding the
+         *     participation's, the person's or the team's ids and never a name. A shared record lands on
+         *     this bank's own entry or case and changes nothing another bank sees; a case's `version`
+         *     is not raised. Answers 201 with the participant.
+         *
+         *     Errors: `permission_denied` (403) without the subject's edit permission, named in
+         *     `requiredPermission`; `enrolment_only` (403) for a session that may only finish enrolling;
+         *     `not_found` (404) for a platform session, for an obligation the bank cannot see and for a
+         *     change the bank has no case for; `invalid_transition` (409) for a case that is closed or
+         *     dismissed; `validation_error` (422) for a body naming both or neither of `userId` and
+         *     `teamKey`, or a field it does not name; `unknown_member` (422) for a person who is not an
+         *     active member of this bank, whether from another bank, deactivated or unknown;
+         *     `unknown_key` (422) for a team the bank has no active row for; `participant_cannot_read`
+         *     (422) for a member whose roles cannot read the register or cases; `already_participant`
+         *     (409) when they already take part; `too_many_participants` (422) when the record already
+         *     holds as many as the deployment allows (50 unless configured otherwise).
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
+         */
+        post: operations["addParticipant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/participants/{participant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a participant, or leave an obligation or a case
+         * @description End one participation on the bank's register entry for an obligation or its case for a
+         *     change: "Leave" on the caller's own row, or "Remove" on anyone else's, a contributor team
+         *     included.
+         *
+         *     On an obligation it needs `register.read`, which every participant held when they were
+         *     added; on a case any person's session in a bank, whatever their role. With that, a person
+         *     may always leave their own participation, and the audit event is `participant.left`;
+         *     removing anyone else also needs `register.edit` on an obligation or `cases.contribute` on
+         *     a case, and the audit event is `participant.removed`. Either holds ids only. The
+         *     participation is ended with its time and who ended it, never deleted, so the record's
+         *     history still shows who took part until when; it may end on a closed case too. No API key
+         *     reaches it and no step-up is asked. Answers 204 with no body.
+         *
+         *     Errors: `permission_denied` (403) without `register.read` on an obligation, or for removing
+         *     someone else without the subject's edit permission, named in `requiredPermission`;
+         *     `enrolment_only` (403) for a session that may only finish enrolling; `not_found` (404) for
+         *     a platform session, for an obligation the bank cannot see, for a change the bank has no
+         *     case for and for a participation that is not live on this bank's record.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
+         */
+        delete: operations["removeParticipant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/private-proposals": {
         parameters: {
             query?: never;
@@ -6317,7 +6118,23 @@ export interface paths {
          */
         get: operations["listProblemReports"];
         put?: never;
-        post?: never;
+        /**
+         * Tell us an obligation or an instrument looks wrong
+         * @description Files a reader's "this looks wrong" report against one obligation or instrument of the shared library, named by `subjectType` and `subjectId` in the body. Call it when someone reading a record believes a public fact is wrong. Nothing in the library changes here: a proposal is the only door into it.
+         *
+         *     The record has to be one this caller can already read: a shared record, or one their own bank owns privately. A provision is reported through the instrument whose card shows it, so say which provision in the text.
+         *
+         *     The report is created inside the bank the caller is signed in to and stays there. No bleqq editor, no other bank, no agent and no model ever reads it, and no console surface lists it (Alex, 2026-09-19). The loop back to the library is closed the other way round: bleqq's watch agents re-check library records against their sources on every run, find the deviation themselves, and propose the correction for a second, independent principal to approve.
+         *
+         *     The reporter and the bank are taken from the caller's session and never from the body, so do not send them; versionNumber and language record which words were on screen.
+         *
+         *     Needs the `problems.report` permission, which every member of a bank holds and no platform role does. Answers 201 with the report's id, its status and when it was filed, and never reads the reader's own words back. Writes one audit event, library.problem_reported, carrying the record, the report's id and the version and language on screen, and never the text itself.
+         *
+         *     Errors to branch on: `not_found` (404) when the record is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or holds a NUL character, or `subjectId` is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language; `rate_limited` (429) when this person has filed 30 reports in the last hour (`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `problems.report`, named in `requiredPermission`.
+         */
+        post: operations["reportProblem"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7554,11 +7371,12 @@ export interface paths {
         /**
          * Tag the selected records at once
          * @description Put one of the bank's own tags on every selected record of one kind at once (VOC-08),
-         *     in one transaction, and answer what happened in the preview's shape. Records that
-         *     already carry the tag are left as they are; records the caller may not read are
-         *     skipped, counted and never named. The whole batch writes exactly one audit event holding
-         *     the tag's key and the ids of the records it reached; a repeat of the same batch changes
-         *     nothing and writes its one event saying so.
+         *     in one transaction, and answer what happened. Records that already carry the tag are
+         *     left as they are; records the caller may not read are skipped, counted and never named.
+         *     The whole batch writes exactly one audit event holding the tag's key and the ids of the
+         *     records it reached; a repeat of the same batch changes nothing and writes its one event
+         *     saying so. With `dryRun=true` it is the preview a screen shows before the user confirms:
+         *     the same answer, and nothing is tagged and no audit event is written.
          *
          *     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
          *     refused. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set
@@ -7572,39 +7390,6 @@ export interface paths {
          *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["tagRecords"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/taggings/preview": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * See what tagging the selected records would do
-         * @description Before tagging a selection from a list (VOC-08), see which records would gain the tag,
-         *     which already carry it and how many would be skipped because the caller may not read
-         *     them. Skipped records are counted and never named. A read with a body: it changes
-         *     nothing and writes no audit event.
-         *
-         *     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
-         *     refused. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set
-         *     another number. Errors: `too_many_records` (422) above that cap; `unsupported_subject`
-         *     (422) for a kind other than obligation, change, change_case or tenant_obligation; `unknown_key`
-         *     (422) for a tag the bank does not have or has retired; `permission_denied` (403)
-         *     without `vocab.manage`; `unauthenticated` (401) without a session; `validation_error`
-         *     (422) for a body the schema rejects, such as an empty selection.
-         *
-         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
-         */
-        post: operations["previewTagging"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14363,16 +14148,34 @@ export interface components {
         };
         /**
          * CollabParticipantInput
-         * @description Who to add: exactly one of a person and a team. A field the schema does not name
-         *     answers 422.
+         * @description Who to add, and to which record: exactly one of a person and a team. A field the
+         *     schema does not name answers 422.
          * @example {
+         *       "subjectId": "44444444-4444-4444-8444-444444444444",
+         *       "subjectType": "obligation",
          *       "userId": "3f6b2d1c-7e8a-4b90-8c1d-2e3f4a5b6c7d"
          *     }
          * @example {
+         *       "subjectId": "44444444-4444-4444-8444-444444444444",
+         *       "subjectType": "change",
          *       "teamKey": "legal"
          *     }
          */
         CollabParticipantInput: {
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The record, as a uuid: an obligation from the inventory, or a change from the watch feed (a bank has exactly one case per change). One the bank cannot see, such as another bank's private obligation, or a change the bank has no case for, answers 404, never 403, so no id can be probed.
+             * @example 44444444-4444-4444-8444-444444444444
+             */
+            subjectId: string;
+            /**
+             * Subjecttype
+             * @description What the participants take part in, one of two fixed values: `obligation`, the bank's register entry for an obligation, read with `register.read` and changed with `register.edit`; `change`, the bank's case for a regulatory change, read with `cases.read` and changed with `cases.contribute`. Each value keeps its own two permissions.
+             * @example obligation
+             * @enum {string}
+             */
+            subjectType: "obligation" | "change";
             /**
              * Teamkey
              * @description The team to add, as the key of an active row of the bank's `team` list (`GET /vocab/team`), at most 80 characters; null by default. A key the bank has no active team for is refused with 422 `unknown_key`. Set this or `userId`, never both.
@@ -22043,11 +21846,12 @@ export interface components {
          * ProblemReportBody
          * @description "This looks wrong" (INV-06). `description` is what the reader believes is wrong;
          *     `versionNumber` and `language` say which words were on their screen, so a colleague
-         *     opens the same ones. The subject is the path, and the bank is the reader's session:
-         *     neither is ever taken from the body.
+         *     opens the same ones. The bank is the reader's session and is never taken from the body.
          * @example {
          *       "description": "The retention line says the records are kept for five years, but FFFS 2017:2 9 kap. 6 § says ten.",
          *       "language": "sv",
+         *       "subjectId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
+         *       "subjectType": "obligation",
          *       "versionNumber": 2
          *     }
          */
@@ -22062,6 +21866,18 @@ export interface components {
              * @description Which content language the reader was reading, as a language key of at most 8 characters such as `sv` or `en`. The content languages are library vocabulary rows that a platform admin may extend or retire, so read `GET /reference/languages` for the live set, and send the key rather than the label. The default is none, for a screen that showed no particular language; a key that is not an active content language is refused.
              */
             language?: string | null;
+            /**
+             * Subjectid
+             * Format: uuid
+             * @description The record the report is about, by its identifier (a UUID). It has to be one the caller can already read, a shared record or one their own bank owns privately, so another bank's private record and an identifier that names nothing both answer 404 rather than telling you which of the two it was.
+             */
+            subjectId: string;
+            /**
+             * Subjecttype
+             * @description Which kind of shared library record the report is about: `obligation` for a duty, `instrument` for a law, regulation or guideline. A provision is reported through the instrument whose card shows it; say which provision in the text.
+             * @enum {string}
+             */
+            subjectType: "obligation" | "instrument";
             /**
              * Versionnumber
              * @description Which version of the summary the reader had on screen, numbered from 1 in the order the versions took effect, so a colleague opens the same words rather than today's: a whole number from 1 to 2147483647, the largest the report's column holds, and anything outside that range is refused with a 422 naming the field. The default is none, for a screen that showed no particular version. It records what was read and is not checked against the record, so it never changes what the server stores.
@@ -28579,7 +28395,7 @@ export interface components {
         };
         /**
          * TaggingBatchBody
-         * @description `POST /taggings/preview` and `POST /taggings/batch` (VOC-08): one tag on many records
+         * @description `POST /taggings/batch` (VOC-08), with or without `dryRun`: one tag on many records
          *     of one kind, as selected on a list.
          * @example {
          *       "subjectIds": [
@@ -29335,6 +29151,9 @@ export interface components {
          *       "cadence": "daily",
          *       "enabled": true
          *     }
+         * @example {
+         *       "paused": true
+         *     }
          */
         TenantAgentUpdate: {
             /**
@@ -29347,6 +29166,11 @@ export interface components {
              * @description Switch the agent on or off; by default null, which leaves it.
              */
             enabled?: boolean | null;
+            /**
+             * Paused
+             * @description `true` pauses the agent: it starts no run until someone resumes it, keeps its settings and history, and an open run is not stopped (interrupt that with `POST /agent-runs/{runId}/interrupt`). `false` resumes it, whether a person or the monthly cap paused it; an agent resumed while the month's cap is still reached is paused again by the cap when its next run is due. By default null, which leaves it. Pausing a paused agent or resuming one that is not paused changes nothing.
+             */
+            paused?: boolean | null;
             /**
              * Runhour
              * @description The new run hour, a minimum of 0 and a maximum of 23; by default null, which leaves it.
@@ -36161,52 +35985,6 @@ export interface operations {
             };
         };
     };
-    pauseTenantAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description One of the bank's own agents, as a UUID. Another bank's agent answers 404, never 403. */
-                tenant_agent_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TenantAgentOut"];
-                };
-            };
-        };
-    };
-    resumeTenantAgent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description One of the bank's own agents, as a UUID. Another bank's agent answers 404, never 403. */
-                tenant_agent_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TenantAgentOut"];
-                };
-            };
-        };
-    };
     runTenantAgentNow: {
         parameters: {
             query?: never;
@@ -37599,90 +37377,6 @@ export interface operations {
             };
         };
     };
-    listCaseParticipants: {
-        parameters: {
-            query?: {
-                /**
-                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-                 * @example 20
-                 */
-                limit?: number;
-                /**
-                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-                 * @example 0
-                 */
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description The change, as a uuid from the watch feed. It names this bank's own case for the change: a bank has exactly one case per change. A change the bank has no case for answers 404, never 403, the same as an id that does not exist, so no id can be probed. */
-                change_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CollabParticipantPage"];
-                };
-            };
-        };
-    };
-    addCaseParticipant: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The change, as a uuid from the watch feed. It names this bank's own case for the change: a bank has exactly one case per change. A change the bank has no case for answers 404, never 403, the same as an id that does not exist, so no id can be probed. */
-                change_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CollabParticipantInput"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CollabParticipant"];
-                };
-            };
-        };
-    };
-    removeCaseParticipant: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The change, as a uuid from the watch feed. It names this bank's own case for the change: a bank has exactly one case per change. A change the bank has no case for answers 404, never 403, the same as an id that does not exist, so no id can be probed. */
-                change_id: string;
-                /** @description The participation, as a uuid from `GET /changes/{changeId}/participants`. One on another bank's case, one that has already ended and one on another case answer 404, never 403, so no id can be probed. */
-                participant_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     restoreChange: {
         parameters: {
             query?: never;
@@ -38855,33 +38549,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstrumentDetail"];
-                };
-            };
-        };
-    };
-    reportInstrumentProblem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The instrument the report is about, by its identifier (a UUID). It has to be one the caller can already read, so another bank's private record and an identifier that names nothing both answer 404 rather than telling you which of the two it was. */
-                instrument_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProblemReportBody"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemReportCreated"];
                 };
             };
         };
@@ -40153,117 +39820,6 @@ export interface operations {
             };
         };
     };
-    listObligationParticipants: {
-        parameters: {
-            query?: {
-                /**
-                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
-                 * @example 20
-                 */
-                limit?: number;
-                /**
-                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
-                 * @example 0
-                 */
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description The obligation, as a uuid from the inventory. The participants are this bank's own, on its register entry for the obligation. An obligation the bank cannot see, such as another bank's private one, answers 404, never 403, so no id can be probed. */
-                obligation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CollabParticipantPage"];
-                };
-            };
-        };
-    };
-    addObligationParticipant: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The obligation, as a uuid from the inventory. The participants are this bank's own, on its register entry for the obligation. An obligation the bank cannot see, such as another bank's private one, answers 404, never 403, so no id can be probed. */
-                obligation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CollabParticipantInput"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CollabParticipant"];
-                };
-            };
-        };
-    };
-    removeObligationParticipant: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The obligation, as a uuid from the inventory. The participants are this bank's own, on its register entry for the obligation. An obligation the bank cannot see, such as another bank's private one, answers 404, never 403, so no id can be probed. */
-                obligation_id: string;
-                /** @description The participation, as a uuid from `GET /obligations/{obligationId}/participants`. One on another bank's register, one that has already ended and one on another obligation answer 404, never 403, so no id can be probed. */
-                participant_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    reportObligationProblem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The obligation the report is about, by its identifier (a UUID). It has to be one the caller can already read, so another bank's private record and an identifier that names nothing both answer 404 rather than telling you which of the two it was. */
-                obligation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProblemReportBody"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemReportCreated"];
-                };
-            };
-        };
-    };
     getRegisterEntry: {
         parameters: {
             query?: never;
@@ -40550,6 +40106,103 @@ export interface operations {
             };
         };
     };
+    listParticipants: {
+        parameters: {
+            query: {
+                /**
+                 * @description How many records to return in one page: 20 by default, 100 at most and 1 at least. A larger number is refused with a 422 rather than quietly trimmed, so a short page always means the data ran out and never that the server capped you without saying so.
+                 * @example 20
+                 */
+                limit?: number;
+                /**
+                 * @description How many records to skip before this page begins, counting from 0: with the default page size, `offset=20` is the second page. The deepest offset accepted is 100000, because PostgreSQL walks every skipped row and an unbounded offset answered 500 on every list (hardening H1); narrow the list with filters rather than paging past it. Totals are counted at the moment of the call, so a record written between two pages can shift what the later page holds.
+                 * @example 0
+                 */
+                offset?: number;
+                /**
+                 * @description What the participants take part in, one of two fixed values: `obligation`, the bank's register entry for an obligation, read with `register.read` and changed with `register.edit`; `change`, the bank's case for a regulatory change, read with `cases.read` and changed with `cases.contribute`. Each value keeps its own two permissions.
+                 * @example obligation
+                 */
+                subjectType: "obligation" | "change";
+                /**
+                 * @description The record, as a uuid: an obligation from the inventory, or a change from the watch feed (a bank has exactly one case per change). One the bank cannot see, such as another bank's private obligation, or a change the bank has no case for, answers 404, never 403, so no id can be probed.
+                 * @example 44444444-4444-4444-8444-444444444444
+                 */
+                subjectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollabParticipantPage"];
+                };
+            };
+        };
+    };
+    addParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollabParticipantInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollabParticipant"];
+                };
+            };
+        };
+    };
+    removeParticipant: {
+        parameters: {
+            query: {
+                /**
+                 * @description What the participants take part in, one of two fixed values: `obligation`, the bank's register entry for an obligation, read with `register.read` and changed with `register.edit`; `change`, the bank's case for a regulatory change, read with `cases.read` and changed with `cases.contribute`. Each value keeps its own two permissions.
+                 * @example change
+                 */
+                subjectType: "obligation" | "change";
+                /**
+                 * @description The record, as a uuid: an obligation from the inventory, or a change from the watch feed (a bank has exactly one case per change). One the bank cannot see, such as another bank's private obligation, or a change the bank has no case for, answers 404, never 403, so no id can be probed.
+                 * @example 44444444-4444-4444-8444-444444444444
+                 */
+                subjectId: string;
+            };
+            header?: never;
+            path: {
+                /** @description The participation, as a uuid from `GET /participants`. One on another bank's record, one that has already ended and one on another record answer 404, never 403, so no id can be probed. */
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listPrivateProposals: {
         parameters: {
             query?: {
@@ -40677,6 +40330,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProblemReportPage"];
+                };
+            };
+        };
+    };
+    reportProblem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProblemReportBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemReportCreated"];
                 };
             };
         };
@@ -41614,66 +41291,13 @@ export interface operations {
     };
     tagRecords: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
+            query?: {
                 /**
-                 * @example {
-                 *       "subjectIds": [
-                 *         "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10",
-                 *         "9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"
-                 *       ],
-                 *       "subjectType": "obligation",
-                 *       "tagKey": "custody"
-                 *     }
+                 * @description True previews the batch and tags nothing: the answer is a 200 with which records would gain the tag, which already carry it and how many would be skipped, and no audit event is written. False, the default, tags the records.
+                 * @example true
                  */
-                "application/json": components["schemas"]["TaggingBatchBody"];
+                dryRun?: boolean;
             };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "alreadyTagged": {
-                     *         "count": 1,
-                     *         "ids": [
-                     *           "5f0c1a52-8d7e-4d3b-9a61-2b7f0e4c9d10"
-                     *         ]
-                     *       },
-                     *       "gained": {
-                     *         "count": 1,
-                     *         "ids": [
-                     *           "9b2e4f61-0c3a-4e8d-b7a5-1d6c8e2f4a37"
-                     *         ]
-                     *       },
-                     *       "skipped": {
-                     *         "count": 0
-                     *       },
-                     *       "subjectType": "obligation",
-                     *       "tag": {
-                     *         "key": "custody",
-                     *         "kind": null,
-                     *         "label": "Custody"
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["TaggingBatchOutcome"];
-                };
-            };
-        };
-    };
-    previewTagging: {
-        parameters: {
-            query?: never;
             header?: never;
             path?: never;
             cookie?: never;

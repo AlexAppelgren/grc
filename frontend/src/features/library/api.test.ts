@@ -59,11 +59,11 @@ describe('library api', () => {
   it('files a problem report with what was on screen, against an obligation or an instrument', async () => {
     const created = { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' };
     const sent = installAdapter(() => ({ status: 201, data: created }));
-    expect(await library.reportObligationProblem('ob-1', { description: 'The English says annually.', versionNumber: 2, language: 'en' })).toEqual(created);
-    await library.reportInstrumentProblem('in-1', { description: 'The in-force date looks wrong.' });
+    expect(await library.reportProblem('obligation', 'ob-1', { description: 'The English says annually.', versionNumber: 2, language: 'en' })).toEqual(created);
+    await library.reportProblem('instrument', 'in-1', { description: 'The in-force date looks wrong.' });
     expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([
-      ['post', '/api/v1/obligations/ob-1/problem-reports', { description: 'The English says annually.', versionNumber: 2, language: 'en' }],
-      ['post', '/api/v1/instruments/in-1/problem-reports', { description: 'The in-force date looks wrong.' }],
+      ['post', '/api/v1/problem-reports', { description: 'The English says annually.', versionNumber: 2, language: 'en', subjectType: 'obligation', subjectId: 'ob-1' }],
+      ['post', '/api/v1/problem-reports', { description: 'The in-force date looks wrong.', subjectType: 'instrument', subjectId: 'in-1' }],
     ]);
   });
 
@@ -83,9 +83,9 @@ describe('library api', () => {
     const sent = installAdapter(() => ({ status: 200, data: outcome }));
     expect(await library.previewObligationTagging('q4', ['ob-1', 'ob-2'])).toEqual(outcome);
     await library.tagObligations('q4', ['ob-1']);
-    expect(sent.map((s) => [s.method, s.path, s.body])).toEqual([
-      ['post', '/api/v1/taggings/preview', { tagKey: 'q4', subjectType: 'obligation', subjectIds: ['ob-1', 'ob-2'] }],
-      ['post', '/api/v1/taggings/batch', { tagKey: 'q4', subjectType: 'obligation', subjectIds: ['ob-1'] }],
+    expect(sent.map((s) => [s.method, s.path, s.params, s.body])).toEqual([
+      ['post', '/api/v1/taggings/batch', { dryRun: true }, { tagKey: 'q4', subjectType: 'obligation', subjectIds: ['ob-1', 'ob-2'] }],
+      ['post', '/api/v1/taggings/batch', null, { tagKey: 'q4', subjectType: 'obligation', subjectIds: ['ob-1'] }],
     ]);
   });
 

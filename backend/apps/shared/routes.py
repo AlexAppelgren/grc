@@ -42,7 +42,8 @@ def iter_operations(api: NinjaAPI) -> Iterator[RegisteredOperation]:
 
 # Tenant-scoped routes register here (chunk 1 onward) so the tenant-isolation guard can
 # request a record of tenant A as tenant B for each one and demand a 404. Entries are
-# (method, path, model label, factory name); the guard builds the record with the
+# (method, path, model label, factory name), the path with its query where the route reads
+# its record from one; the guard builds the record with the
 # factory in apps/shared/factories.py. Phase 0 has none, and the guard enumerates
 # an empty registry rather than skipping.
 TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
@@ -102,8 +103,9 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
     # c8-participants (COL-04): a participant on a register entry for an obligation private to
     # tenant A, so the obligation itself is invisible to tenant B.
-    ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
-    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
+    # Since review 2026-11-11 B-14 the subject rides in the query, which the guard fills too.
+    ("GET", "/participants?subjectType=obligation&subjectId={obligation_id}", "collab.Participant", "obligation_participant"),
+    ("DELETE", "/participants/{participant_id}?subjectType=obligation&subjectId={obligation_id}", "collab.Participant", "obligation_participant"),
     # c11-tenant-agents-budget-scope (AGT-04)
     ("PATCH", "/agents/{tenant_agent_id}", "agents.TenantAgent", "tenant_agent"),
     # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
@@ -113,8 +115,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/duty-occurrences/{occurrence_id}/complete", "register.DutyOccurrence", "duty_occurrence"),
     # c9-case-participants (COL-04): a participant on a case of tenant A, for a change tenant B
     # has no case for, so the case itself is invisible to tenant B.
-    ("GET", "/changes/{change_id}/participants", "collab.Participant", "case_participant"),
-    ("DELETE", "/changes/{change_id}/participants/{participant_id}", "collab.Participant", "case_participant"),
+    ("GET", "/participants?subjectType=change&subjectId={change_id}", "collab.Participant", "case_participant"),
+    ("DELETE", "/participants/{participant_id}?subjectType=change&subjectId={change_id}", "collab.Participant", "case_participant"),
     # acc-entries-and-log (ACC-01, ACC-03, ACC-08): an agent access entry, its keys and its log.
     ("GET", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
     ("PATCH", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),

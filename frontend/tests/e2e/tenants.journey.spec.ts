@@ -690,7 +690,7 @@ test.describe('tenants journeys', () => {
     await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/vocab/team/${A_ONLY.team}`, {});
     await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/tenant/support-access/${aGrantId}/decline`);
     await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/agents/${aTenantAgentId}`, {});
-    await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/agents/${aTenantAgentId}/pause`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/agents/${aTenantAgentId}`, { paused: true });
     await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/agent-access/${A_ONLY.entryId}/calls`);
     // Revoking a key needs a fresh passkey; with it, A's key is not there either.
     await stepUp(page, asBAdmin);

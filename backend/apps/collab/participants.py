@@ -94,6 +94,12 @@ class _Subject:
         return Participant.objects.filter(tenant_obligation_id=self.entry_id, case_id=self.case_id)
 
 
+# Each subject keeps its own two permissions (review 2026-11-11 B-14): reading and leaving,
+# then adding and removing anyone else. The routes check them before any lookup.
+READ_PERMISSION = {"obligation": perms.REGISTER_READ, "change": perms.CASES_READ}
+EDIT_PERMISSION = {"obligation": perms.REGISTER_EDIT, "change": perms.CASES_CONTRIBUTE}
+
+
 def _not_found() -> ProblemError:
     return ProblemError(status=404, code="not_found", detail="Not found.")
 

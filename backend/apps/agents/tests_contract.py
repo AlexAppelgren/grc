@@ -222,8 +222,6 @@ TENANT_ROUTES: list[tuple[str, str, str, Any, str]] = [
     ("createTenantAgent", "post", TENANT_AGENTS, TENANT_AGENT_BODY, perms.AGENTS_MANAGE),
     ("updateTenantAgent", "patch", f"{TENANT_AGENTS}/{{id}}", {"enabled": True}, perms.AGENTS_MANAGE),
     ("runTenantAgentNow", "post", f"{TENANT_AGENTS}/{{id}}/runs", {}, perms.AGENTS_MANAGE),
-    ("pauseTenantAgent", "post", f"{TENANT_AGENTS}/{{id}}/pause", {}, perms.AGENTS_MANAGE),
-    ("resumeTenantAgent", "delete", f"{TENANT_AGENTS}/{{id}}/pause", None, perms.AGENTS_MANAGE),
     ("interruptAgentRun", "post", f"{RUNS}/{{id}}/interrupt", {}, perms.AGENTS_MANAGE),
     ("getAgentBudget", "get", BUDGET, None, perms.AGENTS_MANAGE),
     ("putAgentBudget", "put", BUDGET, {"monthlyCap": "500.00"}, perms.AGENTS_MANAGE),
@@ -238,8 +236,6 @@ SERVED = {
     "listPlatformWatch",  # built by c11-run-history; tests_platform_read.py proves it
     # `c11-tenant-controls-cap` (tests_control.py).
     "runTenantAgentNow",
-    "pauseTenantAgent",
-    "resumeTenantAgent",
     "interruptAgentRun",
 }
 # c11-research-requests (tests_requests.py).
@@ -248,8 +244,6 @@ SERVED |= {"listResearchRequests", "createResearchRequest"}
 ID_KIND = {
     "updateTenantAgent": "agent",
     "runTenantAgentNow": "agent",
-    "pauseTenantAgent": "agent",
-    "resumeTenantAgent": "agent",
     "interruptAgentRun": "run",
 }
 

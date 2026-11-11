@@ -434,7 +434,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
 
         # Given a reader in tenant A reported "This looks wrong" on an obligation.
         words = "This looks wrong: the source says the review is annual, the summary says every two years."
-        filed = self._post(f"/obligations/{obligation.id}/problem-reports", {"description": words}, sign_in(reader_a, tenant=tenant_a))
+        filed = self._post("/problem-reports", {"subjectType": "obligation", "subjectId": str(obligation.id), "description": words}, sign_in(reader_a, tenant=tenant_a))
         self.assertEqual(filed.status_code, 201, filed.content)
         report_id = filed.json()["id"]
 

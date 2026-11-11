@@ -220,7 +220,7 @@ test.describe('governance journeys', () => {
     // The dialog says who reads it: the bank, and nobody outside it, bleqq included.
     await expect(dialog.getByText('Colleagues in your organisation read this and take it up. It reaches nobody outside your organisation.')).toBeVisible();
     await dialog.getByLabel('What you see').fill(words);
-    const filed = page.waitForResponse((r) => /\/api\/v1\/obligations\/[0-9a-f-]{36}\/problem-reports$/.test(r.url()) && r.request().method() === 'POST' && r.ok());
+    const filed = page.waitForResponse((r) => /\/api\/v1\/problem-reports$/.test(r.url()) && r.request().method() === 'POST' && r.ok());
     await dialog.getByRole('button', { name: 'Send report' }).click();
     const { id: reportId } = (await (await filed).json()) as { id: string };
     await dialog.getByRole('button', { name: 'Done' }).click();

@@ -258,13 +258,13 @@ describe('admin agents screen', () => {
   });
 
   it('pauses and resumes, and a pause the cap made reads as the cap', async () => {
-    const sent = server({ agents: [ownAgent({ pausedAt: '2026-09-24T00:00:00Z' })] }, (s) => (s.method === 'delete' ? { status: 200, data: ownAgent() } : undefined));
+    const sent = server({ agents: [ownAgent({ pausedAt: '2026-09-24T00:00:00Z' })] }, (s) => (s.method === 'patch' ? { status: 200, data: ownAgent() } : undefined));
     open(ADMIN);
     await waitFor(() => expect(card()).not.toBeNull());
     expect(within(card()).getByText('Paused, monthly cap reached')).toBeInTheDocument();
     fireEvent.click(within(card()).getByRole('button', { name: 'Resume' }));
     expect(await within(card()).findByText('Resumed.')).toBeInTheDocument();
-    expect(sent.filter((s) => s.method === 'delete').map((s) => s.path)).toEqual([`${AGENTS}/ta1/pause`]);
+    expect(sent.filter((s) => s.method === 'patch').map((s) => [s.path, s.body])).toEqual([[`${AGENTS}/ta1`, { paused: false }]]);
   });
 
   it('adds an agent switched off with its schedule, and renders unknown_key from its code', async () => {

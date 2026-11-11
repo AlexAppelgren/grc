@@ -73,7 +73,7 @@ function page(items: LibraryUpdateRow[]): LibraryUpdatesPage {
 /** The server: /me for the format context, the feed (outside rows only when asked for), and the report. */
 function serve() {
   return installAdapter((sent) => {
-    if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
+    if (sent.method === 'post' && sent.path === '/api/v1/problem-reports') return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     const asked = (sent.params ?? {}) as { outsideFootprint?: string };
     return { status: 200, data: page(asked.outsideFootprint === 'true' ? [newVersion, outside, flagRenamed] : [newVersion, flagRenamed]) };
   }, { me: ME });
@@ -174,8 +174,8 @@ describe('LibraryUpdatesScreen', () => {
     fireEvent.change(within(dialog).getByLabelText('What you see'), { target: { value: 'The annual review is missing from version 2.' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Send report' }));
     expect(await within(dialog).findByText('Report sent. Thank you.')).toBeInTheDocument();
-    expect(sent.filter((call) => call.path.endsWith('/problem-reports')).map((call) => [call.path, call.body])).toEqual([
-      [`/api/v1/obligations/${newVersion.target?.id}/problem-reports`, { description: 'The annual review is missing from version 2.', versionNumber: 2 }],
+    expect(sent.filter((call) => call.path === '/api/v1/problem-reports').map((call) => call.body)).toEqual([
+      { description: 'The annual review is missing from version 2.', versionNumber: 2, subjectType: 'obligation', subjectId: newVersion.target?.id },
     ]);
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }));

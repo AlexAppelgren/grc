@@ -578,11 +578,14 @@ def update_tenant_agent(
     request: HttpRequest, body: TenantAgentUpdate, tenant_agent_id: uuid.UUID = Path(..., description=_TENANT_AGENT_ID)
 ) -> Any:
     """Changes what the body sends on one of the bank's own agents: its switch, cadence,
-    run day and hour, or scope, and nothing else. Its instructions and tools are never the
-    bank's to change. Switching an agent on needs the bank's monthly cap to be set first.
+    run day and hour, scope, or pause, and nothing else. Its instructions and tools are never
+    the bank's to change. Switching an agent on needs the bank's monthly cap to be set first.
+    A paused agent answers with `pausedAt`, `pausedBy` naming the person and no `nextRunAt`;
+    a resumed one with its next run.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event with the fields before and after.
+    event with the fields before and after, and one more for a pause, naming the person who
+    paused, or for a resume. Nothing is deleted: a lifted pause stays in the audit log.
 
     Errors: `not_found` (404) for an agent the bank does not have; `unknown_key` (422) for a
     scope key the vocabulary does not hold, with the valid keys in `validKeys`;
@@ -591,7 +594,7 @@ def update_tenant_agent(
     `validation_error` (422).
     """
     tenant = caller_tenant(request)
-    return tenant_agents.update_tenant_agent(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id, body=body)
+    return control.update(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id, body=body)
 
 
 @router.post(
@@ -623,58 +626,6 @@ def run_tenant_agent_now(request: HttpRequest, tenant_agent_id: uuid.UUID = Path
     """
     tenant = caller_tenant(request)
     return control.run_now(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id)
-
-
-@router.post(
-    "/agents/{tenant_agent_id}/pause",
-    response=TenantAgentOut,
-    auth=SESSION,
-    operation_id="pauseTenantAgent",
-    by_alias=True,
-    summary="Pause your bank's agent",
-)
-@requires_permission(perms.AGENTS_MANAGE)
-@answers_problems
-def pause_tenant_agent(request: HttpRequest, tenant_agent_id: uuid.UUID = Path(..., description=_TENANT_AGENT_ID)) -> Any:
-    """Pauses one of the bank's own agents: it starts no run until someone resumes it, and
-    it keeps its settings and its history. A run already open is not stopped; use
-    `POST /agent-runs/{runId}/interrupt` for that. Returns the agent, with `pausedAt`,
-    `pausedBy` naming the person and no `nextRunAt`. Pausing an agent that is already paused
-    changes nothing and returns it as it is.
-
-    A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event naming the person.
-
-    Errors: `not_found` (404) for an agent the bank does not have.
-    """
-    tenant = caller_tenant(request)
-    return control.pause(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id)
-
-
-@router.delete(
-    "/agents/{tenant_agent_id}/pause",
-    response=TenantAgentOut,
-    auth=SESSION,
-    operation_id="resumeTenantAgent",
-    by_alias=True,
-    summary="Resume your bank's paused agent",
-)
-@requires_permission(perms.AGENTS_MANAGE)
-@answers_problems
-def resume_tenant_agent(request: HttpRequest, tenant_agent_id: uuid.UUID = Path(..., description=_TENANT_AGENT_ID)) -> Any:
-    """Lifts the pause on one of the bank's own agents, whether a person or the monthly cap
-    paused it, so it runs on its cadence again, and returns it with its next run. Nothing is
-    deleted: the pause stays in the audit log. Resuming an agent that is not paused changes
-    nothing and returns it as it is. An agent resumed while the month's cap is still reached
-    is paused again by the cap when its next run is due.
-
-    A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event naming the person.
-
-    Errors: `not_found` (404) for an agent the bank does not have.
-    """
-    tenant = caller_tenant(request)
-    return control.resume(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id)
 
 
 @router.post(

@@ -100,8 +100,8 @@ export async function getObligationDiff(obligationId: string, lang?: string): Pr
  * stays inside the bank that filed it, so nothing here logs it and nothing
  * sends it anywhere else.
  */
-export async function reportObligationProblem(obligationId: string, body: ProblemReportBody): Promise<ProblemReportCreated> {
-  return (await api.post<ProblemReportCreated>(`${OBLIGATIONS}/${obligationId}/problem-reports`, body)).data;
+export async function reportProblem(subjectType: 'obligation' | 'instrument', subjectId: string, body: ProblemReportBody): Promise<ProblemReportCreated> {
+  return (await api.post<ProblemReportCreated>('/api/v1/problem-reports', { ...body, subjectType, subjectId })).data;
 }
 
 // The bank's own tags on an obligation (VOC-08): markers in the bank's zone, never a
@@ -123,7 +123,7 @@ export async function untagObligation(obligationId: string, tagKey: string): Pro
 /** VOC-08: what one tag on many obligations would do. A read with a body: nothing is written. */
 export async function previewObligationTagging(tagKey: string, obligationIds: readonly string[]): Promise<TaggingBatch> {
   const body: Schemas['TaggingBatchBody'] = { tagKey, subjectType: 'obligation', subjectIds: [...obligationIds] };
-  return (await api.post<TaggingBatch>(`${TAGGINGS}/preview`, body)).data;
+  return (await api.post<TaggingBatch>(`${TAGGINGS}/batch`, body, { params: { dryRun: true } })).data;
 }
 
 /** VOC-08: one tag on many obligations in one transaction, audited once by the server. */
@@ -142,11 +142,6 @@ export async function listInstruments(query: InstrumentQuery & PageQuery = {}): 
 
 export async function getInstrument(instrumentId: string): Promise<InstrumentDetail> {
   return (await api.get<InstrumentDetail>(`${INSTRUMENTS}/${instrumentId}`)).data;
-}
-
-/** "This looks wrong" on an instrument card; a provision is reported through the instrument whose card shows it. */
-export async function reportInstrumentProblem(instrumentId: string, body: ProblemReportBody): Promise<ProblemReportCreated> {
-  return (await api.post<ProblemReportCreated>(`${INSTRUMENTS}/${instrumentId}/problem-reports`, body)).data;
 }
 
 // The provision tree (INV-02, INV-04, INV-05): every text version a provision has ever

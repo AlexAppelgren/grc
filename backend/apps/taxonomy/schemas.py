@@ -2313,6 +2313,18 @@ class TaxonomyTermQuery(CamelSchema):
     )
 
 
+class TaggingBatchQuery(CamelSchema):
+    dry_run: bool = Field(
+        default=False,
+        description=(
+            "True previews the batch and tags nothing: the answer is a 200 with which records would gain the "
+            "tag, which already carry it and how many would be skipped, and no audit event is written. False, "
+            "the default, tags the records."
+        ),
+        examples=[True],
+    )
+
+
 class VocabularyMergeQuery(CamelSchema):
     dry_run: bool = Field(
         default=False,
@@ -2382,7 +2394,7 @@ class TaggingBody(WriteBody):
 
 
 class TaggingBatchBody(WriteBody):
-    """`POST /taggings/preview` and `POST /taggings/batch` (VOC-08): one tag on many records
+    """`POST /taggings/batch` (VOC-08), with or without `dryRun`: one tag on many records
     of one kind, as selected on a list."""
 
     model_config = ConfigDict(

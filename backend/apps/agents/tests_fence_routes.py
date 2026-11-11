@@ -41,8 +41,6 @@ REQUESTS: dict[str, dict[str, Any]] = {
     "createTenantAgent": {"body": {"agent": "{definition}", "cadence": "weekly", "scope": {"jurisdictions": [], "terms": []}}},
     "updateTenantAgent": {"body": {"cadence": "weekly"}},
     "runTenantAgentNow": {"body": {}},
-    "pauseTenantAgent": {"body": {}},
-    "resumeTenantAgent": {"body": None},
     "interruptAgentRun": {"body": {}},
     "createResearchRequest": {"body": {"kind": "research_topic", "tenantAgentId": "{agent}", "topic": "DORA subcontracting"}},
 }

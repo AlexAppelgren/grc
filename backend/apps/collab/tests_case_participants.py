@@ -36,20 +36,19 @@ from apps.shared import permissions as perms
 from apps.shared.authentication import PrincipalKind
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import AuditEvent, Tenant
-from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.watch import testing as watch_build
-from config.api import api
+from apps.collab.testing import PARTICIPANTS, participant_body, participant_url, participants_url
 
 C = CaseStatusCategory
 
 
 def url(change_id: Any) -> str:
-    return f"/api/v1/changes/{change_id}/participants"
+    return participants_url("change", change_id)
 
 
 def _post(case: TestCase, change_id: Any, payload: dict[str, str], headers: dict[str, Any]) -> Any:
-    return case.client.post(url(change_id), payload, content_type="application/json", **headers)
+    return case.client.post(PARTICIPANTS, participant_body(url(change_id), payload), content_type="application/json", **headers)
 
 
 def _token(headers: dict[str, Any]) -> str:
@@ -67,24 +66,6 @@ def _bank(slug: str, category: CaseStatusCategory = C.ASSIGNED) -> SimpleNamespa
     row = case_build.case(tenant, watch_build.change(), owner=owner)
     case_build.in_category(row, category)
     return SimpleNamespace(tenant=tenant, owner=owner, contributor=contributor, reader=reader, team=team, case=row)
-
-
-class CaseParticipantRouteGates(TestCase):
-    def test_reading_needs_cases_read_adding_cases_contribute_and_removal_is_the_logics(self) -> None:
-        routes = {op.operation_id: op for op in iter_operations(api) if op.path.startswith("/changes/") and "/participants" in op.path}
-        gates = {name: perms.gate_of(op.view_func) for name, op in routes.items()}
-        self.assertEqual(
-            {name: (gate.kind, gate.value) if gate else None for name, gate in gates.items()},
-            {
-                "listCaseParticipants": ("permission", perms.CASES_READ),
-                "addCaseParticipant": ("permission", perms.CASES_CONTRIBUTE),
-                "removeCaseParticipant": None,
-            },
-        )
-        self.assertIn(("DELETE", routes["removeCaseParticipant"].path), perms.UNGATED_BY_DESIGN)
-        for name, op in routes.items():
-            with self.subTest(operation=name):
-                self.assertFalse(perms.step_up_of(op.view_func), "participation approves nothing")
 
 
 class CaseParticipantLogic(ScenarioTestCase):
@@ -162,31 +143,31 @@ class CaseParticipantLogic(ScenarioTestCase):
         team_row = _post(self, self.change_id, {"teamKey": "legal"}, self.as_owner).json()["id"]
         as_reader = sign_in(self.bank.reader, tenant=self.bank.tenant)
 
-        refused = self.client.delete(f"{url(self.change_id)}/{team_row}", **as_reader)
+        refused = self.client.delete(participant_url(url(self.change_id), team_row), **as_reader)
         self.assertEqual(refused.status_code, 403)
         self.assertEqual(refused.json()["requiredPermission"], perms.CASES_CONTRIBUTE)
         self.activate(self.bank.tenant)
         self.assertIsNone(Participant.objects.get(id=team_row).removed_at)
 
-        left = self.client.delete(f"{url(self.change_id)}/{reader_row}", **as_reader)
+        left = self.client.delete(participant_url(url(self.change_id), reader_row), **as_reader)
         self.assertEqual(left.status_code, 204, left.content)
-        removed = self.client.delete(f"{url(self.change_id)}/{team_row}", **sign_in(self.bank.contributor, tenant=self.bank.tenant))
+        removed = self.client.delete(participant_url(url(self.change_id), team_row), **sign_in(self.bank.contributor, tenant=self.bank.tenant))
         self.assertEqual(removed.status_code, 204, removed.content)
         self.assertEqual([event.after for event in self.audit("participant.left")], [{"participantId": reader_row}])
         self.assertEqual([event.after for event in self.audit("participant.removed")], [{"participantId": team_row}])
-        self.assertEqual(self.client.delete(f"{url(self.change_id)}/{team_row}", **self.as_owner).status_code, 404)
+        self.assertEqual(self.client.delete(participant_url(url(self.change_id), team_row), **self.as_owner).status_code, 404)
         self.assertEqual(self.client.get(url(self.change_id), **self.as_owner).json(), {"items": [], "total": 0})
 
     def test_a_participant_of_another_case_is_not_found_here(self) -> None:
         other = case_build.case(self.bank.tenant, watch_build.change())
         row = _post(self, other.change_id, {"teamKey": "legal"}, self.as_owner).json()["id"]
-        self.assertEqual(self.client.delete(f"{url(self.change_id)}/{row}", **self.as_owner).status_code, 404)
+        self.assertEqual(self.client.delete(participant_url(url(self.change_id), row), **self.as_owner).status_code, 404)
 
     def test_a_change_the_bank_has_no_case_for_is_not_found_to_read_add_or_remove(self) -> None:
         caseless = watch_build.change()
         self.assertEqual(self.client.get(url(caseless.id), **self.as_owner).status_code, 404)
         self.assertEqual(_post(self, caseless.id, {"teamKey": "legal"}, self.as_owner).status_code, 404)
-        self.assertEqual(self.client.delete(f"{url(caseless.id)}/{uuid.uuid4()}", **self.as_owner).status_code, 404)
+        self.assertEqual(self.client.delete(participant_url(url(caseless.id), uuid.uuid4()), **self.as_owner).status_code, 404)
 
     def test_taking_part_grants_nothing(self) -> None:
         """A contributor named on the case keeps exactly their session's permissions, and a
@@ -220,7 +201,7 @@ class CaseParticipantsInTheCaseFile(ScenarioTestCase):
         legal = _post(self, change_id, {"teamKey": "legal"}, as_owner).json()["id"]
         _post(self, change_id, {"teamKey": cards.key}, as_owner)
         _post(self, change_id, {"userId": str(bank.reader.id)}, as_owner)
-        self.assertEqual(self.client.delete(f"{url(change_id)}/{legal}", **as_owner).status_code, 204)
+        self.assertEqual(self.client.delete(participant_url(url(change_id), legal), **as_owner).status_code, 204)
 
         self.activate(bank.tenant)
         text = case_file.compose(tenant=bank.tenant, case_id=bank.case.id, order=["en"])
@@ -256,7 +237,7 @@ def run_col_s9(case: ScenarioTestCase) -> None:
     johan_row = _post(case, change_id, {"userId": str(johan.id)}, as_owner).json()["id"]
     added = _post(case, change_id, {"userId": str(anna.id)}, as_erik)
     case.assertEqual(added.status_code, 201, added.content)
-    removed = case.client.delete(f"{url(change_id)}/{johan_row}", **as_erik)
+    removed = case.client.delete(participant_url(url(change_id), johan_row), **as_erik)
     case.assertEqual(removed.status_code, 204, removed.content)
     case.activate(bank.tenant)
     case.assertEqual(
@@ -270,7 +251,7 @@ def run_col_s9(case: ScenarioTestCase) -> None:
 
     # A reader who takes part leaves on their own.
     reader_row = _post(case, change_id, {"userId": str(bank.reader.id)}, as_owner).json()["id"]
-    left = case.client.delete(f"{url(change_id)}/{reader_row}", **sign_in(bank.reader, tenant=bank.tenant))
+    left = case.client.delete(participant_url(url(change_id), reader_row), **sign_in(bank.reader, tenant=bank.tenant))
     case.assertEqual(left.status_code, 204, left.content)
     case.activate(bank.tenant)
     case.assertTrue(AuditEvent.objects.filter(action="participant.left", after__participantId=reader_row).exists())
@@ -302,7 +283,7 @@ def run_col_s9(case: ScenarioTestCase) -> None:
 
     # B removing A's participant by its id is a 404, and A's row stays.
     a_row = a_before[0]["id"]
-    gone = case.client.delete(f"{url(change_id)}/{a_row}", **as_b)
+    gone = case.client.delete(participant_url(url(change_id), a_row), **as_b)
     case.assertEqual((gone.status_code, gone.json()["code"]), (404, "not_found"))
     case.activate(bank.tenant)
     case.assertIsNone(Participant.objects.get(id=a_row).removed_at)
@@ -332,7 +313,7 @@ def run_cas_s17(case: ScenarioTestCase) -> None:
     loaded = calls.version()
     cards = _post(case, bank.change_id, {"teamKey": "cards"}, sign_in(bank.contributor, tenant=tenant))
     case.assertEqual(cards.status_code, 201, cards.content)
-    case.assertEqual(case.client.delete(f"{url(bank.change_id)}/{legal.json()['id']}", **as_owner).status_code, 204)
+    case.assertEqual(case.client.delete(participant_url(url(bank.change_id), legal.json()['id']), **as_owner).status_code, 204)
     saved = calls.save(body(), if_match=loaded)
     case.assertEqual(saved.status_code, 200, saved.content)
     case.activate(tenant)

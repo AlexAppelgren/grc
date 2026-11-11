@@ -42,7 +42,7 @@ from apps.taxonomy.http import (
     uuid_or_404,
 )
 from apps.taxonomy.models import FootprintChangeRequest
-from apps.taxonomy.schemas import FootprintDecisionBody, FootprintDryRun, FootprintRequestBody, FootprintRequestPage, FootprintRequestQuery, FootprintRequestRow, FootprintView, JurisdictionRow, MarketRow, MarketWatchBody, TaggingBatchBody, TaggingBatchOutcome, TaggingBody, TaggingRecordTags, TaxonomyTermCreateBody, TaxonomyTermPage, TaxonomyTermQuery, VocabularyCreateBody, VocabularyListPage, VocabularyMergeBody, VocabularyMerged, VocabularyMergeQuery, VocabularyPatchBody, VocabularyQuery, VocabularyReorderBody, VocabularyRestored, VocabularyRetireBody, VocabularyRetired, VocabularyRow, VocabularyRowDetail, VocabularyRowPage, VocabularySuggestBody, VocabularySuggestionPage, VocabularySuggestionRow, FootprintSuggestions
+from apps.taxonomy.schemas import FootprintDecisionBody, FootprintDryRun, FootprintRequestBody, FootprintRequestPage, FootprintRequestQuery, FootprintRequestRow, FootprintView, JurisdictionRow, MarketRow, MarketWatchBody, TaggingBatchBody, TaggingBatchOutcome, TaggingBatchQuery, TaggingBody, TaggingRecordTags, TaxonomyTermCreateBody, TaxonomyTermPage, TaxonomyTermQuery, VocabularyCreateBody, VocabularyListPage, VocabularyMergeBody, VocabularyMerged, VocabularyMergeQuery, VocabularyPatchBody, VocabularyQuery, VocabularyReorderBody, VocabularyRestored, VocabularyRetireBody, VocabularyRetired, VocabularyRow, VocabularyRowDetail, VocabularyRowPage, VocabularySuggestBody, VocabularySuggestionPage, VocabularySuggestionRow, FootprintSuggestions
 from apps.shared.schemas import VocabRef
 
 router = Router(tags=["Taxonomy"])
@@ -1387,38 +1387,6 @@ def untag_record(request: HttpRequest, body: TaggingBody) -> TaggingRecordTags:
 
 
 @router.post(
-    "/taggings/preview",
-    response=TaggingBatchOutcome,
-    auth=SESSION,
-    operation_id="previewTagging",
-    by_alias=True,
-    summary="See what tagging the selected records would do",
-    openapi_extra=_BATCH_TAGGING_EXAMPLE,
-)
-@requires_permission(perms.VOCAB_MANAGE)
-@answers_problems
-def preview_tagging(request: HttpRequest, body: TaggingBatchBody) -> TaggingBatchOutcome:
-    """Before tagging a selection from a list (VOC-08), see which records would gain the tag,
-    which already carry it and how many would be skipped because the caller may not read
-    them. Skipped records are counted and never named. A read with a body: it changes
-    nothing and writes no audit event.
-
-    Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
-    refused. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set
-    another number. Errors: `too_many_records` (422) above that cap; `unsupported_subject`
-    (422) for a kind other than obligation, change, change_case or tenant_obligation; `unknown_key`
-    (422) for a tag the bank does not have or has retired; `permission_denied` (403)
-    without `vocab.manage`; `unauthenticated` (401) without a session; `validation_error`
-    (422) for a body the schema rejects, such as an empty selection.
-    """
-    tenant = caller_tenant(request)
-    return tagging_logic.preview(
-        tenant=tenant, who=principal(request), tag_key=body.tag_key, subject_type=body.subject_type,
-        subject_ids=body.subject_ids, order=reading.language_order(request, tenant=tenant),
-    )
-
-
-@router.post(
     "/taggings/batch",
     response=TaggingBatchOutcome,
     auth=SESSION,
@@ -1429,13 +1397,14 @@ def preview_tagging(request: HttpRequest, body: TaggingBatchBody) -> TaggingBatc
 )
 @requires_permission(perms.VOCAB_MANAGE)
 @answers_problems
-def tag_records(request: HttpRequest, body: TaggingBatchBody) -> TaggingBatchOutcome:
+def tag_records(request: HttpRequest, body: TaggingBatchBody, query: Query[TaggingBatchQuery]) -> TaggingBatchOutcome:
     """Put one of the bank's own tags on every selected record of one kind at once (VOC-08),
-    in one transaction, and answer what happened in the preview's shape. Records that
-    already carry the tag are left as they are; records the caller may not read are
-    skipped, counted and never named. The whole batch writes exactly one audit event holding
-    the tag's key and the ids of the records it reached; a repeat of the same batch changes
-    nothing and writes its one event saying so.
+    in one transaction, and answer what happened. Records that already carry the tag are
+    left as they are; records the caller may not read are skipped, counted and never named.
+    The whole batch writes exactly one audit event holding the tag's key and the ids of the
+    records it reached; a repeat of the same batch changes nothing and writes its one event
+    saying so. With `dryRun=true` it is the preview a screen shows before the user confirms:
+    the same answer, and nothing is tagged and no audit event is written.
 
     Requires `vocab.manage` in the caller's tenant and a person's session; an API key is
     refused. At most `BULK_TAGGING_MAX_RECORDS` distinct ids, 200 unless the operator set
@@ -1447,6 +1416,11 @@ def tag_records(request: HttpRequest, body: TaggingBatchBody) -> TaggingBatchOut
     selection.
     """
     tenant = caller_tenant(request)
+    if query.dry_run:
+        return tagging_logic.preview(
+            tenant=tenant, who=principal(request), tag_key=body.tag_key, subject_type=body.subject_type,
+            subject_ids=body.subject_ids, order=reading.language_order(request, tenant=tenant),
+        )
     user = caller_user(request)
     return tagging_logic.tag_batch(
         tenant=tenant, who=principal(request), actor=actor_for(request, user), tag_key=body.tag_key,

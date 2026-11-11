@@ -1531,8 +1531,7 @@ PROBLEM_REPORT_VERSION_MAX = 2**31 - 1
 class ProblemReportBody(WriteBody):
     """"This looks wrong" (INV-06). `description` is what the reader believes is wrong;
     `versionNumber` and `language` say which words were on their screen, so a colleague
-    opens the same ones. The subject is the path, and the bank is the reader's session:
-    neither is ever taken from the body."""
+    opens the same ones. The bank is the reader's session and is never taken from the body."""
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -1543,10 +1542,27 @@ class ProblemReportBody(WriteBody):
                 ),
                 "versionNumber": 2,
                 "language": "sv",
+                "subjectType": "obligation",
+                "subjectId": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
             }
         }
     )
 
+    subject_type: Literal["obligation", "instrument"] = Field(
+        description=(
+            "Which kind of shared library record the report is about: `obligation` for a duty, "
+            "`instrument` for a law, regulation or guideline. A provision is reported through the "
+            "instrument whose card shows it; say which provision in the text."
+        ),
+    )
+    subject_id: UUID = Field(
+        description=(
+            "The record the report is about, by its identifier (a UUID). It has to be one the caller "
+            "can already read, a shared record or one their own bank owns privately, so another bank's "
+            "private record and an identifier that names nothing both answer 404 rather than telling "
+            "you which of the two it was."
+        ),
+    )
     description: str = Field(
         min_length=1,
         max_length=settings.LIBRARY_REPORT_TEXT_MAX_CHARS,

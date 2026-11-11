@@ -560,8 +560,8 @@ class ProblemReportsAreBounded(ProblemReportsTestCase):
 
     def post_report(self, body: dict[str, Any]) -> Any:
         return Client().post(
-            f"{V1}/obligations/{self.obligation.id}/problem-reports",
-            data=body,
+            f"{V1}/problem-reports",
+            data={"subjectType": "obligation", "subjectId": str(self.obligation.id), **body},
             content_type="application/json",
             **self.headers,
         )
@@ -603,8 +603,8 @@ class ProblemReportsAreBounded(ProblemReportsTestCase):
         self.assertEqual(self.reports(), 0)
 
         kept = self.client.post(
-            f"{V1}/obligations/{self.obligation.id}/problem-reports",
-            data={"description": WORDS, "versionNumber": PROBLEM_REPORT_VERSION_MAX},
+            f"{V1}/problem-reports",
+            data={"subjectType": "obligation", "subjectId": str(self.obligation.id), "description": WORDS, "versionNumber": PROBLEM_REPORT_VERSION_MAX},
             content_type="application/json",
             **sign_in(self.reader, tenant=self.tenant),
         )

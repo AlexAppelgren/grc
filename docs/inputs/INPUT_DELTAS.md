@@ -2112,3 +2112,30 @@ before the job succeeded). `GET /tenant/org-units` gains `registerEntry` on each
 - `GET /vocab/{list}/{key}` stays, although the review counted it redundant: it is the only
   read that carries `originalLanguage` and `machineLanguages`, which say which labels a
   machine wrote and no person has confirmed (I18N-01, INV-05).
+
+## review-2026-11-11-b14. Routes that said the same thing under one permission are one (2026-11-11, B-14)
+
+- The designed `POST /obligations/{obligationId}/problem-reports` (`reportObligationProblem`)
+  and the built `POST /instruments/{instrumentId}/problem-reports` are one
+  `POST /problem-reports` (`reportProblem`) beside the list it fills, with `subjectType`
+  (`obligation` or `instrument`) and `subjectId` in the body. The permission
+  (`problems.report`), the answer, the audit event, the rate limit and the 404 for a record
+  the caller cannot read are as they were.
+- `POST /taggings/preview` (`previewTagging`) is `POST /taggings/batch?dryRun=true`, the
+  query parameter the regulatory scope request and the vocabulary merge already use for a
+  preview; both sides need `vocab.manage`.
+- `POST` and `DELETE /agents/{tenantAgentId}/pause` are `paused: true` and `paused: false`
+  on `PATCH /agents/{tenantAgentId}` (`updateTenantAgent`), under the same
+  `agents.manage`. The pause still writes its own `agents.tenant_agent_paused` event naming
+  the person, and a resume its `agents.tenant_agent_resumed` event.
+- The six participant routes (`GET`, `POST /obligations/{obligationId}/participants`,
+  `DELETE /obligations/{obligationId}/participants/{participantId}` and the same three under
+  `/changes/{changeId}`) are three: `GET /participants?subjectType=&subjectId=`,
+  `POST /participants` with `subjectType` and `subjectId` in the body, and
+  `DELETE /participants/{participantId}?subjectType=&subjectId=`. `subjectType` is
+  `obligation` (the bank's register entry) or `change` (the bank's case for the change). Each
+  subject keeps its own permissions, checked by the route before any lookup and named in the
+  403: `register.read` to read and leave and `register.edit` to change an obligation's,
+  `cases.read` to read and `cases.contribute` to change a case's, and anyone may leave a
+  case. The routes are logic gates in `UNGATED_BY_DESIGN` with that reason, and the tenant
+  isolation guard proves both subjects.

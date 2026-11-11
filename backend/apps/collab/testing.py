@@ -59,3 +59,23 @@ def participant_on_private_obligation(tenant: Tenant) -> SimpleNamespace:
         )
         row = Participant.objects.create(tenant=tenant, tenant_obligation=entry, user=person, added_by=officer)
     return SimpleNamespace(id=row.id, params={"obligation_id": private.id})
+
+
+# --- review 2026-11-11 B-14: the participant routes take their record in the query or body --
+PARTICIPANTS = "/api/v1/participants"
+
+
+def participants_url(subject_type: str, subject_id: object) -> str:
+    """`GET /participants` for one record: an `obligation` or a `change`."""
+    return f"{PARTICIPANTS}?subjectType={subject_type}&subjectId={subject_id}"
+
+
+def participant_url(list_url: str, participant_id: object) -> str:
+    """`DELETE /participants/{participantId}` on the record `list_url` names."""
+    return list_url.replace(f"{PARTICIPANTS}?", f"{PARTICIPANTS}/{participant_id}?", 1)
+
+
+def participant_body(list_url: str, payload: dict[str, str]) -> dict[str, str]:
+    """`POST /participants`: who to add, on the record `list_url` names."""
+    query = dict(part.split("=", 1) for part in list_url.partition("?")[2].split("&"))
+    return {"subjectType": query["subjectType"], "subjectId": query["subjectId"], **payload}

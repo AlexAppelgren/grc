@@ -9,6 +9,8 @@ from ninja import Path, Query, Router
 
 from apps.governance import access_log, ai_log, logic, problem_reports_logic, reach
 from apps.governance.models import TenantReachRequest
+from apps.library import reports as library_reports
+from apps.library.schemas import ProblemReportBody, ProblemReportCreated
 from apps.governance.schemas import (
     AgentAccessCallPage,
     AiGenerationPage,
@@ -143,6 +145,54 @@ _REPORTS_REACH = (
     "the bank's own content, and neither its text nor a closing note reaches the audit "
     "log, an outbox event, a log line or a model."
 )
+
+
+_REPORT_DESCRIPTION = (
+    "Files a reader's \"this looks wrong\" report against one obligation or instrument of "
+    "the shared library, named by `subjectType` and `subjectId` in the body. Call it when someone reading a record believes a public fact is wrong. Nothing in the "
+    "library changes here: a proposal is the only door into it.\n\n"
+    "The record has to be one this caller can already read: a shared record, or one their own "
+    "bank owns privately. A provision is reported through the instrument whose card shows it, "
+    "so say which provision in the text.\n\n"
+    "The report is created inside the bank the caller is signed in to and stays there. No bleqq "
+    "editor, no other bank, no agent and no model ever reads it, and no console surface lists it "
+    "(Alex, 2026-09-19). The loop back to the library is closed the other way round: bleqq's "
+    "watch agents re-check library records against their sources on every run, find the "
+    "deviation themselves, and propose the correction for a second, independent principal to "
+    "approve.\n\n"
+    "The reporter and the bank are taken from the caller's session and never from the body, so "
+    "do not send them; versionNumber and language record which words were on screen.\n\n"
+    "Needs the `problems.report` permission, which every member of a bank holds and no platform "
+    "role does. Answers 201 with the report's id, its status and when it was filed, and never "
+    "reads the reader's own words back. Writes one audit event, library.problem_reported, "
+    "carrying the record, the report's id and the version and language on screen, and never the "
+    "text itself.\n\n"
+    "Errors to branch on: `not_found` (404) when the record is not one this caller may read; `validation_error` (422) when the body is "
+    "malformed, the text is longer than 4000 characters or holds a NUL character, or `subjectId` "
+    "is not a UUID; `description_required` (422) when the description is only "
+    "whitespace; `unknown_key` (422) when the language is not an active content language; "
+    "`rate_limited` (429) when this person has filed 30 reports in the last hour "
+    "(`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry."
+)
+
+
+@router.post(
+    "/problem-reports",
+    response={201: ProblemReportCreated},
+    auth=SessionAuth(),
+    operation_id="reportProblem",
+    by_alias=True,
+    summary="Tell us an obligation or an instrument looks wrong",
+    description=_REPORT_DESCRIPTION,
+)
+@requires_permission(perms.PROBLEMS_REPORT)
+@answers_problems
+def report_problem(request: HttpRequest, body: ProblemReportBody) -> Any:
+    reporter = caller_user(request)
+    report = library_reports.report_on(
+        body=body, tenant_id=caller_tenant(request).id, reporter=reporter, actor=actor_for(request, reporter)
+    )
+    return 201, ProblemReportCreated(id=report.id, status=report.status, created_at=report.created_at)
 
 
 @router.get(

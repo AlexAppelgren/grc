@@ -508,14 +508,52 @@ class CollabParticipantPage(CamelSchema):
     total: int = Field(description="How many take part now in total, not how many are on this page.")
 
 
+_PARTICIPANT_SUBJECT_TYPE = (
+    "What the participants take part in, one of two fixed values: `obligation`, the bank's "
+    "register entry for an obligation, read with `register.read` and changed with "
+    "`register.edit`; `change`, the bank's case for a regulatory change, read with "
+    "`cases.read` and changed with `cases.contribute`. Each value keeps its own two "
+    "permissions."
+)
+_PARTICIPANT_SUBJECT_ID = (
+    "The record, as a uuid: an obligation from the inventory, or a change from the watch feed "
+    "(a bank has exactly one case per change). One the bank cannot see, such as another bank's "
+    "private obligation, or a change the bank has no case for, answers 404, never 403, so no id "
+    "can be probed."
+)
+ParticipantSubjectType = Literal["obligation", "change"]
+
+
+class CollabParticipantQuery(PageQuery):
+    """`GET /participants`: whose participants, one page at a time."""
+
+    subject_type: ParticipantSubjectType = Field(alias="subjectType", description=_PARTICIPANT_SUBJECT_TYPE, examples=["obligation"])
+    subject_id: uuid.UUID = Field(alias="subjectId", description=_PARTICIPANT_SUBJECT_ID, examples=["44444444-4444-4444-8444-444444444444"])
+
+
+class CollabParticipantSubject(CamelSchema):
+    """`DELETE /participants/{participantId}`: the record the participation is on."""
+
+    subject_type: ParticipantSubjectType = Field(description=_PARTICIPANT_SUBJECT_TYPE, examples=["change"])
+    subject_id: uuid.UUID = Field(description=_PARTICIPANT_SUBJECT_ID, examples=["44444444-4444-4444-8444-444444444444"])
+
+
 class CollabParticipantInput(WriteBody):
-    """Who to add: exactly one of a person and a team. A field the schema does not name
-    answers 422."""
+    """Who to add, and to which record: exactly one of a person and a team. A field the
+    schema does not name answers 422."""
 
     model_config = ConfigDict(
         extra="forbid",
-        json_schema_extra={"examples": [{"userId": _ERIK["id"]}, {"teamKey": "legal"}]},
+        json_schema_extra={
+            "examples": [
+                {"subjectType": "obligation", "subjectId": "44444444-4444-4444-8444-444444444444", "userId": _ERIK["id"]},
+                {"subjectType": "change", "subjectId": "44444444-4444-4444-8444-444444444444", "teamKey": "legal"},
+            ]
+        },
     )
+
+    subject_type: ParticipantSubjectType = Field(description=_PARTICIPANT_SUBJECT_TYPE, examples=["obligation"])
+    subject_id: uuid.UUID = Field(description=_PARTICIPANT_SUBJECT_ID, examples=["44444444-4444-4444-8444-444444444444"])
 
     user_id: uuid.UUID | None = Field(
         default=None,

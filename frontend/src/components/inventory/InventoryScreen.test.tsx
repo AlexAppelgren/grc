@@ -15,6 +15,9 @@ import type { SearchHit } from '@/features/search/types';
 import { createT } from '@/shared/i18n';
 import { defaultFormatContext } from '@/shared/utils/format';
 
+/** A tagging batch sent with `dryRun`: the preview, which tags nothing. */
+const isDryRun = (sent: Sent): boolean => (sent.params as { dryRun?: boolean } | null)?.dryRun === true;
+
 // /inventory (design/screens/tenant-inventory.html): the URL carries keys,
 // the row carries the pill contract, a row outside the footprint is dashed
 // and says why, and every state the card names renders.
@@ -828,7 +831,7 @@ describe('bulk tagging on the inventory', () => {
   it('previews the selection, commits the ids the preview showed in one call, and shows the server\'s counts', async () => {
     const sent = serveBulk([research, adviceOnly, third], (s) =>
       // The preview skips ob-3; the commit answers what it did.
-      s.path === '/api/v1/taggings/preview' ? outcome(['ob-2'], ['ob-1'], 1) : outcome(['ob-2'], ['ob-1']),
+      isDryRun(s) ? outcome(['ob-2'], ['ob-1'], 1) : outcome(['ob-2'], ['ob-1']),
     );
     renderScreen(['library.read', 'vocab.manage']);
     await screen.findByText('3 obligations');
@@ -842,9 +845,9 @@ describe('bulk tagging on the inventory', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Preview' }));
 
     await within(dialog).findByRole('heading', { name: 'Add "Custody" to 3 obligations?' });
-    const preview = sent.find((s) => s.path === '/api/v1/taggings/preview');
+    const preview = sent.find((s) => s.path === '/api/v1/taggings/batch' && isDryRun(s));
     expect(preview?.body).toEqual({ tagKey: 'custody', subjectType: 'obligation', subjectIds: ['ob-1', 'ob-2', 'ob-3'] });
-    expect(sent.filter((s) => s.path === '/api/v1/taggings/batch')).toHaveLength(0);
+    expect(sent.filter((s) => s.path === '/api/v1/taggings/batch' && !isDryRun(s))).toHaveLength(0);
     expect(document.querySelector('[data-bulk-count="gained"]')).toHaveTextContent('1Would gain the tag');
     expect(document.querySelector('[data-bulk-count="already"]')).toHaveTextContent('1Already carry it');
     expect(document.querySelector('[data-bulk-count="skipped"]')).toHaveTextContent('1Skipped');
@@ -856,7 +859,7 @@ describe('bulk tagging on the inventory', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Tag 1 obligation' }));
     await screen.findByText('"Custody" added to 1 obligation. 1 already carried it.');
-    const batches = sent.filter((s) => s.path === '/api/v1/taggings/batch');
+    const batches = sent.filter((s) => s.path === '/api/v1/taggings/batch' && !isDryRun(s));
     expect(batches).toHaveLength(1);
     expect(batches[0]?.body).toEqual({ tagKey: 'custody', subjectType: 'obligation', subjectIds: ['ob-2', 'ob-1'] });
     expect(sent.filter((s) => s.path === '/api/v1/taggings')).toHaveLength(0);
@@ -938,7 +941,7 @@ describe('bulk tagging on the inventory', () => {
     expect(within(dialog).queryByRole('button', { name: /^Tag / })).toBeNull();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(sent.filter((s) => s.path === '/api/v1/taggings/batch')).toHaveLength(0);
+    expect(sent.filter((s) => s.path === '/api/v1/taggings/batch' && !isDryRun(s))).toHaveLength(0);
   });
 
   it.each([
@@ -960,7 +963,7 @@ describe('bulk tagging on the inventory', () => {
   it('offers Try again after a failed commit, and sends the same previewed ids again', async () => {
     let batches = 0;
     const sent = serveBulk([research, adviceOnly], (s) => {
-      if (s.path === '/api/v1/taggings/preview') return outcome(['ob-2'], ['ob-1']);
+      if (isDryRun(s)) return outcome(['ob-2'], ['ob-1']);
       batches += 1;
       return batches === 1 ? { status: 500 } : outcome(['ob-2'], ['ob-1']);
     });
@@ -974,7 +977,7 @@ describe('bulk tagging on the inventory', () => {
     expect(await within(dialog).findByText('Could not tag the obligations. Nothing was changed.')).toBeTruthy();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Try again' }));
     await screen.findByText('"Custody" added to 1 obligation. 1 already carried it.');
-    const bodies = sent.filter((s) => s.path === '/api/v1/taggings/batch').map((s) => s.body);
+    const bodies = sent.filter((s) => s.path === '/api/v1/taggings/batch' && !isDryRun(s)).map((s) => s.body);
     expect(bodies).toEqual([
       { tagKey: 'custody', subjectType: 'obligation', subjectIds: ['ob-2', 'ob-1'] },
       { tagKey: 'custody', subjectType: 'obligation', subjectIds: ['ob-2', 'ob-1'] },

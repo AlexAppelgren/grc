@@ -298,7 +298,7 @@ class SharedScenarioTests(ScenarioTestCase):
         registered = {(op.method, op.path) for op in iter_operations(api)}
         proven = set()
         for method, path, _model, factory_name in TENANT_SCOPED_ROUTES:
-            self.assertIn((method, path), registered, "the registry names a route Ninja did not register")
+            self.assertIn((method, path.partition("?")[0]), registered, "the registry names a route Ninja did not register")
             record = getattr(factories, factory_name)(tenant=tenant_a)
             with self.subTest(route=f"{method} {path}"), stub_session(member_of_b):
                 response = self.client.generic(
@@ -307,7 +307,7 @@ class SharedScenarioTests(ScenarioTestCase):
                 self.assertEqual(response.status_code, 404, f"{method} {path} leaked or refused instead of 404")
                 self.assertEqual(response.json()["code"], "not_found")
                 self.assertLessEqual(set(response.json()), PROBLEM_FIELDS, "a 404 carries the problem and never the record")
-            proven.add((method, path))
+            proven.add((method, path.partition("?")[0]))
         # A new route in the bank's own namespace without this proof fails: every GET, PATCH
         # and DELETE under /tenant/ that addresses one record is in the registry.
         unproven = sorted(

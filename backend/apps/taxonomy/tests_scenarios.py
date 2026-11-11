@@ -11,7 +11,7 @@ Operations exercised (the audit-on-write guard reads these names): createVocabul
 updateVocabularyRow, reorderVocabulary, retireVocabularyRow, restoreVocabularyRow, mergeVocabularyRow,
 suggestVocabularyRow, declineVocabularySuggestion, createTerm, updateTerm,
 createFootprintRequest, approveFootprintRequest, rejectFootprintRequest,
-withdrawFootprintRequest, tagRecord, untagRecord, previewTagging, tagRecords.
+withdrawFootprintRequest, tagRecord, untagRecord, tagRecords (with and without dryRun).
 
 Prefixes hosted: ACC, FP, I18N, VOC.
 """
@@ -587,7 +587,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         body = {"tagKey": "custody", "subjectType": "obligation", "subjectIds": ids}
         # The preview lists the six and which already carry the tag, and writes nothing.
         audit_before = set(AuditEvent.objects.values_list("id", flat=True))
-        preview = self._preview("/taggings/preview", body, headers)
+        preview = self._preview("/taggings/batch?dryRun=true", body, headers)
         self.assertEqual(preview.status_code, 200, preview.content)
         shown = preview.json()
         self.assertEqual(set(shown["gained"]["ids"]) | set(shown["alreadyTagged"]["ids"]), set(ids))

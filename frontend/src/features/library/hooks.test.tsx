@@ -139,7 +139,7 @@ describe('library hooks', () => {
     const report = renderHook(() => useReportObligationProblem('ob-1'), { wrapper });
     report.result.current.mutate({ description: 'The English says annually.', versionNumber: 2, language: 'en' });
     await waitFor(() => expect(report.result.current.data?.status).toBe('open'));
-    expect(sent.map((s) => [s.method, s.path])).toEqual([['post', '/api/v1/obligations/ob-1/problem-reports']]);
+    expect(sent.map((s) => [s.method, s.path])).toEqual([['post', '/api/v1/problem-reports']]);
     expect(invalidate).not.toHaveBeenCalled();
   });
 
@@ -169,7 +169,7 @@ describe('library hooks', () => {
     const report = renderHook(() => useReportInstrumentProblem('in-1'), { wrapper });
     report.result.current.mutate({ description: 'The in-force date looks wrong.' });
     await waitFor(() => expect(report.result.current.data?.status).toBe('open'));
-    expect(sent.map((s) => [s.method, s.path])).toEqual([['post', '/api/v1/instruments/in-1/problem-reports']]);
+    expect(sent.map((s) => [s.method, s.path])).toEqual([['post', '/api/v1/problem-reports']]);
     expect(invalidate).not.toHaveBeenCalled();
   });
 

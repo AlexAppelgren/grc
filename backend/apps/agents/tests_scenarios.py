@@ -553,8 +553,8 @@ class AgentsScenarioTests(TestCase):
         The budget cap pauses runs and the AI off switch stops every model call (AGT-04).
 
         Built over putAgentBudget, getAgentBudget, the bank's beat, runTenantAgentNow,
-        resumeTenantAgent, setTenantAi and ask. The cap pauses through the one pause
-        pauseTenantAgent uses, with no person. The clock is the test's, so "this month" never depends on
+        updateTenantAgent's `paused`, setTenantAi and ask. The cap pauses through the one pause
+        updateTenantAgent's `paused: true` uses, with no person. The clock is the test's, so "this month" never depends on
         when the test runs.
         """
         from decimal import Decimal
@@ -612,7 +612,7 @@ class AgentsScenarioTests(TestCase):
         self.assertEqual(switched.status_code, 200, switched.content)
         with frozen(WEDNESDAY + datetime.timedelta(days=1)):
             self._as(admin, "put", "/api/v1/tenant/agent-budget", {"monthlyCap": "500.00"})
-        resumed = self._as(admin, "delete", f"/api/v1/agents/{world.agent.id}/pause")
+        resumed = self._as(admin, "patch", f"/api/v1/agents/{world.agent.id}", {"paused": False})
         self.assertEqual(resumed.status_code, 200, resumed.content)
         tenancy.activate(world.bank.id)
         self.assertEqual(

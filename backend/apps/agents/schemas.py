@@ -818,7 +818,7 @@ class TenantAgentInput(WriteBody):
 class TenantAgentUpdate(WriteBody):
     """`PATCH /agents/{tenantAgentId}`: change what the body sends and nothing else."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"enabled": True, "cadence": "daily"}]})
+    model_config = ConfigDict(json_schema_extra={"examples": [{"enabled": True, "cadence": "daily"}, {"paused": True}]})
 
     enabled: bool | None = Field(default=None, description="Switch the agent on or off; by default null, which leaves it.")
     cadence: Cadence | None = Field(default=None, description=f"The new cadence; by default null, which leaves it. {_CADENCE}")
@@ -829,6 +829,16 @@ class TenantAgentUpdate(WriteBody):
         default=None, ge=0, le=23, description="The new run hour, a minimum of 0 and a maximum of 23; by default null, which leaves it."
     )
     scope: TenantAgentScope | None = Field(default=None, description="The new scope, whole; by default null, which leaves it.")
+    paused: bool | None = Field(
+        default=None,
+        description=(
+            "`true` pauses the agent: it starts no run until someone resumes it, keeps its settings and history, "
+            "and an open run is not stopped (interrupt that with `POST /agent-runs/{runId}/interrupt`). `false` "
+            "resumes it, whether a person or the monthly cap paused it; an agent resumed while the month's cap is "
+            "still reached is paused again by the cap when its next run is due. By default null, which leaves it. "
+            "Pausing a paused agent or resuming one that is not paused changes nothing."
+        ),
+    )
 
 
 class TenantRunQuery(PageQuery):

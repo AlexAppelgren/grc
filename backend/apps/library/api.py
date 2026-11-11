@@ -28,8 +28,8 @@ from typing import Annotated, Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.library import reading, reports
-from apps.library.models import Language, SubjectType
+from apps.library import reading
+from apps.library.models import Language
 from apps.library.schemas import (
     InstrumentDetail,
     InstrumentPage,
@@ -41,8 +41,6 @@ from apps.library.schemas import (
     ObligationDetail,
     ObligationPage,
     ObligationQuery,
-    ProblemReportBody,
-    ProblemReportCreated,
     ProvisionNode,
     ReverificationBody,
     SAMPLE_PROVISION_TREE,
@@ -68,49 +66,13 @@ SESSION_OR_KEY = [SessionAuth(), ApiKeyAuth()]
 # ---------------------------------------------------------------------------------------
 # What the published contract says about the writes (docs/plans/briefs/API_DOCUMENTATION.md)
 # ---------------------------------------------------------------------------------------
-# Long prose belongs beside the route, not inside the decorator's argument list, and the two
-# report routes say the same thing about the same record. A backticked snake_case word in an
+# Long prose belongs beside the route, not inside the decorator's argument list. A backticked snake_case word in an
 # operation description is read as an RFC 9457 code by the documentation gate, so the three
 # verification outcomes appear here unquoted on purpose.
-_SUBJECT_ID = (
-    "The {record} the report is about, by its identifier (a UUID). It has to be one the caller "
-    "can already read, so another bank's private record and an identifier that names nothing "
-    "both answer 404 rather than telling you which of the two it was."
-)
-OBLIGATION_ID_DESCRIPTION = _SUBJECT_ID.format(record="obligation")
-INSTRUMENT_ID_DESCRIPTION = _SUBJECT_ID.format(record="instrument")
 REVERIFY_ID_DESCRIPTION = (
     "The obligation that was checked, by its identifier (a UUID). A library editor works in no "
     "bank and so addresses the shared library alone: a record a bank owns privately answers 404 "
     "here, exactly as an identifier that names nothing does."
-)
-
-REPORT_DESCRIPTION = (
-    "Files a reader's \"this looks wrong\" report against one {record} of the shared library. "
-    "Call it when someone reading a record believes a public fact is wrong. Nothing in the "
-    "library changes here: a proposal is the only door into it.\n\n"
-    "{extra}"
-    "The report is created inside the bank the caller is signed in to and stays there. No bleqq "
-    "editor, no other bank, no agent and no model ever reads it, and no console surface lists it "
-    "(Alex, 2026-09-19). The loop back to the library is closed the other way round: bleqq's "
-    "watch agents re-check library records against their sources on every run, find the "
-    "deviation themselves, and propose the correction for a second, independent principal to "
-    "approve.\n\n"
-    "The reporter and the bank are taken from the caller's session and never from the body, so "
-    "do not send them; versionNumber and language record which words were on screen.\n\n"
-    "Needs the `problems.report` permission, which every member of a bank holds and no platform "
-    "role does. Answers 201 with the report's id, its status and when it was filed, and never "
-    "reads the reader's own words back. Writes one audit event, library.problem_reported, "
-    "carrying the record, the report's id and the version and language on screen, and never the "
-    "text itself.\n\n"
-    "Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) "
-    "without the permission, including for every platform role; `not_found` (404) when the "
-    "{record} is not one this caller may read; `validation_error` (422) when the body is "
-    "malformed, the text is longer than 4000 characters or holds a NUL character, or the path "
-    "segment is not a UUID; `description_required` (422) when the description is only "
-    "whitespace; `unknown_key` (422) when the language is not an active content language; "
-    "`rate_limited` (429) when this person has filed 30 reports in the last hour "
-    "(`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry."
 )
 
 REVERIFY_DESCRIPTION = (
@@ -690,86 +652,6 @@ def get_record_sources(
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-06, AGT-01).
     who = require_library_read(request)
     return reading.get_record_sources(obligation_id, reading.today_of(who.tenant_id), reading.reader_of(who))
-
-
-@router.post(
-    "/obligations/{obligation_id}/problem-reports",
-    response={201: ProblemReportCreated},
-    auth=SESSION,
-    operation_id="reportObligationProblem",
-    by_alias=True,
-    summary="Tell us an obligation looks wrong",
-    description=REPORT_DESCRIPTION.format(
-        record="obligation",
-        extra=(
-            "The obligation has to be one this caller can already read: a shared record, or one "
-            "their own bank owns privately.\n\n"
-        ),
-    ),
-)
-@requires_permission(perms.PROBLEMS_REPORT)
-@answers_problems
-def report_obligation_problem(
-    request: HttpRequest,
-    obligation_id: Annotated[uuid.UUID, Path(description=OBLIGATION_ID_DESCRIPTION)],
-    body: ProblemReportBody,
-) -> Any:
-    tenant = caller_tenant(request)
-    reporter = caller_user(request)
-    obligation = reading.obligation_subject(obligation_id)
-    report = reports.create_report(
-        subject_type=SubjectType.OBLIGATION,
-        subject_id=obligation.id,
-        subject_title=obligation.stable_key,
-        tenant_id=tenant.id,
-        reporter=reporter,
-        actor=actor_for(request, reporter),
-        description=body.description,
-        version_number=body.version_number,
-        language=body.language,
-    )
-    return 201, ProblemReportCreated(id=report.id, status=report.status, created_at=report.created_at)
-
-
-@router.post(
-    "/instruments/{instrument_id}/problem-reports",
-    response={201: ProblemReportCreated},
-    auth=SESSION,
-    operation_id="reportInstrumentProblem",
-    by_alias=True,
-    summary="Tell us an instrument or one of its provisions looks wrong",
-    description=REPORT_DESCRIPTION.format(
-        record="instrument",
-        extra=(
-            "A provision is reported through the instrument whose card shows it, so there is no "
-            "separate provision route; say which provision in the text. The instrument has to be "
-            "one this caller can already read: a shared record, or one their own bank owns "
-            "privately.\n\n"
-        ),
-    ),
-)
-@requires_permission(perms.PROBLEMS_REPORT)
-@answers_problems
-def report_instrument_problem(
-    request: HttpRequest,
-    instrument_id: Annotated[uuid.UUID, Path(description=INSTRUMENT_ID_DESCRIPTION)],
-    body: ProblemReportBody,
-) -> Any:
-    tenant = caller_tenant(request)
-    reporter = caller_user(request)
-    instrument = reading.instrument_subject(instrument_id)
-    report = reports.create_report(
-        subject_type=SubjectType.INSTRUMENT,
-        subject_id=instrument.id,
-        subject_title=instrument.stable_key,
-        tenant_id=tenant.id,
-        reporter=reporter,
-        actor=actor_for(request, reporter),
-        description=body.description,
-        version_number=body.version_number,
-        language=body.language,
-    )
-    return 201, ProblemReportCreated(id=report.id, status=report.status, created_at=report.created_at)
 
 
 @router.post(
