@@ -182,8 +182,8 @@ Sources: Apple HIG tab bars (a modal covering the bar, avoiding overflow tabs). 
 | Width | `width: fit-content` (`w-fit`). The list is a grid with `grid-auto-flow: column` and `grid-auto-columns: minmax(0, 6rem)` | own value | On a tablet the bar hugs 96 px cells and sits centred. On a phone the insets decide the width, and the cells share it equally. No JS and no inline style. 96 px fits a 12-character `meta` label on one line | Own value |
 | Height | 62 px: a 1 px border, 4 px padding, a 52 px cell, 4 px padding and the border again. It grows when a label wraps and never clips | own value | About the height of iOS's floating bar (third-party measurement: about 62 pt) | learnui.design, Apple forum thread 796299 (third party) |
 | Radius | 20 px, `rounded-tabbar` (Alex, 2026-10-03: modern, but a capsule's "edges are a bit too round") | `radius-l` | Rounder than the other floating layers, so the bar reads as today's floating bars do, and still not a capsule: the fully rounded shape stays the pill's (open question 1). With 4 px padding, the 16 px current tab sits concentric with the bar (20 − 4 = 16) | Alex. `foundations.md` "Radius", `pills-and-labels.md`, WWDC25 session 356 |
-| Surface | `bg-surface`, solid | `l2-neutral-02` (#ffffff light, #191a1a dark) | Solid, so `contrast.test.ts` can pin every pair (it composites solid colours, not rgba). Green has no glass material | `theme.css` comment on the sidebar accent. Apple HIG materials, for what we leave out |
-| Border | 1 px `border-line` | `border-neutral-02` light, `-03` dark | Draws the bar's edge on a white page | `foundations.md` "hairline" |
+| Surface | `bg-float`, solid (Alex, 2026-11-11) | `l3-neutral-01` (#ffffff light, #313533 dark) | One level above the cards it floats over. In dark the card surface (#191a1a) made the bar the same colour as every card under it, 1.00:1, and a shadow lifts nothing on a near-black page; #313533 is 1.40:1 against a card and 1.58:1 against the page. Solid, so `contrast.test.ts` can pin every pair (it composites solid colours, not rgba). Green has no glass material | `theme.css` comment on the sidebar accent. Apple HIG materials, for what we leave out |
+| Border | 1 px `border-line-control` (Alex, 2026-11-11) | `border-neutral-02` in both themes | Draws the bar's edge on a white page, the same as before in light. In dark the card hairline (`-03`, #282a29) left no edge; `-02` (#454a48) is 2.18:1 against the page and 1.93:1 against a card | `foundations.md` "hairline" |
 | Elevation | `shadow-float`, a new theme alias combining Green `shadow-l-01` and `shadow-l-02` | `--gds-sys-shadow-l-01`, `-l-02` | This is the only layer that sits over scrolling content. Cards stay flat ("no shadow"). Green shadows come in pairs, `-01` and `-02` | Green MCP `get_tokens shadow`. `foundations.md` "Card" |
 | Blur | None | | Solid is simpler, can be pinned, and needs no Reduce Transparency fallback | Apple HIG materials |
 | Stacking | `z-30` | | Below the scrim (40) and dialogs (50), so a modal covers it | Apple HIG tab bars |
@@ -585,15 +585,15 @@ In jsdom, CSS does not apply, so the rail and the bar both render. Scope every q
 
 | Pair | Foreground / background | Floor | Expected (light / dark) |
 |---|---|---|---|
-| tab bar: tab label on the bar | `content-neutral-02` / `l2-neutral-02` | 4.5 | 5.60 / 7.93 |
+| tab bar: tab label on the bar | `content-neutral-02` / `l3-neutral-01` | 4.5 | 5.60 / 5.66 |
 | tab bar: current tab label | `--sidebar-accent-foreground` / `--sidebar-accent` | 4.5 | 16.50 / 11.69 |
 | more sheet: row label | `content-neutral-01` / `l2-neutral-02` | 4.5 | passes |
 | more sheet: organisation and role line | `content-neutral-02` / `l2-neutral-02` | 4.5 | 5.60 / 7.93 |
-| tab bar: tab icon on the bar (non-text) | `content-neutral-02` / `l2-neutral-02` | 3 | 5.60 / 7.93 |
+| tab bar: tab icon on the bar (non-text) | `content-neutral-02` / `l3-neutral-01` | 3 | 5.60 / 5.66 |
 | tab bar: current-tab outline on the bar (non-text) | `border-neutral-01` / `l2-neutral-02` | 3 | 4.15 / 7.05 |
 | tab bar: current-tab outline on its fill (non-text) | `border-neutral-01` / `l3-neutral-02` | 3 | 3.47 / 5.03 |
 | more sheet: current-row outline on the sheet (non-text) | `border-neutral-01` / `l2-neutral-02` | 3 | 4.15 / 7.05 |
-| tab bar: focus ring on the bar (non-text) | `content-notice-01` / `l2-neutral-02` | 3 | 6.39 / 8.19 |
+| tab bar: focus ring on the bar (non-text) | `content-notice-01` / `l3-neutral-01` | 3 | 6.39 / 5.85 |
 
 Name each pair for the bar or the sheet, even where a generic pair already covers it, so that a later token change fails by name.
 

@@ -112,7 +112,9 @@ ordinary cards. Stat tiles are cards with the value in `title` and the label
 in `meta`. Was: 16 to 20 px radius, 20 to 28 px padding, sand fills.
 
 **Pill (shadcn Badge).** Fully rounded, 20 px tall, 8 px side padding,
-`meta` at 500, no border. shadcn's current Badge is `rounded-full px-2 py-0.5
+`meta` at 500, no border. A label wider than its container wraps inside the
+pill, which grows a line at a time and never runs past its card; the 10 px
+radius is half the one-line height, so a one-line pill stays fully rounded. shadcn's current Badge is `rounded-full px-2 py-0.5
 text-xs font-medium`, so the shape stays; with buttons, toggles and nav rows
 now at 6 px, the fully rounded shape is the pill's alone and cannot be
 mistaken for a control. Tones and dark backgrounds: `pills-and-labels.md`.
@@ -177,8 +179,9 @@ Below 400 px the side gap is 8 px. The bar is as wide as its cells and
 centred: equal cells of at most 96 px, no gap, each cell the whole target.
 It is 64 px tall: 6 px padding, a 52 px cell, 6 px padding, with the 1 px
 border inside. It grows when a label wraps and never clips. 12 px radius
-(`radius-s`), solid `l2-neutral-02`, a 1 px hairline, the `float` shadow, no
-blur. It sits above the page and below the scrim and dialogs, and is hidden in
+(`radius-s`), solid `float` (`l3-neutral-01`: white in light, #313533 in
+dark, one level above the cards it floats over), a 1 px `border-neutral-02`
+edge, the `float` shadow, no blur. It sits above the page and below the scrim and dialogs, and is hidden in
 print. A tab is a 20 px icon, a 4 px gap and the label in `meta`, on one or
 two lines, never truncated and never set smaller. "Search and ask" shows as
 "Search" in the bar. Rest: `content-neutral-02` at 400. Hover:
@@ -301,7 +304,7 @@ Every text pair the design uses, lowest first. All pass 4.5:1.
 | negative text on the danger hover tint | 5.24 | 5.40 |
 | muted text on rail | 5.26 | 8.96 |
 | muted text on page / surface | 5.60 | 8.96 / 7.93 |
-| tab label on the tab bar (muted text on surface) | 5.60 | 7.93 |
+| tab label on the tab bar (muted text on `float`) | 5.60 | 5.66 |
 | organisation and role line in the More sheet (muted text on surface) | 5.60 | 7.93 |
 | negative text on surface (danger button, error) | 6.04 | 7.09 |
 | brand text on sand (AI label, legal margin) | 6.28 | 10.26 |

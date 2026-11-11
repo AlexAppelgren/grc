@@ -122,7 +122,7 @@ export const PAIRS: readonly Pair[] = [
   // The tab bar and the More sheet below 1024 px (design/system/navigation.md
   // 16). Named for the bar or the sheet even where a generic pair covers the
   // same tokens, so a later token change fails by name.
-  { name: 'tab bar: tab label on the bar', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'tab bar: tab label on the bar', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l3-neutral-01' },
   { name: 'tab bar: current tab label', fg: '--gds-sys-color-content-neutral-03', bg: '--gds-sys-color-l3-neutral-03' },
   { name: 'more sheet: row label', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'more sheet: organisation and role line', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
@@ -145,10 +145,10 @@ export const NON_TEXT: readonly Pair[] = [
   { name: 'focus ring on surface', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'focus ring on page', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l1-neutral-01' },
   { name: 'focus ring on the rail', fg: '--sidebar-ring', bg: '--sidebar' },
-  { name: 'tab bar: tab icon on the bar', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'tab bar: tab icon on the bar', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l3-neutral-01' },
   // The current tab's fill is its indicator (the button's neutral primary).
-  { name: 'tab bar: current-tab fill on the bar', fg: '--gds-sys-color-l3-neutral-03', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'tab bar: current-tab fill on the bar', fg: '--gds-sys-color-l3-neutral-03', bg: '--gds-sys-color-l3-neutral-01' },
   { name: 'more sheet: current-row outline on the sheet', fg: '--gds-sys-color-border-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
-  { name: 'tab bar: focus ring on the bar', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'tab bar: focus ring on the bar', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l3-neutral-01' },
   { name: 'public page: the hand strike on the green', fg: '--bleqq-public-pen', bg: '--gds-sys-color-l2-brand-01' },
 ];

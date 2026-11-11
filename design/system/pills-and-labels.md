@@ -17,7 +17,9 @@ Token names are Green's (`--gds-sys-color-…`), with the `brand` pair
 overridden in `brand.css`. Note Green's naming: `information` is the grey
 one and `notice` is blue. Tenant tags use an outlined `information` pill.
 Shape (foundations.md, 2026-09-19): fully rounded, 20 px tall, 8 px side
-padding, the `meta` type role (13 / 18) at 500 weight, no border. shadcn's
+padding, the `meta` type role (13 / 18) at 500 weight, no border. A label
+wider than its container (a long instrument short name on a phone) wraps
+inside the pill and never runs past the card. shadcn's
 current Badge is fully rounded too; buttons, toggles and the current nav row
 are 6 px, the current tab in the tab bar 16 px and the floating tab bar itself
 20 px, rounder but not fully rounded (`navigation.md`, Alex 2026-10-03). So the

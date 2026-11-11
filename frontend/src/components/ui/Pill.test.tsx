@@ -40,14 +40,23 @@ describe('Pill (playbook 6.7)', () => {
     expect(pill.style.boxShadow).toContain(`var(${pillTones.information.text})`);
   });
 
-  it('has the foundations shape: fully rounded, 20px, 8px sides, meta at 500', () => {
+  it('has the foundations shape: fully rounded at 20px on one line, 8px sides, meta at 500', () => {
     render(<Pill tone="brand">LVM</Pill>);
     const pill = screen.getByText('LVM');
-    expect(pill.className).toContain('rounded-full');
-    expect(pill.className).toContain('h-5');
+    // 18px line plus 1px above and below is 20px; a 10px radius is fully rounded at that height.
+    expect(pill.className).toContain('rounded-[10px]');
+    expect(pill.className).toContain('py-px');
     expect(pill.className).toContain('px-2');
     expect(pill.className).toContain('font-medium');
     expect(pill.className).toContain('text-meta');
+  });
+
+  it('wraps a label wider than its container instead of running past it', () => {
+    render(<Pill tone="brand">Bekendtgørelse om afskæring af sanktionerede personer fra økonomiske ressourcer</Pill>);
+    const pill = screen.getByText(/Bekendtgørelse/);
+    expect(pill.className).toContain('max-w-full');
+    expect(pill.className).toContain('wrap-anywhere');
+    expect(pill.className).not.toMatch(/whitespace-nowrap|truncate|\bh-5\b/);
   });
 });
 

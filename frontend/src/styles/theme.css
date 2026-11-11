@@ -35,6 +35,11 @@
   --color-subtle: var(--subtle);
   --color-surface: var(--gds-sys-color-l2-neutral-02);
   --color-surface-2: var(--gds-sys-color-l2-neutral-02-2);
+  /* The floating tab bar, one level above the cards it floats over: white in
+     light, as the surface is, and #313533 in dark, where a shadow cannot lift
+     it and the surface it used to share with every card (#191a1a) made it
+     disappear into them (Alex, 2026-11-11). */
+  --color-float: var(--gds-sys-color-l3-neutral-01);
   --color-sand: var(--gds-sys-color-l2-brand-02);
   --color-sand-2: var(--gds-sys-color-l3-brand-02);
   --color-sand-3: var(--gds-sys-color-l3-brand-02-2);

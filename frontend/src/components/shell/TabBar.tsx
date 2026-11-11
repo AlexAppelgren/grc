@@ -21,7 +21,7 @@ import { usePermissions } from '@/shared/navigation/require-permission';
 // Each cell is the whole hit area, 52px tall. The current tab is the app's
 // neutral primary: the button's fill with its text colour, under a solid icon
 // (Alex, 2026-10-03, option A). The fill is itself the indicator: 19.7:1
-// against the bar in light and 12.1:1 in dark, where the outline the old
+// against the bar in light and 8.6:1 in dark, where the outline the old
 // tint needed for 3:1 has nothing left to do, except in forced colours, which
 // drop the fill and keep an outline in the system's colour. Keyboard focus
 // draws the focus ring outside the cell, in the bar's padding.
@@ -71,7 +71,10 @@ export function TabBar({ surface }: { surface: Surface }) {
       className={[
         'fixed right-[max(16px,env(safe-area-inset-right))] bottom-(--tabbar-bottom) left-[max(16px,env(safe-area-inset-left))] z-30 mx-auto w-fit',
         'max-[25rem]:right-[max(8px,env(safe-area-inset-right))] max-[25rem]:left-[max(8px,env(safe-area-inset-left))]',
-        'rounded-tabbar border border-line bg-surface p-1 shadow-float lg:hidden print:hidden',
+        // `float` and the control border, not the card's surface and hairline: in dark
+        // a shadow lifts nothing, so the fill and the edge are what set the bar apart
+        // from the cards scrolling under it (Alex, 2026-11-11).
+        'rounded-tabbar border border-line-control bg-float p-1 shadow-float lg:hidden print:hidden',
       ].join(' ')}
     >
       <ul className="grid auto-cols-[minmax(0,6rem)] grid-flow-col">
@@ -96,7 +99,7 @@ export function TabBar({ surface }: { surface: Surface }) {
               aria-label={unread > 0 ? withUnread(t('nav.more'), unread, t) : undefined}
               className={CELL}
             >
-              <BellIcon id="more" size="tab" count={unread} ring={inMore ? 'button' : 'surface'} />
+              <BellIcon id="more" size="tab" count={unread} ring={inMore ? 'button' : 'float'} />
               <span className={LABEL}>{t('nav.more')}</span>
             </button>
           </MoreSheet>
