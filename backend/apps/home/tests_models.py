@@ -37,13 +37,11 @@ from django.utils import timezone
 
 from apps.cases import testing as case_build
 from apps.home.models import Briefing, BriefingItem, CalendarFeed
-from apps.library.seeds import seed_jurisdictions, seed_languages
-from apps.library.seeds.library import seed_authorities
 from apps.shared import factories, tenancy
 from apps.shared.audit import AppendOnlyRefused
 from apps.shared.models import Tenant
-from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.watch import testing as watch_build
+from apps.shared.testing import seed_reference
 
 # A Monday, and the Monday before it. Fixed dates, never derived from the real clock: a
 # briefing is addressed by its week, and a fixture that moved with today would make these
@@ -62,14 +60,6 @@ OTHER_PREFIX = "b" * 16
 # What a column, a repr or a log line must never be able to produce. No builder puts it
 # anywhere: the tests assert its absence from everything the model can show.
 PLAINTEXT = "feed-prefix-here." + "feed-secret-" + "x" * 31
-
-
-def seed_reference() -> None:
-    seed_languages()
-    seed_jurisdictions()
-    seed_library_vocabularies()
-    seed_taxonomy_terms()
-    seed_authorities()
 
 
 def briefing(tenant: Tenant, *, week_start: datetime.date = WEEK) -> Briefing:

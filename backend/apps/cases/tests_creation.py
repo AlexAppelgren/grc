@@ -48,6 +48,7 @@ from apps.taxonomy.models import CaseStatusCategory, TermDimension, Urgency
 from apps.watch import testing as watch_build
 from apps.watch.models import RegulatoryChange
 from apps.shared.testing import handlers_for
+from apps.shared.testing import drain
 
 SECURITIES = "regime:securities"
 AML = "regime:aml"
@@ -76,19 +77,6 @@ def cases_of(tenant: Any) -> list[ChangeCase]:
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return list(ChangeCase.objects.select_related("urgency").all())
-
-
-def drain() -> None:
-    """Deliver until the backlog is empty, from the library's zone.
-
-    Not one batch: the reference seed and the tenant factories write hundreds of rows and
-    `OUTBOX_BATCH_SIZE` is 100, so a single pass leaves a fixture's own event behind the
-    seed's and the test reads a case that has not been created yet.
-    """
-    with transaction.atomic():
-        tenancy.clear_tenant()
-    while outbox.deliver_batch().delivered:
-        pass
 
 
 class CaseCreationCase(TestCase):

@@ -66,18 +66,13 @@ from apps.taxonomy.models import ChangeLifecycleKind, ChangeType, FootprintTerm,
 from apps.watch import testing as watch
 from apps.watch.models import ChangeObligation, ChangeStatus
 from apps.watch.write import watch_write
+from apps.shared.testing import events_of
 
 ASK = "/api/v1/ask"
 
 COSTS_QUESTION = "What must we disclose about costs and charges?"
 REPORTING_QUESTION = "capital adequacy reporting to the supervisor"
 UNSUPPORTED_QUESTION = "Do we need a licence for crypto custody?"
-
-
-def events_of(response: Any) -> list[dict[str, Any]]:
-    """The events a `text/event-stream` response carried, in order: one `data:` frame each."""
-    body = b"".join(response.streaming_content).decode()
-    return [json.loads(line.removeprefix("data: ")) for line in body.splitlines() if line.startswith("data: ")]
 
 
 def leave(response: Any) -> None:

@@ -35,6 +35,8 @@ from apps.shared.testing import (
     user_principal,
 )
 from config.api import api
+from apps.shared.testing import call_route
+from apps.shared.testing import assert_refused
 
 AS_KEY: dict[str, Any] = {"HTTP_X_API_KEY": API_KEY_FOR_TESTS}
 AS_SESSION: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {SESSION_TOKEN_FOR_TESTS}"}
@@ -121,12 +123,6 @@ class Records:
         ]
 
 
-def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
-    if body is None:
-        return getattr(client, method)(url, **headers)
-    return getattr(client, method)(url, data=body, content_type="application/json", **headers)
-
-
 class TenantsContractCase(TestCase):
     records: Records
     other: Records
@@ -190,25 +186,17 @@ class TenantsRouteTable(TenantsContractCase):
 
 class TenantsRouteGates(TenantsContractCase):
     def test_no_credential_is_401(self) -> None:
-        for name, method, url, body, _permission, _step_up in self.all_routes():
-            with self.subTest(operation=name):
-                response = _call(self.client, method, url, body, {})
-                self.assertEqual(response.status_code, 401)
-                self.assertEqual(response.json()["code"], "unauthenticated")
+        assert_refused(self, self.all_routes(), {}, 401, "unauthenticated")
 
     def test_an_agent_key_reaches_no_route(self) -> None:
         """The organisation, its people and support access are a person's business."""
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES, tenant_id=self.records.tenant.id)):
-            for name, method, url, body, _permission, _step_up in self.all_routes():
-                with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_KEY).status_code, 401)
+            assert_refused(self, self.all_routes(), AS_KEY, 401)
 
     def test_an_enrolment_session_reaches_no_route(self) -> None:
         """The people picker is refused to an enrolment session like every other route."""
         with stub_session(enrolment_principal(subject_id=self.admin.id)):
-            for name, method, url, body, _permission, _step_up in self.all_routes():
-                with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, 401)
+            assert_refused(self, self.all_routes(), AS_SESSION, 401)
 
     def test_every_permission_but_its_own_is_403_naming_it(self) -> None:
         """Every other permission and a fresh step-up, so the only thing missing is the route's
@@ -218,7 +206,7 @@ class TenantsRouteGates(TenantsContractCase):
             if permission is None:
                 continue
             with self.subTest(operation=name), stub_session(self.everything(permissions=everyone - {permission})):
-                response = _call(self.client, method, url, body, AS_SESSION)
+                response = call_route(self.client, method, url, body, AS_SESSION)
                 self.assertEqual(response.status_code, 403)
                 problem = response.json()
                 self.assertEqual(problem["code"], "permission_denied")
@@ -237,18 +225,14 @@ class TenantsRouteGates(TenantsContractCase):
                     step_up_at=step_up_at,
                 )
                 with self.subTest(operation=name, step_up_at=step_up_at), stub_session(who):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 403)
                     self.assertEqual(response.json()["code"], "step_up_required")
 
     def test_a_member_route_answers_404_to_a_console_session(self) -> None:
         """A platform session belongs to no bank, so a bank's own reads have nothing to show it."""
         with stub_session(self.console(permissions=perms.PLATFORM_PERMISSIONS | perms.TENANT_PERMISSIONS)):
-            for name, method, url, body, _permission, _step_up in self.records.routes():
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 404)
-                    self.assertEqual(response.json()["code"], "not_found")
+            assert_refused(self, self.records.routes(), AS_SESSION, 404, "not_found")
 
     def test_bad_input_is_422_before_the_stub(self) -> None:
         unit = self.records.org_unit.id
@@ -282,7 +266,7 @@ class TenantsRouteGates(TenantsContractCase):
         with stub_session(self.everything()):
             for name, method, url, body in cases:
                 with self.subTest(operation=name, body=body):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
 
@@ -291,7 +275,7 @@ class TenantsRouteGates(TenantsContractCase):
         with stub_session(self.console()):
             for body in ({**SUPPORT_BODY, "purpose": ""}, {**SUPPORT_BODY, "hours": 0}, {"hours": 2}):
                 with self.subTest(body=body):
-                    response = _call(self.client, "post", url, body, AS_SESSION)
+                    response = call_route(self.client, "post", url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
 
@@ -314,13 +298,13 @@ class TenantsRoutesHideAnotherBanksRecords(TenantsContractCase):
                 if "{" not in by_id[name]:
                     continue
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, {**AS_SESSION, "HTTP_IF_MATCH": '"1"'})
+                    response = call_route(self.client, method, url, body, {**AS_SESSION, "HTTP_IF_MATCH": '"1"'})
                     self.assertEqual(response.status_code, 404, response.content)
                     self.assertEqual(response.json()["code"], "not_found")
 
     def test_the_request_names_a_bank_that_exists(self) -> None:
         with stub_session(self.console()):
-            response = _call(
+            response = call_route(
                 self.client, "post", f"/api/v1/console/tenants/{uuid.uuid4()}/support-access", SUPPORT_BODY, AS_SESSION
             )
         self.assertEqual(response.status_code, 404)
@@ -378,7 +362,7 @@ class TenantsRouteStubs(TenantsContractCase):
                 if name not in self.VERSIONED:
                     continue
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, {**AS_SESSION, "HTTP_IF_MATCH": "not-a-version"})
+                    response = call_route(self.client, method, url, body, {**AS_SESSION, "HTTP_IF_MATCH": "not-a-version"})
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
 
@@ -393,7 +377,7 @@ class TenantsRouteStubs(TenantsContractCase):
                 continue
             headers = {**AS_SESSION, "HTTP_IF_MATCH": '"1"'} if method == "patch" else AS_SESSION
             with self.subTest(operation=name), stub_session(who):
-                response = _call(self.client, method, url, body, headers)
+                response = call_route(self.client, method, url, body, headers)
                 self.assertEqual(response.status_code, 501, response.content)
                 problem = response.json()
                 self.assertEqual(problem["code"], "not_built")
@@ -408,7 +392,7 @@ class TenantsRouteStubs(TenantsContractCase):
                     continue
                 with self.subTest(operation=name):
                     expected = 200 if name in self.BUILT else 501
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, expected)
+                    self.assertEqual(call_route(self.client, method, url, body, AS_SESSION).status_code, expected)
 
     def test_a_known_permission_on_the_people_picker_is_answered(self) -> None:
         with stub_session(self.everything(permissions=frozenset())):

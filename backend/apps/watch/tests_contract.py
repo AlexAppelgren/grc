@@ -51,6 +51,8 @@ from apps.shared.testing import (
     user_principal,
 )
 from apps.watch.schemas import LINKS_MAX
+from apps.shared.testing import call_route
+from apps.shared.testing import assert_refused
 
 CHANGE = "11111111-1111-4111-8111-111111111111"
 EVENT = "22222222-2222-4222-8222-222222222222"
@@ -122,12 +124,6 @@ BUILT = frozenset(
 STUBBED_BOTH_ROUTES = [route for route in BOTH_ROUTES if route[0] not in BUILT]
 
 
-def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
-    if body is None:
-        return getattr(client, method)(url, **headers)
-    return getattr(client, method)(url, data=body, content_type="application/json", **headers)
-
-
 class WatchRouteGates(TestCase):
     def test_no_credential_is_401(self) -> None:
         cases = (
@@ -136,11 +132,7 @@ class WatchRouteGates(TestCase):
             + [(n, "get", u, None) for n, u, _, _ in READ_ROUTES]
             + [(n, m, u, b) for n, m, u, b, _ in SESSION_ROUTES]
         )
-        for name, method, url, body in cases:
-            with self.subTest(operation=name):
-                response = _call(self.client, method, url, body, {})
-                self.assertEqual(response.status_code, 401)
-                self.assertEqual(response.json()["code"], "unauthenticated")
+        assert_refused(self, cases, {}, 401, "unauthenticated")
 
     def test_a_key_without_the_scope_is_403_naming_it(self) -> None:
         with stub_api_key(agent_principal(scopes={perms.SCOPE_UPCOMING_READ})):
@@ -149,13 +141,7 @@ class WatchRouteGates(TestCase):
                 + [(n, m, u, b, s) for n, m, u, b, s in KEY_ROUTES]
                 + [(n, "get", u, None, s) for n, u, s, _ in READ_ROUTES]
             )
-            for name, method, url, body, scope in cases:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_KEY)
-                    self.assertEqual(response.status_code, 403)
-                    problem = response.json()
-                    self.assertEqual(problem["code"], "permission_denied")
-                    self.assertEqual(problem["requiredPermission"], scope)
+            assert_refused(self, cases, AS_KEY, 403, "permission_denied", naming=True)
 
     def test_a_session_without_the_permission_is_403_naming_it(self) -> None:
         with stub_session(user_principal(permissions={perms.CASES_READ}, tenant_id=uuid.uuid4())):
@@ -164,29 +150,17 @@ class WatchRouteGates(TestCase):
                 + [(n, "get", u, None, p) for n, u, _, p in READ_ROUTES]
                 + [(n, m, u, b, p) for n, m, u, b, p in SESSION_ROUTES]
             )
-            for name, method, url, body, permission in cases:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 403)
-                    problem = response.json()
-                    self.assertEqual(problem["code"], "permission_denied")
-                    self.assertEqual(problem["requiredPermission"], permission)
+            assert_refused(self, cases, AS_SESSION, 403, "permission_denied", naming=True)
 
     def test_a_key_never_registers_a_source(self) -> None:
         """The registry is a library editor's (WAT-01): no scope adds or deactivates a source."""
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            for name, method, url, body, _ in SESSION_ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_KEY)
-                    self.assertEqual(response.status_code, 401)
+            assert_refused(self, SESSION_ROUTES, AS_KEY, 401)
 
     def test_a_person_never_attaches_a_document(self) -> None:
         """Fetched pages arrive from the agent that screened them (AGT-07), not from a screen."""
         with stub_session(user_principal(permissions=perms.ALL_PERMISSIONS, tenant_id=uuid.uuid4())):
-            for name, method, url, body, _ in KEY_ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 401)
+            assert_refused(self, KEY_ROUTES, AS_SESSION, 401)
 
     def test_bad_input_is_422_before_the_stub(self) -> None:
         cases = [
@@ -208,7 +182,7 @@ class WatchRouteGates(TestCase):
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
             for name, method, url, body in cases:
                 with self.subTest(operation=name, body=body):
-                    response = _call(self.client, method, url, body, AS_KEY)
+                    response = call_route(self.client, method, url, body, AS_KEY)
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
 
@@ -221,15 +195,15 @@ class WatchRouteGates(TestCase):
         url = f"/api/v1/changes/{CHANGE}/obligations"
         link = {"obligationId": OBLIGATION, "confidence": 0.5}
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            refused = _call(self.client, "put", url, [link] * (LINKS_MAX + 1), AS_KEY)
-            at_the_cap = _call(self.client, "put", url, [link] * LINKS_MAX, AS_KEY)
+            refused = call_route(self.client, "put", url, [link] * (LINKS_MAX + 1), AS_KEY)
+            at_the_cap = call_route(self.client, "put", url, [link] * LINKS_MAX, AS_KEY)
         self.assertEqual(refused.status_code, 422)
         self.assertEqual(refused.json()["code"], "validation_error")
         self.assertEqual(at_the_cap.status_code, 404, "the cap itself is accepted and reaches the logic")
 
     def test_a_source_write_refuses_an_unknown_field(self) -> None:
         with stub_session(user_principal(permissions={perms.SOURCES_MANAGE})):
-            response = _call(self.client, "post", "/api/v1/sources", {**SOURCE_BODY, "colour": "red"}, AS_SESSION)
+            response = call_route(self.client, "post", "/api/v1/sources", {**SOURCE_BODY, "colour": "red"}, AS_SESSION)
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["code"], "validation_error")
 
@@ -269,7 +243,7 @@ class WatchRouteStubs(TestCase):
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
             for name, method, url, body in cases:
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_KEY)
+                    response = call_route(self.client, method, url, body, AS_KEY)
                     status, code = self.REACHED_THE_LOGIC[name]
                     self.assertEqual(response.status_code, status, response.content)
                     self.assertEqual(response.json()["code"], code)
@@ -282,7 +256,7 @@ class WatchRouteStubs(TestCase):
         with stub_session(user_principal(permissions={perms.SOURCES_MANAGE}, subject_id=editor.id)):
             for name, method, url, body, _ in SESSION_ROUTES:
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     status, code = self.REACHED_THE_LOGIC[name]
                     self.assertEqual(response.status_code, status, response.content)
                     self.assertEqual(response.json()["code"], code)

@@ -21,38 +21,17 @@ from django.test import TestCase
 from apps.cases import creation, testing as case_build
 from apps.cases.models import CaseLinkDecision, CaseObligationLink, ChangeCase
 from apps.library import testing as library_build
-from apps.shared import factories, outbox, tenancy
-from apps.shared.audit import Actor, record
+from apps.shared import factories, tenancy
 from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.watch import testing as watch_build
-from apps.watch.models import ChangeObligation, RegulatoryChange
+from apps.watch.models import ChangeObligation
+from apps.shared.testing import drain
+from apps.cases.testing import registered
 
 V1 = "/api/v1"
 SECURITIES = "regime:securities"
 AML = "regime:aml"
-
-
-def drain() -> None:
-    with transaction.atomic():
-        tenancy.clear_tenant()
-    while outbox.deliver_batch().delivered:
-        pass
-
-
-def registered(change: RegulatoryChange) -> None:
-    with transaction.atomic():
-        tenancy.clear_tenant()
-        record(
-            action=creation.CHANGE_REGISTERED,
-            actor=Actor.system("watch"),
-            subject_type="regulatory_change",
-            subject_id=change.id,
-            subject_title=change.title,
-            summary=f"Registered {change.title}.",
-            tenant_id=None,
-        )
-    drain()
 
 
 class CaseObligationLinkTests(ScenarioTestCase):

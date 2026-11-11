@@ -37,6 +37,8 @@ from apps.shared.testing import (
 )
 from config.api import api
 from apps.shared.testing import gate_of
+from apps.shared.testing import call_route
+from apps.shared.testing import assert_refused
 
 SUBJECT = "11111111-1111-4111-8111-111111111111"
 THING = "22222222-2222-4222-8222-222222222222"
@@ -63,28 +65,18 @@ COMMENT_WRITES = [
     ("deleteComment", "delete", f"/api/v1/comments/{THING}", None),
 ]
 ROUTES = READS + OWN_WRITES + COMMENT_WRITES
-# c10-inbox-and-my-comments: what a built route answers a member past every gate (THING is
-# nobody's notification, so marking it is 404).
-BUILT = {"listNotifications": 200, "markNotificationRead": 404, "markAllNotificationsRead": 204, "listMyComments": 200}
-
-# What a landed module answers a session past every gate, instead of the stub's 501: the
-# comments (c10-comments-mentions) name a record, or a comment, this bank does not hold.
-LANDED: dict[str, tuple[int, str]] = {
+# What each route answers a member past every gate: THING is nobody's notification, so
+# marking it is 404, and the comments name a record, or a comment, this bank does not hold.
+PAST_THE_GATE: dict[str, tuple[int, str | None]] = {
+    "listNotifications": (200, None),
+    "markNotificationRead": (404, None),
+    "markAllNotificationsRead": (204, None),
+    "listMyComments": (200, None),
     "listComments": (404, "not_found"),
     "addComment": (404, "not_found"),
     "editComment": (404, "not_found"),
     "deleteComment": (404, "not_found"),
 }
-
-
-def _answer(name: str) -> tuple[int, str]:
-    return LANDED.get(name, (501, "not_built"))
-
-
-def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
-    if body is None:
-        return getattr(client, method)(url, **headers)
-    return getattr(client, method)(url, data=body, content_type="application/json", **headers)
 
 
 class CollabRouteGates(TestCase):
@@ -102,34 +94,24 @@ class CollabRouteGates(TestCase):
         )
 
     def test_no_credential_is_401(self) -> None:
-        for name, method, url, body in ROUTES:
-            with self.subTest(operation=name):
-                response = _call(self.client, method, url, body, {})
-                self.assertEqual(response.status_code, 401)
-                self.assertEqual(response.json()["code"], "unauthenticated")
+        assert_refused(self, ROUTES, {}, 401, "unauthenticated")
 
     def test_an_agent_key_never_reaches_a_notification_or_a_comment(self) -> None:
         """A notification is one person's and a comment is one bank's own text: no scope
         reaches either, whatever the key holds."""
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES, tenant_id=self.tenant.id)):
-            for name, method, url, body in ROUTES:
-                with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_KEY).status_code, 401)
+            assert_refused(self, ROUTES, AS_KEY, 401)
 
     def test_an_enrolment_session_is_403_on_every_route(self) -> None:
         enrolling = factories.user(status=UserStatus.INVITED)
         headers = sign_in(enrolling, tenant=self.tenant, kind="enrolment")
-        for name, method, url, body in ROUTES:
-            with self.subTest(operation=name):
-                response = _call(self.client, method, url, body, headers)
-                self.assertEqual(response.status_code, 403)
-                self.assertEqual(response.json()["code"], "enrolment_only")
+        assert_refused(self, ROUTES, headers, 403, "enrolment_only")
 
     def test_the_three_comment_writes_need_comments_write_before_the_stub(self) -> None:
         with self._member({perms.CASES_READ, perms.REGISTER_READ}):
             for name, method, url, body in COMMENT_WRITES:
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 403)
                     problem = response.json()
                     self.assertEqual(problem["code"], "permission_denied")
@@ -141,16 +123,11 @@ class CollabRouteGates(TestCase):
         with self._member(set()):
             for name, method, url, body in READS + OWN_WRITES:
                 with self.subTest(operation=name):
-                    expected = BUILT[name] if name in BUILT else _answer(name)[0]
-                    self.assertEqual(_call(self.client, method, url, body, AS_SESSION).status_code, expected)
+                    self.assertEqual(call_route(self.client, method, url, body, AS_SESSION).status_code, PAST_THE_GATE[name][0])
 
     def test_a_platform_session_belongs_to_no_bank_and_gets_404(self) -> None:
         with stub_session(user_principal(permissions={perms.COMMENTS_WRITE}, subject_id=self.person.id)):
-            for name, method, url, body in ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 404)
-                    self.assertEqual(response.json()["code"], "not_found")
+            assert_refused(self, ROUTES, AS_SESSION, 404, "not_found")
 
     def test_bad_input_is_422_before_the_stub(self) -> None:
         cases = [
@@ -171,21 +148,22 @@ class CollabRouteGates(TestCase):
         with self._member({perms.COMMENTS_WRITE}):
             for name, method, url, body in cases:
                 with self.subTest(operation=name, url=url, body=body):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
 
-    def test_a_member_past_every_gate_reaches_the_stub(self) -> None:
-        """Past every gate: 501 `not_built`, in the one problem shape, with nothing of the
-        server in it. Each row moves to what its logic answers when its module lands."""
+    def test_a_member_past_every_gate_reaches_the_logic(self) -> None:
+        """Past every gate each route answers from its logic; a refusal comes in the one
+        problem shape, with nothing of the server in it."""
         with self._member({perms.COMMENTS_WRITE}):
             for name, method, url, body in ROUTES:
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
-                    if name in BUILT:
-                        self.assertEqual(response.status_code, BUILT[name])
+                    response = call_route(self.client, method, url, body, AS_SESSION)
+                    status, code = PAST_THE_GATE[name]
+                    self.assertEqual(response.status_code, status)
+                    if code is None:
                         continue
-                    self.assertEqual((response.status_code, response.json()["code"]), _answer(name))
+                    self.assertEqual(response.json()["code"], code)
                     self.assertEqual(response.headers["Content-Type"], "application/problem+json")
                     self.assertNotIn("traceback", response.content.decode().lower())
 

@@ -33,6 +33,8 @@ from apps.shared.testing import (
     user_principal,
 )
 from config.api import api
+from apps.shared.testing import call_route
+from apps.shared.testing import assert_refused
 
 OBLIGATION = "44444444-4444-4444-8444-444444444444"
 ENTITY = "55555555-5555-4555-8555-555555555555"
@@ -93,12 +95,6 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
 AGENT_READS = {"listRegisterEntries", "readRegisterEntry"}
 
 
-def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
-    if body is None:
-        return getattr(client, method)(url, **headers)
-    return getattr(client, method)(url, data=body, content_type="application/json", **headers)
-
-
 class RegisterRouteTable(TestCase):
     def test_the_table_names_every_register_operation_and_nothing_else(self) -> None:
         """A register route added without a row here would be published ungated by this file;
@@ -121,19 +117,13 @@ class RegisterRouteTable(TestCase):
 
 class RegisterRouteGates(TestCase):
     def test_no_credential_is_401(self) -> None:
-        for name, method, url, body, _permission, _step_up in REGISTER_ROUTES:
-            with self.subTest(operation=name):
-                response = _call(self.client, method, url, body, {})
-                self.assertEqual(response.status_code, 401)
-                self.assertEqual(response.json()["code"], "unauthenticated")
+        assert_refused(self, REGISTER_ROUTES, {}, 401, "unauthenticated")
 
     def test_an_agent_key_reaches_no_register_route(self) -> None:
         """The register is a bank's judgement; no key, whatever its scopes, reaches a person's
         register route. An agent's own two reads are in apps/register/tests_agent_read.py."""
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES, tenant_id=uuid.uuid4())):
-            for name, method, url, body, _permission, _step_up in REGISTER_ROUTES:
-                with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_KEY).status_code, 401)
+            assert_refused(self, REGISTER_ROUTES, AS_KEY, 401)
 
     def test_every_permission_but_its_own_is_403_naming_it(self) -> None:
         """Every other tenant permission and a fresh step-up, so the only thing missing is the
@@ -142,7 +132,7 @@ class RegisterRouteGates(TestCase):
             everything_else = perms.TENANT_PERMISSIONS - {permission}
             who = user_principal(permissions=everything_else, tenant_id=uuid.uuid4(), step_up_at=timezone.now())
             with self.subTest(operation=name), stub_session(who):
-                response = _call(self.client, method, url, body, AS_SESSION)
+                response = call_route(self.client, method, url, body, AS_SESSION)
                 self.assertEqual(response.status_code, 403)
                 problem = response.json()
                 self.assertEqual(problem["code"], "permission_denied")
@@ -181,7 +171,7 @@ class RegisterRouteGates(TestCase):
         with stub_session(who):
             for name, method, url, body, extra in cases:
                 with self.subTest(operation=name, body=body, headers=extra):
-                    response = _call(self.client, method, url, body, {**AS_SESSION, **extra})
+                    response = call_route(self.client, method, url, body, {**AS_SESSION, **extra})
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
 
@@ -260,7 +250,7 @@ class RegisterRouteStubs(TestCase):
                 if name not in IF_MATCH_ROUTES:
                     continue
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, {**AS_SESSION, "HTTP_IF_MATCH": "not-a-version"})
+                    response = call_route(self.client, method, url, body, {**AS_SESSION, "HTTP_IF_MATCH": "not-a-version"})
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
 
@@ -273,7 +263,7 @@ class RegisterRouteStubs(TestCase):
                     continue
                 headers = {**AS_SESSION, "HTTP_IF_MATCH": '"3"'} if method in {"patch", "put", "delete"} else AS_SESSION
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, headers)
+                    response = call_route(self.client, method, url, body, headers)
                     expected = (404, "not_found") if name in BUILT_ROUTES else (501, "not_built")
                     self.assertEqual(response.status_code, expected[0])
                     problem = response.json()
