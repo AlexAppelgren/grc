@@ -857,17 +857,15 @@ test.describe('tenants journeys', () => {
         await expect(invitation).toContainText('Revoked');
       }
 
-      // Change the roles later, behind step-up. The member is the login seeded for this
-      // journey alone: re-issue retires their passkeys and the UI cannot undo it, so it is
-      // never spent on a login another journey signs in as (playbook 8.3 rule 4).
+      // Change the roles later, behind step-up (still fresh from the invitation, so the
+      // prompt may not open again). The member is the login seeded for this journey alone:
+      // re-issue retires their passkeys and the UI cannot undo it, so it is never spent on
+      // a login another journey signs in as (playbook 8.3 rule 4).
       await page.getByRole('tab', { name: 'Members' }).click();
       await page.locator('[data-member-id]', { hasText: LOGINS.reissue }).click();
       await page.locator('label', { hasText: /^Reader/ }).getByRole('checkbox').check();
       await page.getByRole('button', { name: 'Save', exact: true }).click();
-      const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
-      await expect(prompt).toBeVisible();
-      await prompt.getByRole('button', { name: 'Use passkey' }).click();
-      await expect(page.getByText('Saved.')).toBeVisible();
+      await confirmWithPasskey(page, page.getByText('Saved.'));
 
       // Revoke every session, then re-issue enrolment (the assertion is still fresh).
       await page.getByRole('button', { name: 'Revoke all sessions' }).click();
