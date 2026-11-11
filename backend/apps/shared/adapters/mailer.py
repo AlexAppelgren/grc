@@ -107,7 +107,7 @@ class ResendMailer(MailerAdapter):
             headers={
                 "Authorization": f"Bearer {settings.RESEND_API_KEY}",
                 "Content-Type": "application/json",
-                # Resend rejects a request that carries no User-Agent.
+                # Names the sender instead of urllib's default agent.
                 "User-Agent": "grc-mailer/1",
             },
         )
