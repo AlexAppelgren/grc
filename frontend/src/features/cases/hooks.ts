@@ -6,6 +6,7 @@ import { isAxiosError } from 'axios';
 import { homeKeys } from '@/features/home/hooks';
 import { CASES_WORK, watchKeys } from '@/features/watch/hooks';
 import { hasProblemCode, problemFrom } from '@/shared/utils/problem';
+import { usePeople } from '@/features/shared/reference';
 
 import * as cases from './api';
 import type { EvidenceInput } from './api';
@@ -171,7 +172,7 @@ export const CASES_CONTRIBUTE = 'cases.contribute';
 
 /** The people a triage may name as owner: active members who hold `cases.work`. */
 export function useCaseWorkers(enabled = true): UseQueryResult<PersonRef[]> {
-  return useQuery({ queryKey: ['people', CASES_WORK], queryFn: () => cases.listPeople(CASES_WORK), enabled });
+  return usePeople(CASES_WORK, enabled);
 }
 
 /**

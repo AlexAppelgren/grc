@@ -54,6 +54,7 @@ from apps.library import testing as library_build
 from apps.watch import testing as watch_build
 from apps.watch.models import ChangeObligation, RegulatoryChange
 from apps.watch.write import watch_write
+from apps.collab.testing import PARTICIPANTS, participant_body, participants_url
 
 URL = "/api/v1/me/work"
 SECRET = "the custody angle nobody outside the bank may read"
@@ -589,10 +590,7 @@ def run_hom_s10(test: TestCase) -> None:
     bank.entry(joined, next_review_date=bank.today() - DAY)
     give_role(bank, bank.officer, key="compliance_officer")
     role = give_role(bank, bank.erik, permissions={perms.LIBRARY_READ, perms.REGISTER_READ, perms.CASES_READ})
-    added = test.client.post(
-        f"/api/v1/obligations/{joined.id}/participants",
-        {"userId": str(bank.erik.id)},
-        content_type="application/json",
+    added = test.client.post(PARTICIPANTS, participant_body(participants_url("obligation", joined.id), {"userId": str(bank.erik.id)}), content_type="application/json",
         **sign_in(bank.officer, tenant=bank.tenant),
     )
     test.assertEqual(added.status_code, 201, added.content)

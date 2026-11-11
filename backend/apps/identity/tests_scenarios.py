@@ -7,7 +7,7 @@ Operations exercised (the audit-on-write guard reads these names): openInvitatio
 verifyInvitationCode, requestCode, verifyCode, passkeyRegisterOptions, passkeyRegisterVerify,
 passkeyAuthenticateOptions, passkeyAuthenticateVerify, stepUpOptions, stepUpVerify,
 refreshSession, signOut, updateMe, renameMyPasskey, removeMyPasskey, revokeMySession,
-inviteMember, updateMember, deactivateMember, revokeMemberSessions, reissueEnrolment,
+inviteMember, updateMember, revokeMemberSessions, reissueEnrolment,
 resendInvitation, revokeInvitation, createRole, updateRole, retireRole, createApiKey,
 revokeApiKey, markVisit, createAgentAccessKey, createMyToken, revokeMyToken, switchContext,
 acceptInvitation.
@@ -37,7 +37,7 @@ from django.db import DatabaseError, connection, transaction
 from django.test import RequestFactory, override_settings
 from django.utils import timezone
 
-from apps.identity import api_keys_logic, invitation_logic, roles_logic, tokens
+from apps.identity import api_keys_logic, invitation_logic, roles_logic, session_logic, tokens
 from apps.identity.models import (
     ApiKey,
     Invitation,
@@ -64,12 +64,14 @@ from apps.shared.models import AuditEvent
 from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in
 from config.api import api
+from apps.shared.permissions import gate_of
+from apps.shared.testing import b64url_decode
 
 ANNA = "anna@bank.example"
 CHROME_ON_WINDOWS = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 LINK = re.compile(r"/invite#(\S+)")
 CODE = re.compile(r"Your code is (\d+)")
-COOKIE = settings.REFRESH_COOKIE_NAME
+COOKIE = session_logic.refresh_cookie_name()
 # The library bookmark of ID-S32 starts here, months before any test runs: the move is
 # proven by the stamp leaving this anchor, never by comparing it with today (CLAUDE.md §11).
 SEEN_BEFORE = datetime(2026, 6, 1, 9, 0, tzinfo=UTC)
@@ -124,7 +126,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         return self.client.post(f"/api/v1{path}", data=body or {}, content_type="application/json", **extra)
 
     def _invite(self, email: str = ANNA, roles: tuple[str, ...] = ("compliance_officer", "reader")) -> tuple[Invitation, str]:
-        response = self._post("/tenant/members", {"email": email, "roleKeys": list(roles)}, **sign_in(self.admin, tenant=self.tenant))
+        response = self._post("/tenant/members", {"email": email, "roleKeys": list(roles)}, **sign_in(self.admin, tenant=self.tenant, step_up=True))
         self.assertEqual(response.status_code, 201, response.content)
         token = _find(LINK, MockMailer.sent[-1].body)
         self.activate(self.tenant)
@@ -303,7 +305,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         user, authenticator, body, _ = self._enrol(nickname=None)
         row = WebAuthnCredential.objects.get(user=user)
         self.assertEqual(row.credential_id, authenticator.credential_id_b64)
-        self.assertEqual(tokens.b64url_decode(row.public_key), authenticator.cose_public_key())
+        self.assertEqual(b64url_decode(row.public_key), authenticator.cose_public_key())
         self.assertEqual(row.sign_count, 0)
         self.assertEqual(row.transports, ["internal", "hybrid"])
         self.assertEqual(row.aaguid, "00000000-0000-0000-0000-000000000000")
@@ -716,7 +718,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         demoted = self.client.patch(f"/api/v1/tenant/members/{only_admin.id}", data={"roleKeys": ["reader"]}, content_type="application/json", **headers)
         self.assertEqual(demoted.status_code, 409)
         self.assertEqual(demoted.json()["code"], "last_admin")
-        removed = self.client.delete(f"/api/v1/tenant/members/{only_admin.id}", **headers)
+        removed = self.client.post(f"/api/v1/tenant/members/{only_admin.id}/remove", data={}, content_type="application/json", **headers)
         self.assertEqual(removed.status_code, 409)
         self.assertEqual(removed.json()["code"], "last_admin")
         self.activate(lonely)
@@ -873,7 +875,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         for operation in iter_operations(api):
             if operation.method == "GET":
                 continue
-            gate = perms.gate_of(operation.view_func)
+            gate = gate_of(operation.view_func)
             # Chunk 3 adds the first writes under these prefixes: the two problem reports,
             # which write no library row at all, and the re-verification stamp, the single
             # sanctioned exception (INV-S8). What ID-S21 claims is not that no such route
@@ -936,7 +938,8 @@ class IdentityScenarioTests(ScenarioTestCase):
         signin = next(item for item in items if item["event"] == "signin")
         self.assertEqual((signin["method"], signin["userId"], signin["success"]), ("passkey", str(user.id), True))
         # Only security.manage reads it; and the table refuses update and delete.
-        self.assertEqual(self.client.get("/api/v1/tenant/security-log", **sign_in(user, tenant=self.tenant)).status_code, 403)
+        reader = factories.member(self.tenant, roles=("reader",)).user  # the re-enrolled person signs in to nothing until she enrols again
+        self.assertEqual(self.client.get("/api/v1/tenant/security-log", **sign_in(reader, tenant=self.tenant)).status_code, 403)
         row = LoginEvent.objects.filter(tenant=self.tenant).order_by("id").first()
         assert row is not None
         with connection.cursor() as cursor:
@@ -1009,7 +1012,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         # At invitation: an address that already holds a platform role is invited like
         # anyone else.
         staff = factories.platform_user(roles=("library_editor",), email="editor@platform.example")
-        invited = self._post("/tenant/members", {"email": staff.email, "roleKeys": ["reader"]}, **sign_in(self.admin, tenant=self.tenant))
+        invited = self._post("/tenant/members", {"email": staff.email, "roleKeys": ["reader"]}, **sign_in(self.admin, tenant=self.tenant, step_up=True))
         self.assertEqual(invited.status_code, 201, invited.content)
         self.assertEqual(MockMailer.sent[-1].to, staff.email)
         self.activate(self.tenant)
@@ -1061,7 +1064,11 @@ class IdentityScenarioTests(ScenarioTestCase):
         obligation = build.obligation(build.instrument(key="id-s31-instrument", regime="regime:securities"), key="obl-id-s31")
         self.activate(self.tenant)
 
-        proposer_key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        # bleqq's own filing agent: a bank's proposal is approved by a person, never by an
+        # agent (review 2026-11-11 S-3), so the agent reviewer below decides platform filings.
+        tenancy.clear_tenant()
+        proposer_key = agents_testing.agent_key(scopes=("proposals:write",))
+        filed_under = str(agents_testing.platform_run(key=proposer_key).id)
         agent_headers = {"HTTP_X_API_KEY": proposer_key.plain_key}
         # An agent approves an obligation version and a vocabulary row, both records that
         # name the agent that confirmed them (D-79), and rejects a second list proposal.
@@ -1074,19 +1081,20 @@ class IdentityScenarioTests(ScenarioTestCase):
                 "targetId": str(obligation.id),
                 "payload": {"summaries": {"en": "The duty as the source now reads it."}, "originalLanguage": "en", "isMachine": True},
                 "fieldSources": {"summaries.en": "https://www.fi.se/"},
+                "agentRunId": filed_under,
             },
             **agent_headers,
         )
         self.assertEqual(made.status_code, 201, made.content)
         second = self._post(
             "/proposals",
-            {"kind": "vocabulary_create", "title": "Add the flag Sanctioned", "payload": {"list": "flag", "key": "sanctioned", "labels": {"en": "Sanctioned"}}},
+            {"kind": "vocabulary_create", "title": "Add the flag Sanctioned", "payload": {"list": "flag", "key": "sanctioned", "labels": {"en": "Sanctioned"}}, "agentRunId": filed_under},
             **agent_headers,
         )
         self.assertEqual(second.status_code, 201, second.content)
         listed_value = self._post(
             "/proposals",
-            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}},
+            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}, "agentRunId": filed_under},
             **agent_headers,
         )
         self.assertEqual(listed_value.status_code, 201, listed_value.content)
@@ -1096,6 +1104,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         # it tried to decide are untouched: the scope is platform-only at the gate too.
         # It is refused whatever it sends: a bank's key opens no run (item 14), so the run it
         # names is one it never opened, and the gate answers before the run is looked at.
+        self.activate(self.tenant)
         rogue = {"HTTP_X_API_KEY": factories.api_key(self.tenant, scopes=(perms.SCOPE_PROPOSALS_REVIEW,)).plain_key}
         claimed = {"decision": agents_testing.DECISION, "agentRunId": str(uuid.uuid4())}
         for refused in (
@@ -1400,7 +1409,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         sign_in(anna, tenant=self.tenant)
         MockMailer.reset()
         out = StringIO()
-        call_command("bootstrap_platform", "--admin-email", ANNA, "--role", "library_editor", stdout=out)
+        call_command("bootstrap_platform", "--admin-email", ANNA, "--role", "library_editor", "--yes", stdout=out)
         self.assertEqual(list(PlatformRoleAssignment.objects.filter(user=anna).values_list("role__key", flat=True)), ["library_editor"])
         self.assertEqual(MockMailer.sent, [], "an enrolled member switches; no invitation is needed")
         self.assertIn("no invitation sent", out.getvalue())
@@ -1426,7 +1435,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.activate(self.tenant)
         self.assertFalse(UserSession.objects.filter(user=anna, tenant=self.tenant, revoked_at__isnull=True).exists())
         reissued = AuditEvent.objects.get(action="platform_staff.enrolment_reissued", subject_id=anna.id, tenant=self.tenant)
-        self.assertEqual(reissued.after, {"sessionsRevoked": 1, "passkeysRetired": 1})
+        self.assertEqual(reissued.after, {"sessionsRevoked": 1, "passkeysRetired": 1, "tokensRevoked": 0})
 
     def test_id_s38(self) -> None:
         """ID-S38
@@ -1495,8 +1504,12 @@ class IdentityScenarioTests(ScenarioTestCase):
         self.assertEqual(self._post("/auth/invitations/open", {"token": token}).status_code, 202)
         self.assertEqual(self._post("/auth/code/request", {"email": staff.email}).status_code, 202)
         self.assertEqual(MockMailer.sent, [])
+        # The refusal names an account, so it goes to the platform's security log and never
+        # to the inviting bank's (review 2026-11-11 L-2).
         self.activate(self.tenant)
-        self.assertTrue(LoginEvent.objects.filter(user=staff, tenant=self.tenant, event="code_refused_enrolled").exists())
+        self.assertFalse(LoginEvent.objects.filter(user=staff, tenant=self.tenant, event="code_refused_enrolled").exists())
+        tenancy.clear_tenant()
+        self.assertTrue(LoginEvent.objects.filter(user=staff, tenant__isnull=True, event="code_refused_enrolled").exists())
 
         # Signed in with the passkey, the session is the console's; joining needs a step-up.
         tenancy.clear_tenant()  # a sign-in starts in no bank, as a request does

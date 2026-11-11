@@ -102,7 +102,7 @@ while IFS= read -r f; do
                backend/*.md) ;; backend/*) be=1 ;; esac
   case "$f" in openapi.json|generate-types.sh) fe=1 ;; frontend/*.md) ;; frontend/*) fe=1 ;; esac
   case "$f" in backend/poetry.lock|backend/pyproject.toml|frontend/package-lock.json|frontend/package.json|frontend/THIRD_PARTY_NOTICES.md|scripts/*) lock=1 ;; esac
-  case "$f" in backend/Dockerfile|frontend/Dockerfile|.dockerignore|*/.dockerignore|backend/entrypoint.sh) cont=1 ;; esac
+  case "$f" in backend/Dockerfile|frontend/Dockerfile|.dockerignore|*/.dockerignore|backend/docker-entrypoint.sh) cont=1 ;; esac
   case "$f" in *.py) py=1 ;; *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) js=1 ;; esac
 done <<< "$(git diff --name-only "origin/main...$snapshot")"
 [ "$full" = 1 ] && be=1 spec=1 fe=1 lock=1 cont=1 py=1 js=1
@@ -140,8 +140,8 @@ if [ "$lock" = 1 ]; then  # ci.yml `cve` and `licences`
   gate "CVE: lockfiles present and not empty" . test -s backend/poetry.lock -a -s frontend/package-lock.json
   gate "CVE: lockfiles committed" . git ls-files --error-unmatch backend/poetry.lock frontend/package-lock.json
   osv="$(tool osv-scanner-2.6.0 osv-scanner$x "$osv_url" "$osv_sha")"
+  gate "CVE: every accepted advisory has an expiry" . bash -c 'python3 .github/scripts/osv_ignores_gate.py self-test && python3 .github/scripts/osv_ignores_gate.py'
   gate "CVE: osv-scanner" . "$osv" --lockfile=backend/poetry.lock --lockfile=frontend/package-lock.json
-  gate "CVE: npm audit" frontend npm run audit:gate
   gate "Licences: self-test" . python3 scripts/check_licences.py self-test
   gate "Licences: backend" backend bash ./run.sh run python ../scripts/check_licences.py backend
   gate "Licences: frontend" . python3 scripts/check_licences.py frontend

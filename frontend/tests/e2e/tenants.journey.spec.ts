@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import type { Page } from '@playwright/test';
 
+import { confirmWithPasskey } from './support/agent-access-screens';
 import { expect, test, type ApiGuard } from './support/api-guard';
 import { openCase } from './support/cases-signoff';
 import { allowRegisterEntryPending } from './support/obligation-page';
@@ -683,13 +684,13 @@ test.describe('tenants journeys', () => {
     await expect(page.locator('main')).not.toContainText(A_ONLY.entryName);
 
     const asBAdmin = await bearerOf(page);
-    await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/tenant/org-units/${aEntityId}/licences`);
-    await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/tenant/org-units/${aDepartmentId}/licences`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/tenant/org-units/${aEntityId}/licences`, { licenceType: 'bank' });
+    await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/tenant/org-units/${aDepartmentId}`, {});
     await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/tenant/products/${aProductId}`, {});
-    await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/tenant/teams/${A_ONLY.team}/members`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/vocab/team/${A_ONLY.team}`, {});
     await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/tenant/support-access/${aGrantId}/decline`);
     await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/agents/${aTenantAgentId}`, {});
-    await expectNotFound(page, apiGuard, asBAdmin, 'POST', `/agents/${aTenantAgentId}/pause`);
+    await expectNotFound(page, apiGuard, asBAdmin, 'PATCH', `/agents/${aTenantAgentId}`, { paused: true });
     await expectNotFound(page, apiGuard, asBAdmin, 'GET', `/agent-access/${A_ONLY.entryId}/calls`);
     // Revoking a key needs a fresh passkey; with it, A's key is not there either.
     await stepUp(page, asBAdmin);
@@ -824,7 +825,7 @@ test.describe('tenants journeys', () => {
     test("ADM-S2: The members screen invites, assigns roles, re-issues enrolment and revokes sessions", async ({ page, apiGuard }) => {
       // pending: ADM-S2 (ADM-01) -> built in chunk 1
       allowFreshContext(apiGuard);
-      apiGuard.allow(/\/tenant\/members\/[^/]+$/, 403, 'the role change answers step_up_required first and opens the prompt');
+      apiGuard.allow(/\/tenant\/members(\/[^/]+)?$/, 403, 'the invitation and the role change answer step_up_required first and open the prompt');
       await signInAs(page, LOGINS.admin);
       await page.goto('/admin/members');
 
@@ -835,8 +836,9 @@ test.describe('tenants journeys', () => {
       await dialog.getByLabel('Title', { exact: true }).fill('Compliance analyst');
       await dialog.locator('label', { hasText: /^Reader/ }).getByRole('checkbox').check();
       await dialog.locator('label', { hasText: /^Auditor/ }).getByRole('checkbox').check();
-      const invited = page.waitForResponse((r) => r.url().endsWith('/api/v1/tenant/members') && r.request().method() === 'POST');
+      const invited = page.waitForResponse((r) => r.url().endsWith('/api/v1/tenant/members') && r.request().method() === 'POST' && r.ok());
       await dialog.getByRole('button', { name: 'Send invitation' }).click();
+      await confirmWithPasskey(page, page.getByText('Invitation sent to new.person@example-bank.test.'));
       // Pinned by the id this run created: a revoked invitation stays listed, so an
       // earlier attempt's row for the same address must not match (playbook 8.3 rule 4).
       const { id: invitationId } = (await (await invited).json()) as { id: string };
@@ -855,17 +857,15 @@ test.describe('tenants journeys', () => {
         await expect(invitation).toContainText('Revoked');
       }
 
-      // Change the roles later, behind step-up. The member is the login seeded for this
-      // journey alone: re-issue retires their passkeys and the UI cannot undo it, so it is
-      // never spent on a login another journey signs in as (playbook 8.3 rule 4).
+      // Change the roles later, behind step-up (still fresh from the invitation, so the
+      // prompt may not open again). The member is the login seeded for this journey alone:
+      // re-issue retires their passkeys and the UI cannot undo it, so it is never spent on
+      // a login another journey signs in as (playbook 8.3 rule 4).
       await page.getByRole('tab', { name: 'Members' }).click();
       await page.locator('[data-member-id]', { hasText: LOGINS.reissue }).click();
       await page.locator('label', { hasText: /^Reader/ }).getByRole('checkbox').check();
       await page.getByRole('button', { name: 'Save', exact: true }).click();
-      const prompt = page.getByRole('dialog', { name: 'Confirm with your passkey' });
-      await expect(prompt).toBeVisible();
-      await prompt.getByRole('button', { name: 'Use passkey' }).click();
-      await expect(page.getByText('Saved.')).toBeVisible();
+      await confirmWithPasskey(page, page.getByText('Saved.'));
 
       // Revoke every session, then re-issue enrolment (the assertion is still fresh).
       await page.getByRole('button', { name: 'Revoke all sessions' }).click();

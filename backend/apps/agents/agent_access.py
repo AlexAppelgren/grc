@@ -1,18 +1,11 @@
 """Agent access entries (ACC-01, ACC-03, ACC-08; AGENT_ACCESS.md sections 3, 8 and 9).
 
-A bank registers each agent it runs on its own infrastructure as an entry: a name, a
-purpose, the team that answers for it, and the departments and products it serves, which
-narrow what it reads (ACC-02, `apps/taxonomy/entry_scope.py`). Every write is the admin's,
-under `agent_access.manage` with a step-up, and goes through `record()`. An entry is revoked,
-never deleted, and revoking it revokes every credential bound to it in the same transaction,
-so the next call on any of them answers 401.
-
-The service keys themselves are written by `apps/identity/api_keys_logic.py`, the one module
-that mints and revokes keys; this module checks the entry is the bank's and still live
-first.
-
-`reach_allowed` is the one question a register read asks for a credential: the bank's own
-switch (`apps/governance/reach.py`) and the entry's own toggle, both on.
+A bank registers each agent it runs on its own infrastructure as an entry: name, purpose,
+answering team, and the departments and products that narrow what it reads (ACC-02,
+`apps/taxonomy/entry_scope.py`). Every write is under `agent_access.manage` with a step-up,
+through `record()`. Revoking an entry revokes every credential bound to it in the same
+transaction. Keys are minted and revoked by `apps/identity/api_keys_logic.py` alone.
+`reach_allowed` is the register's one question for a credential.
 """
 
 from __future__ import annotations
@@ -35,9 +28,11 @@ from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal
 from apps.shared.models import Tenant
 from apps.taxonomy.models import Team, TeamLabel
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import Labels
+from apps.shared.vocabulary import label_of
 from apps.taxonomy.schemas import PersonRef
 from apps.tenants.models import OrgUnit, TenantProduct
+from apps.shared.people import person_ref
 
 SUBJECT_TYPE = "agent_access"
 
@@ -55,9 +50,7 @@ def reach_allowed(principal: Principal) -> bool:
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Reading
-# ---------------------------------------------------------------------------------------
+# --- Reading ---
 def _entries(tenant_id: uuid.UUID) -> Any:
     return (
         AgentAccess.objects.filter(tenant_id=tenant_id)
@@ -83,10 +76,6 @@ def list_entries(tenant_id: uuid.UUID, *, limit: int, offset: int) -> tuple[list
     return list(queryset[offset : offset + limit]), queryset.count()
 
 
-def _person(user: Any) -> PersonRef | None:
-    return None if user is None else PersonRef(id=user.id, name=user.name)
-
-
 def key_out(key: ApiKey) -> AgentAccessKeyOut:
     return AgentAccessKeyOut(
         id=key.id,
@@ -94,7 +83,7 @@ def key_out(key: ApiKey) -> AgentAccessKeyOut:
         key_prefix=key.key_prefix,
         kind=key.kind,  # type: ignore[arg-type]
         scopes=sorted(key.scopes),
-        person=_person(key.acts_as_user),
+        person=person_ref(key.acts_as_user),
         created_at=key.created_at,
         expires_at=key.expires_at,
         revoked_at=key.revoked_at,
@@ -119,7 +108,7 @@ def views(rows: list[AgentAccess], order: list[str]) -> list[AgentAccessOut]:
             tenant_reach=row.tenant_reach,
             active=row.active,
             revoked_at=row.revoked_at,
-            revoked_by=_person(row.revoked_by),
+            revoked_by=person_ref(row.revoked_by),
             created_by=PersonRef(id=row.created_by.id, name=row.created_by.name),
             created_at=row.created_at,
             version=row.version,
@@ -129,9 +118,7 @@ def views(rows: list[AgentAccess], order: list[str]) -> list[AgentAccessOut]:
     ]
 
 
-# ---------------------------------------------------------------------------------------
-# Writing
-# ---------------------------------------------------------------------------------------
+# --- Writing ---
 def _name(value: str) -> str:
     cleaned = value.strip()
     if not cleaned:

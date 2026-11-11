@@ -105,7 +105,13 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertEqual(denied.status_code, 403)
         self.assertEqual(denied.json()["requiredPermission"], perms.SECURITY_MANAGE)
         # Inviting a member and an admin enrolling a passkey tick their steps.
-        self.client.post("/api/v1/tenant/members", data={"email": "new@bank.example", "roleKeys": ["reader"]}, content_type="application/json", **headers)
+        invited = self.client.post(
+            "/api/v1/tenant/members",
+            data={"email": "new@bank.example", "roleKeys": ["reader"]},
+            content_type="application/json",
+            **sign_in(self.admin, tenant=self.tenant, step_up=True),
+        )
+        self.assertEqual(invited.status_code, 201, invited.content)
         factories.passkey(self.admin)
         steps = {step["key"]: step["done"] for step in self.client.get("/api/v1/tenant", **headers).json()["onboarding"]["steps"]}
         self.assertTrue(steps["members"])
@@ -303,7 +309,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         Removing a member with open work offers bulk reassignment (TEN-05). Erik owns register
         entries, an entity's row, a gap and an internal item, and two open cases with an
         action each (the case half, `c9-owner-team-and-reassign`).
-        Operations: `getMemberOpenWork`, `removeMember`, `deactivateMember`.
+        Operations: `getMemberOpenWork`, `removeMember`.
         """
         erik, anna, work, headers = self._erik()
         cases = self._cases(erik)
@@ -312,8 +318,8 @@ class TenantsScenarioTests(ScenarioTestCase):
         self.assertEqual(preview.status_code, 200)
         owned = {row["kind"]: row["count"] for row in preview.json()["items"]}
         self.assertEqual({k: owned[k] for k in kinds}, {"register_entry": 3, "register_entity": 1, "gap": 1, "internal_item": 1, "case": 2, "action": 2})
-        # Nothing changes until the admin confirms: the plain removal is refused with the counts.
-        refused = self.client.delete(f"/api/v1/tenant/members/{erik.id}", **headers)
+        # Nothing changes until the admin names a new owner for each kind: refused with the counts.
+        refused = self._remove(erik, [], headers)
         self.assertEqual((refused.status_code, refused.json()["code"]), (422, "reassignment_required"))
         self.activate(self.tenant)
         self.assertEqual(TenantObligation.objects.filter(first_line_owner=erik).count(), 2)
@@ -411,7 +417,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         second = self.client.post(url, data=body, content_type="application/json", **console).json()["id"]
         declined = self.client.post(f"/api/v1/tenant/support-access/{second}/decline", **bank)
         self.assertEqual(declined.json()["state"], "declined")
-        self.assertEqual(self.client.post(f"/api/v1/tenant/support-access/{second}/approve", **bank).status_code, 422)
+        self.assertEqual(self.client.post(f"/api/v1/tenant/support-access/{second}/approve", **bank).status_code, 409)
 
     def test_adm_s1(self) -> None:
         """ADM-S1
@@ -543,8 +549,8 @@ class TenantsScenarioTests(ScenarioTestCase):
             membership = Membership.objects.get(tenant=self.tenant, user=person)
             event = AuditEvent.objects.get(action="member.teams_changed", subject_id=membership.id)
             self.assertEqual((event.before, event.after), ({"teams": []}, {"teams": ["retail_compliance"]}))
-        members = self.client.get("/api/v1/tenant/teams/retail_compliance/members", **admin).json()
-        self.assertEqual([row["name"] for row in members["items"]], ["Anna Berg", "Johan Ek"])
+        members = self.client.get("/api/v1/tenant/members?limit=100", **admin).json()
+        self.assertEqual(sorted(row["name"] for row in members["items"] if "retail_compliance" in row["teams"]), ["Anna Berg", "Johan Ek"])
 
         stranger = factories.member_user(other)
         refused = self.client.put(
@@ -621,8 +627,8 @@ class TenantsScenarioTests(ScenarioTestCase):
             **headers,
         )
         self.assertEqual(created.status_code, 201, created.content)
-        listed = self.client.get(f"/api/v1/tenant/org-units/{entity['id']}/licences", **headers).json()
-        [row] = [row for row in listed["items"] if row["id"] == created.json()["id"]]
+        listed = self._licences(entity["id"], headers)
+        [row] = [row for row in listed if row["id"] == created.json()["id"]]
         self.assertEqual({key: row[key] for key in dates}, dates)
         self.assertEqual((row["issuer"], row["number"], row["owner"]["id"], row["withdrawnOn"]), ("Example Certification AB", "EC-2026-0142", str(owner.id), None))
         # The write is audited with before and after values, and nothing else moved.
@@ -639,11 +645,16 @@ class TenantsScenarioTests(ScenarioTestCase):
             f"/api/v1/tenant/licences/{row['id']}", data={"withdrawnOn": withdrawn_on}, content_type="application/json", HTTP_IF_MATCH='"1"', **headers
         )
         self.assertEqual((withdrawn.status_code, withdrawn.json()["withdrawnOn"]), (200, withdrawn_on))
-        listed = self.client.get(f"/api/v1/tenant/org-units/{entity['id']}/licences", **headers).json()
-        self.assertEqual([(item["id"], item["withdrawnOn"]) for item in listed["items"]], [(row["id"], withdrawn_on)])
+        listed = self._licences(entity["id"], headers)
+        self.assertEqual([(item["id"], item["withdrawnOn"]) for item in listed], [(row["id"], withdrawn_on)])
         self.activate(self.tenant)
         update = AuditEvent.objects.get(tenant=self.tenant, subject_id=row["id"], action="licence.updated")
         self.assertEqual((update.before, update.after), ({"withdrawnOn": None}, {"withdrawnOn": withdrawn_on, "rewritten": []}))
+
+    def _licences(self, unit_id: str, headers: dict[str, Any]) -> list[dict[str, Any]]:
+        """The licences one unit holds, as the organisation list carries them on its row."""
+        units = self.client.get("/api/v1/tenant/org-units?limit=100", **headers).json()["items"]
+        return next(unit["licences"] for unit in units if unit["id"] == unit_id)
 
     def _enter(self, platform: Any, grant: str) -> dict[str, Any]:
         """Headers of the support session `platform` opens under `grant`, with a fresh step-up."""
@@ -675,7 +686,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         refusals = [
             ("POST", f"/api/v1/tenant/support-access/{grant}/revoke"),
             ("PATCH", "/api/v1/tenant"),
-            ("DELETE", f"/api/v1/tenant/members/{self.admin.id}"),
+            ("POST", f"/api/v1/tenant/members/{self.admin.id}/remove"),
             ("GET", f"/api/v1/evidence/{grant}/download"),
             # Search and Ask would spend the bank's AI budget.
             ("POST", "/api/v1/search"),

@@ -1195,7 +1195,8 @@ the drift gate and the next reader agree.
 ## 11. The AI output log, and who reports what a model was (2026-09-21)
 
 `ai_generation` (schema v0.3 line 794) is built as designed with four departures, all
-additive, in `apps/governance/models.py` and `governance/0001_ai_generation.py`:
+additive, in `apps/governance/models.py` and `governance/0001_ai_generation.py` (squashed into
+0001):
 
 - `input jsonb` is not built. The designed column holds "question, as_of, ids of the chunks
   given to the model", which is the prompt in pieces; the build stores `prompt_template`
@@ -1330,7 +1331,7 @@ that may never exist.
 `Answer.model` is empty when no model was asked: a question no library passage supports is
 answered `noAnswer` at once, with no model call and so no `ai_generation` row.
 
-`ai_generation` gains `stop_reason` (`governance/0003_ai_generation_stop_reason.py`) and
+`ai_generation` gains `stop_reason` (`governance/0003_ai_generation_stop_reason.py`, squashed into 0001) and
 `AiGenerationRow` gains `stopReason`, neither of which the designed table or contract has:
 how a call bleqq made ended, the provider's own stop reason when the model finished,
 `aborted` when the caller stopped reading first and `failed` when the model failed once
@@ -2075,3 +2076,67 @@ Three routes the designed contract does not name, session only under `vocab.mana
 /tenant/register-lookups/{lookupId}/apply` (`applyRegisterLookup`, 409 `lookup_not_done`
 before the job succeeded). `GET /tenant/org-units` gains `registerEntry` on each row.
 
+
+## review-2026-11-11-s4. A member is removed in one way, and invitations need a passkey (2026-11-11, S-4, B-1)
+
+- The designed `DELETE /tenant/members/{userId}` (`removeMember`) is not built. A member is
+  removed with `POST /tenant/members/{userId}/remove` (`removeMember`), which hands on the
+  work they hold and removes them in one step behind a passkey step-up (TEN-05, D-108). The
+  `DELETE` route the build carried until 2026-11-11 (`deactivateMember`) did the same for a
+  member who held nothing, without the step-up, and no screen called it: the security
+  review of 2026-11-11 (S-4) removed it, so the removal has one door and it asks for a
+  passkey. A member who holds nothing is removed through `/remove` with an empty body.
+- `POST /tenant/members` (`inviteMember`) and `POST /console/tenants`
+  (`createConsoleTenant`) need a fresh passkey step-up (403 `step_up_required`), as a role
+  change does: an invitation grants roles, `admin` included, and a new bank's invitation
+  grants its administrator role. The assertion is stored on the `invitation.created` and
+  `tenant.created` audit events.
+
+## review-2026-11-11-b1. Reads another route already answers are gone (2026-11-11, B-1)
+
+- `GET /agent-runs` (`listAgentRuns`) is a bank's run log only, behind `agents.manage` as a
+  decorator: a console session is refused it, `system.health` included, and reads bleqq's
+  runs from `GET /console/agent-runs` under `agent_definitions.manage`, which counts what
+  each run filed from the rows it filed (H41). The console branch of the shared route had no
+  caller. The bank keeps the paged history behind the latest runs `GET /agents` carries
+  (AGT-04 "history with findings and cost").
+- Seven built-only reads are removed because another route answers them and no screen,
+  agent definition or MCP tool called them: `GET /obligations/{id}/interpretation` (the
+  register entry's `interpretation`), `GET /tenant/footprint/scope-items/{id}` (the
+  regulatory scope's `scopeItems` and a request's rows), `GET /tenant/org-units/{id}/licences`
+  (each organisation row's `licences`), `GET /taxonomy/dimensions` (`GET /vocab/term_dimension`,
+  the same rows behind the same gate), `GET /tenant/teams/{key}/members` (each member row's
+  `teams`), `GET /research-requests/{id}` (`GET /research-requests`) and
+  `GET /reference/product` (the web app's own `shared/brand.ts`). None is in the designed
+  contract. A support session no longer lists the taxonomy's dimensions; no screen it opens
+  read them.
+- `GET /vocab/{list}/{key}` stays, although the review counted it redundant: it is the only
+  read that carries `originalLanguage` and `machineLanguages`, which say which labels a
+  machine wrote and no person has confirmed (I18N-01, INV-05).
+
+## review-2026-11-11-b14. Routes that said the same thing under one permission are one (2026-11-11, B-14)
+
+- The designed `POST /obligations/{obligationId}/problem-reports` (`reportObligationProblem`)
+  and the built `POST /instruments/{instrumentId}/problem-reports` are one
+  `POST /problem-reports` (`reportProblem`) beside the list it fills, with `subjectType`
+  (`obligation` or `instrument`) and `subjectId` in the body. The permission
+  (`problems.report`), the answer, the audit event, the rate limit and the 404 for a record
+  the caller cannot read are as they were.
+- `POST /taggings/preview` (`previewTagging`) is `POST /taggings/batch?dryRun=true`, the
+  query parameter the regulatory scope request and the vocabulary merge already use for a
+  preview; both sides need `vocab.manage`.
+- `POST` and `DELETE /agents/{tenantAgentId}/pause` are `paused: true` and `paused: false`
+  on `PATCH /agents/{tenantAgentId}` (`updateTenantAgent`), under the same
+  `agents.manage`. The pause still writes its own `agents.tenant_agent_paused` event naming
+  the person, and a resume its `agents.tenant_agent_resumed` event.
+- The six participant routes (`GET`, `POST /obligations/{obligationId}/participants`,
+  `DELETE /obligations/{obligationId}/participants/{participantId}` and the same three under
+  `/changes/{changeId}`) are three: `GET /participants?subjectType=&subjectId=`,
+  `POST /participants` with `subjectType` and `subjectId` in the body, and
+  `DELETE /participants/{participantId}?subjectType=&subjectId=`. `subjectType` is
+  `obligation` (the bank's register entry) or `change` (the bank's case for the change). Each
+  subject keeps its own permissions, checked by the route before any lookup and named in the
+  403: `register.read` to read and leave and `register.edit` to change an obligation's,
+  `cases.read` to read and `cases.contribute` to change a case's, and anyone may leave a
+  case. The routes are logic gates in `UNGATED_BY_DESIGN` with that reason, and the tenant
+  isolation guard proves both subjects.

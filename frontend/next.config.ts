@@ -5,6 +5,28 @@ import type { NextConfig } from 'next';
 // emitted server.js; everywhere else `next start` serves the normal build,
 // because Next refuses `next start` on a standalone output. Nothing
 // Railway-specific here (DECISIONS D-16).
+// The content policy (review 2026-11-11 S-12): the app loads nothing from another
+// origin, so everything is 'self' but the API, which NEXT_PUBLIC_API_URL names when it
+// is not this origin (it is inlined at build time, and so is this header). Inline
+// scripts and styles stay allowed because Next and next-themes write them; a nonce from
+// src/proxy.ts is the later, stricter step. `next dev` alone needs eval (React's dev
+// call stacks and fast refresh). object-src, base-uri and form-action close the ways a
+// stray script or markup could load a plugin, rebase links or post a form elsewhere.
+const apiOrigin = URL.canParse(process.env.NEXT_PUBLIC_API_URL ?? '') ? new URL(process.env.NEXT_PUBLIC_API_URL as string).origin : '';
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  `connect-src 'self'${apiOrigin === '' ? '' : ` ${apiOrigin}`}`,
+  "frame-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
+
 const nextConfig: NextConfig = {
   output: process.env.NEXT_OUTPUT_STANDALONE === '1' ? 'standalone' : undefined,
   reactStrictMode: true,
@@ -15,10 +37,13 @@ const nextConfig: NextConfig = {
   // which contains both. Unset everywhere else, so nothing changes outside a worktree.
   ...(process.env.NEXT_TURBOPACK_ROOT ? { turbopack: { root: process.env.NEXT_TURBOPACK_ROOT } } : {}),
   // Clickjacking: no other site may frame a page of the app, where one click can
-  // approve or sign off. Our own origin may, because the public page frames the
-  // app as its demo (design/public/README.md "The demo"). The API refuses every
-  // frame on its own side (backend/config/settings.py). X-Frame-Options is the
-  // same rule for browsers that predate frame-ancestors.
+  // approve or sign off (frame-ancestors in the policy above). Our own origin may,
+  // because the public page frames the app as its demo (design/public/README.md "The
+  // demo"), at "/" on its own origin, which frame-src 'self' allows. The API refuses
+  // every frame on its own side (backend/config/settings.py). X-Frame-Options is the
+  // same rule for browsers that predate frame-ancestors. Cross-Origin-Opener-Policy
+  // keeps a window of another site, opened from here or opening us, out of this
+  // browsing context group: no screen opens a window or reads an opener.
   //
   // The rest is what a bank's web filter looks for on a site it is asked to
   // trust (docs/runbooks/DNS_DOMAINS.md "Site trust"). HSTS names this host
@@ -33,8 +58,9 @@ const nextConfig: NextConfig = {
       {
         source: '/:path*',
         headers: [
-          { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
+          { key: 'Content-Security-Policy', value: contentSecurityPolicy },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

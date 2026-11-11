@@ -1,15 +1,9 @@
 """The bank's organisation (TEN-02, D-21, D-43, ADM-01): its groups, legal entities and
 departments with a head, and the licences and certificates a legal entity holds. Every row
-is the bank's own, written under `vocab.manage`, audited with the fields it changed before
-and after, and deactivated or withdrawn, never deleted.
-
-A legal entity's term is a term of the library's `legal_entity` dimension; a licence's type
-and services, and a product's scope (apps/tenants/products.py), are terms of the dimensions
-an obligation's scope is written with (apps/tenants/terms.py).
-
-Free text a person typed (a scope note or statement) never enters the audit row: its before
-and after carry ids, keys, names and dates, and `rewritten` names the text fields that
-changed (R2_CROSS_CUTTING.md (m)).
+is the bank's own, written under `vocab.manage`, audited before and after, and deactivated or
+withdrawn, never deleted. Types, services and scopes are terms of the dimensions an
+obligation's scope is written with (apps/tenants/terms.py). Free text a person typed never
+enters the audit row; `rewritten` names the text fields that changed (R2_CROSS_CUTTING.md (m)).
 """
 
 from __future__ import annotations
@@ -23,7 +17,7 @@ from django.db.models import Prefetch
 
 from apps.identity.models import Membership, User
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 from apps.taxonomy.models import EntityScopeExclusion
 from apps.taxonomy.schemas import PersonRef, TermRef
@@ -35,7 +29,6 @@ from apps.tenants.schemas import (
     RegisterFacts,
     TenantLicence,
     TenantLicenceBody,
-    TenantLicencePage,
     TenantLicencePatch,
     TenantOrgUnit,
     TenantOrgUnitBody,
@@ -54,19 +47,13 @@ ENTITY_ONLY = ("org_number", "lei", "country_code", "entity_term")
 STALE = "Someone changed this first. Reload and try again."
 
 
-# ---------------------------------------------------------------------------------------
-# What the organisation and product writes share.
-# ---------------------------------------------------------------------------------------
-def _not_found() -> ProblemError:
-    return ProblemError(status=404, code="not_found", detail="Not found.")
-
-
+# --- What the organisation and product writes share ---
 def locked(model: type[Any], tenant: Tenant, pk: uuid.UUID, expected_version: int | None) -> Any:
     """The row, locked for the write, in the caller's bank, or 404; 409 `stale_write` when
     `If-Match` named another version (playbook 4.3)."""
     row = model._default_manager.select_for_update().filter(tenant=tenant, pk=pk).order_by("pk").first()  # ordering: pk lookup, at most one row
     if row is None:
-        raise _not_found()
+        raise not_found()
     if expected_version is not None and expected_version != row.version:
         raise ValidationError(STALE, code="stale_write")
     return row
@@ -102,14 +89,12 @@ def ref(value: Any) -> str | None:
     return None if value is None else str(value)
 
 
-# ---------------------------------------------------------------------------------------
-# Units.
-# ---------------------------------------------------------------------------------------
+# --- Units ---
 def org_unit_of(tenant: Tenant, org_unit_id: uuid.UUID) -> OrgUnit:
     """The unit, in the caller's bank and under its row-level security, or 404."""
     unit = OrgUnit.objects.filter(tenant=tenant, pk=org_unit_id).first()  # ordering: pk lookup, at most one row
     if unit is None:
-        raise _not_found()
+        raise not_found()
     return unit
 
 
@@ -310,20 +295,10 @@ def update_org_unit(
     return _unit_out(tenant, unit.id, order)
 
 
-# ---------------------------------------------------------------------------------------
-# Licences and certificates (D-43, ADR 0037).
-# ---------------------------------------------------------------------------------------
+# --- Licences and certificates (D-43, ADR 0037) ---
 LICENCE_DATES = ("granted_on", "withdrawn_on", "issued_on", "valid_until", "next_audit_on")
 LICENCE_STRINGS = ("reference", "issuer", "number")
 LICENCE_TEXTS = {"scope_note": "scopeNote", "scope_statement": "scopeStatement"}
-
-
-def licence_of(tenant: Tenant, licence_id: uuid.UUID) -> Licence:
-    """The licence, in the caller's bank and under its row-level security, or 404."""
-    licence = Licence.objects.filter(tenant=tenant, pk=licence_id).first()  # ordering: pk lookup, at most one row
-    if licence is None:
-        raise _not_found()
-    return licence
 
 
 def _licence_snapshot(licence: Licence, services: list[Term]) -> dict[str, Any]:
@@ -416,14 +391,6 @@ def _set_services(tenant: Tenant, licence: Licence, terms: list[Term]) -> None:
 
 def _services_of(licence: Licence) -> list[Term]:
     return [row.term for row in LicenceServiceTerm.objects.filter(licence=licence).select_related("term").order_by("term__key")]
-
-
-def list_licences(*, tenant: Tenant, order: list[str], org_unit_id: uuid.UUID, limit: int, offset: int) -> TenantLicencePage:
-    """`GET /tenant/org-units/{orgUnitId}/licences`: withdrawn ones included."""
-    unit = org_unit_of(tenant, org_unit_id)
-    queryset = _licences(tenant).filter(org_unit=unit)
-    licences = list(queryset.order_by("granted_on", "id")[offset : offset + limit])
-    return TenantLicencePage(items=_licences_out(licences, order), total=queryset.count())
 
 
 def create_licence(

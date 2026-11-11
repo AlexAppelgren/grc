@@ -726,16 +726,21 @@ def _upload() -> Call:
     return Call(params={"change_id": _case_row(EVIDENCE_CASE).change_id}, body=body, content_type=MULTIPART_CONTENT)
 
 
+def _participants_of(subject_type: str, subject_id: object) -> dict[str, str]:
+    """The record the participant routes address, in their query or their body (B-14)."""
+    return {"subjectType": subject_type, "subjectId": str(subject_id)}
+
+
 def _case_participant(email: str) -> Call:
     case = _case_row(CASE_PARTICIPATION_CHANGE)
     row = Participant.objects.get(case=case, user__email=email, removed_at__isnull=True)
-    return Call(params={"change_id": case.change_id, "participant_id": row.id})
+    return Call(params={"participant_id": row.id}, query=_participants_of("change", case.change_id))
 
 
 def _obligation_participant() -> Call:
     obligation = _obligation(PARTICIPATION_OBLIGATION)
     row = Participant.objects.get(tenant_obligation__obligation=obligation, user__email=PARTICIPANT, removed_at__isnull=True)
-    return Call(params={"obligation_id": obligation.id, "participant_id": row.id})
+    return Call(params={"participant_id": row.id}, query=_participants_of("obligation", obligation.id))
 
 
 def _comments() -> Call:
@@ -801,8 +806,8 @@ def _tagging(obligation: str) -> Callable[[], Call]:
     return lambda: Call(body={"tagKey": TAG, "subjectType": "obligation", "subjectId": str(_obligation(obligation).id)})
 
 
-def _tag_batch(ids: list[str]) -> Call:
-    return Call(body={"tagKey": TAG, "subjectType": "obligation", "subjectIds": ids})
+def _tag_batch(ids: list[str], query: dict[str, str] | None = None) -> Call:
+    return Call(body={"tagKey": TAG, "subjectType": "obligation", "subjectIds": ids}, query=query or {})
 
 
 def _preview_at_cap() -> Call:
@@ -810,7 +815,7 @@ def _preview_at_cap() -> Call:
     built by the library's own builder as the cap leaves room for."""
     seeded = [str(pk) for pk in Obligation.objects.values_list("pk", flat=True)]
     built = [str(row.id) for row in library_testing.library_of(settings.BULK_TAGGING_MAX_RECORDS - len(seeded))]
-    return _tag_batch(seeded + built)
+    return _tag_batch(seeded + built, {"dryRun": "true"})
 
 
 # --- r2-perf, chunk 11: agents, batches, the bank's own queue and agent access --------------
@@ -870,12 +875,6 @@ def _open_run() -> Call:
         scope=agent.scope,
     )
     return Call(params={"run_id": run.id})
-
-
-def _research_request() -> Call:
-    agent = _tenant_agent()
-    request = ResearchRequest.objects.create(tenant=agent.tenant, tenant_agent=agent, requested_by=_user(ADMIN), kind="research_topic", topic="DORA subcontracting")
-    return Call(params={"request_id": request.id})
 
 
 def _retag_request() -> Call:
@@ -1090,7 +1089,6 @@ ROUTES: list[PerfRoute] = [
     # budget a person waits on.
     #
     # --- sign-in, the ceremonies before a session and the session itself ---
-    PerfRoute("getProduct", anonymous),
     PerfRoute("openInvitation", anonymous, lambda: Call(body={"token": E2E_INVITATION_TOKEN_ANNA}), status=202),
     PerfRoute("verifyInvitationCode", anonymous, _verify_invitation_code),
     PerfRoute("requestCode", anonymous, lambda: Call(body={"email": ANNA}), status=202),
@@ -1115,7 +1113,7 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("listMembers", admin),
     PerfRoute(
         "inviteMember",
-        admin,
+        stepped_up(ADMIN, TENANT_A_SLUG),
         lambda: Call(body={"email": "new.analyst@example-bank.test", "roleKeys": ["reader"], "title": "Compliance analyst"}),
         status=201,
     ),
@@ -1124,8 +1122,6 @@ ROUTES: list[PerfRoute] = [
         stepped_up(ADMIN, TENANT_A_SLUG),
         lambda: Call(params={"user_id": _user("contributor@example-bank.test").id}, body={"roleKeys": ["contributor", "owner"]}),
     ),
-    # The auditor holds no open work, which a plain removal refuses since chunk 8 (TEN-05).
-    PerfRoute("deactivateMember", admin, _member("auditor@example-bank.test"), status=204),
     PerfRoute("listMemberSessions", admin, _member(READER)),
     PerfRoute("revokeMemberSessions", admin, _member(READER), status=204),
     PerfRoute("reissueEnrolment", stepped_up(ADMIN, TENANT_A_SLUG), _member("reissue@example-bank.test"), status=202),
@@ -1167,7 +1163,7 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("listConsoleTenants", platform),
     PerfRoute(
         "createConsoleTenant",
-        platform,
+        stepped_up(PLATFORM),
         lambda: Call(body={"name": "Third Bank Oyj", "firstAdminEmail": "admin@third-bank.test", "firstAdminTitle": "Head of Compliance"}),
         status=201,
     ),
@@ -1181,7 +1177,7 @@ ROUTES: list[PerfRoute] = [
         status=202,
     ),
     PerfRoute("listAgentDefinitions", platform),
-    PerfRoute("listAgentRuns", platform),
+    PerfRoute("listAgentRuns", admin),
     # --- the library ---
     PerfRoute("getObligation", reader, _obligation_call),
     PerfRoute("getObligationDiff", reader, _obligation_call),
@@ -1192,16 +1188,17 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("listAuthorities", reader),
     PerfRoute("getRecordSources", reader, _obligation_call),
     PerfRoute(
-        "reportObligationProblem",
+        "reportProblem",
         reader,
-        lambda: Call(params={"obligation_id": _obligation().id}, body={"description": "The retention line says five years; the act says ten.", "language": "sv", "versionNumber": 1}),
+        lambda: Call(body={"subjectType": "obligation", "subjectId": str(_obligation().id), "description": "The retention line says five years; the act says ten.", "language": "sv", "versionNumber": 1}),
         status=201,
     ),
     PerfRoute(
-        "reportInstrumentProblem",
+        "reportProblem",
         reader,
-        lambda: Call(params=_instrument_call().params, body={"description": "The title is the old one."}),
+        lambda: Call(body={"subjectType": "instrument", "subjectId": str(_instrument_call().params["instrument_id"]), "description": "The title is the old one."}),
         status=201,
+        variant="instrument",
     ),
     PerfRoute(
         "reverifyObligation",
@@ -1238,7 +1235,6 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("retireVocabularyRow", officer, lambda: Call(params={"list_name": TAG_LIST, "key": "whistleblowing"}, body={"confirm": True})),
     PerfRoute("restoreVocabularyRow", officer, _retired_row),
     PerfRoute("mergeVocabularyRow", officer, lambda: Call(params={"list_name": TAG_LIST, "key": "whistleblowing"}, body={"into": "follow_up"})),
-    PerfRoute("listTaxonomyDimensions", reader),
     PerfRoute("listTerms", reader),
     PerfRoute(
         "createTerm",
@@ -1394,7 +1390,6 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("reopenGap", officer, _closed_gap),
     # assessment history, how we read the rule and linked internal items
     PerfRoute("listAssessments", officer, _on_obligation(HISTORY_OBLIGATION)),
-    PerfRoute("getInterpretation", officer, _on_obligation(HISTORY_OBLIGATION)),
     PerfRoute(
         "saveInterpretation",
         officer,
@@ -1438,14 +1433,14 @@ ROUTES: list[PerfRoute] = [
     # the inventory as a register reader filters it by the bank's overlay
     PerfRoute("listObligations", officer, lambda: Call(query={"applicability": "applies", "complianceStatus": "partly_compliant"}), variant="overlay"),
     # participants on a register entry
-    PerfRoute("listObligationParticipants", reader, _on_obligation(PARTICIPATION_OBLIGATION)),
+    PerfRoute("listParticipants", reader, lambda: Call(query=_participants_of("obligation", _obligation(PARTICIPATION_OBLIGATION).id))),
     PerfRoute(
-        "addObligationParticipant",
+        "addParticipant",
         officer,
-        lambda: Call(params={"obligation_id": _obligation(PARTICIPATION_OBLIGATION).id}, body={"userId": str(_user(CONTRIBUTOR).id)}),
+        lambda: Call(body={**_participants_of("obligation", _obligation(PARTICIPATION_OBLIGATION).id), "userId": str(_user(CONTRIBUTOR).id)}),
         status=201,
     ),
-    PerfRoute("removeObligationParticipant", officer, _obligation_participant, status=204),
+    PerfRoute("removeParticipant", officer, _obligation_participant, status=204),
     # My work, a member's own and a department head's view of their department
     PerfRoute("getMyWork", owner),
     PerfRoute("getMyWork", person(HEAD, TENANT_A_SLUG), _department, variant="head"),
@@ -1453,7 +1448,6 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("listOrgUnits", reader),
     PerfRoute("createOrgUnit", admin, lambda: Call(body={"kind": "business_unit", "name": "Savings", "parentId": str(_org_unit(RETAIL_DEPARTMENT).id)}), status=201),
     PerfRoute("updateOrgUnit", admin, lambda: Call(params={"org_unit_id": _org_unit(RETAIL_DEPARTMENT).id}, body={"name": "Retail and Private Banking"})),
-    PerfRoute("listLicences", reader, lambda: Call(params={"org_unit_id": _org_unit().id})),
     PerfRoute(
         "createLicence",
         admin,
@@ -1474,7 +1468,6 @@ ROUTES: list[PerfRoute] = [
     ),
     PerfRoute("updateProduct", admin, lambda: Call(params={"product_id": TenantProduct.objects.get(tenant=_tenant(), name="Guided investing").id}, body={"status": "live"})),
     PerfRoute("listTeams", reader),
-    PerfRoute("listTeamMembers", reader, _on(key=RETAIL_TEAM)),
     PerfRoute("setMemberTeams", admin, lambda: Call(params={"user_id": _user("teams@example-bank.test").id}, body={"teams": [RETAIL_TEAM]})),
     PerfRoute("listPeople", officer, lambda: Call(query={"permission": "cases.signoff"})),
     PerfRoute("getMemberOpenWork", admin, _member(LEAVER)),
@@ -1526,9 +1519,15 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("getExport", officer, _export(built=False)),
     PerfRoute("downloadExport", officer, _export(built=True)),
     # participants on a case
-    PerfRoute("listCaseParticipants", reader, _case(CASE_PARTICIPATION_CHANGE)),
-    PerfRoute("addCaseParticipant", officer, lambda: _case(CASE_PARTICIPATION_CHANGE, {"userId": str(_user(CONTRIBUTOR).id)})(), status=201),
-    PerfRoute("removeCaseParticipant", officer, lambda: _case_participant(OWNER), status=204),
+    PerfRoute("listParticipants", reader, lambda: Call(query=_participants_of("change", _case_row(CASE_PARTICIPATION_CHANGE).change_id)), variant="case"),
+    PerfRoute(
+        "addParticipant",
+        officer,
+        lambda: Call(body={**_participants_of("change", _case_row(CASE_PARTICIPATION_CHANGE).change_id), "userId": str(_user(CONTRIBUTOR).id)}),
+        status=201,
+        variant="case",
+    ),
+    PerfRoute("removeParticipant", officer, lambda: _case_participant(OWNER), status=204, variant="case"),
     # comments, and the inbox at INBOX_ROWS
     PerfRoute("listComments", reader, _comments),
     PerfRoute("addComment", officer, _new_comment, status=201),
@@ -1542,7 +1541,7 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("tagRecord", officer, _tagging("obl-client-assets")),
     PerfRoute("untagRecord", officer, _tagging(EXPECTED_BULK_TAGGING.already_tagged[0])),
     PerfRoute("tagRecords", officer, lambda: _tag_batch([str(_obligation(key).id) for key in EXPECTED_BULK_TAGGING.obligations])),
-    PerfRoute("previewTagging", officer, _preview_at_cap),
+    PerfRoute("tagRecords", officer, _preview_at_cap, variant="dry run"),
     # an absence with a delegate, and the bank's workflow policy
     PerfRoute("getMyOutOfOffice", person(AWAY, TENANT_A_SLUG)),
     PerfRoute("putMyOutOfOffice", person(AWAY, TENANT_A_SLUG), lambda: Call(body={"untilDate": _in_days(7), "delegateId": str(_user(APPROVER).id)})),
@@ -1569,8 +1568,8 @@ ROUTES: list[PerfRoute] = [
         status=201,
     ),
     PerfRoute("updateTenantAgent", admin, lambda: _agent_call({"cadence": "monthly"})),
-    PerfRoute("pauseTenantAgent", admin, _agent_call),
-    PerfRoute("resumeTenantAgent", admin, _paused_agent),
+    PerfRoute("updateTenantAgent", admin, lambda: _agent_call({"paused": True}), variant="pause"),
+    PerfRoute("updateTenantAgent", admin, lambda: Call(params=_paused_agent().params, body={"paused": False}), variant="resume"),
     PerfRoute("runTenantAgentNow", admin, _run_now, status=202),
     PerfRoute("interruptAgentRun", admin, _open_run),
     PerfRoute("getAgentBudget", admin),
@@ -1583,7 +1582,6 @@ ROUTES: list[PerfRoute] = [
         _research_topic,
         status=202,
     ),
-    PerfRoute("getResearchRequest", admin, _research_request),
     # the bank's own queue (D-89)
     PerfRoute("listPrivateProposals", approver, _own_proposal()),
     PerfRoute("approvePrivateProposal", stepped_up(APPROVER, TENANT_A_SLUG), _own_proposal({"note": "Checked against FFFS 2026:9, 4 kap. 5 §."})),

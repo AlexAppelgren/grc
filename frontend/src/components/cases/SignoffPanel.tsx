@@ -5,9 +5,9 @@ import { useState, type FormEvent } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, TextArea } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Panel } from '@/components/ui/Panel';
 import { ProblemAlert } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
 import { closeKindOf } from '@/features/cases/case-presentation';
 import { staleWriteOf, useApproveSignoff, useReloadCase, useRequestSignoff, useSendBackSignoff } from '@/features/cases/hooks';
 import type { CasePanelProps, CaseWorkflow } from '@/features/cases/types';
@@ -98,30 +98,26 @@ function SendBackModal({ changeId, workflow, requester, onOpenChange }: { change
   const sendBack = useSendBackSignoff(changeId, workflow.version);
   const missing = note.trim() === '';
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     setTried(true);
     if (missing) return;
     sendBack.mutate({ note: note.trim() }, { onSuccess: () => onOpenChange(false) });
   };
 
   return (
-    <Modal open onOpenChange={onOpenChange} title={t('caseSignoff.sendBackTitle')} description={t('caseSignoff.sendBackBody', { name: requester })}>
-      <form onSubmit={submit} noValidate aria-busy={sendBack.isPending}>
-        <Field id="signoff-send-back-note" label={t('caseSignoff.sendBackNote')} error={tried && missing ? t('caseSignoff.sendBackNoteRequired') : undefined}>
-          <TextArea id="signoff-send-back-note" value={note} onChange={(event) => setNote(event.target.value)} />
-        </Field>
-        {sendBack.isError ? <WriteRefusal error={sendBack.error} changeId={changeId} codes={{}} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={sendBack.isPending}>
-            {t('caseSignoff.sendBack')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+    <FormDialog
+      title={t('caseSignoff.sendBackTitle')}
+      description={t('caseSignoff.sendBackBody', { name: requester })}
+      submitLabel={t('caseSignoff.sendBack')}
+      pending={sendBack.isPending}
+      onSubmit={submit}
+      onClose={() => onOpenChange(false)}
+    >
+      <Field id="signoff-send-back-note" label={t('caseSignoff.sendBackNote')} error={tried && missing ? t('caseSignoff.sendBackNoteRequired') : undefined}>
+        <TextArea id="signoff-send-back-note" value={note} onChange={(event) => setNote(event.target.value)} />
+      </Field>
+      {sendBack.isError ? <WriteRefusal error={sendBack.error} changeId={changeId} codes={{}} /> : null}
+    </FormDialog>
   );
 }
 

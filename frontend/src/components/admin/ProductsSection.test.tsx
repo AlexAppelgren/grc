@@ -1,10 +1,9 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { ProductsSection } from '@/components/admin/ProductsSection';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { renderWith } from '@/shared/testing/render';
 
 // Products scoped with the terms obligations use (TEN-02, TEN-S2): the entity
 // and the terms as brand pills, status as meta text, a retired product dimmed,
@@ -19,10 +18,9 @@ const terms = { items: [{ dimension: { key: 'service_type', label: 'Services' },
 
 function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.method === 'get' && sent.path === PRODUCTS) return { status: 200, data: { items: [cardCredit, custody], total: 2 } };
     if (sent.path === '/api/v1/tenant/org-units') return { status: 200, data: { items: [bank], total: 1 } };
-    if (sent.path === '/api/v1/taxonomy/dimensions') return { status: 200, data: dimensions };
+    if (sent.path === '/api/v1/vocab/term_dimension') return { status: 200, data: dimensions };
     if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: terms };
     if (sent.path === '/api/v1/reference/people') return { status: 200, data: [{ id: 'u1', name: 'Johan Berg' }] };
     if (sent.method !== 'get' && write !== undefined) return write(sent);
@@ -31,14 +29,7 @@ function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sen
 }
 
 async function renderSection(permissions: string[]): Promise<void> {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <ProductsSection />
-      </PermissionsProvider>
-    </Query>,
-  );
+  renderWith(<ProductsSection />, { permissions });
   await screen.findByText('Safekeeping of listed securities.');
 }
 

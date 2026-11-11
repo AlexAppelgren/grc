@@ -68,9 +68,11 @@ These are the reasons it worked. Everything after this section is how.
   Measured, not felt. The API stamps its own server time on every response.
 - **Write it down where the next person will trip on it.** A rule lives as a
   code comment beside the thing it governs, a docstring on the guard test that
-  enforces it, or a dated review document. Comments explain *why*, name the
-  incident, and carry the measurement. The repo's comments read like a
-  logbook, and that is what made it navigable.
+  enforces it, or a dated review document. A comment says *why* in a line or
+  two and names the decision or finding ID that holds the story; the incident,
+  the dates and the measurement live in that ADR, review document or commit
+  body, not beside the code (owner, 2026-11-11). A comment that states an
+  invariant stays, in one line.
 - **Invariants over features.** Two zones under row-level security,
   proposals as the only door into the library, versions never overwritten,
   an audit row with every write, four eyes, no passwords, AI output labelled
@@ -823,7 +825,7 @@ D); CI is insurance, not first detection.
 | Frontend lint, typecheck, unit coverage, build | Lint and type errors, coverage drops, broken build |
 | E2E (real stack) | Broken journeys, undeclared API failures, page exceptions |
 | Secret scan (gitleaks, always on push) | Committed secrets. Allowlist entries are exact literals with a stated reason, never a relaxed rule |
-| Dependency CVEs (osv-scanner on the **committed** lockfiles + `npm audit`) | Known-vulnerable dependencies. The scan refuses to run on an empty lockfile, and the step runs under `bash -eo pipefail` so a broken pipe fails instead of passing on the last exit code |
+| Dependency CVEs (osv-scanner on the **committed** lockfiles) | Known-vulnerable dependencies. The scan refuses to run on an empty lockfile, an accepted advisory without an expiry fails it, and the step runs under `bash -eo pipefail` so a broken pipe fails instead of passing on the last exit code |
 | CodeQL (own SARIF gate, medium and above) | Injection, traversal, unsafe deserialisation. Findings are accepted per fingerprint with a reason, never per rule; stale acceptances are reported so the list cannot rot into a mute |
 | Requirements coverage | A PRD requirement with no scenario, or a scenario with no test |
 | Contract drift | A designed operation in `docs/inputs/openapi.yaml` that is missing or reshaped without an entry in `INPUT_DELTAS.md` |
@@ -1381,7 +1383,7 @@ never allowed.
 | `specs` | `backend/apps/*/app.md`, `PRD.md`, `docs/inputs/openapi.yaml` | 3, 4, 5, plus the contract-drift and API-documentation gates: everything in the backend job that reads text rather than running code. No migration, no suite, no coverage, no search evaluation, no browser |
 | `frontend` | frontend code, `openapi.json`, `generate-types.sh` | 6, 7, 11, and E2E |
 | `lockfiles` | the lockfiles, `frontend/THIRD_PARTY_NOTICES.md`, `scripts/**` | dependency CVEs and licences |
-| `containers` | the Dockerfiles, `.dockerignore`, `backend/entrypoint.sh` | the image scans |
+| `containers` | the Dockerfiles, `.dockerignore`, `backend/docker-entrypoint.sh` | the image scans |
 | `python` / `javascript` | `**/*.py` / `**/*.{ts,tsx,js,jsx,mjs,cjs}` | that CodeQL language |
 
 Item 10, the secret scan, always runs, and so does the tier guard below. Nothing

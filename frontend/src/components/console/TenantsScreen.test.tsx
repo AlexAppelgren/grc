@@ -6,7 +6,7 @@ import ConsoleTenantsPage from '@/app/(console)/console/tenants/page';
 import { TenantsScreen } from '@/components/console/TenantsScreen';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { REFRESH_PATH, setStepUpHandler } from '@/shared/utils/api-client';
 
 // Tenants in the platform console (ADM-02, ADM-S6): the list of banks, the
 // four states, and creating one with its first administrator invited. The
@@ -40,7 +40,6 @@ const platformAdmin = {
 /** The server: the session and whatever the test adds. */
 function server(tenants: Answer, extra: (sent: Sent) => Answer | undefined = () => undefined): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: platformAdmin };
     const answer = extra(sent);
     if (answer !== undefined) return answer;
@@ -144,6 +143,41 @@ describe('the console tenants screen', () => {
     await waitFor(() => expect(document.querySelector('[data-tenant-slug="third-bank-ab"]')).not.toBeNull());
     const posted = sent.find((s) => s.method === 'post' && s.path === TENANTS_PATH);
     expect(posted?.body).toEqual({ name: 'Third Bank AB', firstAdminEmail: 'administrator@third-bank.test', firstAdminTitle: '' });
+  });
+
+  it('opens the passkey prompt when the server asks for one, and creates once it is confirmed', async () => {
+    const created = { ...tenantB, id: 't3', name: 'Third Bank AB', slug: 'third-bank-ab', status: 'active' };
+    let posts = 0;
+    let prompts = 0;
+    setStepUpHandler(() => {
+      prompts += 1;
+      return Promise.resolve(true);
+    });
+    server({ status: 200, data: { items: [tenantA], total: 1 } }, (s) => {
+      if (s.path !== TENANTS_PATH || s.method !== 'post') return undefined;
+      posts += 1;
+      return posts === 1 ? { status: 403, data: { code: 'step_up_required', detail: 'Confirm with your passkey.', status: 403 } } : { status: 201, data: created };
+    });
+    renderIn(<TenantsScreen />);
+    const form = await openForm();
+    fill(form, { name: 'Third Bank AB', email: 'administrator@third-bank.test' });
+    fireEvent.click(within(form).getByRole('button', { name: 'Create tenant' }));
+
+    expect(await screen.findByText('Third Bank AB is ready. Its first administrator has been invited.')).toBeInTheDocument();
+    expect([prompts, posts]).toEqual([1, 2]);
+  });
+
+  it('says nothing changed when the passkey prompt is cancelled', async () => {
+    setStepUpHandler(() => Promise.resolve(false));
+    server({ status: 200, data: { items: [tenantA], total: 1 } }, (s) =>
+      s.method === 'post' ? { status: 403, data: { code: 'step_up_required', detail: 'Confirm with your passkey.', status: 403 } } : undefined,
+    );
+    renderIn(<TenantsScreen />);
+    const form = await openForm();
+    fill(form, { name: 'Third Bank AB', email: 'administrator@third-bank.test' });
+    fireEvent.click(within(form).getByRole('button', { name: 'Create tenant' }));
+
+    expect(await within(form).findByText('The action was not confirmed, so nothing changed.')).toBeInTheDocument();
   });
 
   it('asks for what the server would refuse, before sending anything', async () => {

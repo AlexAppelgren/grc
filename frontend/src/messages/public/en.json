@@ -1,5 +1,5 @@
 {
-  "public.meta.title": "bleqq · Compliance Watch for banks in the Nordics",
+  "public.meta.title": "bleqq | Agentic Compliance",
   "public.meta.description": "One inventory of your bank's obligations, with a record of every change from the day it was published to the day you signed it off.",
   "public.topLine": "Compliance Watch for banks in the Nordics",
   "public.nav.label": "Sections",
@@ -80,7 +80,6 @@
   "public.demo.picture": "The demo's Today screen, with what is coming for Example Bank AB",
   "public.demo.caption": "Example Bank AB is made up, and nothing you do in it is saved.",
   "public.demo.open": "Try out our demo",
-  "public.demo.close": "Close",
   "public.demo.bank": "Example Bank AB",
   "public.demo.startOver": "Start over",
   "public.demo.skip": "Skip the demo",

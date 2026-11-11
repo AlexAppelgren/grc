@@ -62,7 +62,7 @@ class PanelWorld(UnitWorld):
             ("POST", f"{path}/units", {"orgUnitId": str(self.bank_ab.id), "reference": f"X.{n}", "title": f"Our rule {n}"}),
             ("POST", f"{path}/gaps", gap_body(title=f"Gap {n}")),
             ("POST", f"{path}/internal-links", {**POLICY, "label": f"Policy {n}", "externalRef": f"POL-{n}"}),
-            ("POST", f"{path}/problem-reports", {"description": f"The reference looks wrong ({n})."}),
+            ("POST", "/problem-reports", {"subjectType": "obligation", "subjectId": str(self.standard.id), "description": f"The reference looks wrong ({n})."}),
             ("POST", "/comments", {"subjectType": "obligation", "subjectId": str(self.standard.id), "body": f"Comment {n}"}),
         ]
         for method, url, body in writes:
@@ -73,7 +73,7 @@ class PanelWorld(UnitWorld):
         response = self._call("PATCH", f"{path}/register/entities/{self.bank_ab.id}", status, version=entity["version"], who=self.reader)
         self.assertEqual(response.status_code, 200, response.content)
         person = factories.member_user(self.tenant, roles=("compliance_officer",))
-        response = self._call("POST", f"{path}/participants", {"userId": str(person.id)}, who=self.reader)
+        response = self._call("POST", "/participants", {"subjectType": "obligation", "subjectId": str(self.standard.id), "userId": str(person.id)}, who=self.reader)
         self.assertEqual(response.status_code, 201, response.content)
         watch_build.obligation_link(watch_build.change(stable_key=f"panel-change-{n}"), self.standard)
 
@@ -97,7 +97,7 @@ class EachPartIsWhatItsOwnRouteAnswers(PanelWorld):
             "gaps": f"{path}/gaps?limit=100",
             "assessments": f"{path}/assessments?limit=20&offset=0",
             "internalLinks": f"{path}/internal-links?limit=20&offset=0",
-            "participants": f"{path}/participants?limit=100",
+            "participants": f"/participants?{subject}&limit=100",
             "problemReports": f"/problem-reports?{subject}&limit=20&offset=0",
             "changes": f"{path}/changes?limit=20&offset=0",
             "comments": f"/comments?{subject}&limit=20&offset=0",

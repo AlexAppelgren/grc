@@ -40,10 +40,6 @@ recorded against a line. `--app <name>` is what a sweep runs: it ignores that ap
 lines and reports exactly what the app still owes, changing no file, so parallel sweeps
 never edit the shared ledger to see their own work.
 
-Proven to fail 2026-09-20 against the contract of the day (1173 findings over 263 schemas
-and operations): with the ledger emptied (exit 1, all 263 named, each with the rule it
-breaks and a compliant example), and with a line for the already-documented `Empty` left
-in the ledger (exit 1, the stale line named), then restored.
 apps/shared/tests_api_docs.py pins each rule against a worked example.
 """
 
@@ -62,9 +58,8 @@ BUILT = ROOT / "openapi.json"
 PENDING = BACKEND / "scripts" / "api_docs_pending.txt"
 METHODS = ("get", "post", "put", "patch", "delete")
 
-# A description has to be a sentence about the fact, not a label. Twenty-five characters is
-# the shortest real one we could write ("The tenant's own case id." is 25), so anything
-# under it is a label with a full stop.
+# A description is a sentence about the fact, not a label: 25 characters is the shortest
+# real one ("The tenant's own case id.").
 MIN_DESCRIPTION = 25
 
 # An RFC 9457 code is snake_case with at least one underscore (`four_eyes_violation`,
@@ -72,14 +67,9 @@ MIN_DESCRIPTION = 25
 # about errors -- `code`, `status`, `detail` -- from being read as codes.
 CODE_TOKEN = re.compile(r"`([a-z][a-z0-9]*(?:_[a-z0-9]+)+)`")
 
-# Every `code` a route can raise. apps/shared/errors.py is the contract's vocabulary: its
-# STATUS_BY_CODE table plus the codes config/api.py raises for a request no route sees.
-# A code a route can actually raise, read from the source rather than typed here. The
-# hand-written list this replaces held 26 codes while `apps/` raised far more, so a sweep
-# documenting `invalid_slug` or `idempotency_conflict` — codes the API really answers —
-# failed the gate for telling the truth, and the honest way out was to leave the
-# integrator without the value to branch on (first sweep, 2026-09-20). A test module is
-# not a source: a code only a test names is a code no route raises.
+# Every `code` a route can raise, read from the source (apps/shared/errors.py's
+# STATUS_BY_CODE plus every `code=` literal), never a hand-written list, so documenting a code
+# the API really answers never fails the gate. A code only a test names is no route's.
 CODE_LITERAL = re.compile(r"""code\s*=\s*["']([a-z][a-z0-9_]*)["']""")
 # The exception handlers answer for requests no route sees, so their codes are read too:
 # `enrolment_only` is the 403 an enrolment session gets from every route but passkey
@@ -116,8 +106,10 @@ VOCABULARY_PROPERTIES = frozenset(
     {
         "JurisdictionRow.parentKey",
         "MarketWatchBody.jurisdiction",
-        "ObligationQuery.dutyType",
-        "ObligationQuery.term",
+        # Query parameters are checked under their operation: Ninja inlines a Query model into
+        # `parameters` and the contract publishes no schema for it (review 2026-11-11 B-2).
+        "listObligations.dutyType",
+        "listObligations.term",
         "TaxonomyTermRow.parentKey",
         "VocabularyCreateBody.kind",
         "VocabularyCreateBody.key",
@@ -362,12 +354,8 @@ def documented_codes(operation: dict) -> set[str]:
 
 def has_nothing_to_show(operation: dict) -> bool:
     """True when the call carries no body in either direction, so there is no example to give.
-
-    A `204` answers with no content by definition. Demanding an example of one pushed the
-    first operation that met the rule into declaring `content: application/json` on a 204
-    and typing its body as `unknown` in the generated client, which is the gate bending the
-    API rather than describing it (`markVisit`, 2026-09-20). The description still has to
-    say what the call changes; there is simply nothing to exemplify."""
+    A `204` has no content; demanding an example would bend the API to the gate. The
+    description still has to say what the call changes."""
     if operation.get("requestBody"):
         return False
     successes = [str(code) for code in (operation.get("responses") or {}) if str(code).startswith("2")]

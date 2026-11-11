@@ -1,12 +1,9 @@
-"""Business logic of the governance app. Raises ValidationError with user-facing text; every
-write goes through record(); every threshold comes from settings (playbook 3).
+"""Business logic of the governance app: the tenant audit log (AUD-01).
 
-The tenant audit log (AUD-01): row-level security has already cut `audit_event` to the
-tenant's own rows and the rows without a tenant. Of the latter a tenant sees only a library
-record's change made by an agent, the system or platform staff. Every other row without a
-tenant stays hidden: proposal rows (a tenant-made proposal's title, the editor's rejection
-note, a tenant member as proposer) and platform identity events (sign-ins, code requests,
-which may name a member of another tenant).
+Row-level security has already cut `audit_event` to the tenant's rows and those without a
+tenant. Of the latter a tenant sees only a library record's change made by an agent, the
+system or platform staff; proposal rows and platform identity events stay hidden, because
+they can carry another tenant's words or members.
 """
 
 from __future__ import annotations
@@ -30,7 +27,7 @@ def audit_events(
     tenant_id: uuid.UUID | None, filters: AuditEventQuery, *, limit: int, offset: int
 ) -> tuple[list[AuditEvent], int]:
     """The tenant's audit log, newest first, with the total. A platform session has no
-    tenant and no audit view in chunk 4: 404, like every tenant route."""
+    tenant and no audit view: 404, like every tenant route."""
     if tenant_id is None:
         raise ValidationError("Not found.", code="not_found")
     library_change = Q(tenant__isnull=True, subject_type__in=LIBRARY_SUBJECT_TYPES) & (

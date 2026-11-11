@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import unicodedata
 from typing import Annotated, Any
+from uuid import UUID
 
 from django.conf import settings
 from ninja import Schema
@@ -111,26 +112,91 @@ def _no_chosen_tone(extra: dict[str, Any]) -> dict[str, Any]:
     return extra
 
 
+class NamedRef(LibraryResponse):
+    """A record named on another, as every screen and list reads it: the id to store and
+    compare, and a name to show. A person, a unit of the bank's organisation or one of its
+    agent access entries; the field that carries the reference says which. A person's id and
+    name are the only personal data a record carries about them (playbook 4.7)."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"id": "8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60", "name": "Sara Lindqvist"}]})
+
+    id: UUID = Field(
+        description=(
+            "The record's identifier, a UUID that never changes, the same one its own list and the "
+            "audit log carry. Store and compare this, never the name."
+        ),
+        examples=["8a3c1e5f-2d4b-4f60-9e7a-1b2c3d4e5f60"],
+    )
+    name: str = Field(
+        description=(
+            "The record's name for display only: a person's name as they gave it, or the name the "
+            "bank gave a unit or an entry. It may change at any time and two records may share it, "
+            "so nothing may match on it."
+        ),
+        examples=["Sara Lindqvist"],
+    )
+
+
+class VocabRef(LibraryResponse):
+    """A row of a vocabulary as every picker, pill, filter and export reads it: the key to
+    store and compare, the kind when its list has one, and the label in the reader's language
+    (playbook 15). The field that carries the reference names the list and the endpoint that
+    returns its live set. A tone is never here: a pill's tone follows its slot or the row's
+    own kind and is nobody's to send (NFR-03)."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"examples": [{"key": "act_now", "kind": None, "label": "Act now"}]},
+        json_schema_serialization_defaults_required=True,
+    )
+
+    key: str = Field(
+        description=(
+            "The row's immutable key, and the only part of this reference to store, compare or send "
+            "back. Which vocabulary it is drawn from is settled by the field that carries the "
+            "reference, which names the list and the endpoint that returns its live set: the shared "
+            "library's vocabularies and taxonomy terms, which an admin may extend through an approved "
+            "proposal, a bank's own lists such as its roles, teams, tags and statuses, which the bank's "
+            "admin may extend, relabel, reorder or retire without a deploy, and the platform's fixed "
+            "lists such as the languages. A key you have not seen before is new data and not an error. "
+            "Match on the key and never on the label, and never construct one: a key the list does not "
+            "hold answers 422 `unknown_key` with the valid keys."
+        ),
+        examples=["act_now"],
+    )
+    kind: str | None = Field(
+        default=None,
+        description=(
+            "The row's fixed kind where its list has one, so a screen can branch or pick a pill tone "
+            "without reading the label, and null by default where it has none. By list: a jurisdiction "
+            "is `supranational` (the European Union), `country` (one national market) or `international` "
+            "(a standards body such as ISO/IEC); an urgency is its pill tone, one of `information`, "
+            "`notice`, `positive`, `warning`, `negative` and `brand`; a change type is its lifecycle "
+            "kind; a case sub-status is its case category (`new`, `assigned`, `assessing`, "
+            "`implementing`, `signoff`, `closed` or `dismissed`) and a close reason one of `signed_off`, "
+            "`no_action` or `not_applicable`; a compliance status is `compliant`, `partly`, `gap` or "
+            "`not_assessed` and a gap status `open`, `remediating`, `risk_accepted` or `closed`; a "
+            "taxonomy dimension is `scope` (its terms say who or what a rule covers), `classification` "
+            "(its terms only describe a record) or `opt_in` (the standards a bank follows). Where one "
+            "field carries rows of more than one list, it is the list's name. A taxonomy term, a "
+            "language, a role, a team, a tag, a risk rating and a link kind are null. Kinds are fixed "
+            "in code, so the rules may branch on them; an admin never adds one."
+        ),
+        examples=[None],
+    )
+    label: str = Field(
+        description=(
+            "The row's label in the reader's language: the caller's own language first, then the "
+            "organisation's default language, then English, then any label the row has, and the key "
+            "itself when it has none; a language reads in itself, such as `Svenska`. For display only: a "
+            "person wrote it and may reword or translate it at any time, so nothing may match on it."
+        ),
+        examples=["Act now"],
+    )
+
+
 # A vocabulary write's `extra`: the list's own columns (an urgency's ordinal and SLA days),
 # never a tone or a colour (NFR-S10).
 VocabularyExtra = Annotated[dict[str, Any], AfterValidator(_no_chosen_tone)]
-
-
-class ProductInfo(CamelSchema):
-    """What a sign-in page needs before anyone has signed in: the product's own name."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"productName": "Compliance Watch"}]})
-
-    product_name: str = Field(
-        description=(
-            "The name this deployment of the product goes by, for a sign-in page to show "
-            "before anyone has signed in; a passkey prompt names the service by the same "
-            "name. The platform operator sets it for each deployment, so a rebrand changes "
-            "it without a new release: show what this returns rather than a name of your "
-            "own. It is the product's name and never a bank's; nothing about any bank or "
-            "person is in it."
-        )
-    )
 
 
 class PageQuery(Schema):
@@ -195,20 +261,6 @@ class MailOutboxMessage(CamelSchema):
             "only in a test environment and never where a real person's mail is sent."
         )
     )
-
-
-class VocabularyEntry(CamelSchema):
-    """What every vocabulary read returns (playbook 15): key and kind, never a phrase the
-    client must string-match, plus the label in the caller's language."""
-
-    key: str
-    kind: str | None
-    label: str
-    usage_note: str
-    sort_order: int
-    active: bool
-    is_system: bool
-    is_default: bool
 
 
 class AuditSnapshot(RootModel[dict[str, Any]]):

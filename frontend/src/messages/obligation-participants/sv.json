@@ -9,7 +9,6 @@
   "obligationParticipants.person": "Person",
   "obligationParticipants.addedBy": "Tillagd {date} av {name}",
   "obligationParticipants.leave": "Lämna",
-  "obligationParticipants.remove": "Ta bort",
   "obligationParticipants.grantsNothing": "Att delta listar ärendet under personens Mitt arbete och ger aviseringar. Det ger ingen behörighet.",
   "obligationParticipants.add": "Lägg till en deltagare",
   "obligationParticipants.addTitle": "Lägg till en deltagare",

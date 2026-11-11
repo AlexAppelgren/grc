@@ -31,9 +31,7 @@ from django.utils import timezone
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.errors import ProblemError
 
-# ---------------------------------------------------------------------------------------
-# Tenant permissions (PRD §6). The comment after each row names who holds it by default.
-# ---------------------------------------------------------------------------------------
+# --- Tenant permissions (PRD §6); the comment after each row names who holds it by default ---
 LIBRARY_READ = "library.read"  # everyone
 WATCH_READ = "watch.read"  # everyone
 ROADMAP_READ = "roadmap.read"  # everyone
@@ -67,13 +65,11 @@ VOCAB_MANAGE = "vocab.manage"  # admin, compliance officer
 WORKFLOW_MANAGE = "workflow.manage"  # admin, compliance officer
 AGENTS_MANAGE = "agents.manage"  # admin
 INTEGRATIONS_MANAGE = "integrations.manage"  # admin
-# acc-foundation (PRD 0.5, ACC-01, ACC-03, D-77): a bank's own agents and personal tokens.
+# A bank's own agents and personal tokens (ACC-01, ACC-03, D-77).
 AGENT_ACCESS_MANAGE = "agent_access.manage"  # admin
 TOKENS_CREATE = "tokens.create"  # admin, compliance officer, owner
 
-# ---------------------------------------------------------------------------------------
-# Platform permissions (PRD §6): library_editor and platform_admin.
-# ---------------------------------------------------------------------------------------
+# --- Platform permissions (PRD §6): library_editor and platform_admin ---
 PROPOSALS_REVIEW = "proposals.review"  # library_editor
 LIBRARY_VOCAB_MANAGE = "library_vocab.manage"  # library_editor
 SOURCES_MANAGE = "sources.manage"  # library_editor
@@ -140,10 +136,8 @@ APPROVE_PERMISSIONS: frozenset[str] = frozenset(
     {FOOTPRINT_APPROVE, CASES_SIGNOFF, RISK_ACCEPT_APPROVE, PROPOSALS_REVIEW, PRIVATE_RECORDS_APPROVE}
 )
 
-# ---------------------------------------------------------------------------------------
-# System roles as the PRD's matrix states them. Seeded as rows by chunk 1 (ID-09); kept
-# here so the seed and the seed-integrity guard read one source.
-# ---------------------------------------------------------------------------------------
+# --- System roles as the PRD's matrix states them (ID-09) ---
+# Kept here so the seed and the seed-integrity guard read one source.
 _EVERYONE = frozenset(
     {
         LIBRARY_READ,
@@ -215,11 +209,9 @@ SYSTEM_ROLES: dict[str, frozenset[str]] = {
     ),
 }
 
-# ---------------------------------------------------------------------------------------
-# API key scopes (ID-10), named as schema v0.3 names them (`api_key.scopes` check). Named
-# here so `@requires_scope` and the key console share them. No scope allows a library
-# edit (AC-PRO1, ID-S21): the agent writes changes and proposals only.
-# ---------------------------------------------------------------------------------------
+# --- API key scopes (ID-10) ---
+# Shared by `@requires_scope` and the key console. No scope allows a library edit (AC-PRO1,
+# ID-S21).
 SCOPE_AGENT_RUNS_WRITE = "agent-runs:write"
 SCOPE_SOURCES_WRITE = "sources:write"
 SCOPE_CHANGES_WRITE = "changes:write"
@@ -228,12 +220,9 @@ SCOPE_SEARCH_READ = "search:read"
 SCOPE_LIBRARY_READ = "library:read"
 SCOPE_UPCOMING_READ = "upcoming:read"
 SCOPE_TENANT_READ = "tenant:read"
-# The second, independent principal an agent may be (PRO-S13, D-62, ADR 0054): reads the
-# same review queue a person reads and may approve, correct or reject through the same
-# logic, which still writes the library only through an approved proposal. Platform-only
-# (PLATFORM_ONLY_SCOPES below): a key carrying a tenant is refused it at creation (422,
-# apps/identity/api_keys_logic.py) and at the review gate (403,
-# apps/proposals/api.py:require_reviewer).
+# The second, independent principal an agent may be (PRO-S13, D-62, ADR 0054): it works the
+# review queue through the same logic, which writes the library only through an approved
+# proposal. Platform-only: refused to a tenant key at creation and at the review gate.
 SCOPE_PROPOSALS_REVIEW = "proposals:review"
 ALL_SCOPES: frozenset[str] = frozenset(
     {
@@ -248,33 +237,25 @@ ALL_SCOPES: frozenset[str] = frozenset(
         SCOPE_PROPOSALS_REVIEW,
     }
 )
-# A scope a tenant's own key may never hold, however it is granted (ID-10, D-61, D-62): the
-# review queue is the platform's, never a bank's, and so is the watch feed. Opening a run,
-# logging a source check and writing a change's facts are what bleqq's own agents do for
-# every bank at once, and D-61 says a bank's agent never writes the facts every other bank
-# reads; a bank's own agents are R2 and write only in its zone, through routes that do not
-# exist yet. A bank's key is refused these at creation (422,
-# apps/identity/api_keys_logic.py), and a key that already holds one works without it, with
-# a `key_scopes_withheld` row in the security log. This is the one place the rule is a set
-# membership test rather than a sentence.
+# Scopes a tenant's own key may never hold (ID-10, D-61, D-62): the review queue and the watch
+# feed are the platform's, and a bank's agent never writes the facts every bank reads. Refused
+# at creation (422); an old key holding one works without it, with `key_scopes_withheld` in
+# the security log.
 PLATFORM_ONLY_SCOPES: frozenset[str] = frozenset(
     {SCOPE_PROPOSALS_REVIEW, SCOPE_AGENT_RUNS_WRITE, SCOPE_SOURCES_WRITE, SCOPE_CHANGES_WRITE}
 )
 # What a bank's own key may be given: reads, and filing a proposal, which changes nothing
 # until someone independent approves it (AC-PRO1).
 TENANT_KEY_SCOPES: frozenset[str] = ALL_SCOPES - PLATFORM_ONLY_SCOPES
-# What a credential of an agent access entry, and every personal access token, may hold
-# (acc-foundation, ACC-03, ADR 0055): reads, none of which writes. `tenant:read` reaches the
-# bank's register decisions and only with tenant reach on (D-72, D-76). A CHECK on api_key
-# (identity 0007) holds the same set.
+# What a credential of an agent access entry, and every personal token, may hold (ACC-03, ADR
+# 0055): reads only. `tenant:read` reaches the register only with tenant reach on (D-72,
+# D-76). A CHECK on api_key holds the same set.
 AGENT_ACCESS_SCOPES: frozenset[str] = frozenset(
     {SCOPE_LIBRARY_READ, SCOPE_SEARCH_READ, SCOPE_UPCOMING_READ, SCOPE_TENANT_READ}
 )
 
-# ---------------------------------------------------------------------------------------
-# The permission catalogue for the role editor (`GET /reference/permissions`, ID-09):
-# a one-line description per constant. The group is the word before the dot.
-# ---------------------------------------------------------------------------------------
+# --- The permission catalogue for the role editor (`GET /reference/permissions`, ID-09) ---
+# A one-line description per constant; the group is the word before the dot.
 PERMISSION_DESCRIPTIONS: dict[str, str] = {
     LIBRARY_READ: "Read the shared library of instruments, provisions and obligations.",
     WATCH_READ: "Read the watch feed of regulatory changes.",
@@ -328,9 +309,7 @@ def permission_group(permission: str) -> str:
     return permission.split(".", 1)[0]
 
 
-# ---------------------------------------------------------------------------------------
-# Ungated by design (playbook 5). Five shapes, each read back and disagreed with in review.
-# ---------------------------------------------------------------------------------------
+# --- Ungated by design (playbook 5): five shapes ---
 class UngatedReason(enum.StrEnum):
     """Tier-one kind (apps/shared/kinds.py)."""
 
@@ -356,7 +335,6 @@ _CAPABILITY_VOCAB_READ = "Any session reads the list of lists; pickers, filters 
 _LOGIC_LIBRARY_READ = "A person's session, or an agent's key holding library:read; pickers and agents read one endpoint (AGT-02)."
 _LOGIC_VOCAB_WRITE = "vocab.manage writes a tenant list; a library list write is a proposal from proposals.create or library_vocab.manage (VOC-07)."
 _LOGIC_PROPOSE = "A term change is a proposal from proposals.create (tenant) or library_vocab.manage (console); never a direct write (VOC-07)."
-_LOGIC_RUN_LOG = "agents.manage in a tenant reads the library's runs and its own; system.health reads them in the console (AGT-01, item 14). The gate is the `require_any(AGENTS_MANAGE, SYSTEM_HEALTH)` call in apps/agents/api.py:list_agent_runs, which refuses a session holding neither with the structured 403."
 _LOGIC_WATCH_READER = "watch.read in the caller's tenant, an agent's key with library:read, because a run must know which sources to check, or sources.manage in the console, which has no tenant and so no watch.read, for the read-only Sources page (WAT-01, AGT-02, ruling 3). The gate is apps/watch/api.py:require_watch_reader, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_CHANGE_FACTS = "An agent's key with changes:write, or a library editor with proposals.review; a change's facts are library facts and no tenant role holds that (WAT-02, WAT-03, PRO-01). The gate is apps/watch/api.py:require_change_writer, which branches on the principal kind and names the scope it wanted to a key and the permission it wanted to a person."
 _LOGIC_CURATION_CONFIRM = "A platform key bound to an agent definition and holding the scope `proposals:review`, or a person holding `proposals.review` with a fresh passkey assertion, confirms a change's curated facts for the shared library, because one decorator cannot express 'a session or a key' (WAT-03, WAT-04, D-74). The gate is apps/watch/api.py:require_curation_confirmer, which refuses a tenant-carrying key and a key bound to no agent (`agent_not_bound`), names the scope it wanted to a key and the permission it wanted to a person, and calls `enforce_step_up` for the person; the write refuses an agent confirming what it or another key of its agent suggested."
@@ -365,11 +343,13 @@ _LOGIC_UPCOMING_READER = "roadmap.read in the caller's tenant, or an agent's key
 _LOGIC_PROPOSALS_REVIEW = "The queue read, the detail read, approve and reject accept a session holding `proposals.review` or a platform key bound to an agent and holding the scope `proposals:review`, because `Principal.has_permission`/`has_scope` are kind-exclusive and one decorator cannot express 'a session or a key' (PRO-01, PRO-S13, PRO-S14, D-62, ADR 0054). The gate is apps/proposals/api.py:require_reviewer, which branches on the principal kind, refuses a tenant-carrying key even if its scopes list somehow names the scope, refuses a key bound to no agent definition (`agent_not_bound`), and never applies a step-up to a key, which holds no passkey assertion; approve calls `enforce_step_up` for a person in its body."
 _PUBLIC_CALENDAR_TOKEN = "The revocable token in the calendar address is the whole grant: a calendar client sends no header, follows no sign-in and cannot be asked for a passkey, so the URL is the only credential it can carry (HOM-04, D-52, ADR 0045). The mitigations are the ones that decision weighed. The token is `<prefix>.<secret>` with 256 bits of secret, kept as a lookup prefix beside the secret's SHA-256, shown once and never again. It rides in the query string, not the path, because our own access log prints the route and drops the query while a hosting edge writes whole request lines, which makes this the one named exception to CONVENTIONS 3.6 and is pinned by a guard test that no other route reads a token from the query string. A person may hold only CALENDAR_FEEDS_PER_USER addresses and mints one only from a recent sign-in or a step-up, so a stolen access token cannot leave a lasting one behind. Every fetch re-checks that the owner is still a member holding roadmap.read and has not been enrolled again, revoking the subscription when a check fails; an idle one expires after CALENDAR_FEED_IDLE_DAYS; unknown, revoked and expired answer one 404. What is left is the residual risk the decision accepted and the dialog states: whoever holds the address can see which public regulatory dates, stated to the day, the bank has open work on, and nothing else - no internal deadline, owner, urgency or 'So what?' reaches a calendar. The behaviour is apps/home/feed.py's and apps/home/tests_feed.py proves each of these mitigations."  # noqa: S105 a reviewer's note, not a credential
 
-# c10-collab-contract.
+# Collaboration.
 _SELF_NOTIFICATIONS = "Acts only on the caller's own notification rows; no parameter reaches another person's (COL-02)."
 _SELF_MY_COMMENTS = "Returns the caller's own comments and mentions, filtered afterwards by each subject's read permission (COL-01)."
 _LOGIC_MY_WORK = "Any member's session opens My work, their own or any department's; the service applies register.read to register entries and internal items and cases.read to cases, row by row and count by count, and names a kind it left out in permissionLimited rather than refusing the page (HOM-05, D-23). The department view is a filter and never a grant."
-_LOGIC_CASE_PARTICIPANT_REMOVAL = "A person may always leave their own participation in a case; removing anyone else's needs cases.contribute, which the logic checks on the row (D-19, COL-04)."
+_LOGIC_CASE_PARTICIPANT_REMOVAL = "A person may always leave their own participation; on an obligation that needs register.read, which apps/collab/api.py:remove_participant checks first, and removing anyone else's needs register.edit on an obligation or cases.contribute on a case, which the logic checks on the row (D-19, COL-04)."
+_LOGIC_PARTICIPANTS_READ = "register.read for an obligation's participants, cases.read for a case's: apps/collab/api.py:list_participants checks participants.READ_PERMISSION[subjectType] with require_any before any lookup, naming it in the 403 (COL-04)."
+_LOGIC_PARTICIPANTS_ADD = "register.edit to add to an obligation, cases.contribute to add to a case: apps/collab/api.py:add_participant checks participants.EDIT_PERMISSION[subjectType] with require_any before any lookup, naming it in the 403 (COL-04, D-20)."
 _LOGIC_COMMENT_SUBJECT = "The gate is the read permission of the subject's kind, which `collab/subjects.py` decides per record; the write also needs `comments.write` (COL-01)."
 
 # (METHOD, path as Ninja registers it under /api/v1) -> why it needs no permission gate.
@@ -384,16 +364,12 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("DELETE", "/me/passkeys/{passkey_id}"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("GET", "/me/sessions"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("DELETE", "/me/sessions/{session_id}"): Ungated(UngatedReason.SELF, _SELF_ME),
-    # acc-personal-grants (ACC-03): a member lists and revokes their own tokens even after
+    # ACC-03: a member lists and revokes their own tokens even after
     # losing `tokens.create`; minting stays behind the permission and a step-up.
     ("GET", "/me/tokens"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("DELETE", "/me/tokens/{token_id}"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("POST", "/auth/step-up/options"): Ungated(UngatedReason.SELF, _SELF_STEP_UP),
     ("POST", "/auth/step-up/verify"): Ungated(UngatedReason.SELF, _SELF_STEP_UP),
-    ("GET", "/reference/product"): Ungated(
-        UngatedReason.BOOTSTRAP,
-        "The sign-in page needs the product name before anyone has signed in.",
-    ),
     ("POST", "/auth/invitations/open"): Ungated(
         UngatedReason.PUBLIC_TOKEN, "The single-use invitation token, in the body, is the grant; rate limited (ID-01)."
     ),
@@ -426,9 +402,8 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         UngatedReason.BOOTSTRAP,
         "Exists only under E2E_MODE (404 otherwise) so journeys can prove the mailer sent nothing (AC-ID1).",
     ),
-    # Chunk 2 (vocabularies, taxonomy, footprint, proposals). A logic gate here means one
-    # route serves more than one principal or permission; apps/taxonomy/http.py decides and
-    # still answers the structured 403 with requiredPermission.
+    # A logic gate means one route serves more than one principal or permission;
+    # apps/taxonomy/http.py decides and still answers the structured 403.
     ("GET", "/vocab"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_VOCAB_READ),
     ("GET", "/vocab/{list_name}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_READ),
     ("GET", "/vocab/{list_name}/{key}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_READ),
@@ -441,7 +416,6 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         UngatedReason.CAPABILITY,
         "Any member may suggest a value; it lands with vocab.manage holders or in the proposal queue (VOC-03).",
     ),
-    ("GET", "/taxonomy/dimensions"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_READ),
     ("GET", "/taxonomy/terms"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_READ),
     ("POST", "/taxonomy/terms"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSE),
     ("PATCH", "/taxonomy/terms/{term_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSE),
@@ -453,7 +427,7 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/proposals/{proposal_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
     ("POST", "/proposals/{proposal_id}/approve"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
     ("POST", "/proposals/{proposal_id}/reject"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PROPOSALS_REVIEW),
-    # c11-proposal-batches-create (PRO-04, AGT-05).
+    # Batch proposals (PRO-04, AGT-05).
     ("POST", "/proposal-batches"): Ungated(
         UngatedReason.LOGIC_GATE,
         "proposals.review from a platform person, or the proposals:write scope from a platform key naming an open run of its own; no bank's session or key re-tags the library (PRO-04, AGT-05). The gate is apps/proposals/api.py:require_batch_proposer, which refuses a tenant-carrying principal and names the permission or scope it wanted.",
@@ -467,7 +441,7 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/reference/jurisdictions"): Ungated(
         UngatedReason.CAPABILITY, "A reference read for pickers; any session may list the jurisdiction rows (I18N-01)."
     ),
-    # Chunk 3 (library reads). apps/taxonomy/http.py require_library_read decides.
+    # Library reads: apps/taxonomy/http.py require_library_read decides.
     ("GET", "/obligations"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/obligations/{obligation_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/obligations/{obligation_id}/diff"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
@@ -475,12 +449,8 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/instruments/{instrument_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/instruments/{instrument_id}/provisions"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/provisions/{provision_id}/diff"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
-    # Chunk 5 (the agent API). Eight routes serve more than one kind of principal, so
-    # apps/watch/api.py and apps/agents/api.py decide and still answer the structured 403
-    # with requiredPermission. Everything else the chunk declares carries a single gate.
-    # The chunk 5 brief's "none is added to UNGATED_BY_DESIGN" is amended for these eight,
-    # each naming the dual-principal gate it defers to (CHUNK5_TASKS.md, c5-contract-api-agent).
-    ("GET", "/agent-runs"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_RUN_LOG),
+    # The agent API: these routes serve more than one kind of principal, so apps/watch/api.py
+    # and apps/agents/api.py decide and still answer the structured 403.
     ("GET", "/sources"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_WATCH_READER),
     ("GET", "/sources/coverage"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_WATCH_READER),
     ("POST", "/changes"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
@@ -489,8 +459,8 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("PATCH", "/changes/{change_id}/events/{event_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
     ("PUT", "/changes/{change_id}/obligations"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CHANGE_FACTS),
     ("POST", "/changes/{change_id}/confirmation"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CURATION_CONFIRM),
-    # Chunk 4 (proposals and the platform console). New entries are appended here, so two
-    # sessions adding one at the same time do not land on the same line.
+    # Proposals and the platform console. New entries are appended here, so two changes do
+    # not land on the same line.
     ("POST", "/me/visit"): Ungated(UngatedReason.SELF, _SELF_ME),
     # D-122: a person moves their own session to a bank or the console they already hold.
     ("POST", "/me/context"): Ungated(UngatedReason.SELF, _SELF_ME),
@@ -498,44 +468,23 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     # behind a step-up on their own session.
     ("POST", "/me/invitations/accept"): Ungated(UngatedReason.SELF, _SELF_ME),
 
-    # The two library reads chunk 5 adds (c5-contract-api-screens). Both serve a person's
-    # session and an agent's key, which one decorator cannot express, so they take the same
-    # logic gate as chunk 3's record reads: apps/taxonomy/http.py:require_library_read.
-    # `GET /obligations/{obligation_id}/sources` is deliberately readable by a key holding
-    # library:read alone, because that is how a run re-checks a record against its source
-    # without any write scope; the correction it finds is a proposal (AGT-01, PRO-01).
+    # Library reads served to a session and a key alike: require_library_read decides.
+    # `GET /obligations/{obligation_id}/sources` is readable with library:read alone, so a
+    # run re-checks a record without a write scope (AGT-01, PRO-01).
     ("GET", "/authorities"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
     ("GET", "/obligations/{obligation_id}/sources"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_LIBRARY_RECORDS),
 
-    # Chunk 6 (home, the briefing, the roadmap and the calendar feed). Seven of the nine
-    # operations carry a single permission and are not here; `GET /home` carries
-    # `roadmap.read`, which every system role holds, rather than being left ungated. These
-    # two cannot: one decorator expresses a permission or a scope and never "either", and a
-    # calendar client presents no principal at all.
-    #
-    # `c6-home-api-contract`'s brief said no chunk 6 route would join this list, on the
-    # reading that `getHome` would be the one tempted to. That reading does not survive the
-    # two routes below, exactly as the chunk 5 brief's identical sentence was amended for
-    # its eight dual-principal routes. `UngatedReason.PUBLIC_TOKEN` was written in chunk 1
-    # naming this calendar feed, so the shape was expected; what changed is only where it is
-    # written down. A reviewer disagreeing with either note should say so before the merge.
-    #
-    # The ICS route's path is `feed.ics` and its token is a query parameter, which D-52 and
-    # ADR 0045 decided after the contract first declared `/calendar/{feedToken}`: the token
-    # in a path reaches a hosting edge's request log, and the query string does not reach
-    # ours. `apps/home/tests_contract.py` pins that no other operation takes a token in its
-    # query string, so the exception stays one route wide.
+    # Home: one decorator cannot say "a permission or a scope", and a calendar client presents
+    # no principal at all. The ICS token is a query parameter (D-52, ADR 0045): a path reaches
+    # a hosting edge's request log; apps/home/tests_contract.py keeps it the only one.
     ("GET", "/upcoming"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_UPCOMING_READER),
     ("GET", "/calendar/feed.ics"): Ungated(UngatedReason.PUBLIC_TOKEN, _PUBLIC_CALENDAR_TOKEN),
 
-    # c8-tenants-contract (TEN-02, TEN-03, TEN-06, COL-04). The bank's organisation, its teams
-    # and who from the platform may look in are read by every member: the pickers, the
-    # department view and the Support access panel need them. Writes keep their permission.
+    # The organisation, teams and support access panel are read by every member (TEN-02,
+    # TEN-03, TEN-06, COL-04); writes keep their permission.
     ("GET", "/tenant/org-units"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
-    ("GET", "/tenant/org-units/{org_unit_id}/licences"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
     ("GET", "/tenant/products"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
     ("GET", "/tenant/teams"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
-    ("GET", "/tenant/teams/{key}/members"): Ungated(UngatedReason.CAPABILITY, _CAPABILITY_MEMBER),
     ("GET", "/tenant/support-access"): Ungated(
         UngatedReason.CAPABILITY,
         "Every member may see who from the platform asked to look in, and who was let in (TEN-06, D-49).",
@@ -546,10 +495,8 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         "pickers need the bank's active members, as ids and names only; `GET /tenant/members` "
         "stays under members.manage (COL-04, TEN-03).",
     ),
-    # c10-collab-contract (chunk 10, COL-01, COL-02, HOM-05). The three inbox routes and
-    # GET /me/comments act on the caller's own rows; the comment reads and writes are gated
-    # per record by the subject registry (collab/subjects.py). PATCH and DELETE
-    # /comments/{comment_id} carry comments.write and are not listed here.
+    # The inbox routes and GET /me/comments act on the caller's own rows; comment reads and
+    # writes are gated per record by collab/subjects.py (COL-01, COL-02, HOM-05).
     ("GET", "/notifications"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
     ("POST", "/notifications/{notification_id}/read"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
     ("POST", "/notifications/read-all"): Ungated(UngatedReason.SELF, _SELF_NOTIFICATIONS),
@@ -557,25 +504,25 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
     ("GET", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
     ("POST", "/comments"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_COMMENT_SUBJECT),
 
-    # c8-mywork-routes (chunk 8, HOM-05).
+    # My work (HOM-05).
     ("GET", "/me/work"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_MY_WORK),
-    # c9-case-participants (chunk 9, COL-04, CAS-03). Listing and adding carry cases.read and
-    # cases.contribute; removal is gated in logic, because leaving needs no permission.
-    ("DELETE", "/changes/{change_id}/participants/{participant_id}"): Ungated(
-        UngatedReason.LOGIC_GATE, _LOGIC_CASE_PARTICIPANT_REMOVAL
-    ),
-    # c10-out-of-office (TEN-04): the caller's own absence on their own membership. The
-    # delegate check inside is the gate on what it may name (delegate_cannot_approve).
+    # Participants (COL-04, CAS-03, B-14): one route per verb for both subjects, each subject
+    # keeping its own permissions (participants.READ_PERMISSION, EDIT_PERMISSION); removal is
+    # gated in logic, because leaving needs no permission.
+    ("GET", "/participants"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PARTICIPANTS_READ),
+    ("POST", "/participants"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_PARTICIPANTS_ADD),
+    ("DELETE", "/participants/{participant_id}"): Ungated(UngatedReason.LOGIC_GATE, _LOGIC_CASE_PARTICIPANT_REMOVAL),
+    # The caller's own absence (TEN-04); `delegate_cannot_approve` gates what it may name.
     ("GET", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
     ("PUT", "/me/out-of-office"): Ungated(UngatedReason.SELF, _SELF_ME),
-    # acc-mcp-transport (ACC-05): one endpoint for every tool, so no single scope fits it.
+    # ACC-05: one endpoint for every tool, so no single scope fits it.
     ("POST", "/mcp"): Ungated(
         UngatedReason.LOGIC_GATE,
         "Only the key of an agent access entry or a personal access token, through ApiKeyAuth; any other key "
         "answers 403 agent_access_only. The gate is apps/integrations/mcp.py:handle, and the tool list offers a "
         "tool only when the credential holds the scope its route needs, the register tool only with reach too.",
     ),
-    # acc-scoped-reads (SRC-01, ACC-04, ACC-05): a bank's own agent searches the library in its scope.
+    # SRC-01, ACC-04, ACC-05: a bank's own agent searches the library in its scope.
     ("POST", "/search"): Ungated(
         UngatedReason.LOGIC_GATE,
         "search.use in the caller's tenant, or a key holding search:read, which is how an agent a bank runs "
@@ -583,16 +530,10 @@ UNGATED_BY_DESIGN: dict[tuple[str, str], Ungated] = {
         "The gate is apps/search/api.py:require_searcher, which branches on the principal kind and names the "
         "scope it wanted to a key and the permission it wanted to a person.",
     ),
-    # d89-scope-items-logic (OWN-01): one of the bank's own scope items, read as the scope is.
-    ("GET", "/tenant/footprint/scope-items/{scope_item_id}"): Ungated(
-        UngatedReason.CAPABILITY, "Every member reads the regulatory scope and the scope items in it (FP-03, OWN-01)."
-    ),
 }
 
 
-# ---------------------------------------------------------------------------------------
-# Decorators
-# ---------------------------------------------------------------------------------------
+# --- Decorators ---
 @dataclass(frozen=True)
 class Gate:
     kind: str  # "permission" | "scope"
@@ -675,10 +616,9 @@ def enforce_step_up(request: HttpRequest) -> uuid.UUID:
 
 
 def enforce_recent_sign_in_or_step_up(request: HttpRequest) -> uuid.UUID | None:
-    """Adding or removing a passkey from a full session (security review F9, narrowed):
-    allowed while the session is younger than STEP_UP_FRESHNESS_MINUTES (its creation,
-    which a refresh does not move), or with a fresh assertion. Returns the assertion id
-    when there is one. A sign-in never counts as a step-up for `@requires_step_up`."""
+    """Adding or removing a passkey from a full session (F9): allowed while the session is
+    younger than STEP_UP_FRESHNESS_MINUTES (from its creation), or with a fresh assertion,
+    whose id is returned. A sign-in never counts as a step-up for `@requires_step_up`."""
     principal = _principal(request)
     try:
         return enforce_step_up(request)

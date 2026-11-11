@@ -1,5 +1,5 @@
 {
-  "public.meta.title": "bleqq · Compliance Watch för banker i Norden",
+  "public.meta.title": "bleqq | Agentic Compliance",
   "public.meta.description": "En förteckning över er banks skyldigheter, där varje ändring går att följa från dagen den publicerades till dagen ni attesterade den.",
   "public.topLine": "Compliance Watch för banker i Norden",
   "public.nav.label": "Avsnitt",
@@ -80,7 +80,6 @@
   "public.demo.picture": "Demons Idag-vy, med det som är på väg för Example Bank AB",
   "public.demo.caption": "Example Bank AB är påhittad, och inget ni gör i den sparas.",
   "public.demo.open": "Prova vår demo",
-  "public.demo.close": "Stäng",
   "public.demo.bank": "Example Bank AB",
   "public.demo.startOver": "Börja om",
   "public.demo.skip": "Hoppa över demon",

@@ -1,12 +1,9 @@
 """Read a versioned agent definition (`backend/agents/<agent>/v<n>/definition.yaml`, AGT-03).
 
-PyYAML is a development dependency and the image installs `--only main`, while
-`seed_reference` runs on every deploy, so the seed cannot import it and dependencies are
-not this package's to change. The fields the seed needs are plain top-level scalars and
-the tool names, so this reader takes those and refuses any value it cannot read rather than
-seeding a half-read definition. `apps/agents/tests_models.py` and
-`apps/agents/tests_definition_files.py` parse the same files with PyYAML and demand the two
-agree, so the reader cannot drift from real YAML.
+PyYAML is a development dependency and `seed_reference` runs in the production image, so
+this reads the top-level scalars and tool names itself and refuses anything it cannot read.
+`tests_models.py` and `tests_definition_files.py` parse the same files with PyYAML and
+demand agreement.
 """
 
 from __future__ import annotations
@@ -19,9 +16,8 @@ from django.conf import settings
 
 from apps.agents.models import AgentScopeKind, AgentWritesTo
 
-# `backend/agents/`, which is `/app/agents/` in the API image: the image builds from
-# `backend/` alone, so a definition anywhere else never reaches the deploy that seeds it.
-# The E2E stack alone reads a copy of it (settings.AGENT_DEFINITIONS_DIR).
+# `backend/agents/`, `/app/agents/` in the image, which builds from `backend/` alone. The E2E
+# stack reads a copy (settings.AGENT_DEFINITIONS_DIR).
 DEFINITIONS: Path = settings.AGENT_DEFINITIONS_DIR
 
 FIELD = re.compile(r"[a-z][a-z0-9_]*")

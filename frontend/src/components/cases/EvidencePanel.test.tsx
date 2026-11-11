@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,10 +6,10 @@ import { fileNameOf } from '@/features/cases/api';
 import { presentScanState } from '@/features/cases/case-presentation';
 import type { CaseEvidence, CaseWorkflow } from '@/features/cases/types';
 import { createT } from '@/shared/i18n';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { api, tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
+import { session } from '@/shared/testing/fixtures';
 
 import { EvidencePanel, formatSize, saveDownload } from './EvidencePanel';
 
@@ -20,7 +20,7 @@ import { EvidencePanel, formatSize, saveDownload } from './EvidencePanel';
 // remove with its confirm.
 
 const t = createT('en');
-const SESSION = { user: { locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, enrolmentPending: false, permissions: [] };
+const SESSION = session();
 const WORKER = ['cases.read', 'cases.work', 'cases.contribute'];
 const CONTRIBUTOR = ['cases.read', 'cases.contribute'];
 const READER = ['cases.read'];
@@ -48,16 +48,7 @@ function serve(route: (sent: Sent) => Answer | undefined, items: CaseEvidence[] 
 }
 
 function renderPanel(permissions: string[], category: CaseWorkflow['category'] = 'implementing'): void {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <EvidencePanel change={{ id: 'c-1' } as never} workflow={{ category, version: 6 } as CaseWorkflow} />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Query>,
-  );
+  renderWith(<EvidencePanel change={{ id: 'c-1' } as never} workflow={{ category, version: 6 } as CaseWorkflow} />, { permissions });
 }
 
 const row = (id: string) => within(document.querySelector(`[data-evidence="${id}"]`) as HTMLElement);

@@ -53,6 +53,8 @@ from apps.shared.testing import (
     user_principal,
 )
 from config.api import api
+from apps.shared.testing import call_route
+from apps.shared.testing import assert_refused
 
 CHANGE = "11111111-1111-4111-8111-111111111111"
 OBLIGATION = "44444444-4444-4444-8444-444444444444"
@@ -72,25 +74,15 @@ CASE_ROUTES = [
 ]
 
 
-def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
-    if body is None:
-        return getattr(client, method)(url, **headers)
-    return getattr(client, method)(url, data=body, content_type="application/json", **headers)
-
-
 class CaseRouteGates(TestCase):
     def test_no_credential_is_401(self) -> None:
-        for name, method, url, body in CASE_ROUTES:
-            with self.subTest(operation=name):
-                response = _call(self.client, method, url, body, {})
-                self.assertEqual(response.status_code, 401)
-                self.assertEqual(response.json()["code"], "unauthenticated")
+        assert_refused(self, CASE_ROUTES, {}, 401, "unauthenticated")
 
     def test_a_session_without_cases_work_is_403_naming_it(self) -> None:
         with stub_session(user_principal(permissions={perms.CASES_READ}, tenant_id=uuid.uuid4())):
             for name, method, url, body in CASE_ROUTES:
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 403)
                     problem = response.json()
                     self.assertEqual(problem["code"], "permission_denied")
@@ -100,9 +92,7 @@ class CaseRouteGates(TestCase):
         """A case is a bank's judgement. No scope reaches one, whatever the key holds: the
         agent writes library facts and the bank decides what they mean (AGT-01, rule 13)."""
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            for name, method, url, body in CASE_ROUTES:
-                with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_KEY).status_code, 401)
+            assert_refused(self, CASE_ROUTES, AS_KEY, 401)
 
     def test_a_library_editor_never_writes_a_banks_wording(self) -> None:
         """`proposals.review` is the console's permission and no tenant role holds it; it is
@@ -110,7 +100,7 @@ class CaseRouteGates(TestCase):
         with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW, perms.SOURCES_MANAGE})):
             for name, method, url, body in CASE_ROUTES:
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 403)
                     self.assertEqual(response.json()["requiredPermission"], perms.CASES_WORK)
 
@@ -129,7 +119,7 @@ class CaseRouteGates(TestCase):
         with stub_session(user_principal(permissions={perms.CASES_WORK}, tenant_id=uuid.uuid4())):
             for name, method, url, body in cases:
                 with self.subTest(operation=name, body=body):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
 
@@ -140,7 +130,7 @@ class CaseRouteGates(TestCase):
 
         self.assertEqual(SO_WHAT_MAX, TEXT_MAX)
         with stub_session(user_principal(permissions={perms.CASES_WORK}, tenant_id=uuid.uuid4())):
-            response = _call(
+            response = call_route(
                 self.client, "put", f"/api/v1/changes/{CHANGE}/so-what", {"text": "x" * SO_WHAT_MAX}, AS_SESSION
             )
         self.assertEqual(response.status_code, 404, "the cap itself is accepted and reaches the logic")
@@ -153,7 +143,7 @@ class CaseRouteLogic(TestCase):
         with stub_session(user_principal(permissions={perms.CASES_WORK}, tenant_id=uuid.uuid4())):
             for name, method, url, body in CASE_ROUTES:
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 404)
                     problem = response.json()
                     self.assertEqual(problem["code"], "not_found")
@@ -212,42 +202,10 @@ WORKFLOW = [
 ]
 
 
-# The operations whose module has landed: each answers for real past its gate, and its own
-# tests prove what it does instead of the 501 below. One line per package.
-BUILT = frozenset(
-    {
-        # c9-triage: tests_triage.py and tests_close_paths.py
-        "triageChange",
-        "dismissChange",
-        "restoreChange",
-        "closeWithoutAction",
-        # c9-assessment: tests_assessment.py
-        "startAssessment",
-        "saveAssessment",
-        # c9-actions: tests_actions.py
-        "listActions",
-        "addAction",
-        "updateAction",
-        "deleteAction",
-        # c9-evidence: tests_evidence*.py
-        "listEvidence",
-        "addEvidence",
-        "downloadEvidence",
-        "removeEvidence",
-        # c9-signoff: tests_signoff.py
-        "requestSignoff",
-        "approveSignoff",
-        "sendBackSignoff",
-        # c9-case-file-export: tests_case_file.py
-        "getCaseFile",
-    }
-)
-
-
 def _send(client: Any, route: Route, url: str, headers: dict[str, Any]) -> Any:
     if route.body is MULTIPART:
         return client.post(url, data=EVIDENCE_FORM, **headers)
-    return _call(client, route.method, url, route.body, headers)
+    return call_route(client, route.method, url, route.body, headers)
 
 
 def _bank_with_work() -> SimpleNamespace:
@@ -336,16 +294,6 @@ class WorkflowContract(TestCase):
                     else:
                         self.assertEqual(response.status_code, 404, "past every gate, into a change with no case")
 
-    def test_past_every_gate_each_answers_501_not_built(self) -> None:
-        bank = _bank_with_work()
-        with stub_session(bank.principal):
-            for route in (route for route in WORKFLOW if route.operation_id not in BUILT):
-                with self.subTest(operation=route.operation_id):
-                    response = _send(self.client, route, route.url(bank.change_id, bank.action_id, bank.evidence_id), AS_SESSION)
-                    self.assertEqual(response.status_code, 501)
-                    self.assertEqual(response.json()["code"], "not_built")
-                    self.assertEqual(response.headers["Content-Type"], "application/problem+json")
-
     def test_another_banks_case_action_and_evidence_are_404_before_the_stub(self) -> None:
         """Every route, the ones that need a body included: the stub loads its record under
         row-level security first, so another bank never learns a 501 (R2_CROSS_CUTTING (e))."""
@@ -387,7 +335,7 @@ class WorkflowContract(TestCase):
         with stub_session(bank.principal):
             for method, url, body in cases:
                 with self.subTest(url=url, body=body):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
             response = self.client.post(f"{V1}/changes/{change}/evidence", data={"kind": "video", "name": "x"}, **AS_SESSION)
@@ -557,7 +505,7 @@ class CaseLogic(TestCase):
         principal = user_principal(subject_id=self.person.id, tenant_id=self.tenant.id, permissions={perms.CASES_WORK})
         with stub_session(principal):
             confirmed = self.client.post(f"{V1}/changes/{self.case.change_id}/so-what/confirm", **AS_SESSION)
-            saved = _call(self.client, "put", f"{V1}/changes/{self.case.change_id}/so-what", SO_WHAT_BODY, AS_SESSION)
+            saved = call_route(self.client, "put", f"{V1}/changes/{self.case.change_id}/so-what", SO_WHAT_BODY, AS_SESSION)
         self.assertEqual((confirmed.status_code, saved.status_code), (200, 200))
         with transaction.atomic():
             self._activated()

@@ -14,9 +14,7 @@ becomes exactly one piece of work in each bank and nothing in anyone else's:
   person triages, and the library's drafted "So what?" is copied unconfirmed;
 - a case is written inside its own bank, with its audit row and its outbox row in the same
   transaction, and a deactivated bank gets nothing at all;
-- a case knows when triage is due, from its own bank's triage target, and cases 0004's
-  backfill gives the same answer to a `new` case that predates the column and none to a
-  case that already left `new` (COL-02).
+- a case knows when triage is due, from its own bank's triage target (COL-02).
 
 The events are written the only way an event is ever written, through `record()`, and
 delivered by the one cursor, so what runs here is the production path and not a call to
@@ -29,12 +27,11 @@ should have been outside.
 
 from __future__ import annotations
 
-import importlib
 import uuid
 from datetime import timedelta
 from typing import Any
 
-from django.db import connection, transaction
+from django.db import transaction
 from django.test import TestCase, override_settings
 
 from apps.cases import creation, testing as case_build
@@ -47,6 +44,8 @@ from apps.shared.tenancy import library_write
 from apps.taxonomy.models import CaseStatusCategory, TermDimension, Urgency
 from apps.watch import testing as watch_build
 from apps.watch.models import RegulatoryChange
+from apps.shared.testing import handlers_for
+from apps.shared.testing import drain
 
 SECURITIES = "regime:securities"
 AML = "regime:aml"
@@ -75,19 +74,6 @@ def cases_of(tenant: Any) -> list[ChangeCase]:
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return list(ChangeCase.objects.select_related("urgency").all())
-
-
-def drain() -> None:
-    """Deliver until the backlog is empty, from the library's zone.
-
-    Not one batch: the reference seed and the tenant factories write hundreds of rows and
-    `OUTBOX_BATCH_SIZE` is 100, so a single pass leaves a fixture's own event behind the
-    seed's and the test reads a case that has not been created yet.
-    """
-    with transaction.atomic():
-        tenancy.clear_tenant()
-    while outbox.deliver_batch().delivered:
-        pass
 
 
 class CaseCreationCase(TestCase):
@@ -243,12 +229,12 @@ class WhatTheAgentSuggestedStaysASuggestion(CaseCreationCase):
 class TheHandlerOnTheCursor(CaseCreationCase):
     def test_it_is_the_only_handler_that_opens_cases_for_the_change_registered_kind(self) -> None:
         # The search index rebuilds the change's chunks from the same row and opens no case.
-        self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases, search_tasks.index_change))
+        self.assertEqual(handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases, search_tasks.index_change))
 
     def test_registering_twice_leaves_one_handler(self) -> None:
         creation.register()
         creation.register()
-        self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED).count(creation.create_cases), 1)
+        self.assertEqual(handlers_for(creation.CHANGE_REGISTERED).count(creation.create_cases), 1)
 
     def test_an_event_naming_no_change_is_delivered_without_a_case(self) -> None:
         """The handler reads the change the event names. A row that is not there leaves
@@ -283,30 +269,6 @@ class TriageIsDueByTheBanksOwnTarget(CaseCreationCase):
         self.deliver(change)
         self.assertDueAfter(cases_of(self.banks.inside)[0], 4)
         self.assertDueAfter(cases_of(self.banks.outside)[0], 720)
-
-    def test_the_backfill_gives_a_waiting_case_its_due_time_and_leaves_a_worked_case_alone(self) -> None:
-        self.set_target(self.banks.inside, 6)
-        waiting = case_build.case(self.banks.inside, watch_build.change_with_timeline(terms=(SECURITIES,)))
-        worked = case_build.case(self.banks.inside, watch_build.change_with_timeline(terms=(SECURITIES,)))
-        case_build.in_category(worked, CaseStatusCategory.ASSESSING)
-        elsewhere = case_build.case(self.banks.outside, watch_build.change_with_timeline(terms=(SECURITIES,)))
-        backfill = importlib.import_module("apps.cases.migrations.0004_triage_due_at").BACKFILL_SQL
-        with transaction.atomic(), connection.cursor() as cursor:
-            cursor.execute(backfill)
-        rows = {row.id: row for row in cases_of(self.banks.inside) + cases_of(self.banks.outside)}
-        self.assertDueAfter(rows[waiting.id], 6)
-        self.assertDueAfter(rows[elsewhere.id], self.banks.outside.triage_target_hours)
-        self.assertIsNone(rows[worked.id].triage_due_at, "reminders read the due time only while a case is new")
-
-    def test_the_backfill_keeps_a_due_time_already_set(self) -> None:
-        change = watch_build.change_with_timeline(terms=(SECURITIES,))
-        self.deliver(change)
-        before = cases_of(self.banks.inside)[0].triage_due_at
-        self.set_target(self.banks.inside, 1)
-        backfill = importlib.import_module("apps.cases.migrations.0004_triage_due_at").BACKFILL_SQL
-        with transaction.atomic(), connection.cursor() as cursor:
-            cursor.execute(backfill)
-        self.assertEqual(cases_of(self.banks.inside)[0].triage_due_at, before)
 
 
 @override_settings(CASE_CREATION_BATCH=2)

@@ -1,29 +1,15 @@
-"""Watch-zone rows for `seed_e2e` (c6-e2e-seed, c5-seed-watch, WAT-01 to WAT-05, WAT-06,
-H15): sources, their coverage checks, regulatory changes and everything a change carries —
-its timeline, its pages, its classification and the obligations it affects — idempotent by
-natural key and built from the prototype's own data, exactly as `apps/watch/testing.py`
-builds them for the backend suite.
+"""Watch-zone rows for `seed_e2e` (WAT-01 to WAT-06, H15): sources, coverage checks,
+regulatory changes and their timeline, pages, classification and obligation links, built
+from the prototype's data as `testing.py` builds them for the backend suite.
 
-Why this exists rather than `apps/shared/e2e_seed.py` writing these rows itself: `source`,
-`regulatory_change` and the rest of the seven watch tables are library tables, and the
-library fence (`apps/shared/tests_library_fence.py`) restricts a write of one to the watch
-pipeline's own steps — registration, curation, the source registry, the So what draft —
-through `watch_write()`. This module is the seed's own step, through `write.upsert()`
-(`apps/watch/write.py`'s generic natural-key upsert, added for exactly this): `watch_write()`
-itself says in its own docstring that the door exists for `c5-seed-watch` and `seed_e2e` to
-use it.
+These are library tables the library fence opens only to the watch pipeline's steps through
+`watch_write()`; this module is the seed's step, through `write.upsert()`.
 
-Idempotent by the natural keys the rest of the seed already uses: a source by its `name`, a
-change by its `stable_key`, an event by its `label` on that change, a document by its `url`
-on that change, a term link by its `flag` or `term` on that change, an obligation link by its
-`obligation` on that change. `seed_e2e` may run twice against one database (a developer's
-own, never a deployed one, `refuse_when_deployed()`), and a second run must find the same
-rows rather than doubling them. A source's coverage check is the one exception with no
-natural key of its own: this module keeps one sweep check per source (`kind=SWEEP`), updated
-to `timezone.now()` on every run, because "the last check happened just now" is the fact a
-reseed should keep true and a fixed timestamp would go stale the day after it was written. A
-`recheck` check is instead kept one per `(source, subject)`, because it names a record and
-not "the last look at this source".
+Idempotent by natural key (a source by `name`, a change by `stable_key`, an event by
+`label`, a document by `url`, a term link by flag or term, an obligation link by obligation,
+each on its change), since `seed_e2e` may run twice on one database (never a deployed one).
+A source keeps one sweep check refreshed to now on every run, so a reseed never goes stale;
+a `recheck` is kept one per `(source, subject)`.
 """
 
 from __future__ import annotations
@@ -100,11 +86,8 @@ def seed_source_check(
 def seed_recheck(
     source: Source, obligation: Obligation, *, status: CheckStatus = CheckStatus.OK, run: AgentRun | None = None
 ) -> SourceCheck:
-    """One re-check line (AGT-01, item 3): the agent looked again at `obligation`'s source
-    and found this. Kept one per `(source, obligation)` rather than refreshed to "now" like a
-    sweep, because what matters here is that the log can tell a re-check from a sweep at all
-    (`c5-library-recheck`'s own drift path is a later task; this seed gives its coverage log
-    a row to find, not the proposal the drift would open)."""
+    """One re-check line (AGT-01): the agent looked again at `obligation`'s source. Kept one
+    per `(source, obligation)`, so the log can tell a re-check from a sweep."""
     return write.upsert(
         SourceCheck,
         "seed_e2e",
@@ -143,12 +126,9 @@ def seed_change(
     type_confirmer: ApiKey | None = None,
     confirmed_at: datetime.datetime | None = None,
 ) -> RegulatoryChange:
-    """One reform, merged on `stableKey` exactly as a sweep's retry would merge it
-    (AC-WAT1): a second run updates the seed's own row rather than writing a duplicate. Its
-    type is `suggester`'s suggestion until `type_confirmer` confirms it (`curation()`), and
-    a reseed puts it back exactly so. A change whose publication day the seed does not know
-    (`published_unknown`, the public demo's facts of the baseline) carries none rather than
-    its key date."""
+    """One reform, merged on `stableKey` as a sweep's retry would be (AC-WAT1). Its type is
+    `suggester`'s suggestion until `type_confirmer` confirms it. A change whose publication
+    day is unknown (`published_unknown`) carries none."""
     type_curation = curation(suggester, type_confirmer, confirmed_at, "change_type_")
     return write.upsert(
         RegulatoryChange,
@@ -235,12 +215,9 @@ def seed_document(
 def curation(
     suggester: ApiKey | None, confirmer: ApiKey | None, confirmed_at: datetime.datetime | None, prefix: str = ""
 ) -> dict[str, object]:
-    """Who suggested a curated fact and who confirmed it (D-74), as the columns the two
-    curation constraints read (`watch/models.py`): the agent-bound platform key that filed
-    it and its agent, and, once confirmed, the confirming agent's own key and agent. The
-    seed's confirmations are an independent agent's, never a person's, so a machine's
-    confirmation renders exactly as it will when the confirmer runs; no person is named on
-    either side, which leaves every suggestion free for a person to confirm in a journey."""
+    """Who suggested and who confirmed a curated fact (D-74), as the curation constraints'
+    columns. The seed's confirmations are an independent agent's, never a person's, so every
+    suggestion stays free for a person to confirm in a journey."""
     return {
         f"{prefix}suggested_by": None,
         f"{prefix}suggested_by_api_key": suggester,

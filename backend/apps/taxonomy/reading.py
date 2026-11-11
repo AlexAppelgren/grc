@@ -1,13 +1,9 @@
 """Reading vocabularies: the language order a caller sees labels in, and the one function
 that turns a row into the `VocabularyRow` every surface renders (VOC-01, I18N-01).
 
-Nothing here writes. It names no model class of its own: the list's model and label model
-come from apps/taxonomy/registry.py, so one reader serves every list and adding a list is
-adding a registry entry (AC-VOC1).
-
-Labels are translation rows (D-12). The order is the caller's own language, then the
-tenant's default, then `en`, then the original the row was written in, then the key: a
-label is never stored on the record that uses it, so a rename is instant everywhere.
+Nothing here writes. Models come from apps/taxonomy/registry.py, so adding a list is adding a
+registry entry (AC-VOC1). Labels are translation rows (D-12), in the order: the caller's
+language, the tenant's default, `en`, the original, then the key.
 """
 
 from __future__ import annotations
@@ -30,11 +26,9 @@ CONFIRMATION_JOINS = ("verified_by_agent", "applied_by_proposal__proposed_by_age
 
 
 def language_order(request: HttpRequest, *, tenant: Any = None) -> list[str]:
-    """The caller's content language order: the person's locale and, when they are in one,
-    the tenant's default language. Both come with the session's own read, so this costs no
-    query; a principal a test stubbed without them reads them, two queries at most, unless
-    the route passes the tenant it loaded. A platform session has no tenant and reads in its
-    own locale, then `en`."""
+    """The caller's content language order: the person's locale and, in a tenant, its
+    default language. Both come with the session's own read, so this costs no query unless a
+    stubbed principal lacks them. A platform session reads in its own locale, then `en`."""
     from apps.identity.models import User
     from apps.shared.models import Tenant
 
@@ -58,20 +52,6 @@ def language_order(request: HttpRequest, *, tenant: Any = None) -> list[str]:
     return order
 
 
-def label_of(labels: dict[str, str], order: list[str], *, original: str | None, key: str) -> str:
-    """The label in the first language of `order` that has one, then the original, then the
-    key itself (never an empty string: an unlabelled row still renders)."""
-    for code in order:
-        if labels.get(code):
-            return labels[code]
-    if original and labels.get(original):
-        return labels[original]
-    for text in labels.values():
-        if text:
-            return text
-    return key
-
-
 class Labels:
     """Every label row of one list, grouped by the row it belongs to, read in one query."""
 
@@ -80,9 +60,9 @@ class Labels:
 
     @classmethod
     def for_rows(cls, label_model: type[Any], rows: list[Any], *, field: str = "vocabulary") -> Labels:
-        """Inside a read request, a row's labels are read once however many times the request
-        asks for them (the request memo, apps/shared/middleware.py, keyed by the active tenant
-        as well, so one bank's labels never answer another's). Anywhere else, every call reads."""
+        """Inside a read request a row's labels are read once (the request memo,
+        apps/shared/middleware.py, keyed by the active tenant too, so one bank's labels never
+        answer another's). Anywhere else, every call reads."""
         by_row: dict[uuid.UUID, list[Any]] = {row.id: [] for row in rows}
         memo = request_memo()
         known: dict[uuid.UUID, list[Any]] = {} if memo is None else memo.setdefault(("labels", label_model, field, tenancy.active_tenant_id()), {})
@@ -124,10 +104,8 @@ def extra_of(row: Any, fields: tuple[str, ...]) -> dict[str, Any]:
 
 def confirmation_of(row: Any) -> dict[str, Any]:
     """Who confirmed the approval that wrote a library list row's or a term's wording, and
-    which agent proposed it (INV-05, PRO-02, D-62), as stored: the three provenance fields
-    of `VocabularyRow` and `TaxonomyTermRow`, in the shape an obligation version's
-    `VersionConfirmation` has. A bank's own list has no such columns and answers empty, as
-    a seeded library row does. The label is the screen's to decide."""
+    which agent proposed it (INV-05, PRO-02, D-62), as stored, in `VersionConfirmation`'s
+    shape. A bank's own list and a seeded row answer empty. The label is the screen's."""
     return {
         "verified_origin": getattr(row, "verified_origin", ""),
         "confirmed_by_agent": agent_ref(getattr(row, "verified_by_agent", None)),

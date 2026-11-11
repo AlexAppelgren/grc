@@ -1,17 +1,9 @@
-"""Case builders for tests (playbook 8.1): one bank's case for a library change, that
-bank's own decision about a suggested obligation link, and the pair of banks with
-different footprints that CAS-S1, WAT-S10 and FP-S15 all want.
+"""Case builders for tests (playbook 8.1).
 
-Every builder activates its tenant before writing. FORCE ROW LEVEL SECURITY applies to the
-test runner's own connection as well, so a tenant row is invisible and unwritable until
-`tenancy.activate()` has run inside the transaction (playbook 14). The activation lasts
-until the test's savepoint rolls back, or until the next builder activates another tenant —
-which is exactly why the two-tenant helper hands back both tenants and activates neither.
-
-These builders live here rather than in `apps/shared/factories.py` because a case names a
-library model (`RegulatoryChange`, `Obligation`) beside a write, and the library fence
-treats `factories.py` as a production module while it exempts every `testing.py`
-(apps/shared/tests_library_fence.py).
+Every builder activates its tenant before writing, because forced row-level security
+applies to the test connection too (playbook 14); the two-tenant helper activates neither.
+They live here rather than in `apps/shared/factories.py` because a case names a library
+model beside a write, which the library fence allows only in `testing.py`.
 """
 
 from __future__ import annotations
@@ -41,10 +33,8 @@ def case(
     owner: User | None = None,
     so_what_text: str = "",
 ) -> ChangeCase:
-    """One bank's case for one change, in the `new` category as creation leaves it.
-
-    The urgency starts as the change's suggestion and `urgency_confirmed` stays false until
-    a person triages, which is what the card renders before triage (Alex's item 1).
+    """One bank's case for one change, `new` as creation leaves it, its urgency the change's
+    unconfirmed suggestion.
     """
     with transaction.atomic():
         tenancy.activate(tenant.id)
@@ -60,10 +50,8 @@ def case(
 
 
 def in_category(row: ChangeCase, category: CaseStatusCategory) -> None:
-    """Put a case straight into `category` for a test that reads cases by category, with
-    what the database's CHECKs demand there: an owner between triage and the close, and a
-    reason when dismissed (c9-case-models). The state machine is not run; a test of a move
-    goes through the move itself."""
+    """Put a case straight into `category` with what the CHECKs demand there (an owner
+    between triage and close, a reason when dismissed). The state machine is not run."""
     fields: dict[str, object] = {"status": category.value}
     with transaction.atomic():
         tenancy.activate(row.tenant_id)
@@ -92,13 +80,9 @@ def link_decision(
 def two_tenants_with_different_footprints(
     *, inside: str = "regime:securities", outside: str = "regime:aml"
 ) -> SimpleNamespace:
-    """Two banks whose footprints do not overlap, for every test that has to show a change
-    reaching one and not the other (CAS-S1, WAT-S10, FP-S15).
-
-    `.inside` follows the regime the watch builders put on a change by default, so
-    `watch_build.change_with_timeline()` matches it and not `.outside`. Neither tenant is
-    left activated: a test that writes for one activates it itself, so a forgotten
-    activation fails loudly instead of writing into whichever bank came last.
+    """Two banks whose footprints do not overlap (CAS-S1, WAT-S10, FP-S15). `.inside` follows
+    the watch builders' default regime. Neither is left activated, so a forgotten activation
+    fails loudly.
     """
     suffix = uuid.uuid4().hex[:8]
     matching = factories.tenant(slug=f"inside-{suffix}", name="Example Bank AB")
@@ -116,3 +100,24 @@ def case_on_a_new_change(tenant: Tenant) -> ChangeCase:
     (`apps/shared/factories.py:case_change`)."""
     watch_build.seed_watch_reference()
     return case(tenant, watch_build.change())
+
+
+def registered(change: RegulatoryChange) -> None:
+    """Record `change` as registered from the library's zone, then deliver the outbox, so each
+    bank's case exists the way the cursor makes it."""
+    from apps.cases import creation
+    from apps.shared.audit import Actor, record
+    from apps.shared.testing import drain
+
+    with transaction.atomic():
+        tenancy.clear_tenant()
+        record(
+            action=creation.CHANGE_REGISTERED,
+            actor=Actor.system("watch"),
+            subject_type="regulatory_change",
+            subject_id=change.id,
+            subject_title=change.title,
+            summary=f"Registered {change.title}.",
+            tenant_id=None,
+        )
+    drain()

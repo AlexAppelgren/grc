@@ -321,7 +321,7 @@ class HarnessOnTheRealApi(TestCase):
             if f'{name} = env_int("{name}"' not in settings_source or f"{name}=" not in example or f"`{name}`" not in runbook
         ]
         self.assertEqual(missing, [], "each needs env_int in settings.py, a .env.example line and a runbook row")
-        self.assertIn('ASK_FIRST_TOKEN_BUDGET_MS = env_int("ASK_FIRST_TOKEN_BUDGET_MS", 2000)', settings_source, "playbook 10")
+        self.assertIn('ASK_FIRST_TOKEN_BUDGET_MS = env_int("ASK_FIRST_TOKEN_BUDGET_MS", 2000,', settings_source, "playbook 10")
 
 
 @override_settings(API_BUDGET_MS=250, PERF_REGRESSION_PCT=20)

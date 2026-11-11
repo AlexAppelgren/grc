@@ -154,10 +154,3 @@ export type FootprintSuggestions = components['schemas']['FootprintSuggestions']
 export interface FootprintRejectBody {
   note: string;
 }
-
-export interface TermSuggest {
-  dimension: string;
-  key?: string;
-  labels: Record<string, string>;
-  usageNote?: string;
-}

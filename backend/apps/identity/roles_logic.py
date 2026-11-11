@@ -72,9 +72,7 @@ def _labels_dict(role: TenantRole | PlatformRole) -> dict[str, str]:
     return {label.language: label.text for label in role.labels.all()}
 
 
-# ---------------------------------------------------------------------------------------
-# Seeds (idempotent, keyed on the immutable key)
-# ---------------------------------------------------------------------------------------
+# --- Seeds (idempotent, keyed on the immutable key) ---
 def ensure_system_roles(tenant: Tenant) -> int:
     """Create or refresh the system roles of one tenant. Permissions follow the code (a
     PRD bump changes the matrix); labels and usage notes are written once and left to
@@ -133,9 +131,7 @@ def ensure_platform_roles() -> int:
     return count
 
 
-# ---------------------------------------------------------------------------------------
-# Reads
-# ---------------------------------------------------------------------------------------
+# --- Reads ---
 def tenant_roles(tenant_id: uuid.UUID, *, include_retired: bool = False) -> QuerySet[TenantRole]:
     queryset = TenantRole.objects.filter(tenant_id=tenant_id).prefetch_related("labels")
     if not include_retired:
@@ -179,9 +175,7 @@ def role_out(role: TenantRole, order: list[str]) -> dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------------------------
-# Writes (roles.manage; step-up on permission changes, playbook 4.2)
-# ---------------------------------------------------------------------------------------
+# --- Writes (roles.manage; step-up on permission changes, playbook 4.2) ---
 def _validate_permissions(values: Iterable[str]) -> list[str]:
     wanted = sorted(dict.fromkeys(values))
     unknown = [value for value in wanted if value not in perms.TENANT_PERMISSIONS]

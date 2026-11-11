@@ -1,4 +1,4 @@
-import type { components } from '@/types/api.generated';
+import type { components, operations } from '@/types/api.generated';
 
 // The register's shapes as the API sends them (openapi.json, generated): the
 // screens read these and nothing narrower, so a contract change fails the
@@ -7,7 +7,7 @@ import type { components } from '@/types/api.generated';
 type Schemas = components['schemas'];
 
 export type Applicability = Schemas['RegisterEntry']['applicability'];
-export type RegisterVocabRef = Schemas['RegisterVocabRef'];
+export type RegisterVocabRef = Schemas['VocabRef'];
 export type RegisterEntry = Schemas['RegisterEntry'];
 export type RegisterEntryWithPanels = Schemas['RegisterEntryWithPanels'];
 export type RegisterPanels = Schemas['RegisterPanels'];
@@ -16,13 +16,11 @@ export type RegisterPatch = Schemas['RegisterPatch'];
 export type RegisterEntityPatch = Schemas['RegisterEntityPatch'];
 export type RegisterApplicability = Schemas['RegisterApplicability'];
 export type RegisterApplicabilityBody = Schemas['RegisterApplicabilityBody'];
-export type RegisterApplicabilityMany = Schemas['RegisterApplicabilityMany'];
-export type RegisterApplicabilityManyBody = Schemas['RegisterApplicabilityManyBody'];
 export type RegisterGap = Schemas['RegisterGap'];
 export type RegisterGapPage = Schemas['RegisterGapPage'];
 export type RegisterGapBody = Schemas['RegisterGapBody'];
 export type RegisterGapPatch = Schemas['RegisterGapPatch'];
-export type RegisterGapQuery = Schemas['RegisterGapQuery'];
+export type RegisterGapQuery = NonNullable<operations['listRegisterGaps']['parameters']['query']>;
 export type RegisterRiskAcceptanceBody = Schemas['RegisterRiskAcceptanceBody'];
 export type RegisterAssessmentPage = Schemas['RegisterAssessmentPage'];
 export type RegisterInterpretation = Schemas['RegisterInterpretation'];
@@ -38,9 +36,6 @@ export type RegisterUnitPatch = Schemas['RegisterUnitPatch'];
 export type RegisterUnitPaste = Schemas['RegisterUnitPaste'];
 export type RegisterUnitPasteBody = Schemas['RegisterUnitPasteBody'];
 export type RegisterStatementOfApplicability = Schemas['RegisterStatementOfApplicability'];
-export type RegisterDutyPage = Schemas['RegisterDutyPage'];
-export type RegisterDutyCompleteBody = Schemas['RegisterDutyCompleteBody'];
-export type RegisterDutyCompletion = Schemas['RegisterDutyCompletion'];
 
 /** One page of a register list: `limit` 20 by default and 100 at most, `offset` from 0. */
 export interface RegisterPageQuery {
@@ -51,4 +46,4 @@ export interface RegisterPageQuery {
 // c8-ui-applicability-status: the legal entities an answer can be given for, and a member
 // as the owner and contact pickers offer them (GET /reference/people).
 export type RegisterSpannedEntity = Schemas['RegisterSpannedEntity'];
-export type RegisterPerson = Schemas['PersonRef'];
+export type RegisterPerson = Schemas['NamedRef'];

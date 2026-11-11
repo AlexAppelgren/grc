@@ -32,14 +32,10 @@ def in_force(versions: Iterable[V], on: datetime.date) -> V | None:
     return max(candidates, key=lambda v: (v.effective_from or datetime.date.min, v.version_number), default=None)
 
 
-# ---------------------------------------------------------------------------------------
-# "Show what changed" (INV-04, AC-INV1): a sentence-level diff between two versions, in a
-# language both have (INV-05). Pure: the read routes resolve the versions and serialize.
-# Nothing here logs, because the texts are the library's content. The texts come from
-# fetched sources through proposals, so both functions stay fast on hostile input:
-# splitting is linear and only happens under LIBRARY_TEXT_MAX_CHARS, and aligning is capped
-# at LIBRARY_DIFF_MAX_SENTENCES.
-# ---------------------------------------------------------------------------------------
+# --- "Show what changed" (INV-04, AC-INV1, INV-05) ---
+# A sentence-level diff between two versions in a language both have. Pure, and never logs:
+# the texts are library content. They come from fetched sources, so both functions stay fast
+# on hostile input (LIBRARY_TEXT_MAX_CHARS, LIBRARY_DIFF_MAX_SENTENCES).
 DiffOp = Literal["equal", "insert", "delete"]
 Segment = tuple[DiffOp, str]
 
@@ -77,13 +73,10 @@ def _whole_text(old: str, new: str) -> list[Segment]:
 def sentence_diff(old: str, new: str) -> list[Segment]:
     """The two texts sentence by sentence: a changed sentence is a delete then an insert.
 
-    Two caps keep untrusted text cheap. Splitting is linear but unbounded in the length of
-    the text, so above LIBRARY_TEXT_MAX_CHARS on either side neither text is split at all.
-    Aligning repeated sentences then costs up to the cube of their number, so above
-    LIBRARY_DIFF_MAX_SENTENCES on either side the old text is one delete and the new one
-    one insert: coarse, still correct. autojunk=False because from 200 sentences difflib
-    would treat a sentence repeated in over 1% of the new text ("Upphävd.") as junk that
-    never matches, and show it as changed; it only matters if the cap is raised past 200."""
+    Two caps keep untrusted text cheap: above LIBRARY_TEXT_MAX_CHARS neither text is split,
+    and above LIBRARY_DIFF_MAX_SENTENCES (alignment is cubic) the old text is one delete and
+    the new one one insert, coarse but correct. autojunk=False so a sentence repeated often
+    ("Upphävd.") is never treated as junk; it matters only past 200 sentences."""
     if max(len(old), len(new)) > settings.LIBRARY_TEXT_MAX_CHARS:
         return _whole_text(old, new)
     before, after = split_sentences(old), split_sentences(new)

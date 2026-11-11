@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Field, TextInput } from '@/components/ui/Field';
 import { Notice } from '@/components/ui/Notice';
 import { Panel } from '@/components/ui/Panel';
-import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
+import { ProblemAlert, QueryState } from '@/components/ui/States';
 import { formatEuro } from '@/features/agents/agents-presentation';
 import { putAgentBudget } from '@/features/agents/api';
 import type { AgentBudget } from '@/features/agents/types';
@@ -68,13 +68,11 @@ export function AgentBudgetPanel() {
 
   return (
     <Panel title={t('adminAgents.budget.title')} data-agent-budget="">
-      {budget.isPending ? (
-        <LoadingState rows={1} />
-      ) : budget.isError ? (
-        <ErrorState title={t('adminAgents.budget.errorTitle')} onRetry={() => void budget.refetch()} />
-      ) : (
-        <BudgetBody budget={budget.data} format={(amount) => formatEuro(amount, ctx) ?? amount} />
-      )}
+      <QueryState query={budget} rows={1} errorTitle={t('adminAgents.budget.errorTitle')}>
+        {(data) => (
+          <BudgetBody budget={data} format={(amount) => formatEuro(amount, ctx) ?? amount} />
+        )}
+      </QueryState>
     </Panel>
   );
 }

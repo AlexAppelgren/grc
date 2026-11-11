@@ -11,10 +11,10 @@ import { useFootprint, useJurisdictions, useTerms } from '@/features/footprint/h
 import type { JurisdictionRef, TaxonomyTerm } from '@/features/footprint/types';
 import { INSTRUMENT_OPTIONS, useInstruments } from '@/features/library/hooks';
 import type { Obligation, ScopeFilter } from '@/features/library/types';
-import { usePeople } from '@/features/register/hooks';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';
+import { usePeople } from '@/features/shared/reference';
 
 // The inventory's filters (design/screens/tenant-inventory.html, D-104): a Filters
 // sheet, the set filters as removable chips beside its button, and the scope as a
@@ -318,7 +318,7 @@ function SetFilters({ chips, onClear }: { chips: { filter: string; value: string
         <SetFilterChip key={`${chip.filter}:${chip.value}`} {...chip} />
       ))}
       <button type="button" onClick={onClear} className="px-1 text-meta text-muted underline underline-offset-[3px] hover:text-fg">
-        {t('inventory.filters.clear')}
+        {t('common.clearFilters')}
       </button>
     </>
   );
@@ -351,7 +351,7 @@ function InventorySheetBody({ filters, onChange }: { filters: ObligationFilters;
   const dutyTypes = useVocabularyValues(DUTY_TYPE).data ?? [];
   const instruments = useInstrumentOptions(filters.scope).data?.items ?? [];
   const statuses = useVocabularyValues(COMPLIANCE_STATUS).data ?? [];
-  const people = usePeople().data ?? [];
+  const people = usePeople(null).data ?? [];
   const teams = useVocabularyValues(TEAM).data ?? [];
   const tags = useVocabularyValues(TENANT_TAG);
   const applicability = APPLICABILITY_VALUES.map((key) => ({ key, label: t(APPLICABILITY_LABEL[key]) }));
@@ -408,7 +408,7 @@ function InventoryChips({ filters, onChange, onClear }: { filters: ObligationFil
   const services = useTerms(SERVICE, filters.service !== '').data ?? [];
   const dutyTypes = useVocabularyValues(DUTY_TYPE, false, filters.dutyType !== '').data ?? [];
   const statuses = useVocabularyValues(COMPLIANCE_STATUS, false, filters.complianceStatus !== '').data ?? [];
-  const people = usePeople(filters.owner !== '').data ?? [];
+  const people = usePeople(null, filters.owner !== '').data ?? [];
   const teams = useVocabularyValues(TEAM, false, filters.ownerTeam !== '').data ?? [];
   const tags = useVocabularyValues(TENANT_TAG, false, filters.tenantTag !== '').data ?? [];
   const instrumentName = useInstrumentName(filters.instrument, filters.scope);

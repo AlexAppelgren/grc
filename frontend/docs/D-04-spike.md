@@ -42,6 +42,9 @@ element on the page is the real web component, not a fallback.
   the ADR's condition ("renders and hydrates under `next start`"). Remove
   both when a real Green component ships with its own journey, or keep them
   if none does.
+- Removed 2026-11-11 (simplification review, B-16), with the
+  `@sebgroup/green-core` dependency: no screen uses a Green component, and
+  the first one to do so brings the dependency back with its own journey.
 
 ## Verdict for DECISIONS D-04
 

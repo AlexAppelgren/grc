@@ -1,21 +1,13 @@
-"""What a caller named, resolved to the library rows behind it, and those rows rendered
-back out (WAT-03, WAT-04, AC-WAT2).
+"""What a caller named, resolved to the library rows behind it, and those rows rendered back
+out (WAT-03, WAT-04, AC-WAT2).
 
-Nothing here writes, and that is the module's reason to exist. The library fence refuses
-any production module that both names a library record and calls a write
-(apps/shared/tests_library_fence.py), because that is how a library write gets smuggled in
-beside the proposal door. So the three modules that write — `apps/watch/registration.py`,
-`curation.py` and `sources.py` — name no library record at all, and every lookup and every
-response each of them hands back is built here — the same split
-`apps/cases/reading.py` makes for case creation and `apps/library/reading.py` for the
-proposals app.
+Nothing here writes: the library fence refuses a module that both names a library record
+and writes, so `registration.py`, `curation.py` and `sources.py` name none and do their
+lookups and responses here.
 
-`resolve_keys()` is the watch app's one key resolver (chunk 5 plan, ruling B): the
-registration and the standards rules call this one and add no second. A key the list does
-not hold answers 422 `unknown_key` naming every key that failed and listing that list's
-valid, active keys, so an agent that typed `ammendment` is told what it may say instead of
-guessing again (AC-WAT2, WAT-S5). The resolver runs before anything is written, so a
-refusal stores nothing.
+`resolve_keys()` is the watch app's one key resolver: an unknown key answers 422
+`unknown_key` naming every failed key and listing the valid ones, so an agent that typed
+`ammendment` learns the vocabulary (AC-WAT2, WAT-S5). It runs before any write.
 """
 
 from __future__ import annotations
@@ -31,7 +23,7 @@ from django.db.models import OuterRef, Subquery
 
 from apps.library.models import Authority, JurisdictionKind, Obligation, RecordStatus
 from apps.library.reading import agent_ref, localized, vocabulary_refs
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.taxonomy.models import (
     ChangeTypeLabel,
     FlagLabel,
@@ -64,42 +56,31 @@ from apps.watch.schemas import (
     WatchSourceOut,
 )
 
-# The vocabulary lists a change's facts are drawn from (apps/taxonomy/registry.py). They
-# are constants here and never a caller's string: which list a field reads is settled by
-# the field, so a caller can neither reach another list nor learn which lists exist.
+# The vocabulary lists a change's facts are drawn from: constants, never a caller's string,
+# so a caller can neither reach another list nor learn which exist.
 CHANGE_TYPE_LIST = "change_type"
 FLAG_LIST = "flag"
 SOURCE_KIND_LIST = "source_kind"
 URGENCY_LIST = "urgency"
 
-# The taxonomy dimension whose terms say which body of law a record belongs to. Every change
-# carries at least one of its terms (D-39, AC-AGT1): the regime is the sector boundary, and a
-# change with none would reach every bank whatever its scope. A dimension's key is stable
-# and never changes, which is what makes it safe to name here.
+# The dimension that says which body of law a record belongs to. Every change carries one of
+# its terms (D-39, AC-AGT1): a change with none would reach every bank.
 REGIME_DIMENSION = "regime"
 
-# The names `apps/watch/curation.py`, `registration.py` and `sources.py` annotate their own
-# helpers with. Those modules write, so the fence's AST rule refuses them the model's own
-# name; the rows themselves still have to travel between the two halves. The guarantee that
-# a watch step writes no inventory table is not this rule but `watch_write()`'s runtime
-# refusal (apps/watch/write.py).
+# The names the writing modules annotate their helpers with, since the fence refuses them
+# the model's own name. That no watch step writes an inventory table is `watch_write()`'s
+# runtime refusal.
 ChangeRow = RegulatoryChange
 EventRow = ChangeEvent
 DocumentRow = ChangeDocument
 SourceRow = Source
 
 
-# ---------------------------------------------------------------------------------------
-# Resolving what a caller named
-# ---------------------------------------------------------------------------------------
+# --- Resolving what a caller named ---
 def resolve_keys(list_name: str, keys: Sequence[str]) -> list[Any]:
-    """The rows of `list_name` that `keys` name, in the order they were sent.
-
-    422 `unknown_key` when one does not resolve, naming every key that failed and carrying
-    the list's valid, active keys in `validKeys`, so one refusal teaches the caller the
-    whole vocabulary. A retired row is not a valid key: an admin retires a value to stop
-    new records using it (VOC-02), and a row that never existed and a row that was retired
-    answer the same way, because both are keys this call may not store.
+    """The rows of `list_name` that `keys` name, in the order sent. 422 `unknown_key` naming
+    every key that failed, with the list's active keys in `validKeys`. A retired row is not a
+    valid key (VOC-02).
     """
     entry = REGISTRY[list_name]
     wanted = list(dict.fromkeys(keys))
@@ -120,25 +101,19 @@ def resolve_keys(list_name: str, keys: Sequence[str]) -> list[Any]:
 
 
 def _active_keys(entry: Any) -> Sequence[str]:
-    """Every key the list currently holds, in the list's own order. Ordered explicitly
-    because Django drops `Meta.ordering` from some queries, and a refusal that lists the
-    vocabulary in a different order each time reads as a different answer."""
+    """Every key the list holds, ordered explicitly (Django drops `Meta.ordering` from some
+    queries), so a refusal always lists them the same way."""
     ordering = entry.model._meta.ordering or ("key",)
     return list(entry.model._default_manager.filter(active=True).order_by(*ordering).values_list("key", flat=True))
 
 
 def resolve_terms(term_ids: Sequence[uuid.UUID]) -> list[TaxonomyTerm]:
-    """The active taxonomy terms with these ids, in the order they were sent, read in one
-    query however many there are.
+    """The active taxonomy terms with these ids, in the order sent, in one query.
 
-    422 `unknown_key` naming every id that is not an active term of an active dimension.
-    The terms are not listed back the way a vocabulary's keys are: the taxonomy is the one
-    list a bank may extend to hundreds of rows, so the refusal points at
-    `GET /taxonomy/terms`, which an agent reads at run start anyway (AGT-02).
-
-    422 `jurisdiction_term_mirrored` when one is a term of a mirrored dimension (FP-S12): a
-    change's market comes from its authority (FP-S15), never from a tag. Registration and
-    curation both resolve their terms here, so neither can store one.
+    422 `unknown_key` naming every id that is not an active term; the terms are not listed
+    back (a taxonomy may hold hundreds), the caller reads `GET /taxonomy/terms` (AGT-02).
+    422 `jurisdiction_term_mirrored` for a mirrored dimension's term (FP-S12): a change's
+    market comes from its authority (FP-S15).
     """
     wanted = list(dict.fromkeys(term_ids))
     found = {
@@ -160,10 +135,8 @@ def resolve_terms(term_ids: Sequence[uuid.UUID]) -> list[TaxonomyTerm]:
 
 
 def require_regime(terms: Sequence[TaxonomyTerm]) -> None:
-    """422 `regime_required` when none of these resolved terms is a regime (D-39, AC-AGT1),
-    listing the regime dimension's active keys in `validKeys` so the caller learns what it
-    may choose from; their ids are on `GET /taxonomy/terms`. Called by registration for a
-    new change and by curation for a set that replaces a change's terms."""
+    """422 `regime_required` when none of these terms is a regime (D-39, AC-AGT1), with the
+    regime dimension's active keys in `validKeys`."""
     if any(term.dimension.key == REGIME_DIMENSION for term in terms):
         return
     valid = list(
@@ -180,13 +153,10 @@ def require_regime(terms: Sequence[TaxonomyTerm]) -> None:
 
 
 def require_standards_body(terms: Sequence[TaxonomyTerm], authority_id: uuid.UUID | None) -> None:
-    """422 `standard_term_only_on_standards` when an opt-in term — a standard a bank chooses
-    to follow — sits on a change whose authority is not a standards body, that is, names no
-    jurisdiction of the `international` kind (D-36, D-38, WAT-07). A law that cites a
-    standard is the supervisor's change and reaches every bank in its scope; tagged with the
-    standard, it would vanish from every bank that follows none. Kinds are read, never keys,
-    so a new standard or a new standards body needs no code. Called by registration for a
-    new change and by curation for a set that replaces a change's terms."""
+    """422 `standard_term_only_on_standards` when an opt-in term sits on a change whose
+    authority names no `international` jurisdiction (D-36, D-38, WAT-07): a law that cites a
+    standard is the supervisor's and must reach every bank in scope. Kinds are read, never
+    keys."""
     if not any(term.dimension.kind == TermDimensionKind.OPT_IN.value for term in terms):
         return
     if (
@@ -203,11 +173,8 @@ def require_standards_body(terms: Sequence[TaxonomyTerm], authority_id: uuid.UUI
 
 
 def obligations_for(obligation_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Obligation]:
-    """The active obligations these ids name, read in one query however many there are.
-
-    422 `unknown_key` for an id the library does not hold or has retired: a link never
-    creates an obligation and no key scope reaches the inventory (AC-PRO1), and a link to a
-    retired obligation is a link nobody can follow.
+    """The active obligations these ids name, in one query. 422 `unknown_key` for an unknown
+    or retired one: a link never creates an obligation (AC-PRO1).
     """
     wanted = list(dict.fromkeys(obligation_ids))
     found = {
@@ -228,12 +195,8 @@ def obligations_for(obligation_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, Obli
 
 
 def authority_named(code: str) -> uuid.UUID | None:
-    """The library authority a caller named by key, or None when it named none.
-
-    422 `unknown_key` for a key the authority list does not hold. A change may carry no
-    authority at all — it is then not restricted by jurisdiction (FP-S15, D-29) — but a key
-    that was meant to name one and does not is a mistake worth a sentence rather than a
-    silently unrestricted change.
+    """The library authority a caller named by key, or None when it named none. An unknown
+    key is 422 `unknown_key` rather than a silently unrestricted change (FP-S15, D-29).
     """
     if not code:
         return None
@@ -266,11 +229,8 @@ def authority_with_id(authority_id: uuid.UUID | None) -> uuid.UUID | None:
 
 
 def change_named(change_id: uuid.UUID) -> uuid.UUID:
-    """The id of a change a caller named inside a body — the reform that replaced this one.
-
-    422 `unknown_key` when the library holds no such change: a supersession pointing at
-    nothing is a link nobody can follow, and letting the foreign key refuse it instead
-    would answer a database error rather than a sentence.
+    """The id of the change named as the one that replaced this reform; 422 `unknown_key`
+    when there is none, rather than a foreign-key error.
     """
     found = RegulatoryChange.objects.filter(pk=change_id).values_list(
         "id", flat=True
@@ -292,23 +252,17 @@ def change_for_write(change_id: uuid.UUID) -> ChangeRow:
         .first()  # ordering: pk lookup, at most one row
     )
     if change is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return change
 
 
 def change_for_update(change_id: uuid.UUID) -> ChangeRow:
     """The change this call addresses, locked until its transaction ends, for a write that
-    reads what is confirmed and then acts on it (D-74). Correcting a fact, replacing the
-    links and confirming them all take this lock first, so a confirmation cannot land
-    between another call's check and its write, and two confirmations queue. 404 as
-    `change_for_write` answers it.
-
-    The lock is a query of its own on the change's row alone, and the row is read afresh
-    after it: a locking read that joins the type re-checks a row another call has just
-    re-typed against the type it joined before, and finds nothing (proven 2026-09-24,
-    tests_curation_races.py)."""
+    reads what is confirmed and acts on it (D-74); 404 as `change_for_write`. The lock is its
+    own query on the change's row alone, then the row is read afresh: a locking read joined to
+    the type finds nothing when another call re-typed the row (`tests_curation_races.py`)."""
     if not list(RegulatoryChange.objects.select_for_update().filter(pk=change_id).values_list("pk", flat=True)):
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return change_for_write(change_id)
 
 
@@ -317,15 +271,13 @@ def event_for_write(change: ChangeRow, event_id: uuid.UUID) -> EventRow:
     as one that never existed does, so a timeline id tells a caller nothing."""
     event = change.events.filter(pk=event_id).first()  # ordering: pk lookup inside one change, at most one row
     if event is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return event
 
 
 def change_with_stable_key(stable_key: str) -> ChangeRow | None:
-    """The reform already registered under this key, or None when it is new.
-
-    This is the merge of AC-WAT1: a stable key is a reform's permanent name, so a second
-    sighting of one the library already holds is the same reform and never a second row.
+    """The reform already registered under this key, or None: a second sighting is the same
+    reform, never a second row (AC-WAT1).
     """
     return (
         RegulatoryChange.objects.select_related("change_type", "suggested_urgency")
@@ -335,11 +287,8 @@ def change_with_stable_key(stable_key: str) -> ChangeRow | None:
 
 
 def new_change(values: dict[str, Any]) -> ChangeRow:
-    """A change row built from values already resolved, not yet saved.
-
-    `apps/watch/registration.py` saves it inside `watch_write()`. The row is built here
-    because that module writes and so may not name a library record at all (the AST half of
-    the library fence); nothing in this function reaches the database.
+    """A change row built from resolved values, not yet saved: `registration.py` writes, so it
+    may not name a library record (library fence).
     """
     return RegulatoryChange(**values)  # compliance: allow-kwargs the resolved column values
 
@@ -351,22 +300,16 @@ def document_with_url(change: ChangeRow, url: str) -> DocumentRow | None:
 
 
 def event_with_label(change: ChangeRow, label: str) -> EventRow | None:
-    """The milestone this change already carries under that wording, or None when it is new.
-    A reform has one "Consultation closed", so the label is a timeline entry's key on its
-    change and a replayed registration adds no second one."""
+    """The milestone this change already carries under that wording, or None: the label is
+    the entry's key on its change."""
     return change.events.filter(label=label).first()  # ordering: Meta.ordering, (sort_order, id)
 
 
-# ---------------------------------------------------------------------------------------
-# The source registry and its coverage log (WAT-01)
-# ---------------------------------------------------------------------------------------
+# --- The source registry and its coverage log (WAT-01) ---
 @dataclasses.dataclass(frozen=True)
 class Coverage:
-    """One source and what its coverage log says, before the stale rule reads it.
-
-    The four timestamps are the whole input that rule needs, which is why they are read
-    here in one query and judged in `apps/watch/sources.py`: the numbers behind "stale" are
-    settings and belong beside the rule, not beside the query.
+    """One source and what its coverage log says, before the stale rule in `sources.py`
+    judges it (the thresholds are settings that live beside the rule).
     """
 
     source: WatchSourceOut
@@ -374,10 +317,8 @@ class Coverage:
     last_status: str | None
     last_error: str
     last_ok_at: datetime.datetime | None
-    # When the n-th most recent sweep ran, n being how many failures in a row make a source
-    # stale. Newer than `last_ok_at` (or set while `last_ok_at` is not) means every one of
-    # those n sweeps failed, because an `ok` sweep newer than the last ok one would be the
-    # last ok one. None means the log does not hold n sweeps yet.
+    # When the n-th most recent sweep ran, n being the failures in a row that make a source
+    # stale. Newer than `last_ok_at` means all n failed; None means fewer than n sweeps.
     nth_sweep_at: datetime.datetime | None
 
 
@@ -397,7 +338,7 @@ def source_for_write(source_id: uuid.UUID) -> SourceRow:
         .first()  # ordering: pk lookup, at most one row
     )
     if source is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return source
 
 
@@ -425,13 +366,8 @@ def sources_out(order: list[str]) -> list[WatchSourceOut]:
 
 
 def coverage_rows(order: list[str], *, failures_to_stale: int) -> list[Coverage]:
-    """Every source with the last line of its coverage log, in two queries however many
-    sources and however many checks there are.
-
-    The log is read through correlated sub-selects rather than a query per source, so the
-    cost does not grow with either (NFR-02). Only sweeps count: a re-check looks at one
-    library record the source already gave us and says nothing about whether the source has
-    been read since, so a run full of re-checks must never make a source look fresh.
+    """Every source with the last line of its coverage log, in two queries (NFR-02). Only
+    sweeps count: a re-check says nothing about whether the source was read since.
     """
     sweeps = SourceCheck.objects.filter(source=OuterRef("pk"), kind=SourceCheckKind.SWEEP.value)
     latest = sweeps.order_by("-checked_at", "-id")
@@ -471,8 +407,7 @@ def _sources_out(rows: Sequence[SourceRow], order: list[str]) -> list[WatchSourc
             url=row.url or None,
             kind=kinds[row.kind_id],
             authority_id=row.authority_id,
-            # The column's choices are the kind the schema publishes, so the cast states
-            # what the database already fixes.
+            # The column's choices are the published kind; the cast states what the database fixes.
             check_frequency=cast(Any, row.check_frequency),
             active=row.active,
         )
@@ -480,16 +415,10 @@ def _sources_out(rows: Sequence[SourceRow], order: list[str]) -> list[WatchSourc
     ]
 
 
-# ---------------------------------------------------------------------------------------
-# Rendering what a call answers
-# ---------------------------------------------------------------------------------------
+# --- Rendering what a call answers ---
 def change_out(change: ChangeRow, order: list[str]) -> WatchChange:
-    """One change's library half, as every bank reads it: the sourced facts, the timeline,
-    the pages it was found on and the obligations it affects, with every vocabulary row
-    labelled in the reader's language.
-
-    Nothing of a bank's own case is here. That lives on `change_case` under row-level
-    security, and this response is the same for every bank on the platform.
+    """One change's library half as every bank reads it: facts, timeline, pages and affected
+    obligations, labelled in the reader's language. Nothing of a bank's own case.
     """
     term_links = list(change.term_links.select_related("term", "flag").all())
     flags = [link.flag for link in term_links if link.flag is not None]
@@ -508,8 +437,7 @@ def change_out(change: ChangeRow, order: list[str]) -> WatchChange:
         authority_label=change.authority_label,
         authority_id=change.authority_id,
         published_on=change.published_on,
-        # The column's choices are the kind the schema publishes, so the cast states what
-        # the database already fixes; pydantic validates it again as the response is built.
+        # The column's choices are the published kind; pydantic validates it again.
         published_precision=cast(DatePrecision, change.published_precision),
         summary=change.summary,
         so_what_draft=change.so_what_draft or None,
@@ -550,11 +478,10 @@ def event_out(event: EventRow) -> WatchChangeEvent:
 
 def provenance(row: Any, prefix: str = "") -> dict[str, Any]:
     """Who suggested a curated fact and who confirmed it, as every read answers it (D-74).
-
-    `row` is a change term or obligation link, or a change with `prefix` "change_type_" for
-    its type, loaded with its two agents (`CURATION_AGENTS`). Whether a confirmation is a
-    machine's is read off the confirming agent's column alone, which the check constraint
-    sets exactly when a key confirmed, so an agent's confirmation never reads as a person's.
+    `row` is a term or obligation link, or a change with `prefix` "change_type_", loaded with
+    `CURATION_AGENTS`. A machine confirmation is read off the confirming agent's column alone,
+    which the check constraint sets exactly when a key confirmed, so it never reads as a
+    person's.
     """
     confirmed = getattr(row, f"{prefix}confirmed_at") is not None
     by_an_agent = getattr(row, f"{prefix}confirmed_by_agent_id") is not None
@@ -566,17 +493,14 @@ def provenance(row: Any, prefix: str = "") -> dict[str, Any]:
     }
 
 
-# What `provenance()` reads, joined in the query that loads the rows so naming the agents
-# costs no query per fact (NFR-02).
+# Joined in the loading query, so naming the agents costs no query per fact (NFR-02).
 CURATION_AGENTS = ("suggested_by_agent", "confirmed_by_agent")
 CHANGE_TYPE_AGENTS = ("change_type_suggested_by_agent", "change_type_confirmed_by_agent")
 
 
 def links_out(change: ChangeRow, order: list[str]) -> list[WatchObligationLink]:
-    """The obligations this change affects, most confident first (the model's own order).
-    `confirmed` is the shared library's confirmation, by an independent agent or a person,
-    and false while the link is a suggestion; a bank's own decision about a link lives on
-    its case and never here (WAT-04, ruling C, D-74)."""
+    """The obligations this change affects, most confident first. `confirmed` is the shared
+    library's confirmation; a bank's own decision lives on its case (WAT-04, ruling C, D-74)."""
     links = list(
         change.obligation_links.select_related("obligation__instrument", *CURATION_AGENTS)
         .prefetch_related("obligation__titles")

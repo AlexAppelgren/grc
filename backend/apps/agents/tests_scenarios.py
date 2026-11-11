@@ -45,12 +45,13 @@ from apps.search.models import SearchChunk
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, Tenant
-from apps.shared.tenancy import is_tenant_task, library_write
+from apps.shared.tenancy import library_write
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
 from apps.taxonomy.models import FootprintTerm, Flag, ScopeItem, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.watch import registration, sources, testing as watch_build
 from apps.watch.models import ChangeDocument, RegulatoryChange, SourceCheck
+from apps.shared.testing import is_tenant_task
 
 # One reform as a sweep files it, for the scenarios that drive the agent API. A function
 # rather than a constant because every change carries a regime (D-39, AC-AGT1), and a term's
@@ -553,8 +554,8 @@ class AgentsScenarioTests(TestCase):
         The budget cap pauses runs and the AI off switch stops every model call (AGT-04).
 
         Built over putAgentBudget, getAgentBudget, the bank's beat, runTenantAgentNow,
-        resumeTenantAgent, setTenantAi and ask. The cap pauses through the one pause
-        pauseTenantAgent uses, with no person. The clock is the test's, so "this month" never depends on
+        updateTenantAgent's `paused`, setTenantAi and ask. The cap pauses through the one pause
+        updateTenantAgent's `paused: true` uses, with no person. The clock is the test's, so "this month" never depends on
         when the test runs.
         """
         from decimal import Decimal
@@ -612,7 +613,7 @@ class AgentsScenarioTests(TestCase):
         self.assertEqual(switched.status_code, 200, switched.content)
         with frozen(WEDNESDAY + datetime.timedelta(days=1)):
             self._as(admin, "put", "/api/v1/tenant/agent-budget", {"monthlyCap": "500.00"})
-        resumed = self._as(admin, "delete", f"/api/v1/agents/{world.agent.id}/pause")
+        resumed = self._as(admin, "patch", f"/api/v1/agents/{world.agent.id}", {"paused": False})
         self.assertEqual(resumed.status_code, 200, resumed.content)
         tenancy.activate(world.bank.id)
         self.assertEqual(
@@ -807,7 +808,7 @@ class AgentsScenarioTests(TestCase):
         from apps.agents import runner_events
         from apps.agents.tests_tasks import WEDNESDAY
         from apps.shared import tests_production_guard as boot_guard
-        from apps.shared.adapters.agent_runner import MockAgentRunner, RunHandle
+        from apps.shared.adapters.agent_runner import RunHandle
 
         # Given AGENT_RUNNER=mock
         self.assertEqual(settings.AGENT_RUNNER, "mock")
@@ -838,7 +839,7 @@ class AgentsScenarioTests(TestCase):
         # When the mock runner emits events
         tenancy.activate(world.bank.id)
         handle = RunHandle(run_id=run.id, external_id=run.external_session_id, status=RunStatus.RUNNING, started_at=None)
-        events = MockAgentRunner().poll(handle)
+        events = agent_build.mock_run_events(handle)
         for event in events:
             runner_events.apply_event(event)
 
@@ -954,7 +955,7 @@ class AgentsScenarioTests(TestCase):
         """AGT-S12
 
         Out-of-scope documents are counted and never registered, and the eval set gates it (AGT-08, SRC-05).
-        Operations: `startAgentRun`, `recordSourceCheck`, `finishAgentRun`, `listAgentRuns`.
+        Operations: `startAgentRun`, `recordSourceCheck`, `finishAgentRun`, `listPlatformRuns`.
         """
         gate = _search_eval()
         rows = gate.load_jsonl(gate.EVAL / "classification.jsonl")
@@ -1061,8 +1062,8 @@ class AgentsScenarioTests(TestCase):
         # Then the run history shows the count 2 and no change and no proposal counted; the two
         # source checks are the rows logged against the run, and nothing was registered or
         # proposed under it. The server's own refusal of a change with no regime is WAT-S11's.
-        with stub_session(user_principal(permissions={perms.SYSTEM_HEALTH})):
-            history = self.client.get("/api/v1/agent-runs", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
+        with stub_session(user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE})):
+            history = self.client.get("/api/v1/console/agent-runs", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
         self.assertEqual(history.status_code, 200, history.content)
         run = next(item for item in history.json()["items"] if item["id"] == run_id)
         self.assertEqual(run["status"], "succeeded")
@@ -1247,22 +1248,18 @@ class AgentsScenarioTests(TestCase):
         )
         agent_flow.assert_refused(self, own_side, 409, "four_eyes_violation")
 
-        # And it may correct and approve one, and reject the other, each with the model call
-        # behind its decision, in the run it opened.
-        corrected = "The institution pays for third-party research from its own resources or a research payment account."
+        # And it may approve one as filed, and reject the other, each with the model call
+        # behind its decision, in the run it opened. It corrects nothing: a correction waits
+        # for a person (review 2026-11-11 S-3).
         approved = self.client.post(
             f"/api/v1/proposals/{to_approve}/approve",
-            data={
-                "payloadOverrides": {"summaries": {"en": corrected}},
-                "fieldSources": {"summaries.en": agent_build.DECISION["citations"][0]["url"]},
-                "decision": agent_build.DECISION,
-                "agentRunId": review_id,
-            },
+            data={"decision": agent_build.DECISION, "agentRunId": review_id},
             content_type="application/json",
             **as_confirmer,
         )
         self.assertEqual(approved.status_code, 200, approved.content)
-        self.assertEqual(approved.json()["correctedByAgent"]["key"], "library-confirmer")
+        self.assertEqual(approved.json()["reviewedByAgent"]["key"], "library-confirmer")
+        self.assertIsNone(approved.json()["correctedByAgent"])
         rejected = self.client.post(
             f"/api/v1/proposals/{to_reject}/reject",
             data={

@@ -94,3 +94,46 @@ describe('checkMessages', () => {
     expect(keyCount).toBe(1);
   });
 });
+
+// A key no source file names is dead copy; the check found 129 of them once
+// the review of 2026-11-11 looked. A literal, a template that can build the key
+// and a 'prefix.' + part concatenation each count as a use; a test file does not.
+describe('unused keys', () => {
+  function sourceDir(files) {
+    const dir = mkdtempSync(join(tmpdir(), 'messages-src-'));
+    for (const [name, text] of Object.entries(files)) {
+      mkdirSync(join(dir, name, '..'), { recursive: true });
+      writeFileSync(join(dir, name), text);
+    }
+    return dir;
+  }
+  const catalog = {
+    'nav.today': 'Today',
+    'workflow.weekday.mon': 'Monday',
+    'scope.tenant:read': 'Read',
+    'stale.key': 'Gone',
+    'only.inTest': 'Test',
+  };
+  const messages = () => messagesDir({ nav: { en: catalog, sv: catalog } });
+
+  it('finds a key named by no production file, and none that a literal, a template or a concatenation reaches', () => {
+    const src = sourceDir({
+      'a.tsx': "t('nav.today');\nconst day = t(`workflow.weekday.${key}`);",
+      'b.ts': "const scopes = { tenant: 'scope.tenant:read' };",
+      'c.test.ts': "t('only.inTest');",
+    });
+    expect(checkMessages(messages(), src).problems).toEqual([
+      '"stale.key" is used by no source file; delete it from every language',
+      '"only.inTest" is used by no source file; delete it from every language',
+    ]);
+  });
+
+  it('counts a prefix concatenation as a use', () => {
+    const src = sourceDir({ 'a.ts': "t('nav.today'); t('workflow.weekday.' + day); t('scope.tenant:read'); t('stale.' + x); t('only.inTest');" });
+    expect(checkMessages(messages(), src).problems).toEqual([]);
+  });
+
+  it('skips the unused-key check when no source directory is given', () => {
+    expect(checkMessages(messages()).problems).toEqual([]);
+  });
+});

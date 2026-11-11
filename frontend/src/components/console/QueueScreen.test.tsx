@@ -77,10 +77,9 @@ function proposal(overrides: Partial<ProposalQueueRow>): ProposalQueueRow {
 /** The server: the session and the queue read, answering `rows` and `total` for every page. */
 function serve(rows: ProposalQueueRow[], total = rows.length): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: editor };
     if (sent.path === PROPOSALS) return { status: 200, data: { items: rows, total } };
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
-  });
+  }, { me: editor });
 }
 
 const queueReads = (sent: Sent[]) => sent.filter((s) => s.path === PROPOSALS).map((s) => s.params as Record<string, string>);
@@ -256,11 +255,10 @@ describe('the console queue', () => {
   it('confirms how many, approves each in turn through the approve route, and says what was refused and why', async () => {
     const rows = [proposal({ id: 'p-a', title: 'Add instrument A' }), proposal({ id: 'p-b', title: 'Add instrument B' })];
     const sent = installAdapter((s) => {
-      if (s.path === '/api/v1/me') return { status: 200, data: editor };
       if (s.path === PROPOSALS) return { status: 200, data: { items: rows, total: rows.length } };
       if (s.path === '/api/v1/proposals/p-a/approve') return { status: 200, data: { ...rows[0], status: 'approved' } };
       return { status: 409, data: { code: 'not_open', detail: 'This proposal was decided while you were looking at it.' } };
-    });
+    }, { me: editor });
     renderScreen();
     await screen.findByRole('link', { name: /Add instrument A/ });
     fireEvent.click(screen.getByRole('checkbox', { name: 'Select all 2 on this page' }));
@@ -300,7 +298,6 @@ describe('the console queue', () => {
     let run: unknown = idle;
     let reads = 0;
     const sent = installAdapter((s) => {
-      if (s.path === '/api/v1/me') return { status: 200, data: editor };
       if (s.path === PROPOSALS) return { status: 200, data: { items: rows, total: 201 } };
       if (s.path === `${PROPOSALS}/approve-all` && s.method === 'post') {
         run = running;
@@ -312,7 +309,7 @@ describe('the console queue', () => {
         return { status: 200, data: run };
       }
       return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
-    });
+    }, { me: editor });
     nav.search = 'kind=new_obligation';
     renderScreen();
     await screen.findByRole('link', { name: /Add instrument A/ });
@@ -338,10 +335,9 @@ describe('the console queue', () => {
       release = resolve;
     });
     installAdapter((s) => {
-      if (s.path === '/api/v1/me') return { status: 200, data: editor };
       if (s.path === PROPOSALS) return { status: 200, data: { items: rows, total: rows.length } };
       return { status: 200, data: {} };
-    });
+    }, { me: editor });
     // The second approval answers only when released, so the run is seen half done.
     const answer = api.defaults.adapter as AxiosAdapter;
     api.defaults.adapter = async (config) => {

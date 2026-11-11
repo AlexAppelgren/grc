@@ -36,6 +36,7 @@ from apps.agents.models import (
 from apps.shared import factories, tenancy
 from apps.shared import tests_production_guard as boot_guard
 from apps.shared.adapters import agent_runner
+from apps.agents.testing import mock_run_events
 from apps.shared.adapters.agent_runner import MockAgentRunner, RunHandle, RunnerEvent
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.tenancy import library_write
@@ -60,40 +61,39 @@ class TheSeam(SimpleTestCase):
     def test_the_mock_reports_progress_then_success_with_no_findings_seeded_from_the_run_id(self) -> None:
         runner = MockAgentRunner()
         handle = runner.start(run_id=uuid.uuid4(), definition_key="watch-sweeper", definition_version=1)
-        events = runner.poll(handle)
+        events = mock_run_events(handle)
         self.assertEqual([event.status for event in events], [RunStatus.RUNNING, RunStatus.SUCCEEDED])
         self.assertTrue(all(event.run_id == handle.run_id for event in events))
         self.assertEqual(events[-1].stats, {}, "a mock run finds nothing")
         self.assertEqual(events[-1].error, "")
         self.assertGreater(events[-1].cost or 0, events[0].cost or 0)
-        self.assertEqual(events, runner.poll(handle), "the same run id, the same events: no clock, no chance")
+        self.assertEqual(events, mock_run_events(handle), "the same run id, the same events: no clock, no chance")
         other = runner.start(run_id=uuid.uuid4(), definition_key="watch-sweeper", definition_version=1)
-        spent = [(event.cost, event.tokens_in, event.tokens_out) for event in (runner.poll(other)[-1], events[-1])]
+        spent = [(event.cost, event.tokens_in, event.tokens_out) for event in (mock_run_events(other)[-1], events[-1])]
         self.assertNotEqual(spent[0], spent[1], "another run id, other numbers")
 
     def test_an_interrupted_mock_run_reports_that_it_was_interrupted(self) -> None:
         runner = MockAgentRunner()
         handle = runner.interrupt(runner.start(run_id=uuid.uuid4(), definition_key="watch-sweeper", definition_version=1))
         self.assertIs(handle.status, RunStatus.INTERRUPTED)
-        self.assertEqual([event.status for event in runner.poll(handle)], [RunStatus.INTERRUPTED])
+        self.assertEqual([event.status for event in mock_run_events(handle)], [RunStatus.INTERRUPTED])
 
-    @override_settings(AGENT_RUNNER="managed_agents")
-    def test_managed_agents_still_raises_because_the_boot_refuses_it_deployed(self) -> None:
-        """Ruling 4: D-54 and ADR 0047 refuse `managed_agents` on every deployed environment
-        but test, so it cannot be the first real runner. Reversing that is a decision, and
-        this pin makes it a visible one."""
-        runner = agent_runner.get_agent_runner()
-        handle = RunHandle(run_id=uuid.uuid4(), external_id="x", status=RunStatus.RUNNING, started_at=None)
-        for call in (
-            lambda: runner.start(run_id=uuid.uuid4(), definition_key="watch-sweeper", definition_version=1),
-            lambda: runner.poll(handle),
-            lambda: runner.interrupt(handle),
-        ):
-            with self.assertRaises(NotImplementedError) as refused:
-                call()
-            self.assertIn("D-54", str(refused.exception))
-            self.assertIn("ADR 0047", str(refused.exception))
-        self.assertIn("D-54", agent_runner.ManagedAgentsRunner.__doc__ or "")
+    def test_managed_agents_is_refused_at_boot_everywhere(self) -> None:
+        """Ruling 4: D-54 and ADR 0047 refuse `managed_agents`, a runner outside the EU, so it
+        cannot be the first real runner. It is no runner at all now: the settings refuse the
+        value on every environment, `test` included, and the adapter knows no such name.
+        Reversing that is a decision, and this pin makes it a visible one."""
+        import os
+        import runpy
+
+        from django.conf import settings as django_settings
+        from django.core.exceptions import ImproperlyConfigured
+
+        with mock.patch.dict(os.environ, {"AGENT_RUNNER": "managed_agents"}), self.assertRaisesMessage(ImproperlyConfigured, "AGENT_RUNNER"):
+            runpy.run_path(str(django_settings.BASE_DIR / "config" / "settings.py"))
+        self.assertNotIn("managed_agents", agent_runner.PROVIDERS)
+        with override_settings(AGENT_RUNNER="managed_agents"), self.assertRaises(ValueError):
+            agent_runner.get_agent_runner()
 
 
 class RunnerEventCase(TestCase):
@@ -205,10 +205,10 @@ class ApplyingAnEvent(RunnerEventCase):
     def test_the_mocks_events_run_a_run_to_success(self) -> None:
         runner = MockAgentRunner()
         handle = runner.start(run_id=self.platform_run.id, definition_key="watch-sweeper", definition_version=1)
-        for event in runner.poll(handle):
+        for event in mock_run_events(handle):
             runner_events.apply_event(event)
         run = AgentRun.objects.get(pk=self.platform_run.pk)
-        self.assertEqual((run.status, run.cost), (RunStatus.SUCCEEDED.value, runner.poll(handle)[-1].cost))
+        self.assertEqual((run.status, run.cost), (RunStatus.SUCCEEDED.value, mock_run_events(handle)[-1].cost))
         self.assertEqual(AuditEvent.objects.filter(action="agent_run.runner_event", subject_id=run.id).count(), 2)
 
 

@@ -5,7 +5,6 @@
   "caseActions.empty.body": "Add what must be done, with an owner and a due date. The first action starts the implementation.",
   "caseActions.due": "Due {date}",
   "caseActions.doneBy": "Done {date} by {name}",
-  "caseActions.remove": "Remove",
   "caseActions.removeTitle": "Remove \"{title}\"?",
   "caseActions.removeBody": "It leaves the list and no longer counts as open. The case file still shows it was planned and removed.",
   "caseActions.newTitle": "New action",

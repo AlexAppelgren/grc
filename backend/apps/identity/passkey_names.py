@@ -1,29 +1,19 @@
-"""Names a new passkey from what its registration already tells us (PRD ID-04).
-
-Alex, 2026-09-19, on the enrolment screen's "Name this passkey" step: "Can we remove this
-step and automatically use the device name / information instead." The person no longer
-types a name; the server derives one, and renaming under My passkeys stays (ID-S10).
+"""Names a new passkey from what its registration already tells us (PRD ID-04, ID-S10):
+the person types no name and renames under My passkeys.
 
 In order of preference:
 
-1. The authenticator's own name, from its AAGUID, looked up in the vendored community list
-   `data/passkey_aaguid_names.tsv` (source, licence and date in its header). Local only:
-   nothing calls out to a third party while a person enrols. An all-zero AAGUID (what
-   most platform authenticators send without attestation, Apple's among them) names nothing.
-2. The browser and platform, read by hand from the registration request's User-Agent:
-   "Chrome on Windows". Only for a platform authenticator: a security key or a phone
-   registered from a laptop is not that laptop, so a roaming authenticator (attachment
-   "cross-platform", or transports without "internal") skips this step. The raw
-   User-Agent is never used as a name.
-3. The transport: "Security key" (usb, nfc, ble), "Phone" (hybrid from a roaming
-   authenticator), else "Passkey".
+1. The authenticator's name from its AAGUID, in the vendored list
+   `data/passkey_aaguid_names.tsv` (source and licence in its header). Local only. An
+   all-zero AAGUID names nothing.
+2. For a platform authenticator only, browser and platform from the User-Agent: "Chrome on
+   Windows". A roaming authenticator is not the laptop it registered from. The raw
+   User-Agent is never a name.
+3. The transport: "Security key" (usb, nfc, ble), "Phone" (hybrid), else "Passkey".
 
-The name is unique among the person's live passkeys, case-insensitively, with a counter:
-"Windows Hello (2)". Sync state is deliberately not part of the name: My passkeys already
-shows it as a pill from `device_type`, and backup state can change after the name is set.
-
-Names are stored in English, like the product names they mostly are; the backend holds no
-message catalog. A person renames freely."""
+The name is unique among the person's live passkeys, case-insensitively: "Windows Hello
+(2)". Sync state is not part of it, since backup state can change. Names are stored in
+English; the backend holds no message catalog."""
 
 from __future__ import annotations
 
@@ -53,9 +43,8 @@ PASSKEY = "Passkey"
 _KEY_TRANSPORTS = frozenset({"usb", "nfc", "ble"})
 
 # The same tables, in the same order, as describeDevice() in
-# frontend/src/features/identity/identity-presentation.ts, so a passkey and a session on
-# one device read alike. Order matters: Edge and Samsung Internet also carry "Chrome/",
-# Chrome on iOS carries "Safari/", Android carries "Linux", an iPhone carries "Mac OS X".
+# frontend/src/features/identity/identity-presentation.ts. Order matters: Edge and Samsung
+# Internet carry "Chrome/", Chrome on iOS "Safari/", Android "Linux", an iPhone "Mac OS X".
 _BROWSERS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"Edg(e|A|iOS)?/"), "Edge"),
     (re.compile(r"OPR/|Opera"), "Opera"),

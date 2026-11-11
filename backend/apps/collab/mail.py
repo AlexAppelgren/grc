@@ -1,23 +1,14 @@
-"""The collab mails (COL-02, I18N-01): the reminders before and after a due date, the reminder
-of a next review, the escalation and the weekly digest, each composed in the recipient's own
-language from the catalog in `mail_strings/`.
+"""The collab mails (COL-02, I18N-01): due-date and next-review reminders, the escalation and
+the weekly digest, in the recipient's language from `mail_strings/`. Only these leave by
+mail; every other notification stays in the product. Plain text.
 
-Only these leave by mail; every other notification stays in the product (CHUNK10_TASKS
-default). Plain text, like every mail the product sends. Three rules decide what may be in
-one, and each of them is a product invariant rather than a style choice:
+- Typed context only: `MailContext` holds a title, date, count, name or link, so a comment,
+  note, assessment or summary has nowhere to go (CHUNK10_TASKS rule 13).
+- A link must start with `APP_BASE_URL`, so it cannot carry text to another host.
+- Nothing is logged (playbook 4.7), except the key of a string missing in a language.
 
-- **Typed context only.** A template can interpolate a record title (a library title, or a
-  bank's own action, case or register entry), a date, a count, a person's name or a link,
-  because `MailContext` has no other field. A comment, a note, an assessment or a summary
-  has nowhere to go (CHUNK10_TASKS rule 13).
-- **A link stays in the product.** It must start with `APP_BASE_URL`, so a link cannot carry
-  text of its own to another host.
-- **Nothing here is logged.** Not the address, not the subject, not the body (playbook 4.7).
-  A string missing from the recipient's language falls back to English and logs its key.
-
-`send()` hands the mail to `tasks.deliver_mail` once the caller's transaction commits, the
-path `identity/mail.py` uses; the task composes it, sends it and writes the `email_message`
-row that makes a second send the same day do nothing.
+`send()` queues `tasks.deliver_mail` after commit; its `email_message` row makes a second
+send the same day do nothing.
 """
 
 from __future__ import annotations
@@ -31,11 +22,11 @@ from collections.abc import Sequence
 from typing import Literal, get_args
 
 from django.conf import settings
-from django.db import transaction
 
 from apps.collab.mail_strings import CATALOGS, FALLBACK_LANGUAGE
 from apps.identity.models import Membership
 from apps.shared.adapters.mailer import OutgoingMail
+from apps.shared.tasks import queue_after_commit
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +38,8 @@ COMPOSER_FIELDS = ("recipient", "product")
 
 @dataclasses.dataclass(frozen=True)
 class MailContext:
-    """Everything a collab mail may say about its record, and nothing else.
-
-    `title` is a record's own title, `date` a plain date, `count` a number of items or days,
-    `name` a person's name and `link` a page of the product. Titles and names are folded to
-    one line, because a subject line cannot hold a line break.
+    """Everything a collab mail may say about its record, and nothing else. Titles and names
+    are folded to one line, since a subject line cannot hold a line break.
     """
 
     title: str | None = None
@@ -127,13 +115,9 @@ def compose(
     *,
     sections: Sequence[Sequence[tuple[str, MailContext]]] = (),
 ) -> OutgoingMail:
-    """One recipient's copy of one mail, in their language: the header, the template's body
-    and the footer, under the template's subject. A recipient with no language, or one the
-    catalog does not hold, reads English.
-
-    `sections` are paragraphs between the body and the footer, one line per entry: a catalog
-    key of the template's own filled with its own typed context (the digest's buckets and
-    rows), so a section can say no more than the body can."""
+    """One recipient's copy of one mail in their language (English by default): header,
+    body and footer under the template's subject. `sections` are extra paragraphs built from
+    the template's own keys and typed context, so they can say no more than the body."""
     if template not in TEMPLATES:
         raise ValueError(f"unknown collab mail template {template!r}")
     user = membership.user
@@ -186,8 +170,4 @@ def send(
         subject_type,
         str(subject_id) if subject_id else None,
     )
-    if settings.CELERY_TASK_ALWAYS_EAGER:
-        # Tests: inline, now. `on_commit` never fires inside a TestCase transaction.
-        tasks.deliver_mail.apply(args=args)
-        return
-    transaction.on_commit(lambda: tasks.deliver_mail.delay(*args))
+    queue_after_commit(tasks.deliver_mail, args)

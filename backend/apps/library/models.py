@@ -1,19 +1,13 @@
-"""Models of the library app. Chunk 1 adds `Language` (I18N-01, INPUT_DELTAS §3); chunk 2
-adds `Jurisdiction` (I18N-01, playbook 17): the content languages and the jurisdictions
-are rows, never a column check. Chunk 3 adds instruments, provisions, obligations and
-their versions as LibraryModel subclasses (below).
+"""Models of the library app: the content languages and jurisdictions (I18N-01), and the
+shared library's instruments, provisions, obligations and their versions (INV-01 to INV-06).
 
-`Language` and `Jurisdiction` are reference configuration, not sourced public facts: the
-reference seed (apps/library/seeds/) files them, and everything that labels, files or
-searches reads them. They are plain models rather than `LibraryModel`s, so the tenant
-profile and role logic can name them beside their own writes without tripping the library
-fence's AST heuristic (apps/shared/tests_library_fence.py); the database's door trigger
-holds them instead (shared 0008, 0010). `Jurisdiction` is a `Vocabulary` so it carries
-labels per language and the immutable-key rule; its `kind` (supranational, country or
-international) is the tier-one `JurisdictionKind`. Since D-94 a jurisdiction is also
-relabelled, retired and restored through an approved proposal (ADM-02, VOC-07), never
-added or merged, so it carries a `LibraryVocabulary`'s version and provenance; a language
-is still the seed's alone."""
+`Language` and `Jurisdiction` are reference configuration, filed by the reference seed. They
+are plain models rather than `LibraryModel`s, so tenant logic can name them beside its own
+writes without tripping the library fence (apps/shared/tests_library_fence.py); the
+database's door trigger holds them instead (shared 0008, 0010). A jurisdiction is a
+`Vocabulary` whose kind is the tier-one `JurisdictionKind`; it is relabelled, retired and
+restored only through an approved proposal (D-94, VOC-07), so it carries a
+`LibraryVocabulary`'s version and provenance. A language is the seed's alone."""
 
 from __future__ import annotations
 
@@ -28,10 +22,7 @@ from apps.library.short_names import shown_short_name
 from apps.proposals.models import OriginType
 from apps.shared.tenancy import LibraryModel
 from apps.shared.vocabulary import Vocabulary, VocabularyLabel
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class Language(models.Model):
@@ -56,11 +47,9 @@ class Language(models.Model):
 
 class JurisdictionKind(enum.StrEnum):
     """Tier-one kind (apps/shared/kinds.py): supranational (EU), country, or international
-    (INV-01, INV-08, D-38) for a standards body such as ISO/IEC, which issues from no
-    market a bank operates in. `international` is deliberately left out of
-    `MIRRORED_JURISDICTION_KINDS` (apps/taxonomy/seeds/__init__.py): mirroring it into the
-    footprint's jurisdiction dimension would offer "International" as an operating market,
-    which a standards body is not."""
+    (INV-01, INV-08, D-38) for a standards body such as ISO/IEC. `international` is left out
+    of `MIRRORED_JURISDICTION_KINDS` (apps/taxonomy/seeds/__init__.py), so the footprint
+    never offers "International" as an operating market."""
 
     SUPRANATIONAL = "supranational"
     COUNTRY = "country"
@@ -68,25 +57,22 @@ class JurisdictionKind(enum.StrEnum):
 
 
 class Jurisdiction(Vocabulary):
-    """A jurisdiction (I18N-01, schema v0.3 `jurisdiction`): `eu`, `se`, `dk`, `no`,
-    `fi` and `intl` (D-38), seeded with a parent and the language its legal texts are
-    written in. Instruments and authorities reference it from chunk 3.
+    """A jurisdiction (I18N-01): `eu`, `se`, `dk`, `no`, `fi` and `intl` (D-38), seeded with a
+    parent and the language its legal texts are written in.
 
     `parent` is the jurisdiction whose rules reach this one (D-28, ADR 0026), not
     membership: Norway is outside the Union and still reached by EU financial rules
     through the EEA Agreement.
 
-    `version` backs If-Match on a relabel proposal, and the three provenance columns are a
-    `LibraryVocabulary`'s (apps/shared/vocabulary.py, D-79, D-94): who confirmed the wording
-    the last approval wrote, the confirming agent when it was one, and the proposal, through
-    which the proposing agent is read. Blank and null on a seeded row."""
+    `version` backs If-Match on a relabel proposal; the three provenance columns are a
+    `LibraryVocabulary`'s (apps/shared/vocabulary.py, D-79, D-94), blank on a seeded row."""
 
     KIND_CHOICES = [(kind.value, kind.value) for kind in JurisdictionKind]
 
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="children")
     default_language = models.ForeignKey(Language, on_delete=models.PROTECT, related_name="+")
     version = models.PositiveIntegerField(default=1)
-    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_origin = models.CharField(max_length=16, choices=choices(OriginType), blank=True, default="")
     verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
 
@@ -105,16 +91,11 @@ class JurisdictionLabel(VocabularyLabel):
         constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="jurisdiction_label_unique")]
 
 
-# ---------------------------------------------------------------------------------------
-# Chunk 3: the shared library (INV-01..INV-06; schema v0.3 section 3; INPUT_DELTAS §1, §3, §5)
-# ---------------------------------------------------------------------------------------
+# --- The shared library (INV-01..INV-06; INPUT_DELTAS §1, §3, §5) ---
 # Every table below but ProblemReport extends LibraryModel: no tenant column, written only
-# inside library_write() (apps/proposals/apply.py, the watch pipeline, the reference seeds
-# in apps/library/seeds/). `owner_tenant` on instrument and obligation is the
-# tenant-private record of R3 (INV-07); its migration carries the "shared or mine" policy
-# so the RLS shape is final now. Levels, relation types, provision kinds, duty types, tags
-# and terms are the chunk 2 vocabulary rows, referenced by foreign key; the enums here are
-# kinds only (apps/shared/kinds.py).
+# inside library_write(). `owner_tenant` on instrument and obligation is the tenant-private
+# record (INV-07) under the "shared or mine" policy. Vocabularies are rows referenced by
+# foreign key; the enums here are kinds only (apps/shared/kinds.py).
 class DatePrecision(enum.StrEnum):
     """A legal date is a plain date with a precision (playbook 4.3, INV-S10)."""
 
@@ -130,7 +111,7 @@ class RecordStatus(enum.StrEnum):
 
 
 class SubjectType(enum.StrEnum):
-    """What a verification or a problem report points at. Later chunks add their subjects."""
+    """What a verification or a problem report points at."""
 
     INSTRUMENT = "instrument"
     PROVISION = "provision"
@@ -155,11 +136,11 @@ class VerificationOutcome(enum.StrEnum):
 
 
 def _precision() -> models.CharField:
-    return models.CharField(max_length=8, choices=_choices(DatePrecision), default=DatePrecision.DAY.value)
+    return models.CharField(max_length=8, choices=choices(DatePrecision), default=DatePrecision.DAY.value)
 
 
 def _trigram(field: str, name: str) -> GinIndex:
-    # The keyword leg of search (chunk 7) matches titles and references by similarity.
+    # The keyword leg of search matches titles and references by similarity.
     return GinIndex(fields=[field], name=name, opclasses=["gin_trgm_ops"])
 
 
@@ -209,11 +190,8 @@ class Instrument(LibraryModel):
     translation rows (`InstrumentTitle`); `binding` starts from the level's default, false
     meaning guidance, comply or explain unless the level's kind is `standard`.
 
-    `regime` is required (D-39, library 0008): it is the sector boundary, and an instrument
-    without one would match every bank's footprint. It must be a term of the `regime`
-    dimension: the seed-integrity test and the fixture check hold the seeded rows to that,
-    and the instrument proposal kind, when it lands, answers 422 `not_a_regime` at apply
-    otherwise (INV-S12)."""
+    `regime` is required and must be a `regime` term (D-39, INV-S12): it is the sector
+    boundary, and an instrument without one would match every bank's footprint."""
 
     stable_key = models.SlugField(max_length=120, unique=True)
     short_name = models.CharField(max_length=120)
@@ -230,18 +208,16 @@ class Instrument(LibraryModel):
     in_force_to = models.DateField(null=True, blank=True)
     in_force_to_precision = _precision()
     implements_note = models.TextField(blank=True)
-    status = models.CharField(max_length=16, choices=_choices(RecordStatus), default=RecordStatus.ACTIVE.value)
+    status = models.CharField(max_length=16, choices=choices(RecordStatus), default=RecordStatus.ACTIVE.value)
     owner_tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    created_origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    created_origin = models.CharField(max_length=16, choices=choices(OriginType))
     created_by_agent_run = models.UUIDField(null=True, blank=True)
     last_verified_at = models.DateTimeField(null=True, blank=True)
     verified_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    # Machine-confirmed provenance (INV-05, INV-06, PRO-02, chunk4-T26): who confirmed the
-    # change that produced the record's current state, an agent or a person, beside
-    # `verified_by`'s own re-verification stamp. Blank/null until a proposal that changes
-    # this table is applied; no kind creates or versions an instrument yet, so these two
-    # columns exist for the shape schema v0.3 names and are set once that apply path exists.
-    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    # Machine-confirmed provenance (INV-05, INV-06, PRO-02): who confirmed the change behind
+    # the record's current state, an agent or a person, beside `verified_by`'s re-verification
+    # stamp. Blank until a proposal that changes this table is applied.
+    verified_origin = models.CharField(max_length=16, choices=choices(OriginType), blank=True, default="")
     verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -263,7 +239,7 @@ class Instrument(LibraryModel):
 
     @property
     def shown_short_name(self) -> str:
-        """The name it goes by on screen, one to three words (D-132, `short_names.py`)."""
+        """The name it goes by on screen, one to three words (D-133, `short_names.py`)."""
         return shown_short_name(self.short_name, self.official_ref)
 
 
@@ -317,13 +293,10 @@ class Provision(LibraryModel):
     """A node of an instrument's structure (INV-02): chapter, section, article. The legal
     text lives in `ProvisionVersion` rows, never on the node.
 
-    Never under a standard (INV-08, AC-INV2, D-35): a standard's text is licensed. The
-    trigger `provision_not_under_standard` (library 0008) refuses an insert, or a move of
-    `instrument_id`, onto an instrument whose level's kind is `standard` or which the writer
-    cannot see, whatever the write path: a proposal, a seed, the watch pipeline or a
-    tenant's own record. Two more triggers there refuse the level paths: an instrument
-    holding provisions moved onto a standard level, and a level given the kind `standard`
-    while provisions sit under it."""
+    Never under a standard (INV-08, AC-INV2, D-35): a standard's text is licensed. Triggers
+    (library 0008) refuse, whatever the write path, a provision on a standard-level
+    instrument or one the writer cannot see, an instrument with provisions moved onto a
+    standard level, and a level made `standard` while provisions sit under it."""
 
     stable_key = models.CharField(max_length=200, unique=True)
     instrument = models.ForeignKey(Instrument, on_delete=models.PROTECT, related_name="provisions")
@@ -333,7 +306,7 @@ class Provision(LibraryModel):
     heading = models.TextField(blank=True)
     path = models.CharField(max_length=500)
     sort_order = models.IntegerField(default=0)
-    status = models.CharField(max_length=16, choices=_choices(RecordStatus), default=RecordStatus.ACTIVE.value)
+    status = models.CharField(max_length=16, choices=choices(RecordStatus), default=RecordStatus.ACTIVE.value)
 
     class Meta:
         db_table = "provision"
@@ -398,22 +371,19 @@ class Obligation(LibraryModel):
     trigger_frequency = models.TextField(blank=True)
     retention = models.TextField(blank=True)
     sanction_exposure = models.TextField(blank=True)
-    status = models.CharField(max_length=16, choices=_choices(RecordStatus), default=RecordStatus.ACTIVE.value)
+    status = models.CharField(max_length=16, choices=choices(RecordStatus), default=RecordStatus.ACTIVE.value)
     owner_tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    created_origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    created_origin = models.CharField(max_length=16, choices=choices(OriginType))
     created_by_agent_run = models.UUIDField(null=True, blank=True)
     created_model = models.CharField(max_length=200, blank=True)
     source_url = models.URLField(max_length=2000)
     source_label = models.CharField(max_length=500)
     last_verified_at = models.DateTimeField(null=True, blank=True)
     verified_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    # Machine-confirmed provenance (INV-05, INV-06, PRO-02, chunk4-T26), beside `verified_by`'s
-    # own re-verification stamp: blank/null until a proposal that changes the obligation row
-    # itself is applied. The confirmation of the obligation's current version lives on the
-    # version row (`ObligationVersion.verified_origin`/`verified_by_agent`), read there and
-    # never overwritten; these two columns are the same shape for the obligation row itself,
-    # for the kind chunk 5 or later adds.
-    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    # Machine-confirmed provenance (INV-05, INV-06, PRO-02) of the obligation row itself,
+    # blank until a proposal changing that row is applied. The current version's confirmation
+    # lives on `ObligationVersion`, never overwritten.
+    verified_origin = models.CharField(max_length=16, choices=choices(OriginType), blank=True, default="")
     verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     provisions = models.ManyToManyField(Provision, through="library.ObligationProvision", related_name="obligations")
@@ -448,16 +418,14 @@ class ObligationVersion(LibraryModel):
     version_number = models.PositiveIntegerField()
     effective_from = models.DateField(null=True, blank=True)
     effective_from_precision = _precision()
-    caused_by_change = models.UUIDField(null=True, blank=True)  # the regulatory change; a foreign key from chunk 5
+    caused_by_change = models.UUIDField(null=True, blank=True)  # the regulatory change, by id
     applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_at = models.DateTimeField(null=True, blank=True)
-    # Machine-confirmed provenance (INV-05, INV-06, PRO-02, chunk4-T26): set once, with the
-    # version, from the approving proposal's two sides, and never edited afterwards. `agent`
-    # means an independent agent confirmed it (`verified_by_agent` names it; the proposing
-    # agent is `applied_by_proposal.proposed_by_agent`, so both are named without a second
-    # column here); `user` means `approved_by` names the person who did, exactly as before.
-    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    # Machine-confirmed provenance (INV-05, INV-06, PRO-02): set once, with the version, from
+    # the approving proposal's two sides. `agent`: `verified_by_agent` names the confirming
+    # agent (the proposer is `applied_by_proposal.proposed_by_agent`); `user`: `approved_by`.
+    verified_origin = models.CharField(max_length=16, choices=choices(OriginType), blank=True, default="")
     verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -542,11 +510,11 @@ class Verification(LibraryModel):
     """Every re-verification of a record against its source, not only the latest stamp
     (INV-06): the one library write outside a proposal, still inside library_write()."""
 
-    subject_type = models.CharField(max_length=32, choices=_choices(SubjectType))
+    subject_type = models.CharField(max_length=32, choices=choices(SubjectType))
     subject_id = models.UUIDField()
     verified_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     verified_at = models.DateTimeField(default=timezone.now)
-    outcome = models.CharField(max_length=32, choices=_choices(VerificationOutcome))
+    outcome = models.CharField(max_length=32, choices=choices(VerificationOutcome))
     note = models.TextField(blank=True)
 
     class Meta:
@@ -560,19 +528,14 @@ class Verification(LibraryModel):
 
 class RecurringDuty(LibraryModel):
     """A duty an obligation carries on a schedule (REG-07): a quarterly report, a yearly
-    attestation. A public fact about the duty, so no tenant column: a bank's own occurrences,
-    owners and completions are tenant rows on it (the register app). `recurrence_rule` is an
-    RFC 5545 RRULE stored as text, validated by the proposal kind that writes it; the
-    proposal is the only producer, the library fence and the door trigger (library 0010,
-    ADR 0058) refuse every other writer. `lead_days` is how long before a due date the duty
-    starts showing. `recipient_authority` is who receives it, when an authority does.
+    attestation. A public fact, so no tenant column; a bank's occurrences are register rows.
+    `recurrence_rule` is an RFC 5545 RRULE validated by the proposal kind that writes it, the
+    only producer (library 0010, ADR 0058). `lead_days` is how long before a due date the
+    duty shows; `recipient_authority` receives it, when an authority does.
 
-    Provenance (INV-05, D-79, D-89): `created_origin` and `created_by_agent` name who
-    proposed it, `verified_origin` with `verified_by_agent` or `approved_by` who confirmed
-    it, set once from the approving proposal's two sides. The check constraints hold an
-    agent's proposal and an agent's confirmation to naming their agent, a person's
-    confirmation to naming the person, and the confirming agent to be another agent than the
-    proposer, so a record an agent confirmed never reads as verified by a person."""
+    Provenance (INV-05, D-79, D-89) is set once from the approving proposal's two sides. The
+    check constraints hold the confirming agent to be another agent than the proposer, so a
+    record an agent confirmed never reads as verified by a person."""
 
     obligation = models.ForeignKey(Obligation, on_delete=models.PROTECT, related_name="recurring_duties")
     title = models.CharField(max_length=300)
@@ -580,11 +543,11 @@ class RecurringDuty(LibraryModel):
     due_rule_note = models.TextField(blank=True)
     recipient_authority = models.ForeignKey(Authority, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     lead_days = models.PositiveIntegerField(default=0)
-    status = models.CharField(max_length=16, choices=_choices(RecordStatus), default=RecordStatus.ACTIVE.value)
+    status = models.CharField(max_length=16, choices=choices(RecordStatus), default=RecordStatus.ACTIVE.value)
     applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    created_origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    created_origin = models.CharField(max_length=16, choices=choices(OriginType))
     created_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_origin = models.CharField(max_length=16, choices=choices(OriginType), blank=True, default="")
     verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_at = models.DateTimeField(null=True, blank=True)
@@ -620,29 +583,25 @@ class RecurringDuty(LibraryModel):
 
 class ProblemReport(models.Model):
     """"This looks wrong" (INV-06, AUD-03). A mixed table under forced RLS whose rows all
-    carry the bank that filed them: the writer refuses a report without a tenant, and the
-    column stays nullable only until Alex decides to take the table out of the mixed shape
-    (docs/TODO_FOR_alex.md, problem reports). Any member writes one, so it is not a
-    LibraryModel. It is read and closed inside that bank and nowhere else (D-50): the
-    reporter or a colleague holding `proposals.create` sets `answered`, `fixed` or
-    `rejected` with a note, and the check constraint below keeps a closed report from
-    lacking who closed it, when, and why. No proposal ever links to a report; the library
-    is corrected by the watch agents' re-check instead.
+    carry the bank that filed them; the column stays nullable pending docs/TODO_FOR_alex.md
+    (problem reports). Any member writes one, so it is not a LibraryModel. It is read and
+    closed inside that bank only (D-50): the reporter or a colleague holding
+    `proposals.create` sets `answered`, `fixed` or `rejected` with a note, and the check
+    constraint keeps a closed report naming who closed it, when and why. No proposal links
+    to a report; the watch agents' re-check corrects the library.
 
     `version_number` and `language` record what the reader had on screen, so a colleague
-    reads the same words the reader read. There is no problem-area column: nothing
-    branches on one, and an area would be a library vocabulary rather than a code enum
-    (the open question in docs/plans/briefs/CHUNK3_TASKS.md)."""
+    reads the same words."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     reporter = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
-    subject_type = models.CharField(max_length=32, choices=_choices(SubjectType))
+    subject_type = models.CharField(max_length=32, choices=choices(SubjectType))
     subject_id = models.UUIDField()
     text = models.TextField()
     version_number = models.PositiveIntegerField(null=True, blank=True)
     language = models.ForeignKey(Language, to_field="key", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    status = models.CharField(max_length=16, choices=_choices(ReportStatus), default=ReportStatus.OPEN.value)
+    status = models.CharField(max_length=16, choices=choices(ReportStatus), default=ReportStatus.OPEN.value)
     resolution_note = models.TextField(blank=True, default="")
     closed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     closed_at = models.DateTimeField(null=True, blank=True)

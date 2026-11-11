@@ -1,25 +1,15 @@
-"""Models of the cases app (CAS-01, WAT-04, WAT-05; schema v0.3 `change_case`;
-INPUT_DELTAS §1, §8).
+"""Models of the cases app (CAS-01 to CAS-08, WAT-04, WAT-05; INPUT_DELTAS §1, §8, §18).
 
-Two tenant tables, both `TenantModel` under enabled and forced row-level security: one
-bank's case for one library change, and that bank's own decision about a suggested
-obligation link. Everything here is judgement, which is why it is not in the watch zone —
-the change, its timeline, its classification and its suggested links are library facts
-every bank shares, and no bank's view of them may sit in a library row (playbook 14).
+Tenant tables under forced row-level security: one bank's case for one library change, its
+decisions about suggested obligation links, and the workflow (impact assessment, actions,
+the append-only transition ledger and evidence). All judgement, so none of it sits in a
+library row (playbook 14); accepting a link leaves `change_obligation` as it was
+(`tests_models.py`), and a case never edits the register.
 
-Neither table writes a library row and neither reads one to decide: accepting a link on a
-case leaves `change_obligation` exactly as it was, which `tests_models.py` proves. A case
-is not a register entry either: "applies" and "we comply" are separate facts kept in the
-register (REG-01, REG-02), and closing a case never edits the inventory.
-
-Chunk 9 (`c9-case-models`) adds the workflow: the case's triage, dismissal, sign-off and
-close columns with the four-eyes CHECK, and four child tables, each a tenant table under
-forced row-level security — the impact assessment, actions, the append-only transition
-ledger and evidence. Every reference from a case table to a person, and from a child to
-its case, is also a composite `(tenant_id, …)` foreign key added by the migration
-(INPUT_DELTAS §1, D-18): PostgreSQL checks foreign keys with row-level security bypassed,
-so only a composite key makes another bank's case or a non-member impossible to point at.
-What the designed schema has differently is recorded in INPUT_DELTAS §8 and §18.
+Every reference from a case table to a person, and from a child to its case, is also a
+composite `(tenant_id, …)` foreign key in the migrations (D-18): PostgreSQL checks foreign
+keys without row-level security, so only that key refuses another bank's case or a
+non-member.
 """
 
 from __future__ import annotations
@@ -33,17 +23,12 @@ from apps.shared.adapters.scanner import ScanState
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.tenancy import TenantModel
 from apps.taxonomy.models import CaseStatusCategory
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class CaseLinkDecision(enum.StrEnum):
-    """Tier-one kind (apps/shared/kinds.py): what a bank said about one suggested
-    obligation link on its own case (WAT-04, ruling C). The change page branches on it —
-    an accepted link is worked, a removed one is hidden — and no admin adds a third
-    answer, because there is no third thing a bank can say about a link.
+    """Tier-one kind (apps/shared/kinds.py): what a bank said about one suggested obligation
+    link on its own case (WAT-04, ruling C). There is no third thing to say about a link.
     """
 
     ACCEPTED = "accepted"
@@ -87,9 +72,8 @@ class _RemovedNotDeletedQuerySet(models.QuerySet):
         raise RemovedNotDeleted(f"{self.model.__name__} rows are removed with removed_at, never deleted")
 
 
-# What a workflow read and write joins beside the case, so naming the people and the
-# reasons costs no query of its own. Field names, kept beside the model they name (a logic
-# module may hold no string that reads as a role key, ID-S18).
+# What a workflow read and write joins beside the case. Field names, kept beside the model
+# (a logic module may hold no string that reads as a role key, ID-S18).
 CASE_JOINS = (
     "change",
     "urgency",
@@ -108,32 +92,23 @@ CASE_JOINS = (
 class ChangeCase(TenantModel):
     """One bank's case for one regulatory change (CAS-01).
 
-    Created in the `new` category the moment the change is registered, with the change's
-    suggested urgency and the footprint verdict computed then. `UNIQUE (tenant, change)` is
-    what makes "exactly one case per bank per change" true, so a repeated registration
-    finds the case instead of creating a second one.
+    Created `new` when the change is registered, with the suggested urgency and the footprint
+    verdict; `UNIQUE (tenant, change)` makes it one per bank per change. `so_what_text`
+    starts as the library's draft; `so_what_confirmed` keeps it labelled until a person
+    confirms, and a constraint makes a confirmation name a person and a time (WAT-05, AUD-02).
 
-    `so_what_text` starts as the library's AI draft and becomes this bank's own the moment
-    someone saves over it; `so_what_confirmed` is what keeps AI output labelled until a
-    person confirms it (WAT-05, AUD-02). The constraint below makes the confirmation name a
-    person and a time, so "confirmed" can never be a flag nobody stands behind.
-
-    The workflow columns are chunk 9's. `status` is the fixed category the guards read and
-    `sub_status` a bank's own row inside it, which no guard reads (D-13). Three CHECKs hold
-    what the state machine promises even against a bug in it: a dismissal names a reason,
-    every category between triage and the close has an owner, and whoever signs off is
-    not whoever asked (four eyes, CAS-06). `version` is what every case write's `If-Match`
-    compares, so a concurrent edit is refused rather than merged (CAS-08). Whoever closed
-    the case is on its last `CaseTransition` row, so there is no `closed_by`.
+    `status` is the fixed category the guards read; `sub_status` a bank row inside it (D-13).
+    CHECKs hold the state machine's promises: a dismissal names a reason, every category from
+    triage to close has an owner, and the signer is not the requester (CAS-06). `version` is
+    the `If-Match` of every case write (CAS-08). Who closed it is on the last transition row.
     """
 
     change = models.ForeignKey("watch.RegulatoryChange", on_delete=models.PROTECT, related_name="cases")
     status = models.CharField(
-        max_length=16, choices=_choices(CaseStatusCategory), default=CaseStatusCategory.NEW.value
+        max_length=16, choices=choices(CaseStatusCategory), default=CaseStatusCategory.NEW.value
     )
     urgency = models.ForeignKey("taxonomy.Urgency", on_delete=models.PROTECT, related_name="+")
-    # False until a person triages: the value above is the agent's suggestion, and the
-    # screen says so (Alex's item 1; the designed schema has no such column, §8).
+    # False until a person triages: the urgency above is the agent's suggestion (INPUT_DELTAS §8).
     urgency_confirmed = models.BooleanField(default=False)
     footprint_match = models.BooleanField()
     owner = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -146,8 +121,7 @@ class ChangeCase(TenantModel):
         "identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
     so_what_confirmed_at = models.DateTimeField(null=True, blank=True)
-    # The Monday of the ISO week the case first appeared in the briefing, in the bank's own
-    # time zone. Null until a briefing has carried it (HOM-02, chunk 6).
+    # The Monday (bank time) of the first briefing that carried the case; null until then (HOM-02).
     briefing_week = models.DateField(null=True, blank=True)
     sub_status = models.ForeignKey(
         "taxonomy.CaseSubStatus", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
@@ -169,9 +143,8 @@ class ChangeCase(TenantModel):
     )
     closed_note = models.TextField(blank=True)
     closed_at = models.DateTimeField(null=True, blank=True)
-    # When triage is due: creation plus the bank's `triage_target_hours`, set once when the
-    # case opens (COL-02, `schema.sql` §13). Reminders read it only while the case is `new`.
-    # Null on a case that left `new` before the column existed.
+    # Creation plus the bank's `triage_target_hours`, set once (COL-02); reminders read it only
+    # while the case is `new`. Null on a case that left `new` before the column existed.
     triage_due_at = models.DateTimeField(null=True, blank=True)
     version = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -179,8 +152,7 @@ class ChangeCase(TenantModel):
 
     class Meta:
         db_table = "change_case"
-        # Newest first with the row id as a stable tiebreak, so `.first()` is the newest
-        # case and never a coin flip between two created in the same transaction.
+        # Newest first with the row id as a stable tiebreak.
         ordering = ["-created_at", "id"]
         constraints = [
             models.UniqueConstraint(fields=["tenant", "change"], name="change_case_one_per_tenant"),
@@ -206,10 +178,9 @@ class ChangeCase(TenantModel):
                 name="change_case_worked_case_has_an_owner",
             ),
         ]
-        # The four-eyes check constraint `change_case_four_eyes` (CAS-06, AC-CAS1) is created
-        # by RunSQL in migration 0002 as `signed_off_by_id IS NULL OR (signoff_requested_by_id
-        # IS NOT NULL AND signed_off_by_id <> signoff_requested_by_id)`: a sign-off answers a
-        # request, and never the requester's own. Enumerated by apps/shared/tests_four_eyes.py.
+        # `change_case_four_eyes` (CAS-06, AC-CAS1) is created by RunSQL in 0002 as
+        # `signed_off_by_id IS NULL OR (signoff_requested_by_id IS NOT NULL AND
+        # signed_off_by_id <> signoff_requested_by_id)`; apps/shared/tests_four_eyes.py reads it.
         indexes = [
             models.Index(fields=["tenant", "status", "urgency"], name="change_case_queue_idx"),
             models.Index(
@@ -226,22 +197,14 @@ class ChangeCase(TenantModel):
 
 
 class CaseObligationLink(TenantModel):
-    """What one bank decided about one suggested obligation link, on its own case
-    (WAT-04, ruling C).
-
-    A library editor confirms a link for the shared library; a compliance officer accepts
-    or removes it here. The two are separate facts: this table holds no library row and
-    writes none, so a bank saying "not related to us" changes nothing another bank sees.
-
-    A removal is a `removed` row, not a deleted one, so the case file can say the bank
-    looked at the link and said no (playbook 4.3). `UNIQUE (tenant, case, obligation)`
-    means one decision per link, changed by rewriting that row rather than by stacking a
-    second.
+    """What one bank decided about one suggested obligation link, on its own case (WAT-04,
+    ruling C). Holds and writes no library row. A removal is a `removed` row (playbook 4.3);
+    one decision per link, rewritten in place.
     """
 
     case = models.ForeignKey(ChangeCase, on_delete=models.CASCADE, related_name="obligation_links")
     obligation = models.ForeignKey("library.Obligation", on_delete=models.PROTECT, related_name="+")
-    decision = models.CharField(max_length=16, choices=_choices(CaseLinkDecision))
+    decision = models.CharField(max_length=16, choices=choices(CaseLinkDecision))
     decided_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     decided_at = models.DateTimeField(auto_now_add=True)
 
@@ -261,18 +224,14 @@ class CaseObligationLink(TenantModel):
 
 class ImpactAssessment(TenantModel):
     """One case's impact assessment (CAS-03): whether the change applies, why, what must
-    change, the bank's own deadline and the effort.
-
-    One per case. There is no `contributors` column: the contributor teams are the case's
-    team participants (D-20, INPUT_DELTAS §1), added and removed one at a time so two
-    people editing them never replace each other's list. A saved assessment says why,
-    which the CHECK holds at the database. `version` is the `If-Match` of its own writes,
-    so the second of two people saving the same version gets `stale_write` (AC-CAS2).
+    change, the bank's deadline and the effort. One per case. No `contributors` column: the
+    contributor teams are the case's team participants (D-20). A CHECK holds that a saved
+    assessment says why; `version` is the `If-Match` of its writes (AC-CAS2).
     """
 
     case = models.OneToOneField(ChangeCase, on_delete=models.PROTECT, related_name="assessment")
     applies = models.CharField(
-        max_length=16, choices=_choices(AssessmentApplies), default=AssessmentApplies.YES.value
+        max_length=16, choices=choices(AssessmentApplies), default=AssessmentApplies.YES.value
     )
     why = models.TextField(blank=True)
     what_must_change = models.TextField(blank=True)
@@ -303,12 +262,9 @@ class ImpactAssessment(TenantModel):
 
 class Action(TenantModel):
     """One thing that must be done for a case, with an owner and a due date (CAS-04).
-
-    Removed, never deleted: `delete()` raises and removal sets `removed_at` and
-    `removed_by`, so the case file still shows what was planned. `version` is the
-    `If-Match` of its own writes. The ticket columns of the designed schema wait for
-    `c13-tickets-export` (INPUT_DELTAS §1). The partial index serves every "what is open
-    and when is it due" read without scanning done or removed actions.
+    Removed, never deleted (`delete()` raises). `version` is its `If-Match`. The designed
+    ticket columns are deferred (INPUT_DELTAS §1). The partial index serves every open-and-due
+    read.
     """
 
     case = models.ForeignKey(ChangeCase, on_delete=models.PROTECT, related_name="actions")
@@ -357,18 +313,14 @@ class Action(TenantModel):
 
 
 class CaseTransition(AppendOnlyModel, TenantModel):
-    """One move of a case from one category to another (CAS-08), written in the same
-    transaction as the move.
-
-    Append-only in Python and by trigger, so the time a case spent in each stage cannot be
-    rewritten afterwards. `by_user` names who moved it, which is why the case has no
-    `closed_by`; it is empty only for a move no person made. `from_status` is empty on the
-    first row of a case.
+    """One move of a case between categories (CAS-08), written in the move's transaction.
+    Append-only in Python and by trigger. `by_user` is empty only for a move no person made;
+    `from_status` is empty on a case's first row.
     """
 
     case = models.ForeignKey(ChangeCase, on_delete=models.PROTECT, related_name="+")
-    from_status = models.CharField(max_length=16, choices=_choices(CaseStatusCategory), blank=True)
-    to_status = models.CharField(max_length=16, choices=_choices(CaseStatusCategory))
+    from_status = models.CharField(max_length=16, choices=choices(CaseStatusCategory), blank=True)
+    to_status = models.CharField(max_length=16, choices=choices(CaseStatusCategory))
     at = models.DateTimeField(auto_now_add=True)
     by_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     note = models.TextField(blank=True)
@@ -384,19 +336,15 @@ class CaseTransition(AppendOnlyModel, TenantModel):
 
 
 class Evidence(TenantModel):
-    """One piece of evidence on a case: a file, a link or a reference to an internal
-    document (CAS-05).
+    """One piece of evidence on a case: a file, a link or a reference (CAS-05).
 
-    Only a file has bytes, kept in the private bucket under `storage_key`, and a CHECK per
-    kind makes a half-written row impossible: a file carries its key, hash, size and type;
-    a link its url; neither a link nor a reference a storage key, so neither can ever be
-    downloaded. A new row starts `pending` and a download serves only `clean`, so a file
-    is invisible until the scan passes. Removed, never deleted: `delete()` raises and the
-    row keeps its name and hash for the case file and the audit trail.
+    Only a file has bytes (private bucket, `storage_key`); a CHECK per kind makes a half-
+    written row impossible, so neither a link nor a reference can be downloaded. A row starts
+    `pending` and a download serves only `clean`. Removed, never deleted (`delete()` raises).
     """
 
     case = models.ForeignKey(ChangeCase, on_delete=models.PROTECT, related_name="evidence")
-    kind = models.CharField(max_length=16, choices=_choices(EvidenceKind))
+    kind = models.CharField(max_length=16, choices=choices(EvidenceKind))
     name = models.TextField()
     storage_key = models.TextField(blank=True)
     url = models.TextField(blank=True)
@@ -406,7 +354,7 @@ class Evidence(TenantModel):
     uploaded_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     removed_at = models.DateTimeField(null=True, blank=True)
-    scan_state = models.CharField(max_length=16, choices=_choices(ScanState), default=ScanState.PENDING.value)
+    scan_state = models.CharField(max_length=16, choices=choices(ScanState), default=ScanState.PENDING.value)
     scanned_at = models.DateTimeField(null=True, blank=True)
 
     objects = _RemovedNotDeletedQuerySet.as_manager()

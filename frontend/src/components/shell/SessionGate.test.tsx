@@ -12,14 +12,18 @@ import { api, pathOf, tokenStore } from '@/shared/utils/api-client';
 
 // The gate against the real query client and the real sign-out: while the
 // sign-out is pending the screens are down, so none of them asks the server
-// for anything once the session has ended, and the redirect to /sign-in still
-// runs although the menu that started it went down with them.
+// for anything once the session has ended, and the move to the public page
+// still runs although the menu that started it went down with them. That move
+// is a page load, never the router's: on the app's own host the public page is
+// on another origin (shared/navigation/leave.ts).
 
-const nav = vi.hoisted(() => ({ replace: vi.fn() }));
+const nav = vi.hoisted(() => ({ replace: vi.fn(), leave: vi.fn() }));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: nav.replace, push: vi.fn() }),
 }));
+
+vi.mock('@/shared/navigation/leave', () => ({ leaveForPublicPage: nav.leave }));
 
 const t = createT('en');
 
@@ -69,6 +73,7 @@ function holdSignOut(): { paths: string[]; answer: () => void } {
 beforeEach(() => {
   resetApiForTests();
   nav.replace.mockReset();
+  nav.leave.mockReset();
   tokenStore.set('tok');
 });
 
@@ -77,7 +82,7 @@ afterEach(() => {
 });
 
 describe('SessionGate', () => {
-  it('takes the screens down while a sign-out is pending, then leaves for /sign-in', async () => {
+  it('takes the screens down while a sign-out is pending, then leaves for the public page', async () => {
     const server = holdSignOut();
     const { queryClient } = queryWrapper();
     queryClient.setQueryData(['me'], me);
@@ -94,13 +99,32 @@ describe('SessionGate', () => {
     // Pending: the screen, and the menu with it, is gone; the gate shows its loading state.
     await waitFor(() => expect(screen.queryByRole('button', { name: t('shell.signOut') })).not.toBeInTheDocument());
     expect(screen.getByRole('status')).toHaveTextContent(t('shell.loading'));
-    expect(nav.replace).not.toHaveBeenCalled();
+    expect(nav.leave).not.toHaveBeenCalled();
 
-    // Settled: the redirect runs although the component that asked for it has unmounted.
+    // Settled: the move runs although the component that asked for it has unmounted.
     server.answer();
-    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/welcome'));
+    await waitFor(() => expect(nav.leave).toHaveBeenCalled());
+    expect(nav.replace).not.toHaveBeenCalled();
     expect(server.paths).toEqual(['/api/v1/auth/sign-out']);
     expect(tokenStore.get()).toBeNull();
+    expect(screen.queryByRole('button', { name: t('shell.signOut') })).not.toBeInTheDocument();
+  });
+
+  it('sends a visitor without a session to the public page with a page load, and shows no screen', async () => {
+    tokenStore.clear();
+    const { queryClient } = queryWrapper();
+    queryClient.setQueryData(['me'], null);
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SessionGate>
+          <Screen />
+        </SessionGate>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(nav.leave).toHaveBeenCalledOnce());
+    expect(nav.replace).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toHaveTextContent(t('shell.loading'));
     expect(screen.queryByRole('button', { name: t('shell.signOut') })).not.toBeInTheDocument();
   });
 });

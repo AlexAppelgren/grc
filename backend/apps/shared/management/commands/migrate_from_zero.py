@@ -1,16 +1,12 @@
 """`manage.py migrate_from_zero`: drop and recreate a scratch database, then apply the
-whole migration graph from nothing (playbook 9, Appendix D). This is what proves the
-graph still applies, which `makemigrations --check` cannot see.
+whole migration graph from nothing (playbook 9, Appendix D), which `makemigrations --check`
+cannot prove.
 
-It connects as the migrator (MIGRATOR_DATABASE_URL, which has CREATEDB locally and in
-CI, never in production) to the `postgres` maintenance database, drops and creates the
-scratch database, and runs `manage.py migrate` in a subprocess whose DATABASE_URL and
-MIGRATOR_DATABASE_URL both point at the scratch database. A subprocess because Django's
-connection settings are read at import; changing them in-process is fragile.
+It connects as the migrator (CREATEDB locally and in CI, never in production) to the
+`postgres` database, recreates the scratch database and runs `manage.py migrate` in a
+subprocess pointed at it, since Django reads connection settings at import.
 
-`--name` picks the database (default: the scratch name) and `--keep` leaves it in place.
-The E2E boot (frontend/tests/e2e/support/start-backend.sh) uses both to build the
-throwaway E2E database that seed_e2e then fills and the server then serves, so one
+`--name` picks the database and `--keep` leaves it in place; the E2E boot uses both, so one
 command owns "drop, recreate, migrate from zero" everywhere (playbook 8.3).
 
 Refuses to run on a deployed environment: dropping databases is a local and CI act."""
@@ -31,10 +27,8 @@ SCRATCH_SUFFIX = "_scratch"
 
 
 def default_scratch_name(migrator_url: str) -> str:
-    """The configured database's name plus `_scratch`: `compliance_watch_scratch` on a normal
-    checkout, `compliance_watch_wt3_scratch` in worktree slot 3. Derived rather than fixed so
-    parallel worktrees (scripts/worktree.sh, docs/runbooks/WORKTREES.md) never drop each
-    other's scratch database mid-run, which a shared constant would do."""
+    """The configured database's name plus `_scratch` (`compliance_watch_wt3_scratch` in
+    worktree slot 3), so parallel worktrees never drop each other's scratch database."""
     name = urlsplit(migrator_url).path.lstrip("/") or "compliance_watch"
     return f"{name}{SCRATCH_SUFFIX}"
 
@@ -47,11 +41,8 @@ def _with_database(url: str, name: str) -> str:
 class Command(BaseCommand):
     help = "Drop and recreate a scratch database and apply the whole migration graph."
 
-    # Django's system checks open the default connection before `handle` runs, so on a
-    # machine whose configured database does not exist yet the command that exists to
-    # create it fails with "database does not exist" and a new worktree cannot bootstrap
-    # (2026-09-20). This command talks to the migrator connection itself and needs no
-    # check that reads the app's own database.
+    # System checks open the default connection, which fails before this command can create
+    # a missing database; it uses the migrator connection itself.
     requires_system_checks: list[str] = []
 
     def add_arguments(self, parser: Any) -> None:

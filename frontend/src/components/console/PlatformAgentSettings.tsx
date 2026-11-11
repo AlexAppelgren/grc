@@ -6,7 +6,7 @@ import { Button, ButtonBar } from '@/components/ui/Button';
 import { CheckGroup, CheckRow, Field, Select, TextInput } from '@/components/ui/Field';
 import { Notice } from '@/components/ui/Notice';
 import { Panel } from '@/components/ui/Panel';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { CADENCE_KEY } from '@/features/agents/agents-presentation';
 import { usePlatformAgentSettings, useUpdatePlatformAgentSettings } from '@/features/agents/hooks';
 import type { AgentCadence, PlatformAgentSettings } from '@/features/agents/types';
@@ -113,13 +113,11 @@ export function PlatformAgentSettingsPanel({ agentKey, name }: { agentKey: strin
   return (
     <Panel title={t('console.agents.settings.title')} data-platform-settings="">
       <Notice tone="warn">{t('console.agents.settings.everyBank')}</Notice>
-      {settings.isPending ? (
-        <LoadingState rows={2} />
-      ) : settings.isError ? (
-        <ErrorState title={t('console.agents.settings.errorTitle')} onRetry={() => void settings.refetch()} />
-      ) : (
-        <SettingsForm agentKey={agentKey} name={name} saved={settings.data} />
-      )}
+      <QueryState query={settings} rows={2} errorTitle={t('console.agents.settings.errorTitle')}>
+        {(data) => (
+          <SettingsForm agentKey={agentKey} name={name} saved={data} />
+        )}
+      </QueryState>
     </Panel>
   );
 }

@@ -5,14 +5,15 @@ import { useState } from 'react';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextInput } from '@/components/ui/Field';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
-import { ErrorState, LoadingState } from '@/components/ui/States';
-import { DialogForm, PersonSelect } from '@/features/tenant-admin/organisation/fields';
+import { QueryState } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
+import { orgFormCodes, PersonSelect } from '@/features/tenant-admin/organisation/fields';
 import { useCanEditOrganisation, useCreateOrgUnit, useOrgUnits, useUpdateOrgUnit } from '@/features/tenant-admin/organisation/hooks';
 import { changedFields, DEPARTMENT_KINDS, fieldErrorsOf, isDepartment, orNull, type DepartmentKind } from '@/features/tenant-admin/organisation/organisation-presentation';
 import type { OrgUnit } from '@/features/tenant-admin/organisation/types';
-import { useTeams } from '@/features/tenant-admin/teams/hooks';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { useTeams } from '@/features/shared/reference';
 
 // Departments (design/screens/admin-organisation.html, TEN-02, TEN-S8): the org
 // units of kind business area, business unit or function, each with its head,
@@ -49,43 +50,43 @@ export function DepartmentsSection() {
   return (
     <Panel title={t('admin.org.departments.title')} data-org-section="departments">
       <p className="mb-3 text-muted">{t('admin.org.departments.lede')}</p>
-      {units.isPending ? (
-        <LoadingState />
-      ) : units.isError ? (
-        <ErrorState title={t('admin.org.departments.errorTitle')} onRetry={() => void units.refetch()} />
-      ) : departments.length === 0 ? (
-        <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-empty-state="">
-          <h3 className="text-fg">{t('admin.org.departments.emptyTitle')}</h3>
-          <p className="mx-auto mt-2 max-w-[60ch]">{t('admin.org.departments.emptyBody')}</p>
-        </div>
-      ) : (
-        <Rows>
-          {departments.map((unit) => {
-            const parent = nameOf(unit.parentId);
-            return (
-              <Row key={unit.id} className={unit.active ? undefined : 'opacity-60'} data-department={unit.name}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3>{unit.name}</h3>
-                    <Meta>
-                      <span>{kindLabel(asKind(unit.kind), t)}</span>
-                      {parent !== undefined ? <span>{t('admin.org.departments.in', { name: parent })}</span> : null}
-                      <span>{unit.head === null ? t('admin.org.departments.noHead') : t('admin.org.departments.head', { name: unit.head.name })}</span>
-                      <span>{t('admin.org.departments.teamCount', { count: teamCount(unit.id) })}</span>
-                      {unit.active ? null : <span>{t('admin.org.entities.inactive')}</span>}
-                    </Meta>
-                  </div>
-                  {canEdit ? (
-                    <Button variant="ghost" size="small" onClick={() => setEditing(unit)} aria-label={t('admin.org.editNamed', { name: unit.name })}>
-                      {t('admin.org.edit')}
-                    </Button>
-                  ) : null}
-                </div>
-              </Row>
-            );
-          })}
-        </Rows>
-      )}
+      <QueryState query={units} errorTitle={t('admin.org.departments.errorTitle')}>
+        {() =>
+          departments.length === 0 ? (
+            <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-empty-state="">
+              <h3 className="text-fg">{t('admin.org.departments.emptyTitle')}</h3>
+              <p className="mx-auto mt-2 max-w-[60ch]">{t('admin.org.departments.emptyBody')}</p>
+            </div>
+          ) : (
+            <Rows>
+              {departments.map((unit) => {
+                const parent = nameOf(unit.parentId);
+                return (
+                  <Row key={unit.id} className={unit.active ? undefined : 'opacity-60'} data-department={unit.name}>
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3>{unit.name}</h3>
+                        <Meta>
+                          <span>{kindLabel(asKind(unit.kind), t)}</span>
+                          {parent !== undefined ? <span>{t('admin.org.departments.in', { name: parent })}</span> : null}
+                          <span>{unit.head === null ? t('admin.org.departments.noHead') : t('admin.org.departments.head', { name: unit.head.name })}</span>
+                          <span>{t('admin.org.departments.teamCount', { count: teamCount(unit.id) })}</span>
+                          {unit.active ? null : <span>{t('admin.org.entities.inactive')}</span>}
+                        </Meta>
+                      </div>
+                      {canEdit ? (
+                        <Button variant="ghost" size="small" onClick={() => setEditing(unit)} aria-label={t('admin.org.editNamed', { name: unit.name })}>
+                          {t('admin.org.edit')}
+                        </Button>
+                      ) : null}
+                    </div>
+                  </Row>
+                );
+              })}
+            </Rows>
+          )
+        }
+      </QueryState>
       {canEdit ? (
         <ButtonBar>
           <Button size="small" onClick={() => setEditing('new')}>
@@ -131,7 +132,7 @@ function DepartmentForm({ unit, units, onClose }: { unit: OrgUnit | null; units:
   };
 
   return (
-    <DialogForm title={unit === null ? t('admin.org.departments.addTitle') : t('admin.org.editNamed', { name: unit.name })} error={write.error} formLevel={errors.formLevel} pending={write.isPending} onSubmit={submit} onClose={onClose}>
+    <FormDialog title={unit === null ? t('admin.org.departments.addTitle') : t('admin.org.editNamed', { name: unit.name })} submitLabel={t('common.save')} pending={write.isPending} error={errors.formLevel ? write.error : undefined} codes={orgFormCodes(t)} onSubmit={submit} onClose={onClose}>
       {unit === null ? (
         <Field id="department-kind" label={t('admin.org.form.kind')} error={errors.fields.kind}>
           <Select id="department-kind" value={draft.kind} onChange={(e) => set('kind', asKind(e.target.value))}>
@@ -168,6 +169,6 @@ function DepartmentForm({ unit, units, onClose }: { unit: OrgUnit | null; units:
           </Select>
         </Field>
       ) : null}
-    </DialogForm>
+    </FormDialog>
   );
 }

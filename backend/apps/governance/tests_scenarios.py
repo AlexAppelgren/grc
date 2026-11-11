@@ -50,7 +50,7 @@ from apps.shared import tests_audit_on_write as audit_guards
 from apps.shared import tests_rls as rls_guards
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.models import AuditEvent, Tenant, TenantContentLanguage
-from apps.shared.permissions import UNGATED_BY_DESIGN, gate_of
+from apps.shared.permissions import UNGATED_BY_DESIGN
 from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import ComplianceStatus, Flag
@@ -59,6 +59,7 @@ from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 from apps.tenants import logic as tenants_logic
 from apps.watch import testing as watch_build
 from config.api import api
+from apps.shared.permissions import gate_of
 
 V1 = "/api/v1"
 # The mixed tables (app.md, AC "Mixed tables"), each with its library read rule as
@@ -434,7 +435,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
 
         # Given a reader in tenant A reported "This looks wrong" on an obligation.
         words = "This looks wrong: the source says the review is annual, the summary says every two years."
-        filed = self._post(f"/obligations/{obligation.id}/problem-reports", {"description": words}, sign_in(reader_a, tenant=tenant_a))
+        filed = self._post("/problem-reports", {"subjectType": "obligation", "subjectId": str(obligation.id), "description": words}, sign_in(reader_a, tenant=tenant_a))
         self.assertEqual(filed.status_code, 201, filed.content)
         report_id = filed.json()["id"]
 
@@ -678,7 +679,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         MockMailer.reset()
         seed_languages()
         platform_admin = factories.platform_user(roles=("platform_admin",))
-        headers = sign_in(platform_admin)
+        headers = sign_in(platform_admin, step_up=True)
         created = self._post(
             "/console/tenants",
             {"name": "Example Bank AB", "firstAdminEmail": "admin@example-bank.test", "firstAdminTitle": "Head of Compliance"},
@@ -736,7 +737,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         MockMailer.reset()
         seed_languages()
         platform_admin = factories.platform_user(roles=("platform_admin",))
-        headers = sign_in(platform_admin)
+        headers = sign_in(platform_admin, step_up=True)
         created = self._post("/console/tenants", {"name": "Joining Bank AB", "firstAdminEmail": "Head@Joining-Bank.test"}, headers)
         self.assertEqual(created.status_code, 201, created.content)
         tenant_id = created.json()["id"]
@@ -820,7 +821,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         # ready-to-use tenant with English already set, which is exactly what this
         # scenario proves a console-created one does not have.
         tenant = tenants_logic.create_tenant(
-            actor=actor_of(platform_admin), name="Example Bank AB", first_admin_email="admin@example-bank.test", first_admin_title=""
+            actor=actor_of(platform_admin), name="Example Bank AB", first_admin_email="admin@example-bank.test", first_admin_title="", step_up_assertion_id=None
         )
         admin = factories.member(tenant, roles=("admin",)).user
         headers = sign_in(admin, tenant=tenant)
@@ -893,8 +894,11 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.activate(tenant)
         ensure_tenant_vocabularies(tenant, actor=Actor.system("test"))
 
-        proposer_key = factories.api_key(tenant, scopes=("proposals:write",))
         tenancy.clear_tenant()  # a platform key is written with no tenant activated (H15)
+        # Filed by one of bleqq's agents: an agent approves only what a platform agent or a
+        # platform person filed (review 2026-11-11 S-3).
+        proposer_key = agents_testing.agent_key(scopes=("proposals:write",))
+        proposer_run = str(agents_testing.platform_run(key=proposer_key).id)
         reviewer_key = agents_testing.reviewer_api_key()
         # An obligation version, whose record names the agent that confirmed it (D-79).
         approved = self._post(
@@ -906,29 +910,26 @@ class GovernanceScenarioTests(ScenarioTestCase):
                 "targetId": str(obligation.id),
                 "payload": {"summaries": {"en": "The duty as the source now reads it."}, "originalLanguage": "en", "isMachine": True},
                 "fieldSources": {"summaries.en": "https://www.fi.se/"},
+                "agentRunId": proposer_run,
             },
             {"HTTP_X_API_KEY": proposer_key.plain_key},
         )
         self.assertEqual(approved.status_code, 201, approved.content)
-        # The create request authenticated with a tenant key, which re-activates the tenant
-        # for the rest of this connection's transaction; a platform key is written and read
-        # with no tenant activated (H15).
         tenancy.clear_tenant()
-        # The agent corrects the wording on the way through and approves, sending the model
-        # call behind its decision and the open run of its own key it was made in (D-80).
-        corrected = "The duty as the source now reads it, from the day the decision names."
+        # The agent approves it as filed, sending the model call behind its decision and the
+        # open run of its own key it was made in (D-80).
         sent = agents_testing.decision(reviewer_key)
         decision = self._post(
             f"/proposals/{approved.json()['id']}/approve",
-            {"note": "Confirmed.", "payloadOverrides": {"summaries": {"en": corrected}}, "fieldSources": {"summaries.en": "https://www.fi.se/"}, **sent},
+            {"note": "Confirmed.", **sent},
             {"HTTP_X_API_KEY": reviewer_key.plain_key},
         )
         self.assertEqual(decision.status_code, 200, decision.content)
         self.assertEqual(sorted(obligation.versions.values_list("version_number", flat=True)), [1, 2])
-        self.assertEqual(decision.json()["correctedByAgent"]["key"], reviewer_key.agent.key, "the correction is the agent's")
-        self.assertIsNone(decision.json()["correctedBy"], "no person corrected it")
+        self.assertEqual(decision.json()["reviewedByAgent"]["key"], reviewer_key.agent.key, "the decision is the agent's")
+        self.assertIsNone(decision.json()["reviewedBy"], "no person decided it")
         applied = obligation.versions.get(version_number=2).summaries.get(language_id="en")
-        self.assertEqual(applied.text, corrected)
+        self.assertEqual(applied.text, "The duty as the source now reads it.")
 
         event = self._one("proposal.approved", uuid.UUID(approved.json()["id"]))
         self.assertEqual(event.actor_type, "agent")
@@ -938,7 +939,7 @@ class GovernanceScenarioTests(ScenarioTestCase):
         self.assertIn(f"v{reviewer_key.agent.current_version}", event.actor_label)
         self.assertEqual(event.after["reviewingApiKeyPrefix"], reviewer_key.row.key_prefix)
         self.assertNotIn(str(reviewer_key.id), event.actor_label)
-        self.assertTrue(event.after["corrected"], "the correction is recorded with the decision")
+        self.assertFalse(event.after["corrected"], "an agent approves as filed")
         self.assertEqual(event.after["agentRunId"], sent["agentRunId"], "and so is the run it was made in")
         # No step-up assertion: a key cannot step up.
         self.assertIsNone(event.step_up_assertion_id)
@@ -959,11 +960,11 @@ class GovernanceScenarioTests(ScenarioTestCase):
         # reject a vocabulary proposal, though only a person may approve one (D-79).
         second = self._post(
             "/proposals",
-            {"kind": "vocabulary_create", "title": "Add the flag Sanctioned", "payload": {"list": "flag", "key": "sanctioned", "labels": {"en": "Sanctioned"}}},
+            {"kind": "vocabulary_create", "title": "Add the flag Sanctioned", "payload": {"list": "flag", "key": "sanctioned", "labels": {"en": "Sanctioned"}}, "agentRunId": proposer_run},
             {"HTTP_X_API_KEY": proposer_key.plain_key},
         )
         self.assertEqual(second.status_code, 201, second.content)
-        tenancy.clear_tenant()  # the create request re-activated the tenant; see above (H15)
+        tenancy.clear_tenant()
         rejected = self._post(
             f"/proposals/{second.json()['id']}/reject",
             {"rejectionCode": "duplicate", "note": "Already exists.", **sent, "decision": agents_testing.REJECTION_DECISION},

@@ -1,24 +1,23 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { SupportSessionBanner } from '@/components/shell/SupportSessionBanner';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Field, Select, TextArea, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
-import { useAskForSupportAccess, useEnterSupportAccess, useMySupportAccess } from '@/features/console-support-access/hooks';
-import type { ConsoleSupportGrant } from '@/features/console-support-access/types';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
+import { useAskForSupportAccess, useEnterSupportAccess, useMySupportAccess } from '@/features/support-access/console/hooks';
+import type { ConsoleSupportGrant } from '@/features/support-access/console/types';
 import { useConsoleTenants } from '@/features/console-tenants/hooks';
 import { useFormatContext, useSignOut } from '@/features/identity/hooks';
 import { presentSupportGrant } from '@/features/support-access/support-access-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { PUBLIC_HOME } from '@/shared/navigation/registry';
+import { leaveForPublicPage } from '@/shared/navigation/leave';
 import { formatDateTime } from '@/shared/utils/format';
 
 // Support access, the platform side (design/screens/console-support-access.html,
@@ -94,8 +93,7 @@ function AskModal({ open, onClose, onAsked }: { open: boolean; onClose: () => vo
   const [problem, setProblem] = useState<FormProblem | null>(null);
   const banks = (tenants.data?.items ?? []).filter((tenant) => tenant.status === 'active');
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     if (tenantId === '') {
       setProblem('bank');
       return;
@@ -115,14 +113,22 @@ function AskModal({ open, onClose, onAsked }: { open: boolean; onClose: () => vo
           setTicket('');
           setHours(String(DEFAULT_HOURS));
           onClose();
-        },
-      },
+        } },
     );
   };
 
   return (
-    <Modal open={open} onOpenChange={(next) => (next ? undefined : onClose())} title={t('console.supportAccess.ask')} description={t('console.supportAccess.askBody')}>
-      <form onSubmit={submit} noValidate aria-busy={ask.isPending} data-support-request-form="">
+    open ? (
+      <FormDialog
+        title={t('console.supportAccess.ask')}
+        description={t('console.supportAccess.askBody')}
+        submitLabel={t('console.supportAccess.ask')}
+        pending={ask.isPending}
+        error={ask.error}
+        onSubmit={submit}
+        onClose={onClose}
+        formProps={{ 'data-support-request-form': '' }}
+      >
         <Field id="support-bank" label={t('console.supportAccess.bank')} error={problem === 'bank' ? t('console.supportAccess.bankRequired') : undefined}>
           <Select id="support-bank" value={tenantId} onChange={(e) => setTenantId(e.target.value)}>
             <option value="">{t('console.supportAccess.bankPlaceholder')}</option>
@@ -148,27 +154,17 @@ function AskModal({ open, onClose, onAsked }: { open: boolean; onClose: () => vo
           <TextInput id="support-hours" type="number" min={1} step={1} inputMode="numeric" value={hours} onChange={(e) => setHours(e.target.value)} />
         </Field>
         <p className="text-meta text-muted">{t('console.supportAccess.grantsNothing')}</p>
-        {ask.isError ? <ProblemAlert error={ask.error} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose} disabled={ask.isPending}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={ask.isPending}>
-            {t('console.supportAccess.ask')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+      </FormDialog>
+    ) : null
   );
 }
 
 export function ConsoleSupportAccessScreen() {
   const t = useT();
-  const router = useRouter();
   const [inside, setInside] = useState<ConsoleSupportGrant | null>(null);
   const grants = useMySupportAccess(inside === null);
   const enter = useEnterSupportAccess();
-  const leave = useSignOut(() => router.replace(PUBLIC_HOME));
+  const leave = useSignOut(leaveForPublicPage);
   const [asking, setAsking] = useState(false);
   const [asked, setAsked] = useState<ConsoleSupportGrant | null>(null);
   const [entering, setEntering] = useState<string | null>(null);
@@ -197,25 +193,25 @@ export function ConsoleSupportAccessScreen() {
         actions={<Button onClick={() => setAsking(true)}>{t('console.supportAccess.ask')}</Button>}
       />
       {asked !== null ? <StatusLine tone="positive">{t('console.supportAccess.asked', { tenant: asked.tenantName })}</StatusLine> : null}
-      {grants.isPending ? (
-        <LoadingState rows={3} />
-      ) : grants.isError ? (
-        <ErrorState title={t('console.supportAccess.errorTitle')} onRetry={() => void grants.refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState title={t('console.supportAccess.emptyTitle')} body={t('console.supportAccess.emptyBody')} />
-      ) : (
-        <Rows data-support-grants="">
-          {items.map((grant) => (
-            <GrantRow
-              key={grant.id}
-              grant={grant}
-              entering={entering === grant.id && enter.isPending}
-              error={entering === grant.id ? enter.error : null}
-              onEnter={() => onEnter(grant)}
-            />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={grants} rows={3} errorTitle={t('console.supportAccess.errorTitle')}>
+        {() =>
+          items.length === 0 ? (
+            <EmptyState title={t('console.supportAccess.emptyTitle')} body={t('console.supportAccess.emptyBody')} />
+          ) : (
+            <Rows data-support-grants="">
+              {items.map((grant) => (
+                <GrantRow
+                  key={grant.id}
+                  grant={grant}
+                  entering={entering === grant.id && enter.isPending}
+                  error={entering === grant.id ? enter.error : null}
+                  onEnter={() => onEnter(grant)}
+                />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
       <AskModal open={asking} onClose={() => setAsking(false)} onAsked={setAsked} />
     </>
   );

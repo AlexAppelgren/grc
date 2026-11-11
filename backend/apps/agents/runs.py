@@ -1,32 +1,20 @@
-"""Agent runs (AGT-01, AGT-02, ID-10, AUD-01): open a run, close it, read the log of what
-ran, and answer the one question every other writer of this chunk asks — is this run of
-this key still open?
+"""Agent runs (AGT-01, AGT-02, ID-10, AUD-01): open, close, read the log, and answer "is this
+run of this key still open?" for every other writer.
 
-A run is the provenance anchor. `regulatory_change.agent_run_id`, `source_check.agent_run_id`
-and `proposal.agent_run_id` all point here, so every claim an agent files can be traced to
-the model, the pipeline and the night that produced it. Nothing here reaches the shared
-library: a run is a record of work, and what the work found becomes a proposal a person or
-a second, independent agent approves.
+A run is the provenance anchor: changes, source checks and proposals point at it, so every
+claim an agent files traces to its model, pipeline and night. A run never reaches the
+shared library itself.
 
-Three rules shape the module:
+- Platform-owned: bleqq's watch agents belong to the platform. A tenant-bound key is refused
+  with `tenant_agents_not_available` on a run and every watch write (`refuse_tenant_key`), on
+  top of the agent scopes stripped from a bank's keys at creation, so neither guard alone is
+  load-bearing. A session never arrives: the route takes an API key alone.
+- A key acts only on its own run: another key's is 404, never 403, and every filing names
+  the open run it came from (`require_open_run`).
+- A retry replays: the same `Idempotency-Key` answers the same run, and a repeated close with
+  the same values answers the closed run.
 
-- **Platform-owned in R1** (Alex, 2026-09-19, item 14). bleqq's watch agents are part of
-  the base package, so a run belongs to the platform and to no bank. A tenant-bound key is
-  refused with `tenant_agents_not_available`, on a run and on every watch write
-  (`refuse_tenant_key`), and a person's session never arrives at all:
-  the route takes an API key alone. `c5-platform-agent-keys` strips the agent write scopes
-  from a bank's keys at creation; this is the second guard, so neither alone is
-  load-bearing. Chunk 11 adds a bank's own agents and their runs, and the model's tenant
-  column and policies are already shaped for them, so nothing here needs a migration then.
-- **A key acts only on its own run.** A run of another key answers 404 and never 403, so a
-  run id is not something a key can probe for. What an agent files names the open run it
-  was found in (`require_open_run`), so nothing an agent wrote lacks a night to trace to.
-- **A retry replays.** The same `Idempotency-Key` answers the run it already opened. A
-  close repeated with the same values answers the run it already closed, because what makes
-  a close idempotent is the closing values themselves and not a stored key.
-
-Every open and close writes its audit row and its outbox row in the same transaction as the
-run, with the agent behind the key as the actor rather than the key's id (ID-10).
+Every open and close audits in the run's transaction, the actor being the key's agent (ID-10).
 """
 
 from __future__ import annotations
@@ -48,7 +36,7 @@ from apps.agents.schemas import AgentRunFinish, AgentRunInput, AgentRunOut, Agen
 from apps.identity.models import ApiKey
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 
 SUBJECT_TYPE = "agent_run"
 
@@ -56,9 +44,7 @@ SUBJECT_TYPE = "agent_run"
 RunState = Literal["running", "succeeded", "failed", "interrupted"]
 
 
-# ---------------------------------------------------------------------------------------
-# Reading one run out
-# ---------------------------------------------------------------------------------------
+# --- Reading one run out ---
 def row(run: AgentRun) -> AgentRunOut:
     """One run as every reader sees it. The stored counters are the camelCase shape
     `AgentRunStats` publishes, so what a run filed is what a reader is handed back."""
@@ -67,8 +53,7 @@ def row(run: AgentRun) -> AgentRunOut:
         agent=run.agent.key,
         started_at=run.started_at,
         finished_at=run.finished_at,
-        # A kind in code (`RunStatus`): the column holds one of its four values and the
-        # schema publishes the same four, so the cast states what the choices already fix.
+        # A kind in code (`RunStatus`); the schema publishes the same values.
         status=cast(RunState, run.status),
         model=run.model,
         pipeline_version=run.pipeline_version,
@@ -85,26 +70,18 @@ def _actor(who: Principal) -> Actor:
 
 
 def _stats(values: AgentRunStats | None, fallback: dict[str, Any]) -> dict[str, Any]:
-    """The counters as the JSON column stores them: camelCase, the shape the schema
-    publishes. A close that files none leaves the run's own counters standing, which is the
-    honest answer from a run that failed before it could count."""
+    """The counters as the JSON column stores them, camelCase. A close that files none leaves
+    the run's own counters standing."""
     if values is None:
         return fallback
     return values.model_dump(mode="json", by_alias=True)
 
 
-# ---------------------------------------------------------------------------------------
-# POST /agent-runs
-# ---------------------------------------------------------------------------------------
+# --- POST /agent-runs ---
 def _key_for(who: Principal, wanted: str) -> tuple[ApiKey, uuid.UUID]:
-    """The calling key and the definition it is bound to.
-
-    A key runs exactly one definition (ID-10), and the principal already carries which one,
-    so the name the caller sent is compared against the key's own agent rather than looked
-    up. Any mismatch is one refusal: a definition this build does not ship and one that
-    belongs to another key are the same answer, so trying names tells a caller nothing about
-    which definitions exist. It is also what keeps this module clear of the library fence —
-    `agent` is a library record, and the module that writes never names one.
+    """The calling key and the definition it is bound to (ID-10). The name sent is compared
+    with the key's own agent, not looked up, so a missing and a foreign definition get the
+    same refusal, and this writing module never names a library record.
     """
     if who.agent_id is None or who.agent_label != wanted:
         raise ProblemError(
@@ -119,11 +96,9 @@ def _key_for(who: Principal, wanted: str) -> tuple[ApiKey, uuid.UUID]:
 
 
 def refuse_tenant_key(who: Principal) -> None:
-    """In R1 every run is a platform run (item 14), so a bank's key opens none and writes
-    nothing to the watch: not a run, a source check, a change or anything on one. Every
-    such write asks this first, so a bank's key that somehow holds a watch scope is refused
-    with its reason named rather than writing the shared library, and the refusal comes
-    before any write, so nothing is stored."""
+    """A bank's key opens no run and writes nothing to the watch. Every such write asks this
+    first, so a bank key holding a watch scope by mistake is refused by name before any
+    write."""
     if who.tenant_id is not None:
         raise ProblemError(
             status=403,
@@ -140,10 +115,9 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def refuses_tenant_keys(view: F) -> F:
-    """Route decorator for every run and watch write, placed above its scope gate: a bank's
-    key is refused with its reason named before its scopes are read. A bank's key has its
-    watch scopes withheld when it is resolved (D-61, D-78), so the scope gate alone would
-    answer a bare `permission_denied` and never say why (item 14)."""
+    """Route decorator for every run and watch write, above its scope gate: a bank's key has
+    its watch scopes withheld (D-61, D-78), so the scope gate alone would answer a bare
+    `permission_denied`; this names the reason first."""
 
     @functools.wraps(view)
     def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> Any:
@@ -193,13 +167,10 @@ def open_run(*, who: Principal, body: AgentRunInput, idempotency_key: str | None
 def _replayed_open(
     key: ApiKey, body: AgentRunInput, idempotency_key: str, who: Principal
 ) -> AgentRunOut | None:
-    """The run this key already opened under this retry key, or None when it is new. The
-    same key with a different body is a conflict: keeping either version would lose the
-    other, and silently answering the first would hide a caller's bug."""
-    # One filter keyword per line. Both keywords on one line read to gitleaks'
-    # generic-api-key rule as a key followed by its value, and the secret scan failed on
-    # an ORM query (2026-09-20). Allowlisting it would have taught the scanner to ignore
-    # the shape a real leak takes, so the line is split instead.
+    """The run this key already opened under this retry key, or None. The same key with a
+    different body is a conflict."""
+    # One filter keyword per line: on one line gitleaks' generic-api-key rule reads them as a
+    # key and its value, and allowlisting that shape would hide a real leak.
     existing = (
         AgentRun.objects.select_related("agent")
         .filter(
@@ -233,19 +204,12 @@ def _record_replay(run: AgentRun, who: Principal, summary: str) -> None:
         )
 
 
-# ---------------------------------------------------------------------------------------
-# PATCH /agent-runs/{runId}
-# ---------------------------------------------------------------------------------------
+# --- PATCH /agent-runs/{runId} ---
 def _own_run(api_key_id: uuid.UUID | None, run_id: uuid.UUID) -> AgentRun:
     """The run this key opened, locked until the caller's transaction ends (H36). Another
-    key's run, and one that never existed, answer the same 404: which run ids exist is not
-    something a key may probe for. No key at all finds the keyless runs the scheduler and
-    requests open, so a person naming a run is refused first (`refuse_person_run`).
-
-    Every caller writes: a close, or a filing that names the run. The lock is what makes the
-    run's status true for the whole write, so a close waits for a filing in flight and counts
-    it, and a filing that waited on a close reads the run closed. Only the run's own row is
-    locked (`of=("self",)`), never the agent it is read with."""
+    key's run and an unknown one are the same 404. A keyless (scheduler or request) run is
+    never found by a person: `refuse_person_run` comes first. The lock keeps the status true
+    for the whole write, so a close counts a filing in flight; only the run's row is locked."""
     run = (
         AgentRun.objects.select_related("agent")
         .select_for_update(of=("self",))
@@ -253,17 +217,14 @@ def _own_run(api_key_id: uuid.UUID | None, run_id: uuid.UUID) -> AgentRun:
         .first()  # ordering: pk lookup inside one key, at most one row
     )
     if run is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return run
 
 
 def finish_run(*, who: Principal, run_id: uuid.UUID, body: AgentRunFinish) -> AgentRunOut:
-    """`PATCH /agent-runs/{runId}`: close the run into a terminal status and file what it
-    counted.
-
-    A run closes once. Repeating the same close answers the run it already closed, so a
-    lost answer costs nothing; closing it into something else is refused, so a closed run
-    is never quietly reopened or rewritten. A bank's key is refused first, as on opening one.
+    """`PATCH /agent-runs/{runId}`: close the run into a terminal status and file its counts.
+    Closes once: the same close again answers the closed run; a different one is refused. A
+    bank's key is refused first.
     """
     refuse_tenant_key(who)
     with transaction.atomic():
@@ -277,8 +238,7 @@ def _close(who: Principal, run: AgentRun, body: AgentRunFinish) -> AgentRunOut:
     output_ref = body.output_ref or ""
     error = body.error or ""
     if run.status != RunStatus.RUNNING.value:
-        # Both sides as a reader reads them, so a close stored before a counter existed is
-        # still the same close when it is sent again: the missing counter reads 0 on both.
+        # Both sides as a reader reads them, so a counter added later reads 0 on both.
         stored = _counted(run, _stats(AgentRunStats.model_validate(run.stats), run.stats))
         sent = _counted(run, _stats(body.stats, stored))
         if (run.status, stored, run.output_ref, run.error) != (body.status, sent, output_ref, error):
@@ -308,9 +268,7 @@ def _close(who: Principal, run: AgentRun, body: AgentRunFinish) -> AgentRunOut:
     return row(run)
 
 
-# ---------------------------------------------------------------------------------------
-# The provenance guard the other writers of this chunk ask
-# ---------------------------------------------------------------------------------------
+# --- The provenance guard the other writers ask ---
 def require_open_run(who: Principal, run_id: uuid.UUID | None) -> AgentRun:
     """The open run this key named, for a write that files something against it: a source
     check or a registered change. A bank's key is refused first (`refuse_tenant_key`)."""
@@ -319,25 +277,17 @@ def require_open_run(who: Principal, run_id: uuid.UUID | None) -> AgentRun:
 
 
 def refuse_person_run(person: Any, run_id: uuid.UUID | None) -> None:
-    """A person files under no agent run: a run opened by the scheduler or a request has no
-    key, so `_own_run` alone would find it for a proposer who carries none, and a person's
-    work would read as the agent's and spend the run's budget. It answers the 404 a run of
-    another key answers, whatever the id, so it tells a person nothing about which runs
-    exist."""
+    """A person files under no agent run: `_own_run` would find a keyless run for a proposer
+    with no key, and their work would read as the agent's. Answers the same 404 as another
+    key's run."""
     if person is not None and run_id is not None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
 
 
 def require_open_run_of_key(api_key_id: uuid.UUID | None, run_id: uuid.UUID | None) -> AgentRun:
-    """The open run of the key `api_key_id`, named as `run_id`; for a proposal, whose
-    proposer carries the key rather than the principal.
-
-    The run's row stays locked until the write's transaction ends (H36), so the write is
-    counted by the close that follows it and never lands in a run another request is
-    closing. Naming no run answers 422 `run_not_open`, and so does a run of this key that is
-    already closed, because the caller fixes both the same way, by opening a run and naming it —
-    and because a closed run is a finished account of a night's work that nothing may be
-    added to afterwards. A run of another key answers 404, exactly as closing one does.
+    """The open run of key `api_key_id` named as `run_id`, for a proposal, whose proposer
+    carries the key. Locked until the write's transaction ends (H36), so the following close
+    counts it. No run, or a closed one, is 422 `run_not_open`; another key's run is 404.
     """
     if run_id is None:
         raise ValidationError(
@@ -354,15 +304,10 @@ def require_open_run_of_key(api_key_id: uuid.UUID | None, run_id: uuid.UUID | No
 
 
 def spend(run: AgentRun, filed: QuerySet[Any], *, limit: int, what: tuple[str, str]) -> None:
-    """Refuse one more write under `run` once `filed`, what the run has already filed of this
-    kind, reaches `limit` (H41): 422 `run_budget_exhausted`. The budget is the definition's
-    (`budget_defaults`), held by the server from a setting, so a runaway or injected run
-    cannot flood the queue whatever it believes its budget is.
-
-    Called inside the write's own transaction. It locks the run's row first, so two writes
-    under one run count one after the other and never both squeeze past the last slot, and
-    a close that landed meanwhile answers `run_not_open`. `what` names the kind, singular
-    and plural, for the sentence."""
+    """Refuse one more write under `run` once `filed` reaches `limit` (H41): 422
+    `run_budget_exhausted`. The budget is a server setting, so a runaway or injected run
+    cannot flood the queue. Locks the run's row first, so two writes cannot both take the last
+    slot and a close meanwhile answers `run_not_open`. `what` names the kind for the sentence."""
     status = AgentRun.objects.select_for_update().filter(pk=run.pk).values_list("status", flat=True).first()  # ordering: pk lookup
     if status != RunStatus.RUNNING.value:
         raise ValidationError(
@@ -378,11 +323,8 @@ def spend(run: AgentRun, filed: QuerySet[Any], *, limit: int, what: tuple[str, s
 
 
 def _counted(run: AgentRun, stats: dict[str, Any]) -> dict[str, Any]:
-    """The counters as the server counts them from what the run filed, over what the run
-    reported of itself (H41): the sources it swept, the records it re-checked, the changes
-    it registered and the proposals it filed. What the server cannot see — its model calls,
-    its fetches, the documents it set aside and which proposals were corrections — stays
-    the run's own account."""
+    """The counters the server can count from what the run filed (H41), over what it
+    reported; the rest stays the run's own account."""
     from apps.proposals.models import Proposal
     from apps.watch.models import SourceCheckKind
 

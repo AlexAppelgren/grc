@@ -26,19 +26,16 @@ class JsonFormatter(_JsonFormatter):
         log_record["level"] = record.levelname
         log_record["logger"] = record.name
         log_record.setdefault("request_id", getattr(record, "request_id", None))
-        # Django's request loggers put the request's repr (its full path and query) in
-        # `request` and the concrete path in the message, and a path or a query can carry
-        # a tenant's key or search text (finding F6). The request id already names the
-        # request, so `request` is dropped and django.request's message names the route.
-        # This is the one place that rewrites it, so every handler writes the same line.
+        # A request's repr and path can carry a tenant's key or search text (F6), so `request`
+        # is dropped and django.request's message names the route; the request id already
+        # names the request. The one place that rewrites it.
         log_record.pop("request", None)
         request = getattr(record, "request", None)
         if record.name == "django.request" and isinstance(request, HttpRequest):
             log_record["message"] = f"{getattr(record, 'status_code', '')} {request.method} {loggable_route(request)}"
-        # Celery's failure and retry lines interpolate the exception's repr into the message
-        # and attach its formatted traceback and the task's arguments as `data`; a database
-        # error's message holds the failing row (security-review-c10, M2). The task, its id
-        # and what happened stay; the frames and types come from formatException below.
+        # Celery's failure lines carry the exception's repr, traceback and task arguments, and
+        # a database error's message holds the failing row (security-review-c10 M2). The task,
+        # its id and what happened stay; frames and types come from formatException.
         if record.name == "celery.app.trace" and isinstance(record.args, dict) and "exc" in record.args:
             log_record["message"] = str(record.msg) % {**record.args, "exc": "[redacted]"}
             log_record.pop("data", None)

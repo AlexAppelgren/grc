@@ -1,25 +1,16 @@
-"""The only writer of `ai_generation` (AUD-02, ruling 1).
+"""The only writer of `ai_generation` (AUD-02); `tests_ai_log.py` fails on any other module
+that creates a row, so "every model output is logged" is a fact rather than a habit.
 
-Every model call the product makes leaves a row here, and a row is written nowhere else:
-`apps/governance/tests_ai_log.py` walks the production tree and fails on any other module
-that creates one. One writer is what makes "every model output is logged" a fact rather
-than a habit, and it is the place the three rules about the log live:
+- No prompt and no output text leaves this row: the prompt is stored as a hash and a
+  template name, and nothing here logs either or puts it in an audit summary (NFR-04,
+  playbook 4.7).
+- A row is written in the caller's own transaction, so a rolled-back write leaves no claim
+  that a model was asked something.
+- A row ships as `draft`. A bank's confirmation of a library "So what?" lives on its own
+  `change_case`, and the read computes each bank's review state (`_reviewed`, D-62).
 
-- **No prompt and no output text ever leaves this row.** The prompt is stored as a hash
-  and a template name; the output is stored because AUD-02 asks for it and because a
-  confirmation must be a confirmation of something, but nothing here logs, reports or
-  puts either in an audit summary (NFR-04, playbook 4.7).
-- **A row is written in the caller's own transaction**, so a rolled-back write leaves no
-  claim that a model was asked something.
-- **A row ships as `draft`.** AI output stays labelled until a person confirms it, and
-  nothing in chunk 5 moves that state: a bank's confirmation of a "So what?" lives on its
-  own `change_case`, because the library's row has no tenant and the split write policy
-  refuses a bank session that reaches for it (ruling I). The read shows each bank that
-  confirmation as the row's review state, computed and never stored (`_reviewed`, D-62).
-
-Where the model metadata comes from differs by purpose, and the reader is told which:
-`apps/shared/ai.py` observes it, because it made the call, while a "So what?" filed by an
-agent with the change it read is metadata that agent reported about itself (D-66).
+Model metadata is observed by `apps/shared/ai.py` for a call bleqq made, and reported by the
+agent for a "So what?" an agent filed (D-66).
 """
 
 from __future__ import annotations
@@ -31,12 +22,15 @@ from collections.abc import Sequence
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import connection
-from django.db.models import Case, CharField, DateTimeField, Exists, F, OuterRef, Q, QuerySet, Subquery, Sum, UUIDField, Value, When
+from django.db.models import Case, CharField, Count, DateTimeField, Exists, F, OuterRef, Q, QuerySet, Subquery, Sum, UUIDField, Value, When
 from django.db.models.functions import Left
 
 from apps.cases.models import ChangeCase
 from apps.governance.models import AiGeneration, AiPurpose, AiStatus
 from apps.governance.schemas import AiCitation, AiGenerationQuery, AiGenerationReviewer, AiGenerationRow
+
+# The stop reason of a call the model failed once asked (apps/shared/ai.py).
+FAILED = "failed"
 
 
 class NotInTransaction(RuntimeError):
@@ -67,20 +61,11 @@ def log_generation(
 ) -> AiGeneration:
     """Write one row for one model call, in the caller's transaction.
 
-    `model` and `model_version` are required in words as well as in the signature: a log
-    that cannot say which machine wrote something is not the log AUD-02 asks for, and a
-    caller that has no version reports the one it has rather than an empty string.
-
-    The output is stored up to `AI_GENERATION_OUTPUT_MAX_CHARS`. Model output is untrusted
-    text off a network, so the cap is at the boundary rather than left to the provider's
-    own token limit, and a truncated row is still a true record of what was said first.
-
-    `generation_id` is for a caller that named its output before the model finished: an
-    Ask answer carries its id from the stream's first event, so a reader's verdict on it
-    can find this row (`rateAnswer`).
-
-    `stop_reason` is how the call ended, for a call bleqq made and watched end
-    (`apps/shared/ai.py`); an agent's filing leaves it empty.
+    `model` and `model_version` are required: a log that cannot say which machine wrote
+    something is not the log AUD-02 asks for. The output is capped at
+    `AI_GENERATION_OUTPUT_MAX_CHARS` because model output is untrusted network text.
+    `generation_id` lets a caller name its output before the model finished (an Ask answer's
+    id, for `rateAnswer`). `stop_reason` is set only for a call bleqq made and watched end.
     """
     if not connection.in_atomic_block:
         raise NotInTransaction(
@@ -125,11 +110,9 @@ def cost_minor_between(tenant_id: uuid.UUID, purpose: AiPurpose, start: datetime
 
 
 def answer_of(answer_id: uuid.UUID, tenant_id: uuid.UUID, *, asker_id: uuid.UUID) -> AiGeneration | None:
-    """One Ask answer `asker_id` was given in their bank, by the id its stream gave it, or
-    nothing. An id of another bank's answer is nothing too: row-level security has already
-    hidden it, and the tenant is named here as well so a query written before that policy
-    could not reach it. A colleague's answer is nothing as well, so nobody replaces the
-    verdict of the person who asked (hardening H48)."""
+    """One Ask answer `asker_id` was given in their bank, by its stream id, or nothing. The
+    tenant is named on top of row-level security, and a colleague's answer is nothing too, so
+    nobody replaces the asker's verdict (H48)."""
     return AiGeneration.objects.filter(
         pk=answer_id, tenant_id=tenant_id, asker_id=asker_id, purpose=AiPurpose.ANSWER.value
     ).first()  # ordering: pk lookup, at most one row
@@ -153,12 +136,17 @@ def logged_for(*, agent_run_id: uuid.UUID, purpose: AiPurpose, subject_type: str
     ).exists()
 
 
-def prompt_hashes(*, purpose: AiPurpose, prompt_template: str) -> set[str]:
-    """The prompt hash of every call of this purpose made from one prompt template: what a
-    platform agent asks to tell a question it already put to a model from a new one (D-129).
-    Reads only, the library's rows, never a bank's."""
+def prompt_hashes(*, purpose: AiPurpose, prompt_template: str, failures_allowed: int) -> set[str]:
+    """The prompt hash of every settled call of this purpose and template, so a platform
+    agent can tell a question it already asked from a new one (D-129). An answered call
+    settles its prompt; a failed one only once `failures_allowed` failed rows share it, so a
+    failing question is not asked forever (S-9). Reads the library's rows only."""
     rows = AiGeneration.objects.filter(tenant_id__isnull=True, purpose=purpose.value, prompt_template=prompt_template)
-    return set(rows.values_list("prompt_hash", flat=True))
+    answered = rows.exclude(stop_reason=FAILED).values_list("prompt_hash", flat=True)
+    given_up = (
+        rows.filter(stop_reason=FAILED).values("prompt_hash").annotate(failed=Count("id")).filter(failed__gte=failures_allowed).values_list("prompt_hash", flat=True)
+    )
+    return set(answered) | set(given_up)
 
 
 def generations_for(
@@ -166,9 +154,8 @@ def generations_for(
 ) -> tuple[list[AiGeneration], int]:
     """The reader's own rows and the library's, newest first, with the total.
 
-    Row-level security has already cut the table to the session's own tenant plus the rows
-    with no tenant, so this adds the filters and the page and nothing about who may see
-    what: the zone is the database's answer, not a `WHERE` clause a later edit could drop.
+    Row-level security has already cut the table to the session's tenant plus the rows with
+    no tenant, so the zone is the database's answer, not a `WHERE` a later edit could drop.
     The `status` filter reads the review state as this reader sees it (`_reviewed`).
     """
     rows = _reviewed(AiGeneration.objects.all(), tenant_id)
@@ -186,13 +173,10 @@ def _reviewed(rows: QuerySet[AiGeneration], tenant_id: uuid.UUID | None) -> Quer
     """Each row annotated with its review state, reviewer and time as the reading bank sees
     them, in the one query that pages it.
 
-    A bank's own row carries its own. A library "So what?" is one row every bank reads, and
-    no bank may move it (ruling I), so its review state is the reading bank's own, taken
-    from that bank's case for the change (`so_what_confirmed_by`, `so_what_confirmed_at`)
-    and never written anywhere shared (D-62). The case settles the newest draft of the
-    change logged by the time it was confirmed: that row reads `confirmed` when the bank's
-    words are still the draft's and `edited` when the bank rewrote them. Any other draft of
-    the change reads `draft`, because nobody at that bank stood behind those words.
+    A bank's own row carries its own. A library "So what?" is shared and no bank may move it,
+    so its review state comes from the reading bank's case for the change and is never
+    written anywhere shared (D-62): the newest draft logged by the time the case confirmed it
+    reads `confirmed` (or `edited` when the bank rewrote it); any other draft reads `draft`.
     """
     so_what = AiPurpose.SO_WHAT.value
     confirmed_case = ChangeCase.objects.filter(

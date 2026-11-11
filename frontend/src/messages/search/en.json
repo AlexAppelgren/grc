@@ -31,7 +31,6 @@
   "search.ask.feedback.reasonLabel": "What is wrong?",
   "search.ask.feedback.reasonPlaceholder": "e.g. The answer misses the exemption for minor non-monetary benefits",
   "search.ask.feedback.reasonHint": "Read by the library editors. Improves the evaluation set.",
-  "search.ask.feedback.cancel": "Cancel",
   "search.ask.feedback.send": "Send",
   "search.ask.feedback.thanks": "Thank you. Your feedback is logged with the answer.",
   "search.ask.aiLabelDrafting": "Answer being drafted by AI from inventory records only"

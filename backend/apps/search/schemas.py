@@ -5,7 +5,7 @@ The shapes are the designed contract (`docs/inputs/openapi.yaml`: SearchRequest,
 SearchHit, SearchResponse, SimilarRequest, AskRequest, Citation, AnswerStatement,
 Answer, AnswerFeedback), with the departures INPUT_DELTAS records for chunk 7: a
 language is a key from the language rows rather than a two-value enum (§3), a hit's
-urgency is taxonomy's `TermRef` of key, kind and label rather than a phrase the client
+urgency is taxonomy's `VocabRef` of key, kind and label rather than a phrase the client
 must string-match (§1), and Ask answers a stream rather than one body, so the events
 below are part of the contract too.
 
@@ -37,8 +37,8 @@ from pydantic import ConfigDict, Field
 
 from apps.library.schemas import SHOWN_NAME, FilterKey, FootprintFilter
 from apps.shared.schemas import CamelSchema, WriteBody
-from apps.taxonomy.schemas import TermRef
 from apps.watch.schemas import DatePrecision
+from apps.shared.schemas import VocabRef
 
 # Several jurisdictions at once, combined with OR: 1 to 20 keys of at most 80 characters.
 JurisdictionKeys = Annotated[list[FilterKey], Field(min_length=1, max_length=settings.LIBRARY_TERM_FILTER_MAX)]
@@ -498,7 +498,7 @@ class SearchHit(CamelSchema):
             "close it."
         ),
     )
-    urgency: TermRef | None = Field(
+    urgency: VocabRef | None = Field(
         default=None,
         description=(
             "How soon the shared library says this record deserves attention, as a key, its "

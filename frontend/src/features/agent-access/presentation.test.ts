@@ -70,7 +70,7 @@ const product = (id: string, orgUnitId: string | null, terms: string[] = ['deriv
   launchDate: null,
   orgUnitId,
   owner: null,
-  terms: terms.map((k) => ({ key: k, label: k })),
+  terms: terms.map((k) => ({ key: k, kind: null, label: k })),
   version: 1,
 });
 

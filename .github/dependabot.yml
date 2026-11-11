@@ -66,6 +66,32 @@ updates:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
 
+  # The base images are pinned by digest in both Dockerfiles; this moves the digest
+  # (and the tag) through a reviewed pull request (review 2026-11-11 L-12). Node stays
+  # on 22 (ADR 0025, @types/node above), Python on 3.12 (CLAUDE.md section 4).
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /frontend
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Stockholm
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(images)"
+    groups:
+      base-images:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
   - package-ecosystem: github-actions
     directory: /
     target-branch: main

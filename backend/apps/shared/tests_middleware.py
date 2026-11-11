@@ -9,9 +9,12 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import os
+import subprocess
 import sys
 from typing import Any, cast
 
+from django.conf import settings
 from django.db import IntegrityError
 from django.http import HttpRequest, HttpResponse
 from django.test import SimpleTestCase, TestCase, override_settings
@@ -26,15 +29,15 @@ from apps.shared.testing import sentry_init_kwargs
 
 class RequestId(TestCase):
     def test_a_supplied_request_id_is_echoed_and_a_missing_one_is_minted(self) -> None:
-        response = self.client.get("/api/v1/reference/product", HTTP_X_REQUEST_ID="abc-123")
+        response = self.client.get("/api/v1/me", HTTP_X_REQUEST_ID="abc-123")
         self.assertEqual(response["X-Request-ID"], "abc-123")
-        response = self.client.get("/api/v1/reference/product")
+        response = self.client.get("/api/v1/me")
         self.assertEqual(len(response["X-Request-ID"]), 32)
 
     def test_a_hostile_request_id_is_replaced(self) -> None:
-        response = self.client.get("/api/v1/reference/product", HTTP_X_REQUEST_ID="x\ninjected")
+        response = self.client.get("/api/v1/me", HTTP_X_REQUEST_ID="x\ninjected")
         self.assertNotIn("\n", response["X-Request-ID"])
-        response = self.client.get("/api/v1/reference/product", HTTP_X_REQUEST_ID="a" * 300)
+        response = self.client.get("/api/v1/me", HTTP_X_REQUEST_ID="a" * 300)
         self.assertEqual(len(response["X-Request-ID"]), 32)
 
     def test_log_records_carry_the_request_id(self) -> None:
@@ -68,15 +71,15 @@ class RequestId(TestCase):
 
 class ServerTiming(TestCase):
     def test_every_response_carries_app_timing(self) -> None:
-        response = self.client.get("/api/v1/reference/product")
+        response = self.client.get("/api/v1/me")
         self.assertRegex(response["Server-Timing"], r"^app;dur=\d+\.\d$")
 
     @override_settings(API_BUDGET_MS=0)
     def test_over_budget_logs_a_warning_with_the_route_only(self) -> None:
         with self.assertLogs("apps.shared.middleware", level="WARNING") as logs:
-            self.client.get("/api/v1/reference/product?secret=1")
+            self.client.get("/api/v1/me?secret=1")
         record = logs.records[0]
-        self.assertIn("reference/product", getattr(record, "route"))  # noqa: B009
+        self.assertIn("api/v1/me", getattr(record, "route"))  # noqa: B009
         self.assertFalse(hasattr(record, "path"))
         self.assertEqual(getattr(record, "budget_ms"), 0)  # noqa: B009
         self.assertNotIn("secret", record.getMessage())
@@ -114,7 +117,7 @@ class ContentSecurityPolicy(SimpleTestCase):
         answers may be sniffed into another content type."""
         from django.conf import settings
 
-        response = self._run("/api/v1/reference/product")
+        response = self._run("/api/v1/me")
         self.assertEqual(response["Referrer-Policy"], "no-referrer")
         self.assertEqual(response["X-Content-Type-Options"], "nosniff")
         self.assertEqual(settings.SECURE_REFERRER_POLICY, "no-referrer")
@@ -179,7 +182,7 @@ class SentryScrubbers(SimpleTestCase):
         for hook in (sentry_scrub.before_send, sentry_scrub.before_send_transaction):
             scrubbed = cast(dict, hook(cast(Any, dict(event, request=dict(event["request"]))), {}))
             self.assertEqual(scrubbed["request"]["url"], f"https://api.example/api/v1/auth/invitations/{sentry_scrub.REDACTED}/open")
-        self.assertEqual(sentry_scrub.scrub_url("https://api.example/api/v1/reference/product?x=1"), "https://api.example/api/v1/reference/product?x=1")
+        self.assertEqual(sentry_scrub.scrub_url("https://api.example/api/v1/me?x=1"), "https://api.example/api/v1/me?x=1")
 
     def test_an_access_line_breadcrumb_loses_its_query_and_addresses(self) -> None:
         """Security review 2026-09-19: gunicorn's access line reached a captured event as a
@@ -214,9 +217,48 @@ class SentryScrubbers(SimpleTestCase):
         self.assertFalse(kwargs["include_local_variables"])
         self.assertIs(kwargs["before_send"], sentry_scrub.before_send)
         self.assertIs(kwargs["before_send_transaction"], sentry_scrub.before_send_transaction)
+        self.assertEqual(kwargs["trace_propagation_targets"], [])
         # gunicorn writes its access line outside any request scope, so as a breadcrumb it
         # rides on later events, another tenant's included. It is never recorded.
         self.assertIn("gunicorn.access", sentry_logging._IGNORED_LOGGERS)
+
+    def test_an_outbound_request_carries_no_trace_header_and_records_no_span(self) -> None:
+        """Review 2026-11-11 S-8: with a DSN set, the stdlib integration named a span and a
+        breadcrumb after every outbound URL, and every fetched host received `sentry-trace`
+        and `baggage` with the public key. A child process imports the settings with a DSN
+        (so the SDK starts as deployed), fetches a local server inside a sampled
+        transaction, and reports the headers that server saw."""
+        script = (
+            "import http.client, http.server, json, threading\n"
+            "import config.settings\n"
+            "import sentry_sdk\n"
+            "from sentry_sdk.integrations.stdlib import StdlibIntegration\n"
+            "seen = []\n"
+            "class H(http.server.BaseHTTPRequestHandler):\n"
+            "    def do_GET(self):\n"
+            "        seen.extend(k.lower() for k in self.headers.keys())\n"
+            "        self.send_response(204); self.end_headers()\n"
+            "    def log_message(self, *a): pass\n"
+            "srv = http.server.HTTPServer(('127.0.0.1', 0), H)\n"
+            "threading.Thread(target=srv.handle_request, daemon=True).start()\n"
+            "with sentry_sdk.start_transaction(name='t', sampled=True):\n"
+            "    c = http.client.HTTPConnection('127.0.0.1', srv.server_port, timeout=10)\n"
+            "    c.request('GET', '/lookup?number=5560000001'); c.getresponse().read()\n"
+            "client = sentry_sdk.get_client()\n"
+            "print(json.dumps({'active': client.is_active(), 'stdlib': client.get_integration(StdlibIntegration) is not None, 'headers': seen}))\n"
+        )
+        env = {k: v for k, v in os.environ.items() if k not in {"RAILWAY_ENVIRONMENT_NAME", "DJANGO_SETTINGS_MODULE"}}
+        env.update({"SENTRY_DSN": "https://public@o1.ingest.de.sentry.io/1", "ENVIRONMENT": "local", "SENTRY_TRACES_SAMPLE_RATE": "1.0"})
+        result = subprocess.run(
+            [sys.executable, "-c", script], cwd=str(settings.BASE_DIR), env=env, capture_output=True, text=True, timeout=60, check=False
+        )
+        self.assertEqual(result.returncode, 0, result.stderr[-800:])
+        report = json.loads(result.stdout.strip().splitlines()[-1])
+        self.assertTrue(report["active"])
+        self.assertFalse(report["stdlib"])
+        self.assertIn("host", report["headers"])
+        self.assertNotIn("sentry-trace", report["headers"])
+        self.assertNotIn("baggage", report["headers"])
 
     def test_exception_messages_and_interpolated_log_text_never_leave(self) -> None:
         """Security review 2026-09-19: a Postgres error's message carries row values

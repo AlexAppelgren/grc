@@ -1,8 +1,7 @@
 """The prototype fixture as the one source of seeded keys, labels and usage notes
-(backend/apps/library/fixtures/prototype_data.json, `vocabularies`, `taxonomy_terms`,
-`tags`), so chunk 3 loads the fixture's records against the same keys the seeds wrote
-and nothing needs a mapping. The fixture names pill tones its own way; `TONES` maps
-them to the six the design names (design/system/pills-and-labels.md)."""
+(backend/apps/library/fixtures/prototype_data.json), so the fixture's records load against
+the same keys the seeds wrote. `TONES` maps the fixture's pill tones to the six the design
+names (design/system/pills-and-labels.md)."""
 
 from __future__ import annotations
 

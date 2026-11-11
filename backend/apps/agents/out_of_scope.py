@@ -1,22 +1,14 @@
 """What a narrowed entry could not see (ACC-07, AC-ACC1, AGENT_ACCESS.md section 7).
 
-A developer reads silence as "nothing applies", so a narrowed entry never narrows silently.
-The description an agent sends is compared against the labels and usage notes of the
-bank's footprint terms that lie outside the entry's scope, and every term it touches is
-named by its dimension's label and its own: "Licensed activity: Card issuing". Only labels
-are compared and only labels are answered, never a record, so nothing crosses the line.
+A developer reads silence as "nothing applies", so a narrowed entry never narrows silently:
+the description is compared against the labels and usage notes of the footprint terms
+outside the entry's scope, and every term it touches is named by label ("Licensed activity:
+Card issuing"). Only labels are compared and answered, never a record.
 
-The comparison is a word match and needs no model, so it answers with AI switched off: a
-term is touched when every word of one of its labels, in any language, is in the
-description, or when its usage note shares `AGENT_ACCESS_NOTE_MATCH_WORDS` words with it.
-Words are lower-cased, stripped of a few English endings ("issues" and "issuing" are both
-"issu") and of words too short or too common to mean anything. `words()` is also how
-what_applies.py ranks the list, so the two read a description the same way.
-
-A term is outside the scope when the entry's terms restrict its dimension and leave it
-out: its dimension narrows the footprint (or is opt-in) and the entry names some term in it
-(or it is opt-in, which the entry must name to see). A dimension the entry names nothing in
-does not restrict (FP-01), so its terms are visible and never named here.
+A word match, no model, so it works with AI off: a term is touched when every word of one of
+its labels is in the description, or its usage note shares
+`AGENT_ACCESS_NOTE_MATCH_WORDS` words. `words()` is shared with what_applies.py's ranking.
+A dimension the entry names nothing in does not restrict (FP-01), so its terms never appear.
 """
 
 from __future__ import annotations

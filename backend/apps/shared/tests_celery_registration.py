@@ -19,8 +19,9 @@ from django.db import transaction
 from django.test import TestCase
 
 from apps.shared import factories, tenancy
-from apps.shared.tenancy import NotInTransaction, is_tenant_task, tenant_task
+from apps.shared.tenancy import NotInTransaction, tenant_task
 from config.celery import app as celery_app
+from apps.shared.testing import is_tenant_task
 
 
 class CeleryRegistrationGuard(TestCase):

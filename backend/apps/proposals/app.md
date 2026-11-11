@@ -404,10 +404,10 @@ Given a proposal filed by the agent "watch-sweeper" through its own key
 And a second platform key bound to a different agent definition, holding the scope "proposals:review"
 When that key reads the pending proposals through the queue route a person reads
 Then it sees the same proposal with the same source beside the same diff
-When it approves, corrects or rejects through the same routes
+When it approves as filed or rejects through the same routes
 Then the decision applies exactly as a person's does, in one transaction
 And a decision sent without the model call behind it answers 422, and one naming a run of another agent's key answers 404, and neither applies anything
-And a correction by the agent that moves the original language answers 422 and applies nothing
+And a correction sent by the agent answers 409 "person_review_required" and applies nothing (review 2026-11-11 S-3)
 And the model call behind each decision is logged against the proposal in the run the agent named
 And the audit row names the confirming agent, its definition version, its key and that run, and carries no step-up assertion
 When it approves a vocabulary proposal from the same queue
@@ -423,6 +423,8 @@ When the same key approves it
 Then the request answers 409 with code "four_eyes_violation"
 When a second key of the same agent definition approves it
 Then the request answers 409 with code "four_eyes_violation"
+When a key of another definition, created by the person who created the proposing key, approves it
+Then the request answers 409 with code "four_eyes_violation", which the application decides because the constraint cannot read a key's creator (review 2026-11-11 S-6)
 When the row is written directly, bypassing the logic
 Then the check constraint refuses it for a repeated user, key or agent alike
 And it refuses a reviewing key that names no agent, so two unbound keys cannot pass on nulls

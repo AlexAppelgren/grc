@@ -1,67 +1,28 @@
 """Hybrid search (SRC-01, SRC-02): one SQL statement over the chunk table, the keyword and
-the vector leg fused by reciprocal rank and reranked, filtered by validity and by what the
-caller may see before anything is ranked.
+vector legs fused by reciprocal rank and reranked, filtered by validity and visibility before
+anything is ranked.
 
-**One statement.** Both legs, every filter and everything a hit shows are one SELECT. The
-legs are ranked by window functions over the filtered rows, so the fusion is arithmetic the
-database already has the numbers for, and the facts the chunk does not carry — the record's
-own heading, its version number, its instrument's short name — come back as correlated
-subqueries beside it. Chaining a query per hit would cost a round trip per row and put the
-800 ms budget (NFR-02) in the hands of the page size; `SearchHybridQueryCountTests` pins the
-count at two page sizes so it can never start growing with the answer.
-
-**A leg either found a row or it did not.** `SEARCH_RETRIEVAL_DEPTH` is how deep each leg
-reaches, and `SEARCH_CONCEPT_SCORE_FLOOR` is the least similarity that counts as a concept
-match: the vector leg always has a nearest neighbour, however far away, so without a floor
-every query would report every embedded chunk as matched by meaning and `matchKind` would
-say nothing. What is left is honest: an identifier is won by the words (AC-SRC1), and a
-chunk whose vector has not arrived yet is still found by them. A missing vector makes an
-answer narrower, never wrong.
-
-**Narrower, never wider.** The read is confined to `owner_tenant_id IS NULL` in code as well
-as by the policy, so a row a bank owns cannot be reached by a query written before such a
-row existed (D-10, H7). The regulatory scope is chunk 3's one rule — `taxonomy_in_footprint`
-over the record's own terms plus its instrument's regime and the jurisdictions its rules
-reach, from the SQL twins the obligations list hands the same function — and never a second
-copy of it here. The filters are the obligations list's own (`instrument`, `term`,
-`dutyType`, `footprint`), judged the same way, so the inventory hands its search exactly
-what it hands its list. Every filter compares a key, so renaming a vocabulary row changes
-nothing a caller sent.
-
-**Ties are broken on what a rebuild keeps.** Two chunks may score the same on a leg, and
-the rank each gets decides its fused score. Every ranking here therefore breaks a tie on
-`TIE_BREAK` — the record's stable key, the kind, the language and the start date — and never
-on a uuid, so the same library answers in the same order on every fresh database, which is
-what lets the evaluation set gate a release (SRC-05).
-
-**One hit per record.** A duty is indexed once per language it is summarised in, and the
-reader asked about the duty. The page therefore carries the chunk whose own language read
-the query best and not its translations beside it, which is also why a Swedish query lands
-on the Swedish text and a Finnish one on the Finnish text (SRC-S2).
-
-**The query text is the bank's own.** It reaches the text search, the embedder and the
-reranker and nothing else: no log line, no audit row, no outbox payload and no URL
-(playbook 4.7). The embedder and the reranker are models, so a bank that switched its AI
-features off sends them nothing: its search reads by the words alone, as a deployment with
-neither does (D-07, owner item 14). `POST /search` writes nothing at all, which is why its
-scenarios assert the audit count is unchanged.
-
-**A bank's own agent searches inside its entry's scope.** `POST /search` also answers an
-agent access credential holding `search:read` (ACC-04, ACC-05): the same statement, the same
-footprint, and then the entry's second pass over the same scope (`library.reading.
-entry_admits()`, ACC-02), so it finds nothing its entry could not open. It cannot lift the
-footprint: `footprint` `all` or `watched` is refused by name. The chunks stay the library's (D-10).
-
-**`find_similar` is the same statement, read by an agent.** `POST /search/similar` is the
-agents' route (AGT-02): a watch agent sends a passage it fetched and asks which library
-records are nearest it. Three things differ from a reader's search, and nothing else does.
-A key belongs to no bank, so there is no regulatory scope to apply and no bank to read;
-the passage carries no language, so the keyword leg reads it in all five content
-configurations rather than one; and there is no `asOf`, so the ranking is taken at today.
-The vector leg leads, as it must for a paragraph, and the words catch what it cannot
-reach — a chunk whose embedding has not arrived, and a deployment with no embedding model
-contracted at all (D-09). Both routes spend from the same per-caller bucket in
-`limits.py`: an agent in a retry loop must not cost readers their budget.
+- One statement: both legs, every filter and every hit fact (heading, version, instrument)
+  in one SELECT, so the 800 ms budget (NFR-02) does not depend on page size
+  (`SearchHybridQueryCountTests`).
+- A leg either found a row or it did not: `SEARCH_RETRIEVAL_DEPTH` bounds each leg and
+  `SEARCH_CONCEPT_SCORE_FLOOR` stops the vector leg calling everything a concept match. A
+  chunk without a vector is still found by its words: narrower, never wrong.
+- Narrower, never wider: `owner_tenant_id IS NULL` in code as well as policy (D-10, H7). The
+  regulatory scope is the one rule, `taxonomy_in_footprint`, over the record's terms, its
+  instrument's regime and its rules' jurisdictions; filters are the obligations list's own,
+  compared by key.
+- Ties break on `TIE_BREAK` (stable key, kind, language, start date), never a uuid, so a
+  fresh database answers in the same order and the evaluation set can gate (SRC-05).
+- One hit per record: the language that read the query best (SRC-S2).
+- The query is the bank's own text: it reaches text search, embedder and reranker only,
+  never a log, audit row, payload or URL (playbook 4.7); with AI features off it reaches
+  no model (D-07). `POST /search` writes nothing.
+- A bank's own agent (`search:read`, ACC-04, ACC-05) gets the same statement plus its
+  entry's scope (`entry_admits()`, ACC-02); `footprint` `all` or `watched` is refused.
+- `find_similar` (`POST /search/similar`, AGT-02) is the agents' read: no bank scope, the
+  passage read in all five language configurations, ranked at today, vector leg leading.
+  Both routes share the per-caller bucket in `limits.py`.
 """
 
 from __future__ import annotations
@@ -114,15 +75,14 @@ from apps.search.schemas import (
     SimilarRequest,
 )
 from apps.shared.adapters import embedder, reranker
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 from apps.taxonomy import matching
 from apps.taxonomy.models import InstrumentLevelKind
 from apps.watch.models import RegulatoryChange
 from apps.watch.reading import _scope_term_ids as change_scope_term_ids  # the feed's own rule, never a copy
 
-# Which chunk a caller means by a hit kind, and which kind a chunk answers as. One mapping,
-# read both ways, so a `types` filter and a hit can never disagree about what a chunk is.
+# Which chunk a hit kind means and which kind a chunk answers as: one mapping, read both ways.
 SOURCE_OF_HIT: dict[SearchHitType, str] = {
     SearchHitType.OBLIGATION: SearchSource.OBLIGATION_VERSION.value,
     SearchHitType.PROVISION: SearchSource.PROVISION_VERSION.value,
@@ -130,9 +90,8 @@ SOURCE_OF_HIT: dict[SearchHitType, str] = {
 }
 HIT_OF_SOURCE: dict[str, SearchHitType] = {source: hit for hit, source in SOURCE_OF_HIT.items()}
 
-# What the fused query brings back. The chunk's own `tsv` and `embedding` are deliberately
-# not here: they are the two widest columns in the table and nothing above the database
-# reads them, so a page of fifty hits does not carry fifty 1024-dimension vectors.
+# What the fused query returns. `tsv` and `embedding` are left out: the widest columns, and
+# nothing above the database reads them.
 COLUMNS = (
     "id",
     "source_type",
@@ -149,23 +108,18 @@ COLUMNS = (
     "by_concept",
     "fused",
 )
-# What a tie is broken on wherever rows are ranked: the record's stable key, the kind of
-# chunk, its language and the day its text took effect. A rebuilt library reproduces all
-# four, where a chunk's or a record's uuid comes out different on every fresh database and
-# put two of the evaluation set's questions in another order from one run to the next.
+# What a tie is broken on wherever rows are ranked: all four survive a rebuild, where a uuid
+# changes on every fresh database (SRC-05).
 TIE_BREAK = ("record_key", "source_type", "language_id", "valid_from")
 WORDS = re.compile(r"\w+", re.UNICODE)
 ELLIPSIS = "…"
 
 
-# ---------------------------------------------------------------------------------------
-# POST /search, POST /search/similar
-# ---------------------------------------------------------------------------------------
+# --- POST /search, POST /search/similar ---
 def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None, user_id: uuid.UUID, reader: Reader = OPEN) -> SearchResponse:
-    """`POST /search`. The tenant scopes the footprint filter; the chunks are the
-    library's (D-10: only the library is indexed in R1). The reader's own bucket is spent
-    before any of it runs, so a runaway client is refused at the door (NFR-02). A confined
-    reader, a bank's own agent, is kept inside the footprint and its entry's scope."""
+    """`POST /search`. The tenant scopes the footprint filter; the chunks are the library's
+    (D-10). The reader's bucket is spent first (NFR-02). A confined reader (a bank's own
+    agent) stays inside the footprint and its entry's scope."""
     limits.search_bucket(user_id)
     tenant = tenant_of(tenant_id)
     if reader.confined and body.filters is not None and body.filters.footprint != "in":
@@ -190,15 +144,10 @@ def run_search(body: SearchRequest, *, tenant_id: uuid.UUID | None, user_id: uui
 
 
 def find_similar(body: SimilarRequest, *, caller_id: uuid.UUID, tenant_id: uuid.UUID | None) -> SearchResponse:
-    """`POST /search/similar`. The agents' nearest-neighbour read over library chunks
-    (AGT-02): no bank's record is read or returned; a bank's key reads its bank's switch.
-
-    The passage carries no language and no `asOf`, because an agent has neither: it sends
-    what it fetched and asks what the library holds near it today. So the words are read
-    in every content language's configuration and the ranking is taken at today, UTC.
-
-    A bank's own key may hold `search:read` too, and then the text is the bank's own: it
-    reaches the embedder and the reranker only while that bank has its AI features on.
+    """`POST /search/similar`: the agents' nearest-neighbour read over library chunks
+    (AGT-02); no bank record is read or returned. No language and no `asOf`, so the words are
+    read in every content configuration and ranked at today, UTC. A bank's own key reaches the
+    models only while that bank's AI features are on.
     """
     limits.search_bucket(caller_id)
     as_of = timezone.localdate()
@@ -221,22 +170,13 @@ def passages(
     question: str, *, tenant: Tenant, lang: str | None, as_of: datetime.date, depth: int
 ) -> list[dict[str, Any]]:
     """What Ask may ground an answer in (SRC-03): the obligations the reader's own search
-    would rank first for the question, one row per obligation, best first, at most `depth`.
+    ranks first, one row each, at most `depth`, with the chunk's whole `body`.
 
-    The same statement, the same regulatory scope and the same "as of" as `POST /search`,
-    so an answer can never rest on a record the reader could not have found, and nothing
-    outside the bank's scope is read at all. Obligations only, because a citation points at
-    an obligation version. A row carries the chunk's whole `body` rather than a snippet,
-    since that is the text the model is given. It reaches the embedder and the reranker
-    without asking the bank's switch again, because `ask.answer_events` refused a bank
-    that switched off before calling this. It spends no search bucket: `POST /ask`
-    spends its own (`limits.ask_bucket`).
-
-    Never an obligation under a standard (INV-08, D-81). The library holds a standard's
-    conformance duty and never its clauses, so a model given that duty for a question about
-    a control would answer from what it remembers of licensed text and cite the duty for
-    it. Leaving those rows out before anything is ranked is what makes such a question "no
-    answer" with no model asked, while `POST /search` still finds the duty.
+    Same statement, scope and "as of" as `POST /search`, so an answer never rests on a record
+    the reader could not have found. `ask.answer_events` already checked the AI switch and
+    spent `limits.ask_bucket`. Never an obligation under a standard (INV-08, D-81): the
+    library holds only the conformance duty, so a control question is "no answer" rather than
+    one cited to the duty from licensed text the model remembers.
     """
     found = _candidates(
         question,
@@ -252,9 +192,7 @@ def passages(
     return _best_per_record(_reranked(question, found, models=True))[:depth]
 
 
-# ---------------------------------------------------------------------------------------
-# The one statement
-# ---------------------------------------------------------------------------------------
+# --- The one statement ---
 def _candidates(
     text: str,
     *,
@@ -282,9 +220,7 @@ def _candidates(
         concept_rank=Window(RowNumber(), order_by=(F("similarity").desc(nulls_last=True), *TIE_BREAK)),
     )
     depth = settings.SEARCH_RETRIEVAL_DEPTH
-    # Whether the words matched is `@@` and not the rank: `ts_rank` answers 1e-20 rather
-    # than nothing for a row the query misses entirely, so a rank above zero would make
-    # every chunk in the library a keyword hit for every query.
+    # Whether the words matched is `@@`, not the rank: `ts_rank` answers 1e-20 for a miss.
     rows = rows.annotate(
         by_keyword=_found(Q(tsv=asked) & Q(keyword_rank__lte=depth)),
         by_concept=_found(Q(similarity__gte=settings.SEARCH_CONCEPT_SCORE_FLOOR) & Q(concept_rank__lte=depth)),
@@ -301,25 +237,17 @@ def _candidates(
         ),
         fused=_rank_score("by_keyword", "keyword_rank") + _rank_score("by_concept", "concept_rank"),
     )
-    # Enough for the reranker's window and for the page, whichever is larger, times the
-    # languages a record may be summarised in: the page carries one hit per record, and
-    # without the multiplier a corpus in five languages could answer a page of twenty with
-    # four records and call it the end of the list. The widest columns are left behind
-    # (COLUMNS), so the extra rows cost a few kilobytes and no round trip.
+    # The reranker's window or the page, whichever is larger, times the languages a record
+    # may be summarised in, since the page keeps one hit per record.
     wanted = max(reranker.get_reranker().top_k, limit) * len(TEXT_SEARCH_CONFIGS)
     page = rows.order_by(F("fused").desc(), *TIE_BREAK).values(*COLUMNS)[:wanted]
     return [row for row in page if row["by_keyword"] or row["by_concept"]]
 
 
 def _asked(text: str, configurations: tuple[str, ...]) -> SearchQuery:
-    """The text as PostgreSQL reads it, stemmed in each configuration given and OR-ed.
-
-    A reader tells the screen which language they are reading in, so their search is
-    stemmed once, in that language. An agent tells us nothing: it posts a paragraph it
-    fetched, in whatever language the supervisor published it. Stemming that as English
-    would put a Swedish passage next to no Swedish chunk at all, because the chunk's own
-    `tsv` holds Swedish stems, so the passage is read in all five and the tsqueries are
-    OR-ed into one. It stays one statement; only the query on the left of `@@` is wider.
+    """The text as PostgreSQL reads it, stemmed in each configuration given and OR-ed. A
+    reader names their language; an agent's passage could be any, and its chunks hold
+    their own language's stems, so it is read in all five. Still one statement.
     """
     return functools.reduce(
         operator.or_,
@@ -336,11 +264,10 @@ def _filtered(
     standards: bool = True,
     entry_id: uuid.UUID | None = None,
 ) -> QuerySet[SearchChunk]:
-    """Everything the caller may see and asked for, before a single row is ranked. A filter
-    applied after ranking would answer a short page of a long list and call it the answer.
-    `standards=False` leaves out every chunk whose instrument sits at a level of the kind
-    `standard`: the kind decides, never the level's key (D-81). `entry_id` narrows the
-    footprint's answer by an agent access entry's scope, over the same scope (ACC-02)."""
+    """Everything the caller may see and asked for, filtered before ranking, so a filter
+    never answers a short page of a long list. `standards=False` drops chunks whose
+    instrument's level is of kind `standard` (D-81). `entry_id` narrows by an agent access
+    entry's scope (ACC-02)."""
     rows = SearchChunk.objects.filter(owner_tenant__isnull=True)
     rows = rows.filter(Q(valid_from__isnull=True) | Q(valid_from__lte=as_of))
     rows = rows.filter(Q(valid_to__isnull=True) | Q(valid_to__gte=as_of))
@@ -367,17 +294,15 @@ def _filtered(
             )
         )
     if tenant is None or filters.footprint == "all":
-        # The agents' read, or a reader who lifted the scope. An API key belongs to no bank,
-        # so there is no regulatory scope to apply — not a wider read, because
-        # `owner_tenant_id IS NULL` above has already confined it to the shared library.
+        # The agents' read, or a reader who lifted the scope. Still confined to the shared
+        # library by `owner_tenant_id IS NULL` above.
         return rows
     if filters.footprint == "in":
         rows = rows.annotate(in_scope=matching.in_footprint_expression(tenant.id, _record_scope())).filter(in_scope=True)
         if entry_id is not None:
             rows = rows.filter(*entry_admits(tenant.id, entry_id, _record_scope()))
         return rows
-    # `watched`: what the watched markets add, asked of the inventory's own rule for the
-    # chunk's own record, so the search and the list can never disagree (FP-04).
+    # `watched`: asked of the inventory's own rule for the chunk's record (FP-04).
     obligations = in_view(Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")), tenant, "watched")
     instruments = in_view(Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")), tenant, "watched")
     return rows.filter(
@@ -387,14 +312,10 @@ def _filtered(
 
 
 def _record_scope() -> Coalesce:
-    """The scope the inventory judges the chunk's own record by: `library.reading`'s SQL
-    twins, read for that record and never copied here. An obligation's chunk carries the
-    obligation's own terms plus its instrument's scope; a provision's, which has no terms of
-    its own, its instrument's scope alone; a registered change's the scope the watch feed
-    judges it by (`watch.reading`); a chunk that names none of them carries no scope and
-    matches every bank. So the regime and the jurisdictions an instrument's rules reach
-    (D-28, D-29) narrow a search, by FP-03's verdict or a term filter, exactly as they
-    narrow the inventory."""
+    """The scope the inventory judges the chunk's record by, from `library.reading`'s SQL
+    twins: an obligation's terms plus its instrument's scope; a provision's instrument scope;
+    a change's watch scope (`watch.reading`); none matches every bank. The regime and
+    jurisdictions narrow a search exactly as they narrow the inventory (D-28, D-29)."""
     obligation = Obligation.objects.filter(id=_outer_metadata_uuid("obligation_id")).values(scope=scope_term_ids())
     instrument = Instrument.objects.filter(id=_outer_metadata_uuid("instrument_id")).values(scope=instrument_scope_term_ids())
     change = RegulatoryChange.objects.filter(id=OuterRef("source_id")).values(scope=change_scope_term_ids())
@@ -408,9 +329,8 @@ def _record_scope() -> Coalesce:
 
 
 def _similarity(query: str) -> Any:
-    """How near the query the chunk's meaning is, as cosine similarity, or nothing at all
-    while no embedding model is contracted (D-09, `EMBEDDER_PROVIDER=none`). A deployment
-    without one searches by keyword, which is narrower and still right."""
+    """Cosine similarity to the query, or nothing while no embedding model is contracted
+    (D-09); a deployment without one searches by keyword."""
     adapter = embedder.get_embedder()
     if isinstance(adapter, embedder.NoEmbedder):
         return Value(None, output_field=FloatField())
@@ -460,9 +380,7 @@ def _record_id() -> Case:
 
 
 def _record_key() -> Case:
-    """The stable key of the record the chunk was built from, the first thing a tie is
-    broken on (`TIE_BREAK`): one branch per kind of chunk, a change's included, so ties
-    stay broken the day changes are indexed."""
+    """The stable key of the chunk's record, the first `TIE_BREAK`, one branch per kind."""
     return Case(
         When(
             source_type=SearchSource.OBLIGATION_VERSION.value,
@@ -481,9 +399,8 @@ def _record_key() -> Case:
 
 
 def _heading() -> Coalesce:
-    """The record's own heading in the language searched, which is what the screen puts in
-    the hit's title: the chunk's own `title` is the citation line the keyword leg is built
-    on, and a reader recognises a duty by its words, not by its reference."""
+    """The record's own heading in the language searched, for the hit's title; the chunk's
+    `title` is the citation line the keyword leg is built on."""
     titles = ObligationTitle.objects.filter(obligation_id=_outer_metadata_uuid("obligation_id"))
     return Coalesce(
         Subquery(titles.filter(language=OuterRef("language_id")).values("text")[:1]),
@@ -497,17 +414,11 @@ def _heading() -> Coalesce:
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Ranking and the hit
-# ---------------------------------------------------------------------------------------
+# --- Ranking and the hit ---
 def _reranked(query: str, rows: list[dict[str, Any]], *, models: bool) -> list[dict[str, Any]]:
-    """The reranker's verdict on the fused window, added to the fused score.
-
-    A row the reranker did not judge keeps its fused score alone, and since the window is
-    the top of the fused order it can never overtake one that was judged. That is what
-    makes `RERANKER_PROVIDER=none` a contracted state rather than a broken one: it scores
-    every candidate 0.0, and the fused order stands, which is also what `models` false asks
-    for: the query reaches no reranker.
+    """The reranker's verdict on the fused window, added to the fused score. An unjudged row
+    keeps its fused score and cannot overtake a judged one, so `RERANKER_PROVIDER=none`
+    (every score 0.0) and `models` false leave the fused order standing.
     """
     adapter = reranker.get_reranker() if models else reranker.NoReranker(settings.RERANKER_TOP_K)
     window = rows[: adapter.top_k]
@@ -518,8 +429,7 @@ def _reranked(query: str, rows: list[dict[str, Any]], *, models: bool) -> list[d
     )
     for index, row in enumerate(rows):
         row["score"] = row["fused"] + judged.get(index, 0.0)
-    # sorted() is stable: rows the scores cannot separate keep the database's order, which
-    # broke every tie on `TIE_BREAK` and never on an id.
+    # sorted() is stable: the database already broke every tie on `TIE_BREAK`.
     return sorted(rows, key=lambda row: -row["score"])
 
 
@@ -528,13 +438,8 @@ def _documents(rows: list[dict[str, Any]]) -> list[str]:
 
 
 def _best_per_record(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """One hit per record: the language that answered the query best.
-
-    A duty is indexed once per language it is summarised in, so a corpus in five languages
-    would otherwise answer one obligation five times and fill a page of twenty with four
-    records. The reader asked about the duty, not about its translations, and the hit they
-    get is the chunk whose own language read their query best (SRC-S2). The card they open
-    shows every language the library holds.
+    """One hit per record: the chunk whose language read the query best (SRC-S2), so five
+    translations never fill a page. The card shows every language.
     """
     best: dict[Any, dict[str, Any]] = {}
     for row in rows:
@@ -543,7 +448,7 @@ def _best_per_record(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def instrument_name(row: dict[str, Any]) -> str | None:
-    """The hit's instrument as the product names it, one to three words (D-132)."""
+    """The hit's instrument as the product names it, one to three words (D-133)."""
     short_name = row["instrument_short_name"]
     return None if short_name is None else shown_short_name(short_name, row["instrument_official_ref"] or "")
 
@@ -562,10 +467,7 @@ def _hit(row: dict[str, Any], query: str) -> SearchHit:
         binding=metadata.get("binding"),
         valid_from=row["valid_from"],
         valid_to=row["valid_to"],
-        # The library's own view of how soon a record deserves attention lives on a
-        # registered change (`watch.RegulatoryChange.suggested_urgency`). An obligation
-        # and a provision carry none; a change hit does not carry its label yet, which
-        # needs the reader's language here, so the change it opens is where it is shown.
+        # A change's urgency label needs the reader's language; the change page shows it.
         urgency=None,
     )
 
@@ -577,9 +479,8 @@ def _match_kind(row: dict[str, Any]) -> SearchMatchKind:
 
 
 def _snippet(body: str, query: str) -> str:
-    """The chunk's text around what matched, capped by `SEARCH_SNIPPET_CHARS`. A concept
-    hit has no word to centre on, so it shows the opening, which is where a summary says
-    what it is about."""
+    """The chunk's text around the match, capped by `SEARCH_SNIPPET_CHARS`; a concept hit
+    shows the opening."""
     cap = settings.SEARCH_SNIPPET_CHARS
     if len(body) <= cap:
         return body
@@ -595,9 +496,7 @@ def _first_match(body: str, query: str) -> int:
     return min(positions, default=0)
 
 
-# ---------------------------------------------------------------------------------------
-# The caller
-# ---------------------------------------------------------------------------------------
+# --- The caller ---
 def tenant_of(tenant_id: uuid.UUID | None) -> Tenant:
     """The bank whose scope and time zone a search or a question is read in. A session in no
     bank is a 404 and not a 403, exactly as every other tenant read answers it."""
@@ -607,18 +506,14 @@ def tenant_of(tenant_id: uuid.UUID | None) -> Tenant:
         else None
     )
     if tenant is None:
-        raise ProblemError(status=404, code="not_found", detail="Sign in to a company to search the library.")
+        raise not_found("Sign in to a company to search the library.")
     return tenant
 
 
 def _configuration(lang: str | None, tenant: Tenant) -> str:
-    """The PostgreSQL text search configuration the query is stemmed in: the language the
-    caller asked for, else the bank's default content language, else English.
-
-    The language chooses how the query is read, not which chunks are read. A Swedish bank
-    reads EU material in five languages (INPUT_DELTAS §3), so a search stemmed as Swedish
-    still ranks an English summary that answers it — below the Swedish one, because the
-    Swedish text and the Swedish query are stemmed by the same rules (SRC-S2).
+    """The text search configuration the query is stemmed in: the asked language, else the
+    bank's default content language, else English. It chooses how the query is read, not
+    which chunks are read (INPUT_DELTAS §3, SRC-S2).
     """
     if lang is not None and lang not in TEXT_SEARCH_CONFIGS:
         raise ValidationError(

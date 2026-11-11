@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
+import { humaniseKey } from '@/shared/utils/format';
 
 import {
-  humaniseKey,
   loginMethodText,
-  presentApiKey,
   presentInvitation,
   presentLoginEvent,
   presentMember,
@@ -14,7 +13,6 @@ import {
 } from './members-presentation';
 
 const t = createT('en');
-const now = new Date('2026-09-19T10:00:00Z');
 const roles = [
   { key: 'compliance_officer', kind: 'system', label: 'Compliance officer' },
   { key: 'reader', kind: 'system', label: 'Reader' },
@@ -77,20 +75,6 @@ describe('presentRole and presentPermissions', () => {
       ['library vocab manage', 'information', 11],
     ]);
     expect(humaniseKey('search:read')).toBe('search read');
-  });
-});
-
-describe('presentApiKey', () => {
-  const base = { scopes: ['tenant:read', 'search:read'], revokedAt: null, expiresAt: null };
-
-  it('lists scopes as neutral pills', () => {
-    expect(presentApiKey(base, t, now).map((p) => p.label)).toEqual(['tenant read', 'search read']);
-  });
-
-  it('puts revoked or expired first, revoked winning', () => {
-    expect(presentApiKey({ ...base, revokedAt: '2026-09-19T09:00:00Z', expiresAt: '2026-01-01T00:00:00Z' }, t, now)[0]).toEqual({ key: 'status:revoked', label: 'Revoked', tone: 'information', order: 5 });
-    expect(presentApiKey({ ...base, expiresAt: '2026-01-01T00:00:00Z' }, t, now)[0]).toEqual({ key: 'status:expired', label: 'Expired', tone: 'warning', order: 5 });
-    expect(presentApiKey({ ...base, expiresAt: '2027-01-01T00:00:00Z' }, t, now)).toHaveLength(2);
   });
 });
 

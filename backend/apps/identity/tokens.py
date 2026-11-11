@@ -1,9 +1,8 @@
-"""Tokens, codes and keys (playbook 4.2, chunk 1 brief): every secret is minted from
-`secrets`, stored hashed (SHA-256 for random tokens, a per-row salted HMAC-SHA-256 keyed
-from SECRET_KEY for the six-digit code), and compared in constant time. The access token is the one exception to
-"hashed in a table": it is an HMAC over its own claims (session id, kind, the session's
-bank, expiry) signed with SECRET_KEY, so resolving it costs one signature check, the bank
-activated, and one row read under it (ADR 0064).
+"""Tokens, codes and keys (playbook 4.2): every secret is minted from `secrets`, stored
+hashed (SHA-256 for random tokens, a per-row salted HMAC-SHA-256 keyed from SECRET_KEY for
+the six-digit code), and compared in constant time. The access token is the exception: an
+HMAC over its own claims (session id, kind, bank, expiry), so resolving it costs one
+signature check and one row read (ADR 0064).
 
 Nothing here logs a value (playbook 4.7)."""
 
@@ -31,20 +30,12 @@ def b64url(raw: bytes) -> str:
     return base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii")
 
 
-def b64url_decode(text: str) -> bytes:
-    padding = "=" * (-len(text) % 4)
-    return base64.urlsafe_b64decode(text + padding)
-
-
 def hash_token(token: str) -> str:
     """SHA-256 of a random token (invitation tokens, refresh tokens, API key secrets).
 
-    Deliberately not a password hash (CodeQL py/weak-sensitive-data-hashing, accepted as
-    F30): every input is 256 random bits from `secrets.token_urlsafe`, which no offline
-    guessing can search, so a fast hash is the standard choice and a lookup by hash stays
-    one indexed read. Slow hashing protects low-entropy human secrets, and the product
-    has none (no passwords, ID-03). The six-digit code is low-entropy, so it gets a keyed
-    hash instead (`hash_code`)."""
+    Deliberately not a password hash (F30): every input is 256 random bits, which no offline
+    guessing can search, and a lookup by hash stays one indexed read. The low-entropy
+    six-digit code gets a keyed hash instead (`hash_code`)."""
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
@@ -56,9 +47,7 @@ def constant_equal(left: str, right: str) -> bool:
     return secrets.compare_digest(left.encode("utf-8"), right.encode("utf-8"))
 
 
-# ---------------------------------------------------------------------------------------
-# The emailed code (ID-02)
-# ---------------------------------------------------------------------------------------
+# --- The emailed code (ID-02) ---
 def new_code() -> str:
     """Six random digits (a setting). Under E2E_MODE the one fixed code, refused on a
     deployed environment on this second leg (the first is the boot guard, rule 4)."""
@@ -80,22 +69,16 @@ ENROLMENT_CODE_KEY_LABEL = b"enrolment-code-v1"
 def hash_code(code: str, salt: str) -> str:
     """HMAC-SHA-256 over the salted code, keyed by a key derived from SECRET_KEY (F30).
 
-    Six digits are a million guesses, so an unkeyed hash lets anyone who can read
-    `otp_code` recover a live code offline in milliseconds; without the key, the table and
-    its salt are not enough. The fixed label keeps this key apart from every other use of
-    SECRET_KEY. Rotating SECRET_KEY invalidates only codes still pending (ten minutes).
+    Six digits are a million guesses, so without the key a reader of `otp_code` could recover
+    a live code offline. The fixed label keeps this key apart from other uses of SECRET_KEY.
     Both request paths and the verify decoy call this, so their work stays equal (F12)."""
     key = hmac.new(settings.SECRET_KEY.encode("utf-8"), ENROLMENT_CODE_KEY_LABEL, hashlib.sha256).digest()
     return hmac.new(key, f"{salt}:{code}".encode(), hashlib.sha256).hexdigest()
 
 
-# ---------------------------------------------------------------------------------------
-# Access tokens (D-06, ADR 0064): `v2.<session id hex>.<kind>.<tenant id hex>.<expiry epoch>.<hmac>`
-# The tenant part is empty for a session in no bank (a platform or bank-less enrolment
-# session). It is the stored session's bank, copied when the token is issued, and never
-# trusted alone: the resolver activates it, reads the session under it and refuses a row
-# whose bank is not the claim.
-# ---------------------------------------------------------------------------------------
+# --- Access tokens (D-06, ADR 0064): `v2.<session id hex>.<kind>.<tenant id hex>.<expiry epoch>.<hmac>` ---
+# The tenant part is empty for a session in no bank. It is copied from the stored session
+# and never trusted alone: the resolver refuses a row whose bank is not the claim.
 @dataclass(frozen=True)
 class AccessClaims:
     session_id: uuid.UUID
@@ -136,9 +119,7 @@ def parse_access_token(token: str, now: datetime) -> AccessClaims | None:
     return AccessClaims(session_id=session_id, kind=kind, tenant_id=tenant_id, expires_at=expires_at)
 
 
-# ---------------------------------------------------------------------------------------
-# Refresh tokens: `<session id hex>.<random>`; the row stores the hash of the random part.
-# ---------------------------------------------------------------------------------------
+# --- Refresh tokens: `<session id hex>.<random>`; the row stores the hash of the random part ---
 def new_refresh_token(session_id: uuid.UUID) -> tuple[str, str]:
     secret = new_token(32)
     return f"{session_id.hex}.{secret}", hash_token(secret)
@@ -154,9 +135,7 @@ def parse_refresh_token(value: str) -> tuple[uuid.UUID, str] | None:
         return None
 
 
-# ---------------------------------------------------------------------------------------
-# API keys (ID-10): `cw_<prefix>_<secret>`; the row stores the prefix and the secret's hash.
-# ---------------------------------------------------------------------------------------
+# --- API keys (ID-10): `cw_<prefix>_<secret>`; the row stores the prefix and the secret's hash ---
 def new_api_key() -> tuple[str, str, str]:
     """Returns (plain key, prefix, hash). The plain key is shown once and never stored."""
     prefix = secrets.token_hex(API_KEY_PREFIX_LENGTH // 2)

@@ -32,12 +32,14 @@ import hashlib
 import itertools
 import logging
 import uuid
+from io import StringIO
 from collections.abc import Iterator
 from typing import Any
 from unittest import mock
 from urllib.parse import parse_qs, urlsplit
 
 from django.conf import settings
+from django.core.management import call_command
 from django.db import DEFAULT_DB_ALIAS, OperationalError, connection, transaction
 from django.test import RequestFactory, TestCase, TransactionTestCase, override_settings
 
@@ -48,7 +50,7 @@ from apps.home import roadmap
 from apps.home.models import TOKEN_PREFIX_LENGTH, CalendarFeed
 from apps.home.schemas import HomeRoadmapQuery
 from apps.identity import invitation_logic, passkey_logic
-from apps.identity.models import LoginEvent, LoginEventKind, Membership, TenantRole, User
+from apps.identity.models import LoginEvent, LoginEventKind, Membership, TenantRole, User, UserStatus
 from apps.library.models import DatePrecision
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.audit import ActorType
@@ -195,6 +197,13 @@ class FeedFixture(TestCase):
     def own_rows(self) -> Any:
         tenancy.activate(self.tenant.id)
         return CalendarFeed.objects.filter(tenant=self.tenant)
+
+    def enrolled_on_a_new_device(self) -> None:
+        """What the re-enrolment link ends in: a new passkey, and the account active again
+        (a full session of an account still awaiting enrolment resolves to nothing; review
+        2026-11-11 S-2)."""
+        factories.passkey(self.reader, nickname="New phone")
+        User.objects.filter(pk=self.reader.pk).update(status=UserStatus.ACTIVE.value)
 
     def enrol_again(self, bank: Tenant, *, at: datetime.datetime = AFTER_ENROLMENT) -> None:
         """An admin of `bank` re-issues the reader's enrolment, a minute after they subscribed
@@ -371,7 +380,7 @@ class TheListAndTheCapStopWhatNoLongerWorks(FeedFixture):
         self.enrol_again(self.tenant)
 
         with frozen_at(LATER_THAT_NIGHT):
-            factories.passkey(self.reader, nickname="New phone")
+            self.enrolled_on_a_new_device()
             signed_in_again = self.headers()
             created = self.subscribe(signed_in_again)
             listed = self.client.get(FEEDS, **signed_in_again).json()
@@ -746,14 +755,16 @@ class TheServerStopsASubscriptionItself(FeedFixture):
 
     def test_being_enrolled_again_by_another_bank_stops_it_too(self) -> None:
         """A person's passkeys are theirs, not a bank's, and re-enrolment retires all of
-        them wherever it was issued. The security log's `reenrolment_issued` row is written
-        in the issuing bank alone, and row-level security hides it from this one, so it
-        cannot be what the rule reads."""
+        them. A member of two banks is re-enrolled by the owner's command, never by one
+        bank alone (review 2026-11-11 S-2), and its security-log rows are written per bank,
+        so they cannot be what the rule reads."""
         elsewhere = factories.tenant(slug=f"feed-elsewhere-{next(_slugs)}", timezone="Europe/Stockholm")
         factories.member(elsewhere, roles=("reader",), user_row=self.reader)
         factories.passkey(self.reader)
         token = self.token_of(self.subscribe())
-        self.enrol_again(elsewhere)
+        tenancy.clear_tenant()  # the owner's shell starts in no bank
+        with frozen_at(AFTER_ENROLMENT):
+            call_command("bootstrap_platform", "--admin-email", self.reader.email, "--reenrol", stdout=StringIO())
         self.assert_stopped(token, because="enrolled again", at=LATER_THAT_NIGHT)
 
     def test_removing_one_passkey_while_keeping_another_is_not_enrolling_again(self) -> None:
@@ -778,7 +789,7 @@ class TheServerStopsASubscriptionItself(FeedFixture):
             factories.passkey(self.reader, nickname="Lost phone")
         self.enrol_again(self.tenant, at=INSTANT - datetime.timedelta(hours=1))
         with frozen_at(INSTANT - datetime.timedelta(minutes=30)):
-            factories.passkey(self.reader, nickname="New phone")
+            self.enrolled_on_a_new_device()
         token = self.token_of(self.subscribe())
         self.assertEqual(self.fetch(token, at=LATER_THAT_NIGHT).status_code, 200)
         self.assertIsNone(self.own_rows().get().revoked_at)

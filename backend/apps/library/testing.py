@@ -1,13 +1,9 @@
-"""Library builders for tests (playbook 8.1): an instrument, a provision, an obligation
-with its title, scope terms, tags, cited provisions and summary versions, and a relation
-between two obligations. Each builder writes inside
-`library_write()` and sets every field when it creates a row; nothing here saves or
-updates a row afterwards, because version, summary and text rows are append-only.
-
-This module is the one place outside the reference seeds where a test writes a library
-record: the library fence exempts `testing.py` modules (apps/shared/tests_library_fence.py),
-and apps/shared/factories.py writes no library model. Terms are addressed as
-`dimension:key` and vocabulary rows by key, exactly as the API addresses them."""
+"""Library builders for tests (playbook 8.1): instruments, provisions, obligations with their
+titles, terms, tags, citations and versions, and relations. Each builder writes inside
+`library_write()` and sets every field on create; nothing is saved again, because version,
+summary and text rows are append-only. The library fence exempts `testing.py` modules
+(apps/shared/tests_library_fence.py). Terms are addressed as `dimension:key`, as the API
+does."""
 
 from __future__ import annotations
 
@@ -52,11 +48,8 @@ DEFAULT_VERSIONS: tuple[tuple[datetime.date | None, Mapping[str, str]], ...] = (
 @contextmanager
 def _in_zone(owner_id: uuid.UUID | None) -> Iterator[None]:
     """Write a record and its children in the zone the record lives in, as its door would:
-    the shared library's from a session with no bank, a bank's own record from that bank.
-    A child's policy accepts nothing else (library 0012), and a test that activated a bank
-    before building the shared library gets that bank back afterwards. The zone is left
-    outside the door's savepoint, so a write the database refuses is rolled back before the
-    session's own zone is put back."""
+    the shared library's with no bank, a bank's own record in that bank (library 0012). The
+    zone is restored outside the door's savepoint, so a refused write rolls back first."""
     with transaction.atomic(), tenancy.platform_zone(), library_write(REASON):
         if owner_id is not None:
             tenancy.activate(owner_id)

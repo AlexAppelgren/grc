@@ -4,13 +4,11 @@ import {
   applicabilityTone,
   complianceTone,
   gapTone,
-  riskTone,
   severityTone,
   slotTone,
   type ApplicabilityKind,
   type ComplianceKind,
   type GapKind,
-  type RiskKind,
   type SeverityKind,
 } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
@@ -78,14 +76,6 @@ export function presentCompliance(status: RegisterVocabRef): PresentedPill {
     tone: complianceTone[isComplianceKind(status.kind) ? status.kind : 'not_assessed'],
     order: OBLIGATION_SLOT_ORDER.complianceStatus,
   };
-}
-
-function isRiskKind(kind: string | null): kind is RiskKind {
-  return kind !== null && kind in riskTone;
-}
-
-export function presentRisk(risk: RegisterVocabRef): PresentedPill {
-  return { key: `risk:${risk.key}`, label: risk.label, tone: riskTone[isRiskKind(risk.kind) ? risk.kind : 'low'], order: 0 };
 }
 
 export interface ComplianceHeaderFacts {

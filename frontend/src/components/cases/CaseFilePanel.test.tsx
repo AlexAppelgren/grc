@@ -1,12 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { CaseWorkflow } from '@/features/cases/types';
 import type { ChangeDetail } from '@/features/watch/api';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { setStepUpHandler, tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { CaseFilePanel, caseFileSections } from './CaseFilePanel';
 
@@ -71,16 +70,7 @@ function serve(route: (sent: Sent) => Answer | undefined): Sent[] {
 }
 
 function renderPanel(permissions: string[]): void {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <CaseFilePanel change={change} workflow={workflow} />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Query>,
-  );
+  renderWith(<CaseFilePanel change={change} workflow={workflow} />, { permissions });
 }
 
 const caseFile = (request: Sent): Answer | undefined => (request.path === '/api/v1/changes/c-1/case-file' ? { status: 200, data: TEXT } : undefined);

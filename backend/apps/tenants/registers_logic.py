@@ -1,18 +1,12 @@
 """From a supervisor's register to scope terms (TEN-07, FP-05; PUBLIC_REGISTERS.md 4.1, D-121).
 
-`register_terms.json` beside this module maps a register's own wording to term keys, per
-authority: `categories` maps a business name exactly as the register writes it (main or
-other business), and `licences` a phrase found in a licence's text (`contains`), or a bare
-licence code that is the whole of the line (`equals`, so IRK never matches IRKA), each
-compared case-insensitively. A company's derived terms are the union over its categories and its
-licences: what its licences allow, not what it chooses to do. A name or a licence the file
-does not know is listed as unmapped and maps to nothing; nothing is guessed.
+`register_terms.json` maps a register's own wording to term keys, per authority: `categories`
+by exact business name, `licences` by a phrase in the licence text (`contains`) or a whole-line
+code (`equals`, so IRK never matches IRKA), case-insensitively. A company's terms are the union
+over its categories and licences. Unknown wording is listed as unmapped; nothing is guessed.
 
-Reads only: the functions here name library models (an authority, a jurisdiction, a term) to
-read them and never write, so the library fence's AST guard
-(apps/shared/tests_library_fence.py) sees no write beside them. The terms the file names are
-checked against the seeded taxonomy by apps/tenants/tests_registers_logic.py; a key the live
-taxonomy does not hold is dropped where a term is read (`entity_terms`), never created.
+Reads only: library models are read here and never written (apps/shared/tests_library_fence.py).
+A key the live taxonomy does not hold is dropped where a term is read (`entity_terms`).
 """
 
 from __future__ import annotations
@@ -87,9 +81,7 @@ def _grouped(terms: list[tuple[str, str]]) -> dict[str, set[str]]:
     return grouped
 
 
-# ---------------------------------------------------------------------------------------
-# Business names
-# ---------------------------------------------------------------------------------------
+# --- Business names ---
 def _split(authority_key: str, text: str) -> list[tuple[int, str, bool]]:
     """Every business name in the register's comma-joined text as (position, name, known), in
     the register's order. Known names are found longest first, each only as a whole
@@ -107,16 +99,7 @@ def _split(authority_key: str, text: str) -> list[tuple[int, str, bool]]:
     return sorted(found)
 
 
-def split_businesses(authority_key: str, text: str) -> tuple[list[str], list[str]]:
-    """The business names the mapping knows, and the comma-separated rest it does not, each in
-    the register's order."""
-    parts = _split(authority_key, text)
-    return [name for _, name, known in parts if known], [name for _, name, known in parts if not known]
-
-
-# ---------------------------------------------------------------------------------------
-# Terms
-# ---------------------------------------------------------------------------------------
+# --- Terms ---
 def _licence_terms(mapping: _Mapping, text: str) -> list[tuple[str, str]] | None:
     """The terms a licence line gives, or None when it matches no phrase."""
     line = text.strip().casefold()
@@ -195,9 +178,7 @@ def entity_terms(keys: set[str], order: list[str]) -> dict[str, TermRef]:
     return {term.key: refs[term.id] for term in terms}
 
 
-# ---------------------------------------------------------------------------------------
-# Countries and authorities
-# ---------------------------------------------------------------------------------------
+# --- Countries and authorities ---
 def _jurisdictions_by_name() -> dict[str, str]:
     """A country's name in any of its labels, case-folded -> the key of the active country
     jurisdiction it names. A register writes countries in its own language (`Danmark`), which
@@ -206,14 +187,6 @@ def _jurisdictions_by_name() -> dict[str, str]:
     names = {text.casefold(): key for text, key in rows.order_by("vocabulary__sort_order", "language").values_list("text", "vocabulary__key")}
     # The EBA's register writes a country as its ISO code (`DK`), which is the jurisdiction's key.
     return {**{key: key for key in names.values()}, **names}
-
-
-def branch_jurisdictions(facts: RegisterFacts) -> set[str]:
-    """The jurisdiction keys of the countries the company has branches in, matched exactly,
-    case aside, on the labels of the library's active countries; a country the library does
-    not cover is left out."""
-    names = _jurisdictions_by_name()
-    return {names[branch.country_name.casefold()] for branch in facts.branches if branch.country_name.casefold() in names}
 
 
 def authority_for_country(country_code: str) -> Authority | None:

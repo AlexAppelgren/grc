@@ -1,25 +1,14 @@
-"""This bank's own decision about a suggested obligation link (WAT-04, ruling C).
+"""This bank's own decision about a suggested obligation link (WAT-04, ruling C): on its own
+case, a compliance officer says a suggested obligation really is affected here, or is not
+related at all. A separate fact in the bank's zone that changes nothing another bank sees.
 
-An agent links a change to the obligations it may touch, with a confidence; a library
-editor confirms a link for the shared library. Neither of those is this. Here a compliance
-officer says, on this bank's own case, that a suggested obligation really is affected here
-or is not related to this bank at all — a separate fact, in the bank's own zone, that
-changes nothing another bank sees.
+- No library row is written (`tests_links.py` reads `change_obligation` back unchanged);
+  the obligation is read only to refuse an unknown one with the same 404.
+- A removal is a stored `removed` row the same call reverses, so the case file shows it.
+- One decision per obligation per case, rewritten in place.
 
-Three rules hold it to that:
-
-- **No library row is written.** `change_obligation` is not touched, which
-  `apps/cases/tests_links.py` proves by reading it back unchanged after both decisions.
-  The obligation itself is read for one reason only: to refuse a link to an obligation the
-  library does not hold, which is the same 404 an unknown id gets.
-- **A removal is a row, not a deletion.** `removed` is stored, so the case file can say the
-  bank looked at the link and said no, and the same call reverses it. The link stays
-  visible to every other bank.
-- **One decision per obligation per case.** A second decision rewrites the bank's own row
-  rather than stacking another, so a screen reading the case sees one answer.
-
-An obligation removed here is not an obligation that does not apply: applicability is a
-separate judgement in the register (REG-01), and nothing in this module touches it.
+Removing a link is not saying the obligation does not apply: that is the register's
+(REG-01), untouched here.
 """
 
 from __future__ import annotations
@@ -34,7 +23,7 @@ from apps.cases import reading
 from apps.cases.models import CaseLinkDecision, CaseObligationLink, ChangeCase
 from apps.cases.schemas import CasesObligationLink
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 
 SUBJECT_TYPE = "case_obligation_link"
@@ -83,15 +72,13 @@ def _decide(
     obligation_id: uuid.UUID,
     decision: CaseLinkDecision,
 ) -> CasesObligationLink:
-    """One bank's row, its audit row and its outbox row in one transaction (AUD-01).
-
-    The obligation is resolved before the write opens, so a call naming one the library
-    does not hold stores nothing and answers the same 404 an unknown id would get.
+    """One bank's row, its audit row and its outbox row in one transaction (AUD-01). The
+    obligation is resolved first, so an unknown one stores nothing and answers 404.
     """
     case = _case_for(tenant, change_id)
     details = reading.obligation_details(obligation_id, order)
     if details is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     stored = (
         CaseObligationLink.objects.filter(tenant_id=case.tenant_id, case=case, obligation_id=obligation_id)
         .first()  # ordering: unique (tenant, case, obligation), at most one row
@@ -133,5 +120,5 @@ def _case_for(tenant: Tenant, change_id: uuid.UUID) -> ChangeCase:
         .first()  # ordering: unique (tenant, change), at most one row
     )
     if case is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return case

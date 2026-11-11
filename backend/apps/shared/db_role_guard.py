@@ -1,16 +1,13 @@
 """Boot guard for the database role (playbook 11.1 and 14, PRD AC-NFR2).
 
-PostgreSQL lets three kinds of role skip row-level security policies: superusers, roles
-with BYPASSRLS, and the owner of a table unless the table has FORCE ROW LEVEL SECURITY
-(Verification_Log: PostgreSQL row security policies). The migrations force RLS on every
-tenant table, but an app that connects as the owner or a superuser would still be one
-`ALTER TABLE` away from reading every tenant. So the app refuses to start on any role
-that is not the plain cw_app kind: not a superuser, owning no table in the public
-schema, no BYPASSRLS.
+Superusers, BYPASSRLS roles and a table's owner (without FORCE) skip row-level security, and
+an owner is one `ALTER TABLE` from reading every tenant. So the app refuses to start on any
+role that is not the plain cw_app kind: not a superuser, owning no table in the public
+schema itself or through a role it is a member of, no BYPASSRLS, no CREATEROLE (review
+2026-11-11 L-7).
 
-`check_role(connection)` is the pure check and raises `RoleGuardError`.
-`check_at_boot()` is what SharedConfig.ready() calls; it consults the settings that say
-when the check is skipped (the test runner, and the commands that run as the migrator).
+`check_role(connection)` is the pure check and raises `RoleGuardError`. `check_at_boot()` is
+what SharedConfig.ready() calls, skipped only for the test runner and the migrator's commands.
 """
 
 from __future__ import annotations
@@ -36,6 +33,7 @@ class RoleFacts:
     role: str
     is_superuser: bool
     bypasses_rls: bool
+    creates_roles: bool
     owned_tables: tuple[str, ...]
 
     @property
@@ -45,10 +43,12 @@ class RoleFacts:
             problems.append("is a superuser")
         if self.bypasses_rls:
             problems.append("has BYPASSRLS")
+        if self.creates_roles:
+            problems.append("has CREATEROLE")
         if self.owned_tables:
             shown = ", ".join(self.owned_tables[:5])
             more = "" if len(self.owned_tables) <= 5 else f" and {len(self.owned_tables) - 5} more"
-            problems.append(f"owns tables ({shown}{more})")
+            problems.append(f"owns tables, itself or as a member of their owner ({shown}{more})")
         return problems
 
 
@@ -57,18 +57,20 @@ def inspect_role(connection: BaseDatabaseWrapper) -> RoleFacts:
     by necessity (playbook 11.2 allows raw SQL for exactly this kind of thing)."""
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT current_user, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user"
+            "SELECT current_user, rolsuper, rolbypassrls, rolcreaterole FROM pg_roles WHERE rolname = current_user"
         )
-        role, is_superuser, bypasses_rls = cursor.fetchone()
+        role, is_superuser, bypasses_rls, creates_roles = cursor.fetchone()
+        # A role is a member of itself, so this covers the tables it owns directly too.
         cursor.execute(
             "SELECT tablename FROM pg_tables "
-            "WHERE schemaname = 'public' AND tableowner = current_user ORDER BY tablename"
+            "WHERE schemaname = 'public' AND pg_has_role(current_user, tableowner, 'MEMBER') ORDER BY tablename"
         )
         owned = tuple(row[0] for row in cursor.fetchall())
     return RoleFacts(
         role=role,
         is_superuser=bool(is_superuser),
         bypasses_rls=bool(bypasses_rls),
+        creates_roles=bool(creates_roles),
         owned_tables=owned,
     )
 

@@ -1,11 +1,8 @@
 """Field types the schema needs that Django no longer ships.
 
-`CIEmailField` is a `citext` column (schema.sql: `email citext NOT NULL UNIQUE`). Django
-removed its `CITextField` family in 5.1; the replacement it recommends is a custom field
-whose `db_type` names the extension type, which is exactly this. The `citext` extension
-is installed by shared 0001 (and by infra/db/init.sql on template1 for throwaway test
-databases). Values are still normalised to lower case in logic before they are stored, so
-the collation is a safety net, not the rule.
+`CIEmailField` is a `citext` column, the custom field Django recommends since it removed
+`CITextField`. The extension comes from shared 0001 (and infra/db/init.sql on template1).
+Values are lower-cased in logic before they are stored, so the collation is a safety net.
 """
 
 from __future__ import annotations

@@ -180,3 +180,14 @@ docstring says why it is not a password hash. The docstring edit sits above the 
 and CodeQL hashes the text from that line onward, so the fingerprint is unchanged (checked
 with a reimplementation of the codeql-action line hash that reproduces the reported value).
 If a later edit rehashes the line, the gate reports the acceptance as stale: re-triage then.
+
+## Note, 2026-11-11: F16 closed
+
+D-122 made accounts in several banks, and in a bank and the console, possible, so F16's
+premise no longer held (security review of 2026-11-11, S-2). It is closed: a bank's
+re-enrolment, and the console's recovery of a bank's last administrator, answer 409
+`account_held_elsewhere` for an account that holds a platform role or an active membership
+in another bank, before anything is written; `bootstrap_platform --reenrol` re-enrols such
+an account in every zone it holds. The session resolver refuses a full session of an account
+that is not `active`, and the session revocations name the zone they run in. ADR 0067's
+threat table carries the row; the tests are in `apps/identity/tests_review_2026_11_11.py`.

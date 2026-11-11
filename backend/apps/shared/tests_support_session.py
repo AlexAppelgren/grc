@@ -29,6 +29,8 @@ from apps.tenants.models import SupportAccess
 
 APPS = Path(__file__).resolve().parent.parent
 
+COOKIE = session_logic.refresh_cookie_name()
+
 
 def grant(tenant: Any, platform: Any, approver: Any, *, status: str = "approved", hours: int = 2, started: Any = None) -> SupportAccess:
     """A grant of `tenant` to `platform`, decided by `approver` (a member of the bank)."""
@@ -82,7 +84,7 @@ class SupportSessionTests(ScenarioTestCase):
         entered = self.client.post(f"/api/v1/console/support-access/{row.id}/enter", **console)
         self.assertEqual(entered.status_code, 200, entered.content)
         self.assertEqual(entered.json()["sessionKind"], "support")
-        self.assertIn("cw_refresh", entered.cookies)
+        self.assertIn(COOKIE, entered.cookies)
         self.activate(self.tenant)
         session = UserSession.objects.get(user=self.platform, kind=SessionKind.SUPPORT.value)
         self.assertEqual((session.tenant_id, session.support_access_id, session.expires_at), (self.tenant.id, row.id, row.expires_at))
@@ -180,14 +182,14 @@ class SupportSessionTests(ScenarioTestCase):
     def test_refreshing_never_extends_the_session_and_an_ended_grant_ends_it(self) -> None:
         row = grant(self.tenant, self.platform, self.admin)
         entered = self.enter(row)
-        cookie = entered.cookies["cw_refresh"].value
-        refreshed = self.client.post("/api/v1/auth/refresh", HTTP_COOKIE=f"cw_refresh={cookie}")
+        cookie = entered.cookies[COOKIE].value
+        refreshed = self.client.post("/api/v1/auth/refresh", HTTP_COOKIE=f"{COOKIE}={cookie}")
         self.assertEqual(refreshed.status_code, 200, refreshed.content)
         self.activate(self.tenant)
         session = UserSession.objects.get(support_access=row)
         self.assertEqual(session.expires_at, row.expires_at, "a refresh never moves the end past the window")
         self.client.post(f"/api/v1/tenant/support-access/{row.id}/revoke", **sign_in(self.admin, tenant=self.tenant))
-        again = self.client.post("/api/v1/auth/refresh", HTTP_COOKIE=f"cw_refresh={refreshed.cookies['cw_refresh'].value}")
+        again = self.client.post("/api/v1/auth/refresh", HTTP_COOKIE=f"{COOKIE}={refreshed.cookies[COOKIE].value}")
         self.assertEqual((again.status_code, again.json()["code"]), (401, "support_access_ended"))
         self.activate(self.tenant)
         session.refresh_from_db()
@@ -197,7 +199,7 @@ class SupportSessionTests(ScenarioTestCase):
         row = grant(self.tenant, self.platform, self.admin)
         entered = self.enter(row)
         headers: dict[str, Any] = {"HTTP_AUTHORIZATION": f"Bearer {entered.json()['accessToken']}"}
-        out = self.client.post("/api/v1/auth/sign-out", HTTP_COOKIE=f"cw_refresh={entered.cookies['cw_refresh'].value}", **headers)
+        out = self.client.post("/api/v1/auth/sign-out", HTTP_COOKIE=f"{COOKIE}={entered.cookies[COOKIE].value}", **headers)
         self.assertEqual(out.status_code, 204, out.content)
         self.assertEqual(self.client.get("/api/v1/changes", **headers).status_code, 401)
 

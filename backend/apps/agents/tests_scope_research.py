@@ -53,6 +53,7 @@ from apps.shared.tests_library_fence import WRITE_METHODS, production_modules
 from apps.taxonomy.models import ScopeItem
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.taxonomy.tests_scenarios import _seed_library
+from apps.shared.testing import handlers_for
 
 V1 = "/api/v1"
 JSON = "application/json"
@@ -145,7 +146,7 @@ class OpeningResearch(ScopeResearchCase):
         self.assertEqual(len(research_of(self.w.bank)), 1)
 
     def test_the_handler_is_on_the_cursor_once(self) -> None:
-        self.assertEqual(outbox.handlers_for(scope_research.SCOPE_ITEM_ADDED), (scope_research.open_research,))
+        self.assertEqual(handlers_for(scope_research.SCOPE_ITEM_ADDED), (scope_research.open_research,))
 
     def test_without_the_researcher_switched_on_the_item_waits_for_the_agent(self) -> None:
         for switched in ({"enabled": False}, {"paused_at": "2026-09-01T06:00:00Z"}):
@@ -156,8 +157,9 @@ class OpeningResearch(ScopeResearchCase):
                 self.assertFalse(ResearchRequest.objects.filter(scope_item=item).exists())
                 waiting = AuditEvent.objects.get(action="scope_item.research_waiting", subject_id=item.id)
                 self.assertEqual(waiting.after, {"scopeItem": item.key, "reason": "no_tenant_agent"})
-                read = self.client.get(f"{V1}/tenant/footprint/scope-items/{item.id}", **sign_in(self.w.officer, tenant=self.w.bank))
-                self.assertEqual(read.json()["research"], "waiting_for_agent")
+                scope = self.client.get(f"{V1}/tenant/footprint", **sign_in(self.w.officer, tenant=self.w.bank)).json()
+                read = next(row for row in scope["scopeItems"] if row["id"] == str(item.id))
+                self.assertEqual(read["research"], "waiting_for_agent")
 
     def test_ai_off_or_the_cap_holds_the_research(self) -> None:
         Tenant.objects.filter(pk=self.w.bank.pk).update(ai_enabled=False)

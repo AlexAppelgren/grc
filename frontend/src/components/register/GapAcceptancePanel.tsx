@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ProblemAlert } from '@/components/ui/States';
-import { GAPS_EDIT, gapActions, gapKind, gapProblemCopy, ownerName, statusKeyOf, waitingPill } from '@/features/gaps/gap-view';
+import { ConfirmDialog, FormDialog } from '@/components/ui/Dialogs';
+import { GAPS_EDIT, gapActions, gapKind, gapProblemCopy, ownerName, statusKeyOf, waitingPill } from '@/features/register/gaps/gap-view';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { isStaleWrite, useApproveRiskAcceptance, useReloadRegister, useReopenGap, useRequestRiskAcceptance, useUpdateGap } from '@/features/register/hooks';
 import type { RegisterGap } from '@/features/register/types';
@@ -37,54 +37,36 @@ function AcceptRiskDialog({ gap, onClose, onDone }: { gap: RegisterGap; onClose:
   const [tried, setTried] = useState(false);
   const error = tried && reason === '' ? t('gaps.acceptDialog.reasonRequired') : undefined;
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     setTried(true);
     if (reason === '') return;
     request.mutate({ gapId: gap.id, body: { reason } }, { onSuccess: onDone });
   };
 
   return (
-    <Modal open onOpenChange={(open) => (open ? undefined : onClose())} title={t('gaps.acceptDialog.title')} description={t('gaps.acceptDialog.body')}>
-      <form onSubmit={submit} noValidate aria-busy={request.isPending} data-accept-risk-form="">
-        <Field id="gap-accept-reason" label={t('gaps.acceptDialog.reason')} error={error}>
-          <Select id="gap-accept-reason" value={reason} aria-invalid={error !== undefined} aria-describedby={error === undefined ? undefined : 'gap-accept-reason-error'} onChange={(e) => setReason(e.target.value)}>
-            <option value="">{t('gaps.acceptDialog.choose')}</option>
-            {(reasons.data ?? []).map((row) => (
-              <option key={row.key} value={row.key}>
-                {row.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <p className="text-meta text-muted">{t('gaps.acceptDialog.hint')}</p>
-        {request.isError ? <ProblemAlert error={request.error} codes={gapProblemCopy(t)} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={request.isPending}>
-            {t('gaps.acceptDialog.send')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
-  );
-}
-
-function ConfirmDialog({ title, body, action, busy, onConfirm, onClose }: { title: string; body: string; action: string; busy: boolean; onConfirm: () => void; onClose: () => void }) {
-  const t = useT();
-  return (
-    <Modal open onOpenChange={(open) => (open ? undefined : onClose())} title={title} description={body}>
-      <ButtonBar>
-        <Button variant="outline" onClick={onClose}>
-          {t('common.cancel')}
-        </Button>
-        <Button disabled={busy} onClick={onConfirm}>
-          {action}
-        </Button>
-      </ButtonBar>
-    </Modal>
+    <FormDialog
+      title={t('gaps.acceptDialog.title')}
+      description={t('gaps.acceptDialog.body')}
+      submitLabel={t('gaps.acceptDialog.send')}
+      pending={request.isPending}
+      error={request.error}
+      codes={gapProblemCopy(t)}
+      onSubmit={submit}
+      onClose={onClose}
+      formProps={{ 'data-accept-risk-form': '' }}
+    >
+      <Field id="gap-accept-reason" label={t('gaps.acceptDialog.reason')} error={error}>
+        <Select id="gap-accept-reason" value={reason} aria-invalid={error !== undefined} aria-describedby={error === undefined ? undefined : 'gap-accept-reason-error'} onChange={(e) => setReason(e.target.value)}>
+          <option value="">{t('gaps.acceptDialog.choose')}</option>
+          {(reasons.data ?? []).map((row) => (
+            <option key={row.key} value={row.key}>
+              {row.label}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <p className="text-meta text-muted">{t('gaps.acceptDialog.hint')}</p>
+    </FormDialog>
   );
 }
 

@@ -1,26 +1,14 @@
-"""The weekly briefing mail (HOM-02, I18N-02), composed in the recipient's own language.
+"""The weekly briefing mail (HOM-02, I18N-02), plain text in the recipient's language;
+English and Swedish so far, any other language falls back to English.
 
-English and Swedish, which is what R1's banks read; `c10-mail-catalog` extends this to the
-other three content languages with the rest of the product's mail (chunk 6 ruling 21). A
-language this module does not hold falls back to English rather than sending nothing.
+- Library facts and a confirmed judgement only: an unconfirmed "So what?" is an agent's
+  reading and a mail carries no label, so it never leaves this way (WAT-05).
+- No case note, no owner, no other bank: a mail lands outside our control.
+- Nothing here is logged (playbook 4.7).
 
-Plain text, like every other mail the product sends. Three rules decide what may be in it,
-and each of them is a product invariant rather than a style choice:
-
-- **Library facts and a confirmed judgement only.** The week's titles are the library's; the
-  "So what?" travels only once a person has confirmed it. An unconfirmed draft is still an
-  agent's reading, it is labelled as one on screen, and a mail carries no label a reader can
-  see — so it never leaves this way (WAT-05).
-- **No case note, no owner, no other bank.** A mail lands in an inbox outside our control.
-- **Nothing here is logged.** Not the address, not the subject, not the body (playbook 4.7).
-
-The link points at the snapshot, not at the running week, so opening it in a month shows
-what the mail said rather than what the feed has become.
-
-`send()` hands one queued mail to `tasks.deliver_briefing` once the caller's transaction
-commits, the path `identity/mail.py` and `collab/mail.py` use, so the week's snapshot is
-stored before any mail leaves and a relay that refuses cannot take the snapshot with it
-(HARDENING H21).
+The link points at the snapshot, so it says the same thing in a month. `send()` queues the
+mail after the caller's transaction commits, so the snapshot is stored before any mail
+leaves (H21).
 """
 
 from __future__ import annotations
@@ -29,15 +17,14 @@ import datetime
 import uuid
 
 from django.conf import settings
-from django.db import transaction
 
 from apps.shared.adapters.mailer import OutgoingMail
+from apps.shared.tasks import queue_after_commit
 
 FALLBACK_LANGUAGE = "en"
 
-# One entry per language: the subject line, the opening, what introduces the lead's "So
-# what?", the heading over the rest of the week and the closing line with the link. The week
-# is named by its dates rather than by its ISO number, because a person reads dates.
+# Per language: subject, opening, lead "So what?" intro, heading over the rest and closing
+# line with the link. The week is named by its dates, because a person reads dates.
 _TEXTS: dict[str, dict[str, str]] = {
     "en": {
         "subject": "This week in regulation: {week_start} to {week_end}",
@@ -76,12 +63,9 @@ def weekly_briefing(
     titles: list[str],
     confirmed_so_what: str,
 ) -> OutgoingMail:
-    """One recipient's copy of one week.
-
-    `titles` are the week's changes in the briefing's own order, so the first is the lead.
-    `confirmed_so_what` is empty unless a person has confirmed the lead's "So what?", and an
-    empty one simply leaves that line out — a mail never says an agent's draft is a bank's
-    view of a rule.
+    """One recipient's copy of one week. `titles` are in briefing order, the lead first.
+    An empty `confirmed_so_what` leaves that line out: a mail never presents an agent's draft
+    as the bank's view.
     """
     texts = _TEXTS.get(locale or FALLBACK_LANGUAGE, _TEXTS[FALLBACK_LANGUAGE])
     dates = {"week_start": week_start.isoformat(), "week_end": week_end.isoformat()}
@@ -102,9 +86,4 @@ def send(tenant_id: uuid.UUID, message_id: uuid.UUID) -> None:
     """Deliver one queued briefing mail once the caller's transaction commits."""
     from apps.home import tasks
 
-    args = (str(tenant_id), str(message_id))
-    if settings.CELERY_TASK_ALWAYS_EAGER:
-        # Tests: inline, now. `on_commit` never fires inside a TestCase transaction.
-        tasks.deliver_briefing.apply(args=args)
-        return
-    transaction.on_commit(lambda: tasks.deliver_briefing.delay(*args))
+    queue_after_commit(tasks.deliver_briefing, (str(tenant_id), str(message_id)))

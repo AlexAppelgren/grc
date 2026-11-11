@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
-import { Button, ButtonBar } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Field, Select, TextArea, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
-import type { EvalBaseline, EvalQuestion, EvalQuestionInput, EvalRun } from '@/features/evaluation/api';
-import { formatBaseline, formatScore, languageLabel, languageOptions, MATCH_KIND_KEY, METRICS, presentQuestion, presentRun } from '@/features/evaluation/evaluation-presentation';
-import { useCreateEvalQuestion, useEvalBaseline, useEvalQuestions, useEvalRuns } from '@/features/evaluation/hooks';
+import { ErrorState, LoadingState, StatusLine } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
+import type { EvalBaseline, EvalQuestion, EvalQuestionInput, EvalRun } from '@/features/agents/evaluation/api';
+import { formatBaseline, formatScore, languageLabel, languageOptions, MATCH_KIND_KEY, METRICS, presentQuestion, presentRun } from '@/features/agents/evaluation/evaluation-presentation';
+import { useCreateEvalQuestion, useEvalBaseline, useEvalQuestions, useEvalRuns } from '@/features/agents/evaluation/hooks';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useLanguages } from '@/features/tenant-admin/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -109,8 +109,7 @@ function AddQuestionModal({ open, onClose, onAdded, languages }: { open: boolean
   const [problem, setProblem] = useState<FormProblem | null>(null);
   const set = (field: keyof typeof EMPTY_FORM) => (event: { target: { value: string } }) => setForm((current) => ({ ...current, [field]: event.target.value }));
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     if (form.key.trim() === '') return setProblem('key');
     if (form.lang === '') return setProblem('lang');
     if (form.question.trim() === '') return setProblem('question');
@@ -139,8 +138,17 @@ function AddQuestionModal({ open, onClose, onAdded, languages }: { open: boolean
   };
 
   return (
-    <Modal open={open} onOpenChange={(next) => (next ? undefined : onClose())} title={t('console.evaluation.add.title')}>
-      <form onSubmit={submit} noValidate aria-busy={create.isPending} data-eval-question-form="">
+    open ? (
+      <FormDialog
+        title={t('console.evaluation.add.title')}
+        submitLabel={t('console.evaluation.add.submit')}
+        pending={create.isPending}
+        error={create.error}
+        codes={{ duplicate_key: t('console.evaluation.add.duplicateKey') }}
+        onSubmit={submit}
+        onClose={onClose}
+        formProps={{ 'data-eval-question-form': '' }}
+      >
         <p className="mb-3 rounded-control bg-warning-soft px-3 py-2.5" data-not-in-gate="">
           {t('console.evaluation.add.notInGate')}
         </p>
@@ -182,17 +190,8 @@ function AddQuestionModal({ open, onClose, onAdded, languages }: { open: boolean
         <Field id="eval-notes" label={t('console.evaluation.add.notes')} hint={t('console.evaluation.add.notesHint')}>
           <TextArea id="eval-notes" value={form.notes} onChange={set('notes')} />
         </Field>
-        {create.isError ? <ProblemAlert error={create.error} codes={{ duplicate_key: t('console.evaluation.add.duplicateKey') }} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose} disabled={create.isPending}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={create.isPending}>
-            {t('console.evaluation.add.submit')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+      </FormDialog>
+    ) : null
   );
 }
 

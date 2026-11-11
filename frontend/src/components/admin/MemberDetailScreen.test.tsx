@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MemberDetailScreen } from '@/components/admin/MemberDetailScreen';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH, setStepUpHandler } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 // A member's teams and removal (TEN-03, TEN-05, TEN-S8, TEN-S5, TEN-S9): the
 // teams are saved as one set with no step-up; Deactivate opens the removal,
@@ -55,7 +56,6 @@ const stillOwns = {
 
 function server(write: (sent: Sent) => { status: number; data?: unknown } = () => ({ status: 204 })): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === '/api/v1/tenant/members') return { status: 200, data: { items: [gustav], total: 1 } };
     if (sent.path === `${MEMBER}/sessions`) return { status: 200, data: [] };
     if (sent.path === `${MEMBER}/open-work`) return { status: 200, data: openWork };
@@ -69,12 +69,7 @@ function server(write: (sent: Sent) => { status: number; data?: unknown } = () =
 }
 
 async function renderScreen(): Promise<void> {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <MemberDetailScreen userId="u-gustav" />
-    </Query>,
-  );
+  renderWith(<MemberDetailScreen userId="u-gustav" />);
   await screen.findByRole('heading', { level: 1, name: 'Gustav Sjöberg' });
 }
 

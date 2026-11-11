@@ -2,18 +2,13 @@
 prefix plus the secret's hash, revocable, with a throttled last-used stamp. Scopes are
 the constants in apps/shared/permissions.py and none reaches a library edit.
 
-Two kinds of key. A bank's own key carries its tenant and may hold only
-`TENANT_KEY_SCOPES`: reads, and filing a proposal. A platform key carries no tenant, is
-bound to one agent definition and is minted from the console under
-`agent_definitions.manage` (AGT-01, D-61, D-62): it is what bleqq's own agents run on, so
-it alone may hold the watch writes and the review scope.
-
-Two credential kinds share the table (ACC-03, ADR 0056). A service key bound to an agent
-access entry reads as that entry and stops the moment the entry is revoked. A personal
-access token acts as the member who minted it: it stops the moment the person, their
-membership or a permission one of its scopes stands on is gone (`SCOPE_BACKING`), checked
-on every request rather than by a sweep. `tenant:read` reaches a bank's register only
-through an entry, so a bank's credential bound to none is resolved without it.
+A bank's own key carries its tenant and holds only `TENANT_KEY_SCOPES`. A platform key
+carries no tenant, is bound to one agent definition and is minted under
+`agent_definitions.manage` (AGT-01, D-61, D-62); it alone may hold the watch writes and the
+review scope. A service key bound to an agent access entry reads as that entry (ACC-03, ADR
+0056). A personal access token acts as the member who minted it and stops the moment a
+permission one of its scopes stands on is gone (`SCOPE_BACKING`), checked on every request.
+`tenant:read` reaches a bank's register only through an entry.
 """
 
 from __future__ import annotations
@@ -39,10 +34,9 @@ from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.models import Tenant
 
-# What an agent's kind may hold beyond the reads and `agent-runs:write` every agent needs
-# (H43, D-62). A review agent decides what another definition filed, so it holds
-# `proposals:review` and none of the filing scopes; every other kind files and never
-# decides, so no key of one can approve its own definition's work.
+# What an agent's kind may hold beyond the reads and `agent-runs:write` (H43, D-62): a review
+# agent holds `proposals:review` and no filing scope, every other kind files and never
+# decides, so no key can approve its own definition's work.
 FILING_SCOPES: frozenset[str] = frozenset({perms.SCOPE_SOURCES_WRITE, perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE})
 
 
@@ -112,11 +106,8 @@ def resolve_api_key(plain: str) -> Principal | None:
         return None
     prefix, presented_hash = parsed
     now = timezone.now()
-    # The key with its agent and its bank (neither sits under row-level security) in one
-    # read; the bank is entered in the statement that ends the lookup. A platform key's own
-    # zone is "no tenant", not "whatever the last request left active": a prior
-    # tenant-scoped request in the same connection must never leak its context into this
-    # one (H15).
+    # The key with its agent and its bank in one read. A platform key's zone is "no tenant",
+    # never whatever an earlier request on the connection left active (H15).
     with tenancy.identity_lookup() as lookup:
         key = ApiKey.objects.select_related("agent", "tenant__default_language").filter(key_prefix=prefix).first()  # ordering: key_prefix is unique, at most one row
         usable = (
@@ -137,10 +128,9 @@ def resolve_api_key(plain: str) -> Principal | None:
     if not _backed(key):
         return None
     held = frozenset(key.scopes)
-    # A bank's key created before the watch writes became platform-only may still list one;
-    # it works without it rather than breaking the integration (D-61). `tenant:read` reads a
-    # bank's register only as an entry whose reach it carries, so a bank's credential bound
-    # to no entry is resolved without it (ACC-04, D-72).
+    # An old bank key may still list a watch write; it works without it (D-61). `tenant:read`
+    # needs an entry's reach, so a bank credential bound to no entry goes without it (ACC-04,
+    # D-72).
     withheld = held - perms.TENANT_KEY_SCOPES if key.tenant_id is not None else frozenset()
     if key.tenant_id is not None and entry is None:
         withheld |= held & {perms.SCOPE_TENANT_READ}
@@ -225,9 +215,125 @@ def validate_scopes(values: Iterable[str], allowed: frozenset[str]) -> list[str]
     return wanted
 
 
-# ---------------------------------------------------------------------------------------
-# A bank's own keys
-# ---------------------------------------------------------------------------------------
+# --- One mint and one revoke for every credential (review 2026-11-11 L-17, B-9) ---
+# Each kind's own checks stay with its caller; the row, its security log row and its audit
+# row are written here, the same way for all four.
+def _label(key: ApiKey) -> str:
+    if key.kind == CredentialKind.PERSONAL.value:
+        return "Personal access token"
+    if key.agent_id is not None:
+        return "Agent key"
+    if key.agent_access_id is not None:
+        return "Agent access key"
+    return "API key"
+
+
+def mint_key(
+    *,
+    tenant: Tenant | None,
+    actor: Actor,
+    created_by: User,
+    name: str,
+    scopes: list[str],
+    expires_at: datetime | None,
+    step_up_assertion_id: uuid.UUID | None,
+    action: str,
+    kind: CredentialKind = CredentialKind.SERVICE,
+    agent_id: uuid.UUID | None = None,
+    agent_access_id: uuid.UUID | None = None,
+    acts_as_user: User | None = None,
+    after: dict[str, object] | None = None,
+) -> tuple[ApiKey, str]:
+    """Store a credential the caller has checked, shown once: the `key_created` (or, for a
+    personal token, `token_created`) security log row and the `action` audit row with what
+    it holds and the step-up, in the zone of `tenant` (no tenant: a platform key)."""
+    plain, prefix, key_hash = tokens.new_api_key()
+    key = ApiKey.objects.create(
+        tenant=tenant,
+        kind=kind.value,
+        agent_id=agent_id,
+        agent_access_id=agent_access_id,
+        acts_as_user=acts_as_user,
+        name=name,
+        key_prefix=prefix,
+        key_hash=key_hash,
+        scopes=scopes,
+        created_by=created_by,
+        expires_at=expires_at,
+    )
+    personal = kind is CredentialKind.PERSONAL
+    log_event(
+        event=LoginEventKind.TOKEN_CREATED if personal else LoginEventKind.KEY_CREATED,
+        method=LoginMethod.PERSONAL_TOKEN if personal else LoginMethod.API_KEY,
+        success=True,
+        request=None,
+        tenant_id=tenant.id if tenant is not None else None,
+        user=created_by,
+        api_key=key,
+    )
+    record(
+        action=action,
+        actor=actor,
+        subject_type="api_key",
+        subject_id=key.id,
+        subject_title=key.name,
+        summary=f"{_label(key)} {prefix} created with scopes {', '.join(scopes)}.",
+        tenant_id=tenant.id if tenant is not None else None,
+        after={"keyPrefix": prefix, "scopes": scopes, "expiresAt": expires_at.isoformat() if expires_at else None, **(after or {})},
+        step_up_assertion_id=step_up_assertion_id,
+    )
+    return key, plain
+
+
+def revoke_key(
+    key: ApiKey | None,
+    *,
+    actor: Actor,
+    revoked_by: User,
+    action: str,
+    step_up_assertion_id: uuid.UUID | None = None,
+    missing: str = "Not found.",
+) -> ApiKey:
+    """Revoke a credential the caller found in its own scope (None: `not_found` with
+    `missing`). Revoking twice is a safe retry: nothing changes, and like every 2xx it is
+    still audited (AC-AUD1), with a summary that says so and `before` equal to `after`."""
+    if key is None:
+        raise ValidationError(missing, code="not_found")
+    before = key.revoked_at
+    if before is None:
+        revoke_credential(key, user=revoked_by, now=timezone.now())
+    label = _label(key)
+    record(
+        action=action,
+        actor=actor,
+        subject_type="api_key",
+        subject_id=key.id,
+        subject_title=key.name,
+        summary=f"{label} {key.key_prefix} revoked." if before is None else f"{label} {key.key_prefix} was already revoked; nothing changed.",
+        tenant_id=key.tenant_id,
+        before={"revokedAt": before.isoformat() if before else None},
+        after={"revokedAt": key.revoked_at.isoformat() if key.revoked_at else None},
+        step_up_assertion_id=step_up_assertion_id,
+    )
+    return key
+
+
+def revoke_credential(key: ApiKey, *, user: User, now: datetime) -> None:
+    key.revoked_at = now
+    key.save(update_fields=["revoked_at"])
+    personal = key.kind == CredentialKind.PERSONAL.value
+    log_event(
+        event=LoginEventKind.TOKEN_REVOKED if personal else LoginEventKind.KEY_REVOKED,
+        method=LoginMethod.PERSONAL_TOKEN if personal else LoginMethod.API_KEY,
+        success=True,
+        request=None,
+        tenant_id=key.tenant_id,
+        user=user,
+        api_key=key,
+    )
+
+
+# --- A bank's own keys ---
 def list_api_keys(tenant_id: uuid.UUID, *, limit: int, offset: int) -> tuple[list[ApiKey], int]:
     """Every credential of the bank, newest first (ACC-03): its unbound keys, the service keys
     of its agent access entries and every member's personal token, each with the entry or
@@ -246,53 +352,29 @@ def create_api_key(
     expires_at: datetime | None,
     step_up_assertion_id: uuid.UUID | None,
 ) -> tuple[ApiKey, str]:
-    cleaned_name = checked_name(name, expires_at)
-    granted = validate_scopes(scopes, perms.TENANT_KEY_SCOPES)
-    plain, prefix, key_hash = tokens.new_api_key()
-    key = ApiKey.objects.create(
-        tenant=tenant, name=cleaned_name, key_prefix=prefix, key_hash=key_hash, scopes=granted, created_by=created_by, expires_at=expires_at
-    )
-    record(
-        action="api_key.created",
+    return mint_key(
+        tenant=tenant,
         actor=actor,
-        subject_type="api_key",
-        subject_id=key.id,
-        subject_title=key.name,
-        summary=f"API key {key.key_prefix} created with scopes {', '.join(granted)}.",
-        tenant_id=tenant.id,
-        after={"keyPrefix": key.key_prefix, "scopes": granted, "expiresAt": expires_at.isoformat() if expires_at else None},
+        created_by=created_by,
+        name=checked_name(name, expires_at),
+        scopes=validate_scopes(scopes, perms.TENANT_KEY_SCOPES),
+        expires_at=expires_at,
         step_up_assertion_id=step_up_assertion_id,
+        action="api_key.created",
     )
-    return key, plain
 
 
 def revoke_api_key(*, tenant: Tenant, actor: Actor, revoked_by: User, key_id: uuid.UUID) -> ApiKey:
     """Any credential of the bank, a key or a member's token (ACC-03), with the security log
     row of its own kind the first time."""
     key = ApiKey.objects.filter(pk=key_id, tenant=tenant).first()  # ordering: pk lookup, at most one row
-    if key is None:
-        raise ValidationError("Not found.", code="not_found")
-    if key.revoked_at is None:
-        revoke_credential(key, user=revoked_by, now=timezone.now())
-    record(
-        action="api_key.revoked",
-        actor=actor,
-        subject_type="api_key",
-        subject_id=key.id,
-        subject_title=key.name,
-        summary=f"{'Personal access token' if key.kind == CredentialKind.PERSONAL.value else 'API key'} {key.key_prefix} revoked.",
-        tenant_id=tenant.id,
-    )
-    return key
+    return revoke_key(key, actor=actor, revoked_by=revoked_by, action="api_key.revoked")
 
 
-# ---------------------------------------------------------------------------------------
-# The service keys of an agent access entry (ACC-01, ACC-03, acc-entries-and-log). Minted
-# under `agent_access.manage` with a step-up by the agents app, which has checked the entry
-# is live and the bank's; hold only `AGENT_ACCESS_SCOPES`, expire no later than
-# `AGENT_ACCESS_KEY_MAX_DAYS` from now (that far by default), and are shown once. Revoking
-# the entry revokes every credential bound to it, its keys and the tokens that name it.
-# ---------------------------------------------------------------------------------------
+# --- The service keys of an agent access entry (ACC-01, ACC-03) ---
+# Minted under `agent_access.manage` with a step-up by the agents app, which has checked the
+# entry; hold only `AGENT_ACCESS_SCOPES`, expire within `AGENT_ACCESS_KEY_MAX_DAYS`, shown
+# once. Revoking the entry revokes every credential bound to it.
 def create_entry_key(
     *,
     tenant: Tenant,
@@ -311,45 +393,17 @@ def create_entry_key(
         raise ValidationError(
             f"A key of an agent access entry lives at most {settings.AGENT_ACCESS_KEY_MAX_DAYS} days.", code="expiry_too_late"
         )
-    granted = validate_scopes(scopes, perms.AGENT_ACCESS_SCOPES)
-    plain, prefix, key_hash = tokens.new_api_key()
-    key = ApiKey.objects.create(
+    return mint_key(
         tenant=tenant,
-        agent_access_id=entry_id,
-        name=cleaned_name,
-        key_prefix=prefix,
-        key_hash=key_hash,
-        scopes=granted,
-        created_by=created_by,
-        expires_at=expiry,
-    )
-    log_event(event=LoginEventKind.KEY_CREATED, method=LoginMethod.API_KEY, success=True, request=None, tenant_id=tenant.id, user=created_by, api_key=key)
-    record(
-        action="api_key.created",
         actor=actor,
-        subject_type="api_key",
-        subject_id=key.id,
-        subject_title=key.name,
-        summary=f"Agent access key {key.key_prefix} created with scopes {', '.join(granted)}.",
-        tenant_id=tenant.id,
-        after={"keyPrefix": key.key_prefix, "agentAccessId": str(entry_id), "scopes": granted, "expiresAt": expiry.isoformat()},
+        created_by=created_by,
+        name=cleaned_name,
+        scopes=validate_scopes(scopes, perms.AGENT_ACCESS_SCOPES),
+        expires_at=expiry,
         step_up_assertion_id=step_up_assertion_id,
-    )
-    return key, plain
-
-
-def revoke_credential(key: ApiKey, *, user: User, now: datetime) -> None:
-    key.revoked_at = now
-    key.save(update_fields=["revoked_at"])
-    personal = key.kind == CredentialKind.PERSONAL.value
-    log_event(
-        event=LoginEventKind.TOKEN_REVOKED if personal else LoginEventKind.KEY_REVOKED,
-        method=LoginMethod.PERSONAL_TOKEN if personal else LoginMethod.API_KEY,
-        success=True,
-        request=None,
-        tenant_id=key.tenant_id,
-        user=user,
-        api_key=key,
+        action="api_key.created",
+        agent_access_id=entry_id,
+        after={"agentAccessId": str(entry_id)},
     )
 
 
@@ -370,27 +424,16 @@ def revoke_person_tokens(*, tenant_id: uuid.UUID, person: User, revoked_by: User
 def revoke_entry_key(
     *, tenant: Tenant, entry_id: uuid.UUID, key_id: uuid.UUID, actor: Actor, revoked_by: User, step_up_assertion_id: uuid.UUID | None
 ) -> ApiKey:
-    """One credential bound to the entry, a key or a token naming it. Revoking twice is a
-    safe retry: nothing changes, and it is still audited with `before` equal to `after`."""
+    """One credential bound to the entry, a key or a token naming it."""
     key = ApiKey.objects.select_related("acts_as_user").filter(pk=key_id, tenant=tenant, agent_access_id=entry_id).first()  # ordering: pk lookup, at most one row
-    if key is None:
-        raise ValidationError("That key is not one of this entry's.", code="not_found")
-    before = key.revoked_at
-    if before is None:
-        revoke_credential(key, user=revoked_by, now=timezone.now())
-    record(
-        action="api_key.revoked",
+    return revoke_key(
+        key,
         actor=actor,
-        subject_type="api_key",
-        subject_id=key.id,
-        subject_title=key.name,
-        summary=f"Agent access key {key.key_prefix} revoked." if before is None else f"Agent access key {key.key_prefix} was already revoked; nothing changed.",
-        tenant_id=tenant.id,
-        before={"revokedAt": before.isoformat() if before else None},
-        after={"revokedAt": key.revoked_at.isoformat() if key.revoked_at else None},
+        revoked_by=revoked_by,
+        action="api_key.revoked",
         step_up_assertion_id=step_up_assertion_id,
+        missing="That key is not one of this entry's.",
     )
-    return key
 
 
 def revoke_entry_credentials(*, tenant: Tenant, entry_id: uuid.UUID, revoked_by: User) -> list[str]:
@@ -403,14 +446,11 @@ def revoke_entry_credentials(*, tenant: Tenant, entry_id: uuid.UUID, revoked_by:
     return [key.key_prefix for key in live]
 
 
-# ---------------------------------------------------------------------------------------
-# Platform agent keys (ID-10, AGT-01). Reached only through `agent_definitions.manage`,
-# which no bank session can hold (session_logic.build_principal), so every caller is a
-# platform session. The two writes still assert the platform zone rather than inherit one:
-# the row belongs to no tenant, and the mixed table accepts it only from that zone (H15,
-# D-78). A key holds the scopes its agent's kind takes, `proposals:review` for a review
-# agent (D-62, H43); none reaches a library row (AC-PRO1, ID-S21).
-# ---------------------------------------------------------------------------------------
+# --- Platform agent keys (ID-10, AGT-01) ---
+# Reached only through `agent_definitions.manage`, which no bank session holds. The writes
+# still assert the platform zone: the mixed table accepts the row only from there (H15,
+# D-78). A key holds its agent kind's scopes (D-62, H43); none reaches a library row
+# (AC-PRO1, ID-S21).
 def list_agent_keys(*, limit: int, offset: int) -> tuple[list[ApiKey], int]:
     """Every platform key, newest first, bound or not: an unbound one is listed so that it
     can be seen and revoked, never hidden."""
@@ -448,51 +488,21 @@ def create_agent_key(
             "every other agent files and never decides.",
             code="scope_not_for_kind",
         )
-    plain, prefix, key_hash = tokens.new_api_key()
-    key = ApiKey.objects.create(
-        tenant=None, agent=agent, name=cleaned_name, key_prefix=prefix, key_hash=key_hash, scopes=granted, created_by=created_by, expires_at=expires_at
-    )
-    log_event(event=LoginEventKind.KEY_CREATED, method=LoginMethod.API_KEY, success=True, request=None, user=created_by, api_key=key)
-    record(
-        action="agent_key.created",
+    return mint_key(
+        tenant=None,
         actor=actor,
-        subject_type="api_key",
-        subject_id=key.id,
-        subject_title=key.name,
-        summary=f"Agent key {key.key_prefix} for {agent.key} created with scopes {', '.join(granted)}.",
-        tenant_id=None,
-        after={
-            "keyPrefix": key.key_prefix,
-            "agent": agent.key,
-            "scopes": granted,
-            "expiresAt": expires_at.isoformat() if expires_at else None,
-        },
+        created_by=created_by,
+        name=cleaned_name,
+        scopes=granted,
+        expires_at=expires_at,
         step_up_assertion_id=step_up_assertion_id,
+        action="agent_key.created",
+        agent_id=agent.id,
+        after={"agent": agent.key},
     )
-    return key, plain
 
 
 def revoke_agent_key(*, actor: Actor, revoked_by: User, key_id: uuid.UUID) -> ApiKey:
-    """Revoking twice is a safe retry: the second call changes nothing and, like every 2xx,
-    is still audited (AC-AUD1), with a summary that says so and `before` equal to `after`."""
     tenancy.clear_tenant()
     key = ApiKey.objects.select_related("agent").filter(pk=key_id, tenant__isnull=True).first()  # ordering: pk lookup, at most one row
-    if key is None:
-        raise ValidationError("Not found.", code="not_found")
-    before = key.revoked_at
-    if before is None:
-        key.revoked_at = timezone.now()
-        key.save(update_fields=["revoked_at"])
-        log_event(event=LoginEventKind.KEY_REVOKED, method=LoginMethod.API_KEY, success=True, request=None, user=revoked_by, api_key=key)
-    record(
-        action="agent_key.revoked",
-        actor=actor,
-        subject_type="api_key",
-        subject_id=key.id,
-        subject_title=key.name,
-        summary=f"Agent key {key.key_prefix} revoked." if before is None else f"Agent key {key.key_prefix} was already revoked; nothing changed.",
-        tenant_id=None,
-        before={"revokedAt": before.isoformat() if before else None},
-        after={"revokedAt": key.revoked_at.isoformat() if key.revoked_at else None},
-    )
-    return key
+    return revoke_key(key, actor=actor, revoked_by=revoked_by, action="agent_key.revoked")

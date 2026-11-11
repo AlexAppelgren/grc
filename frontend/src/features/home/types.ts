@@ -8,12 +8,10 @@ import type { components, operations } from '@/types/api.generated';
 type Schemas = components['schemas'];
 
 export type Home = Schemas['Home'];
-export type HomeSourceHealth = Schemas['HomeSourceHealth'];
 
 export type RoadmapItem = Schemas['HomeRoadmapItem'];
 export type Roadmap = Schemas['HomeRoadmap'];
 /** `GET /roadmap`'s three filters, exactly as the route declares them. */
 export type RoadmapQuery = NonNullable<operations['getRoadmap']['parameters']['query']>;
-export type RoadmapItemKind = RoadmapItem['kind'];
 
 export type Briefing = Schemas['HomeBriefing'];

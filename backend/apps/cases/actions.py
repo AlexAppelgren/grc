@@ -1,20 +1,15 @@
 """Actions with an owner and a due date, locked while the case waits for sign-off (CAS-04,
 CAS-08).
 
-An action is added only while a case is worked: in `assessing`, where the first one moves
-the case to `implementing` through `logic.transition()` and so needs the assessment's why
-saved (R2_CROSS_CUTTING (j)), or in `implementing`. From the sign-off category on, every
-write is refused with `actions_locked`: what a second person signs off is what was done.
-The lock reads the category, never a sub-status.
+An action is added only in `assessing` (the first one moves the case to `implementing`
+through `logic.transition()`, so the assessment's why must be saved, R2_CROSS_CUTTING (j))
+or in `implementing`. From the sign-off category on every write is `actions_locked`: what a
+second person signs off is what was done. The lock reads the category, never a sub-status.
 
-Each action is its own versioned record: an edit, a completion, a reopening and a removal
-name the action's `version` in `If-Match`, and adding one names the case's. Every write
-locks the case row first, so two writes to one case's actions queue behind each other and
-behind its move to sign-off. A removal sets `removed_at` and `removed_by` and keeps the row
-for the case file (rule l). An owner is an active member of the bank; the case's owner when
-none is named.
-
-An audit row carries ids, dates and done, never the title a person typed (rule m).
+Each action is versioned (`If-Match`; adding names the case's version), and every write
+locks the case row first. Removal stamps `removed_at` and `removed_by` (rule l). The owner
+is an active member, the case's owner by default. Audit rows carry ids, dates and done,
+never the typed title (rule m).
 """
 
 from __future__ import annotations
@@ -31,11 +26,12 @@ from apps.cases.models import Action, ChangeCase
 from apps.cases.schemas import CasesAction, CasesActionBody, CasesActionPage, CasesActionPatch
 from apps.identity.models import Membership, UserStatus
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import Tenant
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.schemas import PersonRef
+from apps.shared.people import person_ref
 
 SUBJECT_TYPE = "action"
 ADDED = "case.action_added"
@@ -113,9 +109,7 @@ def delete_action(*, tenant: Tenant, actor: Actor, user: Any, action_id: uuid.UU
     _record(REMOVED, row, actor, before=before, summary=f"{actor.label} removed an action from a case.")
 
 
-# ---------------------------------------------------------------------------------------
-# What the writes share
-# ---------------------------------------------------------------------------------------
+# --- What the writes share ---
 def _check_open_to_work(case: ChangeCase) -> None:
     """Actions change only while the case is worked; from sign-off on they are locked."""
     category = C(case.status)
@@ -140,7 +134,7 @@ def _locked_action(tenant: Tenant, action_id: uuid.UUID, expected_version: int |
         .first()  # ordering: pk lookup, at most one row
     )
     if row is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     row.case = case
     _check_open_to_work(case)
     if expected_version is None or expected_version != row.version:
@@ -182,10 +176,6 @@ def _record(action: str, row: Action, actor: Actor, *, before: dict[str, Any], s
     )
 
 
-def _person(user: Any) -> PersonRef | None:
-    return None if user is None else PersonRef(id=user.id, name=user.name)
-
-
 def _out(row: Action, change_id: uuid.UUID) -> CasesAction:
     return CasesAction(
         id=row.id,
@@ -195,7 +185,7 @@ def _out(row: Action, change_id: uuid.UUID) -> CasesAction:
         due_date=row.due_date,
         done=row.done_at is not None,
         done_at=row.done_at,
-        done_by=_person(row.done_by),
+        done_by=person_ref(row.done_by),
         created_at=row.created_at,
         version=row.version,
     )

@@ -9,11 +9,6 @@
     "p95Ms": 22.8,
     "queries": 10
   },
-  "addCaseParticipant": {
-    "medianMs": 28.4,
-    "p95Ms": 34.0,
-    "queries": 17
-  },
   "addChangeDocument": {
     "medianMs": 13.4,
     "p95Ms": 19.2,
@@ -39,10 +34,15 @@
     "p95Ms": 16.6,
     "queries": 15
   },
-  "addObligationParticipant": {
+  "addParticipant": {
     "medianMs": 26.2,
     "p95Ms": 32.1,
     "queries": 21
+  },
+  "addParticipant (case)": {
+    "medianMs": 28.4,
+    "p95Ms": 34.0,
+    "queries": 17
   },
   "approveFootprintRequest": {
     "medianMs": 39.8,
@@ -229,11 +229,6 @@
     "p95Ms": 23.6,
     "queries": 18
   },
-  "deactivateMember": {
-    "medianMs": 22.2,
-    "p95Ms": 24.7,
-    "queries": 22
-  },
   "decideProposalBatch": {
     "medianMs": 124.7,
     "p95Ms": 158.9,
@@ -359,11 +354,6 @@
     "p95Ms": 26.8,
     "queries": 12
   },
-  "getInterpretation": {
-    "medianMs": 9.9,
-    "p95Ms": 10.8,
-    "queries": 7
-  },
   "getMe": {
     "medianMs": 11.7,
     "p95Ms": 12.9,
@@ -404,11 +394,6 @@
     "p95Ms": 7.9,
     "queries": 5
   },
-  "getProduct": {
-    "medianMs": 0.4,
-    "p95Ms": 0.6,
-    "queries": 2
-  },
   "getProposal": {
     "medianMs": 16.5,
     "p95Ms": 17.6,
@@ -433,11 +418,6 @@
     "medianMs": 99.0,
     "p95Ms": 110.2,
     "queries": 41
-  },
-  "getResearchRequest": {
-    "medianMs": 8.1,
-    "p95Ms": 9.3,
-    "queries": 6
   },
   "getRetagRequest": {
     "medianMs": 7.7,
@@ -549,11 +529,6 @@
     "p95Ms": 10.4,
     "queries": 7
   },
-  "listCaseParticipants": {
-    "medianMs": 18.6,
-    "p95Ms": 20.3,
-    "queries": 8
-  },
   "listChanges": {
     "medianMs": 41.1,
     "p95Ms": 49.7,
@@ -649,11 +624,6 @@
     "p95Ms": 59.3,
     "queries": 20
   },
-  "listLicences": {
-    "medianMs": 14.2,
-    "p95Ms": 16.8,
-    "queries": 9
-  },
   "listMemberSessions": {
     "medianMs": 9.9,
     "p95Ms": 10.9,
@@ -694,11 +664,6 @@
     "p95Ms": 29.4,
     "queries": 11
   },
-  "listObligationParticipants": {
-    "medianMs": 13.1,
-    "p95Ms": 14.8,
-    "queries": 9
-  },
   "listObligations": {
     "medianMs": 72.5,
     "p95Ms": 82.9,
@@ -713,6 +678,16 @@
     "medianMs": 20.0,
     "p95Ms": 23.1,
     "queries": 9
+  },
+  "listParticipants": {
+    "medianMs": 13.1,
+    "p95Ms": 14.8,
+    "queries": 9
+  },
+  "listParticipants (case)": {
+    "medianMs": 18.6,
+    "p95Ms": 20.3,
+    "queries": 8
   },
   "listPeople": {
     "medianMs": 7.2,
@@ -793,16 +768,6 @@
     "medianMs": 18.6,
     "p95Ms": 21.5,
     "queries": 12
-  },
-  "listTaxonomyDimensions": {
-    "medianMs": 14.6,
-    "p95Ms": 15.9,
-    "queries": 6
-  },
-  "listTeamMembers": {
-    "medianMs": 9.1,
-    "p95Ms": 12.1,
-    "queries": 7
   },
   "listTeams": {
     "medianMs": 9.7,
@@ -924,16 +889,6 @@
     "p95Ms": 115.5,
     "queries": 18
   },
-  "pauseTenantAgent": {
-    "medianMs": 11.7,
-    "p95Ms": 13.1,
-    "queries": 10
-  },
-  "previewTagging": {
-    "medianMs": 12.6,
-    "p95Ms": 15.9,
-    "queries": 8
-  },
   "putAgentBudget": {
     "medianMs": 15.4,
     "p95Ms": 18.1,
@@ -1004,11 +959,6 @@
     "p95Ms": 16.7,
     "queries": 17
   },
-  "removeCaseParticipant": {
-    "medianMs": 16.6,
-    "p95Ms": 17.7,
-    "queries": 10
-  },
   "removeEvidence": {
     "medianMs": 17.9,
     "p95Ms": 18.7,
@@ -1029,10 +979,15 @@
     "p95Ms": 9.0,
     "queries": 9
   },
-  "removeObligationParticipant": {
+  "removeParticipant": {
     "medianMs": 13.2,
     "p95Ms": 15.4,
     "queries": 12
+  },
+  "removeParticipant (case)": {
+    "medianMs": 16.6,
+    "p95Ms": 17.7,
+    "queries": 10
   },
   "removeUnit": {
     "medianMs": 11.4,
@@ -1059,15 +1014,15 @@
     "p95Ms": 24.1,
     "queries": 22
   },
-  "reportInstrumentProblem": {
-    "medianMs": 8.8,
-    "p95Ms": 10.6,
-    "queries": 7
-  },
-  "reportObligationProblem": {
+  "reportProblem": {
     "medianMs": 9.6,
     "p95Ms": 11.1,
     "queries": 8
+  },
+  "reportProblem (instrument)": {
+    "medianMs": 8.8,
+    "p95Ms": 10.6,
+    "queries": 7
   },
   "requestCode": {
     "medianMs": 8.8,
@@ -1108,11 +1063,6 @@
     "medianMs": 10.0,
     "p95Ms": 10.9,
     "queries": 9
-  },
-  "resumeTenantAgent": {
-    "medianMs": 9.9,
-    "p95Ms": 11.8,
-    "queries": 10
   },
   "retireAgentVersion": {
     "medianMs": 11.6,
@@ -1284,6 +1234,11 @@
     "p95Ms": 12.9,
     "queries": 10
   },
+  "tagRecords (dry run)": {
+    "medianMs": 12.6,
+    "p95Ms": 15.9,
+    "queries": 8
+  },
   "triageChange": {
     "medianMs": 38.4,
     "p95Ms": 43.7,
@@ -1383,6 +1338,16 @@
     "medianMs": 9.6,
     "p95Ms": 10.4,
     "queries": 8
+  },
+  "updateTenantAgent (pause)": {
+    "medianMs": 11.7,
+    "p95Ms": 13.1,
+    "queries": 10
+  },
+  "updateTenantAgent (resume)": {
+    "medianMs": 9.9,
+    "p95Ms": 11.8,
+    "queries": 10
   },
   "updateTenantWorkflow": {
     "medianMs": 24.1,

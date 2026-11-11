@@ -15,9 +15,10 @@ from __future__ import annotations
 
 from django.test import SimpleTestCase
 
-from apps.shared.permissions import UNGATED_BY_DESIGN, UngatedReason, gate_of
+from apps.shared.permissions import UNGATED_BY_DESIGN, UngatedReason
 from apps.shared.routes import iter_operations
 from config.api import api
+from apps.shared.permissions import gate_of
 
 
 class RoutePermissionsGuard(SimpleTestCase):

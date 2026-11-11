@@ -1,11 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { setStepUpHandler, tokenStore } from '@/shared/utils/api-client';
 
 import type { ProposalBatch, ProposalBatchRow } from '@/features/proposals/types';
+import { renderWith } from '@/shared/testing/render';
 import { BatchReviewScreen } from './BatchReviewScreen';
 
 // /console/queue/batches/[batchId] (design/screens/console-queue-batch.html; PRO-04):
@@ -101,7 +101,6 @@ type Answer = { status: number; data?: unknown };
 function serve(current: ProposalBatch, decide: (body: unknown, count: number) => Answer = () => ({ status: 200, data: current })): Sent[] {
   let decisions = 0;
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: editor };
     if (sent.path === BATCH) return { status: 200, data: current };
     if (sent.path === '/api/v1/vocab/rejection_reason') return { status: 200, data: reasons };
     if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: { items: terms, total: terms.length } };
@@ -110,20 +109,13 @@ function serve(current: ProposalBatch, decide: (body: unknown, count: number) =>
       return decide(sent.body, decisions);
     }
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
-  });
+  }, { me: editor });
 }
 
 const decisionsSent = (sent: Sent[]) => sent.filter((s) => s.path === DECIDE).map((s) => s.body);
 
 function renderScreen(): void {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <LocaleProvider locale="en">
-        <BatchReviewScreen batchId="b-1" />
-      </LocaleProvider>
-    </Query>,
-  );
+  renderWith(<BatchReviewScreen batchId="b-1" />);
 }
 
 function card(id: string): HTMLElement {
@@ -153,6 +145,17 @@ describe('the batch review', () => {
     expect(within(first).getByText('Added when approved')).toBeInTheDocument();
     await waitFor(() => expect(within(first).getAllByText('Client money')).toHaveLength(1));
     expect(within(first).getAllByText('Safeguarding')).toHaveLength(2);
+  });
+
+  it('renders a source address that is not http or https as text, never as a link', async () => {
+    // Review 2026-11-11 L-14: the batch's and the rows' addresses come from the API, and
+    // the batch's went into href unchecked; both now pass externalHref.
+    const unsafe = 'javascript:alert(1)';
+    serve(batch({ sourceLabel: '', sourceUrl: unsafe, rows: [row('r-1', 'Keep client money in a segregated account', { source: unsafe })] }));
+    renderScreen();
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.getByText(unsafe)).toBeInTheDocument();
+    expect(screen.queryAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(['/console/queue']);
   });
 
   it('decides a row as a draft that can be undone, and a rejection only with a reason', async () => {

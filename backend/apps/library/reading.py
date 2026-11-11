@@ -1,63 +1,27 @@
 """Reading the library (INV-01, INV-03, INV-04, INV-05, INV-06, FP-01, FP-03): the helpers
-every library read shares, the obligations list and card, the instruments list and card,
-and the diffs between two versions. Nothing here writes.
+every library read shares, the obligation and instrument lists and cards, and the diffs
+between two versions. Nothing here writes.
 
-- `localized()` picks one translation row in the caller's language order (INV-05).
-- `partial_date()` is a legal date with its precision (playbook 4.3).
-- `vocabulary_refs()` labels every distinct vocabulary row or term of a page from one
-  query over its label table.
-- `instrument_scopes()` is the one place for an instrument's own scope: its regime and
-  the jurisdictions its rules reach, derived from its jurisdiction and never stored
-  (D-28, D-29). `obligation_scopes()` inherits through it: an obligation's scope is its
-  own terms plus its instrument's scope. `instrument_scope_term_ids()` and
-  `scope_term_ids()` are their SQL twins, which the lists and search hand to the
-  database's `taxonomy_in_footprint`, unchanged, and to the term filter; the tests pin
-  them to their Python counterparts.
-- `in_view()` is the lists' one footprint filter (FP-03, FP-04): `in`, `all`, or
-  `watched`, what the watched markets add, asked of the same database function twice.
-- `outside_reasons()` is the footprint verdict and its reason, built on
-  `taxonomy.matching`: a record is inside when it has no reason to be outside, and
-  `scope_and_verdict()` builds both for a row of the list and for a record's own card.
-- `terms_of()` is the one parser of `dimension:key`, for the obligations filter and for
-  an obligation proposal's scope.
-- `tenant_tags()` is the caller's bank's own tags on a page of obligations, from one query
-  (VOC-08); `tagged()` is the `tag` and `tenantTag` filters, each key resolved against its
-  own list first so a key that names nothing is a 422, never an empty page.
-- The register overlay on a row and the card, and its filters, are `apps.register.overlay`:
-  one joined query per page over the bank's own entries (REG-01, REG-02). It never decides
-  which rows a page holds beyond its own filters; `in_view()` stays the one scope rule.
-- `active_obligation()` and `unknown_provision_keys()` are what a proposal points at and
-  cites; they live here because the library fence keeps library models out of the
-  proposals app (PRO-01). `instrument_refs()`, `active_instrument()`, `live_duty_type()`
-  and `stable_key_taken()` are what a new instrument or obligation names, for the same
-  reason.
-- `Reader` is how far past the shared library's facts one caller reads (ACC-02, ACC-04,
-  ACC-07, D-57, D-76). A person reads as `OPEN`. A bank's own agent, an agent access
-  credential, is confined to shared records inside the footprint and inside its entry's
-  scope on every list and every addressed read, each record beyond them the same 404
-  another bank gets, and it reads the bank's overlay and tags only through the register's
-  gate (`overlay.shown_to()`). `entry_admits()` is the entry's second pass, which search and
-  the upcoming list apply too.
-- "As of" a date is `logic.in_force()` and nothing else (AC-INV1). A version's end date is
-  never stored: `version_rows()` derives it from the version that follows (INV-04).
-- `confirmation_of()` is who confirmed each version's approval and which agent proposed it
-  (INV-05, PRO-02, D-62), read the same way wherever a version appears: the list's
-  versions, the card's version list and provenance, and both sides of a diff. Every read
-  that names a version fetches it through `versions_with_confirmation()`, so naming both
-  agents costs no query per version.
-- `_visible()` is the one lookup of a record by id, and `obligation_subject()` and
-  `instrument_subject()` are what the write routes address their record through: what
-  row-level security does not show the caller is a 404, never a 403, so no id can be
-  probed for.
+The one place for each rule:
+- `instrument_scopes()`: an instrument's scope, its regime and the jurisdictions its rules
+  reach, derived and never stored (D-28, D-29); `obligation_scopes()` inherits through it.
+  `instrument_scope_term_ids()` and `scope_term_ids()` are their SQL twins.
+- `in_view()`: the lists' footprint filter (FP-03, FP-04); `outside_reasons()` and
+  `scope_and_verdict()`: the footprint verdict and its reason.
+- `terms_of()`: the parser of `dimension:key`.
+- `Reader`: how far past the shared library's facts one caller reads (ACC-02, ACC-04,
+  ACC-07, D-57, D-76); `entry_admits()` is an entry's second pass.
+- `logic.in_force()`: "as of" a date (AC-INV1); `version_rows()` derives a version's end.
+- `confirmation_of()`: who confirmed each version and which agent proposed it (INV-05,
+  PRO-02, D-62), fetched through `versions_with_confirmation()`.
+- `_visible()`: the one lookup of a record by id, so what row-level security hides is a
+  404, never a 403, and no id can be probed for.
+- Reads a proposal points at (`active_obligation()` and the like) live here because the
+  library fence keeps library models out of the proposals app (PRO-01).
 
-Every response object is validated as it is built, natively by pydantic
-(`schemas.LibraryResponse`), and the page validates every row again when it takes them: a
-value the database or a later change gets wrong fails the read rather than reaching the
-caller.
-
-Every query runs on the request's connection, as cw_app under forced row-level security
-in production: an instrument or obligation is shared or the caller's own (INPUT_DELTAS
-§5), and child rows are only ever read through an obligation the caller can see.
+Every response object is validated as it is built. Every query runs as cw_app under forced
+row-level security: an instrument or obligation is shared or the caller's own (INPUT_DELTAS
+§5), and child rows are read only through an obligation the caller can see.
 """
 
 from __future__ import annotations
@@ -159,13 +123,12 @@ from apps.taxonomy.models import (
     TenantTagLabel,
     WatchedMarket,
 )
-from apps.taxonomy.reading import Labels, agent_ref, label_of, proposing_agent
+from apps.taxonomy.reading import Labels, agent_ref, proposing_agent
+from apps.shared.vocabulary import label_of
 from apps.taxonomy.schemas import PersonRef, TaggingTagRef
 
 
-# ---------------------------------------------------------------------------------------
-# Shared helpers
-# ---------------------------------------------------------------------------------------
+# --- Shared helpers ---
 def localized(rows: Iterable[Translation], order: list[str]) -> LocalizedText | None:
     """The text in the first language of `order` that has one, then the original, then any
     (INV-05). Says which language it is and whether a machine wrote it."""
@@ -293,9 +256,7 @@ def terms_of(refs: list[str]) -> list[TaxonomyTerm]:
     return list(found.values())
 
 
-# ---------------------------------------------------------------------------------------
-# The tags on an obligation: the library's own and the bank's own (VOC-08)
-# ---------------------------------------------------------------------------------------
+# --- The tags on an obligation: the library's own and the bank's own (VOC-08) ---
 _Listed = TypeVar("_Listed", bound=QuerySet[Any])
 
 
@@ -367,18 +328,12 @@ def tagged(queryset: _Listed, tenant: Tenant, query: ObligationQuery) -> _Listed
     return queryset
 
 
-# ---------------------------------------------------------------------------------------
-# What a proposal points at (PRO-01). These live here, not in the proposals app, because
-# the library fence refuses a module that names a library model beside a write call
+# --- What a proposal points at (PRO-01) ---
+# Here because the library fence refuses a module naming a library model beside a write
 # (apps/shared/tests_library_fence.py); both are pure reads.
-# ---------------------------------------------------------------------------------------
 def active_obligation(obligation_id: uuid.UUID) -> Obligation:
-    """The obligation `obligation_id` while it is active, or 422 `unknown_key`.
-
-    A proposal that names an obligation nobody can find, or one that has been retired, is
-    refused where it is made rather than left in the queue for a reviewer to discover that
-    it can never be applied (PRO-01).
-    """
+    """The obligation `obligation_id` while it is active, or 422 `unknown_key`, so a
+    proposal that can never be applied is refused where it is made (PRO-01)."""
     # INV-07: a bank's own private obligation is visible to that bank under row-level
     # security, and a library proposal only ever targets a shared record.
     obligation = Obligation.objects.filter(pk=obligation_id, owner_tenant__isnull=True).first()  # ordering: pk lookup, at most one row
@@ -397,9 +352,7 @@ def unknown_provision_keys(keys: Collection[str]) -> set[str]:
     return {key for key in keys if key not in found}
 
 
-# ---------------------------------------------------------------------------------------
-# What a new instrument or obligation names (PRO-01, INV-01, INV-03)
-# ---------------------------------------------------------------------------------------
+# --- What a new instrument or obligation names (PRO-01, INV-01, INV-03) ---
 class InstrumentRefs(NamedTuple):
     """The library rows a new instrument's payload names, resolved once for the creation
     check and again for the apply."""
@@ -599,9 +552,7 @@ def own_obligation(tenant_id: uuid.UUID, key: str) -> Obligation:
     return obligation
 
 
-# ---------------------------------------------------------------------------------------
-# What a provision proposal names (PRO-01, INV-02)
-# ---------------------------------------------------------------------------------------
+# --- What a provision proposal names (PRO-01, INV-02) ---
 def active_provision(provision_id: uuid.UUID) -> Provision:
     """The shared provision `provision_id` while it is active, with its instrument, or 422
     `unknown_key`: a version of a provision nobody can find is never applied."""
@@ -633,20 +584,15 @@ def live_provision_kind(key: str) -> Any:
     return _live_row(ProvisionKind, key, "a provision kind")
 
 
-# ---------------------------------------------------------------------------------------
-# Scope and footprint (FP-01, FP-03)
-# ---------------------------------------------------------------------------------------
+# --- Scope and footprint (FP-01, FP-03) ---
 def instrument_scopes(instrument_ids: Collection[uuid.UUID] | None = None) -> dict[uuid.UUID, dict[str, list[TaxonomyTerm]]]:
     """An instrument's own scope, in one place (INV-01, FP-03, FP-04): its regime, and the
-    jurisdictions its rules reach. `obligation_scopes()` inherits through this, so the
-    list's footprint verdict and the instrument's own can never disagree. For the given
-    instruments, or for every one the caller can see; two queries either way.
+    jurisdictions its rules reach, so the list's verdict and the instrument's own never
+    disagree. For the given instruments, or every one the caller can see; two queries.
 
-    The jurisdictions are derived here, at match time, and never stored (D-28, D-29): the
-    term that mirrors the instrument's own jurisdiction and the terms that mirror every
-    jurisdiction whose parent that one is, read from the mirror link and the parent link
-    alone, so a Union rule reaches each member country and Norway and a national rule its
-    own country only. A jurisdiction that no term mirrors derives nothing (D-38)."""
+    The jurisdictions are derived at match time, never stored (D-28, D-29): the term
+    mirroring the instrument's jurisdiction and those mirroring every jurisdiction whose
+    parent it is. A jurisdiction no term mirrors derives nothing (D-38)."""
     instruments = Instrument.objects.all() if instrument_ids is None else Instrument.objects.filter(id__in=instrument_ids)
     rows = list(instruments.order_by().values_list("id", "regime_id", "jurisdiction_id"))
     jurisdictions = {jurisdiction_id for _, _, jurisdiction_id in rows}
@@ -710,14 +656,11 @@ def _instrument_scope(path: str, *, reach: bool = True) -> ArraySubquery:
 
 def reaching(jurisdiction: Any) -> Q:
     """The terms a record filed under `jurisdiction` derives (D-28, D-29): the term that
-    mirrors it and the terms that mirror every jurisdiction whose parent it is, read from
-    the mirror link and the parent link alone. `jurisdiction` is whatever names the
-    jurisdiction's id in the query: an `OuterRef`, a subquery or an id. A null derives
-    nothing, so a record without a jurisdiction is not restricted by it.
+    mirrors it and the terms that mirror every jurisdiction whose parent it is.
+    `jurisdiction` is an `OuterRef`, a subquery or an id; a null derives nothing.
 
-    The instruments' SQL half above and a change's, which comes from its authority
-    (`apps/watch/reading.py`, `apps/cases/reading.py`), are built from this one condition;
-    `jurisdiction_scopes()` is its Python twin."""
+    Every SQL scope condition is built from this one; `jurisdiction_scopes()` is its Python
+    twin."""
     return Q(jurisdiction=jurisdiction) | Q(jurisdiction__parent=jurisdiction)
 
 
@@ -763,11 +706,9 @@ def _matches(tenant: Tenant, term_ids: Func | ArraySubquery) -> Func:
 
 def in_view(queryset: _Listed, tenant: Tenant, footprint: FootprintFilter) -> _Listed:
     """The lists' one footprint filter (FP-03, FP-04). `in` is the working inventory and
-    `all` lifts it. `watched` is only what the watched markets add: a record the footprint
-    hides, that the footprint allows once the jurisdictions it reaches are set aside, and
-    that reaches a market the bank watches. So a Union rule, which reaches every market the
-    bank operates in, never shows there, and a Danish duty for a service the bank does not
-    provide stays out. Each half asks the same database function; nothing names a market."""
+    `all` lifts it. `watched` is only what the watched markets add: hidden by the footprint,
+    allowed once the jurisdictions are set aside, and reaching a watched market. Each half
+    asks the same database function; nothing names a market."""
     if footprint == "all":
         return queryset
     of_obligations = queryset.model is Obligation
@@ -779,27 +720,19 @@ def in_view(queryset: _Listed, tenant: Tenant, footprint: FootprintFilter) -> _L
     return queryset.exclude(_matches(tenant, scope())).filter(_matches(tenant, scope(reach=False)), Exists(reaches_watched))
 
 
-# ---------------------------------------------------------------------------------------
-# Who reads (ACC-02, ACC-04, ACC-07, D-57, D-76): a person, or a bank's own agent
-# ---------------------------------------------------------------------------------------
+# --- Who reads (ACC-02, ACC-04, ACC-07, D-57, D-76): a person, or a bank's own agent ---
 class Reader(NamedTuple):
     """How far past the shared library's facts one caller reads.
 
     A person's session, and any key that is not an agent access credential, reads as `OPEN`:
-    row-level security decides, the footprint is a filter it may lift, and the bank's own
-    layer (its register overlay, its tags and its own private records) is its own. An agent
-    access credential is `confined`: shared records only, because a bank's own agent is a
-    model and a private record never reaches one (D-57); inside the footprint only; and
-    inside its entry's scope when it reads as an entry (ACC-02). A record beyond any of the
-    three is the same 404 another bank gets, never a filtered 200 (ACC-07). It reads the
-    bank's overlay and tags only while `bank_layer`, the register's own gate (tenant reach on
-    for the bank and the entry, ACC-04, ACC-08), and never on a record under a standard,
-    whose register rows never reach a model (REG-08, AC-REG2).
+    row-level security decides. An agent access credential is `confined`: shared records
+    only, because a private record never reaches a model (D-57); inside the footprint; and
+    inside its entry's scope (ACC-02). A record beyond them is the same 404 another bank
+    gets (ACC-07). It reads the bank's overlay and tags only while `bank_layer` (ACC-04,
+    ACC-08), and never on a record under a standard (REG-08, AC-REG2).
 
-    `shared_only` leaves out the bank's own private records and nothing else: every confined
-    reader reads that way, and so does a support session, platform support reading the bank
-    under a grant it approved, which is never shown a record the bank keeps as its own
-    (OWN-04, INV-07, TEN-06)."""
+    `shared_only` leaves out the bank's own private records: every confined reader, and a
+    support session, which is never shown a bank's own record (OWN-04, INV-07, TEN-06)."""
 
     confined: bool = False
     tenant_id: uuid.UUID | None = None
@@ -958,9 +891,7 @@ def scope_and_verdict(
     return carried, reasons
 
 
-# ---------------------------------------------------------------------------------------
-# GET /obligations
-# ---------------------------------------------------------------------------------------
+# --- GET /obligations ---
 def versions_with_confirmation() -> Prefetch[Any]:
     """An obligation's versions with the confirming agent and the proposing agent joined in
     the same query, so `confirmation_of()` never costs a query per version (playbook 10)."""
@@ -971,10 +902,8 @@ def versions_with_confirmation() -> Prefetch[Any]:
 
 def confirmation_of(version: ObligationVersion) -> VersionConfirmation:
     """Who confirmed the approval that wrote `version`, and which agent proposed it, as
-    stored (INV-05, PRO-02, D-62). The version names its confirmer; the proposer is read
-    through the proposal that wrote it, and withheld when a bank made that proposal
-    (PRO-03). The label is the screen's to decide: a later re-verification by a person is
-    on the record, not here."""
+    stored (INV-05, PRO-02, D-62). The proposer is read through the proposal, and withheld
+    when a bank made it (PRO-03). The label is the screen's to decide."""
     return VersionConfirmation(
         verified_origin=version.verified_origin,
         confirmed_by_agent=agent_ref(version.verified_by_agent),
@@ -1094,9 +1023,7 @@ def obligation_page(
     return rows, total
 
 
-# ---------------------------------------------------------------------------------------
-# Addressing one record: GET /obligations/{id}, its diff, and the writes a record accepts
-# ---------------------------------------------------------------------------------------
+# --- Addressing one record: GET /obligations/{id}, its diff, and the writes it accepts ---
 NOT_FOUND = "There is nothing at this address in your organisation."
 
 _Record = TypeVar("_Record", bound=Model)
@@ -1125,17 +1052,15 @@ def obligation_subject(obligation_id: uuid.UUID) -> Obligation:
 
 def instrument_subject(instrument_id: uuid.UUID) -> Instrument:
     """The instrument a write acts on. A provision is reported through the instrument whose
-    card shows it (chunk 3 default), so this one lookup serves both."""
+    card shows it, so this one lookup serves both."""
     return _visible(Instrument.objects.all(), instrument_id)
 
 
 def version_rows(versions: list[ObligationVersion]) -> dict[int, ObligationVersionRow]:
-    """Every version by number, in version order. `effectiveTo` is derived: a version runs
-    until the day before the next one takes effect, at the precision that next date is known
-    to. Nothing is stored, because a version row is written once and never touched (INV-04).
-    The last version, one whose successor has no date, and one corrected the same day it
-    took effect (`logic.in_force`: the later number wins) have no end, since an end before
-    the start would be a lie on the card."""
+    """Every version by number, in version order. `effectiveTo` is derived, never stored
+    (INV-04): the day before the next version takes effect, at that date's precision. The
+    last version, one whose successor has no date, and one corrected the same day it took
+    effect have no end."""
     rows: dict[int, ObligationVersionRow] = {}
     for index, version in enumerate(versions):
         following = versions[index + 1] if index + 1 < len(versions) else None
@@ -1309,9 +1234,7 @@ def obligation_diff(order: list[str], obligation_id: uuid.UUID, query: VersionDi
     )
 
 
-# ---------------------------------------------------------------------------------------
-# GET /instruments and GET /instruments/{id} (INV-01, INV-06, FP-03)
-# ---------------------------------------------------------------------------------------
+# --- GET /instruments and GET /instruments/{id} (INV-01, INV-06, FP-03) ---
 def _authority_ref(authority: Authority | None) -> InstrumentAuthorityRef | None:
     if authority is None:
         return None
@@ -1388,15 +1311,10 @@ def _obligation_counts(
 
 def _lineage(instrument: Instrument, order: list[str], reader: Reader) -> list[InstrumentLineageRef]:
     """What this instrument implements or elaborates, and what implements, elaborates or
-    amends it in turn (INV-01): both directions of `InstrumentRelation`, so the designed
-    `GET /instruments/{instrumentId}/relations` is served here instead. Row-level security
-    runs the same join either way, so a relation to an instrument the caller cannot see
-    drops the row entirely rather than answering it with a null (INV-07, R3).
-
-    `from_ref` and `to_ref` keep the relation's own meaning from either side, as the designed
-    `InstrumentRelation` has them: the place in the instrument relating and the place in
-    the one related to, so an incoming reference to this instrument's own text is kept. A
-    confined reader sees only relations to instruments it may address itself."""
+    amends it (INV-01): both directions of `InstrumentRelation`, serving the designed
+    `GET /instruments/{instrumentId}/relations`. A relation to an instrument the caller cannot
+    see, or a confined reader may not address, drops out (INV-07). `from_ref` and `to_ref`
+    keep the relation's own meaning from either side."""
     readable = readable_instruments(reader)
     outgoing = list(
         InstrumentRelation.objects.filter(from_instrument=instrument, to_instrument__in=readable).select_related("to_instrument", "relation_type")
@@ -1526,9 +1444,7 @@ def instrument_detail(tenant: Tenant, order: list[str], instrument_id: uuid.UUID
     )
 
 
-# ---------------------------------------------------------------------------------------
-# GET /instruments/{id}/provisions and GET /provisions/{id}/diff (INV-02, INV-04, INV-05)
-# ---------------------------------------------------------------------------------------
+# --- GET /instruments/{id}/provisions and GET /provisions/{id}/diff (INV-02, INV-04, INV-05) ---
 def _provision_version_rows(versions: list[ProvisionVersion], texts: Mapping[uuid.UUID, list[ProvisionText]], order: list[str]) -> list[ProvisionVersionRow]:
     """A provision's own version list (INV-02, INV-04): the same `effectiveTo` derivation
     as `version_rows()`, plus each version's transitional note and text. Kept apart from
@@ -1654,17 +1570,11 @@ def _numbered_provision(versions: list[ProvisionVersion], number: int) -> Provis
     return found
 
 
-# ---------------------------------------------------------------------------------------
-# GET /authorities (FP-04, AGT-02, chunk 5 ruling E)
-# ---------------------------------------------------------------------------------------
+# --- GET /authorities (FP-04, AGT-02) ---
 def list_authorities(order: list[str]) -> list[LibraryAuthority]:
     """Every issuing authority the shared library knows, with its jurisdiction labelled in
-    the caller's language. Two queries: the authorities with their jurisdiction rows, and
-    every jurisdiction label at once.
-
-    It addresses no single record, so it needs no `_visible()` lookup: an authority is a
-    shared reference row, the same list for every bank and for every agent key.
-    """
+    the caller's language, in two queries. A shared reference row, the same for every bank
+    and agent key, so no `_visible()` lookup."""
     authorities = list(Authority.objects.select_related("jurisdiction"))
     jurisdictions = vocabulary_refs(JurisdictionLabel, (row.jurisdiction for row in authorities), order)
     return [
@@ -1680,9 +1590,7 @@ def list_authorities(order: list[str]) -> list[LibraryAuthority]:
     ]
 
 
-# ---------------------------------------------------------------------------------------
-# GET /obligations/{id}/sources
-# ---------------------------------------------------------------------------------------
+# --- GET /obligations/{id}/sources ---
 def today_of(tenant_id: uuid.UUID | None) -> datetime.date:
     """Today for the caller: where its tenant is, or the platform's day for a platform key,
     which belongs to no tenant."""
@@ -1693,15 +1601,11 @@ def today_of(tenant_id: uuid.UUID | None) -> datetime.date:
 def get_record_sources(obligation_id: uuid.UUID, on: datetime.date, reader: Reader = OPEN) -> LibraryRecordSources:
     """`GET /obligations/{obligationId}/sources`, the citations a re-check compares against
     (INV-06, AGT-01 item 3): one per field the approved proposal behind the version in force
-    on `on` sourced, or the record's own source as one `summary` citation for a version no
-    proposal wrote (a seeded one). A record whose versions all lie ahead is read by its
-    first.
+    on `on` sourced, or the record's own source as one `summary` citation for a seeded
+    version. A record whose versions all lie ahead is read by its first.
 
-    It resolves the obligation through `_visible()` above, as every other addressed read in
-    this module does, and never through a lookup of its own: that one function is what makes
-    a record the caller cannot see answer the same 404 as an id that never existed, so a
-    second lookup would be a second chance to leak which of the two it was (INV-07).
-    """
+    Resolved through `_visible()` alone, so a hidden record and a missing id answer the same
+    404 (INV-07)."""
     obligation = _visible(
         readable_obligations(reader).prefetch_related(
             Prefetch("versions", queryset=ObligationVersion.objects.select_related("applied_by_proposal"))
@@ -1726,10 +1630,7 @@ def get_record_sources(obligation_id: uuid.UUID, on: datetime.date, reader: Read
     )
 
 
-# ---------------------------------------------------------------------------------------
-# What a batch proposal re-tags (PRO-04; c11-proposal-batches-create): many obligations
-# read at once, so a batch's preview costs the same few queries however many rows it has.
-# ---------------------------------------------------------------------------------------
+# --- What a batch proposal re-tags (PRO-04): many obligations in a few queries ---
 def active_shared_obligations(obligation_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, Obligation]:
     """Those of `obligation_ids` that are the library's own (never a bank's private record,
     INV-07) and in force, with their instrument and its level, in one query. An id that is
@@ -1748,7 +1649,7 @@ def obligation_scope_terms(obligation_ids: Collection[uuid.UUID]) -> dict[uuid.U
     for link in links:
         scopes.setdefault(link.obligation_id, {})[f"{link.term.dimension.key}:{link.term.key}"] = link.term_id
     return scopes
-# c8-duty-occurrences (REG-07): what the register's occurrences are dated from.
+# What the register's occurrences are dated from (REG-07).
 class DutyRule(NamedTuple):
     """A library recurring duty as the register reads it: its title, its RFC 5545 rule and
     the note on how its due date is set."""

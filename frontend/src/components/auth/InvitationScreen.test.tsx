@@ -41,7 +41,7 @@ function server(verify: (sent: Sent) => Answer = () => ({ status: 200, data: ENR
     if (sent.path.endsWith('/verify')) return verify(sent);
     if (sent.path === '/api/v1/me') return { status: 200, data: { enrolmentPending: true } };
     return { status: 202, data: {} };
-  });
+  }, { refresh: false });
 }
 
 function renderIn(node: ReactNode) {
@@ -130,7 +130,7 @@ describe('opening the invitation', () => {
       addressAtRequest.push(window.location.href);
       if (request.path === REFRESH_PATH) return { status: 401 };
       return { status: 202, data: {} };
-    });
+    }, { refresh: false });
     renderIn(<InvitationScreen />);
     await screen.findByRole('heading', { level: 1, name: 'Enter your code' });
     const open = sent.find((s) => s.path === '/api/v1/auth/invitations/open');
@@ -312,7 +312,7 @@ describe('joining with a passkey', () => {
       if (sent.path.endsWith('/invitations/accept')) return accept();
       if (sent.path.endsWith('/me/context')) return { status: 200, data: { accessToken: 'bank', sessionKind: 'full', expiresIn: 300 } };
       return { status: 202, data: {} };
-    });
+    }, { refresh: false });
   }
 
   it('offers every visitor who is not signed in the same way to sign in, holding the token in this tab only', async () => {

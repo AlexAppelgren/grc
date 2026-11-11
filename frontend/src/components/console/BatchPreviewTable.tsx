@@ -10,6 +10,7 @@ import { scopeTermPills } from '@/features/proposals/proposal-presentation';
 import type { ProposalBatchRow } from '@/features/proposals/types';
 import type { VocabularyRow } from '@/features/vocabularies/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { externalHref } from '@/shared/utils/external-href';
 
 // The batch preview (design/screens/console-queue-batch.html, sections 2, 3 and 10;
 // PRO-04). A list of cards rather than a table, so it reads at 375 px without sideways
@@ -83,6 +84,7 @@ function BatchRowCard({
   const reasonKey = pending ? draft?.rejectionCode : row.rejectionCode;
   const reason = reasonKey === undefined || reasonKey === '' ? null : (reasons.find((r) => r.key === reasonKey)?.label ?? reasonKey);
   const decided = !pending || draft !== undefined;
+  const sourceHref = row.source === undefined ? null : externalHref(row.source);
 
   return (
     <div
@@ -102,8 +104,8 @@ function BatchRowCard({
           <Terms refs={row.after.terms ?? []} labelOf={labelOf} />
         </div>
       </div>
-      {row.source !== undefined && row.source.startsWith('https://') ? (
-        <a href={row.source} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-meta underline">
+      {sourceHref !== null ? (
+        <a href={sourceHref} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-meta underline">
           {t('console.batch.rowSource')}
         </a>
       ) : null}
@@ -129,11 +131,11 @@ function BatchRowCard({
         ) : (
           <ButtonBar className="mt-3">
             <Button variant="outline" size="small" onClick={() => setRejecting(true)}>
-              {t('console.batch.row.reject')}
+              {t('common.reject')}
             </Button>
             {row.stale === true ? null : (
               <Button size="small" onClick={() => onDraft({ decision: 'approved', rejectionCode: '' })}>
-                {t('console.batch.row.approve')}
+                {t('common.approve')}
               </Button>
             )}
           </ButtonBar>

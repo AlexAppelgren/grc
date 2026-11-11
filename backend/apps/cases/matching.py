@@ -1,40 +1,18 @@
 """Keeping `change_case.footprint_match` true after the scope moves (CAS-01, FP-01 to FP-04).
 
-The verdict is cached on the case because the feed, the roadmap and the briefing all read
-it and none of them can afford to re-decide a bank's whole backlog per request. A cache is
-only as good as what refreshes it, and two things move underneath it:
+The verdict is cached because the feed, roadmap and briefing all read it. It is re-decided
+when the bank's footprint changes (every open case of that bank) and when a change's scope
+terms or authority change (every bank's case for it, FP-04), both from the audit row's
+event on the ordered outbox cursor.
 
-- **The bank's own footprint.** A second person approves a footprint change and the bank
-  now watches custody, or has stopped advising. Every open case of that bank is re-decided.
-- **A change's scope terms or its authority.** A run corrects the terms on a change, or a
-  library editor does, or the change turns out to be another authority's, which moves the
-  jurisdictions it reaches (FP-04). Every bank's case for that change is re-decided from
-  the correction's event, and two banks with different footprints land on different
-  answers from the same edit.
+- One statement per bank, never per case (`tests_matching.py` pins the query count).
+- The one scope rule: `taxonomy_in_footprint`, the database half of
+  `apps/taxonomy/matching.py`.
+- A flip changes the cached boolean only (D-30): no urgency, triage or notice.
+- A case that falls outside is neither hidden nor deleted; the feed's filter leaves it out.
 
-Both run on the one ordered cursor over `outbox_event`, from the audit row the write
-already had to leave, so nothing has to be remembered to call them and nothing can happen
-without its audit row (rulings 9 and 32).
-
-Four rules the recomputation holds to:
-
-- **One statement per bank, never one per case.** A footprint change in a bank with ten
-  thousand cases is one UPDATE, and `apps/cases/tests_matching.py` pins the query count so
-  a later convenience cannot turn it into a loop.
-- **The one scope rule.** The verdict comes from `taxonomy_in_footprint`, the database's
-  own half of the rule in `apps/taxonomy/matching.py` that every list query already uses.
-  There is no second rule here, and a change to the rule moves what a case says.
-- **A flip changes a cached boolean and nothing else** (D-30). No urgency is set, no triage
-  is opened, nobody is notified, and the case's own decisions are untouched.
-- **A case that falls outside is not hidden and not deleted.** It stays its owner's, and
-  the feed's own footprint filter is what leaves it out; `footprint=all` still shows it.
-
-One audit row per bank, naming how many cases moved. Never one per case: a recomputation is
-the consequence of a decision somebody already made and already audited, not a new one.
-
-This module writes, so it names no library record: the subquery over a change's scope terms
-lives in `apps/cases/reading.py`, which is the split the library fence's AST guard demands
-of `creation.py` for the same reason.
+One audit row per bank with the count moved. This module writes, so the subquery over a
+change's scope terms lives in `reading.py` (library fence).
 """
 
 from __future__ import annotations
@@ -57,12 +35,10 @@ FOOTPRINT_APPROVED = "footprint.change_approved"
 CHANGE_FACTS_UPDATED = "regulatory_change.facts_updated"
 
 RECOMPUTED = "case.footprint_match_recomputed"
-# Nobody asked for this: a decision somebody else made moved the line, and the cases the
-# line runs through were re-decided. A system actor is what the audit log should say.
+# Re-decided as the consequence of someone else's decision: a system actor.
 ACTOR = Actor.system("footprint-recompute")
 
-# A closed or dismissed case is finished work; re-deciding whether it is in scope would
-# rewrite the record of what the bank did rather than what it should do next.
+# A finished case is the record of what the bank did; it is never re-decided.
 OPEN_CATEGORIES = ~Q(status__in=(CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value))
 
 
@@ -74,10 +50,8 @@ def register() -> None:
 
 
 def after_footprint_change(event: OutboxEvent) -> None:
-    """A bank's footprint moved: re-decide that bank's open cases.
-
-    The event carries the bank's own tenant, so the cursor has already put the handler in
-    that bank's zone and no other bank is in reach.
+    """A bank's footprint moved: re-decide that bank's open cases. The event is the bank's,
+    so the cursor already put the handler in its zone.
     """
     if event.tenant_id is None:  # pragma: no cover - a footprint change is always a bank's
         return
@@ -85,11 +59,8 @@ def after_footprint_change(event: OutboxEvent) -> None:
 
 
 def after_change_scope_change(event: OutboxEvent) -> None:
-    """A change's facts moved: re-decide every bank's case for that change.
-
-    The event belongs to no bank, so this runs in the library's zone and fans out. The
-    banks are read once and in full before the first one's zone is entered, as case
-    creation reads them, because each write moves the session into a different zone.
+    """A change's facts moved: re-decide every bank's case for that change. Runs in the
+    library's zone; the banks are read in full before the first bank's zone is entered.
     """
     change_id = event.audit_event.subject_id
     if change_id is None:  # pragma: no cover - the writer always names the change
@@ -111,11 +82,8 @@ def _recompute_in_tenant(tenant_id: uuid.UUID, *, change_id: uuid.UUID) -> None:
 
 
 def _recompute(tenant_id: uuid.UUID, *, change_id: uuid.UUID | None) -> None:
-    """Re-decide this bank's cases in one statement, and record how many moved.
-
-    `verdict` is the database's own scope rule over the change's scope terms, evaluated per
-    row; the `exclude` is the same expression, so only the rows whose answer actually
-    changed are written and a re-delivered event costs one statement and no rows.
+    """Re-decide this bank's cases in one statement, and record how many moved. Only rows
+    whose verdict changed are written, so a redelivered event costs no rows.
     """
     verdict = in_footprint_expression(tenant_id, reading.scope_term_ids_of_each_case())
     cases = ChangeCase.objects.filter(OPEN_CATEGORIES, tenant_id=tenant_id)

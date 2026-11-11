@@ -13,7 +13,6 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from apps.identity.models import User
 from apps.library.reading import obligation_headings
 from apps.register.links import person_id
 from apps.register.logic import ensure_register_entry
@@ -58,7 +57,7 @@ def assessments_page(*, order: list[str], obligation_id: uuid.UUID, limit: int, 
                 org_unit_id=None if row.scope is None else row.scope.org_unit_id,
                 org_unit_name=None if row.scope is None else row.scope.org_unit.name,
                 assessed_at=row.assessed_at,
-                assessed_by=_person(row.assessed_by),
+                assessed_by=RegisterPersonRef.model_validate(row.assessed_by),
                 method=row.method,  # type: ignore[arg-type]  # the AssessmentMethod kind's values
                 status=_vocab(row.status, order),
                 risk_rating=None if row.risk_rating is None else _vocab(row.risk_rating, order),
@@ -69,13 +68,6 @@ def assessments_page(*, order: list[str], obligation_id: uuid.UUID, limit: int, 
         ],
         total=assessments.count(),
     )
-
-
-def read_interpretation(*, tenant: Tenant, obligation_id: uuid.UUID) -> RegisterInterpretation:
-    """The reading in force and every earlier one, newest first. An obligation the bank
-    cannot see is 404; one without a reading has `current` null."""
-    _visible(obligation_id)
-    return interpretation_out(obligation_id)
 
 
 def save_interpretation(
@@ -131,17 +123,13 @@ def interpretation_out(obligation_id: uuid.UUID) -> RegisterInterpretation:
     already checked the obligation is one the bank can see."""
     versions = [
         RegisterInterpretationVersion(
-            version_no=row.version_number, text=row.body, author=_person(row.author), written_at=row.created_at
+            version_no=row.version_number, text=row.body, author=RegisterPersonRef.model_validate(row.author), written_at=row.created_at
         )
         for row in Interpretation.objects.filter(tenant_obligation__obligation_id=obligation_id)
         .select_related("author")
         .order_by("-version_number")
     ]
     return RegisterInterpretation(obligation_id=obligation_id, current=versions[0] if versions else None, earlier=versions[1:])
-
-
-def _person(user: User) -> RegisterPersonRef:
-    return RegisterPersonRef(id=user.id, name=user.name)
 
 
 def _vocab(row: Vocabulary, order: list[str]) -> RegisterVocabRef:

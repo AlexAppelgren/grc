@@ -1,10 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { useState, type ReactNode } from 'react';
+import { fireEvent, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { MentionPicker, mentionQuery } from './MentionPicker';
 import type { PersonRef } from './types';
@@ -26,15 +26,7 @@ function Harness({ picked }: { picked: PersonRef[] }) {
 
 function renderPicker(picked: PersonRef[] = []): Sent[] {
   const sent = installAdapter(() => ({ status: 200, data: PEOPLE }));
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <Harness picked={picked} />
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  renderWith(<Harness picked={picked} />);
   return sent;
 }
 

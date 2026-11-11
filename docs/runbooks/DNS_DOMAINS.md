@@ -91,7 +91,10 @@ filter vendors, and only the owner can do it.
   `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: strict-origin-when-cross-origin` and a
   `Permissions-Policy` denying camera, microphone, geolocation, payment and
-  USB, beside the existing frame rules (`frontend/next.config.ts`). WebAuthn
+  USB, `Cross-Origin-Opener-Policy: same-origin`, and a content policy that
+  allows only our own origin and the API (`default-src 'self'`, no plugin,
+  no other base or form target, frames from our own origin only; review
+  2026-11-11 S-12), beside the existing frame rules (`frontend/next.config.ts`). WebAuthn
   stays at its default of our own origin. HSTS carries no
   `includeSubDomains` or `preload` until every `bleqq.com` subdomain is known
   to serve HTTPS: both are hard to take back.
@@ -131,7 +134,48 @@ block `r2f-site-trust`; review addresses in `docs/plans/Verification_Log.md`):
    Financial Services where offered) to each vendor: Zscaler, Palo Alto
    Networks, Broadcom (Symantec), Cisco Talos, Fortinet and Forcepoint. Do
    this after steps 1 to 5 and after this package is deployed, so the
-   reviewer sees the fixed site.
+   reviewer sees the fixed site. Submit each host on its own (`bleqq.com`,
+   `app.bleqq.com`, `api.bleqq.com`): Broadcom's review takes one URL, and a
+   subdomain can be rated apart from its domain.
+
+**Seen on 2026-11-11.** Broadcom's Site Review answers "Suspicious" for
+`https://app.bleqq.com/sign-in`, "rated by our WebPulse system". WebPulse is
+Broadcom's real-time rater: a host its database does not hold is scored when
+first requested, and the Suspicious category "is determined by analysis of web
+reputation factors". The fix Broadcom documents is a review request, which puts
+the host in the database under a category (24 to 48 hours once accepted). From
+outside the same day: `www` 301s to the apex, `bleqq.com/sign-in` 301s to
+`app.bleqq.com/sign-in`, both hosts send the headers above, `security.txt`
+answers and an unknown address is a 404. `https://app.bleqq.com/` itself then
+still answered only the session gate's "Loading your session…" to a reader
+without JavaScript; it answers the public page since the same day ("The app
+host's front door" below).
+
+**What Broadcom's rater votes on, and what our pages gave it (2026-11-11).** A
+new host alone does not reach "Suspicious". Broadcom's white paper on threat
+risk levels puts "very new sites, or some evidence of shady behavior" at level
+6 and "shady behavior" at 7, the level that returns the Suspicious category,
+and says the level is a vote of module groups in which "two medium votes may
+equal a high vote". The groups it names: at the request, shady traffic
+("Traffic Cops"), new or untrusted, shady name, shady hosting; at DNS, the
+address and its range ("Shady Neighborhood"); at the response, shady response,
+network error, "Lie Detector" and shady content ("EXE, JAR/ZIP, PDF,
+JScript"); afterwards, phishing detectors. Which votes a host drew is not
+published, so each row below is what a headless browser measured on the live
+hosts, not a proven cause.
+
+| Measured | Whose | State |
+|---|---|---|
+| The sign-in page asked for `/welcome` ahead of a click on Back; the app host answers that with a move to the public host, another origin, so the browser refused it (`net::ERR_FAILED`) on every load | Code | Fixed: the back link is a plain link |
+| `https://app.bleqq.com/` without a session: the same refused request, then a page load to the public host. Sign-out likewise | Code | Fixed: leaving for the public page is a page load (`shared/navigation/leave.ts`); the host-split journey fails on any refused request |
+| Cloudflare's `email-decode.min.js` and encoded addresses on sign-in and enrolment | Cloudflare, Email Address Obfuscation (on by default) | Switched off by the owner; gone from outside at 07:44 UTC |
+| Cloudflare's analytics beacon on every page, the application included | Cloudflare, Web Analytics automatic setup | Switched off by the owner; gone from outside at 07:44 UTC |
+| `https://app.bleqq.com/` answers only "Loading your session…" to a reader without JavaScript; Broadcom: "information will be missing if the website is blank" | Code | Fixed: a visitor's front door is the public page ("The app host's front door" below) |
+| `POST /api/v1/auth/refresh` answers 401 to a visitor without a session | Code | Left: it is the answer the client reads as "not signed in" |
+| The host name first served in autumn 2026; shared Cloudflare addresses | Neither | Only time and Broadcom's database entry change these |
+
+Cloudflare did not challenge a reader without a browser on any host (five
+user agents, 200 each), so its bot settings do not hide the site from a rater.
 
 ## The public site and the app on their own hosts
 
@@ -153,7 +197,9 @@ already planned for the app (D-02).
 | | any other path: sign-in, enrolment, invitation, the app, the console, `/api/…`, an unknown path | 301 to the same path and query on `APP_HOST` |
 | | `robots.txt`, `sitemap.xml`, `icon.svg`, `/.well-known/…`, `/demo/…`, `/_next/…` | Served as they are |
 | `APP_HOST` (`app.bleqq.com`) | `/welcome` | 301 to `/` on the first `PUBLIC_SITE_HOST` |
-| | everything else, `/` included | The app, as today, with `X-Robots-Tag: noindex` |
+| | `/`, a page load from a browser without the session marker (a visitor, a crawler, a filter's fetcher) | The public page, fully rendered on the server, 200, with `Link: <https://bleqq.com/>; rel="canonical"` and no `noindex` (2026-11-11, "The app host's front door" below) |
+| | `/` otherwise: the session marker is present, or the request is the demo's frame or the app's own fetch | The app, with `X-Robots-Tag: noindex` |
+| | everything else | The app, as today, with `X-Robots-Tag: noindex` |
 | Any other host (the service's `*.up.railway.app` address, the health check) | anything | As today |
 | Any host, while `PUBLIC_SITE_HOST` or `APP_HOST` is unset | anything | As today: this is the default, and every journey but the host-split one runs so |
 
@@ -181,6 +227,35 @@ Two details a reviewer asks about:
   The enrolment page's first byte is the code step a visitor without a session
   gets, never an empty "Loading…". The passkey flow itself is unchanged: no
   password, the emailed code only for enrolment.
+
+**The app host's front door (2026-11-11).** From SEB's network
+`https://bleqq.com/` opened and `https://app.bleqq.com/sign-in` was denied as
+Suspicious, threat score 7. Both hosts resolve to the same Cloudflare
+addresses, sit in the same zone and reach the same Railway service, and a
+second domain of the owner's on the same registrar, DNS, proxy and platform,
+registered four months later, has no such rating. So the provider, the network
+and the domain's age do not explain it. What differed was what each host
+answers: the public host a whole page; the app host a sign-in and, at `/`, the
+session gate's "Loading your session…", because only script knows whether a
+session exists (the access token is in memory, the refresh cookie belongs to
+the API host; D-06).
+
+So the app host's front door now answers a visitor with the public page too.
+The web server reads one cookie on its own host, `cw_signed_in`
+(`shared/navigation/session-marker.ts`): the browser sets it whenever it is
+handed an access token and clears it when the token is dropped (a sign-out, a
+refresh the server refused). It is a hint and never a proof. It carries no
+secret, lasts a day and is renewed at each refresh; `SameSite=Lax`, `Secure`
+over HTTPS, readable by script because script writes it. A forged or stale
+marker shows the gate, which asks the API exactly as before. A missing one,
+with a session still alive, shows the public page, whose Sign in forwards a
+signed-in person to their home without a passkey prompt. Every `/` on the app
+host goes out `Cache-Control: private, no-cache`, since one address now has
+more than one answer there as well.
+
+Not proven: that this changes Broadcom's rating. It makes the app host answer
+a rater what the host that passes answers. The review request and the bank's
+allowlist stay the way to replace a rating that is already stored.
 
 `sitemap.xml` lists `https://<first PUBLIC_SITE_HOST>/` once the hosts are
 split, `https://bleqq.com/welcome` before. `robots.txt` is the same file on
@@ -215,8 +290,8 @@ otherwise. The way back, in order:
 
 1. The platform admin, whose own passkey stops working at the same moment:
    `python manage.py bootstrap_platform --admin-email <your address> --reenrol`
-   retires your passkeys, revokes your sessions (in the console and in any bank
-   you are a member of), keeps your platform roles and emails a re-enrolment
+   retires your passkeys, revokes your sessions and personal tokens (in the console
+   and in any bank you are a member of), keeps your platform roles and emails a re-enrolment
    link; enrol again from it. An account that is also a bank's member gets its
    bank access back with the same passkey (D-122).
 2. One administrator of each test bank: the platform re-issues their

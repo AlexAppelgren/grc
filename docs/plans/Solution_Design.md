@@ -166,7 +166,7 @@ wrote no audit row.
 `apps/shared/adapters/` holds four seams, each one interface with a mock and
 real providers chosen by a setting: `llm.py` (`LLM_PROVIDER`: mock,
 anthropic, bedrock), `embedder.py` (`EMBEDDER_PROVIDER`, 1024 dimensions),
-`agent_runner.py` (`AGENT_RUNNER`: mock, managed_agents), `mailer.py`
+`agent_runner.py` (`AGENT_RUNNER`: mock, none), `mailer.py`
 (`MAIL_PROVIDER`: mock, smtp). `storage.py` is the fifth seam
 (`STORAGE_BACKEND`: local, s3). The mocks are deterministic so E2E journeys
 can assert on them (the mock mailer records what it would have sent, which

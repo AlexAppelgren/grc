@@ -40,14 +40,11 @@ def iter_operations(api: NinjaAPI) -> Iterator[RegisteredOperation]:
                     )
 
 
-# Tenant-scoped routes register here (chunk 1 onward) so the tenant-isolation guard can
-# request a record of tenant A as tenant B for each one and demand a 404. Entries are
-# (method, path, model label, factory name); the guard builds the record with the
-# factory in apps/shared/factories.py. Phase 0 has none, and the guard enumerates
-# an empty registry rather than skipping.
+# Tenant-scoped routes, so the tenant-isolation guard requests tenant A's record as tenant B
+# and demands a 404. Entries are (method, path with its query where the route reads its
+# record from one, model label, factory name in apps/shared/factories.py).
 TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("PATCH", "/tenant/members/{user_id}", "identity.Membership", "member_user"),
-    ("DELETE", "/tenant/members/{user_id}", "identity.Membership", "member_user"),
     ("GET", "/tenant/members/{user_id}/sessions", "identity.Membership", "member_user"),
     ("DELETE", "/tenant/members/{user_id}/sessions", "identity.Membership", "member_user"),
     ("DELETE", "/tenant/invitations/{invitation_id}", "identity.Invitation", "invitation"),
@@ -59,13 +56,11 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("POST", "/tenant/footprint/requests/{request_id}/reject", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/tenant/footprint/requests/{request_id}/withdraw", "taxonomy.FootprintChangeRequest", "footprint_request"),
     ("POST", "/vocab/{list_name}/suggestions/{suggestion_id}/decline", "taxonomy.VocabularySuggestion", "vocabulary_suggestion"),
-    # c8-tenants-contract (TEN-02, TEN-03, TEN-05, TEN-06). The licence create is proved in
-    # apps/tenants/tests_api_contract.py: it refuses this guard's empty body before it loads.
+    # Tenants (TEN-02, TEN-03, TEN-05, TEN-06). The licence create is proved in
+    # apps/tenants/tests_api_contract.py.
     ("PATCH", "/tenant/org-units/{org_unit_id}", "tenants.OrgUnit", "org_unit"),
-    ("GET", "/tenant/org-units/{org_unit_id}/licences", "tenants.OrgUnit", "org_unit"),
     ("PATCH", "/tenant/licences/{licence_id}", "tenants.Licence", "licence"),
     ("PATCH", "/tenant/products/{product_id}", "tenants.TenantProduct", "tenant_product"),
-    ("GET", "/tenant/teams/{key}/members", "taxonomy.Team", "team_key"),
     ("GET", "/tenant/members/{user_id}/open-work", "identity.Membership", "member_user"),
     ("POST", "/tenant/members/{user_id}/remove", "identity.Membership", "member_user"),
     ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
@@ -75,10 +70,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # guard's empty one fails before the load, so apps/tenants/tests_scenarios.py (TEN-S13)
     # proves that route's 404.
     ("GET", "/tenant/register-lookups/{lookup_id}", "tenants.RegisterLookup", "register_lookup"),
-    # c9-case-contract: the workflow routes whose request an empty body satisfies. Each
-    # loads the case under row-level security before its stub answers 501, so another
-    # bank's case, action or evidence is a 404 now and stays one when the logic lands. The
-    # routes that need a body are proven the same way in apps/cases/tests_contract.py.
+    # Case workflow routes an empty body satisfies; those needing a body are proven in
+    # apps/cases/tests_contract.py.
     ("POST", "/changes/{change_id}/restore", "cases.ChangeCase", "case_change"),
     ("POST", "/changes/{change_id}/assessment/start", "cases.ChangeCase", "case_change"),
     ("GET", "/changes/{change_id}/actions", "cases.ChangeCase", "case_change"),
@@ -91,56 +84,49 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("DELETE", "/actions/{action_id}", "cases.Action", "case_action"),
     ("GET", "/evidence/{evidence_id}/download", "cases.Evidence", "case_evidence"),
     ("DELETE", "/evidence/{evidence_id}", "cases.Evidence", "case_evidence"),
-    # c8-reg-status: a legal entity's register row (REG-02).
+    # A legal entity's register row (REG-02).
     ("PATCH", "/obligations/{obligation_id}/register/entities/{org_unit_id}", "register.TenantObligationScope", "register_entity"),
-    # c8-reg-gaps-risk (REG-03). `POST /gaps/{gap_id}/accept-risk` needs a body the guard's
-    # empty one fails before the lookup, so apps/register/tests_gaps.py proves its 404.
+    # Gaps (REG-03); `POST /gaps/{gap_id}/accept-risk` needs a body, so
+    # apps/register/tests_gaps.py proves its 404.
     ("PATCH", "/gaps/{gap_id}", "register.Gap", "gap"),
     ("POST", "/gaps/{gap_id}/accept-risk/approve", "register.Gap", "gap"),
     ("POST", "/gaps/{gap_id}/reopen", "register.Gap", "gap"),
-    # c8-reg-links-history (REG-05): a link is removed by id.
+    # A link is removed by id (REG-05).
     ("DELETE", "/internal-links/{link_id}", "register.InternalLink", "internal_link"),
-    # c8-reg-units (REG-08): a Statement of Applicability unit, addressed by its id.
+    # A Statement of Applicability unit (REG-08).
     ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
     ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
-    # c8-participants (COL-04): a participant on a register entry for an obligation private to
-    # tenant A, so the obligation itself is invisible to tenant B.
-    ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
-    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
-    # c11-tenant-agents-budget-scope (AGT-04)
+    # A participant on a register entry for an obligation private to tenant A (COL-04); the
+    # subject rides in the query, which the guard fills too (B-14).
+    ("GET", "/participants?subjectType=obligation&subjectId={obligation_id}", "collab.Participant", "obligation_participant"),
+    ("DELETE", "/participants/{participant_id}?subjectType=obligation&subjectId={obligation_id}", "collab.Participant", "obligation_participant"),
+    # Tenant agents (AGT-04).
     ("PATCH", "/agents/{tenant_agent_id}", "agents.TenantAgent", "tenant_agent"),
-    # acc-scope-and-reach (ACC-08): deciding a request for tenant reach.
+    # ACC-08: deciding a request for tenant reach.
     ("POST", "/tenant/reach/requests/{request_id}/approve", "governance.TenantReachRequest", "tenant_reach_request"),
     ("POST", "/tenant/reach/requests/{request_id}/reject", "governance.TenantReachRequest", "tenant_reach_request"),
-    # c8-duty-occurrences (REG-07): a dated duty occurrence, addressed by its id.
+    # A dated duty occurrence (REG-07).
     ("POST", "/duty-occurrences/{occurrence_id}/complete", "register.DutyOccurrence", "duty_occurrence"),
-    # c9-case-participants (COL-04): a participant on a case of tenant A, for a change tenant B
-    # has no case for, so the case itself is invisible to tenant B.
-    ("GET", "/changes/{change_id}/participants", "collab.Participant", "case_participant"),
-    ("DELETE", "/changes/{change_id}/participants/{participant_id}", "collab.Participant", "case_participant"),
-    # acc-entries-and-log (ACC-01, ACC-03, ACC-08): an agent access entry, its keys and its log.
+    # A participant on a case of tenant A, for a change tenant B has no case for (COL-04).
+    ("GET", "/participants?subjectType=change&subjectId={change_id}", "collab.Participant", "case_participant"),
+    ("DELETE", "/participants/{participant_id}?subjectType=change&subjectId={change_id}", "collab.Participant", "case_participant"),
+    # ACC-01, ACC-03, ACC-08: an agent access entry, its keys and its log.
     ("GET", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
     ("PATCH", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
     ("POST", "/agent-access/{uuidstr:entry_id}/revoke", "agents.AgentAccess", "agent_access_entry"),
     ("POST", "/agent-access/{uuidstr:entry_id}/keys/{uuidstr:key_id}/revoke", "identity.ApiKey", "agent_access_key"),
     ("GET", "/agent-access/{uuidstr:entry_id}/calls", "agents.AgentAccess", "agent_access_entry"),
-    # d89-scope-items-logic (OWN-01): one of the bank's own scope items.
-    ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
-    # security-review-c10: the two chunk 10 id routes that take no body, a comment of tenant A
-    # on its own case and a notification of one of its members.
+    # A comment of tenant A on its own case, and a notification of one of its members.
     ("DELETE", "/comments/{comment_id}", "collab.Comment", "comment"),
     ("POST", "/notifications/{notification_id}/read", "collab.Notification", "notification"),
 ]
 
 
-# c8-support-session-guard (TEN-06, D-49, ADR 0042): every route a support session may call,
-# as (method, path as Ninja registers it under /api/v1). The reads the seven support
-# permissions cover, written out one by one, and nothing else: every other route, a GET
-# added later as much as any write, answers 403 `support_read_only` from
-# `SupportReadOnlyMiddleware` until someone adds it here, under
-# apps/shared/tests_support_routes.py. Deliberately left off: evidence and export downloads,
-# search, Ask, the person's own calendar feeds, member, role, team and key lists, the
-# tenant's profile, footprint and support-access list, proposals, agent runs and the AI log.
+# Every route a support session may call (TEN-06, D-49, ADR 0042), as (method, path under
+# /api/v1): the reads the seven support permissions cover, one by one. Anything else is 403
+# `support_read_only` until added here (apps/shared/tests_support_routes.py). Deliberately
+# off: downloads, search, Ask, calendar feeds, member, role, team and key lists, the tenant
+# profile, footprint, support access, proposals, agent runs and the AI log.
 SUPPORT_READ_ROUTES: frozenset[tuple[str, str]] = frozenset(
     {
         # library.read: the shared library and its reference lists.
@@ -156,7 +142,6 @@ SUPPORT_READ_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/library-updates"),
         ("GET", "/sources"),
         ("GET", "/sources/coverage"),
-        ("GET", "/taxonomy/dimensions"),
         ("GET", "/taxonomy/terms"),
         # watch.read: the feed, a change and the weekly briefing.
         ("GET", "/changes"),

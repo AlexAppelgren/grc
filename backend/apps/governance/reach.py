@@ -1,15 +1,10 @@
 """Tenant reach (ACC-08, D-72, ADR 0057): whether a bank's own register may reach the agents
 it runs itself.
 
-It is an egress decision about the bank's confidential judgement, so it carries the four
-eyes that exports and tenant exit carry: one person holding `security.manage` requests it
-and a different one approves it, each with a fresh passkey assertion. The check here answers
-409 `four_eyes_violation`; the `tenant_reach_request_four_eyes` check constraint is the
-database's word on it. Switching it off needs one person and takes effect from the next
-read, because it is the lever a security function reaches for at three in the morning.
-
-`tenant_reach_on(tenant)` is the one question the register reads for an agent access
-credential ask, before any entry's own toggle counts. No state row reads as off."""
+An egress decision, so four eyes with a passkey on each side: one `security.manage` holder
+requests, another approves (409 `four_eyes_violation`; the check constraint is the
+database's word). Switching it off needs one person and applies from the next read.
+`tenant_reach_on` is the one question the register asks; no state row reads as off."""
 
 from __future__ import annotations
 
@@ -26,6 +21,7 @@ from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ApprovalStatus
 from apps.taxonomy.schemas import PersonRef
+from apps.shared.people import person_ref
 
 SUBJECT_TYPE = "tenant_reach"
 REQUEST_SUBJECT_TYPE = "tenant_reach_request"
@@ -38,17 +34,13 @@ def tenant_reach_on(tenant_id: uuid.UUID) -> bool:
     return TenantReach.objects.filter(tenant_id=tenant_id, enabled=True).exists()
 
 
-def _person(user: Any) -> PersonRef | None:
-    return None if user is None else PersonRef(id=user.id, name=user.name)
-
-
 def request_row(request: TenantReachRequest) -> TenantReachRequestRow:
     return TenantReachRequestRow(
         id=request.id,
         status=request.status,  # type: ignore[arg-type]
         requested_by=PersonRef(id=request.requested_by.id, name=request.requested_by.name),
         requested_at=request.requested_at,
-        decided_by=_person(request.decided_by),
+        decided_by=person_ref(request.decided_by),
         decided_at=request.decided_at,
         version=request.version,
     )
@@ -59,7 +51,7 @@ def view(tenant_id: uuid.UUID) -> TenantReachView:
     waiting = pending(tenant_id)
     return TenantReachView(
         enabled=bool(state and state.enabled),
-        changed_by=_person(state.changed_by if state else None),
+        changed_by=person_ref(state.changed_by if state else None),
         changed_at=state.changed_at if state else None,
         pending=request_row(waiting) if waiting else None,
     )

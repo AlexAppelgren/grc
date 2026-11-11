@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -16,12 +16,6 @@ import { setStepUpHandler } from '@/shared/utils/api-client';
 // requests share one prompt.
 
 type Resolver = (confirmed: boolean) => void;
-
-const StepUpContext = createContext<() => Promise<boolean>>(() => Promise.resolve(false));
-
-export function useRequestStepUp(): () => Promise<boolean> {
-  return useContext(StepUpContext);
-}
 
 export function StepUpProvider({ children }: { children: ReactNode }) {
   const t = useT();
@@ -64,7 +58,7 @@ export function StepUpProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <StepUpContext.Provider value={request}>
+    <>
       {children}
       <Modal
         open={open}
@@ -79,13 +73,13 @@ export function StepUpProvider({ children }: { children: ReactNode }) {
         {error !== null ? <p className="mt-1 text-meta text-muted">{t('stepUp.refused')}</p> : null}
         <ButtonBar>
           <Button variant="outline" onClick={() => finish(false)} disabled={stepUp.isPending}>
-            {t('stepUp.cancel')}
+            {t('common.cancel')}
           </Button>
           <Button onClick={() => void confirm()} disabled={stepUp.isPending}>
             {t('stepUp.use')}
           </Button>
         </ButtonBar>
       </Modal>
-    </StepUpContext.Provider>
+    </>
   );
 }

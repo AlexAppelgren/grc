@@ -1098,9 +1098,11 @@ test.describe('taxonomy journeys', () => {
         // Tenant B's member opens the same address and finds nothing.
         const obligationId = address.split('/').pop() ?? '';
         apiGuard.allow(new RegExp(`/api/v1/[^?]*${obligationId}`), 404, "tenant A's own record is not found from tenant B");
-        // The card's panels ask beside it, from the id in the address; the comments list names
-        // its subject in the query, which the guard does not read, and is refused the same way.
+        // The card's panels ask beside it, from the id in the address; the comments and
+        // participants lists name their subject in the query, which the guard does not read,
+        // and are refused the same way.
         apiGuard.allow(/^\/api\/v1\/comments$/, 404, "tenant A's own record's comments are not found from tenant B");
+        apiGuard.allow(/^\/api\/v1\/participants$/, 404, "tenant A's own record's participants are not found from tenant B");
         const other = await secondPerson(browser, apiGuard, testInfo, LOGINS.secondBankAdmin);
         await other.goto(address);
         await expect(other.locator('[data-not-found]')).toBeVisible();

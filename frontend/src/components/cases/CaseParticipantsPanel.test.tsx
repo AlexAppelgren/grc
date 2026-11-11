@@ -1,13 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { CaseWorkflow } from '@/features/cases/types';
 import type { ChangeDetail } from '@/features/watch/api';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { CaseParticipantsPanel } from './CaseParticipantsPanel';
 
@@ -41,17 +39,7 @@ function serve({ meId, items = [erik, legal], write = () => ({ status: 204 }) }:
 }
 
 function renderPanel(permissions: string[], workflow = workflowOf()) {
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <CaseParticipantsPanel change={CHANGE} workflow={workflow} />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  return renderWith(<CaseParticipantsPanel change={CHANGE} workflow={workflow} />, { permissions });
 }
 
 function row(id: string): HTMLElement {
@@ -79,7 +67,7 @@ describe('CaseParticipantsPanel', () => {
     expect(within(row('p-legal')).queryByRole('button')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add a participant' })).toBeNull();
     fireEvent.click(within(row('p-erik')).getByRole('button', { name: 'Leave' }));
-    await waitFor(() => expect(sent.find((s) => s.method === 'delete')?.path).toBe('/api/v1/changes/c-1/participants/p-erik'));
+    await waitFor(() => expect(sent.find((s) => s.method === 'delete')?.path).toBe('/api/v1/participants/p-erik'));
   });
 
   it('names no owner before triage, and says when nobody takes part', async () => {
@@ -93,12 +81,12 @@ describe('CaseParticipantsPanel', () => {
     const sent = serve({ meId: 'u-anna', write: (s) => (s.method === 'post' ? { status: 201, data: erik } : { status: 204 }) });
     renderPanel(CONTRIBUTOR);
     fireEvent.click(await within(await waitFor(() => row('p-legal'))).findByRole('button', { name: 'Remove' }));
-    await waitFor(() => expect(sent.find((s) => s.method === 'delete')?.path).toBe('/api/v1/changes/c-1/participants/p-legal'));
+    await waitFor(() => expect(sent.find((s) => s.method === 'delete')?.path).toBe('/api/v1/participants/p-legal'));
     fireEvent.click(screen.getByRole('button', { name: 'Add a participant' }));
     fireEvent.click(await screen.findByRole('radio', { name: /Anna Nilsson/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-    await waitFor(() => expect(sent.find((s) => s.method === 'post')?.body).toEqual({ userId: 'u-anna' }));
-    expect(sent.find((s) => s.method === 'post')?.path).toBe('/api/v1/changes/c-1/participants');
+    await waitFor(() => expect(sent.find((s) => s.method === 'post')?.body).toEqual({ subjectType: 'change', subjectId: 'c-1', userId: 'u-anna' }));
+    expect(sent.find((s) => s.method === 'post')?.path).toBe('/api/v1/participants');
     expect(sent.find((s) => s.path === '/api/v1/reference/people')?.params).toEqual({ permission: 'cases.read' });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });

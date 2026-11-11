@@ -1,39 +1,21 @@
-"""Models of the proposals app (PRO-01, PRO-02, AC-PRO2; schema v0.3 `proposal`).
+"""Models of the proposals app (PRO-01, PRO-02, AC-PRO2).
 
-`Proposal` is the door into the library, not the library: it lives in the library zone
-(no tenant column, visible to every tenant's proposer and to the console) but is a plain
-model rather than a `LibraryModel`, because people and agents create proposals from
-apps/proposals/logic.py while the fence reserves library writes for
-apps/proposals/apply.py, which applies an approved payload inside `library_write()`.
+`Proposal` is the door into the library, not the library: a plain model in the library zone,
+created from apps/proposals/logic.py, while only apps/proposals/apply.py writes library rows.
+A batch (PRO-04, AGT-05) is one proposal with `is_batch` and a `ProposalBatchRow` per record,
+each written once and decided once. `ProposalTenant` links a proposal a bank made to that
+bank under row-level security.
 
-`ProposalBatchRow` is a batch's rows (PRO-04, AGT-05): a batch is one proposal with
-`is_batch` set, and each library record it would change is a row carrying the preview the
-reviewer decides on, written once and decided once.
+`owner_tenant` is a zone, not a link (INV-07, OWN-03, D-57, ADR 0050): a proposal of the
+bank's own record is decided inside that bank and never reaches the console. `logic.create`
+sets it, never a request body. `proposal` is a mixed table in the split shape (H15): a bank's
+session may insert, beside its own rows, only a shared proposal it files; the console reads
+no owned row, because the database hides it.
 
-`ProposalTenant` is the tenant half: a proposal a bank's own person or agent made is
-linked to that bank in its own tenant table under forced row-level security. A proposal to
-the shared library names no bank on its own row.
-
-`owner_tenant` is the one exception, and it is not a link but a zone (INV-07, OWN-03, D-57,
-ADR 0050): a proposal of the bank's own record belongs to that bank, is decided inside it
-under `private_records.approve`, and never reaches the console. The server sets it in
-`logic.create` from the target, the filing session's bank for a private record or a worker
-run's bank, never from a request body. Since proposals 0009 `proposal` is a mixed table
-under forced row-level security in the split shape (H15): reads are the shared rows and
-the session's own, updates and deletes stay in the session's own zone, and beside the
-session's own zone a bank's session may insert one thing only, a shared proposal it files
-(`shared_proposal_filed`). The console, which has no tenant, reads no owned row at all:
-the database hides it, not a filter.
-
-`kind` and `status` are tier-one kinds (apps/shared/kinds.py). The payload's shape is
-named per kind in apps/proposals/schemas.py and validated when the proposal is created.
-The check constraint `proposal_four_eyes` (RunSQL in migration 0001, widened in migration
-0003) is the database's word on "never the proposer": refused for a repeated user, a
-repeated key or a repeated agent definition, and for a reviewing key that names no agent
-(PRO-S13, PRO-S14, D-62, ADR 0054). `proposed_by_agent`, `reviewed_by_api_key` and
-`reviewed_by_agent` are copied from the acting API key at the one write path (a check
-constraint cannot dereference a key), because a platform key holding `proposals:review`
-is a second, independent agent that may work the same queue a person does.
+`proposal_four_eyes` (RunSQL) is the database's word on "never the proposer": a repeated
+user, key or agent definition, and a reviewing key that names no agent, are refused
+(PRO-S13, PRO-S14, D-62, ADR 0054). The agent columns are copied from the acting key at the
+one write path, since a constraint cannot dereference a key.
 """
 
 from __future__ import annotations
@@ -47,30 +29,16 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from apps.shared.tenancy import TenantModel
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class ProposalKind(enum.StrEnum):
-    """What a proposal changes; apply() branches on it. Chunk 2: the vocabulary and term
-    kinds. Chunk 4 adds `new_obligation_version`, a new summary in force from a date, with
-    the scope terms it changes. R1 wave 2 adds `new_instrument` and `new_obligation`, which
-    create a record rather than change one and so name no target (PRO-01, INV-01, INV-03).
-    `update_obligation` and `retire_record` wait for a scenario that needs them, and a
-    watch link is never a proposal (D-64). Wave 3 adds `new_provision` and
-    `new_provision_version`, a law's verbatim text, never a standard's (INV-02, INV-08).
-    R2 adds `obligation_scope`, the scope terms of existing obligations changed without a
-    new summary: the re-tag a batch carries (PRO-04, AGT-05). A backfill is a batch of an
-    existing kind, not a kind of its own. `new_recurring_duty` adds the schedule a duty of an
-    obligation in force falls due on, its only door into the library (REG-07). `new_control`
-    is a control of one of a bank's own obligations (OWN-05, D-99): never a library row, but
-    a REG-05 internal item of the control link kind in the bank's zone, linked to that
-    obligation by the same private approval (apps/proposals/private_controls.py).
-    `new_translations` adds machine translations of an existing shared record's title and
-    summary in content languages it lacks (INV-05, I18N-01, D-129): rows are only added,
-    always labelled machine-made, and the original stays what it was."""
+    """What a proposal changes; apply() branches on it. New-record kinds (`new_instrument`,
+    `new_obligation`, `new_provision`, `new_recurring_duty`) name no target (PRO-01, INV-01,
+    INV-02, INV-03, REG-07). `obligation_scope` is a batch's re-tag (PRO-04, AGT-05).
+    `new_control` is a bank's own control, an internal item in the bank's zone, never a
+    library row (OWN-05, D-99). `new_translations` only adds machine-made rows (INV-05,
+    D-129). A watch link is never a proposal (D-64)."""
 
     VOCABULARY_CREATE = "vocabulary_create"
     VOCABULARY_RELABEL = "vocabulary_relabel"
@@ -107,7 +75,7 @@ class OriginType(enum.StrEnum):
 
 class Proposal(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    kind = models.CharField(max_length=40, choices=_choices(ProposalKind))
+    kind = models.CharField(max_length=40, choices=choices(ProposalKind))
     target_type = models.CharField(max_length=64, blank=True)
     target_id = models.UUIDField(null=True, blank=True)
     change_id = models.UUIDField(null=True, blank=True)
@@ -120,7 +88,7 @@ class Proposal(models.Model):
     # queue shows it, and no agent approves while it stands.
     risk_flags = ArrayField(models.CharField(max_length=40), default=list, blank=True)
     effective_from = models.DateField(null=True, blank=True)
-    origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    origin = models.CharField(max_length=16, choices=choices(OriginType))
     agent_run_id = models.UUIDField(null=True, blank=True)
     model = models.CharField(max_length=200, blank=True)
     proposed_by_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -128,7 +96,7 @@ class Proposal(models.Model):
     proposed_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     idempotency_key = models.CharField(max_length=200, null=True, blank=True)
     proposed_in_tenant = models.BooleanField(default=False)
-    status = models.CharField(max_length=16, choices=_choices(ProposalStatus), default=ProposalStatus.OPEN.value)
+    status = models.CharField(max_length=16, choices=choices(ProposalStatus), default=ProposalStatus.OPEN.value)
     reviewed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     reviewed_by_api_key = models.ForeignKey("identity.ApiKey", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     reviewed_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -139,9 +107,8 @@ class Proposal(models.Model):
     corrected_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     corrected_at = models.DateTimeField(null=True, blank=True)
     applied_at = models.DateTimeField(null=True, blank=True)
-    # A batch (PRO-04) is this row plus `row_count` rows in `proposal_batch_row`; a single
-    # proposal counts none. The check constraint `proposal_batch_row_count` holds the two
-    # together.
+    # A batch (PRO-04) is this row plus `row_count` rows in `proposal_batch_row`, held
+    # together by `proposal_batch_row_count`.
     is_batch = models.BooleanField(default=False)
     row_count = models.PositiveIntegerField(default=0)
     # The bank whose own record this proposes (INV-07, OWN-03), or null for the shared
@@ -171,15 +138,9 @@ class Proposal(models.Model):
                 name="proposal_batch_row_count",
             ),
         ]
-        # The four-eyes check constraint `proposal_four_eyes` is created by RunSQL in
-        # migration 0001 as `reviewed_by_id IS NULL OR proposed_by_user_id IS NULL OR
-        # reviewed_by_id <> proposed_by_user_id`, and widened by RunSQL in migration 0003
-        # with the same clause for the reviewing key and for the reviewing agent, plus a
-        # clause refusing a reviewing key that names no agent (`reviewed_by_api_key_id IS
-        # NULL OR reviewed_by_agent_id IS NOT NULL`): without it two unbound platform keys
-        # would both carry a NULL agent, and NULL <> NULL is unknown in SQL, so the
-        # agent comparison would pass on a missing value rather than on independence.
-        # Django cannot spell `<>`, and the four-eyes guard reads the definition back from
+        # `proposal_four_eyes` is RunSQL (migrations 0001, 0003): reviewer differs from the
+        # proposer by user, key and agent, and a reviewing key must name an agent, since
+        # NULL <> NULL would pass two unbound keys. The four-eyes guard reads it back from
         # pg_constraint.
 
     def __str__(self) -> str:
@@ -210,11 +171,10 @@ class ProposalBatchRowQuerySet(models.QuerySet["ProposalBatchRow"]):
         raise BatchRowRefused("A batch row is never deleted")
 
     def decide(self, row_ids: Collection[uuid.UUID], *, decision: str, rejection_reason: Any, decided_by: Any, decided_at: Any) -> None:
-        """The one bulk write a batch row takes: the rows `row_ids` given the same decision in
-        one UPDATE of the decision fields alone, so a reviewer's call on many rows costs one
-        statement per outcome. A row among them already decided refuses the whole write, as
-        `save()` refuses one row; the trigger `proposal_batch_row_decision_guard` stays the
-        database's word on every row it touches."""
+        """The one bulk write a batch row takes: one decision for the rows `row_ids` in one
+        UPDATE of the decision fields. A row already decided refuses the whole write, as
+        `save()` does; the trigger `proposal_batch_row_decision_guard` stays the database's
+        word."""
         ids = set(row_ids)
         pending = self.filter(pk__in=ids, decision=BatchRowDecision.PENDING.value)
         written = models.QuerySet.update(
@@ -226,18 +186,13 @@ class ProposalBatchRowQuerySet(models.QuerySet["ProposalBatchRow"]):
 
 class ProposalBatchRow(models.Model):
     """One library record a batch would change (PRO-04, AGT-05), with the preview computed
-    when the batch was filed: `before` and `after` hold the fields that would change and
-    nothing else, so the reviewer decides on what was proposed, not on what the library
-    says now. Library zone like its proposal: no tenant column, and a bank's re-tag request
-    never becomes one (AGT-05 keeps re-tagging in the console).
+    when filed: `before` and `after` hold only the fields that would change. Library zone,
+    no tenant column.
 
-    Append-only with one permitted update: `decision` moves from `pending` to `approved` or
-    `rejected` once, with `decided_at`, `decided_by` and, for a rejection, a reason from the
-    `rejection_reason` list. The trigger `proposal_batch_row_decision_guard` (proposals 0008)
-    refuses every other UPDATE, any second decision, a decision by the batch's own proposer
-    (four eyes) and any DELETE for every client but the schema owner's stated fix; `save()`
-    and the queryset refuse first for the ORM. `decided_by` is a person; an agent's decision
-    on a row is named by its audit row, as on the parent proposal."""
+    Append-only but for one update: `decision` moves from `pending` once, with `decided_at`,
+    `decided_by` (a person) and, for a rejection, a reason. The trigger
+    `proposal_batch_row_decision_guard` refuses every other UPDATE, a second decision, a
+    decision by the proposer and any DELETE; `save()` and the queryset refuse first."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     proposal = models.ForeignKey(Proposal, on_delete=models.PROTECT, related_name="batch_rows")
@@ -246,7 +201,7 @@ class ProposalBatchRow(models.Model):
     subject_id = models.UUIDField()
     before = models.JSONField(default=dict, blank=True)  # schema: ProposalBatchRowPayload
     after = models.JSONField(default=dict, blank=True)  # schema: ProposalBatchRowPayload
-    decision = models.CharField(max_length=16, choices=_choices(BatchRowDecision), default=BatchRowDecision.PENDING.value)
+    decision = models.CharField(max_length=16, choices=choices(BatchRowDecision), default=BatchRowDecision.PENDING.value)
     rejection_reason = models.ForeignKey("taxonomy.RejectionReason", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     decided_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     decided_at = models.DateTimeField(null=True, blank=True)
@@ -288,11 +243,9 @@ class ProposalBatchRow(models.Model):
 
 
 class ProposalTenant(TenantModel):
-    """Which tenant a proposal was made in (PRO-03). A tenant table of its own, under
-    forced row-level security, so a tenant sees the library proposals its own people made
-    without the library-zone `proposal` row ever carrying a tenant id: the console reads
-    `proposed_in_tenant` and withholds the proposer's identity without learning which bank
-    they work for."""
+    """Which tenant a proposal was made in (PRO-03), under forced row-level security, so the
+    library-zone `proposal` row never carries a tenant id and the console withholds the
+    proposer without learning their bank."""
 
     proposal = models.ForeignKey(Proposal, on_delete=models.PROTECT, related_name="tenant_links")
     created_at = models.DateTimeField(auto_now_add=True)

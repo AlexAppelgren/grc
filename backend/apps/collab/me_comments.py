@@ -1,14 +1,10 @@
 """A person's own comments and mentions for My work's "Comments and mentions" panel (COL-01,
-HOM-05), filtered by each record's read permission.
+HOM-05).
 
-The subject registry (`collab/subjects.py`) decides what the caller may read: a comment on a
-kind whose read permission the caller's roles lack is left out of the rows and of the total,
-and the kind, never the record, is named in `permissionLimitedKinds`. Each row's title is
-the record's own title in the caller's language order, read today, and a record the caller's
-bank no longer shows under row-level security leaves its comment out.
-
-A deleted comment has nothing left to read and is not listed. The body is tenant content the
-caller may see: it travels in the response and nowhere else, and nothing here logs it.
+Comments on kinds the caller's roles cannot read are left out of rows and total, and the
+kind (never the record) is named in `permissionLimitedKinds`. Titles are the record's own,
+read now; a record row-level security hides leaves its comment out, as does deletion. The
+body travels in the response only; nothing here logs it.
 """
 
 from __future__ import annotations

@@ -16,6 +16,7 @@ import {
 } from '@/features/shared/tone-by-kind';
 import { localeTags, type MessageKey, type Translate } from '@/shared/i18n';
 import type { FormatContext } from '@/shared/utils/format';
+import { humaniseKey } from '@/shared/utils/format';
 
 // How an agent, a definition, a version, a run and a research request read
 // (design/system/pills-and-labels.md, "Chunk 11"). Every pill's tone comes
@@ -173,6 +174,6 @@ export function runMinutes(run: Pick<AgentRun, 'startedAt' | 'finishedAt'>): num
 
 /** A definition is named by its stable key, read as words: `watch-sweeper` is "Watch sweeper". */
 export function definitionName(agentKey: string): string {
-  const words = agentKey.replace(/[._:-]+/g, ' ').trim();
+  const words = humaniseKey(agentKey).trim();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }

@@ -157,12 +157,10 @@ def list_proposals(request: HttpRequest, query: Query[ProposalQuery], page: Quer
     scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054). No
     bank role and no tenant key reaches it either way.
 
-    Errors to branch on: `unauthenticated` (401) without a session or a key;
-    `permission_denied` (403) without `proposals.review` or `proposals:review`;
-    `agent_not_bound` (403) for a key holding the scope but bound to no agent definition;
-    `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`, or
-    `order` one that is neither `oldest` nor `newest`;
-    `validation_error` (422) when the page size or offset is out of range.
+    Errors to branch on: `permission_denied` (403) without `proposals.review` or
+    `proposals:review`; `agent_not_bound` (403) for a key holding the scope but bound to no
+    agent definition; `unknown_key` (422) when `origin` is a value that is neither `agent`
+    nor `user`, or `order` one that is neither `oldest` nor `newest`.
     """
     reviewer = require_reviewer(request)
     queryset = logic.queue(
@@ -206,9 +204,7 @@ def list_tenant_proposals(request: HttpRequest, query: Query[TenantProposalQuery
 
     Needs `vocab.manage`, the permission that manages this organisation's vocabularies.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `vocab.manage`; `not_found` (404) for a principal in no organisation;
-    `validation_error` (422) when the page size or offset is out of range.
+    Errors to branch on: `not_found` (404) for a principal in no organisation.
     """
     queryset = reading.tenant_queue(status=query.status, kind=query.kind, target_list=query.target_list)
     total = queryset.count()
@@ -252,9 +248,7 @@ def list_library_updates(request: HttpRequest, query: Query[LibraryUpdatesQuery]
     Needs `library.read`, which every member holds, and a session in an organisation: an API
     key has no bookmark of its own, so this list is a person's.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
-    without `library.read`; `not_found` (404) for a principal in no organisation;
-    `validation_error` (422) when the page size or offset is out of range.
+    Errors to branch on: `not_found` (404) for a principal in no organisation.
     """
     tenant = caller_tenant(request)
     membership = reading.membership_of(tenant, principal(request).subject_id)
@@ -374,16 +368,16 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     at most `WATCH_RUN_MAX_PROPOSALS` proposals (50 unless the platform sets another
     number); a retry of one it filed is not a new proposal and still answers.
 
-    Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or
-    a closed one; `run_budget_exhausted` (422) when the run has already filed as many
+    Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or a
+    closed one; `run_budget_exhausted` (422) when the run has already filed as many
     proposals as one run may, so close it and open another; `not_found` (404) when the run
-    named is not one this key opened;
-    `source_missing` (422) when a changed value carries no source, or a new record no
-    `sourceUrl`; `unknown_key` (422) for a kind, a list, a language, a term, a target
-    obligation or provision, an instrument, a parent provision, a provision kind, a level, a jurisdiction, an authority or a duty type the
-    library does not hold; `not_a_regime` (422) when a new instrument's regime is not a
-    term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
-    an obligation with a term of a dimension that mirrors the jurisdiction list;
+    named is not one this key opened; `source_missing` (422) when a changed value carries no
+    source, or a new record no `sourceUrl`; `unknown_key` (422) for a kind, a list, a
+    language, a term, a target obligation or provision, an instrument, a parent provision, a
+    provision kind, a level, a jurisdiction, an authority or a duty type the library does
+    not hold; `not_a_regime` (422) when a new instrument's regime is not a term of the
+    regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes an
+    obligation with a term of a dimension that mirrors the jurisdiction list;
     `duplicate_key` (409) when a new record's key is already a record's;
     `invalid_recurrence` (422) when a recurring duty's rule does not parse, is finer than a
     day, never falls due, or falls due more often than the cap in ten years;
@@ -392,17 +386,16 @@ def create_proposal(request: HttpRequest, body: ProposalCreateBody) -> Any:
     `PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number);
     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
     obligation whose instrument is not a standard; `licensed_text` (422) for a provision or
-    provision version under a standard, a source on a standard's obligation that is not
-    an https link, a standard's new obligation whose `refLabel` is not the standard's
-    official reference, or a `sourceLabel` under a standard that is anything but that
-    reference; `one_conformance_obligation` (422) for a new obligation under a standard
-    that already holds one; `standard_term_required` (422) when a standard's obligation
-    would carry no standard term, or more than one; `idempotency_conflict` (409) when the
-    same proposer's `Idempotency-Key` arrives with a different body or from another bank
-    (a key is its sender's own: another caller's value files a proposal of its own);
-    `validation_error` (422) also for an `Idempotency-Key` longer than 200 characters;
-    `permission_denied` (403) without
-    the permission or the scope; `unauthenticated` (401) without a credential.
+    provision version under a standard, a source on a standard's obligation that is not an
+    https link, a standard's new obligation whose `refLabel` is not the standard's official
+    reference, or a `sourceLabel` under a standard that is anything but that reference;
+    `one_conformance_obligation` (422) for a new obligation under a standard that already
+    holds one; `standard_term_required` (422) when a standard's obligation would carry no
+    standard term, or more than one; `idempotency_conflict` (409) when the same proposer's
+    `Idempotency-Key` arrives with a different body or from another bank (a key is its
+    sender's own: another caller's value files a proposal of its own); `validation_error`
+    (422) also for an `Idempotency-Key` longer than 200 characters; `permission_denied`
+    (403) without the permission or the scope.
     """
     # Ungated by design: logic-gate (proposals.create, library_vocab.manage or the proposals:write scope; PRO-01).
     who = require_proposer(request)
@@ -459,11 +452,9 @@ def approve_all_proposals(request: HttpRequest, body: ProposalApproveAllBody) ->
     Needs the platform permission `proposals.review` from a person, stepped up fresh. An
     agent's key approves one proposal at a time and never reaches this route.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `proposals.review`; `step_up_required` (403) without a fresh passkey
-    assertion; `approval_running` (409) while the caller's earlier run is still running;
-    `unknown_key` (422) when `origin` is neither `agent` nor `user`; `validation_error` (422)
-    when `kind` is longer than 200 characters.
+    Errors to branch on: `approval_running` (409) while the caller's earlier run is still
+    running; `unknown_key` (422) when `origin` is neither `agent` nor `user`;
+    `validation_error` (422) when `kind` is longer than 200 characters.
     """
     reviewer = require_reviewer(request)
     state = approve_all.start(reviewer=reviewer, kind=body.kind, origin=body.origin, step_up_assertion_id=enforce_step_up(request))
@@ -489,9 +480,6 @@ def read_approve_all_proposals(request: HttpRequest) -> ProposalApproveAll:
 
     A read: it changes nothing and writes no audit row. Each reviewer reads only their own
     run. Needs the platform permission `proposals.review` from a person.
-
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `proposals.review`.
     """
     return ProposalApproveAll.model_validate(approve_all.state_of(require_reviewer(request).user.id))
 
@@ -538,11 +526,10 @@ def get_proposal(
     independent agent opens the same proposal a person opens before it decides. No bank role
     and no bank's key reaches it.
 
-    Errors to branch on: `unauthenticated` (401) without a session or a key;
-    `permission_denied` (403) without `proposals.review` or `proposals:review`, or for a
-    bank's key; `agent_not_bound` (403) for a key holding the scope but bound to no agent
-    definition; `not_found` (404) for a proposal that does not exist and for anything that
-    is not a UUID.
+    Errors to branch on: `permission_denied` (403) without `proposals.review` or
+    `proposals:review`, or for a bank's key; `agent_not_bound` (403) for a key holding the
+    scope but bound to no agent definition; `not_found` (404) for a proposal that does not
+    exist and for anything that is not a UUID.
     """
     reviewer = require_reviewer(request)
     return reading.detail(logic.by_id(uuid_or_404(proposal_id)), language_order(request), reviewer=reviewer)
@@ -590,8 +577,9 @@ def approve_proposal(
     obligation version, a new instrument, a new obligation, a library list row and a
     taxonomy term (D-79). What it confirmed never reads as a person's check: the record
     names the confirming agent, a translation it approves stays labelled machine-made,
-    every list or term label it writes is stored machine-made, and its correction may
-    reword a summary but never move `originalLanguage`, which answers `validation_error`.
+    and every list or term label it writes is stored machine-made. An agent approves a
+    proposal only as it was filed, and only one a platform agent or a platform person filed:
+    a correction, and a proposal filed from an organisation, wait for a person.
 
     An agent's approval is a model call, and every model call is logged: a key sends the
     call behind its approval in `decision` and the open run of its own key it was made in
@@ -605,11 +593,12 @@ def approve_proposal(
     `run_not_open` (422) when a key names no run in `agentRunId`, or a run it has closed;
     `not_found` (404) when that run is one another key opened, or when there is no such
     proposal; `four_eyes_violation` when the reviewer is the person, key or agent who made
-    the proposal; `person_review_required` when an agent approves a kind whose record
-    cannot name its confirming agent, a new provision or a provision's new text, which
-    waits for a person; `risk_flagged` (409) when an agent approves a proposal whose
-    `riskFlags` is not empty, or corrects it with text the injection screen flags, which
-    waits for a person who reads the flag; `invalid_transition` when the proposal was
+    the proposal, or when a key was created by the person who made the proposal or created
+    the proposing key; `person_review_required` (409) when an agent approves a kind whose
+    record cannot name its confirming agent (a new provision or a provision's new text), a
+    proposal filed from an organisation, or sends `payloadOverrides` or `fieldSources`,
+    each of which waits for a person; `risk_flagged` (409) when an agent approves a proposal
+    whose `riskFlags` is not empty, which waits for a person who reads the flag; `invalid_transition` when the proposal was
     already approved or rejected, which is also what a repeated or simultaneous second call
     answers, since nothing is ever applied twice, and for a batch, which is decided row by
     row through `POST /proposal-batches/{batchId}/decide`; `source_missing` when a correction
@@ -784,25 +773,24 @@ def create_proposal_batch(request: HttpRequest, body: ProposalBatchInput) -> Any
     answers **201**. Every text it arrives with is read by the injection screen and stored
     as it arrived; what the screen finds is returned in `riskFlags`.
 
-    Errors to branch on: `unauthenticated` (401) without a session or a key;
-    `permission_denied` (403) without `proposals.review` or `proposals:write`, and for a
-    bank's session or key; `batch_too_large` (422) above `PROPOSAL_BATCH_MAX_ROWS` rows;
-    `unknown_key` (422) for a kind that is not a batch kind, an obligation the library does
-    not hold in force, or a term that is not a live term; `jurisdiction_term_mirrored`
-    (422) for a term of a dimension that mirrors the jurisdiction list; `source_missing`
-    (422) for an entry without a source; `standard_term_only_on_standards` (422) when a
-    standard's term would sit on a law's obligation; `standard_term_required` (422) when a
-    standard's obligation would carry no standard term or more than one; `licensed_text`
-    (422) for a source on a standard's obligation that is not an https link, or a
-    `sourceLabel` under a standard that is not its official reference; `run_not_open`
-    (422) when a key names no run or a closed one; `run_budget_exhausted` (422) when the
-    run has filed as many proposals as one run may; `not_found` (404) when the run is not
-    one this key opened; `idempotency_conflict` (409) when the same proposer's
-    `Idempotency-Key` arrives with a different body; `validation_error` (422) for a body
-    the schema refuses, an obligation named twice, a term both added and removed, an entry
-    that changes nothing, a source that is neither a link nor a provision's key, a
-    `sourceUrl` that is not an https link, or an `Idempotency-Key` longer than 200
-    characters.
+    Errors to branch on: `permission_denied` (403) without `proposals.review` or
+    `proposals:write`, and for a bank's session or key; `batch_too_large` (422) above
+    `PROPOSAL_BATCH_MAX_ROWS` rows; `unknown_key` (422) for a kind that is not a batch kind,
+    an obligation the library does not hold in force, or a term that is not a live term;
+    `jurisdiction_term_mirrored` (422) for a term of a dimension that mirrors the
+    jurisdiction list; `source_missing` (422) for an entry without a source;
+    `standard_term_only_on_standards` (422) when a standard's term would sit on a law's
+    obligation; `standard_term_required` (422) when a standard's obligation would carry no
+    standard term or more than one; `licensed_text` (422) for a source on a standard's
+    obligation that is not an https link, or a `sourceLabel` under a standard that is not
+    its official reference; `run_not_open` (422) when a key names no run or a closed one;
+    `run_budget_exhausted` (422) when the run has filed as many proposals as one run may;
+    `not_found` (404) when the run is not one this key opened; `idempotency_conflict` (409)
+    when the same proposer's `Idempotency-Key` arrives with a different body;
+    `validation_error` (422) for a body the schema refuses, an obligation named twice, a
+    term both added and removed, an entry that changes nothing, a source that is neither a
+    link nor a provision's key, a `sourceUrl` that is not an https link, or an
+    `Idempotency-Key` longer than 200 characters.
     """
     # Ungated by design: logic-gate (proposals.review from the console or the proposals:write scope from a platform key; PRO-04, AGT-05).
     proposer = require_batch_proposer(request)
@@ -845,9 +833,8 @@ def get_proposal_batch(request: HttpRequest, batch_id: str = _BATCH_PATH) -> Pro
 
     Needs the platform permission `proposals.review`. No bank role reaches it.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `proposals.review`; `not_found` (404) for a batch that does not exist, a
-    proposal that is not a batch, and anything that is not a UUID.
+    Errors to branch on: `not_found` (404) for a batch that does not exist, a proposal that
+    is not a batch, and anything that is not a UUID.
     """
     return batch.read(batch.by_id(uuid_or_404(batch_id)), language_order(request))
 
@@ -887,16 +874,15 @@ def decide_proposal_batch(request: HttpRequest, body: ProposalBatchDecision, bat
 
     Errors to branch on: `unauthenticated` (401) without a session, a key included;
     `permission_denied` (403) without `proposals.review`, a bank's session included;
-    `step_up_required` (403) without a fresh passkey assertion; `not_found` (404) for a batch
-    that does not exist, a proposal that is not a batch, and anything that is not a UUID;
-    `four_eyes_violation` (409) when the reviewer proposed the batch or asked for the
-    re-tag that filed it, which decides nothing;
-    `invalid_transition` (409) when the batch or a named row is already decided;
-    `stale_write` (409) when a row named for approval is stale, or every row left to approve
-    is; `reason_required` (422) for a rejection without a live row of the rejection reason
-    list; `unknown_key` (422) for a row id that is not a row of this batch;
-    `validation_error` (422) for a decision that is not `approved` or `rejected`, a row
-    named twice, a reason on an approval, and a body that decides nothing.
+    `not_found` (404) for a batch that does not exist, a proposal that is not a batch, and
+    anything that is not a UUID; `four_eyes_violation` (409) when the reviewer proposed the
+    batch or asked for the re-tag that filed it, which decides nothing; `invalid_transition`
+    (409) when the batch or a named row is already decided; `stale_write` (409) when a row
+    named for approval is stale, or every row left to approve is; `reason_required` (422)
+    for a rejection without a live row of the rejection reason list; `unknown_key` (422) for
+    a row id that is not a row of this batch; `validation_error` (422) for a decision that
+    is not `approved` or `rejected`, a row named twice, a reason on an approval, and a body
+    that decides nothing.
     """
     user = caller_user(request)
     proposal = batch.decide(
@@ -947,10 +933,6 @@ def list_private_proposals(request: HttpRequest, page: Query[PageQuery]) -> Priv
     Needs `private_records.approve`, which the Compliance officer and Approver roles hold. It is
     never a platform permission and never an API key scope, so no key and no platform session
     reaches it.
-
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
-    without `private_records.approve`; `validation_error` (422) when the page size or offset is
-    out of range.
     """
     return private_approval.queue(reader=caller_user(request), limit=page.limit, offset=page.offset)
 
@@ -980,15 +962,13 @@ def approve_private_proposal(request: HttpRequest, body: PrivateProposalApproveB
     the four-eyes constraint refuses that row on its own. An agent never approves here, so a
     record an agent found reads as found by the agent and approved by this person.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
-    without `private_records.approve`; `step_up_required` (403) without a fresh passkey
-    assertion; `not_found` (404) for another organisation's proposal, a proposal to the shared
-    library, one that does not exist and anything that is not a UUID; `four_eyes_violation`
-    (409) when the caller filed the proposal; `invalid_transition` (409) when it is already
-    decided; `duplicate_key` (409) when its key was taken while it waited; `unknown_key` (422)
-    when a row it names was retired while it waited; `validation_error` (422) for a field the
-    body does not name, a note longer than 2000 characters, or a record whose instrument is
-    not the organisation's own.
+    Errors to branch on: `not_found` (404) for another organisation's proposal, a proposal
+    to the shared library, one that does not exist and anything that is not a UUID;
+    `four_eyes_violation` (409) when the caller filed the proposal; `invalid_transition`
+    (409) when it is already decided; `duplicate_key` (409) when its key was taken while it
+    waited; `unknown_key` (422) when a row it names was retired while it waited;
+    `validation_error` (422) for a field the body does not name, a note longer than 2000
+    characters, or a record whose instrument is not the organisation's own.
     """
     user = caller_user(request)
     return private_approval.approve(
@@ -1022,13 +1002,12 @@ def reject_private_proposal(request: HttpRequest, body: PrivateProposalRejectBod
     person rejecting is never the proposer. The audit and outbox rows carry the reason's key
     and never the note.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
-    without `private_records.approve`; `not_found` (404) for another organisation's proposal, a
-    proposal to the shared library, one that does not exist and anything that is not a UUID;
-    `four_eyes_violation` (409) when the caller filed the proposal; `invalid_transition` (409)
-    when it is already decided; `reason_required` (422) without a live row of the rejection
-    reason list or without a note; `validation_error` (422) for a field the body does not name
-    or a note longer than 2000 characters.
+    Errors to branch on: `not_found` (404) for another organisation's proposal, a proposal
+    to the shared library, one that does not exist and anything that is not a UUID;
+    `four_eyes_violation` (409) when the caller filed the proposal; `invalid_transition`
+    (409) when it is already decided; `reason_required` (422) without a live row of the
+    rejection reason list or without a note; `validation_error` (422) for a field the body
+    does not name or a note longer than 2000 characters.
     """
     user = caller_user(request)
     return private_approval.reject(

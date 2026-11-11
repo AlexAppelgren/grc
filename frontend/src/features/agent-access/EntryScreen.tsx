@@ -6,11 +6,11 @@ import { useState } from 'react';
 import { BackLink } from '@/components/admin/AdminGate';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { CheckRow } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
 import { AccessLog } from '@/features/agent-access/AccessLog';
 import { EntryScope, SECURITY_HREF, useOrgReach } from '@/features/agent-access/AccessScreen';
 import { Credentials } from '@/features/agent-access/Credentials';
@@ -58,18 +58,20 @@ function RevokeDialog({ entry, onClose, onRevoked }: { entry: AccessEntry; onClo
   const t = useT();
   const revoke = useRevokeEntry();
   return (
-    <Modal open onOpenChange={(next) => (next ? undefined : onClose())} title={t('agentAccess.revoke.title', { name: entry.name })} description={t('agentAccess.revoke.body')}>
-      {revoke.isError ? <ProblemAlert error={revoke.error} codes={refusals(t)} /> : null}
-      <ButtonBar>
-        <Button variant="outline" onClick={onClose} disabled={revoke.isPending}>
-          {t('agentAccess.revoke.keep')}
-        </Button>
-        <Button variant="danger" disabled={revoke.isPending} onClick={() => revoke.mutate(entry, { onSuccess: onRevoked })}>
-          {t('agentAccess.revoke.confirm')}
-        </Button>
-      </ButtonBar>
-      <p className="mt-2 text-meta text-muted">{t('agentAccess.revoke.stepUpHint')}</p>
-    </Modal>
+    <ConfirmDialog
+      title={t('agentAccess.revoke.title', { name: entry.name })}
+      body={t('agentAccess.revoke.body')}
+      action={t('agentAccess.revoke.confirm')}
+      cancelLabel={t('common.keep')}
+      danger
+      busy={revoke.isPending}
+      error={revoke.error}
+      codes={refusals(t)}
+      onConfirm={() => revoke.mutate(entry, { onSuccess: onRevoked })}
+      onClose={onClose}
+    >
+      <p className="text-meta text-muted">{t('agentAccess.revoke.stepUpHint')}</p>
+    </ConfirmDialog>
   );
 }
 
@@ -83,9 +85,9 @@ function Entry({ entry, onReload }: { entry: AccessEntry; onReload: () => void }
   const actions = entry.active ? (
     <ButtonBar className="mt-0">
       <Button variant="danger" onClick={() => setDialog('revoke')}>
-        {t('agentAccess.entry.revoke')}
+        {t('common.revoke')}
       </Button>
-      <Button onClick={() => setDialog('edit')}>{t('agentAccess.entry.edit')}</Button>
+      <Button onClick={() => setDialog('edit')}>{t('common.edit')}</Button>
     </ButtonBar>
   ) : null;
 

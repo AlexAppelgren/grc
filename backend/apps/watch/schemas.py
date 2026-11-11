@@ -52,11 +52,11 @@ from pydantic import ConfigDict, HttpUrl, UrlConstraints, model_validator
 from pydantic.json_schema import JsonDict
 
 from apps.cases.schemas import ASSESSMENT_EXAMPLE as CASES_ASSESSMENT_EXAMPLE
-from apps.cases.schemas import NOTE_MAX, OWNER_TEAM_REF, CasesAssessment, CasesVocabularyRef
+from apps.cases.schemas import NOTE_MAX, OWNER_TEAM_REF, CasesAssessment
 from apps.governance.schemas import AiCitation
-from apps.library.schemas import SHOWN_NAME, AgentRef, LibraryRef, LibraryResponse
+from apps.library.schemas import SHOWN_NAME, AgentRef, LibraryResponse
 from apps.shared.schemas import AgentDecision, CamelSchema, PageQuery, WriteBody
-from apps.taxonomy.schemas import PersonRef
+from apps.shared.schemas import NamedRef, VocabRef
 
 __all__ = ["CamelSchema"]
 
@@ -522,7 +522,7 @@ class WatchSourceOut(CamelSchema):
         ),
         examples=["https://www.fi.se/"],
     )
-    kind: LibraryRef = Field(
+    kind: VocabRef = Field(
         description=(
             "What kind of place this is, as `{key, kind, label}` from the `source_kind` "
             "library vocabulary. The values are rows a platform admin may extend without a "
@@ -1587,7 +1587,7 @@ class WatchChange(CamelSchema):
         description="What the reform is called, in the source's words.",
         examples=["FI adopts amended rules on paying for investment research"],
     )
-    change_type: LibraryRef = Field(
+    change_type: VocabRef = Field(
         description=(
             "The kind of change, as `{key, kind, label}` from the `change_type` library "
             "vocabulary; the label is in the reader's language. The `kind` member is the "
@@ -1624,7 +1624,7 @@ class WatchChange(CamelSchema):
         ),
         examples=["Teams that pay for external research should confirm that documented criteria exist."],
     )
-    suggested_urgency: LibraryRef | None = Field(
+    suggested_urgency: VocabRef | None = Field(
         description=(
             "The agent's suggested urgency as `{key, kind, label}` from the `urgency` library "
             "vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or "
@@ -1637,7 +1637,7 @@ class WatchChange(CamelSchema):
     key_date_precision: DatePrecision | None = Field(description=_PRECISION, examples=["day"])
     key_date_label: str | None = Field(description="What that date is, in the source's words.", examples=["In force"])
     recurrence_rule: str | None = Field(description="How a returning date returns, in words. Null for a one-off reform.", examples=[None])
-    flags: list[LibraryRef] = Field(
+    flags: list[VocabRef] = Field(
         description=(
             "What the change is about across subject areas, as `{key, kind, label}` rows of the "
             "`flag` library vocabulary, `ai` and `advice_perimeter` on day one. An empty list "
@@ -1653,7 +1653,7 @@ class WatchChange(CamelSchema):
         ),
         examples=["active"],
     )
-    terms: list[LibraryRef] = Field(
+    terms: list[VocabRef] = Field(
         description=(
             "The taxonomy terms that scope the change — regime, market, product, service — as "
             "`{key, kind, label}` rows of the taxonomy vocabulary, `securities`, `banking`, "
@@ -1713,7 +1713,7 @@ class WatchFact(LibraryResponse):
 
     model_config = ConfigDict(json_schema_extra={"examples": [FACT_EXAMPLE]})
 
-    ref: LibraryRef = Field(
+    ref: VocabRef = Field(
         description=(
             "The vocabulary row or taxonomy term itself, as `{key, kind, label}`: a row of the "
             "`change_type` library vocabulary (`proposal`, `adopted`, `supervision`, "
@@ -1800,7 +1800,7 @@ class WatchChangeCase(LibraryResponse):
         ),
         examples=["new"],
     )
-    urgency: LibraryRef | None = Field(
+    urgency: VocabRef | None = Field(
         description=(
             "How soon this bank must act, as `{key, kind, label}` from the `urgency` library "
             "vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or "
@@ -1867,7 +1867,7 @@ class WatchChangeCase(LibraryResponse):
     obligation_decisions: list[WatchCaseObligationDecision] = Field(
         description="What this bank decided about the suggested obligation links. An empty list means it has decided nothing yet."
     )
-    sub_status: CasesVocabularyRef | None = Field(
+    sub_status: VocabRef | None = Field(
         description=(
             "The bank's own finer step inside `category`, from its `case_sub_status` "
             "vocabulary, whose `kind` is the category the row sits in; day one seeds one per "
@@ -1892,14 +1892,14 @@ class WatchCaseWorkflow(WatchChangeCase):
 
     model_config = ConfigDict(json_schema_extra={"examples": [CASE_WORKFLOW_EXAMPLE]})
 
-    owner: PersonRef | None = Field(description=f"Who owns the case, named at triage. {_PERSON} Null before triage.")
-    owner_team: CasesVocabularyRef | None = Field(description=OWNER_TEAM_REF)
-    triaged_by: PersonRef | None = Field(description=f"Who triaged the case. {_PERSON} Null before triage.")
+    owner: NamedRef | None = Field(description=f"Who owns the case, named at triage. {_PERSON} Null before triage.")
+    owner_team: VocabRef | None = Field(description=OWNER_TEAM_REF)
+    triaged_by: NamedRef | None = Field(description=f"Who triaged the case. {_PERSON} Null before triage.")
     triaged_at: datetime.datetime | None = Field(
         description="When the case was triaged, as an RFC 3339 timestamp in UTC (`2026-09-17T08:40:00Z`). Null before triage.",
         examples=["2026-09-17T08:40:00Z"],
     )
-    dismissed_reason: CasesVocabularyRef | None = Field(
+    dismissed_reason: VocabRef | None = Field(
         description=(
             "Why the bank dismissed the change, from its `dismissal_reason` vocabulary, "
             "`out_of_scope`, `duplicate` and `already_covered` on day one; rows the bank's admin "
@@ -1907,20 +1907,20 @@ class WatchCaseWorkflow(WatchChangeCase):
             "key. Null unless the case is or was dismissed."
         )
     )
-    dismissed_by: PersonRef | None = Field(description=f"Who dismissed it. {_PERSON} Null unless it was dismissed.")
+    dismissed_by: NamedRef | None = Field(description=f"Who dismissed it. {_PERSON} Null unless it was dismissed.")
     dismissed_at: datetime.datetime | None = Field(
         description="When it was dismissed, as an RFC 3339 timestamp in UTC. Null unless it was dismissed.", examples=[None]
     )
-    signoff_requested_by: PersonRef | None = Field(
+    signoff_requested_by: NamedRef | None = Field(
         description=f"Who asked for sign-off; this person can never give it. {_PERSON} Null until someone asks."
     )
     signoff_requested_at: datetime.datetime | None = Field(
         description="When sign-off was asked for, as an RFC 3339 timestamp in UTC. Null until someone asks.", examples=[None]
     )
-    signed_off_by: PersonRef | None = Field(
+    signed_off_by: NamedRef | None = Field(
         description=f"The second person who signed the case off with a passkey, never the one who asked. {_PERSON} Null until then."
     )
-    close_reason: CasesVocabularyRef | None = Field(
+    close_reason: VocabRef | None = Field(
         description=(
             "Why the case was closed, from the bank's `close_reason` vocabulary, whose `kind` is "
             "one of `signed_off` (a second person signed it off), `no_action` or `not_applicable` "
@@ -2022,7 +2022,7 @@ class WatchChangeRow(LibraryResponse):
     status: ChangeStatus = Field(description="The library's lifecycle stage: `active`, `superseded` or `withdrawn`.", examples=["active"])
     flags: list[WatchFact] = Field(description="The change's flags, each with its confidence and suggestion marker.")
     terms: list[WatchFact] = Field(description="The change's scope terms, each with its confidence and suggestion marker.")
-    suggested_urgency: LibraryRef | None = Field(
+    suggested_urgency: VocabRef | None = Field(
         description=(
             "The agent's suggested urgency as `{key, kind, label}` from the `urgency` library "
             "vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or "
@@ -2038,7 +2038,7 @@ class WatchChangeRow(LibraryResponse):
         ),
         examples=[True],
     )
-    market: LibraryRef | None = Field(
+    market: VocabRef | None = Field(
         description=(
             "The market this bank watches that the change comes from, as `{key, kind, label}` "
             "of its term in the `jurisdiction` dimension of the taxonomy vocabulary (`kind` is "
@@ -2075,13 +2075,13 @@ class WatchChangeDetail(WatchChange):
     footprint and their bank's case — and with the classification answered the way the feed
     answers it.
 
-    `flags` and `terms` are `WatchFact` here and `LibraryRef` on `WatchChange`, because the
+    `flags` and `terms` are `WatchFact` here and `VocabRef` on `WatchChange`, because the
     write shapes answer the record as stored and this is the page a person judges a change
     on: an agent's suggestion has to be visible as a suggestion where the decision is taken
     (WAT-03). The change page used to flatten each fact to its `ref` and lose the
     provenance the feed row carries (2026-09-21).
 
-    `changeType` stays a `LibraryRef` here, where a feed row answers a fact, so a client
+    `changeType` stays a `VocabRef` here, where a feed row answers a fact, so a client
     that reads it keeps working; since the type carries its own suggestion and confirmation
     (D-74, watch 0002) the same fact a feed row answers is `changeTypeFact` beside it.
     """

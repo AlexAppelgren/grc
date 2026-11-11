@@ -26,6 +26,7 @@ from apps.taxonomy import entry_scope, matching
 from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, Team, TermDimension
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.tenants.models import OrgUnit, OrgUnitKind, ProductStatusKind, TenantProduct, TenantProductTerm
+from apps.shared.testing import admits_sql
 
 
 def seed() -> None:
@@ -185,7 +186,7 @@ class EntryScopeDerivation(TestCase):
         self.assertNotIn("advice", scope.terms["service_type"])
         # A record carrying only that term is out: the footprint says so, and the entry cannot say otherwise.
         entry = self.bank.entry(departments=[self.trading], name="Second")
-        self.assertFalse(entry_scope.admits_sql(self.bank.tenant.id, entry.id, [advice.id]))
+        self.assertFalse(admits_sql(self.bank.tenant.id, entry.id, [advice.id]))
 
     def test_retired_products_and_deactivated_units_derive_nothing(self) -> None:
         closed = self.bank.unit("Closed desk", parent=self.trading, active=False)
@@ -210,7 +211,7 @@ class EntryScopeDerivation(TestCase):
         restricting = matching.restricting_dimensions()
         # Not even a record carrying no term at all, which every footprint admits.
         self.assertFalse(entry_scope.admits({}, footprint, scope, restricting=restricting))
-        self.assertFalse(entry_scope.admits_sql(self.bank.tenant.id, entry.id, []))
+        self.assertFalse(admits_sql(self.bank.tenant.id, entry.id, []))
 
     def test_an_entry_out_of_sight_or_revoked_fails_closed(self) -> None:
         other = EntryBank(factories.tenant(slug="entry-scope-other"))
@@ -218,8 +219,8 @@ class EntryScopeDerivation(TestCase):
         # Under this bank's zone the other bank's entry is invisible: it reads nothing, not everything.
         mine = self.bank.scope(theirs)
         self.assertEqual(mine.empty_reason, entry_scope.EMPTY_SCOPE)
-        self.assertFalse(entry_scope.admits_sql(self.bank.tenant.id, theirs.id, []))
-        self.assertFalse(entry_scope.admits_sql(self.bank.tenant.id, uuid.uuid4(), []))
+        self.assertFalse(admits_sql(self.bank.tenant.id, theirs.id, []))
+        self.assertFalse(admits_sql(self.bank.tenant.id, uuid.uuid4(), []))
         revoked = self.bank.entry(name="Revoked")
         AgentAccess.objects.filter(pk=revoked.pk).update(active=False, revoked_at=timezone.now(), revoked_by=self.bank.admin)
         self.assertEqual(self.bank.scope(revoked).empty_reason, entry_scope.EMPTY_SCOPE)
@@ -246,7 +247,7 @@ class EntryScopeDerivation(TestCase):
             scope = self.bank.scope(entry)
             for record in records:
                 expected = entry_scope.admits(as_map(record), footprint, scope, restricting=restricting)
-                actual = entry_scope.admits_sql(self.bank.tenant.id, entry.id, [row.id for row in record])
+                actual = admits_sql(self.bank.tenant.id, entry.id, [row.id for row in record])
                 self.assertIs(actual, expected, f"{entry.name}: {as_map(record)}")
                 admitted[entry.name] += expected
         # Every narrowing reads less than the whole footprint, and the empty entry reads nothing.

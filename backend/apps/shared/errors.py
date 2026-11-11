@@ -1,12 +1,9 @@
 """One error shape everywhere (playbook 4.4): RFC 9457 problem details.
 
-`ProblemError` is raised from api.py (re-raising a logic ValidationError with the right
-status) or by the permission decorators. config/api.py turns it into a response. The
-`code` values are the contract's vocabulary: four_eyes_violation, open_actions,
-evidence_missing, invalid_transition, stale_write, unknown_key, step_up_required,
-feed_limit_reached, permission_denied, unauthenticated, not_found, validation_error,
-bad_request (a request Django cannot read: too large, too many fields, a broken multipart
-body) and internal_error (anything unexpected; no trace or message leaves the server).
+`ProblemError` is raised from api.py or by the permission decorators; config/api.py turns it
+into a response. The `code` is the contract's vocabulary (`STATUS_BY_CODE` below), with
+`bad_request` for a request Django cannot read and `internal_error` for anything unexpected:
+no trace or message leaves the server.
 """
 
 from __future__ import annotations
@@ -18,10 +15,9 @@ from django.http import JsonResponse
 
 PROBLEM_CONTENT_TYPE = "application/problem+json"
 
-# logic.py raises Django's ValidationError with a `code`; config/api.py turns it into a
-# problem response with the status this table names (playbook 4.4). Anything not listed
-# is a 422 (a field or rule the caller can fix). One table so a code never means two
-# statuses in two apps.
+# logic.py raises ValidationError with a `code`; config/api.py and `answers_problems` answer
+# with the status named here (playbook 4.4), else 422. One table, so a code never means two
+# statuses.
 STATUS_BY_CODE: dict[str, int] = {
     "not_found": 404,
     "unauthenticated": 401,
@@ -51,6 +47,31 @@ STATUS_BY_CODE: dict[str, int] = {
     # A lookup in the public registers applied before it succeeded (TEN-07): the job's state
     # does not allow the move yet, so a conflict and not a field to fix.
     "lookup_not_done": 409,
+    # A bank re-enrols only an account that is in no other bank and not platform staff
+    # (review 2026-11-11 S-2): the platform owner re-enrols the others.
+    "account_held_elsewhere": 409,
+    # Conflicts with the record's state, not fields the caller can fix.
+    "in_use": 409,
+    "system_row": 409,
+    "category_empty": 409,
+    # A team still owns open work (TEN-03): a confirm cannot override it.
+    "open_work": 409,
+    "request_pending": 409,
+    "invalid_transition": 409,
+    "approval_running": 409,
+    "idempotency_conflict": 409,
+    "already_watching": 409,
+    "forbidden": 403,
+    # An agent approved a kind whose record cannot name its confirming agent (D-79).
+    "person_review_required": 409,
+    # An agent approved or confirmed what the injection screen flagged (AGT-07, H40).
+    "risk_flagged": 409,
+    # An agent confirmed a watch fact its own agent suggested (D-74).
+    "own_suggestion": 409,
+    "same_agent": 409,
+    # A sign-off request while an action is open or before evidence passed the scan (CAS-06).
+    "open_actions": 409,
+    "evidence_missing": 409,
 }
 
 
@@ -85,6 +106,11 @@ class ProblemError(Exception):
         if self.errors:
             body["errors"] = self.errors
         return body
+
+
+def not_found(detail: str = "Not found.") -> ProblemError:
+    """The one 404: a record that does not exist and one the caller may not see read alike."""
+    return ProblemError(status=404, code="not_found", detail=detail)
 
 
 def problem_response(error: ProblemError) -> JsonResponse:

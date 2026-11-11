@@ -80,9 +80,9 @@ import type {
 } from '@/features/footprint/types';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { humanisePermission, usePermissions } from '@/shared/navigation/require-permission';
+import { usePermissions } from '@/shared/navigation/require-permission';
 import { externalHref } from '@/shared/utils/external-href';
-import { formatDate } from '@/shared/utils/format';
+import { formatDate, humaniseKey } from '@/shared/utils/format';
 import { hasProblemCode } from '@/shared/utils/problem';
 
 // /admin/footprint, shown as Regulatory scope (design/screens/admin-footprint.html,
@@ -385,7 +385,7 @@ function ScopeItemRow({ line, removing, onToggleRemove }: { line: ScopeItemLine;
       </div>
       {removing !== null ? (
         <Button variant="ghost" size="small" onClick={onToggleRemove}>
-          {removing ? t('footprint.items.keep') : t('footprint.items.remove')}{' '}
+          {removing ? t('footprint.items.keep') : t('common.remove')}{' '}
           <span className="sr-only">{item.name}</span>
         </Button>
       ) : null}
@@ -638,11 +638,11 @@ function PendingBanner({
               </Button>
             ) : (
               <Button variant="outline" onClick={onReject}>
-                {t('footprint.banner.reject')}
+                {t('common.reject')}
               </Button>
             )}
             {/* The requester approves only as the bank's only approver (D-125). */}
-            {approver ? <Button onClick={onApprove}>{t('footprint.banner.approve')}</Button> : null}
+            {approver ? <Button onClick={onApprove}>{t('common.approve')}</Button> : null}
           </ButtonBar>
         ) : null}
       </Notice>
@@ -739,7 +739,7 @@ function RejectDialog({ request, reject, onClose, onDone }: { request: Footprint
             {t('common.cancel')}
           </Button>
           <Button type="submit" variant="danger" disabled={reject.isPending}>
-            {t('footprint.reject.button')}
+            {t('common.reject')}
           </Button>
         </ButtonBar>
       </form>
@@ -774,7 +774,7 @@ function History({ requests, more, loadingMore, onMore }: { requests: readonly F
       )}
       {more ? (
         <Button variant="outline" size="small" className="mt-3" disabled={loadingMore} onClick={onMore}>
-          {t('footprint.history.showMore')}
+          {t('common.showMore')}
         </Button>
       ) : null}
     </Panel>
@@ -818,7 +818,7 @@ function MarketsPanel({ markets, canWatch }: { markets: readonly Market[]; canWa
   const reach = reachLines(markets, jurisdictions.data ?? [], t);
   return (
     <Panel title={t('footprint.markets.title')} data-markets="">
-      {canWatch ? null : <Notice className="mb-3">{t('footprint.markets.approverOnly', { permission: humanisePermission(FOOTPRINT_REQUEST) })}</Notice>}
+      {canWatch ? null : <Notice className="mb-3">{t('footprint.markets.approverOnly', { permission: humaniseKey(FOOTPRINT_REQUEST) })}</Notice>}
       <p className="mb-3 text-meta text-muted">{t('footprint.markets.intro')}</p>
       <ul className="m-0 list-none p-0" aria-busy={busy}>
         {markets.map((market) => (

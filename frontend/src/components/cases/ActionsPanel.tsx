@@ -5,10 +5,10 @@ import { useState, type FormEvent } from 'react';
 import { Pill } from '@/components/ui/Pill';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { Notice } from '@/components/ui/Notice';
 import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
 import { daysLeftText, presentOverdue } from '@/features/cases/case-presentation';
 import { staleWriteOf, useAddAction, useCaseActions, useDeleteAction, useReloadCase, useUpdateAction } from '@/features/cases/hooks';
 import type { CaseAction, CaseCategory, CasePanelProps } from '@/features/cases/types';
@@ -16,7 +16,7 @@ import { useFormatContext } from '@/features/identity/hooks';
 import { CASES_WORK } from '@/features/watch/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
-import { formatDate } from '@/shared/utils/format';
+import { formatDate, tenantToday } from '@/shared/utils/format';
 import { hasProblemCode, problemFrom } from '@/shared/utils/problem';
 
 // The case's actions (design/screens/tenant-change.html, "Actions"; CAS-04).
@@ -31,12 +31,6 @@ export const CASES_CONTRIBUTE = 'cases.contribute';
 
 /** The categories whose actions can change; from sign-off on they are locked. */
 export const WORKED: readonly CaseCategory[] = ['assessing', 'implementing'];
-
-/** The tenant-local calendar day, as UTC midnight, for `daysUntil`. */
-export function tenantToday(timeZone: string, now: Date = new Date()): Date {
-  const [year, month, day] = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now).split('-').map(Number);
-  return new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1));
-}
 
 /** A write the server refused: a lock or a stale version offers a reload, anything else is its own answer. */
 function WriteRefusal({ error, changeId }: { error: unknown; changeId: string }) {
@@ -155,7 +149,7 @@ function ActionRow({ action, today, canComplete, canRemove, busy, onDone, onRemo
       </div>
       {canRemove ? (
         <Button variant="ghost" size="small" onClick={onRemove}>
-          {t('caseActions.remove')}
+          {t('common.remove')}
         </Button>
       ) : null}
     </div>
@@ -174,7 +168,8 @@ export function ActionsPanel({ change, workflow }: CasePanelProps) {
   const worked = WORKED.includes(workflow.category);
   const canWork = worked && permissions.includes(CASES_WORK);
   const canComplete = worked && permissions.includes(CASES_CONTRIBUTE);
-  const today = tenantToday(ctx.timeZone);
+  // The tenant-local calendar day, as UTC midnight, for `daysUntil`.
+  const today = new Date(`${tenantToday(ctx.timeZone)}T00:00:00Z`);
 
   function confirmRemove() {
     if (removing === null) return;
@@ -222,21 +217,17 @@ export function ActionsPanel({ change, workflow }: CasePanelProps) {
     <Panel title={t('caseActions.heading')} data-case-panel="actions">
       {workflow.category === 'signoff' ? <Notice data-actions-locked="">{t('caseActions.locked')}</Notice> : null}
       {body}
-      <Modal
-        open={removing !== null}
-        onOpenChange={(open) => (open ? undefined : setRemoving(null))}
-        title={t('caseActions.removeTitle', { title: removing?.title ?? '' })}
-        description={t('caseActions.removeBody')}
-      >
-        <ButtonBar>
-          <Button variant="outline" onClick={() => setRemoving(null)}>
-            {t('common.cancel')}
-          </Button>
-          <Button variant="danger" disabled={remove.isPending} onClick={confirmRemove}>
-            {t('caseActions.remove')}
-          </Button>
-        </ButtonBar>
-      </Modal>
+      {removing !== null ? (
+        <ConfirmDialog
+          title={t('caseActions.removeTitle', { title: removing?.title ?? '' })}
+          body={t('caseActions.removeBody')}
+          action={t('common.remove')}
+          danger
+          busy={remove.isPending}
+          onConfirm={confirmRemove}
+          onClose={() => setRemoving(null)}
+        />
+      ) : null}
     </Panel>
   );
 }

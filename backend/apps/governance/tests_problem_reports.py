@@ -57,8 +57,8 @@ class ProblemReportsTestCase(ScenarioTestCase):
     def file(self, user: Any, *, on: str = "obligation", words: str = WORDS, tenant: Any = None) -> str:
         subject = self.obligation if on == "obligation" else self.instrument
         answer = self.client.post(
-            f"{V1}/{on}s/{subject.id}/problem-reports",
-            data={"description": words, "versionNumber": 1, "language": "en"},
+            REPORTS,
+            data={"subjectType": on, "subjectId": str(subject.id), "description": words, "versionNumber": 1, "language": "en"},
             content_type="application/json",
             **sign_in(user, tenant=tenant or self.tenant),
         )

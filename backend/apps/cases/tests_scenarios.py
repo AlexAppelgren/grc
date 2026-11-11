@@ -498,7 +498,7 @@ class CaseParticipantScenarioTests(ScenarioTestCase):
         """CAS-S17
 
         Contributor teams are the case's team participants (CAS-03, COL-04).
-        Operations: `addCaseParticipant`, `removeCaseParticipant`.
+        Operations: `addParticipant`, `removeParticipant`.
         """
         from apps.collab.tests_case_participants import run_cas_s17
 

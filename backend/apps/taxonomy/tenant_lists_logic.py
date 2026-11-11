@@ -1,27 +1,18 @@
 """Managing vocabulary lists (VOC-01, VOC-02, VOC-03, VOC-07).
 
-One module serves every list because every list is the same shape: the model, its label
-model, the kinds its rows may carry and how a merge re-points come from
-apps/taxonomy/registry.py. Adding a list is adding a registry entry; no route, no screen
-and no agent read changes (AC-VOC1).
+One module serves every list: the model, label model, kinds and merge re-point come from
+apps/taxonomy/registry.py (AC-VOC1). Tenant lists are written here under `vocab.manage`
+through `record()`. Library lists are never written here: every write becomes a proposal
+(VOC-07), so this module names no `LibraryModel` (the library fence).
 
-Tier 3 (tenant) lists are written here, under `vocab.manage`, inside the request's
-transaction with `record()`. Tier 2 (library) lists are never written here: every write
-becomes a proposal (VOC-07), because a library row is shared by every tenant and a rename
-moves pills and pickers for all of them. That is also why this module names no
-`LibraryModel` class: the library fence's AST guard refuses any module outside the
-allowlist that names one and calls a write method.
+Rules a screen cannot enforce on its own (playbook 15):
 
-Three rules from playbook 15 that a screen cannot enforce on its own:
-
-- **Retire, never delete**, and the usage count comes first: an unconfirmed retire of a
-  used value answers 409 `in_use` with the count, so the person decides knowing the blast
-  radius. `restore` is its inverse.
+- **Retire, never delete**, usage count first: an unconfirmed retire of a used value is 409
+  `in_use` with the count. `restore` is its inverse.
 - **Merge re-points in one audited transaction**, previewed first (`?dryRun=true`).
 - **System rows can be relabelled, not removed** (409 `system_row`).
-- **A category never goes empty** (VOC-04): retiring the last active row of a fixed kind
-  answers 409 `category_empty`, checked before `system_row` because it names the real
-  reason: the state machine, the reports and the tone need a value in every category.
+- **A category never goes empty** (VOC-04): 409 `category_empty`, checked before
+  `system_row` because it names the real reason.
 """
 
 from __future__ import annotations
@@ -39,7 +30,8 @@ from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
 from apps.shared.vocabulary import Vocabulary, VocabularyLabel
 from apps.taxonomy import repoint
-from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, extra_of, label_of
+from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, extra_of
+from apps.shared.vocabulary import label_of, write_labels
 from apps.taxonomy.registry import REGISTRY, VocabularyList
 from apps.taxonomy.schemas import (
     PersonRef,
@@ -56,14 +48,10 @@ from apps.taxonomy.terms_logic import term_by_ref  # noqa: F401  re-exported: on
 SUBJECT_TYPE = "vocabulary"
 ORIGINAL_LANGUAGE = "en"
 
-# A near-duplicate is a typo or a case variant of a value that already exists, not a
-# different value that shares words with one: "Custdy" beside "Custody" is a mistake;
-# "Custody services" beside "Custody" and "Waiting for legal" beside "Waiting for
-# sign-off" are values someone meant to create (AC-VOC3). Trigram similarity alone cannot
-# tell them apart (0.50 for the typo, 0.44 for the two waiting states, 0.62 for custody
-# services, measured 2026-09-19), so it only recalls candidates, cheaply and in Postgres,
-# and an edit-similarity ratio on the casefolded labels decides (0.92, 0.70, 0.74). A
-# holder of vocab.manage can always insist with `force`.
+# A near-duplicate is a typo or a case variant ("Custdy" beside "Custody"), not a different
+# value sharing words ("Custody services") (AC-VOC3). Trigram similarity cannot tell them
+# apart, so it only recalls candidates in Postgres and an edit-similarity ratio on the
+# casefolded labels decides. A holder of vocab.manage can insist with `force`.
 NEAR_DUPLICATE_RECALL = 0.3
 NEAR_DUPLICATE_RATIO = 0.8
 MAX_CANDIDATES = 5
@@ -75,10 +63,9 @@ KEY_MAX_CHARS: int = Vocabulary._meta.get_field("key").max_length or 0
 
 
 class VocabularyProblem(ValidationError):
-    """A refusal that carries more than a sentence: the candidates of a duplicate, the usage
-    count of a value in use. The route returns `extra` beside the problem's `code` so the
-    screen can offer the near match or state the blast radius without a second call. Kept
-    off Django's `params`, which would %-format a label containing a percent sign."""
+    """A refusal that carries more than a sentence: a duplicate's candidates, a value's usage
+    count, returned as `extra` beside the `code`. Kept off Django's `params`, which would
+    %-format a label containing a percent sign."""
 
     def __init__(self, message: str, *, code: str, extra: dict[str, Any]) -> None:
         super().__init__(message, code=code)
@@ -105,11 +92,9 @@ def entry_for(list_name: str) -> VocabularyList:
 
 
 def _queryset(entry: VocabularyList, tenant_id: uuid.UUID | None) -> Any:
-    """The list's rows with their usage count, in the list's own order. The order is
-    explicit because Django drops `Meta.ordering` from a GROUP BY query, and the usage
-    count is one: without it a reordered list came back in whatever order Postgres chose
-    (found by VOC-S3, 2026-09-19). Every library list's rows carry who confirmed them (each
-    LibraryVocabulary, and the jurisdictions since D-94), so those facts are joined in."""
+    """The list's rows with their usage count, in the list's own order, explicit because
+    Django drops `Meta.ordering` from a GROUP BY query. Library list rows carry who confirmed
+    them (D-94), joined in."""
     queryset = entry.usage(entry.model._default_manager.all()).order_by(*(entry.model._meta.ordering or ()))
     if entry.is_library:
         queryset = queryset.select_related(*CONFIRMATION_JOINS)
@@ -120,9 +105,7 @@ def _queryset(entry: VocabularyList, tenant_id: uuid.UUID | None) -> Any:
     return queryset
 
 
-# ---------------------------------------------------------------------------------------
-# Reading
-# ---------------------------------------------------------------------------------------
+# --- Reading ---
 def list_of_lists(tenant_id: uuid.UUID | None) -> list[VocabularyListEntry]:
     """`GET /vocab`: the list of lists, with how many rows each holds and how many are
     retired, so the admin screen's index needs no call per list. One aggregate per list
@@ -189,11 +172,9 @@ def row_by_key(list_name: str, key: str, tenant_id: uuid.UUID | None) -> Any:
 
 
 def row_for_write(list_name: str, keys: list[str], tenant_id: uuid.UUID) -> list[Any]:
-    """The rows a write changes, locked before they are read, so two writers queue: the
-    second reads the version and state the first committed, and `If-Match` or the state
-    check refuses it rather than letting it overwrite. The usage count groups rows, which
-    `FOR UPDATE` cannot, so the lock is taken on the bare rows first, in key order so two
-    merges never deadlock."""
+    """The rows a write changes, locked before they are read, so a second writer reads what
+    the first committed and `If-Match` or the state check refuses it. `FOR UPDATE` cannot
+    group, so the bare rows are locked first, in key order so two merges never deadlock."""
     entry = entry_for(list_name)
     lock = entry.model._default_manager.select_for_update().filter(tenant_id=tenant_id, key__in=keys)
     list(lock.order_by("key").values_list("pk", flat=True))
@@ -212,9 +193,7 @@ def row_detail(list_name: str, key: str, tenant_id: uuid.UUID | None, order: lis
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Validation shared by create and suggest
-# ---------------------------------------------------------------------------------------
+# --- Validation shared by create and suggest ---
 def known_languages() -> set[str]:
     from apps.library.models import Language
 
@@ -222,11 +201,9 @@ def known_languages() -> set[str]:
 
 
 def validated_labels(labels: dict[str, str], *, max_chars: int | None = LABEL_MAX_CHARS) -> dict[str, str]:
-    """Labels are translation rows keyed by a language that exists (I18N-01). An unknown
-    code is 422 `unknown_key` with the codes that would have worked, never a silent row
-    nobody can read. Each text is capped at `max_chars`, the label column's width; a caller
-    validating texts stored in an unbounded column (a provision's text, a summary) passes
-    None."""
+    """Labels are translation rows keyed by a language that exists (I18N-01): an unknown code
+    is 422 `unknown_key` naming the codes that work. Each text is capped at `max_chars`; None
+    for texts stored in an unbounded column."""
     cleaned = {code: text.strip() for code, text in labels.items() if text and text.strip()}
     if not cleaned:
         raise ValidationError("Give the value a label in at least one language.", code="validation_error")
@@ -262,13 +239,10 @@ def validated_kind(entry: VocabularyList, kind: str | None) -> str | None:
 
 
 def extra_columns(entry: VocabularyList, extra: dict[str, Any] | None, tenant_id: uuid.UUID | None = None) -> dict[str, Any]:
-    """The list's own columns from a write's `extra`, keyed by column name. Reads render
-    them camelCased (`slaDays`), so writes accept that spelling as well as the column name
-    (`sla_days`); a key that is not one of the list's columns is dropped, never stored.
-    Each value is cleaned by its model field and a reference (a related row's key) becomes
-    that row, so a wrong value is a 422 when the write or the proposal is made, never a
-    500 when it is saved or approved. A tenant list's resolver checks its value in the
-    caller's bank, `tenant_id`."""
+    """The list's own columns from a write's `extra`, by column name or camelCase (`slaDays`);
+    any other key is dropped. Each value is cleaned by its model field and a reference becomes
+    its row, so a wrong value is a 422 at the write or proposal, never a 500 later. A tenant
+    list's resolver checks its value in the caller's bank, `tenant_id`."""
     from pydantic.alias_generators import to_camel
 
     names = {to_camel(name): name for name in entry.extra_fields} | {name: name for name in entry.extra_fields}
@@ -403,38 +377,10 @@ def check_near_duplicate(
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Writing (tenant lists only; library lists go through apps/proposals)
-# ---------------------------------------------------------------------------------------
+# --- Writing (tenant lists only; library lists go through apps/proposals) ---
 def _next_sort_order(entry: VocabularyList, tenant_id: uuid.UUID | None) -> int:
     highest = _queryset(entry, tenant_id).aggregate(highest=Max("sort_order"))["highest"]
     return 0 if highest is None else highest + 1
-
-
-def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str], tenant: Tenant | None) -> None:
-    """Write translation rows (D-12). The first labels a row gets name its original: English
-    when English is among them, otherwise the language the person wrote in. A person's edit
-    is never machine output, so `is_machine` is cleared on the languages they touched."""
-    existing = {label.language: label for label in entry.label_model._default_manager.filter(vocabulary=row)}
-    original = None
-    if not any(label.is_original for label in existing.values()):
-        original = ORIGINAL_LANGUAGE if ORIGINAL_LANGUAGE in labels else next(iter(labels))
-    for language, text in labels.items():
-        label = existing.get(language)
-        if label is not None:
-            label.text = text
-            label.is_machine = False
-            label.save(update_fields=["text", "is_machine"])
-            continue
-        fields: dict[str, Any] = {
-            "vocabulary": row,
-            "language": language,
-            "text": text,
-            "is_original": language == original,
-        }
-        if tenant is not None:
-            fields["tenant"] = tenant
-        entry.label_model._default_manager.create(**fields)
 
 
 def _refuse_full_list(entry: VocabularyList, tenant_id: uuid.UUID) -> None:
@@ -480,7 +426,7 @@ def create_row(
     }
     fields.update(extra_columns(entry, extra, tenant.id))
     row = entry.model._default_manager.create(**fields)
-    _write_labels(entry, row, cleaned, tenant)
+    write_labels(entry.label_model, {"vocabulary": row} if tenant is None else {"vocabulary": row, "tenant": tenant}, cleaned, is_machine=False)
     record(
         action="vocabulary.created",
         actor=actor,
@@ -520,7 +466,7 @@ def patch_row(
     cleaned = validated_labels(labels) if labels else {}
     columns = extra_columns(entry, extra, tenant.id)  # checked before anything is written
     if cleaned:
-        _write_labels(entry, row, cleaned, tenant)
+        write_labels(entry.label_model, {"vocabulary": row} if tenant is None else {"vocabulary": row, "tenant": tenant}, cleaned, is_machine=False)
     if usage_note is not None:
         row.usage_note = usage_note.strip()
     if sort_order is not None:
@@ -602,9 +548,8 @@ def _refuse_emptying_category(entry: VocabularyList, row: Any, tenant_id: uuid.U
 
 
 def _refuse_open_work(entry: VocabularyList, row: Any) -> None:
-    """TEN-03: a team that owns open work is not retired, even with `confirm`, because
-    nobody would be left to pick the work up. The 409 carries the counts per table so the
-    screen can say what to move first."""
+    """TEN-03: a team that owns open work is not retired, even with `confirm`, since nobody
+    would pick the work up. The 409 carries the counts per table."""
     open_work = entry.open_work(row) if entry.open_work is not None and row.active else {}
     if open_work:
         raise VocabularyProblem(
@@ -693,8 +638,7 @@ def merge(
         )
     count = int(getattr(source, "usage_count", 0))
     if dry_run:
-        # A preview changes nothing and is not a write, so it leaves no audit row: the
-        # audit log answers "what changed", and nothing did (AUD-01).
+        # A preview writes nothing, so it leaves no audit row (AUD-01).
         return VocabularyMerged(
             **{"from": key}, into=into, usage_count=count, repointed=repoint.count(entry.repoint(source, target, dry_run=True)), dry_run=True
         )
@@ -717,9 +661,7 @@ def merge(
     return VocabularyMerged(**{"from": key}, into=into, usage_count=count, repointed=repointed, dry_run=False)
 
 
-# ---------------------------------------------------------------------------------------
-# Suggestions (VOC-03): "Create where you use it" for people without vocab.manage
-# ---------------------------------------------------------------------------------------
+# --- Suggestions (VOC-03): "Create where you use it" for people without vocab.manage ---
 def suggest(
     *, list_name: str, tenant: Tenant, actor: Actor, user: Any, labels: dict[str, str], key: str | None, usage_note: str
 ) -> VocabularySuggestionRow:
@@ -767,9 +709,8 @@ def suggestion_row(suggestion: Any, status: str | None = None) -> VocabularySugg
 def suggestions_of(
     list_name: str, tenant_id: uuid.UUID, *, limit: int, offset: int
 ) -> tuple[list[VocabularySuggestionRow], int]:
-    """One page of the list's waiting suggestions (VOC-03, NFR-02), oldest first because
-    the inbox is worked in the order it filled, and how many wait in all. The id settles two
-    sent in the same instant, so two reads always agree on the order."""
+    """One page of the list's waiting suggestions (VOC-03, NFR-02), oldest first, as the
+    inbox is worked, and the total. The id breaks ties."""
     from apps.taxonomy.models import SuggestionStatus, VocabularySuggestion
 
     entry_for(list_name)

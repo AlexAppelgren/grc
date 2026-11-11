@@ -30,11 +30,6 @@ describe('footprint edges', () => {
     expect(sent).toEqual(['/api/v1/tenant/footprint/requests/r1/reject', '/api/v1/tenant/footprint/requests/r1/withdraw']);
   });
 
-  it('reads a proposal answer with its fields missing as empty, never undefined', async () => {
-    installAdapter(() => ({ status: 202, data: { proposal: {} } }));
-    expect(await footprint.suggestTerm({ dimension: 'channel', labels: { en: 'Robo' } })).toEqual({ id: '', kind: '', status: '', title: '' });
-  });
-
   it('toggles a term in a dimension the draft has not seen, and reads additions of no request as none', () => {
     const draft = toggleTerm({}, 'channel', 'digital');
     expect([...(draft.channel ?? [])]).toEqual(['digital']);

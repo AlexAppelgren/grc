@@ -3,25 +3,12 @@
 
 Floors sit just below measured coverage with a margin sized to the module: minus 2 at
 400+ statements, minus 3 at 100 to 400, minus 4 below 100. Never lowered to go green;
-raised when a module climbs away. The measured value, the test count and the date sit
+raised when a module climbs away. The measured value, the statement count and the date sit
 beside each floor and are restated whenever this file is touched.
 
 The gate refuses to judge a partial run: if the aggregate sits more than
 PARTIAL_RUN_MARGIN points under the global floor in pyproject.toml, the suite was
 subsetted and the question is wrong, so the answer is "cannot judge" (exit 2), not pass.
-
-Proven to fail 2026-09-19 by setting the tenancy floor to 101 (exit 1, module named)
-and by running one test module only (exit 2, partial run refused), then restored.
-
-Measured 2026-09-19, Phase 0 close: 128 tests (296 collected, 168 scenario stubs
-skipped), aggregate 97% over 1448 statements.
-Measured 2026-09-19, chunk 1 close: 190 tests (334 collected, 144 scenario stubs
-skipped), aggregate 96% over 3696 statements.
-Measured 2026-09-24, R1 close (chunks 3 to 7, over the merged wave-4 batch): 2081 tests
-(1959 run, 122 scenario stubs of R2 and R3 skipped), aggregate 97.5% over 15637 statements.
-Measured 2026-09-27, R2 close (chunks 8 to 11, over the merged wave-7 batch): 4104 tests
-(4068 run, 36 scenario stubs of R3 and the named R2 cuts skipped), aggregate 97.9% over
-28864 statements. The R2 floors join below; no earlier floor moved.
 """
 
 from __future__ import annotations
@@ -40,7 +27,6 @@ PARTIAL_RUN_MARGIN = 15.0
 # module path (as coverage reports it, forward slashes) -> (floor %, measured %, statements, date)
 # Only the modules where a bug costs money, mis-states a statutory figure or lets the wrong
 # person through: tenancy, authentication, permissions, audit, health, the role guard.
-# The later chunks' modules join below, each block measured at its chunk's close.
 FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/shared/tenancy.py": (96, 100, 85, "2026-09-19"),
     "apps/shared/authentication.py": (96, 100, 55, "2026-09-19"),
@@ -58,8 +44,7 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/shared/vocabulary.py": (91, 96, 55, "2026-09-19"),
     "apps/shared/e2e_seed.py": (96, 97, 93, "2026-09-19"),
     "config/settings.py": (85, 87, 166, "2026-09-19"),
-    # Chunk 1 (identity and tenant admin basics): the modules that let the wrong person
-    # through, measured at the chunk's close on 2026-09-19.
+    # Identity and tenant admin: the modules that let the wrong person through.
     "apps/identity/tokens.py": (94, 98, 84, "2026-09-19"),
     "apps/identity/rate_limit.py": (96, 100, 19, "2026-09-19"),
     "apps/identity/session_logic.py": (92, 95, 160, "2026-09-19"),
@@ -75,10 +60,7 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/identity/api.py": (95, 98, 215, "2026-09-19"),
     "apps/tenants/logic.py": (87, 91, 91, "2026-09-19"),
     "apps/tenants/api.py": (96, 100, 31, "2026-09-19"),
-    # Chunk 2 (vocabularies, taxonomy, footprint): footprint matching and vocabulary retire
-    # and merge, measured 2026-09-19 over 409 tests (284 run, 125 scenario stubs skipped),
-    # aggregate 97% over 6221 statements. Chunk 2's proposal modules are restated with
-    # chunk 4 below.
+    # Vocabularies, taxonomy and footprint: matching, retire and merge.
     "apps/taxonomy/api.py": (96, 99, 216, "2026-09-19"),
     "apps/taxonomy/footprint_logic.py": (97, 100, 109, "2026-09-19"),
     "apps/taxonomy/http.py": (93, 96, 103, "2026-09-19"),
@@ -90,19 +72,16 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/taxonomy/tenant_hooks.py": (96, 100, 37, "2026-09-19"),
     "apps/taxonomy/tenant_lists_logic.py": (94, 97, 304, "2026-09-19"),
     "apps/taxonomy/terms_logic.py": (94, 98, 72, "2026-09-19"),
-    # Chunk 3 (library and inventory): the FFFS provision tree, the instrument and
-    # provision reads and the "as of" and diff rules that back both, measured
-    # 2026-09-22 at the chunk's close, aggregate 98% over 1505 statements.
+    # Library and inventory: the provision tree, instrument and provision reads, "as of" and
+    # diff rules.
     "apps/library/seeds/__init__.py": (96, 100, 22, "2026-09-22"),
     "apps/library/seeds/library.py": (97, 100, 106, "2026-09-22"),
     "apps/library/logic.py": (96, 100, 57, "2026-09-22"),
     "apps/library/api.py": (97, 100, 121, "2026-09-22"),
     "apps/library/reading.py": (95, 98, 322, "2026-09-22"),
     "apps/library/reports.py": (96, 100, 18, "2026-09-22"),
-    # Chunk 4 (proposals and the console): four eyes, apply, the agent as second principal,
-    # a standard's proposal rules, library updates and the bank's problem reports; chunk 2's
-    # three proposal lines restated. Measured 2026-09-24 at the R1 close over 2081 tests.
-    # `logic.py` grew from 123 to 462 statements; its floor stays 97, never lowered.
+    # Proposals and the console: four eyes, apply, the agent as second principal, standards,
+    # library updates and problem reports. `logic.py`'s floor stays 97 as it grew: never lowered.
     "apps/proposals/apply.py": (92, 95, 281, "2026-09-24"),
     "apps/proposals/logic.py": (97, 98, 462, "2026-09-24"),
     "apps/proposals/api.py": (96, 100, 85, "2026-09-24"),
@@ -110,7 +89,7 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/proposals/updates.py": (92, 96, 99, "2026-09-24"),
     "apps/proposals/standards.py": (96, 100, 51, "2026-09-24"),
     "apps/governance/problem_reports_logic.py": (90, 94, 73, "2026-09-24"),
-    # Chunk 5 (watch and the agent API): registration, curation, sources, the keys, the watch
+    # Watch and the agent API: registration, curation, sources, the keys, the watch
     # door, the "So what?", the case fan-out, runs and the screen, the AI log and the outbox.
     "apps/watch/reading.py": (96, 99, 203, "2026-09-24"),
     "apps/watch/registration.py": (97, 100, 121, "2026-09-24"),
@@ -128,7 +107,7 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/governance/ai_log.py": (96, 100, 48, "2026-09-24"),
     "apps/shared/outbox.py": (96, 100, 97, "2026-09-24"),
     "apps/shared/ai.py": (93, 97, 66, "2026-09-24"),
-    # Chunk 6 (home, briefing, roadmap): every module of apps/home, the calendar feed first.
+    # Home, briefing and roadmap: every module of apps/home, the calendar feed first.
     "apps/home/api.py": (96, 100, 84, "2026-09-24"),
     "apps/home/briefing.py": (96, 100, 28, "2026-09-24"),
     "apps/home/calendar.py": (96, 100, 15, "2026-09-24"),
@@ -139,16 +118,16 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/home/roadmap.py": (96, 100, 60, "2026-09-24"),
     "apps/home/schemas.py": (96, 100, 98, "2026-09-24"),
     "apps/home/tasks.py": (82, 86, 54, "2026-09-24"),
-    # Chunk 7 (search and ask): the hybrid ranking, the index, Ask and the evaluation set.
+    # Search and Ask: the hybrid ranking, the index, Ask and the evaluation set.
     "apps/search/api.py": (96, 100, 55, "2026-09-24"),
     "apps/search/ask.py": (96, 99, 147, "2026-09-24"),
     "apps/search/eval_sets.py": (96, 99, 119, "2026-09-24"),
     "apps/search/hybrid.py": (97, 100, 153, "2026-09-24"),
     "apps/search/indexing.py": (94, 97, 148, "2026-09-24"),
     "apps/search/sources.py": (95, 98, 110, "2026-09-24"),
-    # Chunk 8 (register): applicability, status per entity, gaps, internal links and units,
-    # history, the overlay and the agent's register read; the organisation, member removal
-    # and support access; My work and participants. Measured 2026-09-27 at the R2 close.
+    # Register: applicability, status per entity, gaps, internal links and units, history,
+    # the overlay and the agent's register read; organisation, member removal, support
+    # access; My work and participants.
     "apps/register/applicability.py": (95, 98, 167, "2026-09-27"),
     "apps/register/status_logic.py": (96, 99, 173, "2026-09-27"),
     "apps/register/gaps.py": (95, 98, 209, "2026-09-27"),
@@ -162,7 +141,7 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/tenants/support_access.py": (97, 100, 156, "2026-09-27"),
     "apps/home/my_work.py": (96, 99, 299, "2026-09-27"),
     "apps/collab/participants.py": (97, 100, 137, "2026-09-27"),
-    # Chunk 9 (case workflow): the state machine, triage, assessment, actions, evidence and
+    # Case workflow: the state machine, triage, assessment, actions, evidence and
     # its scanner, sign-off with four eyes, and the case file.
     "apps/cases/state.py": (96, 100, 42, "2026-09-27"),
     "apps/cases/triage.py": (95, 98, 101, "2026-09-27"),
@@ -173,7 +152,7 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/cases/case_file.py": (94, 97, 183, "2026-09-27"),
     "apps/cases/logic.py": (93, 97, 72, "2026-09-27"),
     "apps/shared/adapters/scanner.py": (94, 98, 98, "2026-09-27"),
-    # Chunk 10 (collaboration): comments and who may read them, notifications, reminders,
+    # Collaboration: comments and who may read them, notifications, reminders,
     # escalation, delegation while away, and tagging.
     "apps/collab/comments.py": (96, 100, 93, "2026-09-27"),
     "apps/collab/subjects.py": (96, 100, 44, "2026-09-27"),
@@ -184,7 +163,7 @@ FLOORS: dict[str, tuple[int, int, int, str]] = {
     "apps/collab/tasks.py": (93, 97, 80, "2026-09-27"),
     "apps/tenants/out_of_office.py": (94, 98, 65, "2026-09-27"),
     "apps/taxonomy/tagging_logic.py": (96, 100, 62, "2026-09-27"),
-    # Chunk 11 (agents and agent access): the runner's events, run control and the cap,
+    # Agents and agent access: the runner's events, run control and the cap,
     # research requests, a bank's agents, platform definitions, re-tag batches, the bank's own
     # queue, what applies, entries, keys and tokens, tenant reach, the access log, the fence
     # on an agent credential, the MCP server and the session policy.

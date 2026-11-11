@@ -1,6 +1,6 @@
-import type { Member, Page } from '@/features/tenant-admin/types';
+import type { Member } from '@/features/tenant-admin/types';
 import type { components } from '@/types/api.generated';
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
 
 // Thin typed wrappers returning `.data` (playbook 6.1) for the bank's teams
 // (TEN-03). A team is a row of the bank's own `team` list, so adding and
@@ -12,16 +12,9 @@ export type Team = components['schemas']['TenantTeam'];
 const TENANT = '/api/v1/tenant';
 const TEAM_LIST = '/api/v1/vocab/team';
 
-const id = (value: string) => encodeURIComponent(value);
-
 /** A team's name per content language; Swedish only when one was given. */
 export function teamLabels(en: string, sv: string): Record<string, string> {
   return sv.trim() === '' ? { en: en.trim() } : { en: en.trim(), sv: sv.trim() };
-}
-
-/** Every team, active and retired, in the list's order: one page at the server's maximum. */
-export async function listTeams(): Promise<Team[]> {
-  return (await api.get<Page<Team>>(`${TENANT}/teams`, { params: { limit: 100 } })).data.items;
 }
 
 /** What the team form writes: its names, and the department it sits in (`orgUnitId`, null for none), one of the list's own columns. */
@@ -36,10 +29,10 @@ export async function createTeam({ labels, orgUnitId }: TeamDraft): Promise<void
 
 /** New names and department, sent with the version the row was read at, so a change made in between is refused with stale_write. */
 export async function updateTeam(key: string, { labels, orgUnitId }: TeamDraft, version: number | undefined): Promise<void> {
-  await api.patch(`${TEAM_LIST}/${id(key)}`, { labels, extra: { orgUnitId } }, version === undefined ? {} : { version });
+  await api.patch(`${TEAM_LIST}/${segment(key)}`, { labels, extra: { orgUnitId } }, version === undefined ? {} : { version });
 }
 
 /** The whole set of teams a member is in; the answer is the member as they now stand. */
 export async function setMemberTeams(userId: string, teams: readonly string[]): Promise<Member> {
-  return (await api.put<Member>(`${TENANT}/members/${id(userId)}/teams`, { teams })).data;
+  return (await api.put<Member>(`${TENANT}/members/${segment(userId)}/teams`, { teams })).data;
 }

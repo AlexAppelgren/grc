@@ -13,11 +13,9 @@ import { REFRESH_PATH, tokenStore } from '@/shared/utils/api-client';
 // the bank is named, and entering swaps the console session for the support
 // session and reads nothing more.
 
-const nav = vi.hoisted(() => ({ replace: vi.fn() }));
+const nav = vi.hoisted(() => ({ leave: vi.fn() }));
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: nav.replace, push: vi.fn() }),
-}));
+vi.mock('@/shared/navigation/leave', () => ({ leaveForPublicPage: nav.leave }));
 
 const ME_PATH = '/api/v1/me';
 const MINE_PATH = '/api/v1/console/support-access';
@@ -61,7 +59,7 @@ function server(mine: Answer, extra: (sent: Sent) => Answer | undefined = () => 
     if (answer !== undefined) return answer;
     if (sent.path === MINE_PATH && sent.method === 'get') return mine;
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
-  });
+  }, { refresh: false });
 }
 
 function renderIn(node: ReactNode) {
@@ -71,7 +69,7 @@ function renderIn(node: ReactNode) {
 
 beforeEach(() => {
   resetApiForTests();
-  nav.replace.mockReset();
+  nav.leave.mockReset();
 });
 
 describe('the console support access screen', () => {
@@ -157,7 +155,7 @@ describe('the console support access screen', () => {
     const reads = sent.filter((s) => s.method === 'get' && s.path === MINE_PATH).length;
 
     fireEvent.click(screen.getByRole('button', { name: 'Leave' }));
-    await waitFor(() => expect(nav.replace).toHaveBeenCalled());
+    await waitFor(() => expect(nav.leave).toHaveBeenCalled());
     expect(sent.some((s) => s.method === 'post' && s.path === '/api/v1/auth/sign-out')).toBe(true);
     expect(sent.filter((s) => s.method === 'get' && s.path === MINE_PATH)).toHaveLength(reads);
   });

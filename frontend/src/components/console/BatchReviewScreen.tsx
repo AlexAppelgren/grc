@@ -19,6 +19,7 @@ import type { ProposalBatch } from '@/features/proposals/types';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
+import { externalHref } from '@/shared/utils/external-href';
 import { formatDateTime } from '@/shared/utils/format';
 import { hasProblemCode } from '@/shared/utils/problem';
 
@@ -37,6 +38,7 @@ const QUEUE = '/console/queue';
 function About({ batch }: { batch: ProposalBatch }) {
   const t = useT();
   const ctx = useFormatContext();
+  const sourceHref = externalHref(batch.sourceUrl);
   return (
     <Panel aria-label={t('console.batch.about')} className="mb-4">
       <dl className="grid grid-cols-1 gap-x-3.5 gap-y-2 md:grid-cols-[140px_1fr]">
@@ -46,12 +48,14 @@ function About({ batch }: { batch: ProposalBatch }) {
           <>
             <dt className="text-meta text-muted">{t('console.batch.source')}</dt>
             <dd className="m-0 break-words">
-              {batch.sourceUrl !== '' ? (
-                <a href={batch.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">
+              {sourceHref !== null ? (
+                <a href={sourceHref} target="_blank" rel="noopener noreferrer" className="underline">
                   {batch.sourceLabel !== '' ? batch.sourceLabel : batch.sourceUrl}
                 </a>
-              ) : (
+              ) : batch.sourceLabel !== '' ? (
                 batch.sourceLabel
+              ) : (
+                batch.sourceUrl
               )}
             </dd>
           </>

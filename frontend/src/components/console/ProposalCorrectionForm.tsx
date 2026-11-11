@@ -13,7 +13,7 @@ import { languageName } from '@/features/library/version-presentation';
 import { useApproveProposal, useScopeTermLabels } from '@/features/proposals/hooks';
 import { obligationPayloadOf } from '@/features/proposals/proposal-presentation';
 import type { ProposalRow } from '@/features/proposals/types';
-import { termRowsQuery } from '@/features/footprint/hooks';
+import { termRowsQuery } from '@/features/shared/reference';
 import { scopeTermsOf, type ScopeTerm } from '@/features/watch/api';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
@@ -159,7 +159,7 @@ export function ProposalCorrectionForm({ proposal }: { proposal: ProposalRow }) 
       {approve.isError ? <ProblemAlert error={approve.error} /> : null}
       <ButtonBar>
         <Button variant="danger" disabled={approve.isPending} onClick={() => setRejecting(true)}>
-          {t('console.queue.reject')}
+          {t('common.reject')}
         </Button>
         <Button disabled={approve.isPending} onClick={submit}>
           {t('console.queue.approve')}

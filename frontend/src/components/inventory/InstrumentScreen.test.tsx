@@ -47,6 +47,7 @@ const fffs: InstrumentDetail = {
       direction: 'incoming',
       instrument: { key: 'fffs-2026-11', shortName: 'FFFS 2026:11' },
       note: 'Amends FFFS 2017:2, in force 1 October 2026.',
+      fromRef: '',
       toRef: '',
     },
     {
@@ -54,6 +55,7 @@ const fffs: InstrumentDetail = {
       direction: 'outgoing',
       instrument: { key: 'celex-32017l0593', shortName: 'Delegated directive (EU) 2017/593' },
       note: '',
+      fromRef: '',
       toRef: '',
     },
   ],
@@ -110,15 +112,14 @@ function renderIn(node: ReactNode, permissions: string[] = ['library.read', 'pro
 /** The server: /me, the card, its obligations (`total` beyond the page when given) and the report. */
 function serve(answer: InstrumentDetail | number, obligations: Obligation[] = [researchObligation], total = obligations.length) {
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path === '/api/v1/obligations') return { status: 200, data: { items: obligations, total } };
     if (sent.path.endsWith('/provisions')) return { status: 200, data: [] };
     // The record's "Reported problems" (AUD-03): the bank has filed none on it.
-    if (sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
-    if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
+    if (sent.method === 'get' && sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
+    if (sent.method === 'post' && sent.path === '/api/v1/problem-reports') return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
     return { status: 200, data: answer };
-  });
+  }, { me: ME });
 }
 
 describe('InstrumentScreen', () => {
@@ -237,8 +238,8 @@ describe('InstrumentScreen', () => {
     // The directive's card sees FFFS 2017:2 implementing it (incoming implements);
     // the amending instrument's card sees its own amendment going out.
     const lineage: InstrumentDetail['lineage'] = [
-      { relation: { key: 'implements', kind: null, label: 'Implements' }, direction: 'incoming', instrument: { key: 'fffs-2017-2', shortName: 'FFFS 2017:2' }, note: '', toRef: '' },
-      { relation: { key: 'amends', kind: null, label: 'Amends' }, direction: 'outgoing', instrument: { key: 'fffs-2017-1', shortName: 'FFFS 2017:1' }, note: '', toRef: '9 kap. 6 §' },
+      { relation: { key: 'implements', kind: null, label: 'Implements' }, direction: 'incoming', instrument: { key: 'fffs-2017-2', shortName: 'FFFS 2017:2' }, note: '', fromRef: '', toRef: '' },
+      { relation: { key: 'amends', kind: null, label: 'Amends' }, direction: 'outgoing', instrument: { key: 'fffs-2017-1', shortName: 'FFFS 2017:1' }, note: '', fromRef: '', toRef: '9 kap. 6 §' },
     ];
     serve({ ...fffs, lineage });
     renderIn(<InstrumentScreen instrumentId="in-1" />);
@@ -431,7 +432,7 @@ describe('InstrumentScreen', () => {
     const withReport = renderIn(<InstrumentScreen instrumentId="in-1" />);
     expect(await screen.findByText('No problems reported on this record.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Reported problems' })).toBeInTheDocument();
-    expect(sent.filter((call) => call.path === '/api/v1/problem-reports').map((call) => call.params)).toEqual([
+    expect(sent.filter((call) => call.method === 'get' && call.path === '/api/v1/problem-reports').map((call) => call.params)).toEqual([
       { subjectType: 'instrument', subjectId: fffs.id, limit: 20, offset: 0 },
     ]);
     withReport.unmount();

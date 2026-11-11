@@ -1,13 +1,11 @@
 """The abstract `Vocabulary` model (VOC-01, playbook 15) and its label rows (D-12).
 
-A vocabulary row: immutable `key`, optional fixed `kind`, labels per language as
-translation rows, a `usage_note` written for people and agents alike, `sort_order`,
-`active`, `is_system`, `is_default`. One generic endpoint set serves every list as
-`{key, kind, label}`; nothing ever stores a label.
+A vocabulary row: immutable `key`, optional fixed `kind`, labels per language as translation
+rows, a `usage_note`, `sort_order`, `active`, `is_system`, `is_default`. One generic endpoint
+set serves every list as `{key, kind, label}`; nothing ever stores a label.
 
-Concrete vocabularies (chunk 2 onward) subclass `Vocabulary` and declare a matching label
-model that subclasses `VocabularyLabel` with a `vocabulary` foreign key named exactly so,
-for example:
+A concrete vocabulary subclasses `Vocabulary` and declares a label model subclassing
+`VocabularyLabel` with a `vocabulary` foreign key named exactly so:
 
     class ChangeType(LibraryVocabulary):
         class Kind(models.TextChoices): ...   # the fixed lifecycle kind, if any
@@ -35,10 +33,8 @@ from apps.shared.tenancy import LibraryModel
 # provenance columns use (library 0007), so every confirmation reads the same two values.
 ORIGIN_CHOICES = [(member.value, member.value) for member in OriginType]
 
-# Content languages are rows (I18N-01); a label row references one by its code. The
-# `language` table exists since chunk 1; the column stays a code (validated against the
-# active rows by the logic that writes it) because turning it into a foreign key would
-# rewrite the identity app's role label tables, which chunk 2 does not touch.
+# Content languages are rows (I18N-01); a label row names one by its code, validated against
+# the active rows by the writing logic rather than a foreign key.
 LANGUAGE_CODE_MAX_LENGTH = 8
 
 
@@ -76,7 +72,7 @@ class Vocabulary(models.Model):
         super().save(*args, **kwargs)
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:  # compliance: allow-kwargs Django Model.delete signature
-        # Retire, never delete (playbook 15). Merge re-points duplicates in chunk 2.
+        # Retire, never delete (playbook 15).
         raise ValidationError(
             "Vocabulary rows are retired, never deleted; set active=False.", code="retire_not_delete"
         )
@@ -113,22 +109,15 @@ class VocabularyLabel(models.Model):
 
 
 class LibraryVocabulary(Vocabulary, LibraryModel):
-    """A tier-2 vocabulary (playbook 15): shared rows the platform curates, written only
-    by an approved proposal (apps/proposals/apply.py) or a reference seed, because a
-    change alters footprint matching and pickers for every tenant (VOC-07). The library
-    fence (LibraryModel) refuses any other write. `version` backs If-Match on the
-    proposal that relabels a row.
+    """A tier-2 vocabulary (playbook 15): shared rows written only by an approved proposal or
+    a reference seed, because a change alters matching and pickers for every tenant (VOC-07).
+    `version` backs If-Match on a relabel proposal.
 
-    Machine-confirmed provenance (INV-05, PRO-02, D-62, D-79), the same three facts an
-    obligation version carries: who confirmed the row's wording (`verified_origin`: `agent`
-    or `user`), the confirming agent when it was one, and the proposal that wrote it,
-    through which the proposing agent is read (`applied_by_proposal.proposed_by_agent`), so
-    both agents are named without a fourth column. Unlike a version, a row is reworded in
-    place, so every label an agent's approval writes is machine-made on its own and the
-    stamp stays `agent` until a person has approved all the wording the agents left
-    (apps/proposals/apply.py, `_restamp`). An approval that writes no wording, such as a
-    sort order, a retire, a restore or a merge, leaves the three as they were. Blank and
-    null on a seeded row."""
+    Machine-confirmed provenance (INV-05, PRO-02, D-62, D-79), as on an obligation version:
+    `verified_origin`, the confirming agent, and the proposal (through which the proposing
+    agent is read). A row is reworded in place, so the stamp stays `agent` until a person has
+    approved all the wording the agents left (`apply._restamp`); an approval writing no
+    wording leaves it. Blank on a seeded row."""
 
     version = models.PositiveIntegerField(default=1)
     verified_origin = models.CharField(max_length=16, choices=ORIGIN_CHOICES, blank=True, default="")
@@ -151,8 +140,8 @@ class LibraryVocabularyLabel(VocabularyLabel, LibraryModel):
 
 class TenantListVocabulary(TenantVocabulary):
     """A tier-3 vocabulary a tenant admin manages through the generic vocabulary routes
-    (VOC-02). `version` backs If-Match on PATCH. Declared apart from TenantVocabulary so
-    the role tables of chunk 1 keep their column set."""
+    (VOC-02). `version` backs If-Match on PATCH. Apart from TenantVocabulary so the role
+    tables keep their column set."""
 
     version = models.PositiveIntegerField(default=1)
 
@@ -161,14 +150,43 @@ class TenantListVocabulary(TenantVocabulary):
         ordering = ["sort_order", "key"]
 
 
+def write_labels(label_model: type[Any], owner: dict[str, Any], labels: dict[str, str], *, is_machine: bool) -> None:
+    """Write `labels` onto one row's translation rows (D-12); `owner` names the row. The first
+    labels a row gets name its original: English when among them, else the first. `is_machine`
+    is set by an agent's approval and cleared by a person's edit or approval, per label
+    (INV-05, D-12, D-62)."""
+    manager = label_model._default_manager
+    existing = {label.language: label for label in manager.filter(**owner)}
+    original = None
+    if not any(label.is_original for label in existing.values()):
+        original = "en" if "en" in labels else next(iter(labels), None)
+    for language, text in labels.items():
+        label = existing.get(language)
+        if label is None:
+            manager.create(**owner, language=language, text=text, is_original=language == original, is_machine=is_machine)
+            continue
+        label.text = text
+        label.is_machine = is_machine
+        label.save(update_fields=["text", "is_machine"])
+
+
+def label_of(labels: dict[str, str], order: list[str], *, original: str | None, key: str) -> str:
+    """The one label resolver: the label in the first language of `order` that has one, then
+    the original, then any label, then the key itself (never an empty string: an unlabelled
+    row still renders). Nothing stores a label, so a rename is instant."""
+    for code in order:
+        if labels.get(code):
+            return labels[code]
+    if original and labels.get(original):
+        return labels[original]
+    for text in labels.values():
+        if text:
+            return text
+    return key
+
+
 def label_for(row: Vocabulary, language_order: list[str]) -> str:
-    """The label in the first language of `language_order` that has one, then the
-    original, then the key. Nothing stores a label, so a rename is instant."""
-    labels = {label.language: label for label in row.labels.all()}  # type: ignore[attr-defined]
-    for code in language_order:
-        if code in labels:
-            return labels[code].text
-    for label in labels.values():
-        if label.is_original:
-            return label.text
-    return row.key
+    """`label_of` over a row's own labels, read through its `labels` relation."""
+    rows = list(row.labels.all())  # type: ignore[attr-defined]
+    original = next((label.language for label in rows if label.is_original), None)
+    return label_of({label.language: label.text for label in rows}, language_order, original=original, key=row.key)

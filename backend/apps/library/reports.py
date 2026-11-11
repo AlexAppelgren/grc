@@ -1,25 +1,14 @@
 """"This looks wrong": filing a problem report (INV-06, AUD-03, INV-S7).
 
-A reader who spots a mistake in a public fact never edits the library; they say what
-looks wrong. The report stays inside the bank: its own members with the right permission
-read and close it (Alex, 2026-09-19, OWNER_RECOMMENDATIONS item 3), and bleqq's watch
-agents find the deviation themselves by re-checking the record against its source and
-proposing a correction (chunk 5). This module writes that one row.
+A reader who spots a mistake never edits the library; the report stays inside the bank, read
+and closed by its own members, and the watch agents' re-check corrects the source. The
+subject arrives resolved, so nothing here names a library model. The tenant and reporter come
+from the principal, never the body, and a tenant is required: a mixed-table row without one
+would be readable by every bank.
 
-The subject arrives already resolved — its kind, its id and the public title a colleague
-will read — so nothing here names an `Instrument` or an `Obligation`, and the library
-fence has nothing to catch. The tenant and the reporter come from the caller's principal,
-never from the request body, so a report can only ever be filed for the bank the reader
-is signed in to. A tenant is required: `problem_report` is a mixed table, so a row with
-no tenant would be the library's own and readable by every bank, which is the opposite of
-what the report is for. The route cannot produce one either, because `caller_tenant()`
-answers 404 to a principal in no bank.
-
-What the reader wrote is tenant content (playbook 4.7). It lives in `problem_report.text`
-and reaches nothing else: not the audit summary, not the audit before and after, not the
-outbox payload the worker delivers, and not a log line. The audit row carries the subject,
-the report's id and the version and language the reader had on screen, which is what a
-colleague needs to open the same words.
+What the reader wrote is tenant content (playbook 4.7): it lives in `problem_report.text`
+and reaches no audit row, outbox payload or log line. The audit row carries the subject, the
+report's id and the version and language the reader had on screen.
 """
 
 from __future__ import annotations
@@ -31,7 +20,9 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 
 from apps.identity.rate_limit import enforce
+from apps.library import reading
 from apps.library.models import Language, ProblemReport, SubjectType
+from apps.library.schemas import ProblemReportBody
 from apps.shared.audit import Actor, record
 
 ACTION = "library.problem_reported"
@@ -67,9 +58,8 @@ def create_report(
         raise ValidationError("A version number starts at 1.", code="invalid_value")
     if language is not None and not Language.objects.filter(key=language, active=True).exists():
         raise ValidationError(f"{language!r} is not a content language.", code="unknown_key")
-    # Each report is a row and an audit row kept for ten years: one person's reports are
-    # bounded per hour (ACC-09, hardening H39), counted after the checks so a refusal
-    # spends nothing.
+    # Each report is a ten-year row and audit row, so reports are bounded per person per hour
+    # (ACC-09, H39), counted after the checks so a refusal spends nothing.
     enforce(BUCKET, str(reporter.id), settings.PROBLEM_REPORTS_PER_USER_PER_HOUR, HOUR)
 
     report = ProblemReport.objects.create(
@@ -92,3 +82,23 @@ def create_report(
         after={"reportId": str(report.id), "versionNumber": version_number, "language": language},
     )
     return report
+
+
+def report_on(*, body: ProblemReportBody, tenant_id: uuid.UUID, reporter: Any, actor: Actor) -> ProblemReport:
+    """`POST /problem-reports`: file a report on an obligation or an instrument the caller
+    can read; another bank's private record answers 404 as one that does not exist."""
+    if body.subject_type == SubjectType.OBLIGATION.value:
+        record: Any = reading.obligation_subject(body.subject_id)
+    else:
+        record = reading.instrument_subject(body.subject_id)
+    return create_report(
+        subject_type=SubjectType(body.subject_type),
+        subject_id=record.id,
+        subject_title=record.stable_key,
+        tenant_id=tenant_id,
+        reporter=reporter,
+        actor=actor,
+        description=body.description,
+        version_number=body.version_number,
+        language=body.language,
+    )

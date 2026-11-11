@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { hostSettingsFrom, routeByHost, variesByDest, type HostRequest, type HostSettings } from './hosts';
+import { hostSettingsFrom, routeByHost, variesByRequest, type HostRequest, type HostSettings } from './hosts';
 
 const SPLIT: HostSettings = { publicHosts: ['bleqq.com', 'www.bleqq.com'], appHost: 'app.bleqq.com' };
 
 function request(host: string, path: string, extra: Partial<HostRequest> = {}): HostRequest {
-  return { host, path, search: '', protocol: 'https', dest: 'document', ...extra };
+  return { host, path, search: '', protocol: 'https', dest: 'document', signedIn: false, ...extra };
 }
 
 describe('hostSettingsFrom', () => {
@@ -80,10 +80,28 @@ describe('routeByHost on a public host', () => {
 });
 
 describe('routeByHost on the app host', () => {
-  it('keeps / and every app path, marked noindex', () => {
-    for (const path of ['/', '/sign-in', '/enrol', '/inventory', '/console', '/not-a-page']) {
-      expect(routeByHost(SPLIT, request('app.bleqq.com', path))).toEqual({ kind: 'pass', noindex: true });
+  it('keeps every app path, marked noindex, whatever the browser says about a session', () => {
+    for (const path of ['/sign-in', '/enrol', '/inventory', '/console', '/not-a-page']) {
+      for (const signedIn of [false, true]) expect(routeByHost(SPLIT, request('app.bleqq.com', path, { signedIn }))).toEqual({ kind: 'pass', noindex: true });
     }
+  });
+
+  it('answers a page load of / with the public page when the browser holds no session marker, a crawler included', () => {
+    const publicPage = { kind: 'rewrite', path: '/welcome', canonical: 'https://bleqq.com/' };
+    expect(routeByHost(SPLIT, request('app.bleqq.com', '/'))).toEqual(publicPage);
+    expect(routeByHost(SPLIT, request('app.bleqq.com', '/', { dest: null }))).toEqual(publicPage);
+    expect(routeByHost(SPLIT, request('APP.bleqq.com', '/', { search: '?ref=a' }))).toEqual(publicPage);
+    expect(routeByHost(SPLIT, request('app.bleqq.com', '/', { protocol: 'http' }))).toEqual({ ...publicPage, canonical: 'http://bleqq.com/' });
+  });
+
+  it('keeps the app at / for a browser that says it holds a session', () => {
+    expect(routeByHost(SPLIT, request('app.bleqq.com', '/', { signedIn: true }))).toEqual({ kind: 'pass', noindex: true });
+    expect(routeByHost(SPLIT, request('app.bleqq.com', '/', { signedIn: true, dest: null }))).toEqual({ kind: 'pass', noindex: true });
+  });
+
+  it('keeps the app at / for the demo frame and for fetches made by the app, which are not page loads', () => {
+    expect(routeByHost(SPLIT, request('app.bleqq.com', '/', { dest: 'iframe' }))).toEqual({ kind: 'pass', noindex: true });
+    expect(routeByHost(SPLIT, request('app.bleqq.com', '/', { dest: 'empty' }))).toEqual({ kind: 'pass', noindex: true });
   });
 
   it('sends the public page to the first public host, from a page load and from the app alike', () => {
@@ -105,18 +123,24 @@ describe('routeByHost on any other host', () => {
   });
 });
 
-describe('variesByDest', () => {
+describe('variesByRequest', () => {
   it('holds for every page on a public host, where a page load and the demo frame get different answers at one address', () => {
     for (const host of ['bleqq.com', 'www.bleqq.com', 'BLEQQ.com']) {
-      for (const path of ['/', '/welcome', '/sign-in', '/inventory']) expect(variesByDest(SPLIT, request(host, path))).toBe(true);
+      for (const path of ['/', '/welcome', '/sign-in', '/inventory']) expect(variesByRequest(SPLIT, request(host, path))).toBe(true);
     }
   });
 
-  it('holds for nothing else: the public files, the app host, another host, or the split unset', () => {
-    expect(variesByDest(SPLIT, request('bleqq.com', '/robots.txt'))).toBe(false);
-    expect(variesByDest(SPLIT, request('bleqq.com', '/demo/today-desktop-light.jpg'))).toBe(false);
-    expect(variesByDest(SPLIT, request('app.bleqq.com', '/'))).toBe(false);
-    expect(variesByDest(SPLIT, request('grc-front-staging.up.railway.app', '/'))).toBe(false);
-    expect(variesByDest(null, request('bleqq.com', '/'))).toBe(false);
+  it('holds for the front door of the app host, where a visitor and a signed-in person get different answers', () => {
+    expect(variesByRequest(SPLIT, request('app.bleqq.com', '/'))).toBe(true);
+    expect(variesByRequest(SPLIT, request('APP.bleqq.com', '/'))).toBe(true);
+  });
+
+  it('holds for nothing else: the public files, the rest of the app host, another host, or the split unset', () => {
+    expect(variesByRequest(SPLIT, request('bleqq.com', '/robots.txt'))).toBe(false);
+    expect(variesByRequest(SPLIT, request('bleqq.com', '/demo/today-desktop-light.jpg'))).toBe(false);
+    for (const path of ['/sign-in', '/inventory', '/welcome', '/robots.txt']) expect(variesByRequest(SPLIT, request('app.bleqq.com', path))).toBe(false);
+    expect(variesByRequest(SPLIT, request('grc-front-staging.up.railway.app', '/'))).toBe(false);
+    expect(variesByRequest(null, request('bleqq.com', '/'))).toBe(false);
+    expect(variesByRequest(null, request('app.bleqq.com', '/'))).toBe(false);
   });
 });

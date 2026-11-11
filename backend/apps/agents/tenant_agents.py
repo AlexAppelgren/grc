@@ -1,18 +1,11 @@
 """A bank's own agents (AGT-04, ADR 0053): added from a tenant-scoped definition, switched on
-and off, given a cadence and a scope, and only ever inside the bank's own zone.
+and off, given a cadence and a scope, only inside the bank's zone.
 
-A record is loaded under row-level security first, so another bank's agent is not found
-before anything else is said, and one of bleqq's agents is refused by the fence before any
-write is attempted. The plan limits are settings until plans exist (R3): the most frequent
-cadence (`AGENT_MIN_CADENCE`) and how many agents a bank may add (`AGENTS_PER_TENANT_MAX`),
-each 422 `above_plan_limit` past it. An agent is switched on only once the bank has set its
-monthly cap, so no agent of a bank's own ever runs uncapped.
-
-The scope is keys only (D-32): jurisdiction and taxonomy term keys, each an active row. A
-person holding `agents.manage` sets it; no agent sets its own scope, and nothing here reads
-or writes the bank's regulatory scope (D-89). `next_run_at` is computed here, at write time,
-from the cadence and the bank's own time zone; the scheduler reads it and does not
-recompute it.
+Records load under row-level security; one of bleqq's agents is refused by the fence before
+any write. Plan limits are settings (`AGENT_MIN_CADENCE`, `AGENTS_PER_TENANT_MAX`, 422
+`above_plan_limit`). An agent is switched on only once the bank set its monthly cap. The
+scope is keys only, each an active row, set by an `agents.manage` holder (D-32); nothing here
+touches the regulatory scope (D-89). `next_run_at` is computed here, in the bank's zone.
 """
 
 from __future__ import annotations
@@ -35,7 +28,7 @@ from apps.agents.schemas import TenantAgentInput, TenantAgentScope, TenantAgentU
 from apps.identity.models import User
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
 from apps.watch.keys import resolve_keys
@@ -49,17 +42,14 @@ _MONDAY = 1
 
 
 def own_agent(tenant_agent_id: uuid.UUID, *, lock: bool = False) -> TenantAgent:
-    """The caller's bank's own agent, read under row-level security: another bank's agent
-    and one that does not exist are the same 404. It is fenced before it is returned, so
-    every control that starts here refuses one of bleqq's agents. A writer that saves the
-    whole row, or decides on its pause, asks for `lock`, so a pause committed meanwhile is
-    waited for and read rather than written over."""
+    """The bank's own agent under row-level security (another bank's is 404), fenced before
+    return. `lock` for a writer that saves the whole row or decides on its pause."""
     queryset = TenantAgent.objects.select_related("agent", "paused_by")
     if lock:
         queryset = queryset.select_for_update(of=("self",))
     agent = queryset.filter(pk=tenant_agent_id).first()  # ordering: pk lookup, at most one row
     if agent is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     refuse_platform_agent(agent.agent)
     return agent
 
@@ -80,9 +70,7 @@ def lock_tenant(tenant: Tenant, purpose: str) -> None:
         cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [f"{purpose}:{tenant.id}"])
 
 
-# ---------------------------------------------------------------------------------------
-# Reading
-# ---------------------------------------------------------------------------------------
+# --- Reading ---
 def _out(agent: TenantAgent) -> dict[str, Any]:
     paused_by = agent.paused_by
     return {
@@ -113,9 +101,7 @@ def list_tenant_agents(*, tenant: Tenant, limit: int, offset: int) -> dict[str, 
     }
 
 
-# ---------------------------------------------------------------------------------------
-# Rules
-# ---------------------------------------------------------------------------------------
+# --- Rules ---
 def _check_cadence(cadence: str) -> None:
     if _FREQUENCY.index(cadence) < _FREQUENCY.index(settings.AGENT_MIN_CADENCE):
         raise ValidationError(
@@ -156,10 +142,9 @@ def _schedule(agent: TenantAgent) -> None:
 
 
 def next_run_at(agent: TenantAgent, tenant: Tenant) -> datetime.datetime | None:
-    """The next scheduled start after now, in UTC: the tenant-local date the cadence names at
-    the run hour in the bank's own time zone. Daily: the next such hour. Weekly: the next run
-    weekday. Monthly: the first run weekday of the month. None when the agent is off, paused
-    or manual, because then no run is scheduled."""
+    """The next scheduled start after now, in UTC, at the run hour in the bank's zone: daily
+    the next such hour, weekly the next run weekday, monthly the month's first run weekday.
+    None when off, paused or manual."""
     if not agent.enabled or agent.paused_at is not None or agent.cadence == AgentCadence.MANUAL.value:
         return None
     zone = ZoneInfo(tenant.timezone)
@@ -204,9 +189,7 @@ def _person(who: Principal) -> tuple[User, Actor]:
     return user, Actor(kind=ActorType.USER, id=user.id, label=user.name)
 
 
-# ---------------------------------------------------------------------------------------
-# Writing
-# ---------------------------------------------------------------------------------------
+# --- Writing ---
 def create_tenant_agent(*, who: Principal, tenant: Tenant, body: TenantAgentInput) -> dict[str, Any]:
     """`POST /agents`: a switched-off agent of the bank's own from a tenant-scoped definition.
     The fence answers first, so one of bleqq's agents writes nothing."""
@@ -293,10 +276,8 @@ def update_tenant_agent(*, who: Principal, tenant: Tenant, tenant_agent_id: uuid
 
 
 def pause(tenant_agent: TenantAgent, reason: str, *, by: User | None = None) -> TenantAgent:
-    """Pause one of the bank's own agents for the scheduler, the controls and the cap: it
-    starts no run until someone resumes it, and keeps its settings and history. `reason` is
-    a key (`budget_cap`), never text a person typed; `by` is the person, or None when the
-    system paused it. Pausing a paused agent changes nothing and records nothing."""
+    """Pause one of the bank's own agents: no run starts until resumed; settings and history
+    stay. `reason` is a key, `by` None when the system paused. Re-pausing records nothing."""
     refuse_platform_agent(tenant_agent.agent)
     if tenant_agent.paused_at is not None:
         return tenant_agent

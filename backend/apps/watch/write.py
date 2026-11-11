@@ -1,26 +1,17 @@
-"""The watch door: the second named way into the library zone (chunk 5 plan, ruling H).
+"""The watch door: the second named way into the library zone.
 
-`library_write()` is the fence every library row sits behind (PRO-01). Approved proposals
-open it, the reference seeds open it, and the watch pipeline opens it — because a change,
-its timeline and its source pages are sourced public facts that no person proposes. The
-door here is narrower than the one the allowlist held before it: it reaches the seven
-watch tables of apps/watch/models.py and nothing else, so a watch step cannot write an
-authority, an instrument, a provision, an obligation or a version table even by mistake.
-Those stay behind the proposal door, where four eyes and a step-up are.
+A change, its timeline and pages are sourced public facts no person proposes, so the watch
+pipeline opens `library_write()` (PRO-01), but narrowly: only the seven watch tables, never
+an authority, instrument, provision, obligation or version table, which stay behind the
+proposal door.
 
-Two halves make that true:
+- Who may open it: only this module is on `LIBRARY_WRITE_ALLOWLIST` under apps/watch/, and
+  `tests_library_fence.py` restricts `watch_write()` to the watch steps that own a write.
+- What it may write: a connection wrapper refuses a write of any other library table
+  wherever it sits in the statement (first, in a CTE, after a semicolon), covering ORM calls
+  and raw SQL alike.
 
-- **Who may open it.** `apps/watch/write.py` is the only module under apps/watch/ on
-  `LIBRARY_WRITE_ALLOWLIST`, and the AST guard in apps/shared/tests_library_fence.py
-  restricts `watch_write()` itself to the four watch steps that own a write.
-- **What it may write.** Inside the block a database wrapper reads every statement the
-  connection runs and refuses a write of any library table outside the seven, wherever in
-  the statement that write sits — first, inside a common table expression, or after a
-  semicolon. It sits at the connection, not at the model, so `save()`, `update()`,
-  `delete()` and `bulk_create()` are all covered by one rule, and so is raw SQL.
-
-Reads are untouched, and so are the tables that are not library rows: `record()` writes
-its audit and outbox rows in the same transaction as the change it describes (AUD-01).
+Reads and non-library tables are untouched: `record()` writes audit and outbox rows (AUD-01).
 """
 
 from __future__ import annotations
@@ -40,16 +31,10 @@ from apps.watch.models import WATCH_MODELS
 
 WATCH_TABLES = frozenset(model._meta.db_table for model in WATCH_MODELS)
 
-# Every table a statement writes, wherever the write sits in it. Django puts its
-# `INSERT INTO "table"`, `UPDATE "table" SET` and `DELETE FROM "table"` first, but raw SQL
-# need not: a data-modifying common table expression hides the write inside brackets
-# (`WITH x AS (INSERT INTO obligation ...) SELECT ...`), a second statement hides it after
-# a semicolon, and COPY, MERGE and TRUNCATE write without any of those three words. So a
-# write verb counts wherever a statement can begin — at the start, after `(`, after `;` —
-# and every match is checked, not only the first.
-#
-# It deliberately does not count `... FOR UPDATE OF "obligation"`, which is a locking read
-# and which an anchor-free pattern would refuse.
+# Every table a statement writes, wherever the write sits: a write verb counts where a
+# statement can begin (start, after `(`, after `;`), since raw SQL can hide a write in a CTE
+# or a second statement, and COPY, MERGE and TRUNCATE use none of the usual words. Every
+# match is checked. `FOR UPDATE OF "obligation"` is a locking read and does not count.
 _WRITE_STATEMENT = re.compile(
     r'(?:^|[(;])\s*(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|MERGE\s+INTO|COPY|TRUNCATE(?:\s+TABLE)?)'
     r'\s+(?:ONLY\s+)?"?(?P<table>\w+)"?',
@@ -89,20 +74,13 @@ def _refuse_writes_outside_the_watch_zone(
 
 @contextmanager
 def watch_write(reason: str) -> Iterator[None]:
-    """The only context in which a watch table may be written. `reason` names the step —
-    the registration, the curation, the source check, the So what draft — and travels into
-    the audit row the caller records.
+    """The only context in which a watch table may be written. `reason` names the step and
+    travels into the audit row.
 
-    The wrapper sits on the default connection, the one the application writes through;
-    the `app` alias exists for the guards, which read. A refusal aborts the transaction it
-    happened in, which is what a fence breach should do. The database holds the same line
-    a second time: the door named below opens the seven watch tables and no other (H16,
-    shared 0008, ADR 0058).
-
-    A shared source is written with no tenant active. `source` is the one watch table with
-    a zone column (WAT-06), and its write rule is the session's own zone alone, so a
-    session with a tenant activated writes that bank's private source and only a session
-    with none writes the shared row a sweep reads (`c5-seed-watch`, `seed_e2e`)."""
+    The wrapper sits on the default connection, the one the application writes through; a
+    refusal aborts its transaction. The database holds the same line through the watch door
+    (H16, shared 0008, ADR 0058). `source` is the one watch table with a zone column
+    (WAT-06): a shared source is written with no tenant active."""
     with library_write(f"watch: {reason}", door="watch"), connections[DEFAULT_DB_ALIAS].execute_wrapper(
         _refuse_writes_outside_the_watch_zone
     ):
@@ -110,22 +88,10 @@ def watch_write(reason: str) -> Iterator[None]:
 
 
 def upsert(model: type[Any], reason: str, *, lookup: dict[str, Any], defaults: dict[str, Any]) -> Any:
-    """A natural-key `update_or_create` through the door, for a caller with nothing more
-    than a fixture to write (`seed_e2e`, c6-e2e-seed): idempotent by the lookup it is given,
-    so a second run of the seed finds the same row rather than a duplicate.
-
-    `model` arrives as a parameter rather than an import, which is what lets this live in
-    `write.py` beside the door's own definition without naming a watch model: the split
-    `apps/shared/tests_library_fence.py` demands of every other door step (`apps/watch/
-    keys.py` resolves what a caller named; the step that writes never names the record) is
-    the same one this generic helper keeps, the other way round — the caller names the
-    model, this function never does.
-
-    Runs inside `tenancy.platform_zone()`: `source` is the one watch table with a zone
-    column (WAT-06), written only by a session with no tenant active, and a seed script may
-    share one connection across several calls whose ambient tenant this function must never
-    depend on (proven to fail 2026-09-21: a second `seed_e2e()` call on the same connection
-    left a tenant active from the first, and the shared source it seeds refused the write)."""
+    """A natural-key `update_or_create` through the door for a seed: idempotent by `lookup`.
+    `model` is a parameter, so this never names a watch model (library fence). Runs in
+    `tenancy.platform_zone()`, since a seed may share a connection whose ambient tenant would
+    make the shared `source` write refuse."""
     with tenancy.platform_zone(), watch_write(reason):
         row, _ = model.objects.update_or_create(**lookup, defaults=defaults)
         return row
@@ -133,16 +99,10 @@ def upsert(model: type[Any], reason: str, *, lookup: dict[str, Any], defaults: d
 
 def repoint(moving: Any, twins: Any, field: str, target: Any) -> int:
     """Re-point a watch table's rows from a merged-away library value to its target (VOC-02,
-    VOC-07), for an approved merge proposal. apps/proposals/apply.py already holds the
-    fence open for that approval, so this adds the watch door and nothing else: in Python
-    its own refusal, so the statements reach the watch tables and no inventory table, and in
-    the database the watch door itself, which the watch tables demand and which `library_door()`
-    swaps back to the approval's own on the way out (H16, ADR 0058), as the index door does
-    for a rebuild. It opens no second `library_write()` of its own, so the approval route
-    still reaches one writer, `apply()` (apps/shared/tests_library_fence.py).
-
-    `twins` already carry `target` beside the row they would duplicate (a unique
-    constraint), so they are dropped rather than moved, and only the moved rows count."""
+    VOC-07) inside an approved merge, whose `apply()` already holds the fence open. Adds only
+    the watch door: its own refusal in Python, and in the database the watch door, which
+    `library_door()` swaps back to the approval's on exit (H16, ADR 0058). No second
+    `library_write()`. `twins` already carry `target`, so they are dropped, not moved."""
     with tenancy.library_door("watch"), connections[DEFAULT_DB_ALIAS].execute_wrapper(_refuse_writes_outside_the_watch_zone):
         twins.delete()
         return int(moving.update(**{field: target}))

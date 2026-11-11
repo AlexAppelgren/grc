@@ -1,13 +1,9 @@
-"""The run log as a person reads it (AGT-01, AGT-04, ruling 9): `GET /agent-runs`, with the
-chunk 11 filters and fields.
+"""A bank's run log as a person reads it (AGT-04): `GET /agent-runs`. The console reads
+bleqq's runs from `platform.list_runs` (review 2026-11-11 B-1).
 
-A caller reads the runs of its own zone and no other: a bank's session its own runs, a
-console session the library's. bleqq's runs reach a bank as watch items and proposals,
-never as run rows, so no platform cost, token count or model is on a bank's page (the
-TODO default on what a bank sees of bleqq's watch). Row-level security already keeps
-another bank's runs out; the zone filter narrows a bank's session further, past the library
-rows security lets it read. `tenantAgentId` narrows to one of the bank's agents and `mine`
-to the runs the caller asked for; neither can widen what the zone allows.
+A bank's session reads its own runs. bleqq's runs reach a bank as watch items and proposals,
+never as run rows, so no platform cost, token count or model is on a bank's page.
+`tenantAgentId` and `mine` only narrow; neither can widen what the zone allows.
 """
 
 from __future__ import annotations
@@ -24,14 +20,11 @@ from apps.shared.authentication import Principal
 from apps.taxonomy.schemas import PersonRef
 
 
-def list_runs(*, who: Principal, query: TenantRunQuery) -> AgentRunListPage:
-    """The runs of the caller's own zone, newest first with a stable tiebreak on id, one page
-    at a time."""
-    queryset = AgentRun.objects.select_related("agent", "agent_version", "requested_by").order_by("-started_at", "-id")
-    if who.tenant_id is None:
-        queryset = queryset.filter(tenant__isnull=True)
-    else:
-        queryset = queryset.filter(tenant_id=who.tenant_id)
+def list_runs(*, tenant_id: uuid.UUID, who: Principal, query: TenantRunQuery) -> AgentRunListPage:
+    """The bank's own runs, newest first with a stable tiebreak on id, one page at a time."""
+    queryset = (
+        AgentRun.objects.select_related("agent", "agent_version", "requested_by").filter(tenant_id=tenant_id).order_by("-started_at", "-id")
+    )
     if query.tenant_agent_id is not None:
         queryset = queryset.filter(tenant_agent_id=query.tenant_agent_id)
     if query.mine:
@@ -42,9 +35,8 @@ def list_runs(*, who: Principal, query: TenantRunQuery) -> AgentRunListPage:
 
 
 def recent_runs(tenant_agent_ids: list[uuid.UUID], *, per_agent: int) -> dict[uuid.UUID, list[AgentRunListItem]]:
-    """The latest `per_agent` runs of each of the bank's own agents, in the order and shape
-    `list_runs` answers for one of them, read in one query however many agents. Row-level
-    security keeps them the caller's bank's, as it does every run row."""
+    """The latest `per_agent` runs of each of the bank's own agents, shaped as `list_runs`,
+    in one query."""
     if not tenant_agent_ids:
         return {}
     ranked = (

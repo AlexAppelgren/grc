@@ -1,38 +1,19 @@
 """What the search index reads out of the library (SRC-01, SRC-02, D-10).
 
 Every library row a chunk is built from is read here and nowhere else, and nothing here
-writes: the library fence (`apps/shared/tests_library_fence.py`) keeps watching this
-module without ever having to allow it, and `apps/search/tests_indexing.py` walks this
-file's syntax tree and fails on any write call. The rebuild in `apps/search/indexing.py`
-therefore never names a library model, and the index's one door never touches the
-library's.
+writes (`tests_indexing.py` fails on a write call), so `indexing.py` never names a library
+model.
 
-**A document, not a display record.** A chunk's `title` is the citation line a lawyer
-would write — the instrument's official reference, the record's own reference label, then
-the record's title — because only `title` and `body` reach the generated `tsvector`, and
-AC-SRC1 asks that "FFFS 2017:2" be won by the keyword leg. `hierarchy_path` is the
-breadcrumb a screen draws; the screen takes the words it shows from the record the hit
-points at, never from the chunk.
-
-**Validity is copied, so "as of" needs no join.** `valid_to` is the last day the version
-is in force: the day before the next one takes effect, by the one rule
-`apps/library/reading.py::version_rows()` uses for the obligation card, so the card and
-the index can never disagree. There is no end date when there is no next version, when
-the next one has no date of its own, or when it took effect on or before this one — and
-in that last case the version was corrected on the day it began (`logic.in_force`: the
-later number wins), so it is not indexed at all rather than indexed for ever.
-
-**Shared records only, in R1** (D-10, owner items 4 and 10). A record a bank owns, or one
-whose instrument a bank owns, yields no chunk. Its version ids are still returned, so a
-rebuild removes anything an earlier run left behind.
-
-**A registered change is the third source** (WAT-01, WAT-02, AGT-02). It is one text — its
-title and its summary, in whatever language the source was written in, which the change
-does not record — so it is indexed once under every content language's configuration,
-and whichever reads the reader's query best is the hit (`hybrid._best_per_record`). It
-carries its authority, its authority's jurisdiction and its scope terms, and it is
-searchable from the day it was published. Only an active change is: a withdrawn or
-superseded one keeps its id in the rebuild's scope and loses its chunks.
+- A chunk's `title` is the citation line (official reference, record label, title), since
+  only `title` and `body` reach the `tsvector` and AC-SRC1 wants "FFFS 2017:2" won by the
+  keyword leg. The screen's words come from the record, never the chunk.
+- Validity is copied, so "as of" needs no join: `valid_to` is the day before the next
+  version takes effect, the rule of `reading.version_rows()`. A version corrected on the day
+  it began is not indexed at all.
+- Shared records only (D-10): a record or instrument a bank owns yields no chunk, but its
+  version ids are returned so a rebuild removes leftovers.
+- A registered change (WAT-01, WAT-02, AGT-02) is one text in an unrecorded language, so it
+  is indexed once per content language configuration; only an active change has chunks.
 """
 
 from __future__ import annotations
@@ -78,11 +59,8 @@ class ChunkSource:
 
 @dataclass(frozen=True)
 class RecordChunks:
-    """What one library record contributes to the index, and what the rebuild owns.
-
-    `source_ids` is every version of the record, indexed or not: it is the scope the
-    rebuild deletes outside of, so a version that stopped being indexable takes its chunk
-    with it.
+    """What one library record contributes to the index. `source_ids` is every version,
+    indexed or not: the scope the rebuild deletes outside of.
     """
 
     source_type: str
@@ -157,11 +135,8 @@ def obligations_chunks(obligation_ids: Collection[uuid.UUID]) -> RecordChunks:
 
 def provision_chunks(provision_id: uuid.UUID) -> RecordChunks:
     """The chunks provision `provision_id` should have: one per version per text language.
-
-    A provision belongs to an instrument and to no obligation, so its chunk carries the
-    instrument's regime, binding and jurisdiction and no duty type and no scope terms —
-    those are the obligation's. Its end date is the one stored on the version when there
-    is one, and otherwise the same derivation the obligation versions use.
+    A provision carries its instrument's regime, binding and jurisdiction, no duty type and no
+    scope terms; its end date is the stored one, else derived as for obligation versions.
     """
     provision = (
         Provision.objects.select_related("instrument", "instrument__jurisdiction", "instrument__regime")
@@ -208,14 +183,9 @@ def provision_chunks(provision_id: uuid.UUID) -> RecordChunks:
 
 def change_chunks(change_id: uuid.UUID) -> RecordChunks:
     """The chunks registered change `change_id` should have: one per content language while
-    it is active, none once it is withdrawn or superseded. An unknown change contributes
-    nothing at all.
-
-    The scope terms are the change's own, a flag excluded (a flag says what the reform is
-    about, not who it reaches, WAT-03), and the reader's regulatory scope is applied to
-    them by `hybrid._record_scope` through the watch feed's own rule. A change belongs to
-    no bank: it is registered by the platform's runs and its events carry no tenant, which
-    `tasks.index_change` checks before it calls this.
+    active, none once withdrawn or superseded. Scope terms are the change's own, flags
+    excluded (WAT-03); `hybrid._record_scope` applies the reader's scope. A change belongs to
+    no bank, which `tasks.index_change` checks first.
     """
     change = (
         RegulatoryChange.objects.select_related("authority", "authority__jurisdiction")
@@ -269,8 +239,7 @@ def change_ids() -> list[uuid.UUID]:
 
 
 def _owned(*owners: uuid.UUID | None) -> bool:
-    """True when a bank owns the record or the instrument it hangs under. Nothing a bank
-    owns, and no child of one, is indexed in R1 (D-10, owner item 10)."""
+    """True when a bank owns the record or its instrument: never indexed (D-10)."""
     return any(owner is not None for owner in owners)
 
 

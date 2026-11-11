@@ -15,8 +15,9 @@ from uuid import UUID
 from django.conf import settings
 from pydantic import ConfigDict, Field, RootModel
 
-from apps.library.schemas import SHOWN_NAME, AgentRef, DiffSegment, LibraryRef, LocalizedText, OutsideReason, PartialDate
+from apps.library.schemas import SHOWN_NAME, AgentRef, DiffSegment, LocalizedText, OutsideReason, PartialDate
 from apps.shared.schemas import AgentDecision, CamelSchema, WriteBody
+from apps.shared.schemas import NamedRef, VocabRef
 
 __all__ = ["CamelSchema"]
 
@@ -29,15 +30,8 @@ TermRefs = list[str]
 DayDate = date
 
 
-class ProposalActorRef(CamelSchema):
-    """A platform person named on a proposal: who filed it, who corrected it or who decided
-    it. Always bleqq's own staff and never a bank member, whose name and id do not reach the
-    console (PRO-03)."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"id": "0b6f2c4e-8d1a-4f3b-9e27-5c8a1d3f6b90", "name": "Kari Nygaard"}]})
-
-    id: UUID = Field(description="The person's platform account, as a UUID that never changes. Compare this, never the name, to tell whether two proposals were handled by the same person.")
-    name: str = Field(description="The person's name as their platform account spells it today, for showing on screen. It may change; the audit trail keeps the name it had at the time.")
+# Published as `NamedRef` (review 2026-11-11 B-2); the name the logic modules import.
+ProposalActorRef = NamedRef
 
 
 class ProposalAgentRef(CamelSchema):
@@ -430,7 +424,7 @@ class ProposalRow(CamelSchema):
             "writes, carry none. A source is the authority's page, not our reading of it."
         ),
     )
-    scope_suggestion: list[dict[str, Any]] = Field(  # schema: TermRef (chunk 4 fills it)
+    scope_suggestion: list[dict[str, Any]] = Field(  # schema: VocabRef (chunk 4 fills it)
         default_factory=list,
         description="Scope terms an agent suggests for a record it is creating. Always empty today, since the kinds that would carry one are not built: an empty list is not a claim that a record has no scope.",
     )
@@ -460,7 +454,7 @@ class ProposalRow(CamelSchema):
     )
     agent_run_id: UUID | None = Field(default=None, description="The agent run that produced the proposal, as a UUID the run log addresses. Null for a person's proposal.")
     model: str = Field(default="", description="The model that drafted the text, recorded because AI output is labelled until a person confirms it (AUD-02). Empty means no model was named, not that no model was used.")
-    proposed_by: ProposalActorRef | None = Field(
+    proposed_by: NamedRef | None = Field(
         default=None,
         description=(
             "The platform person who made the proposal. Null for an agent's proposal, which "
@@ -488,7 +482,7 @@ class ProposalRow(CamelSchema):
         ),
         examples=[False],
     )
-    reviewed_by: ProposalActorRef | None = Field(
+    reviewed_by: NamedRef | None = Field(
         default=None,
         description=(
             "The platform person who decided it, never the person who proposed it, which the database "
@@ -505,7 +499,7 @@ class ProposalRow(CamelSchema):
             "record it applied reads as confirmed by that agent and never as verified by a person."
         ),
     )
-    corrected_by: ProposalActorRef | None = Field(
+    corrected_by: NamedRef | None = Field(
         default=None,
         description=(
             "The person who corrected the payload on the way to approving it, which is always the person "
@@ -517,8 +511,10 @@ class ProposalRow(CamelSchema):
         default=None,
         description=(
             "The independent agent that corrected the payload on the way to approving it, which is always "
-            "the agent that approved it. Null when nobody corrected it and when a person did. What was "
-            "proposed stays in `payload` beside the correction, so the audit trail keeps both."
+            "the agent that approved it. Null when nobody corrected it and when a person did. Only a "
+            "proposal decided before 2026-11-11 can carry one: since then an agent approves a proposal as "
+            "it was filed. What was proposed stays in `payload` beside the correction, so the audit trail "
+            "keeps both."
         ),
     )
     reviewed_at: datetime | None = Field(default=None, description="When the decision was made, by a person or by an agent: a UTC timestamp, date and time together. Null while the proposal is open.")
@@ -605,8 +601,9 @@ class ProposalRow(CamelSchema):
 
 
 class ProposalTarget(CamelSchema):
-    """The library record a proposal changes, as the queue names it in a row: the record's
-    own title and reference, never the proposal's wording. Null on a proposal that changes a
+    """The library record a proposal changes or an update touched, as a queue or update row
+    names it: the record's own title and reference, never a proposal's wording, so one bank's
+    request never reaches another bank as a title. Null on a proposal that changes a
     vocabulary list rather than a record; `payload.list` and `payload.key` name that row."""
 
     model_config = ConfigDict(
@@ -622,7 +619,7 @@ class ProposalTarget(CamelSchema):
         }
     )
 
-    id: UUID = Field(description="The library record this proposal changes, as a UUID, which is the id `GET /obligations/{obligationId}` takes.")
+    id: UUID = Field(description="The library record the proposal changes or the update touched, as a UUID, which is the id `GET /obligations/{obligationId}` takes.")
     title: str = Field(
         description=(
             "The record's own title, in the best language this reader has (the original where "
@@ -814,7 +811,7 @@ class ProposalDetail(ProposalQueueRow):
             "which is not the same as an empty list: an empty list would clear it."
         ),
     )
-    rejection_reason: LibraryRef | None = Field(
+    rejection_reason: VocabRef | None = Field(
         default=None,
         description=(
             "Why it was refused, as the key and the label of the row chosen from the "
@@ -1036,27 +1033,8 @@ class ProposalPage(CamelSchema):
 # ---------------------------------------------------------------------------------------
 # What changed in the shared library since a reader last looked (PRO-03, INV-04, FP-03)
 # ---------------------------------------------------------------------------------------
-class LibraryUpdateTarget(CamelSchema):
-    """The library record an update touched, named by the record itself. A proposal's own
-    wording never appears here: one bank's request must not reach another bank as a title."""
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "id": "3c1f8a52-62d4-4a1b-8a0e-0f9d7e5b2a44",
-                    "title": "Pay for third-party research only under the permitted models",
-                    "referenceLabel": "Third-party payments",
-                    "instrumentShortName": "FFFS 2017:2",
-                }
-            ]
-        }
-    )
-
-    id: UUID = Field(description="The duty that changed, as a UUID: the id its own card is read at, so a row can link straight to it.")
-    title: str = Field(description="The duty's own title, in the best language this reader has, as the library holds it after the change.")
-    reference_label: str = Field(description="How the duty is cited inside its instrument, for example \"Third-party payments\". Empty when the record carries no reference of its own.")
-    instrument_short_name: str = Field(description="The short name of the law, regulation or guideline the duty sits in, for example \"FFFS 2017:2\".")
+# Published as `ProposalTarget` (review 2026-11-11 B-2); the name the logic modules import.
+LibraryUpdateTarget = ProposalTarget
 
 
 class LibraryUpdateInstrument(CamelSchema):
@@ -1141,7 +1119,7 @@ class LibraryUpdateRow(CamelSchema):
         description="Which version of the duty this change created, counting from 1 upwards, so a reader can ask for what changed between it and the one before. Null on a change to a shared list.",
         examples=[2],
     )
-    target: LibraryUpdateTarget | None = Field(
+    target: ProposalTarget | None = Field(
         default=None,
         description="The duty that changed, or the duty that arrived, named by the library's own wording. Null on a change to a shared list, which names no single record, when `vocabularyList` says which list it was, and null on a new instrument.",
     )
@@ -1158,7 +1136,7 @@ class LibraryUpdateRow(CamelSchema):
         ),
         examples=["flag"],
     )
-    vocabulary: LibraryRef | None = Field(
+    vocabulary: VocabRef | None = Field(
         default=None,
         description=(
             "The row of that list which changed, by key and label, as the list labels it today. "
@@ -1629,7 +1607,8 @@ class ProposalApproveBody(WriteBody):
             "fresh source in `fieldSources`. Each summary is at most "
             f"{settings.PROPOSAL_TEXT_MAX_CHARS} characters per language. What is applied is kept beside what was proposed, as "
             "the reviewer's own correction: a reader must not take the proposal's payload as the text "
-            "the library now holds."
+            "the library now holds. A person's field only: an agent's key that sends it answers 409 "
+            "`person_review_required`, because an agent approves a proposal as it was filed."
         ),
     )
     field_sources: dict[str, str] | None = Field(  # schema: ProposalFieldSources
@@ -1643,7 +1622,8 @@ class ProposalApproveBody(WriteBody):
             "or a standard's obligation. A changed value without one answers 422 `source_missing`; a "
             "source for a field the correction leaves as proposed answers 422 `validation_error`. The "
             "proposal keeps these sources for the corrected fields from then on. Optional, and left out "
-            "when nothing is corrected."
+            "when nothing is corrected. A person's field only, as `payloadOverrides` is: an agent's key "
+            "that sends it answers 409 `person_review_required`."
         ),
         examples=[{"summaries.sv": "https://www.fi.se/sv/publicerat/nyheter/2026/analysbetalningar/"}],
     )
@@ -1957,7 +1937,7 @@ class ProposalBatchRow(CamelSchema):
         ),
         examples=[""],
     )
-    decided_by: ProposalActorRef | None = Field(default=None, description="The platform person who decided the row, never the batch's proposer, which the database enforces. Null while pending.")
+    decided_by: NamedRef | None = Field(default=None, description="The platform person who decided the row, never the batch's proposer, which the database enforces. Null while pending.")
     decided_at: datetime | None = Field(default=None, description="When the row was decided: a UTC timestamp, date and time together. Null while pending.")
 
 

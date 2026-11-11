@@ -1,12 +1,11 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { CaseWorkflow } from '@/features/cases/types';
 import type { ChangeDetail } from '@/features/watch/api';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { setStepUpHandler, tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { SignoffPanel } from './SignoffPanel';
 
@@ -70,16 +69,7 @@ function serve(write: (sent: Sent, n: number) => Answer, me = MARIA.id): () => S
 }
 
 function renderPanel(workflow: CaseWorkflow, permissions: string[]): void {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <SignoffPanel change={change} workflow={workflow} />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Query>,
-  );
+  renderWith(<SignoffPanel change={change} workflow={workflow} />, { permissions });
 }
 
 const problem = (status: number, code: string, extra: Record<string, unknown> = {}): Answer => ({

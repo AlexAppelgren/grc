@@ -9,7 +9,8 @@ import { Field, Select, TextInput } from '@/components/ui/Field';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { QueryState } from '@/components/ui/States';
+import { Pager } from '@/components/ui/Pager';
 import { actionLabel, AUDIT_SUBJECT_TYPES, dayRange, diffRows, presentAuditEvent, subjectTypeLabel } from '@/features/governance/audit-presentation';
 import { AUDIT_LOG_PAGE, useAuditEvents } from '@/features/governance/hooks';
 import type { AuditEvent } from '@/features/governance/types';
@@ -108,32 +109,22 @@ export function AuditLogScreen() {
         </Meta>
       </Panel>
 
-      {log.isPending ? (
-        <LoadingState />
-      ) : log.isError ? (
-        <ErrorState title={t('admin.auditLog.errorTitle')} onRetry={() => void log.refetch()} />
-      ) : log.data.items.length === 0 ? (
-        <EmptyState title={t('admin.auditLog.emptyTitle')} body={filtered ? t('admin.auditLog.emptyFiltered') : t('admin.auditLog.emptyBody')} />
-      ) : (
-        <>
-          <Panel className="px-4 py-1" data-audit-log="">
-            {log.data.items.map((event) => (
-              <AuditRow key={event.id} event={event} onRecord={on(setRecord)} onActor={on(setActor)} />
-            ))}
-          </Panel>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-meta text-muted">
-            <span>{t('admin.auditLog.range', { from: offset + 1, to: Math.min(offset + log.data.items.length, log.data.total), total: log.data.total })}</span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - AUDIT_LOG_PAGE))}>
-                {t('admin.auditLog.newer')}
-              </Button>
-              <Button variant="outline" size="small" disabled={offset + AUDIT_LOG_PAGE >= log.data.total} onClick={() => setOffset(offset + AUDIT_LOG_PAGE)}>
-                {t('admin.auditLog.older')}
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+      <QueryState query={log} errorTitle={t('admin.auditLog.errorTitle')}>
+        {(data) =>
+          data.items.length === 0 ? (
+            <EmptyState title={t('admin.auditLog.emptyTitle')} body={filtered ? t('admin.auditLog.emptyFiltered') : t('admin.auditLog.emptyBody')} />
+          ) : (
+            <>
+              <Panel className="px-4 py-1" data-audit-log="">
+                {data.items.map((event) => (
+                  <AuditRow key={event.id} event={event} onRecord={on(setRecord)} onActor={on(setActor)} />
+                ))}
+              </Panel>
+              <Pager inTime offset={offset} limit={AUDIT_LOG_PAGE} shown={data.items.length} total={data.total} onOffset={setOffset} />
+            </>
+          )
+        }
+      </QueryState>
     </>
   );
 }

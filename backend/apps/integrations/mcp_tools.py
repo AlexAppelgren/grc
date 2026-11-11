@@ -1,21 +1,13 @@
-"""The six tools `tools/call` serves (ACC-05, AGENT_ACCESS.md section 6): each one is the
-REST route behind it, run as a request of its own, so the server adds no read path.
+"""The six tools `tools/call` serves (ACC-05, AGENT_ACCESS.md section 6): each runs the REST
+route behind it as a request of its own, so the server adds no read path.
 
-The call becomes a request to the route: the tool's arguments go to the route's query
-string, body or path, and the credential's own headers go with them. Django resolves it and
-the route runs as it does over HTTP, through the same authentication class, the same agent
-access fence (`read_only_credential`, `step_up_required`), the same scope gate, the same
-logic and the same pagination. Only the rate is not spent twice: the MCP request already
-spent it (`agent_access_guard.TOOL_CALL`).
-
-The route's answer comes back as it is: a 2xx body is the structured content, and a
-problem is a tool error whose structured content is the problem, code included. A tool name
-this server does not have, or a call that is not shaped as one, is the protocol error
--32602; an argument the tool does not declare, or one of the wrong type, is a tool error
-the model can correct, as the specification asks (Verification_Log, 2026-09-25).
-
-The access log (ACC-08) keeps one row per MCP request: it names the tool, and takes the
-filters, the record count and the status from the route's own call.
+Arguments go to the route's query, body or path with the credential's own headers, and the
+route runs through the same authentication, agent access fence, scope gate, logic and
+pagination as over HTTP. Only the rate is not spent twice (`agent_access_guard.TOOL_CALL`).
+A 2xx body is the structured content; a problem is a tool error carrying the problem. An
+unknown tool or malformed call is -32602; an undeclared or mistyped argument is a tool error
+the model can correct (Verification_Log). The access log (ACC-08) keeps one row per MCP
+request with the route's filters, record count and status.
 """
 
 from __future__ import annotations

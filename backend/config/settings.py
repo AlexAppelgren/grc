@@ -1,34 +1,31 @@
 """Django settings for Compliance Watch.
 
-Read top to bottom: environment detection, the application, the database and its two
-roles, adapters, every threshold under a banner naming its requirement, logging, Sentry,
-and last the production-safety block that owns the boot guards of playbook 11.1.
-
-Every value that varies by environment is read from an environment variable. Dev-only
-defaults are literals ending in `-dev-only` or starting `django-insecure-` so the secret
-scanner can allowlist them by exact literal (playbook 11.2). `.env.example` at the repo
-root lists every variable with a comment.
-
-Nothing in here is Railway-specific beyond reading `RAILWAY_ENVIRONMENT_NAME` as the
-"we are deployed" signal (DECISIONS D-16).
+Every value that varies by environment is read from an environment variable through the
+helpers below, which refuse to boot on a value outside the setting's bounds. `.env.example`
+at the repo root describes every variable; docs/runbooks/RAILWAY_VARIABLES.md says where
+each is set. Dev-only defaults end in `-dev-only` or start `django-insecure-` so the secret
+scanner can allowlist them by exact literal (playbook 11.2). The production-safety block at
+the end owns the boot guards of playbook 11.1. `RAILWAY_ENVIRONMENT_NAME` is the one
+host-specific name, read as the "we are deployed" signal (D-16).
 """
 
 from __future__ import annotations
 
 import logging
 import os
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import dj_database_url
+from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# ---------------------------------------------------------------------------------------
-# Environment helpers. Booleans accept 1/true/yes/on, case-insensitively, nothing else.
-# ---------------------------------------------------------------------------------------
+# --- Environment helpers. Booleans accept 1/true/yes/on, case-insensitively. ---
 def env_str(name: str, default: str = "") -> str:
     return os.environ.get(name, default)
 
@@ -40,14 +37,43 @@ def env_bool(name: str, default: bool = False) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
-def env_int(name: str, default: int) -> int:
+def _bounded[N: (int, float)](name: str, value: N, min: N | None, max: N | None) -> N:
+    if min is not None and value < min:
+        raise ImproperlyConfigured(f"Refusing to boot: {name} is {value}, below its minimum of {min}.")
+    if max is not None and value > max:
+        raise ImproperlyConfigured(f"Refusing to boot: {name} is {value}, above its maximum of {max}.")
+    return value
+
+
+def env_int(name: str, default: int, min: int | None = None, max: int | None = None) -> int:
     raw = os.environ.get(name)
     if raw is None or raw.strip() == "":
-        return default
+        return _bounded(name, default, min, max)
     try:
-        return int(raw)
+        value = int(raw)
     except ValueError as exc:
         raise ImproperlyConfigured(f"{name} must be an integer, got {raw!r}") from exc
+    return _bounded(name, value, min, max)
+
+
+def env_float(name: str, default: float, min: float | None = None, max: float | None = None) -> float:
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return _bounded(name, float(default), min, max)
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise ImproperlyConfigured(f"{name} must be a number, got {raw!r}") from exc
+    if value != value:  # NaN compares false with every bound
+        raise ImproperlyConfigured(f"{name} must be a number, got {raw!r}")
+    return _bounded(name, value, min, max)
+
+
+def env_choice(name: str, default: str, choices: tuple[str, ...]) -> str:
+    value = os.environ.get(name, default)
+    if value not in choices:
+        raise ImproperlyConfigured(f"Refusing to boot: {name} is {value!r}, not one of {', '.join(choices)}.")
+    return value
 
 
 def env_list(name: str, default: str = "") -> list[str]:
@@ -55,45 +81,32 @@ def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
-# ---------------------------------------------------------------------------------------
-# Environment detection (playbook 11.1). Deny by default: the environment is "deployed"
-# when the host names it at all, or when ENVIRONMENT is anything other than the three
-# non-deployed names. `prod`, `Production`, `demo` and `dev` are all deployed. DEBUG never
-# disarms a guard.
-# ---------------------------------------------------------------------------------------
+# --- Environment detection (playbook 11.1) ---
+# Deny by default: deployed when the host names an environment at all, or when ENVIRONMENT
+# is anything but the three non-deployed names. DEBUG never disarms a guard.
 NON_DEPLOYED_ENVIRONMENTS = frozenset({"local", "test", "ci"})
 ENVIRONMENT = env_str("ENVIRONMENT", "local")
 HOST_ENVIRONMENT_NAME = env_str("RAILWAY_ENVIRONMENT_NAME", "")
 IS_DEPLOYED_ENVIRONMENT = bool(HOST_ENVIRONMENT_NAME) or ENVIRONMENT not in NON_DEPLOYED_ENVIRONMENTS
-# The one deployed name where mock adapters and demo data may run (RAILWAY_DEPLOY.md). The
-# UI shows a banner while a mock is active.
+# The one deployed name where mock adapters and demo data may run; the UI shows a banner.
 MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT = "test"
-# The E2E flag makes emailed codes deterministic and unlocks nothing else. Refused when
-# deployed on two independent legs: here at boot and again in the code-issuing logic.
+# Deterministic emailed codes and nothing else; refused deployed here and in the code logic.
 E2E_MODE = env_bool("E2E_MODE", False)
-# Where the agent definitions this build ships are read (AGT-03): `backend/agents/`. Only the
-# E2E stack may point it elsewhere, at a copy that also holds the fixture version folders
-# AGT-S4's journey publishes; outside E2E_MODE, which a deploy refuses, the variable is ignored.
+# The agent definitions this build ships (AGT-03); only the E2E stack may point elsewhere.
 AGENT_DEFINITIONS_DIR = Path(env_str("AGENT_DEFINITIONS_DIR")) if E2E_MODE and env_str("AGENT_DEFINITIONS_DIR") else BASE_DIR / "agents"
 
 DEBUG = env_bool("DEBUG", False)
 DEFAULT_INSECURE_SECRET_KEY = "django-insecure-dev-only-change-me"  # noqa: S105 dev-only, allowlisted in .gitleaks.toml
 SECRET_KEY = env_str("SECRET_KEY", DEFAULT_INSECURE_SECRET_KEY)
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
-
 PRODUCT_NAME = env_str("PRODUCT_NAME", "Compliance Watch")
 
-# ---------------------------------------------------------------------------------------
-# Application. No django.contrib.auth, no sessions, no admin (playbook 4.3): nobody has a
-# password and the API with its permissions is the only write surface. `ninja` is listed
-# for its docs templates only.
-# ---------------------------------------------------------------------------------------
+# --- Application. No django.contrib.auth, sessions or admin (playbook 4.3): nobody has a
+# password (tests_no_passwords.py pins the list). `ninja` is listed for its docs templates.
 INSTALLED_APPS = [
     "ninja",
     "corsheaders",
-    # For ArrayField (role permissions, key scopes, credential transports). No auth, no
-    # sessions, no admin: nobody has a password (tests_no_passwords.py pins the list).
-    "django.contrib.postgres",
+    "django.contrib.postgres",  # ArrayField
     "apps.shared",
     "apps.identity",
     "apps.tenants",
@@ -114,32 +127,25 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    # Request ID first so every later log line, including the security middleware's, is
-    # correlated (playbook 4.7).
-    "apps.shared.middleware.RequestIdMiddleware",
+    "apps.shared.middleware.RequestIdMiddleware",  # first, so every log line is correlated
     "django.middleware.security.SecurityMiddleware",
     "apps.shared.middleware.ContentSecurityPolicyMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # c8-support-session-guard: a support session reads its allow-list and nothing else.
+    # A support session reads its allow-list and nothing else.
     "apps.shared.middleware.SupportReadOnlyMiddleware",
-    # acc-entries-and-log (ACC-08): the access log row of an agent access credential's call,
-    # written after the response.
+    # ACC-08: the access log row of an agent access credential's call.
     "apps.governance.access_log.AccessLogMiddleware",
-    # acc-what-applies (ACC-07): the scope statement on every answer to an agent access
-    # credential.
+    # ACC-07: the scope statement on every answer to an agent access credential.
     "apps.shared.agent_access_guard.ScopeStatementMiddleware",
-    # perf-request-once: a read request reads each vocabulary's labels once.
+    # A read request reads each vocabulary's labels once.
     "apps.shared.middleware.RequestMemoMiddleware",
-    # Timing last so the measurement is the application's own time (playbook 10), not
-    # the middleware stack above it.
-    "apps.shared.middleware.ServerTimingMiddleware",
+    "apps.shared.middleware.ServerTimingMiddleware",  # last: the application's own time
 ]
 
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
-
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -148,45 +154,28 @@ TEMPLATES = [
         "OPTIONS": {"context_processors": []},
     }
 ]
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ---------------------------------------------------------------------------------------
-# Database (playbook 14). Two roles: cw_migrator owns the schema and runs migrations;
-# cw_app runs the application with no ownership and no BYPASSRLS. DATABASE_URL is the app
-# role. MIGRATOR_DATABASE_URL is used by docker-entrypoint.sh, migrate_from_zero and the
-# test runner (config/test_settings.py, override 1). ATOMIC_REQUESTS so `SET LOCAL
+# --- Database (playbook 14). cw_migrator owns the schema and runs migrations; cw_app runs
+# the application with no ownership and no BYPASSRLS. ATOMIC_REQUESTS so `SET LOCAL
 # app.tenant_id` lives exactly as long as the request's transaction.
-# ---------------------------------------------------------------------------------------
-DATABASE_URL = env_str(
-    "DATABASE_URL", "postgres://cw_app:cw-app-dev-only@localhost:5432/compliance_watch"
-)
+DATABASE_URL = env_str("DATABASE_URL", "postgres://cw_app:cw-app-dev-only@localhost:5432/compliance_watch")
 MIGRATOR_DATABASE_URL = env_str(
-    "MIGRATOR_DATABASE_URL",
-    "postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/compliance_watch",
+    "MIGRATOR_DATABASE_URL", "postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/compliance_watch"
 )
-# Persistent connections pair with single-region deploys (playbook 10).
-DATABASE_CONN_MAX_AGE_S = env_int("DATABASE_CONN_MAX_AGE_S", 60)
+DATABASE_CONN_MAX_AGE_S = env_int("DATABASE_CONN_MAX_AGE_S", 60, min=0, max=3600)
 DATABASES: dict[str, Any] = {
     "default": dj_database_url.parse(DATABASE_URL, conn_max_age=DATABASE_CONN_MAX_AGE_S),
 }
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
-# Just-in-time compilation off (r2-perf, NFR-02): the row-level security subqueries lift a
-# search's estimated cost far above `jit_above_cost`, and at 3,000 obligations a hybrid
-# search spent 5.1 s of 5.9 s compiling a plan whose rows took under 400 ms. The app's
-# queries are short reads JIT never pays back. Not a setting: nothing wants it on.
+# JIT off (NFR-02): the RLS subqueries lift a search's estimated cost far above
+# `jit_above_cost`, and compiling then dominates the query. Not a setting.
 JIT_OFF = {"options": "-c jit=off"}
 DATABASES["default"]["OPTIONS"] = {**DATABASES["default"].get("OPTIONS", {}), **JIT_OFF}
 
-# The boot guard for the database role (playbook 11.1, AC-NFR2) runs from
-# apps.shared.apps.SharedConfig.ready() through apps.shared.db_role_guard. Commands that
-# legitimately run as the migrator, or need no database, are exempt by name. Everything
-# else (gunicorn, celery, runserver, shell) is checked. The test runner disables the guard
-# in test_settings because its default connection is the migrator by design, and
-# tests_database_role.py proves the guard against the `app` alias instead. Deliberately
-# not an environment variable: a guard that an env var can switch off is not a guard
-# (tests_production_guard.py proves DB_ROLE_GUARD_ENABLED=false in the environment does
-# nothing).
+# The database role guard (playbook 11.1) runs from SharedConfig.ready(). Commands that run
+# as the migrator or need no database are exempt by name. Deliberately not an environment
+# variable: a guard an env var can switch off is not a guard (tests_production_guard.py).
 DB_ROLE_GUARD_ENABLED = True
 DB_ROLE_GUARD_EXEMPT_COMMANDS = frozenset(
     {
@@ -204,66 +193,40 @@ DB_ROLE_GUARD_EXEMPT_COMMANDS = frozenset(
     }
 )
 
-# ---------------------------------------------------------------------------------------
-# Cache and Celery (Redis). The health check pings both.
-# ---------------------------------------------------------------------------------------
+# --- Cache and Celery (Redis). The health check pings both. ---
 REDIS_URL = env_str("REDIS_URL", "redis://localhost:6379/0")
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": REDIS_URL,
-    }
-}
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}}
 CELERY_BROKER_URL = REDIS_URL
-# `crontab` is pure Celery and pulls in no Django app, so a beat entry further down this
-# file can name a time of day rather than only an interval in seconds.
-from celery.schedules import crontab  # noqa: E402 settings is read top to bottom, not imported as a package
-
 CELERY_RESULT_BACKEND = None
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_ACKS_LATE = True
 CELERY_TIMEZONE = "UTC"
-# The worker keeps LOGGING's JSON handler on the root logger rather than swapping in its own
-# plain one, whose tracebacks print exception messages (security-review-c10, M2).
+# Keep LOGGING's JSON handler: the worker's own prints exception messages (M2).
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 CELERY_BEAT_SCHEDULE: dict[str, Any] = {}
 
-# ---------------------------------------------------------------------------------------
-# No passwords (PRD ID-03, playbook 4.2). There is no auth app to configure; these are set
-# to their empty values so a later `django.contrib.auth` import cannot quietly inherit
-# Django's defaults. apps/shared/tests_no_passwords.py pins all three.
-# ---------------------------------------------------------------------------------------
+# --- No passwords (ID-03): empty, so a stray contrib import inherits nothing. ---
 AUTH_PASSWORD_VALIDATORS: list[dict[str, str]] = []
 PASSWORD_HASHERS: list[str] = []
 AUTHENTICATION_BACKENDS: list[str] = []
 
-# ---------------------------------------------------------------------------------------
-# Time and language. Storage is always UTC (playbook 4.3); tenants convert explicitly.
-# Content languages and jurisdictions are data (playbook 17), not settings.
-# ---------------------------------------------------------------------------------------
+# --- Time and language. Storage is always UTC; tenants convert explicitly. ---
 LANGUAGE_CODE = "en"
 TIME_ZONE = "UTC"
 USE_TZ = True
 USE_I18N = False
-DEFAULT_TENANT_TIMEZONE = "Europe/Stockholm"
 
-# ---------------------------------------------------------------------------------------
-# Transport security (playbook 11.2). HSTS and secure cookies whenever not DEBUG, frames
-# denied, a strict CSP from apps.shared.middleware, CORS allowlist scoped to /api/.
-# ---------------------------------------------------------------------------------------
+# --- Transport security (playbook 11.2) ---
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = not DEBUG and IS_DEPLOYED_ENVIRONMENT
-SECURE_HSTS_SECONDS = 0 if DEBUG else env_int("SECURE_HSTS_SECONDS", 60 * 60 * 24 * 365)
+SECURE_HSTS_SECONDS = 0 if DEBUG else env_int("SECURE_HSTS_SECONDS", 60 * 60 * 24 * 365, min=0)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "no-referrer"  # the invitation token rides a URL (F28)
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-# The API serves JSON only, so nothing may load or embed it. The docs page (DEBUG only)
-# gets the relaxed policy for the paths below.
+# The API serves JSON only; the docs page (DEBUG only) gets the relaxed policy.
 CONTENT_SECURITY_POLICY = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
 CONTENT_SECURITY_POLICY_DOCS = (
     "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
@@ -273,7 +236,7 @@ CONTENT_SECURITY_POLICY_DOCS = (
 CONTENT_SECURITY_POLICY_DOCS_PREFIXES = ("/api/v1/docs",) if DEBUG else ()
 
 CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
-CORS_ALLOW_CREDENTIALS = True  # the rotating refresh cookie (DECISIONS D-06)
+CORS_ALLOW_CREDENTIALS = True  # the rotating refresh cookie (D-06)
 CORS_URLS_REGEX = r"^/api/.*$"
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -285,57 +248,38 @@ CORS_ALLOW_HEADERS = [
     "x-request-id",
     "x-tenant-id",
 ]
-# content-disposition: an evidence download is saved under the name the server chose (CAS-05).
+# content-disposition: an evidence download is saved under the name the server chose.
 CORS_EXPOSE_HEADERS = ["content-disposition", "etag", "server-timing", "x-request-id"]
 
-# ---------------------------------------------------------------------------------------
-# Adapters (playbook 16). One interface each, a mock chosen by setting. A mock outside the
-# named test environment refuses to boot (production-safety block).
-# ---------------------------------------------------------------------------------------
-LLM_PROVIDER = env_str("LLM_PROVIDER", "mock")  # mock | anthropic | bedrock
+# --- Adapters (playbook 16). A mock outside the named test environment refuses to boot. ---
+LLM_PROVIDER = env_choice("LLM_PROVIDER", "mock", ("mock", "anthropic", "bedrock"))
 ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "")
-EMBEDDER_PROVIDER = env_str("EMBEDDER_PROVIDER", "mock")  # mock | none | <chosen per D-09>
-EMBEDDER_API_KEY = env_str("EMBEDDER_API_KEY", "")
-EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024)  # DECISIONS D-09
-AGENT_RUNNER = env_str("AGENT_RUNNER", "mock")  # mock | managed_agents
+EMBEDDER_PROVIDER = env_choice("EMBEDDER_PROVIDER", "mock", ("mock", "none"))  # a model joins per D-09
+EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024, min=1, max=16000)  # D-09
+# No `managed_agents`: a runner outside the EU (D-54) was never built and is no value at all.
+AGENT_RUNNER = env_choice("AGENT_RUNNER", "mock", ("mock", "none"))
+RERANKER_PROVIDER = env_choice("RERANKER_PROVIDER", "mock", ("mock", "none"))  # none keeps the fused order
+RERANKER_TOP_K = env_int("RERANKER_TOP_K", 50, min=1, max=1000)
+MAIL_PROVIDER = env_choice("MAIL_PROVIDER", "mock", ("mock", "smtp", "resend"))
+MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
+MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
+MAIL_SMTP_PORT = env_int("MAIL_SMTP_PORT", 587, min=1, max=65535)
+MAIL_SMTP_USER = env_str("MAIL_SMTP_USER", "")
+MAIL_SMTP_PASSWORD = env_str("MAIL_SMTP_PASSWORD", "")
+RESEND_API_KEY = env_str("RESEND_API_KEY", "")  # read only when MAIL_PROVIDER=resend
+MAIL_TIMEOUT_SECONDS = env_float("MAIL_TIMEOUT_SECONDS", 8, min=1, max=60)  # a slow code mail is a failed sign-in
+MOCK_ADAPTER_SETTINGS = ("LLM_PROVIDER", "EMBEDDER_PROVIDER", "RERANKER_PROVIDER", "AGENT_RUNNER", "MAIL_PROVIDER", "REGISTERS_PROVIDER")
 
-# --- c11-agents-contract (AGT-05) ------------------------------------------------------
-# The longest topic a research or re-tag request may carry, in characters: the text is a
-# bank's own (or the console's) and is validated at the boundary before anything reads it.
-AGENT_RESEARCH_TOPIC_MAX_CHARS = env_int("AGENT_RESEARCH_TOPIC_MAX_CHARS", 500)
-
-# --- c11-tenant-agents-budget-scope (AGT-04) ---------------------------------------------
-# Plan limits on a bank's own agents, until plans exist (R3): the most frequent cadence a
-# bank may set (`daily`, `weekly` or `monthly`; `manual` is always allowed), and how many
-# agents of its own a bank may add. The hour, in the bank's own time zone, a scheduled run
-# starts when the bank names none.
-AGENT_MIN_CADENCE = env_str("AGENT_MIN_CADENCE", "weekly")
-if AGENT_MIN_CADENCE not in ("daily", "weekly", "monthly"):
-    raise ImproperlyConfigured(f"AGENT_MIN_CADENCE must be daily, weekly or monthly, got {AGENT_MIN_CADENCE!r}")
-AGENTS_PER_TENANT_MAX = env_int("AGENTS_PER_TENANT_MAX", 3)
-AGENT_DEFAULT_RUN_HOUR = env_int("AGENT_DEFAULT_RUN_HOUR", 6)
-if not 0 <= AGENT_DEFAULT_RUN_HOUR <= 23:
-    raise ImproperlyConfigured(f"AGENT_DEFAULT_RUN_HOUR must be an hour from 0 to 23, got {AGENT_DEFAULT_RUN_HOUR}")
-
-# --- c11-scheduler (AGT-03, AGT-04, AGT-06) ----------------------------------------------
-# How often the two agent beats fire, in minutes: bleqq's (apps.agents.tasks.
-# run_platform_agents) and the banks' (schedule_tenant_agents). The most runs of bleqq's
-# agents one beat starts, so a beat never starts the whole library at once; the rest start
-# on the next beat. The most one run of a bank's own agent may spend, in EUR: a run starts
-# only when the month's spend plus this still fits under the bank's cap, and it is stored
-# on the run as its `budget_limit`.
-from decimal import Decimal, InvalidOperation  # noqa: E402 this block's own import, kept beside it
-
-AGENT_BEAT_INTERVAL_MINUTES = env_int("AGENT_BEAT_INTERVAL_MINUTES", 15)
-AGENT_RUNS_PER_BEAT = env_int("AGENT_RUNS_PER_BEAT", 5)
+# --- Agents (AGT-03 to AGT-06) ---
+AGENT_RESEARCH_TOPIC_MAX_CHARS = env_int("AGENT_RESEARCH_TOPIC_MAX_CHARS", 500, min=1, max=10_000)
+AGENT_MIN_CADENCE = env_choice("AGENT_MIN_CADENCE", "weekly", ("daily", "weekly", "monthly"))
+AGENTS_PER_TENANT_MAX = env_int("AGENTS_PER_TENANT_MAX", 3, min=0, max=100)
+AGENT_DEFAULT_RUN_HOUR = env_int("AGENT_DEFAULT_RUN_HOUR", 6, min=0, max=23)
+AGENT_BEAT_INTERVAL_MINUTES = env_int("AGENT_BEAT_INTERVAL_MINUTES", 15, min=1, max=1440)
+AGENT_RUNS_PER_BEAT = env_int("AGENT_RUNS_PER_BEAT", 5, min=1, max=1000)
+AGENT_RECENT_RUNS = env_int("AGENT_RECENT_RUNS", 5, min=1, max=100)  # a page is at most 100
+# The most one run of a bank's own agent may spend, in EUR; stored as the run's budget_limit.
 AGENT_RUN_BUDGET_LIMIT = env_str("AGENT_RUN_BUDGET_LIMIT", "5.00")
-if AGENT_BEAT_INTERVAL_MINUTES < 1 or AGENT_RUNS_PER_BEAT < 1:
-    raise ImproperlyConfigured("AGENT_BEAT_INTERVAL_MINUTES and AGENT_RUNS_PER_BEAT must each be at least 1")
-# perf-frontend-requests: how many of each agent's latest runs `GET /agents` carries, so the
-# admin page reads them with the list rather than once per agent. A page is at most 100.
-AGENT_RECENT_RUNS = env_int("AGENT_RECENT_RUNS", 5)
-if not 1 <= AGENT_RECENT_RUNS <= 100:
-    raise ImproperlyConfigured("AGENT_RECENT_RUNS must be between 1 and 100")
 try:
     _run_budget_limit = Decimal(AGENT_RUN_BUDGET_LIMIT)
 except InvalidOperation:
@@ -350,76 +294,30 @@ CELERY_BEAT_SCHEDULE["agents-tenant"] = {
     "task": "apps.agents.tasks.schedule_tenant_agents",
     "schedule": AGENT_BEAT_INTERVAL_MINUTES * 60,
 }
+# Research requests (AGT-05): per bank per calendar month, then the check_url fetch's limits.
+RESEARCH_REQUESTS_PER_MONTH = env_int("RESEARCH_REQUESTS_PER_MONTH", 30, min=1, max=10_000)
+RESEARCH_URL_TIMEOUT_SECONDS = env_int("RESEARCH_URL_TIMEOUT_SECONDS", 5, min=1, max=60)
+RESEARCH_URL_MAX_BYTES = env_int("RESEARCH_URL_MAX_BYTES", 1_000_000, min=1, max=50_000_000)
+RESEARCH_URL_MAX_REDIRECTS = env_int("RESEARCH_URL_MAX_REDIRECTS", 3, min=0, max=10)
+RESEARCH_URL_TOTAL_SECONDS = env_int("RESEARCH_URL_TOTAL_SECONDS", 15, min=1, max=300)
+RESEARCH_URL_RATE_PER_HOUR = env_int("RESEARCH_URL_RATE_PER_HOUR", 20, min=1, max=1000)  # S-10
+SCOPE_RESEARCH_TEXT_MAX_CHARS = env_int("SCOPE_RESEARCH_TEXT_MAX_CHARS", 2000, min=1, max=100_000)
 
-# --- c11-research-requests (AGT-05) -------------------------------------------------------
-# How many research requests a bank may make in a calendar month of its own time zone,
-# until plans exist (R3); past it a request is 429 `plan_limit_reached`. A `check_url` fetch:
-# the seconds one connection may take, the most bytes of a page kept, and how many
-# redirects are followed, each hop checked for a public https host first.
-RESEARCH_REQUESTS_PER_MONTH = env_int("RESEARCH_REQUESTS_PER_MONTH", 30)
-RESEARCH_URL_TIMEOUT_SECONDS = env_int("RESEARCH_URL_TIMEOUT_SECONDS", 5)
-RESEARCH_URL_MAX_BYTES = env_int("RESEARCH_URL_MAX_BYTES", 1_000_000)
-RESEARCH_URL_MAX_REDIRECTS = env_int("RESEARCH_URL_MAX_REDIRECTS", 3)
-# security-review-c11: one deadline for a whole check_url fetch, every read and redirect.
-RESEARCH_URL_TOTAL_SECONDS = env_int("RESEARCH_URL_TOTAL_SECONDS", 15)
-if min(RESEARCH_REQUESTS_PER_MONTH, RESEARCH_URL_TIMEOUT_SECONDS, RESEARCH_URL_MAX_BYTES, RESEARCH_URL_TOTAL_SECONDS) < 1 or RESEARCH_URL_MAX_REDIRECTS < 0:
-    raise ImproperlyConfigured("The RESEARCH_* settings must be positive, and RESEARCH_URL_MAX_REDIRECTS at least 0")
-# d89-agent-research (OWN-02, D-98, ADR 0061): the longest each of a scope item's text fields
-# (its name, official reference and source address) may be when it reaches the bank's own
-# agent; each is cut to it before it leaves the worker.
-SCOPE_RESEARCH_TEXT_MAX_CHARS = env_int("SCOPE_RESEARCH_TEXT_MAX_CHARS", 2000)
-if SCOPE_RESEARCH_TEXT_MAX_CHARS < 1:
-    raise ImproperlyConfigured("SCOPE_RESEARCH_TEXT_MAX_CHARS must be at least 1")
-
-MAIL_PROVIDER = env_str("MAIL_PROVIDER", "mock")  # mock | smtp | resend
-MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
-MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
-MAIL_SMTP_PORT = env_int("MAIL_SMTP_PORT", 587)
-MAIL_SMTP_USER = env_str("MAIL_SMTP_USER", "")
-MAIL_SMTP_PASSWORD = env_str("MAIL_SMTP_PASSWORD", "")
-RESEND_API_KEY = env_str("RESEND_API_KEY", "")  # read only when MAIL_PROVIDER=resend
-MAIL_TIMEOUT_SECONDS = float(env_str("MAIL_TIMEOUT_SECONDS", "8"))  # a slow code mail is a failed sign-in
-# E4: the reranker over the fused top window (SRC-01, D-09). `none` is the contracted
-# state until a model is chosen, and leaves the fused order as the answer.
-RERANKER_PROVIDER = env_str("RERANKER_PROVIDER", "mock")  # mock | none | <chosen per D-09>
-RERANKER_TOP_K = env_int("RERANKER_TOP_K", 50)
-MOCK_ADAPTER_SETTINGS = ("LLM_PROVIDER", "EMBEDDER_PROVIDER", "RERANKER_PROVIDER", "AGENT_RUNNER", "MAIL_PROVIDER", "REGISTERS_PROVIDER")
-
-# ===== E3: the Anthropic provider behind the LLM adapter (chunks 5 and 7, D-07) =========
-# The key is read from the environment only (ANTHROPIC_API_KEY above); everything the
-# provider needs besides the key is a threshold with an env override. LLM_MAX_TOKENS is a
-# ceiling: a caller asking for more gets this.
+# --- The Anthropic provider (D-07). The key is read from the environment only. ---
 LLM_MODEL = env_str("LLM_MODEL", "claude-opus-5")
-LLM_MAX_TOKENS = env_int("LLM_MAX_TOKENS", 4096)
-# Per socket operation (the connect, then each read of the stream), not per call; also the
-# longest a `retry-after` may hold a request.
-LLM_TIMEOUT_S = float(env_str("LLM_TIMEOUT_S", "60.0"))
-LLM_MAX_RETRIES = env_int("LLM_MAX_RETRIES", 2)
-LLM_RETRY_BACKOFF_S = float(env_str("LLM_RETRY_BACKOFF_S", "0.5"))
-# The whole call, retries and their waits included. No read starts after it, so a call
-# ends within this plus one LLM_TIMEOUT_S (security review of E3, 2026-09-19).
-LLM_DEADLINE_S = float(env_str("LLM_DEADLINE_S", "180.0"))
-# The most a streamed answer may send, events and all, before it is refused. Several
-# times what LLM_MAX_TOKENS can stream; raise the two together.
-LLM_MAX_RESPONSE_BYTES = env_int("LLM_MAX_RESPONSE_BYTES", 4 * 1024 * 1024)
-# An error body is read only this far, for its `error.type`.
-LLM_MAX_ERROR_BODY_BYTES = env_int("LLM_MAX_ERROR_BODY_BYTES", 64 * 1024)
+LLM_MAX_TOKENS = env_int("LLM_MAX_TOKENS", 4096, min=1, max=200_000)
+LLM_TIMEOUT_S = env_float("LLM_TIMEOUT_S", 60.0, min=1, max=600)
+LLM_MAX_RETRIES = env_int("LLM_MAX_RETRIES", 2, min=0, max=10)
+LLM_RETRY_BACKOFF_S = env_float("LLM_RETRY_BACKOFF_S", 0.5, min=0, max=60)
+LLM_DEADLINE_S = env_float("LLM_DEADLINE_S", 180.0, min=1, max=3600)
+LLM_MAX_RESPONSE_BYTES = env_int("LLM_MAX_RESPONSE_BYTES", 4 * 1024 * 1024, min=1024, max=100 * 1024 * 1024)
+LLM_MAX_ERROR_BODY_BYTES = env_int("LLM_MAX_ERROR_BODY_BYTES", 64 * 1024, min=1024, max=1024 * 1024)
+# AUD-02, the AI output log: a model's output is stored up to the first; over the second is 422.
+AI_GENERATION_OUTPUT_MAX_CHARS = env_int("AI_GENERATION_OUTPUT_MAX_CHARS", 20000, min=1, max=1_000_000)
+AI_GENERATION_CITATIONS_MAX = env_int("AI_GENERATION_CITATIONS_MAX", 20, min=1, max=1000)
 
-# ---------------------------------------------------------------------------------------
-# ===== AUD-02 the AI output log (apps/governance/ai_log.py) =============================
-# Two caps at one trust boundary: what a model wrote, and what an agent reported about it.
-# Model output is text off a network and an agent's report is a caller's body, so neither
-# is bounded by the provider's own token limit. Over the citation cap is a 422 naming the
-# field; a longer output is stored up to the character cap, because the log keeps the
-# record of what was said and not the whole transcript.
-# ---------------------------------------------------------------------------------------
-AI_GENERATION_OUTPUT_MAX_CHARS = env_int("AI_GENERATION_OUTPUT_MAX_CHARS", 20000)
-AI_GENERATION_CITATIONS_MAX = env_int("AI_GENERATION_CITATIONS_MAX", 20)
-
-# ---------------------------------------------------------------------------------------
-# File storage (playbook 4.6). local for dev and tests, s3 when deployed. Nothing public.
-# ---------------------------------------------------------------------------------------
-STORAGE_BACKEND = env_str("STORAGE_BACKEND", "local")  # local | s3
+# --- File storage (playbook 4.6): local for dev and tests, s3 when deployed. ---
+STORAGE_BACKEND = env_choice("STORAGE_BACKEND", "local", ("local", "s3"))
 MEDIA_ROOT = Path(env_str("STORAGE_LOCAL_ROOT", str(BASE_DIR / "var" / "media")))
 STORAGE_S3_ENDPOINT_URL = env_str("STORAGE_S3_ENDPOINT_URL", "")
 STORAGE_S3_BUCKET = env_str("STORAGE_S3_BUCKET", "")
@@ -427,576 +325,173 @@ STORAGE_S3_REGION = env_str("STORAGE_S3_REGION", "eu-west-1")
 STORAGE_S3_ACCESS_KEY_ID = env_str("STORAGE_S3_ACCESS_KEY_ID", "")
 STORAGE_S3_SECRET_ACCESS_KEY = env_str("STORAGE_S3_SECRET_ACCESS_KEY", "")
 
-# ---------------------------------------------------------------------------------------
-# WebAuthn (playbook 4.2, DECISIONS D-02). The RP ID is the exact app host.
-# ---------------------------------------------------------------------------------------
+# --- WebAuthn (D-02). The RP ID is the exact app host. ---
 WEBAUTHN_RP_ID = env_str("WEBAUTHN_RP_ID", "localhost")
 WEBAUTHN_RP_NAME = PRODUCT_NAME
 WEBAUTHN_ORIGINS = env_list("WEBAUTHN_ORIGINS", "http://localhost:3000")
-# The public URL of the web app, used in the emailed invitation link (ID-01). Defaults to
-# the first CORS origin, which is the web app on every environment we run.
 APP_BASE_URL = env_str("APP_BASE_URL", CORS_ALLOWED_ORIGINS[0] if CORS_ALLOWED_ORIGINS else "http://localhost:3000")
 
-# ---------------------------------------------------------------------------------------
-# ===== NFR-02 performance budgets (playbook 10) ==========================================
-# ---------------------------------------------------------------------------------------
-API_BUDGET_MS = env_int("API_BUDGET_MS", 250)
-SEARCH_BUDGET_MS = env_int("SEARCH_BUDGET_MS", 800)
-SEARCH_RERANKED_BUDGET_MS = env_int("SEARCH_RERANKED_BUDGET_MS", 1500)
-API_PAGE_SIZE_DEFAULT = env_int("API_PAGE_SIZE_DEFAULT", 20)
-API_PAGE_SIZE_MAX = env_int("API_PAGE_SIZE_MAX", 100)
-# The largest offset a list accepts. PostgreSQL counts an OFFSET row by row and raises on a
-# value beyond a signed 64-bit integer, so an unbounded offset turns every paginated route
-# into a 500 (hardening H1). Above this the answer is a 422 naming the field, not a crash;
-# nothing in the product pages that deep, and a reader that wants the far end filters.
-API_PAGE_OFFSET_MAX = env_int("API_PAGE_OFFSET_MAX", 100000)
-# Bounded like the diff cap below, and for the same reason: a typo here is not a slower
-# product but a broken one. Below API_PAGE_SIZE_MAX no reader can reach the second page of
-# a full list, and at 0 or below every list answers 422 to its own default offset. The
-# production-safety block runs too late for this, so it refuses here.
-if API_PAGE_OFFSET_MAX < API_PAGE_SIZE_MAX:
-    raise ImproperlyConfigured(
-        f"Refusing to boot: API_PAGE_OFFSET_MAX is {API_PAGE_OFFSET_MAX}, "
-        f"below API_PAGE_SIZE_MAX ({API_PAGE_SIZE_MAX})."
-    )
+# --- Performance budgets and pagination (NFR-02, playbook 10) ---
+API_BUDGET_MS = env_int("API_BUDGET_MS", 250, min=1, max=60_000)
+SEARCH_BUDGET_MS = env_int("SEARCH_BUDGET_MS", 800, min=1, max=60_000)
+SEARCH_RERANKED_BUDGET_MS = env_int("SEARCH_RERANKED_BUDGET_MS", 1500, min=1, max=60_000)
+API_PAGE_SIZE_MAX = env_int("API_PAGE_SIZE_MAX", 100, min=1, max=1000)
+API_PAGE_SIZE_DEFAULT = env_int("API_PAGE_SIZE_DEFAULT", 20, min=1, max=API_PAGE_SIZE_MAX)
+# Below one page nobody reaches a list's second page (H1).
+API_PAGE_OFFSET_MAX = env_int("API_PAGE_OFFSET_MAX", 100000, min=API_PAGE_SIZE_MAX, max=10**12)
+ASK_FIRST_TOKEN_BUDGET_MS = env_int("ASK_FIRST_TOKEN_BUDGET_MS", 2000, min=1, max=60_000)
+PERF_SAMPLES = env_int("PERF_SAMPLES", 20, min=2, max=1000)
+PERF_REGRESSION_PCT = env_int("PERF_REGRESSION_PCT", 20, min=1, max=1000)
 
-# ---------------------------------------------------------------------------------------
-# ===== NFR-02 the performance harness (backend/perf/, scripts/perf_report.py) ============
-# Ask's budget is the time to its first streamed chunk, not to the whole answer (playbook
-# 10): the harness adds the wait for that chunk to the stream's Server-Timing. The other two
-# are the harness's own. Twenty timed requests per route make the 95th percentile the
-# second-slowest of them rather than a single outlier. A route fails the report when its
-# median is more than PERF_REGRESSION_PCT per cent above its recorded baseline: tighter and
-# the noise of a busy laptop fails routes nobody changed, looser and a real slowdown hides.
-# The harness refuses a deployed environment, so the last two are never set on one.
-# ---------------------------------------------------------------------------------------
-ASK_FIRST_TOKEN_BUDGET_MS = env_int("ASK_FIRST_TOKEN_BUDGET_MS", 2000)
-PERF_SAMPLES = env_int("PERF_SAMPLES", 20)
-PERF_REGRESSION_PCT = env_int("PERF_REGRESSION_PCT", 20)
-
-
-# ---------------------------------------------------------------------------------------
-# ===== SRC-01..03 search and ask input caps (apps/search/schemas.py) =====================
-# What a caller may send to search, to the similarity read and to Ask. Each is a cap at a
-# trust boundary: the text reaches a text-search query, the embedder and, for Ask, a model
-# prompt, and the budgets above are measured on queries of this size. Over the cap is a
-# 422 naming the field, never a silent truncation that searches for something else.
-# ---------------------------------------------------------------------------------------
-SEARCH_QUERY_MAX_CHARS = env_int("SEARCH_QUERY_MAX_CHARS", 500)
-SEARCH_SIMILAR_MAX_CHARS = env_int("SEARCH_SIMILAR_MAX_CHARS", 8000)
-ASK_QUESTION_MAX_CHARS = env_int("ASK_QUESTION_MAX_CHARS", 2000)
-SEARCH_FEEDBACK_NOTE_MAX_CHARS = env_int("SEARCH_FEEDBACK_NOTE_MAX_CHARS", 2000)
-
-# ---------------------------------------------------------------------------------------
-# ===== SRC-01 search index embedding (apps/search/indexing.py, apps/search/tasks.py) =====
-# How many chunks one embedding call carries, and how often the sweep that drains the rest
-# runs. An outbox delivery embeds one batch and stops, because it runs inside the cursor's
-# transaction and holds the lock on the cursor row: a full-corpus rebuild that embedded
-# everything there would make every other consumer's rows wait behind N model calls. The
-# sweep takes the remainder on beat's clock, holding nothing anyone waits on, and it is
-# also what picks up a rebuild whose outbox row spent its attempts and a corpus that was
-# never embedded because no model was contracted yet.
-# Raising the batch costs memory and the provider's own per-request limit; lowering it
-# costs round trips. Nothing waits on either: a chunk with no embedding yet is still found
-# by the keyword leg.
-# ---------------------------------------------------------------------------------------
-SEARCH_EMBED_BATCH_SIZE = env_int("SEARCH_EMBED_BATCH_SIZE", 64)
-SEARCH_EMBED_SWEEP_INTERVAL_S = env_int("SEARCH_EMBED_SWEEP_INTERVAL_S", 60)
+# --- Search and Ask (SRC-01 to SRC-03) ---
+SEARCH_QUERY_MAX_CHARS = env_int("SEARCH_QUERY_MAX_CHARS", 500, min=1, max=10_000)
+SEARCH_SIMILAR_MAX_CHARS = env_int("SEARCH_SIMILAR_MAX_CHARS", 8000, min=1, max=100_000)
+ASK_QUESTION_MAX_CHARS = env_int("ASK_QUESTION_MAX_CHARS", 2000, min=1, max=20_000)
+SEARCH_FEEDBACK_NOTE_MAX_CHARS = env_int("SEARCH_FEEDBACK_NOTE_MAX_CHARS", 2000, min=1, max=20_000)
+SEARCH_EMBED_BATCH_SIZE = env_int("SEARCH_EMBED_BATCH_SIZE", 64, min=1, max=2048)
+SEARCH_EMBED_SWEEP_INTERVAL_S = env_int("SEARCH_EMBED_SWEEP_INTERVAL_S", 60, min=1, max=86_400)
 CELERY_BEAT_SCHEDULE["search-embed-backlog"] = {
     "task": "apps.search.tasks.embed_search_backlog",
     "schedule": SEARCH_EMBED_SWEEP_INTERVAL_S,
 }
-
-# ---------------------------------------------------------------------------------------
-# ===== SRC-01, SRC-02 the fused hybrid query (apps/search/hybrid.py) =====================
-# How the keyword leg and the vector leg are weighed against each other, how far down each
-# of them a row still counts as found, and how much text a hit shows. Each is a lever on
-# retrieval quality, so each is a setting the evaluation gate can be re-run against
-# (backend/scripts/search_eval.py) rather than a number in the query.
-#
-# The rerank window is not here: `RERANKER_TOP_K` above is already "how many fused hits the
-# reranker is given", and a second name for the same number is a way for the two to drift.
-# ---------------------------------------------------------------------------------------
-# Reciprocal rank fusion adds 1/(k + rank) per leg. k is how much a lower rank still counts:
-# 60 is the constant the method was published with, and it means the difference between
-# ranks 1 and 2 is worth more than the whole tail.
-SEARCH_RRF_K = env_int("SEARCH_RRF_K", 60)
-# How deep each leg reaches. A row ranked below this by a leg was not found by that leg, so
-# it neither scores nor says it matched that way. Raising it widens the answer and slows the
-# fusion; lowering it makes a long tail unreachable.
-SEARCH_RETRIEVAL_DEPTH = env_int("SEARCH_RETRIEVAL_DEPTH", 50)
-# The least cosine similarity that counts as a concept match. The vector leg always has a
-# nearest neighbour, however far away, so without a floor every query would report every
-# embedded chunk as a concept hit and "matched by meaning" would mean nothing. Half is
-# where the mock embedder separates the two things it measures: a text that shares a
-# concept with the question scores well above it, and one that merely repeats a few of its
-# characters — an identifier and a reference number are the common case — scores below.
-# It is re-tuned against the model D-09 chooses, whose similarities are on its own scale.
-SEARCH_CONCEPT_SCORE_FLOOR = float(env_str("SEARCH_CONCEPT_SCORE_FLOOR", "0.5"))
-# The most of a hit's text a snippet shows, cut around what matched. Long enough to judge a
-# hit, short enough that a page of twenty is a page and not the library.
-SEARCH_SNIPPET_CHARS = env_int("SEARCH_SNIPPET_CHARS", 240)
-
-# ---------------------------------------------------------------------------------------
-# ===== SRC-01, SRC-03, NFR-02 what one caller may spend (apps/search/limits.py) ==========
-# Per caller per minute, in a fixed window: a person's session or an agent's key, each
-# with a window of its own. Search is the whole index read twice and reranked; Ask is that
-# plus a model call the bank pays for, so Ask is the tighter of the two. Sixty searches a
-# minute is one a second, which no reader reaches and a runaway script passes at once; ten
-# questions a minute is more than anyone asks and far less than a loop costs.
-# ---------------------------------------------------------------------------------------
-SEARCH_RATE_PER_USER_PER_MINUTE = env_int("SEARCH_RATE_PER_USER_PER_MINUTE", 60)
-ASK_RATE_PER_USER_PER_MINUTE = env_int("ASK_RATE_PER_USER_PER_MINUTE", 10)
-# Bounded, like the page offset and the diff cap above and for the same reason: at zero or
-# below every call is over the limit and search stops answering at all, and there is no
-# value of these that means "no limit" — a limit that can be configured away is not one.
-# The production-safety block runs too late for this, so it refuses here.
-if min(SEARCH_RATE_PER_USER_PER_MINUTE, ASK_RATE_PER_USER_PER_MINUTE) < 1:
-    raise ImproperlyConfigured(
-        f"Refusing to boot: SEARCH_RATE_PER_USER_PER_MINUTE is {SEARCH_RATE_PER_USER_PER_MINUTE} "
-        f"and ASK_RATE_PER_USER_PER_MINUTE is {ASK_RATE_PER_USER_PER_MINUTE}; both must be at least 1."
-    )
-
-# ---------------------------------------------------------------------------------------
-# ===== x-hardening-inputs-ask: open Ask streams, problem reports, visits (H38, H39, H47) =
-# ASK_STREAMS_PER_USER is how many Ask answers one caller may have streaming at once
-# (apps/search/limits.py). The per-minute rate above bounds how often a caller asks, not how
-# long each answer holds a server thread (up to LLM_DEADLINE_S), so a few callers could
-# otherwise hold every thread for every bank (H47). A slot is taken before the first byte
-# and given back when the stream closes; a slot a lost worker never gave back expires
-# ASK_STREAM_SLOT_TTL_S after the caller's last take, which is past the longest a model
-# call can run.
-# PROBLEM_REPORTS_PER_USER_PER_HOUR is how many problem reports one person may file, and
-# separately close, in an hour (ACC-09, H39): each is a row and an audit row kept for ten
-# years, and a script behind a session could file thousands.
-# VISIT_MIN_INTERVAL_SECONDS: a `POST /me/visit` this soon after the person's last one
-# writes nothing, since each writes an audit and an outbox row kept for ten years (H38).
-# None of the three may be below 1: there is no value of them that means "no limit".
-# ---------------------------------------------------------------------------------------
-ASK_STREAMS_PER_USER = env_int("ASK_STREAMS_PER_USER", 2)
+SEARCH_RRF_K = env_int("SEARCH_RRF_K", 60, min=1, max=1000)
+SEARCH_RETRIEVAL_DEPTH = env_int("SEARCH_RETRIEVAL_DEPTH", 50, min=1, max=1000)
+SEARCH_CONCEPT_SCORE_FLOOR = env_float("SEARCH_CONCEPT_SCORE_FLOOR", 0.5, min=0, max=1)
+SEARCH_SNIPPET_CHARS = env_int("SEARCH_SNIPPET_CHARS", 240, min=1, max=10_000)
+# Per caller per minute. No value means "no limit": a limit that can be configured away is not one.
+SEARCH_RATE_PER_USER_PER_MINUTE = env_int("SEARCH_RATE_PER_USER_PER_MINUTE", 60, min=1, max=10_000)
+ASK_RATE_PER_USER_PER_MINUTE = env_int("ASK_RATE_PER_USER_PER_MINUTE", 10, min=1, max=1000)
+# H47, H39, H38: open Ask streams per caller, problem reports per person per hour, visit spacing.
+ASK_STREAMS_PER_USER = env_int("ASK_STREAMS_PER_USER", 2, min=1, max=100)
 ASK_STREAM_SLOT_TTL_S = int(LLM_DEADLINE_S + LLM_TIMEOUT_S) + 60
-PROBLEM_REPORTS_PER_USER_PER_HOUR = env_int("PROBLEM_REPORTS_PER_USER_PER_HOUR", 30)
-VISIT_MIN_INTERVAL_SECONDS = env_int("VISIT_MIN_INTERVAL_SECONDS", 60)
-for _name, _value in (
-    ("ASK_STREAMS_PER_USER", ASK_STREAMS_PER_USER),
-    ("PROBLEM_REPORTS_PER_USER_PER_HOUR", PROBLEM_REPORTS_PER_USER_PER_HOUR),
-    ("VISIT_MIN_INTERVAL_SECONDS", VISIT_MIN_INTERVAL_SECONDS),
-):
-    if _value < 1:
-        raise ImproperlyConfigured(f"Refusing to boot: {_name} is {_value}; it must be at least 1.")
+PROBLEM_REPORTS_PER_USER_PER_HOUR = env_int("PROBLEM_REPORTS_PER_USER_PER_HOUR", 30, min=1, max=1000)
+VISIT_MIN_INTERVAL_SECONDS = env_int("VISIT_MIN_INTERVAL_SECONDS", 60, min=1, max=86_400)
+# Each passage is a citation, so the depth may not exceed the AI log's citation cap.
+ASK_RETRIEVAL_DEPTH = env_int("ASK_RETRIEVAL_DEPTH", 6, min=1, max=AI_GENERATION_CITATIONS_MAX)
+ASK_MAX_TOKENS = env_int("ASK_MAX_TOKENS", 1024, min=1, max=LLM_MAX_TOKENS)
 
-# ---------------------------------------------------------------------------------------
-# ===== SRC-03 Ask: what reaches the model and how much it may write (apps/search/ask.py) =
-# How many passages of the hybrid ranking the model is given, and the most it may write
-# back. The passages are the whole of what an answer may rest on, so a deeper retrieval is
-# a wider answer and a longer prompt; each is also a numbered citation on the answer and
-# on its AI log row, so the depth may not exceed the log's citation cap. The token cap is
-# the answer's own ceiling beneath LLM_MAX_TOKENS: an answer is a few cited sentences, and
-# a model that runs on is spending the bank's money on text nobody asked for.
-# ---------------------------------------------------------------------------------------
-ASK_RETRIEVAL_DEPTH = env_int("ASK_RETRIEVAL_DEPTH", 6)
-ASK_MAX_TOKENS = env_int("ASK_MAX_TOKENS", 1024)
-# At zero every question would be "no answer" without anyone having decided so, and above
-# the citation cap an answer could cite a passage its log row cannot record.
-if not 1 <= ASK_RETRIEVAL_DEPTH <= AI_GENERATION_CITATIONS_MAX or ASK_MAX_TOKENS < 1:
-    raise ImproperlyConfigured(
-        f"Refusing to boot: ASK_RETRIEVAL_DEPTH is {ASK_RETRIEVAL_DEPTH} (1 to "
-        f"AI_GENERATION_CITATIONS_MAX, {AI_GENERATION_CITATIONS_MAX}) and ASK_MAX_TOKENS is "
-        f"{ASK_MAX_TOKENS} (at least 1)."
-    )
+# --- The library (INV-03 to INV-06, PRO-01 to PRO-04, REG-07) ---
+# Aligning two versions costs up to the cube of their sentences (H12).
+LIBRARY_DIFF_MAX_SENTENCES = env_int("LIBRARY_DIFF_MAX_SENTENCES", 50, min=1, max=200)
+LIBRARY_TEXT_MAX_CHARS = env_int("LIBRARY_TEXT_MAX_CHARS", 20000, min=1, max=1_000_000)
+LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20, min=1, max=100)
+# The most words an instrument is named in where it is shown; longer gives the compact reference (D-133).
+INSTRUMENT_SHORT_NAME_MAX_WORDS = env_int("INSTRUMENT_SHORT_NAME_MAX_WORDS", 3, min=1, max=20)
+# The library's own source_url is a URLField of 2000 characters.
+PROPOSAL_SOURCE_MAX_CHARS = env_int("PROPOSAL_SOURCE_MAX_CHARS", 2000, min=1, max=2000)
+PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20, min=1, max=100)
+PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000, min=1, max=1_000_000)
+PROPOSAL_BATCH_MAX_ROWS = env_int("PROPOSAL_BATCH_MAX_ROWS", 100, min=1, max=1000)
+RECURRENCE_MAX_OCCURRENCES = env_int("RECURRENCE_MAX_OCCURRENCES", 120, min=1, max=10_000)
+LIBRARY_UPDATES_DEFAULT_DAYS = env_int("LIBRARY_UPDATES_DEFAULT_DAYS", 30, min=1, max=3650)
+LIBRARY_REPORT_TEXT_MAX_CHARS = env_int("LIBRARY_REPORT_TEXT_MAX_CHARS", 4000, min=1, max=100_000)
 
-# ---------------------------------------------------------------------------------------
-# ===== INV-04 "show what changed" (apps/library/logic.py sentence_diff) ==================
-# Aligning two versions costs up to the cube of their sentence count when sentences repeat,
-# and the texts come from fetched sources. Above this many sentences on either side the
-# diff is the whole old text deleted and the whole new text inserted. The worst case measured
-# 12 ms at 50 (29 ms under coverage on a loaded machine), 60 ms at 100 and 211 ms at 200,
-# against API_BUDGET_MS for the whole request. A summary or a provision is a few sentences.
-# ---------------------------------------------------------------------------------------
-LIBRARY_DIFF_MAX_SENTENCES = env_int("LIBRARY_DIFF_MAX_SENTENCES", 50)
-# Bounded, because this one is a cost ceiling on untrusted text and not a taste: at 0 or
-# below no version is ever compared sentence by sentence and every diff is the whole text;
-# above 200 the cubic cost runs away (211 ms measured at 200, about 7 s at 500). The
-# production-safety block below runs too late for this, so it refuses here
-# (apps/shared/tests_production_guard.py boots all four cases).
-if not 1 <= LIBRARY_DIFF_MAX_SENTENCES <= 200:
-    raise ImproperlyConfigured(
-        f"Refusing to boot: LIBRARY_DIFF_MAX_SENTENCES is {LIBRARY_DIFF_MAX_SENTENCES}, "
-        "which is outside 1 to 200."
-    )
-# The same, one level up: splitting a text into sentences is linear but unbounded in the
-# length of the text, and a text is what a source published, through a proposal. 200 KB of
-# short sentences measured 57 ms on the build machine and about half a second on the loaded
-# laptop where the review found it. Above this many characters on either side the diff is
-# the whole old text deleted and the whole new one inserted, with neither text split. A text
-# that stays under the sentence cap above is a few thousand characters, so this cap only
-# fires on text that would have been shown whole anyway.
-LIBRARY_TEXT_MAX_CHARS = env_int("LIBRARY_TEXT_MAX_CHARS", 20000)
-
-# ---------------------------------------------------------------------------------------
-# ===== INV-03 library reads ==============================================================
-# The most scope terms (`?term=dimension:key`) one list read accepts; they are resolved
-# in one query, so the bound keeps that query and the URL short.
-# ---------------------------------------------------------------------------------------
-LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20)
-# The most words an instrument's name may have where the product shows it, in a pill, a
-# citation or a heading (D-132): a longer short name gives way to the compact official
-# reference (`apps/library/short_names.py`).
-INSTRUMENT_SHORT_NAME_MAX_WORDS = env_int("INSTRUMENT_SHORT_NAME_MAX_WORDS", 3)
-
-# ---------------------------------------------------------------------------------------
-# ===== PRO-01 what a proposal may carry ==================================================
-# A proposal arrives from an agent or a person over the network, so its two unbounded
-# parts are bounded here. A field source is a link or a provision's stable key, and the
-# longest source the library itself stores is `source_url`, a URLField of 2000 characters,
-# so a field source is held to the same length. The scope terms are resolved in one query
-# and stored twice (the payload and its audit row), so their number is bounded like the
-# library's own term filter above.
-# ---------------------------------------------------------------------------------------
-PROPOSAL_SOURCE_MAX_CHARS = env_int("PROPOSAL_SOURCE_MAX_CHARS", 2000)
-PROPOSAL_SCOPE_MAX_TERMS = env_int("PROPOSAL_SCOPE_MAX_TERMS", 20)
-# A payload text (a provision's verbatim text or an obligation's summary, per language)
-# arrives from an agent or a person and is stored in the queue before anyone reads it, so it
-# is bounded too (H35). The longest article a Nordic or Union source publishes runs to a few
-# tens of thousands of characters; anything beyond this is refused with 422 rather than
-# queued.
-PROPOSAL_TEXT_MAX_CHARS = env_int("PROPOSAL_TEXT_MAX_CHARS", 50000)
-
-# ---------------------------------------------------------------------------------------
-# ===== PRO-04 how many rows one batch proposal may hold (c11-proposal-batches-create) ====
-# A batch is one proposal with a row per library record it would change, each carrying its
-# preview, and a reviewer reads the whole batch in one answer. The cap keeps that read one
-# page (the API's own maximum page is 100) and inside the 250 ms budget; a larger re-tag is
-# filed as more than one batch, and above the cap creation answers 422 `batch_too_large`.
-# ---------------------------------------------------------------------------------------
-PROPOSAL_BATCH_MAX_ROWS = env_int("PROPOSAL_BATCH_MAX_ROWS", 100)
-
-# ---------------------------------------------------------------------------------------
-# ===== REG-07 how often a recurring duty may recur (c8-recurring-duty-proposal) ==========
-# A recurring duty's rule is an RFC 5545 RRULE a proposer writes, and every bank's
-# occurrences are expanded from it (apps/library/recurrence.py). A rule that would fall due
-# more often than this in ten years is refused when it is proposed (422
-# `invalid_recurrence`), so a bad rule cannot become a denial of service. 120 is monthly
-# for ten years; a regulatory duty recurs yearly, quarterly or monthly.
-# ---------------------------------------------------------------------------------------
-RECURRENCE_MAX_OCCURRENCES = env_int("RECURRENCE_MAX_OCCURRENCES", 120)
-
-# ---------------------------------------------------------------------------------------
-# ===== PRO-03 how far back "what changed in the library" looks ===========================
-# A reader who has never marked the library as seen has no bookmark to read from, so the
-# list falls back to this many days. Long enough that a first visit is not empty and a
-# fortnight away still shows the fortnight; short enough that the first read is a page and
-# not the whole history, which is what the inventory itself is for.
-# ---------------------------------------------------------------------------------------
-LIBRARY_UPDATES_DEFAULT_DAYS = env_int("LIBRARY_UPDATES_DEFAULT_DAYS", 30)
-
-# ---------------------------------------------------------------------------------------
-# ===== INV-06 what a person types on a library record ====================================
-# The longest "this looks wrong" description and re-verification note the API accepts. A
-# report says what looks wrong and which words were on screen; it is not a document, and
-# an unbounded free-text field at a trust boundary is a way to fill a table.
-# ---------------------------------------------------------------------------------------
-LIBRARY_REPORT_TEXT_MAX_CHARS = env_int("LIBRARY_REPORT_TEXT_MAX_CHARS", 4000)
-
-# ---------------------------------------------------------------------------------------
-# ===== AUD-01, CAS-01 the outbox cursor (apps/shared/outbox.py, c5-outbox-cursor) ========
-# One worker delivers `outbox_event` in `(created, id)` order. The batch size bounds one
-# pass, which holds the cursor's row lock for its duration; the poll interval is how often
-# beat runs it, and it is also the longest a change waits for its case at an idle moment.
-# A handler that raises is tried again after the backoff, doubled per attempt (60 s, 120 s,
-# 240 s, 480 s at the defaults); after the last attempt the row is left failed and the
-# cursor moves on, so one broken consumer cannot stop every other row forever.
-# ---------------------------------------------------------------------------------------
-OUTBOX_BATCH_SIZE = env_int("OUTBOX_BATCH_SIZE", 100)
-OUTBOX_POLL_INTERVAL_S = env_int("OUTBOX_POLL_INTERVAL_S", 10)
-OUTBOX_MAX_ATTEMPTS = env_int("OUTBOX_MAX_ATTEMPTS", 5)
-OUTBOX_RETRY_BACKOFF_S = env_int("OUTBOX_RETRY_BACKOFF_S", 60)
-# The beat entry that runs it. CELERY_BEAT_SCHEDULE is declared empty in the Celery block
-# above, which is the one place the worker, beat and the test runner read; the interval
-# has to be defined before an entry can name it, so the entry is added here beside it.
+# --- The outbox cursor (AUD-01, CAS-01) ---
+OUTBOX_BATCH_SIZE = env_int("OUTBOX_BATCH_SIZE", 100, min=1, max=10_000)
+OUTBOX_POLL_INTERVAL_S = env_int("OUTBOX_POLL_INTERVAL_S", 10, min=1, max=3600)
+OUTBOX_MAX_ATTEMPTS = env_int("OUTBOX_MAX_ATTEMPTS", 5, min=1, max=100)
+OUTBOX_RETRY_BACKOFF_S = env_int("OUTBOX_RETRY_BACKOFF_S", 60, min=0, max=86_400)
 CELERY_BEAT_SCHEDULE["outbox-deliver"] = {
     "task": "apps.shared.tasks.deliver_outbox",
     "schedule": OUTBOX_POLL_INTERVAL_S,
 }
 
-# ---------------------------------------------------------------------------------------
-# ===== CAS-01 one case per bank per change (apps/cases/creation.py, c5-cases-creation) ===
-# A registered change opens a case in every active bank, on the cursor above and never in
-# the request that registered it. This is how many bank ids come back per round trip while
-# the fan-out reads the list, so a change reaching hundreds of banks costs a handful of
-# fetches; each bank's case is then one insert of its own, because a session writes one
-# zone and no insert can span two.
-# ---------------------------------------------------------------------------------------
-CASE_CREATION_BATCH = env_int("CASE_CREATION_BATCH", 100)
+# --- Cases (CAS-01, CAS-04, CAS-05) ---
+CASE_CREATION_BATCH = env_int("CASE_CREATION_BATCH", 100, min=1, max=10_000)
+CASE_ACTIONS_MAX = env_int("CASE_ACTIONS_MAX", 200, min=1, max=10_000)
 
-# ---------------------------------------------------------------------------------------
-# ===== CAS-04 how many actions one case may carry (apps/cases/actions.py, c9-actions) ====
-# A case's live actions are read whole by the case file and the sign-off guard, so one case
-# cannot grow without bound and push those reads past the 250 ms budget. Adding one more
-# than this answers 409 `too_many_actions`; a removed action no longer counts.
-# ---------------------------------------------------------------------------------------
-CASE_ACTIONS_MAX = env_int("CASE_ACTIONS_MAX", 200)
-
-# ---------------------------------------------------------------------------------------
-# ===== WAT-01 when a watched source has gone stale (apps/watch/sources.py) ===============
-# The console's Source coverage says "we missed nothing" only as far as the coverage log
-# lets it. A source is stale when the last SOURCE_STALE_AFTER_CHECKS sweeps of it all
-# failed — one, by default, because a supervisor's page that will not answer is news the
-# moment it happens — or when longer than its own cadence plus SOURCE_STALE_GRACE_HOURS
-# has passed since the last sweep that succeeded. The grace exists because a run is
-# scheduled rather than instantaneous: a daily source checked a few hours late is late,
-# not unwatched, and a grace of a day keeps the page free of rows nobody can act on.
-# ---------------------------------------------------------------------------------------
-SOURCE_STALE_AFTER_CHECKS = env_int("SOURCE_STALE_AFTER_CHECKS", 1)
-SOURCE_STALE_GRACE_HOURS = env_int("SOURCE_STALE_GRACE_HOURS", 24)
-
-# ---------------------------------------------------------------------------------------
-# ===== WAT-07 standards publishers nobody reads automatically (apps/watch/sources.py) ====
-# A source whose address is on one of these hosts, or a subdomain of one, is registered
-# with its automated checks off, like every source of the `standards_body` kind, and a run
-# may log no check of it. Comma-separated host names. The default names every standards
-# publisher whose terms docs/plans/Verification_Log.md ("PRD 0.3 standards facts") read, so
-# out of the box bleqq reads no publisher automatically; a host leaves the list only when a
-# lawyer has cleared its terms (D-45, docs/TODO_FOR_alex.md "Legal, before any standard is
-# seeded"). IAF is not on it: it publishes no standard's text.
-# ---------------------------------------------------------------------------------------
-STANDARDS_PUBLISHER_HOSTS = [host.lower() for host in env_list(
+# --- The watch (WAT-01, WAT-07, AGT-01) ---
+SOURCE_STALE_AFTER_CHECKS = env_int("SOURCE_STALE_AFTER_CHECKS", 1, min=1, max=100)
+SOURCE_STALE_GRACE_HOURS = env_int("SOURCE_STALE_GRACE_HOURS", 24, min=0, max=8760)
+STANDARDS_PUBLISHER_HOSTS = [
+    host.lower()
+    for host in env_list(
         "STANDARDS_PUBLISHER_HOSTS", "iso.org,iec.ch,sis.se,ds.dk,standard.no,sfs.fi,pcisecuritystandards.org"
-    )]
-
-# ---------------------------------------------------------------------------------------
-# ===== AGT-01, WAT-01 what one agent run may file (HARDENING H41, agent-write-guards) ====
-# The server holds every run to the write budgets its definition names
-# (`budget_defaults` in backend/agents/watch-sweeper/v1/definition.yaml): new proposals,
-# new changes on the watch feed and re-check lines of the coverage log. A write past its
-# budget answers 422 `run_budget_exhausted` and stores nothing, so a runaway or injected
-# run cannot flood the review queue under one open run. A budget below 1 would refuse
-# every run's first write, so it refuses to boot instead.
-# ---------------------------------------------------------------------------------------
-WATCH_RUN_MAX_PROPOSALS = env_int("WATCH_RUN_MAX_PROPOSALS", 50)
-WATCH_RUN_MAX_CHANGES = env_int("WATCH_RUN_MAX_CHANGES", 50)
-WATCH_RUN_MAX_RECHECKS = env_int("WATCH_RUN_MAX_RECHECKS", 100)
-if min(WATCH_RUN_MAX_PROPOSALS, WATCH_RUN_MAX_CHANGES, WATCH_RUN_MAX_RECHECKS) < 1:
-    raise ImproperlyConfigured(
-        "Refusing to boot: WATCH_RUN_MAX_PROPOSALS, WATCH_RUN_MAX_CHANGES and WATCH_RUN_MAX_RECHECKS are each at least 1."
     )
+]
+WATCH_RUN_MAX_PROPOSALS = env_int("WATCH_RUN_MAX_PROPOSALS", 50, min=1, max=10_000)
+WATCH_RUN_MAX_CHANGES = env_int("WATCH_RUN_MAX_CHANGES", 50, min=1, max=10_000)
+WATCH_RUN_MAX_RECHECKS = env_int("WATCH_RUN_MAX_RECHECKS", 100, min=1, max=10_000)
 
-# ---------------------------------------------------------------------------------------
-# ===== D-118 the library baseline's runner (apps/proposals/baseline.py, ADR 0065) ========
-# How often the beat files the library baseline's due entries and registers the sources it
-# names, in minutes. Filing is idempotent and asks four queries when nothing is due, so the
-# duties of an instrument a reviewer approved reach the queue within this interval with no
-# one running a command. 0 switches it off: the default under E2E_MODE, whose journeys read
-# a queue the seed fixed, and anywhere `manage.py file_library_baseline` should be the only
-# way. Below 0 refuses to boot.
-# ---------------------------------------------------------------------------------------
-LIBRARY_BASELINE_FILING_MINUTES = env_int("LIBRARY_BASELINE_FILING_MINUTES", 0 if E2E_MODE else 60)
-if LIBRARY_BASELINE_FILING_MINUTES < 0:
-    raise ImproperlyConfigured("Refusing to boot: LIBRARY_BASELINE_FILING_MINUTES is 0 (off) or more.")
+# --- The library baseline and translations (D-118, D-129); 0 switches each off. ---
+LIBRARY_BASELINE_FILING_MINUTES = env_int("LIBRARY_BASELINE_FILING_MINUTES", 0 if E2E_MODE else 60, min=0, max=10_080)
 if LIBRARY_BASELINE_FILING_MINUTES:
     CELERY_BEAT_SCHEDULE["library-baseline"] = {
         "task": "apps.proposals.tasks.file_library_baseline",
         "schedule": LIBRARY_BASELINE_FILING_MINUTES * 60,
     }
-# The same filing, queued when a reviewer approves a library instrument, so its duties
-# reach the queue within seconds instead of on the next beat. The outbox row of the approval
-# (`instrument.created`) queues one run this many seconds later, and every approval inside
-# that window rides the same run, so approving a page of a hundred files once, not a hundred
-# times. 0 switches it off and leaves the beat alone: the default under E2E_MODE and in the
-# test settings, where an approval must not file the whole real baseline. Below 0 refuses to
-# boot.
-LIBRARY_BASELINE_ON_APPROVAL_S = env_int("LIBRARY_BASELINE_ON_APPROVAL_S", 0 if E2E_MODE else 10)
-if LIBRARY_BASELINE_ON_APPROVAL_S < 0:
-    raise ImproperlyConfigured("Refusing to boot: LIBRARY_BASELINE_ON_APPROVAL_S is 0 (off) or more.")
-
-# ---------------------------------------------------------------------------------------
-# ===== INV-05, I18N-01, D-129 the library's machine translations (apps/proposals/translations.py)
-# How often the beat files machine translations of the shared records whose title or summary
-# lacks a content language, as `new_translations` proposals of `library-translator`, in
-# minutes. Each record costs one model call, so this is the switch for the whole feature: 0
-# turns off both the beat and the fan-out queued after an approval that adds an obligation or
-# an instrument's summary (one per approval window, however many were approved). Off under E2E_MODE and in the test settings; below 0 refuses to boot.
-# At most LIBRARY_TRANSLATION_RUN_MAX records are queued per beat, one task each, and a
-# translated text longer than LIBRARY_TRANSLATION_TEXT_MAX_CHARS is refused, whoever wrote it.
-# ---------------------------------------------------------------------------------------
-LIBRARY_TRANSLATION_MINUTES = env_int("LIBRARY_TRANSLATION_MINUTES", 0 if E2E_MODE else 10)
-LIBRARY_TRANSLATION_RUN_MAX = env_int("LIBRARY_TRANSLATION_RUN_MAX", 100)
-LIBRARY_TRANSLATION_TEXT_MAX_CHARS = env_int("LIBRARY_TRANSLATION_TEXT_MAX_CHARS", 8000)
-if LIBRARY_TRANSLATION_MINUTES < 0 or LIBRARY_TRANSLATION_RUN_MAX < 1 or not 1 <= LIBRARY_TRANSLATION_TEXT_MAX_CHARS <= PROPOSAL_TEXT_MAX_CHARS:
-    raise ImproperlyConfigured(
-        "Refusing to boot: LIBRARY_TRANSLATION_MINUTES is 0 (off) or more, LIBRARY_TRANSLATION_RUN_MAX at least 1, "
-        "and LIBRARY_TRANSLATION_TEXT_MAX_CHARS between 1 and PROPOSAL_TEXT_MAX_CHARS."
-    )
+LIBRARY_BASELINE_ON_APPROVAL_S = env_int("LIBRARY_BASELINE_ON_APPROVAL_S", 0 if E2E_MODE else 10, min=0, max=3600)
+LIBRARY_TRANSLATION_MINUTES = env_int("LIBRARY_TRANSLATION_MINUTES", 0 if E2E_MODE else 10, min=0, max=10_080)
+LIBRARY_TRANSLATION_RUN_MAX = env_int("LIBRARY_TRANSLATION_RUN_MAX", 100, min=1, max=10_000)
+LIBRARY_TRANSLATION_TEXT_MAX_CHARS = env_int("LIBRARY_TRANSLATION_TEXT_MAX_CHARS", 8000, min=1, max=PROPOSAL_TEXT_MAX_CHARS)
+LIBRARY_TRANSLATION_MAX_FAILURES = env_int("LIBRARY_TRANSLATION_MAX_FAILURES", 3, min=1, max=100)  # S-9
 if LIBRARY_TRANSLATION_MINUTES:
     CELERY_BEAT_SCHEDULE["library-translation"] = {
         "task": "apps.proposals.tasks.file_library_translations",
         "schedule": LIBRARY_TRANSLATION_MINUTES * 60,
     }
+# Approve all (D-128): how long progress stays readable, and when a silent run is stopped.
+PROPOSALS_APPROVE_ALL_KEEP_S = env_int("PROPOSALS_APPROVE_ALL_KEEP_S", 86_400, min=60, max=30 * 86_400)
+PROPOSALS_APPROVE_ALL_STALE_S = env_int("PROPOSALS_APPROVE_ALL_STALE_S", 300, min=30, max=86_400)
 
-# ---------------------------------------------------------------------------------------
-# ===== PRO-02 Approve all, run by the worker (apps/proposals/approve_all.py, D-128) ======
-# How long a reviewer's run keeps its progress readable after it last moved, in seconds,
-# and how long a running run may say nothing before a new start treats its worker as
-# stopped. The worker writes its progress every ten approvals, a second or two apart.
-# ---------------------------------------------------------------------------------------
-PROPOSALS_APPROVE_ALL_KEEP_S = env_int("PROPOSALS_APPROVE_ALL_KEEP_S", 86_400)
-PROPOSALS_APPROVE_ALL_STALE_S = env_int("PROPOSALS_APPROVE_ALL_STALE_S", 300)
-if PROPOSALS_APPROVE_ALL_KEEP_S < 60 or PROPOSALS_APPROVE_ALL_STALE_S < 30:
-    raise ImproperlyConfigured("Refusing to boot: PROPOSALS_APPROVE_ALL_KEEP_S is 60 or more and PROPOSALS_APPROVE_ALL_STALE_S 30 or more.")
-
-# ---------------------------------------------------------------------------------------
-# ===== HOM-01 how long Today's "Coming up" list is (apps/home/logic.py, c6-home-backend) =
-# Today shows the same short list on a 375 px phone and on a desktop, so its length is one
-# number rather than a breakpoint: the screen never decides how much of the roadmap it is
-# allowed to show. Five is what the designed screen holds above the fold on a phone, and
-# the count beside the list says how many more the roadmap has, so nothing is hidden by it.
-# ---------------------------------------------------------------------------------------
-HOME_COMING_UP_ITEMS = env_int("HOME_COMING_UP_ITEMS", 5)
-
-# ---------------------------------------------------------------------------------------
-# ===== HOM-02 the weekly briefing and its mail (apps/home/tasks.py, c6-briefing-backend) =
-# The mail goes out on the bank's own Monday morning and covers the week that has just
-# ended, which is the only moment a week can be summed up; the designed screen says the
-# same ("the weekly email on Monday 07:00"). Both are settings rather than literals because
-# a bank may want its briefing on a Friday afternoon instead, and neither number is a rule.
-# The weekday is Python's: Monday is 0. The hour is the bank's own local hour, which is why
-# the beat entry below runs every hour and the task picks the banks whose clock has just
-# struck it — one schedule serving banks in several time zones.
-# The cap is what one mail and one page can carry without becoming a list nobody reads; the
-# rest of the week stays on the feed, which the briefing links to.
-# ---------------------------------------------------------------------------------------
-BRIEFING_SEND_WEEKDAY = env_int("BRIEFING_SEND_WEEKDAY", 0)
-BRIEFING_SEND_HOUR = env_int("BRIEFING_SEND_HOUR", 7)
-BRIEFING_MAX_ITEMS = env_int("BRIEFING_MAX_ITEMS", 10)
+# --- Home, briefing, reminders and the workflow policy (HOM-01, HOM-02, COL-02) ---
+HOME_COMING_UP_ITEMS = env_int("HOME_COMING_UP_ITEMS", 5, min=1, max=50)
+BRIEFING_SEND_WEEKDAY = env_int("BRIEFING_SEND_WEEKDAY", 0, min=0, max=6)  # Monday is 0
+BRIEFING_SEND_HOUR = env_int("BRIEFING_SEND_HOUR", 7, min=0, max=23)  # the bank's local hour
+BRIEFING_MAX_ITEMS = env_int("BRIEFING_MAX_ITEMS", 10, min=1, max=100)
 CELERY_BEAT_SCHEDULE["briefing-weekly"] = {
     "task": "apps.home.tasks.send_weekly_briefings",
     "schedule": crontab(minute="0"),
 }
-
-# ---------------------------------------------------------------------------------------
-# Reminders before and after a due date (COL-02, c10-reminders-core). The hour is each
-# bank's own local hour, so the entry runs every hour and hands on the banks whose clock
-# has just struck it; a daylight saving change moves the UTC hour, not the local one.
-# ---------------------------------------------------------------------------------------
-REMINDER_SEND_HOUR = env_int("REMINDER_SEND_HOUR", 7)
+REMINDER_SEND_HOUR = env_int("REMINDER_SEND_HOUR", 7, min=0, max=23)
 CELERY_BEAT_SCHEDULE["collab-reminders"] = {
     "task": "apps.collab.tasks.send_reminders",
     "schedule": crontab(minute="0"),
 }
-
-# ---------------------------------------------------------------------------------------
-# ===== COL-02, TEN-01 the workflow policy's platform defaults (c10-workflow-policy) =====
-# What a bank's workflow policy starts at: a new tenant takes these, and the migration that
-# added the columns wrote them into every tenant that already existed. The bank changes its
-# own through PATCH /tenant/workflow; changing a value here moves no existing bank. The lead
-# days are comma-separated day counts, the weekday one of monday..sunday, the role a system
-# role key every tenant is seeded with.
-# ---------------------------------------------------------------------------------------
+# What a new bank's workflow policy starts at; the bounds are the tenant table's checks.
 WORKFLOW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REMINDER_DAYS_BEFORE", "3")]
 WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE = [int(value) for value in env_list("WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE", "30")]
-WORKFLOW_ESCALATE_AFTER_DAYS = env_int("WORKFLOW_ESCALATE_AFTER_DAYS", 5)
+WORKFLOW_ESCALATE_AFTER_DAYS = env_int("WORKFLOW_ESCALATE_AFTER_DAYS", 5, min=1, max=90)
 WORKFLOW_ESCALATE_TO_ROLE = env_str("WORKFLOW_ESCALATE_TO_ROLE", "compliance_officer")
-WORKFLOW_DIGEST_WEEKDAY = env_str("WORKFLOW_DIGEST_WEEKDAY", "monday")
-WORKFLOW_TRIAGE_TARGET_HOURS = env_int("WORKFLOW_TRIAGE_TARGET_HOURS", 48)
+WORKFLOW_DIGEST_WEEKDAY = env_choice(
+    "WORKFLOW_DIGEST_WEEKDAY", "monday", ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+)
+WORKFLOW_TRIAGE_TARGET_HOURS = env_int("WORKFLOW_TRIAGE_TARGET_HOURS", 48, min=1, max=720)
 
-# ---------------------------------------------------------------------------------------
-# ===== HOM-04 the calendar subscription's limits (D-52, ADR 0045) ========================
-# The token in a calendar address is a credential nobody can be asked to confirm: a
-# calendar client sends no header, follows no sign-in and polls unattended for years. Two
-# numbers bound what that is worth to whoever finds one. A person keeps a handful of
-# subscriptions, not an inventory, so a compromised session cannot mint addresses without
-# anyone noticing; and a subscription nobody has fetched for a month is a calendar that was
-# removed or a device that was replaced, so it expires rather than working forever. Both
-# are settings because a bank's own guidance may be stricter and neither number is a rule.
-# `apps/home/feed.py` reads them when a subscription is made, listed and fetched.
-# ---------------------------------------------------------------------------------------
-CALENDAR_FEEDS_PER_USER = env_int("CALENDAR_FEEDS_PER_USER", 5)
-CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30)
-# How many stopped subscriptions a person's list shows beside the ones that work, most
-# recently stopped first. Enough to show a whole set of addresses just replaced; the list
-# stays short however many a person has replaced over the years, which is what lets it go
-# unpaged (the live ones are capped above).
-CALENDAR_FEED_REVOKED_SHOWN = env_int("CALENDAR_FEED_REVOKED_SHOWN", 5)
+# --- Calendar subscriptions and participants (HOM-04, COL-04) ---
+CALENDAR_FEEDS_PER_USER = env_int("CALENDAR_FEEDS_PER_USER", 5, min=1, max=100)
+CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30, min=1, max=3650)
+CALENDAR_FEED_REVOKED_SHOWN = env_int("CALENDAR_FEED_REVOKED_SHOWN", 5, min=0, max=100)
+CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20, min=1, max=1000)
+CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300, min=0, max=86_400)
+MAX_PARTICIPANTS_PER_RECORD = env_int("MAX_PARTICIPANTS_PER_RECORD", 50, min=1, max=1000)
 
-# ---------------------------------------------------------------------------------------
-# Participants (COL-04, D-18, c8-participants)
-# How many people and teams may take part in one register entry or case at once. A record
-# that everyone takes part in tells nobody anything, and every participant is a recipient of
-# every notification about it, so the list is capped; adding past the cap answers 422
-# `too_many_participants`. `apps/collab/participants.py` reads it on every add.
-# ---------------------------------------------------------------------------------------
-MAX_PARTICIPANTS_PER_RECORD = env_int("MAX_PARTICIPANTS_PER_RECORD", 50)
-# How often one address may be fetched. A calendar client polls every few hours, so this
-# is generous for every real client and still bounds what someone who found an address
-# can pull from it. It is per token, so a flood on one address leaves the others answering.
-CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20)
-# How often a fetch moves `last_used_at` and writes its `feed_used` security-log row, as
-# an API key's stamp is throttled (ID-10). Without it a polling client would turn a read
-# into a write every time and fill the security log with one bank's polling.
-CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300)
-
-# ===== CAS-05 the malware scanner (apps/shared/adapters/scanner.py, c9-scanner-adapter) ==
-# `mock` answers from the EICAR string and marker names and is refused at first use on
-# every deployed environment, `test` included; `clamd` streams the bytes over INSTREAM to
-# a clamd service on the private network (D-101). A timeout, a refused connection or an
-# unreadable reply is a failed scan, never a clean one.
-SCANNER_PROVIDER = env_str("SCANNER_PROVIDER", "mock")  # mock | clamd
+# --- The malware scanner (CAS-05, D-101). A failed or timed-out scan is never clean. ---
+SCANNER_PROVIDER = env_choice("SCANNER_PROVIDER", "mock", ("mock", "clamd"))
 SCANNER_HOST = env_str("SCANNER_HOST", "localhost")
-SCANNER_PORT = env_int("SCANNER_PORT", 3310)  # clamd's TCPSocket in the official image
-# Bounds the connect, each send, and the scan with its whole reply. clamd reads the whole
-# stream before it answers, so this must cover scanning the largest evidence file.
-SCANNER_TIMEOUT_SECONDS = float(env_str("SCANNER_TIMEOUT_SECONDS", "60.0"))
+SCANNER_PORT = env_int("SCANNER_PORT", 3310, min=1, max=65535)
+SCANNER_TIMEOUT_SECONDS = env_float("SCANNER_TIMEOUT_SECONDS", 60.0, min=1, max=3600)
 
-# --- public-registers (TEN-07, TEN-08, FP-05) --------------------------------------------
-# Where a bank's companies, licences and branches are read (apps/shared/adapters/registers.py,
-# PUBLIC_REGISTERS.md 5.3). `live` reads GLEIF and Finansinspektionen's register over https
-# and nothing else; `mock` answers the E2E group offline and is refused deployed outside
-# ENVIRONMENT=test (rule 5), so a deployed environment defaults to `live` and needs no
-# variable. Each read waits at most REGISTERS_TIMEOUT_SECONDS per socket operation and keeps
-# at most REGISTERS_MAX_BYTES; a lookup walks at most REGISTERS_MAX_ENTITIES companies and
-# reads at most REGISTERS_MAX_BRANCHES branches per company. A lookup and one bank's nightly
-# re-read run inside the bank's transaction, so each gets at most REGISTERS_JOB_SECONDS of
-# register reads in all: a lookup that needs longer fails as `register_unavailable`, and a
-# re-read leaves the rest for the next night. The nightly re-read starts at
-# REGISTERS_RECHECK_HOUR, UTC.
-REGISTERS_PROVIDER = env_str("REGISTERS_PROVIDER", "live" if IS_DEPLOYED_ENVIRONMENT else "mock")  # live | mock
+# --- Public registers (TEN-07, TEN-08, FP-05). `live` when deployed, `mock` elsewhere. ---
+REGISTERS_PROVIDER = env_choice("REGISTERS_PROVIDER", "live" if IS_DEPLOYED_ENVIRONMENT else "mock", ("live", "mock"))
 REGISTERS_GLEIF_URL = env_str("REGISTERS_GLEIF_URL", "https://api.gleif.org/api/v1")
 REGISTERS_FI_URL = env_str("REGISTERS_FI_URL", "https://www.fi.se/sv/vara-register/foretagsregistret")
-# The EBA's Credit Institutions Register: a credit institution's branches in other EEA
-# countries, read by LEI when FI's company pages turn a scripted read away (D-126).
-REGISTERS_EBA_URL = env_str("REGISTERS_EBA_URL", "https://euclid.eba.europa.eu/register")
-REGISTERS_TIMEOUT_SECONDS = env_int("REGISTERS_TIMEOUT_SECONDS", 10)
-REGISTERS_MAX_BYTES = env_int("REGISTERS_MAX_BYTES", 2_000_000)
-REGISTERS_MAX_ENTITIES = env_int("REGISTERS_MAX_ENTITIES", 100)
-REGISTERS_MAX_BRANCHES = env_int("REGISTERS_MAX_BRANCHES", 40)
-REGISTERS_RECHECK_HOUR = env_int("REGISTERS_RECHECK_HOUR", 3)
-REGISTERS_JOB_SECONDS = env_int("REGISTERS_JOB_SECONDS", 300)
-if REGISTERS_PROVIDER not in ("live", "mock"):
-    raise ImproperlyConfigured(f"REGISTERS_PROVIDER must be live or mock, got {REGISTERS_PROVIDER!r}")
+REGISTERS_EBA_URL = env_str("REGISTERS_EBA_URL", "https://euclid.eba.europa.eu/register")  # D-126
 if not all(url.startswith("https://") for url in (REGISTERS_GLEIF_URL, REGISTERS_FI_URL, REGISTERS_EBA_URL)):
     raise ImproperlyConfigured("REGISTERS_GLEIF_URL, REGISTERS_FI_URL and REGISTERS_EBA_URL must be https addresses")
-if not 1 <= REGISTERS_TIMEOUT_SECONDS <= 120:
-    raise ImproperlyConfigured("REGISTERS_TIMEOUT_SECONDS must be between 1 and 120")
-if not 10_000 <= REGISTERS_MAX_BYTES <= 50_000_000:
-    raise ImproperlyConfigured("REGISTERS_MAX_BYTES must be between 10000 and 50000000")
-if not 1 <= REGISTERS_MAX_ENTITIES <= 500:
-    raise ImproperlyConfigured("REGISTERS_MAX_ENTITIES must be between 1 and 500")
-if not 0 <= REGISTERS_MAX_BRANCHES <= 200:
-    raise ImproperlyConfigured("REGISTERS_MAX_BRANCHES must be between 0 and 200")
-if not 0 <= REGISTERS_RECHECK_HOUR <= 23:
-    raise ImproperlyConfigured("REGISTERS_RECHECK_HOUR must be an hour from 0 to 23")
-if not 30 <= REGISTERS_JOB_SECONDS <= 3600:
-    raise ImproperlyConfigured("REGISTERS_JOB_SECONDS must be between 30 and 3600")
+REGISTERS_TIMEOUT_SECONDS = env_int("REGISTERS_TIMEOUT_SECONDS", 10, min=1, max=120)
+REGISTERS_MAX_BYTES = env_int("REGISTERS_MAX_BYTES", 2_000_000, min=10_000, max=50_000_000)
+REGISTERS_MAX_ENTITIES = env_int("REGISTERS_MAX_ENTITIES", 100, min=1, max=500)
+REGISTERS_MAX_BRANCHES = env_int("REGISTERS_MAX_BRANCHES", 40, min=0, max=200)
+REGISTERS_RECHECK_HOUR = env_int("REGISTERS_RECHECK_HOUR", 3, min=0, max=23)  # UTC
+REGISTERS_JOB_SECONDS = env_int("REGISTERS_JOB_SECONDS", 300, min=30, max=3600)
+REGISTERS_LOOKUPS_PER_HOUR = env_int("REGISTERS_LOOKUPS_PER_HOUR", 10, min=1, max=100)  # S-11
 CELERY_BEAT_SCHEDULE["registers-recheck"] = {
     "task": "apps.tenants.tasks.recheck_registers",
     "schedule": crontab(minute="17", hour=str(REGISTERS_RECHECK_HOUR)),
 }
 
-# ===== CAS-05 evidence on a case (apps/cases/evidence.py, tasks.py, c9-evidence) =========
-# A file is refused with 422 before a byte is stored when its type is outside this list or
-# it is larger than the cap (parallel plan §7.2). The type is what the header claims, the
-# name's extension and the bytes themselves all agree on; a type listed here that the
-# server cannot recognise in the bytes is refused rather than trusted.
+# --- Evidence, tagging, exports, the register, My work and comments ---
 EVIDENCE_ALLOWED_TYPES = env_list(
     "EVIDENCE_ALLOWED_TYPES",
     "application/pdf,"
@@ -1005,293 +500,135 @@ EVIDENCE_ALLOWED_TYPES = env_list(
     "application/vnd.openxmlformats-officedocument.presentationml.presentation,"
     "image/png,image/jpeg,text/plain,text/csv",
 )
-EVIDENCE_MAX_BYTES = env_int("EVIDENCE_MAX_BYTES", 25 * 1024 * 1024)
-# How many more times a scan that failed is tried before the file stays `error`.
-EVIDENCE_SCAN_RETRIES = env_int("EVIDENCE_SCAN_RETRIES", 2)
-# Live evidence one case may hold, so one case cannot push its case file past the budget.
-CASE_EVIDENCE_MAX = env_int("CASE_EVIDENCE_MAX", 200)
+EVIDENCE_MAX_BYTES = env_int("EVIDENCE_MAX_BYTES", 25 * 1024 * 1024, min=1, max=512 * 1024 * 1024)
+EVIDENCE_SCAN_RETRIES = env_int("EVIDENCE_SCAN_RETRIES", 2, min=0, max=10)
+CASE_EVIDENCE_MAX = env_int("CASE_EVIDENCE_MAX", 200, min=1, max=10_000)
+BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200, min=1, max=10_000)
+EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7, min=1, max=365)
+REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100, min=1, max=1000)
+MY_WORK_DUE_SOON_DAYS = env_int("MY_WORK_DUE_SOON_DAYS", 30, min=1, max=365)
+MY_WORK_AWARE_DAYS = env_int("MY_WORK_AWARE_DAYS", 14, min=1, max=365)
+COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000, min=1, max=100_000)
+COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15, min=0, max=1440)  # also My work's `canEdit`
+TENANT_LIST_MAX_ROWS = env_int("TENANT_LIST_MAX_ROWS", 500, min=1, max=100_000)  # H32
 
-# ---------------------------------------------------------------------------------------
-# ===== VOC-08 bulk tagging's cap (c10-tagging-routes) ====================================
-# How many distinct records one tagging preview or batch may name. A list page holds at
-# most 100 rows, so two pages' worth covers every selection a screen makes, and the one
-# audit event a batch writes stays a size a reviewer can read. Above it the preview and
-# the batch answer 422 `too_many_records` and nothing is tagged.
-# `apps/taxonomy/tagging_logic.py` reads it.
-# ---------------------------------------------------------------------------------------
-BULK_TAGGING_MAX_RECORDS = env_int("BULK_TAGGING_MAX_RECORDS", 200)
-
-# ---------------------------------------------------------------------------------------
-# ===== REP-02 export files (apps/reports, x-exports-contract) ===========================
-# How long an export's file is kept after the worker built it. A file carries a bank's
-# records outside the screens that permission-check them, so it lives only long enough to
-# be downloaded; after that its download answers 409 `export_expired` and the person asks
-# for a new one. The job row stays. A bank's policy may be stricter, so it is a setting.
-# ---------------------------------------------------------------------------------------
-EXPORT_RETENTION_DAYS = env_int("EXPORT_RETENTION_DAYS", 7)
-
-# ---------------------------------------------------------------------------------------
-# ===== c8-reg-applicability: REG-01, AC-REG1 many answers in one call (D-75) ============
-# The most applicability answers one confirmed call stores (POST /applicability). Each row
-# is a write and an audit event in one transaction, so the cap keeps a call inside the API
-# budget; a longer call is refused whole and stores nothing.
-REGISTER_BULK_MAX = env_int("REGISTER_BULK_MAX", 100)
-
-# ---------------------------------------------------------------------------------------
-# ===== HOM-05 My work's windows (apps/home/my_work.py, c8-mywork-service, D-23, D-25) ===
-# A row is "due soon" when its next date is today or within MY_WORK_DUE_SOON_DAYS; the
-# tenant's reminder lead replaces it once COL-02 lands. A new version of an obligation stays
-# under "Changes on your items" for MY_WORK_AWARE_DAYS after it was applied: a fixed window
-# needs no write on every page load. Each is at least 1, or the app refuses to boot.
-# ---------------------------------------------------------------------------------------
-MY_WORK_DUE_SOON_DAYS = env_int("MY_WORK_DUE_SOON_DAYS", 30)
-MY_WORK_AWARE_DAYS = env_int("MY_WORK_AWARE_DAYS", 14)
-if min(MY_WORK_DUE_SOON_DAYS, MY_WORK_AWARE_DAYS) < 1:
-    raise ImproperlyConfigured("Refusing to boot: MY_WORK_DUE_SOON_DAYS and MY_WORK_AWARE_DAYS are each at least 1.")
-
-# ---------------------------------------------------------------------------------------
-# ===== COL-01 comments on a record (apps/collab/comments.py, c10-comments-mentions) =====
-# A comment is a note to colleagues, not a document: the cap bounds what one request can
-# store and what a thread of twenty costs to read. An edit is for a slip noticed at once;
-# after the window the author may delete but not rewrite what others have already read
-# (CHUNK10_TASKS ruling 10). Both are settings because neither number is a rule.
-# ---------------------------------------------------------------------------------------
-COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000)
-COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15)  # also My work's `canEdit` (c10-inbox-and-my-comments)
-
-# ---------------------------------------------------------------------------------------
-# ===== Tenant list cap (c8-vocab-register-usage, H32) ====================================
-# How many rows, retired ones included, one of a bank's own vocabulary lists may hold.
-# `GET /vocab/{list}` answers a whole list with its usage counts, so the list must stay a
-# size one read can serve inside the API budget. Adding past it answers 422 `list_full`.
-# `apps/taxonomy/tenant_lists_logic.py` reads it. There is no value that means "no limit",
-# so the process refuses to boot below 1.
-# ---------------------------------------------------------------------------------------
-TENANT_LIST_MAX_ROWS = env_int("TENANT_LIST_MAX_ROWS", 500)
-if TENANT_LIST_MAX_ROWS < 1:
-    raise ImproperlyConfigured("TENANT_LIST_MAX_ROWS must be at least 1.")
-
-# ---------------------------------------------------------------------------------------
-# ===== COL-02 the weekly digest's content (apps/collab/digest.py, c10-digest-content) ===
-# At most DIGEST_MAX_ITEMS of My work's rows in one digest, the most urgent, then "and N
-# more". My work's page size is at most 100, so the cap is 1 to 100, or the app refuses
-# to boot.
-# ---------------------------------------------------------------------------------------
-DIGEST_MAX_ITEMS = env_int("DIGEST_MAX_ITEMS", 20)
-if not 1 <= DIGEST_MAX_ITEMS <= 100:
-    raise ImproperlyConfigured("Refusing to boot: DIGEST_MAX_ITEMS is 1 to 100.")
-
-# ---------------------------------------------------------------------------------------
-# ===== COL-02 the weekly digest's beat (apps/collab/tasks.py, c10-digest-beat-and-journeys)
-# The digest goes out at DIGEST_SEND_HOUR on each bank's own `digest_weekday`, both read on
-# the bank's clock, so the entry runs every hour beside the reminders and hands on the banks
-# whose clock has just struck it. 0 to 23, or the app refuses to boot.
-# ---------------------------------------------------------------------------------------
-DIGEST_SEND_HOUR = env_int("DIGEST_SEND_HOUR", 7)
-if not 0 <= DIGEST_SEND_HOUR <= 23:
-    raise ImproperlyConfigured("Refusing to boot: DIGEST_SEND_HOUR is 0 to 23.")
+# --- The weekly digest (COL-02): My work's page is at most 100. ---
+DIGEST_MAX_ITEMS = env_int("DIGEST_MAX_ITEMS", 20, min=1, max=100)
+DIGEST_SEND_HOUR = env_int("DIGEST_SEND_HOUR", 7, min=0, max=23)
 CELERY_BEAT_SCHEDULE["collab-digests"] = {
     "task": "apps.collab.tasks.send_digests",
     "schedule": crontab(minute="0"),
 }
 
-# ---------------------------------------------------------------------------------------
-# ===== Health check (playbook 2.2, 5) ====================================================
-# The worker ping is bounded to one reply so a large fleet never makes /health/ slow.
-# ---------------------------------------------------------------------------------------
-HEALTH_WORKER_PING_TIMEOUT_S = float(env_str("HEALTH_WORKER_PING_TIMEOUT_S", "1.0"))
-HEALTH_WORKER_PING_LIMIT = 1
+# --- Health check (playbook 2.2) ---
+HEALTH_WORKER_PING_TIMEOUT_S = env_float("HEALTH_WORKER_PING_TIMEOUT_S", 1.0, min=0.1, max=30)
+HEALTH_WORKER_PING_LIMIT = 1  # one reply, so a large fleet never makes /health/ slow
+HEALTH_CACHE_SECONDS = env_float("HEALTH_CACHE_SECONDS", 5, min=0, max=60)  # L-8
 
-# ---------------------------------------------------------------------------------------
-# ===== ID-02, ID-03 enrolment code and invitation windows (playbook 4.2) ===============
-# Chunk 1 reads these; they exist from Phase 0 so no number is ever a literal in logic.
-# ---------------------------------------------------------------------------------------
-INVITATION_TTL_HOURS = env_int("INVITATION_TTL_HOURS", 72)
-ENROLMENT_CODE_DIGITS = env_int("ENROLMENT_CODE_DIGITS", 6)
-ENROLMENT_CODE_TTL_MINUTES = env_int("ENROLMENT_CODE_TTL_MINUTES", 10)
-ENROLMENT_CODE_MAX_ATTEMPTS = env_int("ENROLMENT_CODE_MAX_ATTEMPTS", 5)
-ENROLMENT_CODE_RATE_PER_ADDRESS_PER_HOUR = env_int("ENROLMENT_CODE_RATE_PER_ADDRESS_PER_HOUR", 5)
-ENROLMENT_CODE_RATE_PER_IP_PER_HOUR = env_int("ENROLMENT_CODE_RATE_PER_IP_PER_HOUR", 20)
-# Every other auth ceremony endpoint (verify code, passkey sign-in, refresh) per IP.
-AUTH_RATE_PER_IP_PER_MINUTE = env_int("AUTH_RATE_PER_IP_PER_MINUTE", 30)
-# How many proxies of ours append to X-Forwarded-For before a request reaches the app.
-# 0 (the default) means the socket address is the client: the header is then ignored,
-# because a caller can write anything into it and would otherwise pick its own address
-# for the per-IP limits and the security log. Set to 1 behind one edge proxy (Railway).
-TRUSTED_PROXY_HOPS = env_int("TRUSTED_PROXY_HOPS", 0)
-# A WebAuthn challenge lives this long (registration, sign-in and step-up ceremonies).
-CHALLENGE_TTL_SECONDS = env_int("CHALLENGE_TTL_SECONDS", 120)
-# The one deterministic code E2E journeys type (playbook 8.3). Read only when E2E_MODE is
-# on, which the production-safety block refuses when deployed (rule 4) and the code logic
-# refuses again on its own leg.
+# --- Enrolment, invitations and sign-in (ID-01 to ID-03, playbook 4.2) ---
+INVITATION_TTL_HOURS = env_int("INVITATION_TTL_HOURS", 72, min=1, max=720)
+ENROLMENT_CODE_DIGITS = env_int("ENROLMENT_CODE_DIGITS", 6, min=6, max=10)
+ENROLMENT_CODE_TTL_MINUTES = env_int("ENROLMENT_CODE_TTL_MINUTES", 10, min=1, max=60)
+ENROLMENT_CODE_MAX_ATTEMPTS = env_int("ENROLMENT_CODE_MAX_ATTEMPTS", 5, min=1, max=10)
+ENROLMENT_CODE_RATE_PER_ADDRESS_PER_HOUR = env_int("ENROLMENT_CODE_RATE_PER_ADDRESS_PER_HOUR", 5, min=1, max=100)
+ENROLMENT_CODE_RATE_PER_IP_PER_HOUR = env_int("ENROLMENT_CODE_RATE_PER_IP_PER_HOUR", 20, min=1, max=1000)
+# Every other auth ceremony endpoint (verify code, passkey sign-in, refresh), per IP.
+AUTH_RATE_PER_IP_PER_MINUTE = env_int("AUTH_RATE_PER_IP_PER_MINUTE", 30, min=1, max=1000)
+# Proxies of ours appending to X-Forwarded-For; 0 trusts the socket address (rule 11).
+TRUSTED_PROXY_HOPS = env_int("TRUSTED_PROXY_HOPS", 1 if IS_DEPLOYED_ENVIRONMENT else 0, min=0, max=5)
+CHALLENGE_TTL_SECONDS = env_int("CHALLENGE_TTL_SECONDS", 120, min=10, max=600)  # a WebAuthn challenge
+# The one code E2E journeys type, read only under E2E_MODE (refused deployed, rule 4).
 E2E_FIXED_CODE = "123456"
 
-# ---------------------------------------------------------------------------------------
-# ===== ID-06, ID-08 sessions and step-up (DECISIONS D-06) ================================
-# ---------------------------------------------------------------------------------------
-SESSION_IDLE_MINUTES_DEFAULT = env_int("SESSION_IDLE_MINUTES_DEFAULT", 30)
-SESSION_ABSOLUTE_HOURS_DEFAULT = env_int("SESSION_ABSOLUTE_HOURS_DEFAULT", 12)
-SESSION_IDLE_MINUTES_MAX = env_int("SESSION_IDLE_MINUTES_MAX", 8 * 60)
-SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24)
-# ===== c8-org-models: ID-07 credential policy (ADR 0048) =====
-# How many days ahead a tightened credential policy takes effect by default, so members can
-# enrol a device-bound passkey before theirs stop working (tenants.SecurityPolicy).
-CREDENTIAL_POLICY_NOTICE_DAYS = env_int("CREDENTIAL_POLICY_NOTICE_DAYS", 14)
-ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10)
-REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30)
-# security-review-c11 (ID-08): the shortest idle limit a bank may set. A session is refreshed
-# only when its access token runs out, so an idle limit no longer than the token's life would
-# sign out people who are working; the floor must exceed ACCESS_TOKEN_TTL_MINUTES.
-SESSION_IDLE_MINUTES_MIN = env_int("SESSION_IDLE_MINUTES_MIN", 15)
-if not ACCESS_TOKEN_TTL_MINUTES < SESSION_IDLE_MINUTES_MIN <= SESSION_IDLE_MINUTES_MAX:
-    raise ImproperlyConfigured("SESSION_IDLE_MINUTES_MIN must exceed ACCESS_TOKEN_TTL_MINUTES and be at most SESSION_IDLE_MINUTES_MAX")
-STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5)
-# The rotating refresh token's cookie (ADR 0006): HttpOnly, Secure outside DEBUG,
-# SameSite=Strict, scoped to the auth path so no other route ever receives it.
+# --- Sessions, step-up and keys (ID-06 to ID-10, D-06) ---
+ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10, min=1, max=60)
+SESSION_IDLE_MINUTES_MAX = env_int("SESSION_IDLE_MINUTES_MAX", 8 * 60, min=1, max=1440)
+SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24, min=1, max=168)
+# A session refreshes only when its token runs out, so the idle floor must outlast the token.
+SESSION_IDLE_MINUTES_MIN = env_int(
+    "SESSION_IDLE_MINUTES_MIN", 15, min=ACCESS_TOKEN_TTL_MINUTES + 1, max=SESSION_IDLE_MINUTES_MAX
+)
+SESSION_IDLE_MINUTES_DEFAULT = env_int(
+    "SESSION_IDLE_MINUTES_DEFAULT", 30, min=SESSION_IDLE_MINUTES_MIN, max=SESSION_IDLE_MINUTES_MAX
+)
+SESSION_ABSOLUTE_HOURS_DEFAULT = env_int("SESSION_ABSOLUTE_HOURS_DEFAULT", 12, min=1, max=SESSION_ABSOLUTE_HOURS_MAX)
+REFRESH_REPLAY_GRACE_SECONDS = env_int("REFRESH_REPLAY_GRACE_SECONDS", 30, min=0, max=300)
+STEP_UP_FRESHNESS_MINUTES = env_int("STEP_UP_FRESHNESS_MINUTES", 5, min=1, max=15)
+# The rotating refresh cookie (ADR 0006): HttpOnly, SameSite=Strict, scoped to the auth path.
 REFRESH_COOKIE_NAME = "cw_refresh"
 REFRESH_COOKIE_PATH = "/api/v1/auth"
 REFRESH_COOKIE_SECURE = not DEBUG
-# An API key's last_used_at (and its key_used security-log row) is written at most this
-# often, so a busy agent does not turn every call into a write (ID-10).
-API_KEY_LAST_USED_THROTTLE_SECONDS = env_int("API_KEY_LAST_USED_THROTTLE_SECONDS", 60)
-# ===== acc-foundation: agent access credentials (ACC-03, ACC-09, ADRs 0055 and 0056) =====
-# The longest a service key of an agent access entry, and a personal access token, may live;
-# a token cannot be minted without an expiry. And the requests one such credential may make
-# per minute, whatever it reads.
-AGENT_ACCESS_KEY_MAX_DAYS = env_int("AGENT_ACCESS_KEY_MAX_DAYS", 90)
-PERSONAL_TOKEN_MAX_DAYS = env_int("PERSONAL_TOKEN_MAX_DAYS", 90)
-AGENT_ACCESS_RATE_PER_MINUTE = env_int("AGENT_ACCESS_RATE_PER_MINUTE", 60)
-if min(AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS, AGENT_ACCESS_RATE_PER_MINUTE) < 1:
-    raise ImproperlyConfigured(
-        "Refusing to boot: AGENT_ACCESS_KEY_MAX_DAYS, PERSONAL_TOKEN_MAX_DAYS and "
-        "AGENT_ACCESS_RATE_PER_MINUTE must each be at least 1."
-    )
-# ===== c8-ten-support-grants: TEN-06 support access (D-49, ADR 0042) =====
-# The longest window platform support may ask a bank for, in hours; a longer request answers
-# 422. The window starts when the bank approves.
-SUPPORT_ACCESS_MAX_HOURS = env_int("SUPPORT_ACCESS_MAX_HOURS", 4)
-# How long a request nobody decides stays open before it reads as lapsed, in hours.
-SUPPORT_ACCESS_REQUEST_TTL_HOURS = env_int("SUPPORT_ACCESS_REQUEST_TTL_HOURS", 24)
+API_KEY_LAST_USED_THROTTLE_SECONDS = env_int("API_KEY_LAST_USED_THROTTLE_SECONDS", 60, min=0, max=3600)
+# Agent access credentials (ACC-03, ACC-09): the longest life of a key and a personal token.
+AGENT_ACCESS_KEY_MAX_DAYS = env_int("AGENT_ACCESS_KEY_MAX_DAYS", 90, min=1, max=365)
+PERSONAL_TOKEN_MAX_DAYS = env_int("PERSONAL_TOKEN_MAX_DAYS", 90, min=1, max=365)
+AGENT_ACCESS_RATE_PER_MINUTE = env_int("AGENT_ACCESS_RATE_PER_MINUTE", 60, min=1, max=10_000)
+# Support access (TEN-06, D-49): the longest window, and how long an undecided request lives.
+SUPPORT_ACCESS_MAX_HOURS = env_int("SUPPORT_ACCESS_MAX_HOURS", 4, min=1, max=72)
+SUPPORT_ACCESS_REQUEST_TTL_HOURS = env_int("SUPPORT_ACCESS_REQUEST_TTL_HOURS", 24, min=1, max=168)
 
-# ===== d89-scope-items-model: the bank's own scope items (OWN-01, D-91) =====
-# The longest description a scope item may carry; the boundary refuses a longer one.
-SCOPE_ITEM_DESCRIPTION_MAX_CHARS = env_int("SCOPE_ITEM_DESCRIPTION_MAX_CHARS", 2000)
-if SCOPE_ITEM_DESCRIPTION_MAX_CHARS < 1:
-    raise ImproperlyConfigured("Refusing to boot: SCOPE_ITEM_DESCRIPTION_MAX_CHARS must be at least 1.")
-# ===== acc-what-applies: what applies to a bank's own agent (ACC-06, ACC-07) =====
-# The longest description `POST /agent-access/what-applies` takes, in characters, and how
-# many words a footprint term's usage note must share with it to be named as outside the
-# entry's scope (a label matches when all its words are in the description).
-AGENT_ACCESS_DESCRIPTION_MAX_CHARS = env_int("AGENT_ACCESS_DESCRIPTION_MAX_CHARS", 2000)
-AGENT_ACCESS_NOTE_MATCH_WORDS = env_int("AGENT_ACCESS_NOTE_MATCH_WORDS", 2)
-if min(AGENT_ACCESS_DESCRIPTION_MAX_CHARS, AGENT_ACCESS_NOTE_MATCH_WORDS) < 1:
-    raise ImproperlyConfigured(
-        "Refusing to boot: AGENT_ACCESS_DESCRIPTION_MAX_CHARS and AGENT_ACCESS_NOTE_MATCH_WORDS must each be at least 1."
-    )
-# ===== acc-summary-j11: the drafted summary above what applies (ACC-06, ACC-09) =====
-# How long what-applies waits for the model before it answers the list without a summary
-# (`timeout`), how many of the list's first obligations the model is shown, and the
-# summary's own ceiling beneath LLM_MAX_TOKENS. The price of a model call in minor units
-# per million tokens (the provider's list price for LLM_MODEL, Verification_Log), which a
-# summary's cost on its AI log row is computed from and counted against the bank's
-# monthly cap on its own agents.
-WHAT_APPLIES_SUMMARY_DEADLINE_MS = env_int("WHAT_APPLIES_SUMMARY_DEADLINE_MS", 2000)
-WHAT_APPLIES_SUMMARY_FACTS = env_int("WHAT_APPLIES_SUMMARY_FACTS", 20)
-WHAT_APPLIES_SUMMARY_MAX_TOKENS = env_int("WHAT_APPLIES_SUMMARY_MAX_TOKENS", 400)
-LLM_PRICE_INPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_INPUT_MINOR_PER_MTOK", 500)
-LLM_PRICE_OUTPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_OUTPUT_MINOR_PER_MTOK", 2500)
-if min(WHAT_APPLIES_SUMMARY_DEADLINE_MS, WHAT_APPLIES_SUMMARY_FACTS, WHAT_APPLIES_SUMMARY_MAX_TOKENS) < 1 or min(
-    LLM_PRICE_INPUT_MINOR_PER_MTOK, LLM_PRICE_OUTPUT_MINOR_PER_MTOK
-) < 0:
-    raise ImproperlyConfigured(
-        "Refusing to boot: WHAT_APPLIES_SUMMARY_DEADLINE_MS, WHAT_APPLIES_SUMMARY_FACTS and "
-        "WHAT_APPLIES_SUMMARY_MAX_TOKENS must each be at least 1, and the LLM prices at least 0."
-    )
-
-# ===== d89-scope-items-logic: the regulatory scope request's caps (FP-02, OWN-01, H24) =====
-# The most terms, and the most scope items, one regulatory scope request may add or remove,
-# each list on its own: every entry costs lookups, a link row and, on approval, a history
-# and an audit row, so the list is bounded at the boundary rather than by the body size.
-# A bank whose only member able to approve a scope change is the person asking may approve
-# its own request (D-125, Alex 2026-11-09: "make it so that a single admin can handle
-# regulatory scope, we can harden it later"). A passkey step-up is still required, the
-# request is marked `sole_approver` and the audit row says so, and the moment a second
-# member can approve, four eyes applies again. False restores four eyes everywhere.
+# --- Scope items, what applies and the regulatory scope request (OWN-01, ACC-06, FP-02) ---
+SCOPE_ITEM_DESCRIPTION_MAX_CHARS = env_int("SCOPE_ITEM_DESCRIPTION_MAX_CHARS", 2000, min=1, max=100_000)
+AGENT_ACCESS_DESCRIPTION_MAX_CHARS = env_int("AGENT_ACCESS_DESCRIPTION_MAX_CHARS", 2000, min=1, max=100_000)
+AGENT_ACCESS_NOTE_MATCH_WORDS = env_int("AGENT_ACCESS_NOTE_MATCH_WORDS", 2, min=1, max=20)
+WHAT_APPLIES_SUMMARY_DEADLINE_MS = env_int("WHAT_APPLIES_SUMMARY_DEADLINE_MS", 2000, min=1, max=60_000)
+WHAT_APPLIES_SUMMARY_FACTS = env_int("WHAT_APPLIES_SUMMARY_FACTS", 20, min=1, max=1000)
+WHAT_APPLIES_SUMMARY_MAX_TOKENS = env_int("WHAT_APPLIES_SUMMARY_MAX_TOKENS", 400, min=1, max=LLM_MAX_TOKENS)
+# A model call's list price in minor units per million tokens (Verification_Log).
+LLM_PRICE_INPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_INPUT_MINOR_PER_MTOK", 500, min=0)
+LLM_PRICE_OUTPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_OUTPUT_MINOR_PER_MTOK", 2500, min=0)
+# D-125: a bank's only approver may approve their own scope request, with a passkey, marked
+# `sole_approver` and audited. False restores four eyes everywhere.
 FOOTPRINT_SOLE_APPROVER_ALLOWED = env_bool("FOOTPRINT_SOLE_APPROVER_ALLOWED", True)
-FOOTPRINT_CHANGE_MAX_TERMS = env_int("FOOTPRINT_CHANGE_MAX_TERMS", 50)
-if FOOTPRINT_CHANGE_MAX_TERMS < 1:
-    raise ImproperlyConfigured("Refusing to boot: FOOTPRINT_CHANGE_MAX_TERMS must be at least 1.")
-# How many company lines (a term out of or back into one legal entity's own scope, FP-05) one
-# request may carry in each direction: a group of ten companies with eight licence-bound terms
-# each fits, with room (PUBLIC_REGISTERS.md 5.4).
-FOOTPRINT_ENTITY_CHANGE_MAX = env_int("FOOTPRINT_ENTITY_CHANGE_MAX", 200)
-if FOOTPRINT_ENTITY_CHANGE_MAX < 1:
-    raise ImproperlyConfigured("Refusing to boot: FOOTPRINT_ENTITY_CHANGE_MAX must be at least 1.")
+FOOTPRINT_CHANGE_MAX_TERMS = env_int("FOOTPRINT_CHANGE_MAX_TERMS", 50, min=1, max=1000)
+FOOTPRINT_ENTITY_CHANGE_MAX = env_int("FOOTPRINT_ENTITY_CHANGE_MAX", 200, min=1, max=10_000)
 
-# ---------------------------------------------------------------------------------------
-# ===== Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ===========
-# ---------------------------------------------------------------------------------------
+# --- Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ---
 RATE_LIMITING_ENABLED = env_bool("RATE_LIMITING_ENABLED", True)
 
-# ---------------------------------------------------------------------------------------
-# Logging (playbook 4.7): structured JSON with the request ID on every line. Personal data
-# is limited to a person's name and id; tenant content never appears. The compliance lint
-# checks call sites; this block only shapes the output.
-# ---------------------------------------------------------------------------------------
+# --- Logging (playbook 4.7): JSON with the request id; never tenant content. ---
 LOG_LEVEL = env_str("LOG_LEVEL", "INFO").upper()
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "filters": {"request_id": {"()": "apps.shared.middleware.RequestIdLogFilter"}},
-    "formatters": {
-        "json": {
-            "()": "apps.shared.logging.JsonFormatter",
-        }
-    },
+    "formatters": {"json": {"()": "apps.shared.logging.JsonFormatter"}},
     "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "json",
-            "filters": ["request_id"],
-        }
+        "console": {"class": "logging.StreamHandler", "formatter": "json", "filters": ["request_id"]}
     },
     "root": {"handlers": ["console"], "level": LOG_LEVEL},
     "loggers": {
         "django": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
         "django.request": {"handlers": ["console"], "level": "WARNING", "propagate": False},
         "apps": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
+        # Its DEBUG lines carry an Ask event's repr, the reader's question (AskPrivacyTests).
+        "django.template": {"level": "INFO"},
     },
 }
-# ===== SRC-03 Ask: no tenant text through django.template's DEBUG lines ================
-# Ninja reads a response attribute it cannot find through Django's template `Variable`,
-# which logs the miss at DEBUG with the object's repr, and an Ask event's repr holds the
-# question the reader typed. So this one logger stays at INFO whatever LOG_LEVEL says
-# (apps/search/tests_ask.py, AskPrivacyTests).
-LOGGING["loggers"]["django.template"] = {"level": "INFO"}  # type: ignore[index]
 
-# ---------------------------------------------------------------------------------------
-# Sentry (playbook 11.2), only when SENTRY_DSN is set, on the EU region. No PII, no
-# request bodies, no local variables, and both scrubbers: transactions bypass before_send
-# and a 10% trace sample silently exempted one in ten requests in the last repo.
-# ---------------------------------------------------------------------------------------
+# --- Sentry (playbook 11.2), only when SENTRY_DSN is set. No PII, bodies or locals; both
+# scrubbers, because transactions bypass before_send. ---
 SENTRY_DSN = env_str("SENTRY_DSN", "")
-SENTRY_TRACES_SAMPLE_RATE = float(env_str("SENTRY_TRACES_SAMPLE_RATE", "0.1"))
+SENTRY_TRACES_SAMPLE_RATE = env_float("SENTRY_TRACES_SAMPLE_RATE", 0.1, min=0, max=1)
 if SENTRY_DSN:
     import sentry_sdk
     from sentry_sdk.integrations.celery import CeleryIntegration
     from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.integrations.logging import ignore_logger
+    from sentry_sdk.integrations.stdlib import StdlibIntegration
 
-    from apps.shared.sentry_scrub import before_send, before_send_transaction  # noqa: E402
+    from apps.shared.sentry_scrub import before_send, before_send_transaction
 
-    # gunicorn writes each access line at INFO outside any request scope, so as a
-    # breadcrumb it would ride on the next event, whoever's request that is (security
-    # review 2026-09-19). The line is in the container log already; Sentry never needs it.
+    # A gunicorn access line as a breadcrumb would ride on the next event, whoever's it is.
     ignore_logger("gunicorn.access")
+    # The stdlib integration names spans after outbound URLs and propagation sends the public
+    # key to every host fetched; Sentry needs neither (S-8).
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=HOST_ENVIRONMENT_NAME or ENVIRONMENT,
         integrations=[DjangoIntegration(), CeleryIntegration()],
+        disabled_integrations=[StdlibIntegration],
+        trace_propagation_targets=[],
         send_default_pii=False,
         max_request_body_size="never",
         include_local_variables=False,
@@ -1300,39 +637,31 @@ if SENTRY_DSN:
         before_send_transaction=before_send_transaction,
     )
 
-# ---------------------------------------------------------------------------------------
-# ===== Production-safety block (playbook 11.1) ===========================================
-# The rationale lives here; apps/shared/tests_production_guard.py boots Django in
-# subprocesses under `prod`, `Production`, `demo`, `dev`, `local`, `test` and `ci` to prove
-# every branch. A guard that cannot fail is decoration.
+# --- Production-safety block (playbook 11.1) ---
+# apps/shared/tests_production_guard.py boots Django under `prod`, `Production`, `demo`,
+# `dev`, `local`, `test` and `ci` to prove every branch.
 #
 #  1. Deployed is the default. Only `local`, `test` and `ci` without a host environment
 #     name are non-deployed; anything else, and any RAILWAY_ENVIRONMENT_NAME, is deployed.
 #  2. DEBUG on a deployed environment leaks settings, SQL and stack traces to the browser.
-#  3. The default SECRET_KEY signs nothing safely. It is tolerated only on the three
-#     non-deployed names (local, test, ci: laptops and CI runners set no key), refused on
-#     every deployed environment whatever DEBUG says.
-#  4. E2E_MODE makes the enrolment code deterministic. That is fine on a laptop or a CI
-#     runner and catastrophic anywhere reachable from the internet (PRD ID-02, ID-03).
+#  3. The default SECRET_KEY signs nothing safely; tolerated only on the non-deployed names.
+#  4. E2E_MODE makes the enrolment code deterministic: catastrophic anywhere reachable from
+#     the internet (PRD ID-02, ID-03).
 #  5. A mock LLM, embedder, agent runner, mailer or register reader on a deployed
-#     environment other than the one named `test` means silent no-ops: emails that never
-#     send, agent runs that never happen, embeddings that are zeros, a made-up group in place
-#     of the bank's own. `test` may run mocks and shows a banner.
-#  6. The local file backend is a container's ephemeral disk. Evidence written there is
-#     lost on the next deploy (playbook 4.6), so deployed environments must use s3.
-#  7. The database role: checked at boot against the live connection by
-#     apps.shared.db_role_guard (superuser, table owner, BYPASSRLS all skip policies:
-#     Verification_Log, PostgreSQL row security). It cannot be checked here because
-#     settings must not open connections; SharedConfig.ready() does it.
-#  8. The WebAuthn RP ID is the exact app host (ADR 0002). A deployed environment that
-#     still says `localhost` would enrol passkeys nobody can use from the real host, so
-#     it refuses to boot until WEBAUTHN_RP_ID and WEBAUTHN_ORIGINS name the host.
-#  9. RATE_LIMITING_ENABLED=false switches every bucket off at once: the sign-in
-#     ceremonies' (ID-02) and search's and Ask's, which cap what one caller spends of the
-#     model budget (NFR-02). Each bucket's own size already refuses to boot below 1, so the
-#     switch is the one way left to turn them off, and it stays for laptops and tests only
-#     (security-review-c7, M2).
-# ---------------------------------------------------------------------------------------
+#     environment other than `test` means silent no-ops. `test` may run mocks with a banner.
+#  6. The local file backend is a container's ephemeral disk; deployed uses s3.
+#  7. The database role: checked at boot on the live connection by
+#     apps.shared.db_role_guard from SharedConfig.ready(); settings open no connection.
+#  8. The WebAuthn RP ID is the exact app host (ADR 0002); `localhost` deployed enrols
+#     passkeys nobody can use.
+#  9. RATE_LIMITING_ENABLED=false switches every bucket off at once; laptops and tests only
+#     (M2). Each bucket's own size already refuses to boot below 1.
+# 10. Processors outside the EU (D-54, ADR 0047). On every deployed environment but `test`,
+#     the `anthropic` provider is refused, and Sentry only on a host ending
+#     `.ingest.de.sentry.io`. The lists are code, never variables. The `managed_agents`
+#     runner is refused everywhere: AGENT_RUNNER names no such value.
+# 11. TRUSTED_PROXY_HOPS=0 behind the edge keys every per-IP limit and security log row on
+#     the proxy's address. A deployed environment defaults to 1 and refuses 0 (L-18).
 def _refuse(reason: str) -> None:
     raise ImproperlyConfigured(f"Refusing to boot: {reason}")
 
@@ -1370,8 +699,13 @@ if IS_DEPLOYED_ENVIRONMENT and (
     )
 if IS_DEPLOYED_ENVIRONMENT and not RATE_LIMITING_ENABLED:
     _refuse(f"RATE_LIMITING_ENABLED=false on deployed environment {ENVIRONMENT!r}. Rule 9.")
-if STORAGE_BACKEND not in {"local", "s3"}:
-    _refuse(f"STORAGE_BACKEND={STORAGE_BACKEND!r} is not one of local, s3.")
+if IS_DEPLOYED_ENVIRONMENT and ENVIRONMENT != MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT:
+    if LLM_PROVIDER == "anthropic":
+        _refuse(f"LLM_PROVIDER='anthropic' on deployed environment {ENVIRONMENT!r}: it processes outside the EU. Rule 10 (D-54).")
+    if SENTRY_DSN and not (urlsplit(SENTRY_DSN).hostname or "").endswith(".ingest.de.sentry.io"):
+        _refuse(f"SENTRY_DSN is not on ingest.de.sentry.io on deployed environment {ENVIRONMENT!r}. Rule 10 (D-54).")
+if IS_DEPLOYED_ENVIRONMENT and TRUSTED_PROXY_HOPS < 1:
+    _refuse(f"TRUSTED_PROXY_HOPS={TRUSTED_PROXY_HOPS} on deployed environment {ENVIRONMENT!r}. Rule 11: set 1 behind Railway's edge.")
 
 logging.getLogger(__name__).debug(
     "settings loaded", extra={"environment": ENVIRONMENT, "deployed": IS_DEPLOYED_ENVIRONMENT}

@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient, type UseMutati
 
 import { collabKeys } from '@/features/collab/hooks';
 import { participantKeys } from '@/features/participants/hooks';
-import { problemReportKeys } from '@/features/problem-reports/hooks';
+import { problemReportKeys } from '@/features/library/problem-reports/hooks';
 import { CHANGE_PAGE, watchKeys } from '@/features/watch/hooks';
 import { hasProblemCode } from '@/shared/utils/problem';
 
@@ -12,12 +12,7 @@ import * as register from './api';
 import type {
   RegisterApplicability,
   RegisterApplicabilityBody,
-  RegisterApplicabilityMany,
-  RegisterApplicabilityManyBody,
   RegisterAssessmentPage,
-  RegisterDutyCompleteBody,
-  RegisterDutyCompletion,
-  RegisterDutyPage,
   RegisterEntityPatch,
   RegisterEntityStatus,
   RegisterEntry,
@@ -36,7 +31,6 @@ import type {
   RegisterPageQuery,
   RegisterPanels,
   RegisterPatch,
-  RegisterPerson,
   RegisterRiskAcceptanceBody,
   RegisterSpannedEntity,
   RegisterStatementOfApplicability,
@@ -45,8 +39,7 @@ import type {
   RegisterUnitPage,
   RegisterUnitPaste,
   RegisterUnitPasteBody,
-  RegisterUnitPatch,
-} from './types';
+  RegisterUnitPatch } from './types';
 
 // Query keys and invalidation for the register (playbook 6.1). Every panel on
 // the obligation page reads through these hooks, so a write in one panel
@@ -70,7 +63,6 @@ export const registerKeys = {
   units: (obligationId: string, entity: string | undefined, page: RegisterPageQuery) =>
     [...registerKeys.obligation(obligationId), 'units', entity ?? null, page] as const,
   statement: (obligationId: string, entity: string, page: RegisterPageQuery) => [...registerKeys.obligation(obligationId), 'statement', entity, page] as const,
-  duties: (obligationId: string, page: RegisterPageQuery) => [...registerKeys.obligation(obligationId), 'duties', page] as const,
   gapList: (filters: RegisterGapQuery, page: RegisterPageQuery) => ['register', 'gaps', filters, page] as const,
   items: (q: string) => ['register', 'items', q] as const,
 };
@@ -173,10 +165,6 @@ export function useStatementOfApplicability(obligationId: string, entity: string
   });
 }
 
-export function useDuties(obligationId: string, page: RegisterPageQuery = {}): UseQueryResult<RegisterDutyPage> {
-  return useQuery({ queryKey: registerKeys.duties(obligationId, page), queryFn: () => register.listDuties(obligationId, page) });
-}
-
 // Writes. A versioned write takes the `version` the panel last read.
 
 export function useUpdateRegister(obligationId: string): UseMutationResult<RegisterEntry, unknown, { body: RegisterPatch; version: number }> {
@@ -191,10 +179,6 @@ export function useUpdateRegisterEntity(
 
 export function useSetApplicability(obligationId: string): UseMutationResult<RegisterApplicability, unknown, { body: RegisterApplicabilityBody; version: number }> {
   return useRegisterWrite(({ body, version }) => register.setApplicability(obligationId, body, version));
-}
-
-export function useSetApplicabilityMany(): UseMutationResult<RegisterApplicabilityMany, unknown, RegisterApplicabilityManyBody> {
-  return useRegisterWrite(register.setApplicabilityMany);
 }
 
 export function useCreateGap(obligationId: string): UseMutationResult<RegisterGap, unknown, RegisterGapBody> {
@@ -245,10 +229,6 @@ export function usePasteUnits(obligationId: string): UseMutationResult<RegisterU
   return useRegisterWrite((body: RegisterUnitPasteBody) => register.pasteUnits(obligationId, body));
 }
 
-export function useCompleteDutyOccurrence(): UseMutationResult<RegisterDutyCompletion, unknown, { occurrenceId: string; body: RegisterDutyCompleteBody }> {
-  return useRegisterWrite(({ occurrenceId, body }) => register.completeDutyOccurrence(occurrenceId, body));
-}
-
 // c8-ui-applicability-status: the entities an answer can be given for, and the people an
 // owner or contact picker offers. Neither changes with a register write.
 
@@ -256,6 +236,3 @@ export function useSpannedEntities(obligationId: string): UseQueryResult<Registe
   return useQuery({ queryKey: spanKey(obligationId), queryFn: () => register.listSpannedEntities(obligationId) });
 }
 
-export function usePeople(enabled = true): UseQueryResult<RegisterPerson[]> {
-  return useQuery({ queryKey: ['reference', 'people'], queryFn: register.listPeople, enabled });
-}

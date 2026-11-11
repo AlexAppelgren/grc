@@ -9,7 +9,6 @@
   "obligationParticipants.person": "Person",
   "obligationParticipants.addedBy": "Added {date} by {name}",
   "obligationParticipants.leave": "Leave",
-  "obligationParticipants.remove": "Remove",
   "obligationParticipants.grantsNothing": "Taking part lists the item on a person's My work and notifies them. It grants no access.",
   "obligationParticipants.add": "Add a participant",
   "obligationParticipants.addTitle": "Add a participant",

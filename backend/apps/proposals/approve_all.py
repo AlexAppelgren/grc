@@ -1,24 +1,19 @@
 """Approve all: one reviewer's decision to approve every proposal waiting in the console
 queue under the filters they chose, carried out by the worker (PRO-02, D-128).
 
-Approving the library baseline one call at a time from the browser took a round trip per
-proposal, about an hour for 2,400. Here the reviewer steps up once and names the filters;
-`start` reads the ids of what is waiting at that moment, writes one audit row for the
-decision under that assertion, and queues `tasks.approve_listed`, which approves each id
-through `logic.approve`, the one door into the library, in a transaction of its own. Every
-approval writes its own audit rows with the same assertion id, four eyes is checked row by
-row as always, and a refused row is counted with its reason while the rest go on.
+The reviewer steps up once; `start` reads the ids waiting at that moment, writes one audit
+row under that assertion and queues `tasks.approve_listed`, which approves each id through
+`logic.approve`, the one door, in its own transaction. Four eyes is checked row by row and a
+refused row is counted with its reason. Proposals filed during the run, the reviewer's own,
+flagged ones and batches wait for their own review.
 
-Only what was waiting when the reviewer confirmed is approved: a proposal filed during the
-run, such as the duties of a regulation the run just approved, waits for the next decision.
-What the page selection would refuse is never read: the reviewer's own proposals, flagged
-ones and batches, each for its own review.
+Progress lives in the cache under the reviewer's id. One run per reviewer: a second start
+answers 409 `approval_running` unless the running one is silent past
+`PROPOSALS_APPROVE_ALL_STALE_S`.
 
-The run's progress lives in the cache under the reviewer's id, the only reader being the
-reviewer's own queue screen; the audit trail and the queue are the record of what happened.
-One run per reviewer at a time: a second start while one is running answers 409
-`approval_running`, unless the running one has said nothing for
-`PROPOSALS_APPROVE_ALL_STALE_S`, which means its worker stopped.
+Every `PROGRESS_EVERY` rows the run checks that the reviewer could still start it (account
+active, `proposals.review` held, step-up session not revoked) and otherwise stops with
+`proposal.approve_all_stopped` (review 2026-11-11 L-1). Revoking the session ends a run.
 """
 
 from __future__ import annotations
@@ -36,6 +31,7 @@ from django.utils import timezone
 from apps.proposals import logic
 from apps.proposals.logic import Reviewer
 from apps.proposals.models import ProposalStatus
+from apps.shared import permissions as perms
 from apps.shared.audit import Actor, ActorType, record
 
 IDLE = "idle"
@@ -105,14 +101,54 @@ def start(*, reviewer: Reviewer, kind: str | None, origin: str | None, step_up_a
     return state
 
 
+def _no_longer_allowed(user_id: uuid.UUID, step_up_assertion_id: uuid.UUID) -> str:
+    """Why the reviewer could not start this run now, or "" while they still could: the
+    session they stepped up in is revoked (`session_revoked`), their account is not active
+    (`account_inactive`), or their platform grants no longer hold `proposals.review`
+    (`permission_revoked`). Read afresh each time, never from the run's start."""
+    from apps.identity import session_logic
+    from apps.identity.models import StepUpAssertion, UserStatus
+
+    assertion = StepUpAssertion.objects.select_related("session__user").filter(pk=step_up_assertion_id).first()  # ordering: pk lookup, at most one row
+    if assertion is None or assertion.session.user_id != user_id or assertion.session.revoked_at is not None:
+        return "session_revoked"
+    if assertion.session.user.status != UserStatus.ACTIVE.value:
+        return "account_inactive"
+    principal = session_logic.build_principal(assertion.session)
+    if principal is None or not principal.has_permission(perms.PROPOSALS_REVIEW):
+        return "permission_revoked"
+    return ""
+
+
+def _stop(reviewer: Reviewer, reason: str, state: dict[str, Any], left: int) -> None:
+    with transaction.atomic():
+        record(
+            action="proposal.approve_all_stopped",
+            actor=reviewer.actor,
+            subject_type=logic.SUBJECT_TYPE,
+            subject_id=None,
+            subject_title="",
+            summary=f"Stopped approving all waiting proposals with {left} left",
+            tenant_id=None,
+            after={"reason": reason, "approved": state["approved"], "refused": state["refused"], "left": left},
+        )
+
+
 def approve_listed(*, user: Any, proposal_ids: list[str], step_up_assertion_id: uuid.UUID) -> dict[str, Any]:
     """Approve each listed proposal through `logic.approve`, one transaction each, as the
     reviewer who started the run and under the assertion they gave. A refusal is counted,
-    the first `REFUSALS_KEPT` with their reasons, and the run goes on."""
+    the first `REFUSALS_KEPT` with their reasons, and the run goes on. Before the first row
+    and every `PROGRESS_EVERY` rows it checks the reviewer may still approve, and stops with
+    an audit row when they may not (`_no_longer_allowed`)."""
     reviewer = Reviewer(actor=Actor(kind=ActorType.USER, id=user.id, label=user.name), user=user)
     state = {**state_of(user.id), "status": RUNNING, "total": len(proposal_ids)}
     try:
         for done, proposal_id in enumerate(proposal_ids, start=1):
+            if (done - 1) % PROGRESS_EVERY == 0:
+                reason = _no_longer_allowed(user.id, step_up_assertion_id)
+                if reason:
+                    _stop(reviewer, reason, state, left=len(proposal_ids) - done + 1)
+                    break
             title = ""
             try:
                 proposal = logic.by_id(uuid.UUID(proposal_id))

@@ -30,7 +30,6 @@
   "shell.signOut": "Logga ut",
   "shell.signingOut": "Loggar ut…",
   "shell.account": "Konto",
-  "shell.close": "Stäng",
   "shell.loading": "Hämtar din session…",
   "shell.accountFor": "{name}, kontomeny",
   "shell.orgRoles": "{organisation} · {roles}",

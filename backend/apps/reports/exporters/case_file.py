@@ -1,13 +1,10 @@
 """The case file as an export (CAS-07): the same text `GET /changes/{changeId}/case-file`
-answers, byte for byte, built by the one builder in `apps/cases/case_file.py`.
+answers, built by `apps/cases/case_file.py`, plain UTF-8 (no PDF library).
 
-Plain UTF-8 text; there is no PDF library (parallel plan §7.2). The job names its case by
-the case's id in `subjectId`. `check` runs when the export is asked for and again at every
-download: the person must be able to read cases, and the case must be their own bank's,
-so another bank's case answers 404 before a job is written. The builder reads the case
-again by the job's own tenant and id, under that tenant's row-level security, so a job
-that somehow names another bank's case fails rather than finding it. The file is written
-in the language of the person who asked for it, exactly as the screen shows it to them.
+`subjectId` names the case. `check` runs on create and on every download: the person must be
+able to read cases and the case must be their bank's (404 otherwise). The builder re-reads the
+case under the job's tenant, so a job naming another bank's case fails. The file is in the
+asker's language.
 """
 
 from __future__ import annotations
@@ -21,7 +18,7 @@ from apps.cases.models import ChangeCase
 from apps.identity.roles_logic import language_order
 from apps.reports.models import ExportJob
 from apps.shared import permissions as perms
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 
 
@@ -32,7 +29,7 @@ def check(*, tenant: Tenant, permissions: frozenset[str], subject_id: uuid.UUID 
             status=403, code="permission_denied", detail="You do not have access to this.", required_permission=perms.CASES_READ
         )
     if subject_id is None or not ChangeCase.objects.filter(tenant=tenant, pk=subject_id).exists():
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
 
 
 def build(job: ExportJob) -> bytes:

@@ -11,6 +11,7 @@ from datetime import timedelta
 from typing import Any
 from unittest import mock
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -20,6 +21,7 @@ from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.reports.models import JobStatus
 from apps.shared import factories, tenancy
 from apps.shared.adapters.registers import MockRegisters
+from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, TenantStatus
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.tenants import registers_jobs, tasks
@@ -122,6 +124,54 @@ class TheWorker(RegistersCase):
         with mock.patch.object(MockRegisters, "children", return_value=[dataclasses.replace(odd, registration_number="?")]):
             entities = self.lookup().result["entities"]
         self.assertEqual((entities[1]["authority"], entities[1]["facts"]), ("fi", None))
+
+
+class ALookupIsBounded(RegistersCase):
+    """Review 2026-11-11 S-11: one lookup per bank at a time, at most
+    REGISTERS_LOOKUPS_PER_HOUR an hour, and the walk checks the deadline per company."""
+
+    def _waiting(self, *, minutes_ago: int = 0) -> RegisterLookup:
+        waiting = RegisterLookup.objects.create(tenant=self.tenant, query="556000-0001", requested_by=self.person)
+        RegisterLookup.objects.filter(pk=waiting.pk).update(created_at=timezone.now() - timedelta(minutes=minutes_ago))
+        return waiting
+
+    def _refused(self, status: int, code: str) -> None:
+        with self.assertRaises(ProblemError) as refused:
+            self.lookup()
+        self.assertEqual((refused.exception.status, refused.exception.code), (status, code))
+
+    def test_a_second_lookup_while_one_is_queued_is_409_unless_the_first_went_stale(self) -> None:
+        """Review 2026-11-11 S-11: `lookup_in_progress`, with the stale-lookup escape."""
+        waiting = self._waiting()
+        self._refused(409, "lookup_in_progress")
+        self.assertEqual(RegisterLookup.objects.count(), 1, "the refusal writes nothing")
+        stale_minutes = 2 * settings.REGISTERS_JOB_SECONDS // 60 + 1
+        RegisterLookup.objects.filter(pk=waiting.pk).update(created_at=timezone.now() - timedelta(minutes=stale_minutes))
+        self.assertEqual(self.lookup().status, JobStatus.SUCCEEDED.value)
+
+    @override_settings(REGISTERS_LOOKUPS_PER_HOUR=2)
+    def test_past_the_hourly_number_a_lookup_is_429(self) -> None:
+        """Review 2026-11-11 S-11: `rate_limited` per bank, the hour rolling."""
+        self.lookup()
+        self.lookup()
+        self._refused(429, "rate_limited")
+        RegisterLookup.objects.update(created_at=timezone.now() - timedelta(minutes=61))
+        self.assertEqual(self.lookup().status, JobStatus.SUCCEEDED.value)
+
+    def test_the_walk_checks_the_deadline_before_each_companys_children(self) -> None:
+        """Review 2026-11-11 S-11: the deadline is read inside the group walk, not after it."""
+        # Each reading of the clock moves it 100 seconds: the root's children are read at 100,
+        # and the next company's would be at 200, past the 150 the job may take.
+        clock = itertools.count(0.0, 100.0)
+        real_children = MockRegisters.children
+        with (
+            override_settings(REGISTERS_JOB_SECONDS=150),
+            mock.patch.object(registers_jobs, "_clock", side_effect=lambda: next(clock)),
+            mock.patch.object(MockRegisters, "children", autospec=True, side_effect=real_children) as children,
+        ):
+            lookup = self.lookup()
+        self.assertEqual((lookup.status, lookup.error), (JobStatus.FAILED.value, "register_unavailable"))
+        self.assertEqual(children.call_count, 1, "the second company's children were never asked for")
 
 
 class WhereACompanyGoes(RegistersCase):

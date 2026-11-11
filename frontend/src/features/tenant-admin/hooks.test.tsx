@@ -10,7 +10,6 @@ import {
   useApiKeys,
   useCreateApiKey,
   useCreateRole,
-  useDeactivateMember,
   useInvitations,
   useInviteMember,
   useLanguages,
@@ -81,7 +80,6 @@ describe('tenant-admin hooks', () => {
 
     await renderHook(() => useInviteMember(), { wrapper }).result.current.mutateAsync({ email: 'x@y.z', roleKeys: ['reader'], title: '' });
     await renderHook(() => useUpdateMember(), { wrapper }).result.current.mutateAsync({ userId: 'u1', body: { title: 'x' } });
-    await renderHook(() => useDeactivateMember(), { wrapper }).result.current.mutateAsync('u1');
     await renderHook(() => useReissueEnrolment(), { wrapper }).result.current.mutateAsync('u1');
     await renderHook(() => useRevokeMemberSessions(), { wrapper }).result.current.mutateAsync('u1');
     await renderHook(() => useResendInvitation(), { wrapper }).result.current.mutateAsync('i1');
@@ -92,7 +90,6 @@ describe('tenant-admin hooks', () => {
     expect(writes).toEqual([
       ['post', '/api/v1/tenant/members'],
       ['patch', '/api/v1/tenant/members/u1'],
-      ['delete', '/api/v1/tenant/members/u1'],
       ['post', '/api/v1/tenant/members/u1/reissue-enrolment'],
       ['delete', '/api/v1/tenant/members/u1/sessions'],
       ['post', '/api/v1/tenant/invitations/i1/resend'],

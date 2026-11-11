@@ -15,7 +15,6 @@ proves a requirement, only the contract the frontend data layer is written again
 
 from __future__ import annotations
 
-import json
 import uuid
 from typing import Any, ClassVar
 
@@ -34,6 +33,7 @@ from apps.shared.testing import (
     stub_session,
     user_principal,
 )
+from apps.shared.testing import events_of
 
 SEARCH = "/api/v1/search"
 SIMILAR = "/api/v1/search/similar"
@@ -47,12 +47,6 @@ SEARCH_BODY = {"q": "FFFS 2017:2"}
 SIMILAR_BODY = {"text": "nudging in onboarding"}
 ASK_BODY = {"question": "What must we report quarterly?"}
 FEEDBACK_BODY = {"feedback": "helpful"}
-
-
-def events_of(response: Any) -> list[dict[str, Any]]:
-    """The events a `text/event-stream` response carried, in order: one `data:` frame each."""
-    body = b"".join(response.streaming_content).decode()
-    return [json.loads(line.removeprefix("data: ")) for line in body.splitlines() if line.startswith("data: ")]
 
 
 class SearchApiTestCase(TestCase):

@@ -1,29 +1,15 @@
-"""Models of the collab app (COL-01, COL-02, COL-04; schema v0.3 `comment`, `notification`,
-`email_message`; INPUT_DELTAS §1; the participant of MY_WORK_AND_MARKETS 3.2).
+"""Models of the collab app (COL-01, COL-02, COL-04; INPUT_DELTAS §1): five tenant tables
+under forced row-level security, all one bank's own.
 
-Five tenant tables, all `TenantModel` under enabled and forced row-level security: a
-comment on a record, the people it mentions, the text an edit replaced, a person's
-notifications and the proof that a mail went out. All of it is one bank's own.
+- Nobody outside the row's bank can be named on it: each person column is also a composite
+  `(tenant_id, user_id)` key to `membership`, and mentions and revisions point at their
+  comment through `(tenant_id, comment_id)`, written in SQL in collab 0001. A foreign-key
+  check bypasses row-level security, so only the composite key refuses another bank (D-18).
+- An edited comment keeps the text it replaced: `comment_revision` is append-only by trigger.
+- Nothing here prints tenant text: every `__str__` returns the id (playbook 4.7).
 
-Three rules are structural here rather than remembered:
-
-- **Nobody outside the row's bank can be named on it.** Every person column is also a
-  composite `(tenant_id, user_id)` foreign key to `membership`, and a mention or a revision
-  points at its comment through `(tenant_id, comment_id)`. Those keys are written in collab
-  0001 in SQL, because Django declares a foreign key on one column only; the single-column
-  keys below stay for the ORM's joins. A foreign-key check does not pass through row-level
-  security, so only the composite key refuses another bank's person or comment (D-18).
-- **An edited comment keeps the text it replaced.** `comment_revision` is an
-  `AppendOnlyModel` with the trigger of the same name (CHUNK10_TASKS ruling 10).
-- **Nothing here prints tenant text.** Every `__str__` returns the row's id, because a
-  model's repr reaches logs, shells and error pages (playbook 4.7).
-
-`subject_type` is a plain string, as on `tagging`: which kinds a comment or a notification
-may name, and who may read each, is the subject registry's (`collab/subjects.py`, ruling 3),
-not a column constraint that a later chunk would have to migrate.
-
-No logic lives here. `notify()` in `collab/logic.py` is the only writer of a notification
-(ruling 1).
+`subject_type` is a plain string; which kinds exist and who reads them is the subject
+registry's (`collab/subjects.py`). `notify()` is the only writer of a notification.
 """
 
 from __future__ import annotations
@@ -38,10 +24,7 @@ from django.utils import timezone
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.fields import CIEmailField
 from apps.shared.tenancy import TenantModel
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class NotificationKind(enum.StrEnum):
@@ -77,13 +60,10 @@ class Comment(TenantModel):
     """A comment on one record of one bank (COL-01), shared with everyone in that bank
     (D-22, D-60).
 
-    `body` is tenant content. It never reaches a log line, a Sentry event, an audit before
-    or after value, an outbox payload, a webhook, a notification title or a mail (CLAUDE.md
-    §5, CHUNK10_TASKS rule 13): anything that has to say which comment carries its id.
-
-    Edited in place: `edited_at` is stamped and the text it replaced goes to
-    `CommentRevision` in the same transaction. Deleted softly: `deleted_at` is stamped, the
-    row stays for the tenant export, and the API stops returning its body.
+    `body` is tenant content: never in a log, Sentry, audit value, outbox payload, webhook,
+    notification title or mail (CHUNK10_TASKS rule 13); refer to a comment by its id. An edit
+    stamps `edited_at` and moves the old text to `CommentRevision` in the same transaction; a
+    delete stamps `deleted_at` and the API stops returning the body.
     """
 
     subject_type = models.CharField(max_length=64)
@@ -126,12 +106,8 @@ class CommentMention(TenantModel):
 
 
 class CommentRevision(AppendOnlyModel, TenantModel):
-    """The text one edit of a comment replaced (CHUNK10_TASKS ruling 10), written before the
-    new text lands, in the same transaction.
-
-    `body` is tenant content, exactly as on `Comment`: it never reaches a log line, a Sentry
-    event, an audit value, an outbox payload, a webhook, a notification or a mail. No route
-    returns a revision; they are the bank's own history, carried by its export.
+    """The text one edit of a comment replaced, written in the same transaction. `body` is
+    tenant content, as on `Comment`. No route returns a revision; the export carries them.
     """
 
     comment = models.ForeignKey(Comment, on_delete=models.PROTECT, related_name="+")
@@ -156,7 +132,7 @@ class Notification(TenantModel):
     """
 
     user = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
-    kind = models.CharField(max_length=32, choices=_choices(NotificationKind))
+    kind = models.CharField(max_length=32, choices=choices(NotificationKind))
     subject_type = models.CharField(max_length=64)
     subject_id = models.UUIDField()
     title = models.TextField()
@@ -183,13 +159,9 @@ class Notification(TenantModel):
 
 
 class EmailMessage(TenantModel):
-    """The proof that one mail went to one person (schema v0.3 §21).
-
-    No column holds what was sent: the proof is the template key and the record, never the
-    text. `sent_on` is the bank's local date, and the unique key over it — nulls counting as
-    equal, so the digest, which names no record, is covered too — is what stops a retried
-    worker sending the same mail twice in a day. `user` is null for an address that is not
-    yet a member (an invitation).
+    """The proof that one mail went to one person. No column holds what was sent. The unique
+    key over the bank-local `sent_on` (nulls equal, so the digest is covered) stops a retried
+    worker sending the same mail twice in a day. `user` is null for an invitation.
     """
 
     user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -198,7 +170,7 @@ class EmailMessage(TenantModel):
     subject = models.TextField()
     subject_type = models.CharField(max_length=64, null=True, blank=True)
     subject_id = models.UUIDField(null=True, blank=True)
-    status = models.CharField(max_length=16, choices=_choices(EmailStatus), default=EmailStatus.QUEUED.value)
+    status = models.CharField(max_length=16, choices=choices(EmailStatus), default=EmailStatus.QUEUED.value)
     provider_message_id = models.CharField(max_length=255, blank=True)
     queued_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True, blank=True)
@@ -222,16 +194,12 @@ class EmailMessage(TenantModel):
 
 class Participant(TenantModel):
     """A person or a team named on one register entry or one case of one bank (COL-04,
-    D-18), so that it reaches their My work and their notifications. It grants nothing: what
-    a participant may read or do is still their role's alone.
+    D-18), so it reaches their My work and notifications. It grants nothing.
 
-    Exactly one subject (the register entry or the case) and exactly one participant (the
-    person or the team), both held by `num_nonnulls` CHECKs in collab 0002. Every reference
-    is also a composite `(tenant_id, …)` key there, a person's to `membership`, so the
-    database refuses another bank's entry, case, team or person, and anyone who is not a
-    member. One live row per subject and participant. Removed by stamping `removed_at` and
-    `removed_by`, never deleted, so the case file (CAS-07) and the history (REG-04) still
-    show who took part. No text column and no participant role."""
+    Exactly one subject and one participant (`num_nonnulls` CHECKs in collab 0002); every
+    reference is a composite `(tenant_id, …)` key, so the database refuses another bank's
+    entry, case, team or person. One live row per pair. Removal stamps `removed_at` and
+    `removed_by`, so the case file (CAS-07) and history (REG-04) keep who took part."""
 
     tenant_obligation = models.ForeignKey(
         "register.TenantObligation", null=True, blank=True, on_delete=models.PROTECT, related_name="+"

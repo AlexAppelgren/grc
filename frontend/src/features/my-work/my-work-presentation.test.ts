@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
 import type { FormatContext } from '@/shared/utils/format';
+import type { components } from '@/types/api.generated';
 
 import {
   SECTIONS,
@@ -9,12 +10,13 @@ import {
   myCommentHref,
   permissionLimitedLines,
   presentWorkItem,
-  tenantToday,
   workHref,
   workReasons,
   workWhen,
 } from './my-work-presentation';
-import type { WorkDate, WorkItem, WorkReason } from './types';
+import type { WorkDate, WorkItem } from './types';
+
+type WorkReason = components['schemas']['HomeWorkReason'];
 
 // Every section, reason and date kind has its words in both languages, and a
 // day count is taken against the bank's own today, never the browser's.
@@ -102,14 +104,6 @@ describe('workWhen', () => {
   });
 });
 
-describe('tenantToday', () => {
-  it('is the date in the bank time zone, not UTC', () => {
-    // 23:30 UTC on 18 September is already 19 September in Stockholm.
-    expect(tenantToday(new Date('2026-09-18T23:30:00Z'), 'Europe/Stockholm')).toBe('2026-09-19');
-    expect(tenantToday(new Date('2026-09-18T23:30:00Z'), 'UTC')).toBe('2026-09-18');
-  });
-});
-
 describe('workReasons', () => {
   it('speaks to the reader in their own view, in en and sv', () => {
     const all = [reason('owner', 'person'), reason('owner', 'team'), reason('participant', 'person'), reason('participant', 'team')];
@@ -168,11 +162,6 @@ describe('presentWorkItem', () => {
     expect(presentWorkItem({ status: null, urgency: null })).toEqual([]);
   });
 
-  it('draws a status that arrives without a kind the same as one whose kind is null', () => {
-    const withoutKind = presentWorkItem({ status: { key: 'partly_ok', label: 'Partly compliant' }, urgency: null });
-    expect(withoutKind).toEqual(presentWorkItem({ status: { key: 'partly_ok', kind: null, label: 'Partly compliant' }, urgency: null }));
-    expect(withoutKind).toEqual([expect.objectContaining({ label: 'Partly compliant' })]);
-  });
 });
 
 describe('links', () => {

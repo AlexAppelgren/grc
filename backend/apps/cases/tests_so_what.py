@@ -23,12 +23,14 @@ from django.utils import timezone
 
 from apps.cases import creation, so_what, testing as case_build
 from apps.cases.models import ChangeCase
-from apps.shared import factories, outbox, tenancy
+from apps.shared import factories, tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.watch import testing as watch_build
 from apps.watch.models import RegulatoryChange
+from apps.shared.testing import drain
+from apps.cases.testing import registered
 
 V1 = "/api/v1"
 SECURITIES = "regime:securities"
@@ -37,28 +39,6 @@ AML = "regime:aml"
 DRAFT = "Teams that pay for external research should confirm that documented criteria exist."
 BETTER_DRAFT = "Desks paying for external research need documented annual quality criteria by 1 October."
 OUR_WORDS = "Self-directed trading and Guided investing both pay for research; the desk documents the criteria."
-
-
-def drain() -> None:
-    with transaction.atomic():
-        tenancy.clear_tenant()
-    while outbox.deliver_batch().delivered:
-        pass
-
-
-def registered(change: RegulatoryChange) -> None:
-    with transaction.atomic():
-        tenancy.clear_tenant()
-        record(
-            action=creation.CHANGE_REGISTERED,
-            actor=Actor.system("watch"),
-            subject_type="regulatory_change",
-            subject_id=change.id,
-            subject_title=change.title,
-            summary=f"Registered {change.title}.",
-            tenant_id=None,
-        )
-    drain()
 
 
 def redrafted(change: RegulatoryChange) -> None:

@@ -1,24 +1,17 @@
-"""The weekly digest (COL-02, HOM-05, CHUNK10_TASKS `f03-T81` and `c10-digest-a`): one mail
-per person per week listing their open items as My work counts them.
+"""The weekly digest (COL-02, HOM-05): one mail per person per week listing their open items
+as My work counts them.
 
-- **One definition.** The content is `home/my_work.py`'s answer for the reader's own scope:
-  the same buckets, the same permission-filtered rows and the same counts (D-23). This
-  module reads no case, action or register entry itself, and imports no model beyond the
-  membership it composes for, which a test pins.
-- **The reader's own.** Rows and counts follow the reader's roles, titles the reader's
-  language order, and the mail goes to the reader alone: a delegate never receives an
-  absent person's digest, and a digest is never escalated or copied to anyone (TEN-04).
-- **The cap.** At most `DIGEST_MAX_ITEMS` rows, the service's first ones, which are the
-  most urgent, then "and N more"; the bucket counts still cover every row.
-- **Nothing but titles, counts, dates and links.** Every line is a catalog string filled
-  with a `MailContext`, so no comment, note or assessment can reach it; every link is an
-  absolute page of the product built from `APP_BASE_URL`, and none carries a token.
-- **Once a week.** The mail leaves through `tasks.deliver_mail`, which composes it afresh
-  in the worker, so no record title rides the queue, and keys its `email_message` row to the
-  first day of the bank's week. Nothing open means no mail and no row.
+- One definition: the content is `home/my_work.py`'s answer for the reader's own scope
+  (D-23); this module reads no case, action or entry itself, which a test pins.
+- The reader's own: their roles, their language, to them alone; never to a delegate,
+  escalated or copied (TEN-04).
+- At most `DIGEST_MAX_ITEMS` rows, the most urgent, then "and N more".
+- Only titles, counts, dates and links: catalog strings filled from a `MailContext`, links
+  under `APP_BASE_URL` with no token.
+- Once a week: `tasks.deliver_mail` composes it in the worker (no title rides the queue) and
+  keys its `email_message` row to the bank's week. Nothing open, no mail.
 
-`send_all()` is what the weekly beat calls for one bank; the beat itself is
-`c10-digest-b`'s.
+`send_all()` is what the weekly beat calls for one bank.
 """
 
 from __future__ import annotations

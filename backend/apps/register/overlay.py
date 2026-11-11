@@ -1,26 +1,18 @@
-"""The register overlay on the inventory (REG-01, REG-02, INV-03): the caller's bank's own
+"""The register overlay on the inventory (REG-01, REG-02, INV-03): the bank's own
 applicability, compliance status and owner on each obligation `GET /obligations` and its
 card return, and the filters over them.
 
-The library read stays a library read: the overlay is one query over the bank's register
-entries for a page, whatever its size, joined by obligation id, and nothing here writes. It
-reads by the bank's id as well as under row-level security, so another bank's judgement on
-the same shared record never reaches this one, and an obligation nobody in the bank has
-worked on reads as not assessed with no status and no owner. The footprint decides which
-rows a page holds (`library.reading.in_view()`, the one scope rule); the overlay never
-hides a row, so a record shown outside the footprint keeps the bank's judgement on it.
+One query per page over the bank's entries, by the bank's id as well as under row-level
+security; nothing writes. An obligation nobody worked on reads as not assessed. The
+footprint (`library.reading.in_view()`) decides the rows; the overlay never hides one.
 
-"Applies" and "we comply" stay two facts (CLAUDE.md section 5). An obligation applies when
-the entry or any of its legal entities' rows says so, so a gap can never hide behind the
-entry's own answer; a status is shown only where it applies, and it is the worst of the
-applying entities' statuses by `WORST_FIRST`, else the entry's own. Answering "does not
-apply" hides the status and changes nothing: turning it back shows it again (REG-S4).
+"Applies" when the entry or any entity row says so, so a gap cannot hide behind the entry's
+own answer; the status shows only where it applies and is the worst applying entity's by
+`WORST_FIRST`, else the entry's. "Does not apply" hides the status and changes nothing
+(REG-S4).
 
-The overlay is the bank's judgement, so a bank's own agent reads it only through the gate the
-register read has (ACC-04, ACC-08, D-76): `shown_to()` is true for a person and for a bank's
-key bound to no entry, and for an agent access credential only when it holds `tenant:read`
-and tenant reach is on for the bank and for the entry it reads as. Without it the inventory answers such a credential
-the library's facts alone (`library.reading.Reader`).
+A bank's own agent reads the overlay only through the register's gate (ACC-04, ACC-08,
+D-76): `shown_to()`; otherwise the inventory answers it library facts alone.
 """
 
 from __future__ import annotations
@@ -43,14 +35,13 @@ from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ComplianceCategory, ComplianceStatus, ComplianceStatusLabel, TeamLabel
-from apps.taxonomy.reading import label_of
+from apps.shared.vocabulary import label_of
 
 if TYPE_CHECKING:
     from apps.library.schemas import ObligationQuery
 
-# Worst first. The rank is the category's, fixed in code, because the bank may relabel and
-# reorder its own rows: not assessed ranks below partly, since nobody has shown compliance.
-# `status_logic.worst_of()` ranks by the same tuple, so the row and the card never disagree.
+# Worst first, by the category fixed in code, because the bank may relabel and reorder its
+# rows; not assessed ranks below partly. `status_logic.worst_of()` ranks by the same tuple.
 WORST_FIRST = (ComplianceCategory.GAP, ComplianceCategory.PARTLY, ComplianceCategory.NOT_ASSESSED, ComplianceCategory.COMPLIANT)
 RANK = {category.value: index for index, category in enumerate(WORST_FIRST)}
 
@@ -175,10 +166,7 @@ def _ref(key: str, kind: str | None, labels: list[dict[str, Any]], order: list[s
     return RegisterVocabRef(key=key, kind=kind, label=label_of(texts, order, original=original, key=key))
 
 
-# ---------------------------------------------------------------------------------------
-# Who reads it (security-review-c8 M3): the overlay is the bank's register, so only a
-# person holding register.read reads it or narrows by it.
-# ---------------------------------------------------------------------------------------
+# --- Who reads it (M3): only a person holding register.read reads or narrows by it ---
 _Carrier = TypeVar("_Carrier", bound=BaseModel)
 
 

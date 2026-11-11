@@ -18,13 +18,10 @@ from django.test import TestCase
 from apps.agents.models import Agent, AgentKind, AgentRun
 from apps.library import testing as build
 from apps.library.models import Authority, DatePrecision, Obligation, SubjectType
-from apps.library.seeds import seed_jurisdictions, seed_languages
-from apps.library.seeds.library import seed_authorities
 from apps.proposals.models import OriginType
 from apps.shared import factories
 from apps.shared.tenancy import LibraryModel, LibraryWriteRefused, library_write
 from apps.taxonomy.models import ChangeType, Flag, SourceKind, Urgency
-from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
 from apps.watch.models import (
     WATCH_MODELS,
     ChangeDocument,
@@ -40,18 +37,11 @@ from apps.watch.models import (
     SourceCheckKind,
 )
 from apps.watch.write import watch_write
+from apps.shared.testing import seed_reference
 
 D = datetime.date
 REASON = "test builder"
 UTC = datetime.UTC
-
-
-def seed_reference() -> None:
-    seed_languages()
-    seed_jurisdictions()
-    seed_library_vocabularies()
-    seed_taxonomy_terms()
-    seed_authorities()
 
 
 class WatchZoneTestCase(TestCase):

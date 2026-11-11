@@ -6,7 +6,7 @@ stored, and the three home tables (`briefing`, `briefing_item`, `calendar_feed`)
 in a response as themselves.
 
 Nothing here is restated from chunk 5. The lead change and a briefing's items are
-`WatchChangeRow`, an urgency is the `LibraryRef` every surface reads a vocabulary row
+`WatchChangeRow`, an urgency is the `VocabRef` every surface reads a vocabulary row
 through, a failed source is `WatchSourceCoverage` and an obligation link is
 `WatchObligationLink`. One shape has one owner (API_DOCUMENTATION §4b), and the home screens
 read the same rows the watch screens do.
@@ -47,9 +47,7 @@ from ninja import Field
 from pydantic import ConfigDict, model_validator
 from pydantic.json_schema import JsonDict
 
-from apps.library.schemas import LibraryRef
 from apps.shared.schemas import CamelSchema, PageQuery, WriteBody
-from apps.taxonomy.schemas import PersonRef, TermRef
 from apps.watch.schemas import (
     CHANGE_ROW_EXAMPLE,
     SOURCE_EXAMPLE,
@@ -59,6 +57,7 @@ from apps.watch.schemas import (
     WatchObligationLink,
     WatchSourceCoverage,
 )
+from apps.shared.schemas import NamedRef, VocabRef
 
 __all__ = ["CamelSchema"]
 
@@ -256,31 +255,39 @@ _ITEM_TYPE = (
 # ---------------------------------------------------------------------------------------
 # The roadmap (HOM-03, FP-03)
 # ---------------------------------------------------------------------------------------
-class HomeRoadmapOwner(CamelSchema):
-    """Who answers for one of the bank's own deadlines on the roadmap."""
+class HomeWorkWho(CamelSchema):
+    """Who a My work reason names or who owns a roadmap item: a person, a team, or both
+    when a person owns the record with their team."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [ROADMAP_OWNER_EXAMPLE]})
-
-    person: PersonRef | None = Field(
-        description="The member who owns the record, as id and name, or null when a team owns it alone."
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [{"person": None, "team": {"key": "retail_compliance", "kind": None, "label": "Retail compliance"}}]
+        }
     )
-    team: TermRef | None = Field(
+
+    person: NamedRef | None = Field(
         description=(
-            "The team that owns the record, as `{key, kind, label}` from the bank's own `team` "
-            "vocabulary, or null when a person owns it alone. Its rows carry no kind, so `kind` "
-            "is null. The bank's admin may add, relabel or retire a team without a deploy, so "
-            "read `GET /vocab/team` for the live set and match on the key, never on the label."
+            "The person named, as id and name, or null when only a team is. On My work it is the "
+            "caller in their own view and whichever member is responsible in a department view, so "
+            "the row can say 'Anna is responsible'; on the roadmap it is the member who owns the record."
+        )
+    )
+    team: VocabRef | None = Field(
+        description=(
+            "The team named, as `{key, kind, label}` from the bank's own `team` "
+            "vocabulary, or null when only a person is. Its rows carry no kind, so `kind` is "
+            "null. The bank's admin may add, relabel or retire a team without a deploy, so read "
+            "`GET /vocab/team` for the live set and match on the key, never on the label."
         )
     )
 
 
-class HomeRoadmapEntity(CamelSchema):
-    """The legal entity an internal roadmap item's date belongs to."""
+# Published as `HomeWorkWho` (review 2026-11-11 B-2); the name the logic modules import.
+HomeRoadmapOwner = HomeWorkWho
 
-    model_config = ConfigDict(json_schema_extra={"examples": [ROADMAP_ENTITY_EXAMPLE]})
 
-    id: uuid.UUID = Field(description="The organisation unit's identifier, as a uuid.", examples=["3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36"])
-    name: str = Field(description="The bank's own name for the unit, for display only; it may change.", examples=["Example Bank AB"])
+# Published as `NamedRef` (review 2026-11-11 B-2); the name the logic modules import.
+HomeRoadmapEntity = NamedRef
 
 
 class HomeRoadmapSubject(CamelSchema):
@@ -310,7 +317,7 @@ class HomeRoadmapSubject(CamelSchema):
         ),
         examples=["2e7b9d41-5c08-4a6f-b3e2-8d1f0a7c6e59"],
     )
-    entity: HomeRoadmapEntity | None = Field(
+    entity: NamedRef | None = Field(
         description=(
             "The legal entity the date belongs to: the entity a review row, a gap or a duty's "
             "occurrence is for, or the entity holding the certificate. Null when the date is "
@@ -411,7 +418,7 @@ class HomeRoadmapItem(CamelSchema):
         ),
         examples=["new"],
     )
-    urgency: LibraryRef | None = Field(
+    urgency: VocabRef | None = Field(
         description=(
             f"{_URGENCY} It starts as the agent's suggestion for every bank and becomes this "
             "bank's own at triage; until then a reader must not report it as the bank's "
@@ -438,7 +445,7 @@ class HomeRoadmapItem(CamelSchema):
         ),
         examples=["c3a6e1f0-7b42-4d8e-95a1-2f0b6c8d4e19"],
     )
-    owner: HomeRoadmapOwner | None = Field(
+    owner: HomeWorkWho | None = Field(
         description=(
             "Who answers for an `internal` item's date, a person, a team or, on a register "
             "entry, both: the entry's first-line owner and owning team, the owner of one legal "
@@ -838,7 +845,7 @@ class HomeUpcomingItem(CamelSchema):
         ),
         examples=["In force"],
     )
-    change_type: LibraryRef = Field(
+    change_type: VocabRef = Field(
         description=(
             "What kind of change this is, as `{key, kind, label}` from the `change_type` "
             "library vocabulary: `proposal` (a draft rule; its dates are proposed, not "
@@ -857,7 +864,7 @@ class HomeUpcomingItem(CamelSchema):
         ),
         examples=["Finansinspektionen"],
     )
-    suggested_urgency: LibraryRef | None = Field(
+    suggested_urgency: VocabRef | None = Field(
         description=(
             f"{_URGENCY} It is the agent's suggestion for the whole library and not any bank's "
             "decision; a reader outside a bank must not present it as one. Null when no "
@@ -1099,30 +1106,6 @@ class HomeWorkQuery(PageQuery, CamelSchema):
         return self
 
 
-class HomeWorkWho(CamelSchema):
-    """Who a reason names: one person or one team, never both and never neither."""
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [{"person": None, "team": {"key": "retail_compliance", "kind": None, "label": "Retail compliance"}}]
-        }
-    )
-
-    person: PersonRef | None = Field(
-        description=(
-            "The person the reason names, as id and name, or null when it names a team. In the "
-            "caller's own view this is the caller; in a department view it is whichever member "
-            "is responsible, so the row can say 'Anna is responsible'."
-        )
-    )
-    team: TermRef | None = Field(
-        description=(
-            "The team the reason names, as `{key, kind, label}` from the bank's own `team` "
-            "vocabulary, or null when it names a person. Its rows carry no kind, so `kind` is "
-            "null. The bank's admin may add, relabel or retire a team without a deploy, so read "
-            "`GET /vocab/team` for the live set and match on the key, never on the label."
-        )
-    )
 
 
 class HomeWorkVia(CamelSchema):
@@ -1219,19 +1202,8 @@ class HomeWorkSubject(CamelSchema):
     )
 
 
-class HomeWorkEntity(CamelSchema):
-    """The legal entity a row's date belongs to, where the date is one entity's own."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [WORK_ITEM_EXAMPLE["entity"]]})
-
-    id: uuid.UUID = Field(
-        description="The organisation unit's identifier, as a uuid.",
-        examples=["3b8e2f10-6c4d-4a95-b7e1-0d2c9f5a8e36"],
-    )
-    name: str = Field(
-        description="The bank's own name for the unit, for display only; it may change.",
-        examples=["Fund AB"],
-    )
+# Published as `NamedRef` (review 2026-11-11 B-2); the name the logic modules import.
+HomeWorkEntity = NamedRef
 
 
 class HomeWorkDate(CamelSchema):
@@ -1289,7 +1261,7 @@ class HomeWorkItem(CamelSchema):
         examples=["tenant_obligation"],
     )
     subject: HomeWorkSubject = Field(description="The record the row is about: its identifier and its name.")
-    entity: HomeWorkEntity | None = Field(
+    entity: NamedRef | None = Field(
         description=(
             "The legal entity whose own date or gap placed the row, or null when the date is "
             "the record's own or there is none."
@@ -1307,7 +1279,7 @@ class HomeWorkItem(CamelSchema):
             "and who. A row reached through a person and through one of their teams carries both."
         )
     )
-    status: TermRef | None = Field(
+    status: VocabRef | None = Field(
         description=(
             "On a `tenant_obligation` row, the register entry's compliance status as `{key, "
             "kind, label}` from the bank's own `compliance_status` vocabulary; null on other "
@@ -1318,7 +1290,7 @@ class HomeWorkItem(CamelSchema):
             "obligation applies is a separate fact and never read from this."
         )
     )
-    urgency: LibraryRef | None = Field(
+    urgency: VocabRef | None = Field(
         description=f"On a `change_case` row, the case's urgency; null on other rows. {_URGENCY}"
     )
     open_change_count: int = Field(

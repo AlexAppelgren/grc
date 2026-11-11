@@ -50,11 +50,12 @@ from apps.collab.schemas import (
     CollabParticipant,
     CollabParticipantInput,
     CollabParticipantPage,
+    CollabParticipantQuery,
+    CollabParticipantSubject,
 )
 from apps.shared import permissions as perms
 from apps.shared.authentication import SessionAuth
 from apps.shared.permissions import requires_permission
-from apps.shared.schemas import PageQuery
 from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, principal, require_any
 from apps.taxonomy.reading import language_order
 
@@ -66,25 +67,10 @@ _NOTIFICATION_ID = (
     "The notification to mark read, as a uuid from `GET /notifications`. Another person's "
     "notification, or one in another bank, answers 404, never 403, so no id can be probed."
 )
-_OBLIGATION_ID = (
-    "The obligation, as a uuid from the inventory. The participants are this bank's own, on its "
-    "register entry for the obligation. An obligation the bank cannot see, such as another "
-    "bank's private one, answers 404, never 403, so no id can be probed."
-)
 _PARTICIPANT_ID = (
-    "The participation, as a uuid from `GET /obligations/{obligationId}/participants`. One on "
-    "another bank's register, one that has already ended and one on another obligation answer "
-    "404, never 403, so no id can be probed."
-)
-_CHANGE_ID = (
-    "The change, as a uuid from the watch feed. It names this bank's own case for the change: a "
-    "bank has exactly one case per change. A change the bank has no case for answers 404, never "
-    "403, the same as an id that does not exist, so no id can be probed."
-)
-_CASE_PARTICIPANT_ID = (
-    "The participation, as a uuid from `GET /changes/{changeId}/participants`. One on another "
-    "bank's case, one that has already ended and one on another case answer 404, never 403, so "
-    "no id can be probed."
+    "The participation, as a uuid from `GET /participants`. One on another bank's record, one "
+    "that has already ended and one on another record answer 404, never 403, so no id can be "
+    "probed."
 )
 _COMMENT_ID = (
     "The comment, as a uuid from `GET /comments`. A comment in another bank answers 404, never "
@@ -386,272 +372,145 @@ def list_my_comments(request: HttpRequest, query: Query[CollabMyCommentQuery]) -
 
 
 # ---------------------------------------------------------------------------------------
-# Participants of a register entry (COL-04, D-18, D-19)
+# Participants of a register entry or a case (COL-04, CAS-03, D-18 to D-20). One route per
+# verb for both subjects (review 2026-11-11 B-14); each subject keeps its own permissions,
+# checked here from participants.READ_PERMISSION and EDIT_PERMISSION before any lookup.
 # ---------------------------------------------------------------------------------------
 @router.get(
-    "/obligations/{obligation_id}/participants",
+    "/participants",
     response=CollabParticipantPage,
     auth=SESSION,
-    operation_id="listObligationParticipants",
+    operation_id="listParticipants",
     by_alias=True,
-    summary="See who takes part in an obligation",
+    summary="See who takes part in an obligation or a case",
 )
-@requires_permission(perms.REGISTER_READ)
 @answers_problems
-def list_obligation_participants(
-    request: HttpRequest, page: Query[PageQuery], obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
-) -> Any:
-    """The people and teams taking part in the bank's register entry for an obligation, in
-    the order they were added, for the obligation page's participants panel.
+def list_participants(request: HttpRequest, query: Query[CollabParticipantQuery]) -> Any:
+    """The people and teams taking part in the bank's register entry for an obligation, or in
+    its case for a change, in the order they were added, for the participants panel; on a case
+    the team participants are also the assessment's contributor teams (D-20).
 
     A read: it changes nothing, writes no audit row and never creates a register entry. Needs
-    a person's session in a bank holding `register.read`; no API key reaches it. Taking part
-    grants nothing, so the list says who is involved and nothing about what they may do.
+    a person's session in a bank holding `register.read` for an obligation or `cases.read`
+    for a change; no API key reaches it. Taking part grants nothing, so the list says who is
+    involved and nothing about what they may do.
 
-    Pages with `limit` and `offset`, 20 rows by default and 100 at most. An obligation nobody
-    takes part in, or that the bank has not worked on yet, is a 200 with an empty `items`.
+    Pages with `limit` and `offset`, 20 rows by default and 100 at most. A record nobody takes
+    part in, or an obligation the bank has not worked on yet, is a 200 with an empty `items`.
 
-    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-    finish enrolling, `permission_denied` without `register.read` (naming it in
-    `requiredPermission`), `not_found` for a platform session and for an obligation the bank
-    cannot see, and `validation_error` for a `limit` outside 1 to 100.
+    Errors: `permission_denied` (403) without the subject's read permission, named in
+    `requiredPermission`; `enrolment_only` (403) for a session that may only finish enrolling;
+    `not_found` (404) for a platform session, for an obligation the bank cannot see and for a
+    change the bank has no case for.
     """
+    # Ungated by design: logic-gate (register.read for an obligation, cases.read for a change).
+    require_any(request, participants.READ_PERMISSION[query.subject_type])
     tenant = caller_tenant(request)
     caller_user(request)
-    return participants.list_participants(
-        obligation_id=obligation_id,
-        order=language_order(request, tenant=tenant),
-        limit=page.limit,
-        offset=page.offset,
-    )
+    order = language_order(request, tenant=tenant)
+    if query.subject_type == "obligation":
+        return participants.list_participants(obligation_id=query.subject_id, order=order, limit=query.limit, offset=query.offset)
+    return participants.list_case_participants(tenant=tenant, change_id=query.subject_id, order=order, limit=query.limit, offset=query.offset)
 
 
 @router.post(
-    "/obligations/{obligation_id}/participants",
+    "/participants",
     response={201: CollabParticipant},
     auth=SESSION,
-    operation_id="addObligationParticipant",
+    operation_id="addParticipant",
     by_alias=True,
-    summary="Add a person or a team to an obligation",
+    summary="Add a person or a team to an obligation or a case",
 )
-@requires_permission(perms.REGISTER_EDIT)
 @answers_problems
-def add_obligation_participant(
-    request: HttpRequest, body: CollabParticipantInput, obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID)
-) -> Any:
-    """Name a person or a team on the bank's register entry for an obligation, so it reaches
-    their My work and their notifications. It grants them nothing: a participant still gets
-    403 on anything their role lacks.
+def add_participant(request: HttpRequest, body: CollabParticipantInput) -> Any:
+    """Name a person or a team on the bank's register entry for an obligation or on its case
+    for a change, so it reaches their My work and their notifications. Adding a team to a
+    case is how the assessment records a contributor team (D-20): one call per team, never a
+    list, so a form loaded earlier cannot undo someone else's add. It grants them nothing: a
+    participant still gets 403 on anything their role lacks.
 
-    Needs a person's session in a bank holding `register.edit`; no API key reaches it, and no
-    step-up is asked, because taking part approves nothing. The first add on an obligation the
-    bank has not worked on creates its register entry, with its own audit event. Records one
-    audit event holding the participation's, the person's or the team's ids and never a name.
-    A shared obligation lands on this bank's own entry and changes nothing another bank sees.
-    Answers 201 with the participant.
+    Needs a person's session in a bank holding `register.edit` for an obligation or
+    `cases.contribute` for a change; no API key reaches it, and no step-up is asked, because
+    taking part approves nothing. The first add on an obligation the bank has not worked on
+    creates its register entry, with its own audit event. Records one audit event holding the
+    participation's, the person's or the team's ids and never a name. A shared record lands on
+    this bank's own entry or case and changes nothing another bank sees; a case's `version`
+    is not raised. Answers 201 with the participant.
 
-    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-    finish enrolling, `permission_denied` without `register.edit` (naming it in
-    `requiredPermission`), `not_found` for a platform session and for an obligation the bank
-    cannot see, `validation_error` for a body naming both or neither of `userId` and
-    `teamKey`, or a field it does not name, `unknown_member` for a person who is not an active
-    member of this bank, whether from another bank, deactivated or unknown, `unknown_key` for
-    a team the bank has no active row for, `participant_cannot_read` for a member whose roles
-    cannot read the register, `already_participant` (409) when they already take part, and
-    `too_many_participants` when the entry already holds as many as the deployment allows (50
-    unless configured otherwise).
+    Errors: `permission_denied` (403) without the subject's edit permission, named in
+    `requiredPermission`; `enrolment_only` (403) for a session that may only finish enrolling;
+    `not_found` (404) for a platform session, for an obligation the bank cannot see and for a
+    change the bank has no case for; `invalid_transition` (409) for a case that is closed or
+    dismissed; `validation_error` (422) for a body naming both or neither of `userId` and
+    `teamKey`, or a field it does not name; `unknown_member` (422) for a person who is not an
+    active member of this bank, whether from another bank, deactivated or unknown;
+    `unknown_key` (422) for a team the bank has no active row for; `participant_cannot_read`
+    (422) for a member whose roles cannot read the register or cases; `already_participant`
+    (409) when they already take part; `too_many_participants` (422) when the record already
+    holds as many as the deployment allows (50 unless configured otherwise).
     """
+    # Ungated by design: logic-gate (register.edit for an obligation, cases.contribute for a change).
+    require_any(request, participants.EDIT_PERMISSION[body.subject_type])
     tenant = caller_tenant(request)
     user = caller_user(request)
-    return 201, participants.add_participant(
-        tenant_id=tenant.id,
-        obligation_id=obligation_id,
-        user_id=body.user_id,
-        team_key=body.team_key,
-        caller_id=user.id,
-        actor=actor_for(request, user),
-        order=language_order(request, tenant=tenant),
-    )
-
-
-@router.delete(
-    "/obligations/{obligation_id}/participants/{participant_id}",
-    response={204: None},
-    auth=SESSION,
-    operation_id="removeObligationParticipant",
-    by_alias=True,
-    summary="Remove a participant, or leave an obligation",
-)
-@requires_permission(perms.REGISTER_READ)
-@answers_problems
-def remove_obligation_participant(
-    request: HttpRequest,
-    obligation_id: uuid.UUID = Path(..., description=_OBLIGATION_ID),
-    participant_id: uuid.UUID = Path(..., description=_PARTICIPANT_ID),
-) -> Any:
-    """End one participation on the bank's register entry for an obligation: "Leave" on the
-    caller's own row, or "Remove" on anyone else's.
-
-    Needs a person's session in a bank holding `register.read`, which every participant held
-    when they were added. With it, a person may always leave their own participation, and
-    the audit event is `participant.left`; removing anyone else, a team included, also needs
-    `register.edit`, and the audit event is `participant.removed`. Either holds ids only. The
-    participation is ended with its time and who ended it, never deleted, so the record's
-    history still shows who took part until when. No API key reaches it and no step-up is
-    asked. Answers 204 with no body.
-
-    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-    finish enrolling, `permission_denied` without `register.read`, or for removing someone
-    else without `register.edit` (naming the permission in `requiredPermission`), and `not_found` for a platform session, for an
-    obligation the bank cannot see and for a participation that is not live on this bank's
-    entry for it.
-    """
-    # register.edit for anyone else's row is checked by the logic on the row.
-    tenant = caller_tenant(request)
-    user = caller_user(request)
-    participants.remove_participant(
-        tenant_id=tenant.id,
-        obligation_id=obligation_id,
-        participant_id=participant_id,
-        caller_id=user.id,
-        actor=actor_for(request, user),
-        can_edit=principal(request).has_permission(perms.REGISTER_EDIT),
-    )
-    return 204, None
-
-
-# ---------------------------------------------------------------------------------------
-# Participants of a case (COL-04, CAS-03, D-18 to D-20; c9-case-participants)
-# ---------------------------------------------------------------------------------------
-@router.get(
-    "/changes/{change_id}/participants",
-    response=CollabParticipantPage,
-    auth=SESSION,
-    operation_id="listCaseParticipants",
-    by_alias=True,
-    summary="See who takes part in a case",
-)
-@requires_permission(perms.CASES_READ)
-@answers_problems
-def list_case_participants(
-    request: HttpRequest, page: Query[PageQuery], change_id: uuid.UUID = Path(..., description=_CHANGE_ID)
-) -> Any:
-    """The people and teams taking part in the bank's case for a change, in the order they
-    were added, for the case's participants and the assessment's contributor teams, which are
-    the team participants (D-20).
-
-    A read: it changes nothing and writes no audit row. Needs a person's session in a bank
-    holding `cases.read`; no API key reaches it. Taking part grants nothing, so the list says
-    who is involved and nothing about what they may do.
-
-    Pages with `limit` and `offset`, 20 rows by default and 100 at most. A case nobody takes
-    part in is a 200 with an empty `items`.
-
-    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-    finish enrolling, `permission_denied` without `cases.read` (naming it in
-    `requiredPermission`), `not_found` for a platform session and for a change the bank has
-    no case for, and `validation_error` for a `limit` outside 1 to 100.
-    """
-    tenant = caller_tenant(request)
-    caller_user(request)
-    return participants.list_case_participants(
-        tenant=tenant,
-        change_id=change_id,
-        order=language_order(request, tenant=tenant),
-        limit=page.limit,
-        offset=page.offset,
-    )
-
-
-@router.post(
-    "/changes/{change_id}/participants",
-    response={201: CollabParticipant},
-    auth=SESSION,
-    operation_id="addCaseParticipant",
-    by_alias=True,
-    summary="Add a person or a team to a case",
-)
-@requires_permission(perms.CASES_CONTRIBUTE)
-@answers_problems
-def add_case_participant(
-    request: HttpRequest, body: CollabParticipantInput, change_id: uuid.UUID = Path(..., description=_CHANGE_ID)
-) -> Any:
-    """Name a person or a team on the bank's case for a change, so it reaches their My work
-    and their notifications. Adding a team is how the assessment records a contributor team
-    (D-20): one call per team, never a list, so a form loaded earlier cannot undo someone
-    else's add. It grants them nothing: a participant still gets 403 on anything their role
-    lacks.
-
-    Needs a person's session in a bank holding `cases.contribute`; no API key reaches it, and
-    no step-up is asked, because taking part approves nothing. Records one audit event on the
-    case holding the participation's, the person's or the team's ids and never a name. A
-    shared change lands on this bank's own case and changes nothing another bank sees. The
-    case's `version` is not raised. Answers 201 with the participant.
-
-    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-    finish enrolling, `permission_denied` without `cases.contribute` (naming it in
-    `requiredPermission`), `not_found` for a platform session and for a change the bank has
-    no case for, `invalid_transition` (409) for a case that is closed or dismissed,
-    `validation_error` for a body naming both or neither of `userId` and `teamKey`, or a
-    field it does not name, `unknown_member` for a person who is not an active member of this
-    bank, whether from another bank, deactivated or unknown, `unknown_key` for a team the bank
-    has no active row for, `participant_cannot_read` for a member whose roles cannot read
-    cases, `already_participant` (409) when they already take part, and
-    `too_many_participants` when the case already holds as many as the deployment allows (50
-    unless configured otherwise).
-    """
-    tenant = caller_tenant(request)
-    user = caller_user(request)
+    order = language_order(request, tenant=tenant)
+    if body.subject_type == "obligation":
+        return 201, participants.add_participant(
+            tenant_id=tenant.id, obligation_id=body.subject_id, user_id=body.user_id, team_key=body.team_key,
+            caller_id=user.id, actor=actor_for(request, user), order=order,
+        )
     return 201, participants.add_case_participant(
-        tenant=tenant,
-        change_id=change_id,
-        user_id=body.user_id,
-        team_key=body.team_key,
-        caller_id=user.id,
-        actor=actor_for(request, user),
-        order=language_order(request, tenant=tenant),
+        tenant=tenant, change_id=body.subject_id, user_id=body.user_id, team_key=body.team_key,
+        caller_id=user.id, actor=actor_for(request, user), order=order,
     )
 
 
 @router.delete(
-    "/changes/{change_id}/participants/{participant_id}",
+    "/participants/{participant_id}",
     response={204: None},
     auth=SESSION,
-    operation_id="removeCaseParticipant",
+    operation_id="removeParticipant",
     by_alias=True,
-    summary="Remove a participant, or leave a case",
+    summary="Remove a participant, or leave an obligation or a case",
 )
 @answers_problems
-def remove_case_participant(
-    request: HttpRequest,
-    change_id: uuid.UUID = Path(..., description=_CHANGE_ID),
-    participant_id: uuid.UUID = Path(..., description=_CASE_PARTICIPANT_ID),
+def remove_participant(
+    request: HttpRequest, query: Query[CollabParticipantSubject], participant_id: uuid.UUID = Path(..., description=_PARTICIPANT_ID)
 ) -> Any:
-    """End one participation on the bank's case for a change: "Leave" on the caller's own
-    row, or "Remove" on anyone else's, a contributor team included.
+    """End one participation on the bank's register entry for an obligation or its case for a
+    change: "Leave" on the caller's own row, or "Remove" on anyone else's, a contributor team
+    included.
 
-    Any person's session in a bank may leave their own participation, whatever their role,
-    and the audit event is `participant.left`; removing anyone else needs `cases.contribute`,
-    and the audit event is `participant.removed`. Either holds ids only. The participation is
-    ended with its time and who ended it, never deleted, so the case file still shows who took
-    part until when; it may end on a closed case too. No API key reaches it and no step-up is
-    asked. Answers 204 with no body.
+    On an obligation it needs `register.read`, which every participant held when they were
+    added; on a case any person's session in a bank, whatever their role. With that, a person
+    may always leave their own participation, and the audit event is `participant.left`;
+    removing anyone else also needs `register.edit` on an obligation or `cases.contribute` on
+    a case, and the audit event is `participant.removed`. Either holds ids only. The
+    participation is ended with its time and who ended it, never deleted, so the record's
+    history still shows who took part until when; it may end on a closed case too. No API key
+    reaches it and no step-up is asked. Answers 204 with no body.
 
-    Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
-    finish enrolling, `permission_denied` for removing someone else without
-    `cases.contribute` (naming it in `requiredPermission`), and `not_found` for a platform
-    session, for a change the bank has no case for and for a participation that is not live
-    on this bank's case for it.
+    Errors: `permission_denied` (403) without `register.read` on an obligation, or for removing
+    someone else without the subject's edit permission, named in `requiredPermission`;
+    `enrolment_only` (403) for a session that may only finish enrolling; `not_found` (404) for
+    a platform session, for an obligation the bank cannot see, for a change the bank has no
+    case for and for a participation that is not live on this bank's record.
     """
-    # Ungated by design: logic-gate (cases.contribute, or the person on their own row).
+    # Ungated by design: logic-gate (register.read on an obligation; the edit permission, or
+    # the person on their own row, is checked by the logic on the row).
+    if query.subject_type == "obligation":
+        require_any(request, participants.READ_PERMISSION["obligation"])
     tenant = caller_tenant(request)
     user = caller_user(request)
-    participants.remove_case_participant(
-        tenant=tenant,
-        change_id=change_id,
-        participant_id=participant_id,
-        caller_id=user.id,
-        actor=actor_for(request, user),
-        can_contribute=principal(request).has_permission(perms.CASES_CONTRIBUTE),
-    )
+    can_edit = principal(request).has_permission(participants.EDIT_PERMISSION[query.subject_type])
+    if query.subject_type == "obligation":
+        participants.remove_participant(
+            tenant_id=tenant.id, obligation_id=query.subject_id, participant_id=participant_id,
+            caller_id=user.id, actor=actor_for(request, user), can_edit=can_edit,
+        )
+    else:
+        participants.remove_case_participant(
+            tenant=tenant, change_id=query.subject_id, participant_id=participant_id,
+            caller_id=user.id, actor=actor_for(request, user), can_contribute=can_edit,
+        )
     return 204, None

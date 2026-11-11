@@ -5,6 +5,7 @@ import { Component, createContext, useContext, type ErrorInfo, type ReactNode } 
 
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { unlocks } from '@/shared/navigation/registry';
+import { humaniseKey } from '@/shared/utils/format';
 
 // The client gate (playbook 6.2). `permissions` is the signed-in user's
 // permission list; `null` means no session is known yet. The gate is UX
@@ -50,11 +51,6 @@ export function forbiddenFrom(error: unknown): Forbidden | null {
   };
 }
 
-// `cases.signoff` reads "cases signoff": the grant name, not a role name.
-export function humanisePermission(permission: string): string {
-  return permission.replace(/[._]/g, ' ');
-}
-
 export function RestrictedScreen({ detail, code, requiredPermission }: Partial<Forbidden>) {
   const t = useT();
   return (
@@ -62,7 +58,7 @@ export function RestrictedScreen({ detail, code, requiredPermission }: Partial<F
       <h1>{t('restricted.title')}</h1>
       <p className="mt-3 text-muted">{detail && detail.length > 0 ? detail : t('restricted.body')}</p>
       {requiredPermission !== undefined ? (
-        <p className="mt-3 text-meta text-muted">{t('restricted.needs', { permission: humanisePermission(requiredPermission) })}</p>
+        <p className="mt-3 text-meta text-muted">{t('restricted.needs', { permission: humaniseKey(requiredPermission) })}</p>
       ) : null}
       {code !== undefined ? (
         <p className="mt-1 font-mono text-meta text-muted">{t('restricted.reference', { code })}</p>

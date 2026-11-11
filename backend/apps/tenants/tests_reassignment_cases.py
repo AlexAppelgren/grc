@@ -142,11 +142,12 @@ class CaseWorkRemoval(TestCase):
         self.assertEqual({row["kind"]: row["count"] for row in response.json()["items"]}, CASE_KINDS)
         self.assertEqual(self.snapshot(), before)
 
-    def test_a_plain_removal_is_refused_with_the_case_kinds_counted(self) -> None:
+    def test_a_removal_naming_no_owner_is_refused_with_the_case_kinds_counted(self) -> None:
         before = self.snapshot()
-        response = self.client.delete(f"{V1}/tenant/members/{self.erik.id}", **self.headers())
+        response = self.remove([])
         self.assertEqual((response.status_code, response.json()["code"]), (422, "reassignment_required"))
-        self.assertEqual({row["field"]: row["count"] for row in response.json()["errors"]}, CASE_KINDS)
+        owned = {kind: count for kind, count in CASE_KINDS.items() if kind not in ("participation", "team_membership")}
+        self.assertEqual({row["field"]: row["count"] for row in response.json()["errors"]}, owned)
         self.assertEqual(self.snapshot(), before)
 
     def test_the_confirm_moves_each_item_with_one_audit_event_and_leaves_the_teams_alone(self) -> None:

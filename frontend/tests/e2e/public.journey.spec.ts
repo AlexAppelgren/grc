@@ -3,11 +3,26 @@ import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
 import { DEMO_FRAME_NAME } from '@/features/demo/frame';
 
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, BACKEND_URL, LOGINS, signInAs, signOut } from './support/passkeys';
+import { allowFreshContext, BACKEND_URL, LOGINS, REFRESH_COOKIE, signInAs, signOut } from './support/passkeys';
 
 // The public page opens on the bleqq entry, the one h1 (design/public/, the Lexicon direction).
 const HEADWORD = { level: 1, name: 'bleqq', exact: true } as const;
 const GREEN = 'rgb(10, 58, 42)';
+// The web app's content policy (next.config.ts, review 2026-11-11 S-12): everything from
+// its own origin, the API's calls to the API, and no frame, plugin or form elsewhere.
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  `connect-src 'self' ${new URL(BACKEND_URL).origin}`,
+  "frame-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
 
 // The public page (design/public/): what a visitor who is not signed in sees at
 // the front door, and the way from it into the passkey sign-in flow. The page
@@ -29,6 +44,7 @@ test.describe('public page', () => {
     allowFreshContext(apiGuard);
     await page.goto('/');
     await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page).toHaveTitle('bleqq | Agentic Compliance');
     await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
     await expect(page.locator('[data-ink]')).toBeVisible();
     await expect(page.getByText("One inventory of your bank's obligations.")).toBeVisible();
@@ -47,7 +63,7 @@ test.describe('public page', () => {
     await signInAs(page, LOGINS.reader);
     // The refresh cookie is scoped to the auth routes (REFRESH_COOKIE_PATH).
     const authUrl = `${BACKEND_URL}/api/v1/auth/refresh`;
-    const refresh = (await page.context().cookies(authUrl)).find((cookie) => cookie.name === 'cw_refresh');
+    const refresh = (await page.context().cookies(authUrl)).find((cookie) => cookie.name === REFRESH_COOKIE);
     expect(refresh, 'the refresh cookie a signed-in browser holds').toBeDefined();
 
     await signOut(page);
@@ -55,8 +71,8 @@ test.describe('public page', () => {
 
     // The browser no longer holds the cookie, and a copy taken before sign-out
     // is dead too: the session row is revoked, and every access token checks it.
-    expect((await page.context().cookies(authUrl)).some((cookie) => cookie.name === 'cw_refresh')).toBe(false);
-    const replay = await page.request.post(authUrl, { headers: { Cookie: `cw_refresh=${refresh?.value ?? ''}` } });
+    expect((await page.context().cookies(authUrl)).some((cookie) => cookie.name === REFRESH_COOKIE)).toBe(false);
+    const replay = await page.request.post(authUrl, { headers: { Cookie: `${REFRESH_COOKIE}=${refresh?.value ?? ''}` } });
     expect(replay.status()).toBe(401);
 
     // Back at the front door nothing signs the person in again.
@@ -81,7 +97,7 @@ test.describe('public page', () => {
     const bar = page.getByRole('banner');
     const entry = page.locator('section#bleqq');
     for (const [secondary, main] of [
-      [bar.getByRole('link', { name: 'Sign in' }), bar.getByRole('link', { name: 'Request access' })],
+      [bar.getByRole('link', { name: 'Request access' }), bar.getByRole('link', { name: 'Sign in' })],
       [entry.getByRole('link', { name: 'Request access' }), entry.getByRole('link', { name: 'Try out our demo' })],
     ] as const) {
       await expect(secondary).toBeVisible();
@@ -180,7 +196,7 @@ test.describe('public page', () => {
   test('no other site can frame the app, while its own public page frames the demo', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     const response = await page.goto('/welcome');
-    expect(response?.headers()['content-security-policy']).toBe("frame-ancestors 'self'");
+    expect(response?.headers()['content-security-policy']).toBe(CONTENT_SECURITY_POLICY);
     expect(response?.headers()['x-frame-options']).toBe('SAMEORIGIN');
     const app = page.url();
 
@@ -196,8 +212,9 @@ test.describe('public page', () => {
 // security headers.
 test.describe('site trust', () => {
   const HEADERS = {
-    'content-security-policy': "frame-ancestors 'self'",
+    'content-security-policy': CONTENT_SECURITY_POLICY,
     'x-frame-options': 'SAMEORIGIN',
+    'cross-origin-opener-policy': 'same-origin',
     'strict-transport-security': 'max-age=31536000',
     'x-content-type-options': 'nosniff',
     'referrer-policy': 'strict-origin-when-cross-origin',
@@ -318,7 +335,7 @@ test.describe('the public site and the app on hosts of their own', () => {
   });
 
   test('the app host keeps the app, marks every page noindex, and sends the public page to the public host', async ({ request }) => {
-    for (const path of ['/', '/sign-in', '/enrol', '/inventory']) {
+    for (const path of ['/sign-in', '/enrol', '/inventory']) {
       const response = await request.get(path, { maxRedirects: 0 });
       expect(response.status(), path).toBe(200);
       expect(response.headers()['x-robots-tag'], path).toBe('noindex');
@@ -326,6 +343,36 @@ test.describe('the public site and the app on hosts of their own', () => {
     const welcome = await request.get('/welcome', { maxRedirects: 0 });
     expect(welcome.status()).toBe(301);
     expect(welcome.headers().location).toBe(`${PUBLIC}/`);
+  });
+
+  // A bank's filter let the public host through and rated the app host Suspicious: the public host answered a
+  // whole page, the app host's front door the session gate's waiting text. So the app host answers a visitor
+  // with the same page, and only a browser that says it holds a session gets the app there.
+  test('the front door of the app host is the public page for a visitor and a crawler, and the app for a signed-in browser', async ({ request }) => {
+    const visitor = await request.get('/', { maxRedirects: 0 });
+    expect(visitor.status()).toBe(200);
+    const html = await visitor.text();
+    for (const text of ['>bleqq</h1>', 'To check each regulator and law gazette on a schedule, in the language it publishes in.', 'Access is by invitation.']) expect(html).toContain(text);
+    expect(html).not.toContain('Loading your session');
+    expect(html).toMatch(/<meta name="robots" content="index, follow"/);
+    // The page's own address is the public host's, and no shared cache may keep an answer that turns on the visitor.
+    expect(visitor.headers().link).toBe(`<${PUBLIC}/>; rel="canonical"`);
+    expect(visitor.headers()['x-robots-tag']).toBeUndefined();
+    expect(visitor.headers()['cache-control']).toBe('private, no-cache');
+
+    // The marker is a hint and no proof: with it the app loads, and the session gate asks the API as before.
+    const signedIn = await request.get('/', { maxRedirects: 0, headers: { Cookie: 'cw_signed_in=1' } });
+    expect(signedIn.status()).toBe(200);
+    const shell = await signedIn.text();
+    expect(shell).toContain('Loading your session');
+    expect(shell).not.toContain('>bleqq</h1>');
+    expect(signedIn.headers()['x-robots-tag']).toBe('noindex');
+    expect(signedIn.headers()['cache-control']).toBe('private, no-cache');
+
+    // The demo's frame, and the app's own fetches, still get the app at / without the marker.
+    const frame = await request.get('/', { maxRedirects: 0, headers: { 'Sec-Fetch-Dest': 'iframe' } });
+    expect(await frame.text()).toContain('Loading your session');
+    expect(frame.headers()['x-robots-tag']).toBe('noindex');
   });
 
   test('the sign-in and enrolment pages say what the service is and who runs it before any script runs', async ({ browser }) => {
@@ -352,6 +399,15 @@ test.describe('the public site and the app on hosts of their own', () => {
 
   test('a visitor goes from the public host to sign in on the app host, and back', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
+    // Nothing either host's pages ask for may be refused. The app's router once fetched the public page's address
+    // ahead of a click on Back, and again to send a visitor without a session on; on the app host that address
+    // moves to the public host, another origin, so the browser refused the answer each time. An abort is only a
+    // request the next page load cut short.
+    const refused: string[] = [];
+    page.on('requestfailed', (request) => {
+      const reason = request.failure()?.errorText ?? '';
+      if (reason !== 'net::ERR_ABORTED') refused.push(`${request.url()} ${reason}`);
+    });
     await page.goto(`${PUBLIC}/`);
     await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
     await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click();
@@ -366,18 +422,33 @@ test.describe('the public site and the app on hosts of their own', () => {
     await expect(page).toHaveURL(`${PUBLIC}/`);
     await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
 
-    // Without a session the app host's front door goes on to the public host, as it goes to /welcome today.
+    // Without a session the app host's front door is the public page itself, and its Sign in stays on the app host.
     await page.goto('/');
-    await expect(page).toHaveURL(`${PUBLIC}/`);
+    await expect(page).toHaveURL(`${APP}/`);
     await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
+    await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL(`${APP}/sign-in`);
+
+    // The sign-in page at rest asks for nothing that is refused either: its back link is not fetched ahead.
+    await page.goto('/sign-in');
+    await expect(page.getByRole('link', { name: '← Back' })).toHaveAttribute('href', '/welcome');
+    await page.waitForLoadState('networkidle');
+    expect(refused).toEqual([]);
   });
 
-  test('a passkey signs in on the app host', async ({ page, apiGuard }) => {
+  test('a passkey signs in on the app host', async ({ page, context, apiGuard }) => {
     allowFreshContext(apiGuard);
     await signInAs(page, LOGINS.reader);
     expect(new URL(page.url()).origin).toBe(APP);
     await page.reload();
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+
+    // Signing in left the marker, so a page load of the front door is the app and never the public page.
+    expect((await context.cookies(APP)).map((cookie) => cookie.name)).toContain('cw_signed_in');
+    await page.goto('/');
+    await expect(page).toHaveURL(`${APP}/`);
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+    await expect(page.getByRole('heading', HEADWORD)).toBeHidden();
   });
 
   test('the demo runs the app in its frame on the public host', async ({ page, apiGuard }) => {

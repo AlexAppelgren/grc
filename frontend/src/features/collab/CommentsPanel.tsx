@@ -77,7 +77,7 @@ export function CommentsPanel({ subject }: { subject: CommentSubject }) {
       <div role="alert" className="flex flex-wrap items-center gap-2">
         <span className="text-muted">{t('collab.comments.loadFailed')}</span>
         <Button variant="outline" size="small" onClick={() => void comments.refetch()}>
-          {t('collab.comments.tryAgain')}
+          {t('common.tryAgain')}
         </Button>
       </div>
     );
@@ -95,7 +95,7 @@ export function CommentsPanel({ subject }: { subject: CommentSubject }) {
         )}
         {comments.hasNextPage ? (
           <Button variant="outline" size="small" className="mt-3" disabled={comments.isFetchingNextPage} onClick={() => void comments.fetchNextPage()}>
-            {t('collab.comments.showMore')}
+            {t('common.showMore')}
           </Button>
         ) : null}
         {canWrite ? <Composer subject={subject} onPosted={onPosted} /> : <p className="mt-4 text-muted">{t('collab.comments.readOnly')}</p>}
@@ -142,7 +142,7 @@ function CommentItem({ comment, undelivered }: { comment: Comment; undelivered: 
       <div className="order-3 ml-auto flex gap-1 md:order-2">
         {comment.canEdit ? (
           <Button variant="ghost" size="small" onClick={startEdit}>
-            {t('collab.comments.edit')}
+            {t('common.edit')}
           </Button>
         ) : null}
         {comment.canDelete ? (
@@ -166,14 +166,14 @@ function CommentItem({ comment, undelivered }: { comment: Comment; undelivered: 
   } else if (mode === 'edit') {
     body = (
       <form onSubmit={save} className="grid gap-2">
-        <TextArea id={editId} aria-label={t('collab.comments.edit')} className="field-sizing-content" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} />
+        <TextArea id={editId} aria-label={t('common.edit')} className="field-sizing-content" value={draft} autoFocus onChange={(e) => setDraft(e.target.value)} />
         <ProblemAlert error={edit.error} codes={{ edit_window_closed: t('collab.comments.editClosed'), [NETWORK_PROBLEM_CODE]: t('collab.comments.postFailed') }} />
         <div className="flex justify-end gap-2">
           <Button variant="outline" size="small" onClick={() => setMode('view')}>
-            {t('collab.comments.cancel')}
+            {t('common.cancel')}
           </Button>
           <Button type="submit" size="small" disabled={draft.trim() === '' || edit.isPending}>
-            {t('collab.comments.save')}
+            {t('common.save')}
           </Button>
         </div>
       </form>
@@ -197,7 +197,7 @@ function CommentItem({ comment, undelivered }: { comment: Comment; undelivered: 
         <div role="group" aria-label={t('collab.comments.deleteConfirm')} className="mt-2 flex flex-wrap items-center justify-end gap-2">
           <span className="mr-auto">{t('collab.comments.deleteConfirm')}</span>
           <Button variant="outline" size="small" onClick={() => setMode('view')}>
-            {t('collab.comments.cancel')}
+            {t('common.cancel')}
           </Button>
           <Button variant="danger" size="small" disabled={remove.isPending} onClick={() => remove.mutate(comment.id, { onSuccess: () => setMode('view') })}>
             {t('collab.comments.delete')}

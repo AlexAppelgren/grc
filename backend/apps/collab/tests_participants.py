@@ -1,10 +1,10 @@
-"""The participant table and its logic (collab 0002, `collab/participants.py`; COL-04, D-18,
+"""The participant table and its logic (collab 0002, squashed into 0001; `collab/participants.py`; COL-04, D-18,
 D-19). The scenarios themselves are COL-S6 to COL-S8 in tests_scenarios.py; these pin what
 they rest on.
 
 The table: the database refuses every reference to another bank's register entry, case,
 team or person, and anyone who is not a member (walking the migration's own
-`COMPOSITE_KEYS`, so a key added there is proved here without a line of its own); a row
+`PARTICIPANT_KEYS`, so a key added there is proved here without a line of its own); a row
 names exactly one subject and exactly one participant; one live row per subject and
 participant; a row is never deleted.
 
@@ -20,6 +20,7 @@ replaced by `true` the check test named both constraints."""
 from __future__ import annotations
 
 import importlib
+import json
 import uuid
 from typing import Any
 
@@ -39,12 +40,13 @@ from apps.shared import factories, tenancy
 from apps.shared import permissions as perms
 from apps.shared.authentication import PrincipalKind
 from apps.shared.models import AuditEvent, Tenant
-from apps.shared.testing import ScenarioTestCase, sign_in
+from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, ScenarioTestCase, sign_in, stub_session, user_principal
 from apps.shared.routes import iter_operations
 from apps.watch import testing as watch_build
 from config.api import api
+from apps.collab.testing import PARTICIPANTS, participant_body, participant_url, participants_url
 
-COMPOSITE_KEYS = importlib.import_module("apps.collab.migrations.0002_participant").COMPOSITE_KEYS
+COMPOSITE_KEYS = importlib.import_module("apps.collab.migrations.0001_squashed_0002_schema").PARTICIPANT_KEYS
 
 
 class Bank:
@@ -148,7 +150,7 @@ class ParticipantLogic(ScenarioTestCase):
         cls.officer = factories.member_user(cls.tenant, roles=("compliance_officer",))
         cls.reader = factories.member_user(cls.tenant)
         cls.team = collab_testing.team(cls.tenant, "legal", "Legal")
-        cls.url = f"/api/v1/obligations/{cls.obligation.id}/participants"
+        cls.url = participants_url("obligation", cls.obligation.id)
 
     def setUp(self) -> None:
         self.officer_headers = sign_in(self.officer, tenant=self.tenant)
@@ -161,10 +163,9 @@ class ParticipantLogic(ScenarioTestCase):
     def test_a_read_never_creates_an_entry_and_a_refused_add_leaves_none(self) -> None:
         listed = self.client.get(self.url, **self.officer_headers)
         self.assertEqual((listed.status_code, listed.json()), (200, {"items": [], "total": 0}))
-        refused = self.client.post(self.url, {"teamKey": "no-such-team"}, content_type="application/json", **self.officer_headers)
+        refused = self.client.post(PARTICIPANTS, participant_body(self.url, {"teamKey": "no-such-team"}), content_type="application/json", **self.officer_headers)
         self.assertEqual((refused.status_code, refused.json()["code"]), (422, "unknown_key"))
-        both = self.client.post(
-            self.url, {"teamKey": "legal", "userId": str(self.reader.id)}, content_type="application/json", **self.officer_headers
+        both = self.client.post(PARTICIPANTS, participant_body(self.url, {"teamKey": "legal", "userId": str(self.reader.id)}), content_type="application/json", **self.officer_headers
         )
         self.assertEqual((both.status_code, both.json()["code"]), (422, "validation_error"))
         self.assertEqual(self.entries(), 0)
@@ -172,7 +173,7 @@ class ParticipantLogic(ScenarioTestCase):
         self.assertFalse(AuditEvent.objects.filter(action__startswith="participant.").exists())
 
     def test_a_team_is_added_without_a_read_check_and_reads_back_with_its_label(self) -> None:
-        added = self.client.post(self.url, {"teamKey": "legal"}, content_type="application/json", **self.officer_headers)
+        added = self.client.post(PARTICIPANTS, participant_body(self.url, {"teamKey": "legal"}), content_type="application/json", **self.officer_headers)
         self.assertEqual(added.status_code, 201, added.content)
         body = added.json()
         self.assertEqual(
@@ -184,46 +185,67 @@ class ParticipantLogic(ScenarioTestCase):
 
     def test_an_ended_participation_leaves_the_list_and_may_be_added_again(self) -> None:
         payload = {"userId": str(self.reader.id)}
-        first = self.client.post(self.url, payload, content_type="application/json", **self.officer_headers).json()
-        removed = self.client.delete(f"{self.url}/{first['id']}", **self.officer_headers)
+        first = self.client.post(PARTICIPANTS, participant_body(self.url, payload), content_type="application/json", **self.officer_headers).json()
+        removed = self.client.delete(participant_url(self.url, first['id']), **self.officer_headers)
         self.assertEqual(removed.status_code, 204)
         self.activate(self.tenant)
         self.assertEqual(AuditEvent.objects.filter(action="participant.removed").count(), 1)
         self.assertEqual(self.client.get(self.url, **self.officer_headers).json(), {"items": [], "total": 0})
-        again = self.client.delete(f"{self.url}/{first['id']}", **self.officer_headers)
+        again = self.client.delete(participant_url(self.url, first['id']), **self.officer_headers)
         self.assertEqual(again.status_code, 404)
-        second = self.client.post(self.url, payload, content_type="application/json", **self.officer_headers)
+        second = self.client.post(PARTICIPANTS, participant_body(self.url, payload), content_type="application/json", **self.officer_headers)
         self.assertEqual(second.status_code, 201)
         self.assertNotEqual(second.json()["id"], first["id"])
 
     def test_a_participant_on_another_obligation_is_not_found_here(self) -> None:
         other = collab_testing.obligation()
-        added = self.client.post(
-            f"/api/v1/obligations/{other.id}/participants", {"userId": str(self.reader.id)}, content_type="application/json", **self.officer_headers
+        added = self.client.post(PARTICIPANTS, participant_body(participants_url("obligation", other.id), {"userId": str(self.reader.id)}), content_type="application/json", **self.officer_headers
         ).json()
-        response = self.client.delete(f"{self.url}/{added['id']}", **self.officer_headers)
+        response = self.client.delete(participant_url(self.url, added['id']), **self.officer_headers)
         self.assertEqual(response.status_code, 404)
 
 
 class ParticipantRouteGates(TestCase):
-    def test_reading_and_leaving_need_register_read_and_adding_register_edit(self) -> None:
-        """Every write under /obligations carries a gate (ID-S21), so removal is gated on
-        `register.read`, which every participant held when added; the logic still asks
-        `register.edit` for anyone else's row (c8-ten-reassignment, on merging with ID-S21)."""
-        routes = {op.operation_id: op for op in iter_operations(api) if "/participants" in op.path and op.path.startswith("/obligations/")}
-        gates = {name: perms.gate_of(op.view_func) for name, op in routes.items()}
-        self.assertEqual(
-            {name: (gate.kind, gate.value) if gate else None for name, gate in gates.items()},
-            {
-                "listObligationParticipants": ("permission", perms.REGISTER_READ),
-                "addObligationParticipant": ("permission", perms.REGISTER_EDIT),
-                "removeObligationParticipant": ("permission", perms.REGISTER_READ),
-            },
+    """Review 2026-11-11 B-14: one route per verb for both subjects, and each subject keeps
+    its own permissions, checked before any lookup and named in the 403. An obligation's
+    participants are read and left with `register.read` and changed with `register.edit`; a
+    case's are read with `cases.read` and changed with `cases.contribute`, and anyone may
+    leave a case."""
+
+    def call(self, method: str, url: str, body: dict[str, str] | None, permissions: set[str]) -> Any:
+        tenant = factories.tenant(slug=f"gates-{uuid.uuid4().hex[:6]}")
+        person = factories.member_user(tenant)
+        with stub_session(user_principal(permissions=permissions, tenant_id=tenant.id, subject_id=person.id)):
+            return self.client.generic(
+                method, url, json.dumps(body) if body is not None else "", content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}",
+            )
+
+    def test_each_subject_asks_its_own_permission_and_never_the_others(self) -> None:
+        subject = str(uuid.uuid4())
+        on_obligation, on_case = participants_url("obligation", subject), participants_url("change", subject)
+        refusals = (
+            ("GET", on_obligation, None, perms.REGISTER_READ, {perms.CASES_READ}),
+            ("GET", on_case, None, perms.CASES_READ, {perms.REGISTER_READ}),
+            ("POST", PARTICIPANTS, participant_body(on_obligation, {"teamKey": "legal"}), perms.REGISTER_EDIT, {perms.REGISTER_READ, perms.CASES_CONTRIBUTE}),
+            ("POST", PARTICIPANTS, participant_body(on_case, {"teamKey": "legal"}), perms.CASES_CONTRIBUTE, {perms.CASES_READ, perms.REGISTER_EDIT}),
+            ("DELETE", participant_url(on_obligation, uuid.uuid4()), None, perms.REGISTER_READ, {perms.CASES_READ, perms.CASES_CONTRIBUTE}),
         )
-        self.assertNotIn(("DELETE", routes["removeObligationParticipant"].path), perms.UNGATED_BY_DESIGN)
-        for name, op in routes.items():
-            with self.subTest(operation=name):
+        for method, url, body, needed, other in refusals:
+            with self.subTest(method=method, url=url):
+                refused = self.call(method, url, body, other)
+                self.assertEqual(refused.status_code, 403, refused.content)
+                self.assertEqual((refused.json()["code"], refused.json()["requiredPermission"]), ("permission_denied", needed))
+        # Leaving a case needs no permission of its own: an unknown participation is a 404.
+        self.assertEqual(self.call("DELETE", participant_url(on_case, uuid.uuid4()), None, set()).status_code, 404)
+
+    def test_participation_approves_nothing(self) -> None:
+        routes = [op for op in iter_operations(api) if op.path.startswith("/participants")]
+        self.assertEqual(len(routes), 3)
+        for op in routes:
+            with self.subTest(operation=op.operation_id):
                 self.assertFalse(perms.step_up_of(op.view_func), "participation approves nothing")
+                self.assertIn((op.method, op.path), perms.UNGATED_BY_DESIGN)
 
 
 # ---------------------------------------------------------------------------------------
@@ -231,7 +253,7 @@ class ParticipantRouteGates(TestCase):
 # live here, beside the table they rest on, so the shared scenario module stays a list.
 # ---------------------------------------------------------------------------------------
 def _post(case: ScenarioTestCase, url: str, payload: dict[str, str], headers: dict[str, Any]) -> Any:
-    return case.client.post(url, payload, content_type="application/json", **headers)
+    return case.client.post(PARTICIPANTS, participant_body(url, payload), content_type="application/json", **headers)
 
 
 def _token(headers: dict[str, Any]) -> str:
@@ -244,7 +266,7 @@ def run_col_s6(case: ScenarioTestCase) -> None:
     erik = factories.member_user(tenant, roles=("contributor",))
     legal = collab_testing.team(tenant, "legal", "Legal")
     obligation = collab_testing.obligation()
-    url = f"/api/v1/obligations/{obligation.id}/participants"
+    url = participants_url("obligation", obligation.id)
     as_anna = sign_in(anna, tenant=tenant)
     as_erik = sign_in(erik, tenant=tenant)
     erik_before = session_logic.resolve_access_token(_token(as_erik), want=PrincipalKind.USER)
@@ -292,13 +314,13 @@ def run_col_s7(case: ScenarioTestCase) -> None:
     erik = factories.member_user(tenant, roles=("reader",))
     johan = factories.member_user(tenant, roles=("reader",))
     obligation = collab_testing.obligation()
-    url = f"/api/v1/obligations/{obligation.id}/participants"
+    url = participants_url("obligation", obligation.id)
     as_anna = sign_in(anna, tenant=tenant)
     as_erik = sign_in(erik, tenant=tenant)
     erik_row = _post(case, url, {"userId": str(erik.id)}, as_anna).json()["id"]
     johan_row = _post(case, url, {"userId": str(johan.id)}, as_anna).json()["id"]
 
-    left = case.client.delete(f"{url}/{erik_row}", **as_erik)
+    left = case.client.delete(participant_url(url, erik_row), **as_erik)
     case.assertEqual(left.status_code, 204, left.content)
     case.activate(tenant)
     row = Participant.objects.get(id=erik_row)
@@ -315,7 +337,7 @@ def run_col_s7(case: ScenarioTestCase) -> None:
     case.assertEqual(history, ["participant.added", "participant.left"])
     case.assertEqual([item["id"] for item in case.client.get(url, **as_erik).json()["items"]], [johan_row])
 
-    refused = case.client.delete(f"{url}/{johan_row}", **as_erik)
+    refused = case.client.delete(participant_url(url, johan_row), **as_erik)
     case.assertEqual(refused.status_code, 403)
     case.assertEqual(refused.json()["requiredPermission"], perms.REGISTER_EDIT)
     case.activate(tenant)
@@ -339,8 +361,8 @@ def run_col_s8(case: ScenarioTestCase) -> None:
     shared = collab_testing.obligation()
     as_a = sign_in(owner_a, tenant=tenant_a)
     as_b = sign_in(owner_b, tenant=tenant_b)
-    private_url = f"/api/v1/obligations/{private.id}/participants"
-    shared_url = f"/api/v1/obligations/{shared.id}/participants"
+    private_url = participants_url("obligation", private.id)
+    shared_url = participants_url("obligation", shared.id)
     a_on_shared = _post(case, shared_url, {"userId": str(reader_a.id)}, as_a).json()["id"]
     a_on_private = _post(case, private_url, {"userId": str(reader_a.id)}, as_a)
     case.assertEqual(a_on_private.status_code, 201)
@@ -348,7 +370,7 @@ def run_col_s8(case: ScenarioTestCase) -> None:
     # Another bank's private obligation is not there for tenant B, to add, read or remove.
     case.assertEqual(_post(case, private_url, {"userId": str(only_in_b.id)}, as_b).status_code, 404)
     case.assertEqual(case.client.get(private_url, **as_b).status_code, 404)
-    case.assertEqual(case.client.delete(f"{private_url}/{a_on_private.json()['id']}", **as_b).status_code, 404)
+    case.assertEqual(case.client.delete(participant_url(private_url, a_on_private.json()['id']), **as_b).status_code, 404)
 
     # On a shared obligation B's add lands on B's own entry, and A's list is unchanged.
     b_added = _post(case, shared_url, {"userId": str(only_in_b.id)}, as_b)
@@ -359,7 +381,7 @@ def run_col_s8(case: ScenarioTestCase) -> None:
     case.assertEqual([item["id"] for item in case.client.get(shared_url, **as_a).json()["items"]], [a_on_shared])
     case.assertEqual([item["id"] for item in case.client.get(shared_url, **as_b).json()["items"]], [b_added.json()["id"]])
 
-    removed = case.client.delete(f"{shared_url}/{a_on_shared}", **as_b)
+    removed = case.client.delete(participant_url(shared_url, a_on_shared), **as_b)
     case.assertEqual((removed.status_code, removed.json()["code"]), (404, "not_found"))
     case.activate(tenant_a)
     case.assertIsNone(Participant.objects.get(id=a_on_shared).removed_at)

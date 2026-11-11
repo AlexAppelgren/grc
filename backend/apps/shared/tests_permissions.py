@@ -7,19 +7,17 @@ hold exactly the PRD's grants), the structured 403, `@requires_scope` for agents
 
 from __future__ import annotations
 
-import importlib
 from datetime import timedelta
 from typing import Any
 
-from django.db import connection, transaction
-from django.test import SimpleTestCase, TestCase, override_settings
+from django.test import SimpleTestCase, override_settings
 from django.test.client import RequestFactory
 from django.utils import timezone
 
-from apps.identity.models import TenantRole
-from apps.shared import factories, permissions as p, tenancy
+from apps.shared import permissions as p
 from apps.shared.errors import ProblemError
 from apps.shared.testing import agent_principal, enrolment_principal, user_principal
+from apps.shared.permissions import gate_of
 
 PRD_TENANT_PERMISSIONS = {
     "library.read", "watch.read", "roadmap.read", "search.use", "comments.write", "problems.report",
@@ -109,7 +107,7 @@ class Decorators(SimpleTestCase):
 
     def test_requires_permission_marks_the_view_and_enforces(self) -> None:
         gated = p.requires_permission(p.CASES_TRIAGE)(_view)
-        self.assertEqual(p.gate_of(gated), p.Gate("permission", p.CASES_TRIAGE))
+        self.assertEqual(gate_of(gated), p.Gate("permission", p.CASES_TRIAGE))
         self.assertEqual(gated(self._request(user_principal(permissions={p.CASES_TRIAGE}))), "ok")
         with self.assertRaises(ProblemError) as caught:
             gated(self._request(user_principal(permissions={p.CASES_READ})))
@@ -129,7 +127,7 @@ class Decorators(SimpleTestCase):
 
     def test_requires_scope_marks_the_view_and_enforces(self) -> None:
         gated = p.requires_scope(p.SCOPE_CHANGES_WRITE)(_view)
-        self.assertEqual(p.gate_of(gated), p.Gate("scope", p.SCOPE_CHANGES_WRITE))
+        self.assertEqual(gate_of(gated), p.Gate("scope", p.SCOPE_CHANGES_WRITE))
         self.assertEqual(gated(self._request(agent_principal(scopes={p.SCOPE_CHANGES_WRITE}))), "ok")
         with self.assertRaises(ProblemError) as caught:
             gated(self._request(agent_principal(scopes={p.SCOPE_LIBRARY_READ})))
@@ -143,7 +141,7 @@ class Decorators(SimpleTestCase):
     def test_requires_step_up_needs_a_fresh_assertion(self) -> None:
         gated = p.requires_step_up(_view)
         self.assertTrue(p.step_up_of(gated))
-        self.assertIsNone(p.gate_of(gated))
+        self.assertIsNone(gate_of(gated))
         fresh = user_principal(step_up_at=timezone.now() - timedelta(minutes=1))
         stale = user_principal(step_up_at=timezone.now() - timedelta(minutes=6))
         self.assertEqual(gated(self._request(fresh)), "ok")
@@ -155,7 +153,7 @@ class Decorators(SimpleTestCase):
 
     def test_decorators_compose_and_keep_their_marks(self) -> None:
         view = p.requires_permission(p.CASES_SIGNOFF)(p.requires_step_up(_view))
-        self.assertEqual(p.gate_of(view).value, p.CASES_SIGNOFF)  # type: ignore[union-attr]
+        self.assertEqual(gate_of(view).value, p.CASES_SIGNOFF)  # type: ignore[union-attr]
         self.assertTrue(p.step_up_of(view))
         self.assertEqual(view.__name__, "_view")
 
@@ -163,33 +161,3 @@ class Decorators(SimpleTestCase):
         self.assertEqual(
             {r.value for r in p.UngatedReason}, {"self", "bootstrap", "capability", "logic-gate", "public-token"}
         )
-
-
-class RetiredApplicabilityRequest(TestCase):
-    """identity 0006 strips the retired key from every stored role, system or the bank's
-    own, in every tenant, and leaves every other grant and the session's tenant alone."""
-
-    def test_the_migration_removes_the_key_from_every_tenant_role(self) -> None:
-        retire = importlib.import_module("apps.identity.migrations.0006_retire_applicability_request")
-        banks = [factories.tenant(slug="retire-a"), factories.tenant(slug="retire-b")]
-        for bank in banks:
-            with transaction.atomic():
-                tenancy.activate(bank.id)
-                TenantRole.objects.create(
-                    tenant=bank, key="scoping", permissions=["applicability.request", p.REGISTER_READ, p.REGISTER_EDIT]
-                )
-                TenantRole.objects.filter(tenant=bank, key="owner").update(
-                    permissions=sorted(p.SYSTEM_ROLES["owner"] | {"applicability.request"})
-                )
-        with transaction.atomic():
-            tenancy.activate(banks[0].id)
-            with connection.cursor() as cursor:
-                cursor.execute(retire.FORWARD)
-            self.assertEqual(tenancy.database_tenant_id(), banks[0].id)
-        for bank in banks:
-            with transaction.atomic():
-                tenancy.activate(bank.id)
-                roles = {role.key: set(role.permissions) for role in TenantRole.objects.filter(tenant=bank)}
-            self.assertFalse(any("applicability.request" in grants for grants in roles.values()), bank.slug)
-            self.assertEqual(roles["scoping"], {p.REGISTER_READ, p.REGISTER_EDIT})
-            self.assertEqual(roles["owner"], set(p.SYSTEM_ROLES["owner"]))

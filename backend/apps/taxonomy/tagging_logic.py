@@ -1,16 +1,10 @@
 """The bank's own tags on a record (VOC-08): one by one, or in a previewed batch.
 
-A tag is a `tagging` row in the tenant zone naming a `tenant_tag` and a record by kind and
-id; tagging never touches the record itself, so a library obligation or change stays the
-shared fact it was. Which kinds take a tag, and which records a caller may read, is
-tagging_subjects.py's read; anything the caller may not read is not there: one record
-answers the 404 an unknown id answers, and a batch skips it, counts it and never names it
-back, not even in the audit event.
-
-Every write is audited through `record()`: one event per single tag or untag, naming the
-record, and exactly one per batch, naming the tag and the ids. A repeat changes nothing
-and still writes its one event saying so, so the log shows what was asked as well as what
-happened.
+A tag is a `tagging` row in the tenant zone; the shared record is never touched. Which
+records a caller may read is tagging_subjects.py's read: one the caller may not read answers
+the 404 an unknown id does, and a batch skips it without naming it, even in the audit event.
+Every write is audited through `record()`, one event per tag or untag and one per batch; a
+repeat still writes its one event, so the log shows what was asked.
 """
 
 from __future__ import annotations

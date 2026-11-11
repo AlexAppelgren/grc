@@ -1,27 +1,18 @@
 """Sessions (D-06, ADR 0006): a short-lived HMAC access token, a rotating refresh token in
 an HttpOnly cookie scoped to the auth path, a `user_session` row behind every refresh so
-a person or an admin revokes at once. Idle and absolute limits are enforced on refresh;
-they are the bank's security policy (ID-08), the platform defaults where it sets none, and
-never above the SESSION_*_MAX settings. A replay inside the grace window answers like the
-original, a replay after it revokes the whole session (ID-S9).
+a person or an admin revokes at once. Idle and absolute limits are the bank's policy
+(ID-08), never above the SESSION_*_MAX settings. A replay inside the grace window answers
+like the original; after it, it revokes the whole session (ID-S9).
 
-`resolve_access_token` is what the three auth classes call. The signed token names the
-session's bank (ADR 0064), so the resolver activates that bank first and reads the session,
-its person, its bank, the grants and the latest step-up in one statement under it: every
-query of the request is scoped from the first (playbook 14), and the identity-lookup flag is
-never switched on for a request's credential. A claim that is not the stored session's bank
-finds no row, or a row the resolver refuses; either way the token answers 401, and a
-mismatch is logged to the security log and ends the session (`_refuse_claim`).
+`resolve_access_token` is what the auth classes call. The signed token names the session's
+bank (ADR 0064): the resolver activates it first and reads the session, person, bank,
+grants and step-up in one statement under it, so every query is scoped (playbook 14). A
+claim that is not the stored session's bank answers 401, is logged and ends the session.
 
-A support session (TEN-06, ADR 0042) is minted here and nowhere else: a platform person
-enters one bank under a grant it approved, and the session activates that bank exactly as a
-member's does, then re-reads the grant under the bank's own policies on every request. The
-one window onto a grant before any bank is active, `app.platform_user_id`, is also set here
-and nowhere else (`own_grants`); `apps/shared/tests_support_session.py` pins both.
-
-One account may be a bank's member and platform staff (D-122, ADR 0067), but a session is in
-one zone: `switch_context` is how the person moves, behind a fresh step-up, to a new session
-in another context they hold (`held_banks`, `holds_platform`)."""
+A support session (TEN-06, ADR 0042) is minted here and nowhere else, and so is the one
+window onto a grant before a bank is active, `app.platform_user_id` (`own_grants`);
+`apps/shared/tests_support_session.py` pins both. A session is in one zone; `switch_context`
+moves a person to another context they hold (D-122, ADR 0067)."""
 
 from __future__ import annotations
 
@@ -37,11 +28,11 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import connection
 from django.contrib.postgres.aggregates import JSONBAgg
-from django.db.models import Case, OuterRef, QuerySet, Subquery, When
+from django.db.models import Case, OuterRef, Q, QuerySet, Subquery, When
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 
-from apps.identity import tokens
+from apps.identity import rate_limit, tokens
 from apps.identity.models import (
     LoginEventKind,
     LoginMethod,
@@ -58,12 +49,11 @@ from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal, PrincipalKind
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.tenants.models import SecurityPolicy, SupportAccess
 
-# What a support session holds (D-49, ADR 0042): the seven reads and nothing else. No search
-# or Ask, which would spend the bank's AI budget, no role rows and no platform grant. Which
-# routes it reaches is `SUPPORT_READ_ROUTES` (apps/shared/routes.py), not this set alone.
+# What a support session holds (D-49, ADR 0042): the seven reads and nothing else; no search
+# or Ask, which spend the bank's AI budget. Routes: `SUPPORT_READ_ROUTES` (apps/shared/routes.py).
 SUPPORT_PERMISSIONS: frozenset[str] = frozenset(
     {
         perms.LIBRARY_READ,
@@ -90,16 +80,12 @@ def actor_of(user: User) -> Actor:
     return Actor(kind=ActorType.USER, id=user.id, label=user.name)
 
 
-# ---------------------------------------------------------------------------------------
-# Limits (ID-08)
-# ---------------------------------------------------------------------------------------
+# --- Limits (ID-08) ---
 def limits(tenant_id: uuid.UUID | None) -> tuple[timedelta, timedelta]:
     """The idle and absolute limits of a session in `tenant_id`: its bank's policy, the
-    platform default where the bank sets none (or for a platform session), and never above
-    the platform maximum, even for a row written around the policy route's check. The idle
-    limit is never below `SESSION_IDLE_MINUTES_MIN`, which outlasts an access token, so a
-    person who is working is never signed out as idle. Activates
-    the tenant, as every session in it runs there."""
+    platform default where the bank sets none, never above the platform maximum. The idle
+    limit is never below `SESSION_IDLE_MINUTES_MIN`, which outlasts an access token.
+    Activates the tenant, as every session in it runs there."""
     idle, absolute = settings.SESSION_IDLE_MINUTES_DEFAULT, settings.SESSION_ABSOLUTE_HOURS_DEFAULT
     if tenant_id is not None:
         tenancy.activate(tenant_id)
@@ -113,15 +99,36 @@ def limits(tenant_id: uuid.UUID | None) -> tuple[timedelta, timedelta]:
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Cookies
-# ---------------------------------------------------------------------------------------
+# --- Cookies ---
+def refresh_cookie_name() -> str:
+    """`__Secure-cw_refresh` wherever the cookie is `Secure`, so no other site or plain-http
+    script can plant or shadow it (review 2026-11-11 L-5). The plain name only where
+    `REFRESH_COOKIE_SECURE` is off (local http), where the prefix would drop the cookie."""
+    base = settings.REFRESH_COOKIE_NAME
+    return f"__Secure-{base}" if settings.REFRESH_COOKIE_SECURE else base
+
+
+def presented_refresh(request: HttpRequest) -> str | None:
+    return request.COOKIES.get(refresh_cookie_name())
+
+
+def guard_cookie_route(request: HttpRequest) -> None:
+    """Refresh and sign-out take the cookie as their only credential, so each is rate limited
+    per address in a bucket of its own (review 2026-11-11 L-4) and refused with 403
+    `origin_refused` when a browser names an `Origin` the API does not serve (L-5), on top of
+    `SameSite=Strict`. A request with no `Origin` is not refused for that."""
+    rate_limit.enforce("session:ip", client_ip(request) or "", settings.AUTH_RATE_PER_IP_PER_MINUTE, 60, e2e_exempt=True)
+    origin = request.headers.get("Origin")
+    if origin is not None and origin not in settings.CORS_ALLOWED_ORIGINS:
+        raise ProblemError(status=403, code="origin_refused", detail="This request came from a page the service does not serve.")
+
+
 def set_refresh_cookie(response: HttpResponse, value: str) -> None:
     """The cookie lives as long as its session may: until the session's absolute end."""
     session, _ = _load_by_refresh(value)
     remaining = session.expires_at - timezone.now() if session is not None else timedelta(0)
     response.set_cookie(
-        settings.REFRESH_COOKIE_NAME,
+        refresh_cookie_name(),
         value,
         max_age=max(0, int(remaining.total_seconds())),
         httponly=True,
@@ -132,12 +139,11 @@ def set_refresh_cookie(response: HttpResponse, value: str) -> None:
 
 
 def clear_refresh_cookie(response: HttpResponse) -> None:
-    response.delete_cookie(settings.REFRESH_COOKIE_NAME, path=settings.REFRESH_COOKIE_PATH, samesite="Strict")
+    # Django marks the deletion `Secure` itself for a `__Secure-` name, as the browser requires.
+    response.delete_cookie(refresh_cookie_name(), path=settings.REFRESH_COOKIE_PATH, samesite="Strict")
 
 
-# ---------------------------------------------------------------------------------------
-# Creating sessions
-# ---------------------------------------------------------------------------------------
+# --- Creating sessions ---
 def held_banks(user: User) -> list[tuple[uuid.UUID, str]]:
     """The banks the person is an active member of, as (id, name), oldest membership first.
     Read through the identity lookup: under a bank's zone the person's other memberships do
@@ -195,9 +201,7 @@ def create_session(
     return SessionBundle(session=session, access_token=access_token, expires_in=expires_in, refresh_value=refresh_value)
 
 
-# ---------------------------------------------------------------------------------------
-# Resolving an access token into a principal
-# ---------------------------------------------------------------------------------------
+# --- Resolving an access token into a principal ---
 def _live(session: UserSession, now: datetime) -> bool:
     return session.revoked_at is None and session.expires_at > now
 
@@ -244,22 +248,16 @@ def _read_session(session_id: uuid.UUID) -> UserSession | None:
 
 def build_principal(session: UserSession) -> Principal | None:
     """Flatten the person's grants in the session's tenant (plus platform grants) into a
-    Principal, from the session as `_read_session` loads it (a session loaded any other
-    way is read again that way, under the zone that is active).
+    Principal, from the session as `_read_session` loads it.
 
-    None when a full session in a tenant stands on no active membership there
-    (deactivated, or never created): the token then resolves to nothing, so no route that
-    takes "any member" as its grant answers a non-member (security review 2026-09-19,
-    finding F7). An enrolment session has no membership yet by definition.
+    None when a full session in a tenant stands on no active membership there, so no "any
+    member" route answers a non-member (F7). An enrolment session has no membership yet.
 
-    A session holds the permissions of its own zone and no others (hardening H2, H13). A
-    tenant session reads the membership's role rows and keeps what `TENANT_PERMISSIONS`
-    names, so a row written around the seeds and the role editor cannot smuggle
-    `proposals.review` past the library fence; a platform session reads the platform
-    assignments and keeps what `PLATFORM_PERMISSIONS` names. One account may hold both
-    (D-122, ADR 0067), and still a platform grant is never read in a bank session, nor a
-    membership's in a platform session: the query reads one zone's grants by the
-    session's own `tenant_id`."""
+    A session holds the permissions of its own zone and no others (H2, H13): a tenant session
+    keeps what `TENANT_PERMISSIONS` names, so a row written around the role editor cannot
+    smuggle `proposals.review` past the library fence, and a platform session keeps what
+    `PLATFORM_PERMISSIONS` names. One account may hold both (D-122, ADR 0067); the query
+    reads one zone's grants by the session's own `tenant_id`."""
     if not hasattr(session, "tenant_grants"):
         loaded = _read_session(session.id)
         if loaded is None:
@@ -335,9 +333,8 @@ def resolve_access_token(token: str, *, want: PrincipalKind) -> Principal | None
     if claims.kind not in wanted_kinds:
         return None
     support = claims.kind == SessionKind.SUPPORT.value
-    # The signed bank first (ADR 0064), then the one read under it. Row-level security shows
-    # the session only in its own zone, and a platform session's row to a bank as well (the
-    # mixed read), so the comparison below is what refuses a claim the row does not match.
+    # The signed bank first (ADR 0064), then the one read under it. A platform session's row
+    # shows in a bank too (the mixed read), so the comparison below refuses a mismatch.
     if claims.tenant_id is not None:
         tenancy.activate(claims.tenant_id)
     else:
@@ -346,12 +343,14 @@ def resolve_access_token(token: str, *, want: PrincipalKind) -> Principal | None
     if session is None or session.tenant_id != claims.tenant_id:
         _refuse_claim(claims)
         return None
-    usable = (
-        session.kind == claims.kind
-        and session.revoked_at is None
-        and (support or _live(session, now))
-        and session.user.status != UserStatus.DEACTIVATED.value
-    )
+    # Only an enrolment session may stand on an `invited` account; every other needs it
+    # `active`, so a re-enrolment ends its sessions in every zone at once, even those
+    # row-level security hid from the revocation (review 2026-11-11 S-2).
+    if claims.kind == SessionKind.ENROLMENT.value:
+        standing = session.user.status != UserStatus.DEACTIVATED.value
+    else:
+        standing = session.user.status == UserStatus.ACTIVE.value
+    usable = session.kind == claims.kind and session.revoked_at is None and (support or _live(session, now)) and standing
     if not usable:
         return None
     # A support session ends with its grant: past the window, or revoked by the bank, every
@@ -365,12 +364,10 @@ TENANT_CLAIM_MISMATCH = "tenant_claim_mismatch"
 
 
 def _refuse_claim(claims: tokens.AccessClaims) -> None:
-    """A signed token whose session the claimed zone did not show. Look the row up by id
-    across the zones, leave the claimed bank for the row's own zone (or no bank when there
-    is no row), and when the row stands in another zone than the claim, log the refusal to
-    the security log and end the session: only a party holding the signing key can make
-    such a token, since the claim is copied from the row when a token is issued and a
-    session never changes bank (ADR 0064)."""
+    """A signed token whose session the claimed zone did not show. Look the row up across
+    the zones and leave the claimed bank; when the row stands in another zone than the
+    claim, log the refusal and end the session: only a holder of the signing key can make
+    such a token (ADR 0064)."""
     with tenancy.identity_lookup() as lookup:
         stored = UserSession.objects.select_related("user").filter(pk=claims.session_id).first()  # ordering: pk lookup, at most one row
         lookup.then_activate(stored.tenant_id if stored is not None else None)
@@ -398,9 +395,7 @@ def resolve_refreshed(access_token: str) -> Principal | None:
     return resolve_access_token(access_token, want=PrincipalKind.ENROLMENT if claims.kind == SessionKind.ENROLMENT.value else PrincipalKind.USER)
 
 
-# ---------------------------------------------------------------------------------------
-# Support sessions (TEN-06, D-49, ADR 0042)
-# ---------------------------------------------------------------------------------------
+# --- Support sessions (TEN-06, D-49, ADR 0042) ---
 def _grant_live(session: UserSession) -> bool:
     """Whether the grant a support session stands on is still open, read after the session's
     bank is active and under its own policies, so the read proves the grant is that bank's."""
@@ -427,7 +422,7 @@ def own_grants(principal: Principal) -> Iterator[None]:
     caller's own user id, cleared when the block ends, even on an error. A bank's session,
     or a support session, never opens it."""
     if principal.kind is not PrincipalKind.USER or principal.tenant_id is not None or not principal.is_platform_staff:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     with connection.cursor() as cursor:
         cursor.execute("SELECT set_config(%s, %s, true)", [PLATFORM_USER_SETTING, str(principal.subject_id)])
     try:
@@ -475,9 +470,7 @@ def create_support_session(
     return SessionBundle(session=session, access_token=access_token, expires_in=expires_in, refresh_value=refresh_value)
 
 
-# ---------------------------------------------------------------------------------------
-# Switching context (D-122, ADR 0067)
-# ---------------------------------------------------------------------------------------
+# --- Switching context (D-122, ADR 0067) ---
 CONTEXT_SWITCHED = "context_switched"
 
 
@@ -485,16 +478,13 @@ def switch_context(
     *, principal: Principal, tenant_id: uuid.UUID | None, step_up_assertion_id: uuid.UUID, request: HttpRequest
 ) -> SessionBundle:
     """Replace the caller's full session with one in another context they hold: a bank they
-    are an active member of (`tenant_id`), or the console (None) when they hold an active
-    platform role. The route has already demanded a fresh step-up on the current session;
-    the assertion stays with that session, so each switch costs one.
+    are an active member of (`tenant_id`), or the console (None) with an active platform
+    role. The step-up stays with the old session, which the switch ends, so each switch
+    costs one.
 
-    The old session is revoked in its own zone first, then the zone is changed and the new
-    session written there, so neither zone ever holds the other's session row. A context the
-    person does not hold, or the one they are in, is a 404 and writes nothing. The security
-    log records a passkey sign-in to the new zone with the reason `context_switched`; the
-    audit trail records the revocation in the old zone and the switch, with the step-up, in
-    the new one, naming no other bank."""
+    The old session is revoked in its own zone, then the new one written in the new zone,
+    so neither zone holds the other's row. A context not held, or the current one, is a 404
+    and writes nothing. The security log and the audit trail name no other bank."""
     user = principal.user or User.objects.get(pk=principal.subject_id)
     held = holds_platform(user) if tenant_id is None else any(bank == tenant_id for bank, _ in held_banks(user))
     if not held or tenant_id == principal.tenant_id:
@@ -502,7 +492,10 @@ def switch_context(
     actor = actor_of(user)
     assert principal.session_id is not None  # a person's session always names itself
     old = UserSession.objects.select_related("user").get(pk=principal.session_id, user=user)
-    revoke_session(old, reason=CONTEXT_SWITCHED, actor=actor, request=request)
+    # Ending the session spends its step-up: of two switches sent with one assertion,
+    # only the one whose revocation lands goes on (review 2026-11-11 L-6).
+    if not revoke_session(old, reason=CONTEXT_SWITCHED, actor=actor, request=request):
+        raise ValidationError("Sign in again.", code="unauthenticated")
     if tenant_id is None:
         tenancy.clear_tenant()
     bundle = create_session(user=user, kind=SessionKind.FULL, tenant_id=tenant_id, request=request)
@@ -530,9 +523,7 @@ def switch_context(
     return bundle
 
 
-# ---------------------------------------------------------------------------------------
-# Refresh, sign-out, revocation
-# ---------------------------------------------------------------------------------------
+# --- Refresh, sign-out, revocation ---
 def _load_by_refresh(value: str | None) -> tuple[UserSession | None, str | None]:
     parsed = tokens.parse_refresh_token(value or "")
     if parsed is None:
@@ -543,6 +534,38 @@ def _load_by_refresh(value: str | None) -> tuple[UserSession | None, str | None]
     return session, presented_hash
 
 
+def _replayed(session: UserSession, presented_hash: str, request: HttpRequest | None, now: datetime) -> tuple[str, int, None]:
+    """The refresh secret the session rotated away from, presented again: inside the grace
+    window a concurrent tab, answered with an access token and no third refresh token;
+    after it a stolen copy, and the whole session ends (ID-S9)."""
+    previous = session.previous_refresh_hash is not None and tokens.constant_equal(presented_hash, session.previous_refresh_hash)
+    if not previous or session.rotated_at is None:
+        raise ValidationError("Sign in again.", code="unauthenticated")
+    if now - session.rotated_at <= timedelta(seconds=settings.REFRESH_REPLAY_GRACE_SECONDS):
+        access_token, expires_in = tokens.issue_access_token(session.id, session.kind, session.tenant_id, now)
+        record(
+            action="session.refreshed",
+            actor=actor_of(session.user),
+            subject_type="user_session",
+            subject_id=session.id,
+            subject_title=session.user.name,
+            summary="Refresh replayed inside the grace window (concurrent tab).",
+            tenant_id=session.tenant_id,
+        )
+        return access_token, expires_in, None
+    revoke_session(session, reason="refresh_replay", actor=actor_of(session.user), request=request)
+    log_event(
+        event=LoginEventKind.REFRESH_REPLAY,
+        method=LoginMethod.PASSKEY,
+        success=False,
+        request=request,
+        user=session.user,
+        tenant_id=session.tenant_id,
+        failure_reason="refresh_replay",
+    )
+    raise ValidationError("Sign in again.", code="unauthenticated")
+
+
 def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, str | None]:
     """Rotate the refresh token. Returns (access token, expires in, new refresh value or
     None when a replay inside the grace window is answered without a third token)."""
@@ -551,36 +574,12 @@ def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, s
     if session is None or presented_hash is None or not _live(session, now):
         raise ValidationError("Sign in again.", code="unauthenticated")
     idle_limit, absolute_limit = limits(session.tenant_id)
-    current = tokens.constant_equal(presented_hash, session.refresh_token_hash)
-    previous = session.previous_refresh_hash is not None and tokens.constant_equal(
-        presented_hash, session.previous_refresh_hash
-    )
-    if previous and session.rotated_at is not None:
-        within_grace = now - session.rotated_at <= timedelta(seconds=settings.REFRESH_REPLAY_GRACE_SECONDS)
-        if within_grace:
-            access_token, expires_in = tokens.issue_access_token(session.id, session.kind, session.tenant_id, now)
-            record(
-                action="session.refreshed",
-                actor=actor_of(session.user),
-                subject_type="user_session",
-                subject_id=session.id,
-                subject_title=session.user.name,
-                summary="Refresh replayed inside the grace window (concurrent tab).",
-                tenant_id=session.tenant_id,
-            )
-            return access_token, expires_in, None
-        revoke_session(session, reason="refresh_replay", actor=actor_of(session.user), request=request)
-        log_event(
-            event=LoginEventKind.REFRESH_REPLAY,
-            method=LoginMethod.PASSKEY,
-            success=False,
-            request=request,
-            user=session.user,
-            tenant_id=session.tenant_id,
-            failure_reason="refresh_replay",
-        )
-        raise ValidationError("Sign in again.", code="unauthenticated")
-    if not current:
+    if not tokens.constant_equal(presented_hash, session.refresh_token_hash):
+        return _replayed(session, presented_hash, request, now)
+    if session.kind != SessionKind.ENROLMENT.value and session.user.status != UserStatus.ACTIVE.value:
+        # Re-enrolled or deactivated since sign-in: the session ends here, in its own zone
+        # (S-2), as `resolve_access_token` already refuses its access token.
+        revoke_session(session, reason="account_not_active", actor=actor_of(session.user), request=request)
         raise ValidationError("Sign in again.", code="unauthenticated")
     # A limit the bank lowered since sign-in applies now; a raised one never extends.
     deadline = min(session.expires_at, session.created_at + absolute_limit)
@@ -593,13 +592,21 @@ def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, s
     if session.kind == SessionKind.SUPPORT.value and not _grant_live(session):
         revoke_session(session, reason="support_access_ended", actor=actor_of(session.user), request=request)
         raise ProblemError(status=401, code="support_access_ended", detail="The bank's support access has ended.")
-    session.expires_at = deadline
     new_value, new_hash = tokens.new_refresh_token(session.id)
-    session.previous_refresh_hash = session.refresh_token_hash
-    session.refresh_token_hash = new_hash
-    session.rotated_at = now
-    session.last_seen_at = now
-    session.save(update_fields=["previous_refresh_hash", "refresh_token_hash", "rotated_at", "last_seen_at", "expires_at"])
+    # One conditional UPDATE on the secret that was read: of two refreshes with one token,
+    # the second is the replay the grace window answers (review 2026-11-11 L-6).
+    rotated = UserSession.objects.filter(pk=session.pk, refresh_token_hash=session.refresh_token_hash, revoked_at__isnull=True).update(
+        previous_refresh_hash=session.refresh_token_hash,
+        refresh_token_hash=new_hash,
+        rotated_at=now,
+        last_seen_at=now,
+        expires_at=deadline,
+    )
+    if not rotated:
+        session.refresh_from_db()
+        if session.revoked_at is not None:
+            raise ValidationError("Sign in again.", code="unauthenticated")
+        return _replayed(session, presented_hash, request, now)
     access_token, expires_in = tokens.issue_access_token(session.id, session.kind, session.tenant_id, now)
     record(
         action="session.refreshed",
@@ -627,12 +634,12 @@ def _holds_secret(session: UserSession, presented_hash: str, now: datetime) -> b
 
 
 def sign_out(value: str | None, request: HttpRequest | None) -> None:
-    """Idempotent: a stale or missing cookie still answers 204, and the attempt is still a
-    write for the audit rule (AC-AUD1), recorded with no subject.
-
-    The cookie is the only credential here, and a session id is no secret (every
-    `session.created` audit row names one), so a cookie naming a session without holding
-    its refresh secret signs nobody out and writes nothing in that person's name."""
+    """Idempotent: a stale or missing cookie still answers 204. A stale cookie is audited
+    with no subject (AC-AUD1); no cookie writes nothing, so it cannot fill the audit trail
+    (review 2026-11-11 L-4). A session id is no secret, so a cookie without the refresh
+    secret signs nobody out and writes nothing in that person's name."""
+    if not value:
+        return
     session, presented_hash = _load_by_refresh(value)
     if (
         session is None
@@ -655,12 +662,17 @@ def sign_out(value: str | None, request: HttpRequest | None) -> None:
     revoke_session(session, reason="sign_out", actor=actor_of(session.user), request=request)
 
 
-def revoke_session(session: UserSession, *, reason: str, actor: Actor, request: HttpRequest | None = None) -> None:
-    if session.revoked_at is not None:
-        return
-    session.revoked_at = timezone.now()
+def revoke_session(session: UserSession, *, reason: str, actor: Actor, request: HttpRequest | None = None) -> bool:
+    """End the session, with its security log and audit rows, once: the revocation is one
+    conditional UPDATE, so of two requests ending the same session only one does it and
+    writes the rows; the other is answered False (review 2026-11-11 L-6)."""
+    now = timezone.now()
+    if session.revoked_at is not None or not UserSession.objects.filter(pk=session.pk, revoked_at__isnull=True).update(
+        revoked_at=now, revoked_reason=reason
+    ):
+        return False
+    session.revoked_at = now
     session.revoked_reason = reason
-    session.save(update_fields=["revoked_at", "revoked_reason"])
     log_event(
         event=LoginEventKind.SESSION_REVOKED,
         method=LoginMethod.PASSKEY if session.kind == SessionKind.FULL.value else LoginMethod.EMAIL_CODE,
@@ -680,34 +692,62 @@ def revoke_session(session: UserSession, *, reason: str, actor: Actor, request: 
         tenant_id=session.tenant_id,
         after={"reason": reason},
     )
+    return True
 
 
-def revoke_all(user: User, *, tenant_id: uuid.UUID | None, reason: str, actor: Actor, request: HttpRequest | None = None) -> int:
-    """Revoke every live session of `user`; in one tenant when `tenant_id` is given
-    (an admin acts inside their tenant), everywhere when None (the person themself)."""
-    queryset = UserSession.objects.filter(user=user, revoked_at__isnull=True).select_related("user")
-    if tenant_id is not None:
-        queryset = queryset.filter(tenant_id=tenant_id)
-    count = 0
-    for session in queryset:
-        revoke_session(session, reason=reason, actor=actor, request=request)
-        count += 1
-    return count
+def _in_zone(user: User, tenant_id: uuid.UUID | None) -> QuerySet[UserSession]:
+    """The person's sessions in one zone: the bank `tenant_id`, or the platform zone when
+    None. A bank's zone also reads platform sessions but may not change them, so every read
+    that may lead to a write names the zone (review 2026-11-11 S-2)."""
+    return UserSession.objects.filter(_zone(tenant_id), user=user)
+
+
+def _zone(tenant_id: uuid.UUID | None) -> Q:
+    return Q(tenant__isnull=True) if tenant_id is None else Q(tenant_id=tenant_id)
+
+
+def revoke_all(
+    user: User,
+    *,
+    tenant_id: uuid.UUID | None,
+    reason: str,
+    actor: Actor,
+    request: HttpRequest | None = None,
+    kind: SessionKind | None = None,
+) -> int:
+    """Revoke every live session of `user` in one zone (`_in_zone`), of one `kind` when
+    given. The caller has activated that zone; a person's other zones are revoked from each
+    of them in turn (`bootstrap_platform --reenrol`)."""
+    queryset = _in_zone(user, tenant_id).filter(revoked_at__isnull=True).select_related("user").order_by("created_at", "id")
+    if kind is not None:
+        queryset = queryset.filter(kind=kind.value)
+    return sum(revoke_session(session, reason=reason, actor=actor, request=request) for session in queryset)
+
+
+def revoke_enrolment_sessions(
+    user: User, *, tenant_id: uuid.UUID | None, reason: str, actor: Actor, request: HttpRequest | None = None
+) -> int:
+    """End every enrolment session of `user` in one zone: one exists per code verified, and
+    each would otherwise outlive the first passkey or the invitation it enrols through
+    (review 2026-11-11 S-1). `passkey_logic` refuses one in another zone on its own."""
+    return revoke_all(user, tenant_id=tenant_id, reason=reason, actor=actor, request=request, kind=SessionKind.ENROLMENT)
 
 
 def live_sessions(user: User, *, tenant_id: uuid.UUID | None) -> list[UserSession]:
+    """The person's live full sessions in one zone (`_in_zone`), most recent first."""
     now = timezone.now()
-    queryset = UserSession.objects.filter(
-        user=user, revoked_at__isnull=True, expires_at__gt=now, kind=SessionKind.FULL.value
-    )
-    if tenant_id is not None:
-        queryset = queryset.filter(tenant_id=tenant_id)
+    queryset = _in_zone(user, tenant_id).filter(revoked_at__isnull=True, expires_at__gt=now, kind=SessionKind.FULL.value)
     return list(queryset.order_by("-last_seen_at", "-id"))
 
 
 def revoke_own_session(principal: Principal, session_id: uuid.UUID, request: HttpRequest | None) -> None:
-    """A person revokes one of their own sessions (ID-04); another user's is a 404."""
-    session = UserSession.objects.select_related("user").filter(pk=session_id, user_id=principal.subject_id).first()  # ordering: pk lookup, at most one row
+    """A person revokes one of their own sessions in the zone they are signed in to (ID-04);
+    another user's, or one of theirs in another zone, is a 404 (S-2)."""
+    session = (
+        UserSession.objects.select_related("user")
+        .filter(_zone(principal.tenant_id), pk=session_id, user_id=principal.subject_id)
+        .first()
+    )  # ordering: pk lookup, at most one row
     if session is None:
         raise ValidationError("Not found.", code="not_found")
     revoke_session(session, reason="revoked_by_user", actor=actor_of(session.user), request=request)

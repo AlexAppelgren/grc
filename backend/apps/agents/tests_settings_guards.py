@@ -23,13 +23,13 @@ class AgentSettingsRefuseToBoot(SimpleTestCase):
 
     def test_each_nonsensical_value_refuses_to_boot(self) -> None:
         refused = {
-            "AGENT_MIN_CADENCE": ("hourly", "AGENT_MIN_CADENCE must be daily, weekly or monthly"),
-            "AGENT_DEFAULT_RUN_HOUR": ("24", "AGENT_DEFAULT_RUN_HOUR must be an hour from 0 to 23"),
-            "AGENT_BEAT_INTERVAL_MINUTES": ("0", "must each be at least 1"),
-            "AGENT_RUNS_PER_BEAT": ("0", "must each be at least 1"),
+            "AGENT_MIN_CADENCE": ("hourly", "AGENT_MIN_CADENCE is 'hourly', not one of daily, weekly, monthly"),
+            "AGENT_DEFAULT_RUN_HOUR": ("24", "AGENT_DEFAULT_RUN_HOUR is 24, above its maximum of 23"),
+            "AGENT_BEAT_INTERVAL_MINUTES": ("0", "AGENT_BEAT_INTERVAL_MINUTES is 0, below its minimum of 1"),
+            "AGENT_RUNS_PER_BEAT": ("0", "AGENT_RUNS_PER_BEAT is 0, below its minimum of 1"),
             "AGENT_RUN_BUDGET_LIMIT": ("five euros", "AGENT_RUN_BUDGET_LIMIT must be an amount in EUR above zero"),
-            "RESEARCH_URL_MAX_REDIRECTS": ("-1", "RESEARCH_URL_MAX_REDIRECTS at least 0"),
-            "RESEARCH_REQUESTS_PER_MONTH": ("0", "The RESEARCH_* settings must be positive"),
+            "RESEARCH_URL_MAX_REDIRECTS": ("-1", "RESEARCH_URL_MAX_REDIRECTS is -1, below its minimum of 0"),
+            "RESEARCH_REQUESTS_PER_MONTH": ("0", "RESEARCH_REQUESTS_PER_MONTH is 0, below its minimum of 1"),
         }
         for variable, (value, words) in refused.items():
             with self.subTest(variable=variable), self.assertRaisesMessage(ImproperlyConfigured, words):

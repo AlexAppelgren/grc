@@ -1,13 +1,9 @@
-"""Models of the reports app (REP-02, CAS-07; schema v0.3 `export_job`, INPUT_DELTAS §18).
+"""Models of the reports app (REP-02, CAS-07; INPUT_DELTAS §18).
 
-One tenant table: an export job, under enabled and forced row-level security. A job is not
-a ledger — its row moves from `queued` to `succeeded` or `failed` and records its first
-download — so it is a plain `TenantModel`. The file itself never lives in the database: the
-worker writes it through the storage seam (apps/shared/storage.py) under a key built from
-the tenant id and the job id, and the download streams it back through a permission-checked,
-audited route (playbook 4.6, D-11).
-
-`ImportJob` is chunk 12's (REP-03, R3) and deliberately not here.
+An export job is a plain `TenantModel` under forced row-level security: it moves from
+`queued` to `succeeded` or `failed` and records its first download. The file never lives in
+the database: the worker writes it through apps/shared/storage.py and the download streams
+it back through a permission-checked, audited route (playbook 4.6, D-11).
 """
 
 from __future__ import annotations
@@ -17,10 +13,7 @@ import enum
 from django.db import models
 
 from apps.shared.tenancy import TenantModel
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class JobStatus(enum.StrEnum):
@@ -62,12 +55,12 @@ class ExportJob(TenantModel):
     download and never moves again: the tenant exit refuses an export nobody downloaded.
     """
 
-    kind = models.CharField(max_length=32, choices=_choices(ExportKind))
+    kind = models.CharField(max_length=32, choices=choices(ExportKind))
     # What the export is about when the kind is about one record: the case for a case file.
     subject_id = models.UUIDField(null=True, blank=True)
     format = models.CharField(max_length=8, choices=[(value, value) for value in EXPORT_FORMATS])
     filters = models.JSONField(default=dict, blank=True)  # schema: ExportFilters
-    status = models.CharField(max_length=16, choices=_choices(JobStatus), default=JobStatus.QUEUED.value)
+    status = models.CharField(max_length=16, choices=choices(JobStatus), default=JobStatus.QUEUED.value)
     storage_key = models.CharField(max_length=255, null=True, blank=True)
     # The SHA-256 of the produced file, hex encoded.
     content_hash = models.CharField(max_length=64, null=True, blank=True)

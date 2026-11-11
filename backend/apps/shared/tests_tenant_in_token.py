@@ -35,6 +35,7 @@ from apps.shared import factories, tenancy
 from apps.shared.authentication import PrincipalKind
 from apps.shared.testing import sign_in
 from apps.shared.tests_support_session import grant
+from apps.shared.testing import identity_lookup_active
 
 V1 = "/api/v1"
 MISMATCH = session_logic.TENANT_CLAIM_MISMATCH
@@ -77,7 +78,7 @@ class TenantInToken(TestCase):
         # runs in a bank that is not the session's.
         self.assertEqual(tenancy.database_tenant_id(), session.tenant_id)
         self.assertEqual(tenancy.active_tenant_id(), session.tenant_id)
-        self.assertFalse(tenancy.identity_lookup_active())
+        self.assertFalse(identity_lookup_active())
         self.assertEqual(self.refusals(session), [(MISMATCH, str(session.tenant_id), False)])
         with tenancy.identity_lookup():
             ended = UserSession.objects.get(pk=session.id)

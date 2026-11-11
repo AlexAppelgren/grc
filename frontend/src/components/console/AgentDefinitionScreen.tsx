@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
 import { BackLink } from '@/components/admin/AdminGate';
 import { PlatformAgentSettingsPanel } from '@/components/console/PlatformAgentSettings';
@@ -8,11 +8,11 @@ import { PlatformRunsPanel } from '@/components/console/PlatformRunsPanel';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Field, TextArea, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
 import { canRetire, definitionName, presentDefinition, presentVersion } from '@/features/agents/agents-presentation';
 import { useAgentDefinition, usePublishAgentVersion, useRetireAgentVersion } from '@/features/agents/hooks';
 import type { AgentDefinitionDetail, AgentVersion } from '@/features/agents/types';
@@ -38,8 +38,7 @@ function PublishModal({ definition, open, onClose, onPublished }: { definition: 
   const [problem, setProblem] = useState<'version' | 'note' | null>(null);
   const chosen = Number(versionNo);
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     if (!Number.isInteger(chosen) || chosen < 1) return setProblem('version');
     if (note.trim() === '') return setProblem('note');
     setProblem(null);
@@ -56,25 +55,26 @@ function PublishModal({ definition, open, onClose, onPublished }: { definition: 
   };
 
   return (
-    <Modal open={open} onOpenChange={(isOpen) => (isOpen ? undefined : onClose())} title={t('console.agents.publishTitle')} description={t('console.agents.publishNote')}>
-      <form onSubmit={submit} noValidate aria-busy={publish.isPending} data-publish-form="">
+    open ? (
+      <FormDialog
+        title={t('console.agents.publishTitle')}
+        description={t('console.agents.publishNote')}
+        submitLabel={t('console.agents.publishAction', { version: Number.isInteger(chosen) && chosen > 0 ? chosen : next })}
+        pending={publish.isPending}
+        error={publish.error}
+        codes={{ step_up_required: t('problem.stepUpCancelled') }}
+        onSubmit={submit}
+        onClose={onClose}
+        formProps={{ 'data-publish-form': '' }}
+      >
         <Field id="agent-version-no" label={t('console.agents.versionLabel')} hint={t('console.agents.versionHint')} error={problem === 'version' ? t('console.agents.versionRequired') : undefined}>
           <TextInput id="agent-version-no" type="number" min={1} step={1} inputMode="numeric" value={versionNo} onChange={(e) => setVersionNo(e.target.value)} />
         </Field>
         <Field id="agent-version-note" label={t('console.agents.changeNote')} hint={t('console.agents.changeNoteHint')} error={problem === 'note' ? t('console.agents.changeNoteRequired') : undefined}>
           <TextArea id="agent-version-note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
-        {publish.isError ? <ProblemAlert error={publish.error} codes={{ step_up_required: t('problem.stepUpCancelled') }} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose} disabled={publish.isPending}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={publish.isPending}>
-            {t('console.agents.publishAction', { version: Number.isInteger(chosen) && chosen > 0 ? chosen : next })}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+      </FormDialog>
+    ) : null
   );
 }
 
@@ -129,7 +129,7 @@ function VersionRow({ definition, version, onRetired }: { definition: AgentDefin
             </>
           ) : (
             <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
-              {t('console.agents.retire')}
+              {t('common.retire')}
             </Button>
           )}
         </ButtonBar>

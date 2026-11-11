@@ -29,6 +29,7 @@ from apps.taxonomy.models import FootprintTerm, TaxonomyTerm, TermDimension
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.taxonomy.terms_logic import term_by_ref
 from apps.watch.keys import resolve_terms
+from apps.shared.testing import in_footprint_sql, opt_in_dimensions
 
 # The restricting dimensions each pure case is decided against.
 SCOPE = matching.Restricting({"service_type", "client_category"}, opt_in=())
@@ -155,7 +156,7 @@ class SqlMirrorsPython(TestCase):
             self.assertEqual(footprint, _as_dict(footprint_refs))
             for record_refs in subsets:
                 expected = matching.in_footprint(_as_dict(record_refs), footprint, restricting=self.restricting)
-                actual = matching.in_footprint_sql(self.tenant.id, [self.terms[ref].id for ref in record_refs])
+                actual = in_footprint_sql(self.tenant.id, [self.terms[ref].id for ref in record_refs])
                 self.assertIs(actual, expected, f"record {record_refs} footprint {footprint_refs}")
                 checked += 1
         self.assertEqual(checked, 32 * 32)
@@ -173,14 +174,14 @@ class SqlMirrorsPython(TestCase):
         tenancy.activate(other.id)
         FootprintTerm.objects.create(tenant=other, term=custody)
         # As the other tenant: its custody-only footprint restricts service_type.
-        self.assertTrue(matching.in_footprint_sql(other.id, [custody.id]))
-        self.assertFalse(matching.in_footprint_sql(other.id, [advice.id]))
+        self.assertTrue(in_footprint_sql(other.id, [custody.id]))
+        self.assertFalse(in_footprint_sql(other.id, [advice.id]))
         # As this tenant: the other tenant's custody row is invisible, so it never widens this
         # tenant's advice-only footprint, and asking about the other tenant sees no footprint.
         tenancy.activate(self.tenant.id)
-        self.assertFalse(matching.in_footprint_sql(self.tenant.id, [custody.id]))
-        self.assertTrue(matching.in_footprint_sql(self.tenant.id, [advice.id]))
-        self.assertTrue(matching.in_footprint_sql(other.id, [advice.id]))
+        self.assertFalse(in_footprint_sql(self.tenant.id, [custody.id]))
+        self.assertTrue(in_footprint_sql(self.tenant.id, [advice.id]))
+        self.assertTrue(in_footprint_sql(other.id, [advice.id]))
 
     def test_unknown_term_ids_do_not_match_anything(self) -> None:
         with connection.cursor() as cursor:
@@ -227,7 +228,7 @@ class OptInMirror(TestCase):
             for record_refs in subsets:
                 record = _as_dict(record_refs)
                 expected = matching.in_footprint(record, footprint, restricting=restricting)
-                actual = matching.in_footprint_sql(self.tenant.id, [self.terms[ref].id for ref in record_refs])
+                actual = in_footprint_sql(self.tenant.id, [self.terms[ref].id for ref in record_refs])
                 self.assertIs(actual, expected, f"record {record_refs} footprint {footprint_refs}")
                 if "standard" in record and "standard" not in footprint:
                     self.assertFalse(expected, f"record {record_refs} footprint {footprint_refs}")
@@ -237,26 +238,26 @@ class OptInMirror(TestCase):
 
     def test_every_combination_agrees_with_the_flag_as_seeded(self) -> None:
         self.assertTrue(self.standard.restricts_footprint)
-        self.assertEqual(matching.opt_in_dimensions(), {"standard"})
+        self.assertEqual(opt_in_dimensions(), {"standard"})
         self._every_combination_agrees()
 
     def test_every_combination_agrees_with_the_flag_cleared(self) -> None:
         """Clearing the flag changes nothing: the kind, not the flag, makes it opt-in."""
         self._set_flag(False)
         self.assertIn("standard", matching.restricting_dimensions())
-        self.assertEqual(matching.opt_in_dimensions(), {"standard"})
+        self.assertEqual(opt_in_dimensions(), {"standard"})
         self._every_combination_agrees()
 
     def test_a_retired_opt_in_dimension_restricts_nothing_in_either(self) -> None:
         iso = self.terms["standard:iso_iec_27001"]
-        self.assertFalse(matching.in_footprint_sql(self.tenant.id, [iso.id]))
+        self.assertFalse(in_footprint_sql(self.tenant.id, [iso.id]))
         with library_write("test"):
             TermDimension.objects.filter(pk=self.standard.pk).update(active=False)
         restricting = matching.restricting_dimensions()
         self.assertNotIn("standard", restricting)
-        self.assertEqual(matching.opt_in_dimensions(), frozenset())
+        self.assertEqual(opt_in_dimensions(), frozenset())
         self.assertTrue(matching.in_footprint({"standard": {"iso_iec_27001"}}, {}, restricting=restricting))
-        self.assertTrue(matching.in_footprint_sql(self.tenant.id, [iso.id]))
+        self.assertTrue(in_footprint_sql(self.tenant.id, [iso.id]))
 
     def test_restricting_dimensions_is_one_query(self) -> None:
         with self.assertNumQueries(1):
@@ -278,7 +279,7 @@ class SeededStandard(TestCase):
     def test_the_seeded_standard_is_active(self) -> None:
         self.assertTrue(self.iso.active)
         self.assertTrue(self.iso.dimension.active)
-        self.assertEqual(matching.opt_in_dimensions(), {"standard"})
+        self.assertEqual(opt_in_dimensions(), {"standard"})
 
     def test_every_door_names_it(self) -> None:
         doors = {
@@ -312,7 +313,7 @@ class ListFilterReadsTheFootprintOnce(TestCase):
         self.assertGreater(len(verdicts), 10)
         self.assertIn(False, verdicts.values(), "the footprint above hides some terms")
         for term_id, admitted in verdicts.items():
-            self.assertIs(admitted, matching.in_footprint_sql(self.tenant.id, [term_id]), term_id)
+            self.assertIs(admitted, in_footprint_sql(self.tenant.id, [term_id]), term_id)
 
     def test_the_guard_runs_once_per_query(self) -> None:
         sql, params = self.rows.query.sql_with_params()

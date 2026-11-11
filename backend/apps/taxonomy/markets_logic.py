@@ -1,13 +1,10 @@
 """Watched markets (FP-04, D-27, D-30, D-31): a jurisdiction a tenant names because it
 wants visibility into it without operating there. Watching hides nothing, so it is a
-direct, audited write rather than a footprint change request: no preview, no second
-person, no step-up (D-30).
+direct, audited write: no preview, no second person, no step-up (D-30).
 
-A market's level is never stored, only computed (FP-S11): operating comes first — its
-mirrored jurisdiction term (FP-S12) sits in the tenant's footprint — then watching, a row
-here naming it, otherwise not followed. So a market watched before it started operating
-reads as watched again the moment operating stops, and footprint approval never touches a
-row here.
+A market's level is computed, never stored (FP-S11): operating when its mirrored
+jurisdiction term (FP-S12) is in the footprint, else watching when a row here names it,
+else not followed. So footprint approval never touches a row here.
 """
 
 from __future__ import annotations
@@ -22,7 +19,8 @@ from apps.library.models import Jurisdiction, JurisdictionKind, JurisdictionLabe
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
 from apps.taxonomy.models import FootprintTerm, WatchedMarket
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import Labels
+from apps.shared.vocabulary import label_of
 from apps.taxonomy.schemas import MarketLevel, MarketRow, TermRef
 
 SUBJECT_TYPE = "watched_market"
@@ -45,9 +43,8 @@ def _country(key: str) -> Jurisdiction:
 
 def _operating(tenant_id: uuid.UUID) -> set[uuid.UUID]:
     """The jurisdictions the tenant operates in: those whose mirrored term sits in its
-    footprint, read through the term's own link to its jurisdiction (FP-S12, D-28), never
-    through a dimension key or a term key that happens to match. One query for every
-    country, so a market list never costs a query per row."""
+    footprint, read through the term's link to its jurisdiction (FP-S12, D-28), never a key
+    that happens to match. One query for every country."""
     return set(
         FootprintTerm.objects.filter(tenant_id=tenant_id, term__jurisdiction__isnull=False).values_list("term__jurisdiction_id", flat=True)
     )

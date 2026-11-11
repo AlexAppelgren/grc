@@ -27,6 +27,7 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 from django.conf import settings
@@ -34,6 +35,8 @@ from django.db import DEFAULT_DB_ALIAS, connections
 from django.test import TestCase
 
 BOOT = "import django; django.setup(); print('booted')"
+# The ENVIRONMENT the runtime stage of backend/Dockerfile sets.
+IMAGE_ENVIRONMENT = "production"
 SETTING_NAMES = (
     "ENVIRONMENT",
     "RAILWAY_ENVIRONMENT_NAME",
@@ -59,6 +62,7 @@ SETTING_NAMES = (
     "API_PAGE_OFFSET_MAX",
     "API_PAGE_SIZE_MAX",
     "RATE_LIMITING_ENABLED",
+    "TRUSTED_PROXY_HOPS",
 )
 
 
@@ -100,10 +104,10 @@ class ProductionGuard(TestCase):
             "ENVIRONMENT": environment,
             "DEBUG": "false",
             "SECRET_KEY": "a-real-looking-key-for-the-subprocess",
-            "LLM_PROVIDER": "anthropic",
+            "LLM_PROVIDER": "bedrock",
             "EMBEDDER_PROVIDER": "none",
             "RERANKER_PROVIDER": "none",
-            "AGENT_RUNNER": "managed_agents",
+            "AGENT_RUNNER": "none",
             "MAIL_PROVIDER": "smtp",
             "STORAGE_BACKEND": "s3",
             "STORAGE_S3_BUCKET": "bucket",
@@ -147,6 +151,21 @@ class ProductionGuard(TestCase):
             Case("local boots", self._local("local"), True),
             Case("test boots", self._local("test"), True),
             Case("ci boots", self._local("ci"), True),
+            # Review 2026-11-11 S-14: an unset ENVIRONMENT is `local`, a laptop, in the
+            # settings; the image sets ENVIRONMENT=production (test_the_image_..._production
+            # below), so the same image started without the variable refuses the default key.
+            Case(
+                "unset ENVIRONMENT boots as a laptop",
+                {"DATABASE_URL": self.app_url, "MIGRATOR_DATABASE_URL": self.migrator_url},
+                True,
+            ),
+            Case(
+                "the image's ENVIRONMENT refuses the default key",
+                self._local(IMAGE_ENVIRONMENT, DEBUG="false"),
+                False,
+                "SECRET_KEY",
+                "rule 1 and 3",
+            ),
             # A properly configured deployed environment boots, under every deployed name.
             Case("prod boots when configured", self._good_deployed("prod"), True),
             Case("Production boots when configured", self._good_deployed("Production"), True),
@@ -184,8 +203,8 @@ class ProductionGuard(TestCase):
             Case("ci boots with no key and DEBUG off", self._local("ci", DEBUG="false"), True),
             Case(
                 "host name refuses the default key",
-                self._local("ci", DEBUG="false", RAILWAY_ENVIRONMENT_NAME="ci", LLM_PROVIDER="anthropic",
-                            EMBEDDER_PROVIDER="none", RERANKER_PROVIDER="none", AGENT_RUNNER="managed_agents",
+                self._local("ci", DEBUG="false", RAILWAY_ENVIRONMENT_NAME="ci", LLM_PROVIDER="bedrock",
+                            EMBEDDER_PROVIDER="none", RERANKER_PROVIDER="none", AGENT_RUNNER="none",
                             MAIL_PROVIDER="smtp",
                             STORAGE_BACKEND="s3", STORAGE_S3_BUCKET="b"),
                 False,
@@ -361,6 +380,77 @@ class ProductionGuard(TestCase):
                 self._local("local", RATE_LIMITING_ENABLED="false"),
                 True,
             ),
+            # Rule 10 (review 2026-11-11 S-7, D-54): no processor outside the EU when
+            # deployed, except on the environment named test, which holds no bank's data.
+            Case(
+                "prod refuses the anthropic provider",
+                self._good_deployed("prod", LLM_PROVIDER="anthropic"),
+                False,
+                "Rule 10",
+                "rule 10",
+            ),
+            Case(
+                "demo refuses the managed agents runner",
+                self._good_deployed("demo", AGENT_RUNNER="managed_agents"),
+                False,
+                "AGENT_RUNNER",
+                "rule 10",
+            ),
+            Case(
+                "prod refuses a Sentry host outside the EU",
+                self._good_deployed("prod", SENTRY_DSN="https://key@o1.ingest.us.sentry.io/2"),
+                False,
+                "SENTRY_DSN",
+                "rule 10",
+            ),
+            Case(
+                "prod refuses a Sentry host that only contains the EU name",
+                self._good_deployed("prod", SENTRY_DSN="https://key@o1.ingest.de.sentry.io.example.com/2"),
+                False,
+                "SENTRY_DSN",
+                "rule 10",
+            ),
+            Case(
+                "prod boots with Sentry on the EU host",
+                self._good_deployed("prod", SENTRY_DSN="https://key@o1.ingest.de.sentry.io/2"),
+                True,
+            ),
+            Case(
+                "deployed test keeps anthropic and any Sentry host",
+                self._good_deployed(
+                    "test",
+                    RAILWAY_ENVIRONMENT_NAME="test",
+                    LLM_PROVIDER="anthropic",
+                    SENTRY_DSN="https://key@o1.ingest.us.sentry.io/2",
+                ),
+                True,
+            ),
+            # Review 2026-11-11 B-15: the managed agents runner was never built and is no
+            # value at all, so even the deployed test environment refuses it.
+            Case(
+                "deployed test refuses the managed agents runner too",
+                self._good_deployed("test", RAILWAY_ENVIRONMENT_NAME="test", AGENT_RUNNER="managed_agents"),
+                False,
+                "AGENT_RUNNER",
+                "rule 10",
+            ),
+            # Rule 11 (review 2026-11-11 L-18): behind the edge, 0 hops puts every caller
+            # in the proxy's one per-IP bucket. A deployed environment defaults to 1.
+            Case(
+                "prod refuses zero proxy hops",
+                self._good_deployed("prod", TRUSTED_PROXY_HOPS="0"),
+                False,
+                "TRUSTED_PROXY_HOPS",
+                "rule 11",
+            ),
+            Case(
+                "deployed test refuses zero proxy hops too",
+                self._good_deployed("test", RAILWAY_ENVIRONMENT_NAME="test", TRUSTED_PROXY_HOPS="0"),
+                False,
+                "TRUSTED_PROXY_HOPS",
+                "rule 11",
+            ),
+            Case("a laptop keeps zero proxy hops", self._local("local", TRUSTED_PROXY_HOPS="0"), True),
             Case(
                 "DB_ROLE_GUARD_ENABLED=false does not disarm rule 7 when deployed",
                 self._good_deployed("prod", DATABASE_URL=self.superuser_url, DB_ROLE_GUARD_ENABLED="false"),
@@ -369,6 +459,14 @@ class ProductionGuard(TestCase):
                 "rule 7 (see settings: the env override is refused when deployed)",
             ),
         ]
+
+    def test_the_image_sets_environment_to_production(self) -> None:
+        """Review 2026-11-11 S-14: outside Railway nothing sets RAILWAY_ENVIRONMENT_NAME,
+        so the runtime stage must name a deployed environment itself."""
+        dockerfile = (Path(settings.BASE_DIR) / "Dockerfile").read_text(encoding="utf-8")
+        runtime = dockerfile.split(" AS runtime", 1)[1]
+        self.assertRegex(runtime, rf"\n\s*ENVIRONMENT={IMAGE_ENVIRONMENT} ")
+        self.assertNotIn(IMAGE_ENVIRONMENT, settings.NON_DEPLOYED_ENVIRONMENTS)
 
     def test_every_case_boots_or_refuses_as_the_rules_say(self) -> None:
         cases = self.cases()

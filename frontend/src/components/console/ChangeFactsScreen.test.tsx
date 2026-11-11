@@ -62,7 +62,6 @@ const editor = {
 /** The server: the session, the one read the screen makes, and nothing else. */
 function server(changes: Answer, extra: (sent: Sent) => Answer | undefined = () => undefined): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: editor };
     const answer = extra(sent);
     if (answer !== undefined) return answer;

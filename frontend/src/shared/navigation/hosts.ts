@@ -17,6 +17,16 @@ import { PUBLIC_HOME } from './registry';
 // load. On the app host the app works as today, sends noindex, and its link to
 // the public page moves to the public host. Any other host (the platform's own
 // address, its health check) behaves as today.
+//
+// The app host's own front door (2026-11-11): a bank's filter let the public
+// host through and rated the app host Suspicious, with the same addresses and
+// the same service behind both. The one difference was what each host answered:
+// the public host a whole page, the app host a sign-in and, at /, the session
+// gate's waiting text, since only script knows whether a session exists. So a
+// page load of / on the app host from a browser that does not say it holds a
+// session (shared/navigation/session-marker.ts) is answered with the public
+// page too, naming the public host as its canonical address. A browser that
+// says it does gets the app as before, and the gate still decides.
 
 export interface HostSettings {
   /** The first is where the app host sends a visitor to the public page. */
@@ -32,9 +42,15 @@ export interface HostRequest {
   protocol: string;
   /** Sec-Fetch-Dest, or null when the client sent none. */
   dest: string | null;
+  /** The browser says it holds a session: the marker cookie is present. A hint, never a proof. */
+  signedIn: boolean;
 }
 
-export type HostRoute = { kind: 'pass'; noindex: boolean } | { kind: 'rewrite'; path: string } | { kind: 'redirect'; url: string };
+export type HostRoute =
+  | { kind: 'pass'; noindex: boolean }
+  /** `canonical` is set where another host is the page's own address. */
+  | { kind: 'rewrite'; path: string; canonical?: string }
+  | { kind: 'redirect'; url: string };
 
 /** The files every host serves as they are: what crawlers, filters and the public page load. */
 const PUBLIC_FILES = ['/robots.txt', '/sitemap.xml', '/icon.svg'];
@@ -60,23 +76,30 @@ export function routeByHost(settings: HostSettings | null, request: HostRequest)
   if (settings === null || isPublicFile(request.path)) return { kind: 'pass', noindex: false };
   const on = (target: string, path: string) => `${request.protocol}://${target}${path}${request.search}`;
 
+  const pageLoad = request.dest === null || request.dest === 'document';
   if (host === settings.appHost) {
-    return request.path === PUBLIC_HOME ? { kind: 'redirect', url: on(settings.publicHosts[0], '/') } : { kind: 'pass', noindex: true };
+    if (request.path === PUBLIC_HOME) return { kind: 'redirect', url: on(settings.publicHosts[0], '/') };
+    if (request.path === '/' && pageLoad && !request.signedIn) return { kind: 'rewrite', path: PUBLIC_HOME, canonical: `${request.protocol}://${settings.publicHosts[0]}/` };
+    return { kind: 'pass', noindex: true };
   }
   if (!settings.publicHosts.includes(host)) return { kind: 'pass', noindex: false };
-  if (request.dest !== null && request.dest !== 'document') return { kind: 'pass', noindex: true };
+  if (!pageLoad) return { kind: 'pass', noindex: true };
   if (request.path === '/') return { kind: 'rewrite', path: PUBLIC_HOME };
   if (request.path === PUBLIC_HOME) return { kind: 'redirect', url: on(host, '/') };
   return { kind: 'redirect', url: on(settings.appHost, request.path) };
 }
 
 /**
- * Whether the answer turns on Sec-Fetch-Dest: every path on a public host but its
- * files. A shared cache keys an answer on its address alone (Railway's edge: the
- * method, host, path and query), so it must never store one of these, or the
- * public page reaches the demo's frame and a move to the app host reaches the app
- * inside it, which the app host may not frame.
+ * Whether one address has more than one answer: every path on a public host but
+ * its files, where the answer turns on Sec-Fetch-Dest, and the app host's front
+ * door, where it also turns on the session marker. A shared cache keys an answer
+ * on its address alone (Railway's edge: the method, host, path and query), so it
+ * must never store one of these, or the public page reaches the demo's frame, a
+ * move to the app host reaches the app inside it, which the app host may not
+ * frame, and a signed-in person's front door reaches a visitor.
  */
-export function variesByDest(settings: HostSettings | null, request: Pick<HostRequest, 'host' | 'path'>): boolean {
-  return settings !== null && !isPublicFile(request.path) && settings.publicHosts.includes(hostOf(request.host));
+export function variesByRequest(settings: HostSettings | null, request: Pick<HostRequest, 'host' | 'path'>): boolean {
+  if (settings === null || isPublicFile(request.path)) return false;
+  const host = hostOf(request.host);
+  return settings.publicHosts.includes(host) || (host === settings.appHost && request.path === '/');
 }

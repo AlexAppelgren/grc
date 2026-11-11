@@ -9,7 +9,6 @@ type Schemas = components['schemas'];
 export type OrgUnit = Schemas['TenantOrgUnit'];
 /** A unit as `GET /tenant/org-units` lists it: a legal entity carries its licences. */
 export type OrgUnitRow = Schemas['TenantOrgUnitRow'];
-export type OrgUnitKind = OrgUnit['kind'];
 export type OrgUnitBody = Schemas['TenantOrgUnitBody'];
 export type OrgUnitPatch = Schemas['TenantOrgUnitPatch'];
 
@@ -21,8 +20,6 @@ export type Product = Schemas['TenantProductOut'];
 export type ProductStatus = Product['status'];
 export type ProductBody = Schemas['TenantProductBody'];
 export type ProductPatch = Schemas['TenantProductPatch'];
-
-export type PersonRef = Schemas['PersonRef'];
 
 /** A lookup in the public registers (TEN-07): a job, and once it succeeded the companies it found. */
 export type RegisterLookup = Schemas['RegisterLookupOut'];

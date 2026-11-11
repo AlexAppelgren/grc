@@ -7,9 +7,7 @@ class CasesConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self) -> None:
-        # A registered change opens one case per bank, on the one ordered cursor over
-        # outbox_event (CAS-01, chunk 5 ruling 32). The handler is registered here because
-        # this is where the app is ready and the model registry is loaded.
+        # A registered change opens one case per bank, on the ordered outbox cursor (CAS-01).
         from apps.cases import creation, matching, so_what
 
         creation.register()

@@ -50,9 +50,9 @@ from apps.shared.db_role_guard import check_role
 from apps.shared.errors import PROBLEM_CONTENT_TYPE
 from apps.shared.middleware import RequestIdLogFilter
 from apps.shared.migration_helpers import POLICY_NAME, TENANT_SETTING
-from apps.shared.permissions import UNGATED_BY_DESIGN, Ungated, UngatedReason, gate_of
+from apps.shared.permissions import UNGATED_BY_DESIGN, Ungated, UngatedReason
 from apps.shared.routes import TENANT_SCOPED_ROUTES, RegisteredOperation, iter_operations
-from apps.shared.tenancy import is_tenant_task, tenant_task
+from apps.shared.tenancy import tenant_task
 from apps.shared.testing import ScenarioTestCase, agent_principal, sign_in, stub_api_key, stub_session, user_principal
 from apps.shared.tests_production_guard import BOOT, SETTING_NAMES, _with_database
 from apps.shared.tests_rls import tenant_scoped_models
@@ -62,6 +62,8 @@ from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, 
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from config.api import api
 from config.celery import app as celery_app
+from apps.shared.permissions import gate_of
+from apps.shared.testing import is_tenant_task
 
 V1 = "/api/v1"
 WRITE_METHODS = frozenset({"POST", "PATCH", "PUT"})
@@ -150,7 +152,6 @@ BOUNDED_BY_DESIGN = {
     "listPermissions": "The fixed permission catalogue in code.",
     "listRoles": "One bank's roles: the system roles and the few it adds.",
     "listSources": "The platform-curated source registry: tens of rows until a bank's own sources arrive (WAT-06).",
-    "listTaxonomyDimensions": "The taxonomy's dimensions: a handful of seeded rows.",
     "listTerms": "One vocabulary's rows (the taxonomy's terms), managed by an admin and read whole by pickers.",
     "listVocabularies": "The fixed set of vocabulary lists in code.",
     "listVocabularyRows": "One vocabulary's rows, managed by an admin and read whole by pickers.",
@@ -299,7 +300,7 @@ class SharedScenarioTests(ScenarioTestCase):
         registered = {(op.method, op.path) for op in iter_operations(api)}
         proven = set()
         for method, path, _model, factory_name in TENANT_SCOPED_ROUTES:
-            self.assertIn((method, path), registered, "the registry names a route Ninja did not register")
+            self.assertIn((method, path.partition("?")[0]), registered, "the registry names a route Ninja did not register")
             record = getattr(factories, factory_name)(tenant=tenant_a)
             with self.subTest(route=f"{method} {path}"), stub_session(member_of_b):
                 response = self.client.generic(
@@ -308,7 +309,7 @@ class SharedScenarioTests(ScenarioTestCase):
                 self.assertEqual(response.status_code, 404, f"{method} {path} leaked or refused instead of 404")
                 self.assertEqual(response.json()["code"], "not_found")
                 self.assertLessEqual(set(response.json()), PROBLEM_FIELDS, "a 404 carries the problem and never the record")
-            proven.add((method, path))
+            proven.add((method, path.partition("?")[0]))
         # A new route in the bank's own namespace without this proof fails: every GET, PATCH
         # and DELETE under /tenant/ that addresses one record is in the registry.
         unproven = sorted(
@@ -437,15 +438,15 @@ class SharedScenarioTests(ScenarioTestCase):
         budget_log.addHandler(handler)
         try:
             with override_settings(API_BUDGET_MS=0):
-                slow = timed("/reference/product")
+                slow = timed("/me")
             with override_settings(API_BUDGET_MS=60_000):
-                timed("/reference/product")
+                timed("/me")
         finally:
             budget_log.removeHandler(handler)
         warnings = [record for record in captured if record.levelno == logging.WARNING]
         self.assertEqual(len(warnings), 1, "one warning, for the request over budget only")
         self.assertEqual(getattr(warnings[0], "request_id"), slow["X-Request-ID"])  # noqa: B009
-        self.assertEqual(getattr(warnings[0], "route"), "api/v1/reference/product")  # noqa: B009
+        self.assertEqual(getattr(warnings[0], "route"), "api/v1/me")  # noqa: B009
 
         # Every list in the exported contract takes PageQuery or is bounded by design.
         openapi = api.get_openapi_schema(path_prefix=V1)

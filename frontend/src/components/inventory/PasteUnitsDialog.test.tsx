@@ -1,10 +1,9 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { PasteUnitsDialog, parsePastedUnits } from './PasteUnitsDialog';
 
@@ -55,15 +54,7 @@ function serve(decide: () => Answer = () => ({ status: 200, data: { items: [] } 
 function renderDialog(canDecide: boolean) {
   const onCreated = vi.fn();
   const onOpenChange = vi.fn();
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <PasteUnitsDialog obligationId="ob-std" entity={entity} canDecide={canDecide} open onOpenChange={onOpenChange} onCreated={onCreated} />
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  renderWith(<PasteUnitsDialog obligationId="ob-std" entity={entity} canDecide={canDecide} open onOpenChange={onOpenChange} onCreated={onCreated} />);
   return { onCreated, onOpenChange };
 }
 

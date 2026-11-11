@@ -5,11 +5,11 @@ import { useState, type FormEvent } from 'react';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Field, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
 import { useAddPasskey, useFormatContext, usePasskeys, useRemovePasskey, useRenamePasskey } from '@/features/identity/hooks';
 import { presentPasskey } from '@/features/identity/identity-presentation';
 import type { Passkey } from '@/features/identity/types';
@@ -73,17 +73,17 @@ function PasskeyRow({ passkey, onlyOne }: { passkey: Passkey; onlyOne: boolean }
                   {t('common.cancel')}
                 </Button>
                 <Button variant="danger" size="small" disabled={remove.isPending} onClick={() => remove.mutate(passkey.id, { onSettled: () => setConfirming(false) })}>
-                  {t('me.passkeys.remove')}
+                  {t('common.remove')}
                 </Button>
               </>
             ) : (
               <>
                 <Button variant="outline" size="small" onClick={() => setEditing(true)}>
-                  {t('me.passkeys.rename')}
+                  {t('common.rename')}
                 </Button>
                 {/* Stays pressable with one passkey: the server's 409 last_passkey is the answer (ID-S10). */}
                 <Button variant="danger" size="small" onClick={() => setConfirming(true)} data-only-one={onlyOne ? '' : undefined}>
-                  {t('me.passkeys.remove')}
+                  {t('common.remove')}
                 </Button>
               </>
             )}
@@ -98,8 +98,7 @@ function AddPasskeyModal({ open, onClose, onAdded }: { open: boolean; onClose: (
   const t = useT();
   const add = useAddPasskey();
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     add.mutate(undefined, {
       onSuccess: (response) => {
         onAdded(response.passkey.nickname);
@@ -109,8 +108,14 @@ function AddPasskeyModal({ open, onClose, onAdded }: { open: boolean; onClose: (
   };
 
   return (
-    <Modal open={open} onOpenChange={(next) => (next ? undefined : onClose())} title={t('me.passkeys.addTitle')}>
-      <form onSubmit={submit} noValidate aria-busy={add.isPending}>
+    open ? (
+      <FormDialog
+        title={t('me.passkeys.addTitle')}
+        submitLabel={add.isPending ? t('auth.enrol.waiting') : t('auth.enrol.create')}
+        pending={add.isPending}
+        onSubmit={submit}
+        onClose={onClose}
+      >
         <p className="mb-5 text-muted">{t('me.passkeys.addLede')}</p>
         {add.error instanceof WebAuthnFailure ? (
           <p role="alert" className="text-meta text-negative">
@@ -120,16 +125,8 @@ function AddPasskeyModal({ open, onClose, onAdded }: { open: boolean; onClose: (
           <ProblemAlert error={add.error} />
         ) : null}
         {add.isPending ? <StatusLine>{t('auth.enrol.waitingHint')}</StatusLine> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose} disabled={add.isPending}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={add.isPending}>
-            {add.isPending ? t('auth.enrol.waiting') : t('auth.enrol.create')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+      </FormDialog>
+    ) : null
   );
 }
 
@@ -145,19 +142,19 @@ export function PasskeysScreen() {
       {added !== null ? (
         <StatusLine tone="positive">{t('auth.enrol.added', { name: added })}</StatusLine>
       ) : null}
-      {passkeys.isPending ? (
-        <LoadingState />
-      ) : passkeys.isError ? (
-        <ErrorState title={t('me.passkeys.errorTitle')} onRetry={() => void passkeys.refetch()} />
-      ) : passkeys.data.length === 0 ? (
-        <EmptyState title={t('me.passkeys.emptyTitle')} body={t('me.passkeys.emptyBody')} />
-      ) : (
-        <Rows>
-          {passkeys.data.map((passkey) => (
-            <PasskeyRow key={passkey.id} passkey={passkey} onlyOne={passkeys.data.length === 1} />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={passkeys} errorTitle={t('me.passkeys.errorTitle')}>
+        {(data) =>
+          data.length === 0 ? (
+            <EmptyState title={t('me.passkeys.emptyTitle')} body={t('me.passkeys.emptyBody')} />
+          ) : (
+            <Rows>
+              {data.map((passkey) => (
+                <PasskeyRow key={passkey.id} passkey={passkey} onlyOne={data.length === 1} />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
       <AddPasskeyModal open={adding} onClose={() => setAdding(false)} onAdded={setAdded} />
     </>
   );

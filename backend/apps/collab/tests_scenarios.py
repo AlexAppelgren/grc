@@ -374,7 +374,7 @@ class CollabScenarioTests(ScenarioTestCase):
         """COL-S6
 
         A person or a team is added to a register entry, audited, and gains no access (COL-04, AC-COL1).
-        Operations: `addObligationParticipant`, `listObligationParticipants`.
+        Operations: `addParticipant`, `listParticipants`.
         """
         run_col_s6(self)
 
@@ -382,7 +382,7 @@ class CollabScenarioTests(ScenarioTestCase):
         """COL-S7
 
         A participant leaves a register entry on their own (COL-04).
-        Operations: `removeObligationParticipant`.
+        Operations: `removeParticipant`.
         """
         run_col_s7(self)
 
@@ -390,7 +390,7 @@ class CollabScenarioTests(ScenarioTestCase):
         """COL-S8
 
         Register-entry participant routes refuse other tenants, strangers and people who cannot read (COL-04, NFR-01).
-        Operations: `addObligationParticipant`, `listObligationParticipants`, `removeObligationParticipant`.
+        Operations: `addParticipant`, `listParticipants`, `removeParticipant`.
         """
         run_col_s8(self)
 
@@ -398,7 +398,7 @@ class CollabScenarioTests(ScenarioTestCase):
         """COL-S9
 
         Case participants are managed by those who contribute, and refused across tenants (COL-04, NFR-01).
-        Operations: `addCaseParticipant`, `listCaseParticipants`, `removeCaseParticipant`.
+        Operations: `addParticipant`, `listParticipants`, `removeParticipant`.
         """
         run_col_s9(self)
 

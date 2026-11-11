@@ -10,7 +10,7 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 
-import { termRowsQuery } from '@/features/footprint/hooks';
+import { termRowsQuery } from '@/features/shared/reference';
 import { homeKeys } from '@/features/home/hooks';
 import { usePermissions } from '@/shared/navigation/require-permission';
 

@@ -59,7 +59,6 @@
   "console.agents.changeNoteRequired": "Beskriv vad som ändrats i den här versionen.",
   "console.agents.publishAction": "Publicera version {version}",
   "console.agents.publishedStatus": "Publicerad. {name} kör version {version} från nästa körning.",
-  "console.agents.retire": "Avveckla",
   "console.agents.retireBody": "Avveckla version {version}? Ingen körning startar på den igen. Körningarna den gjort anger den fortfarande, och den finns kvar i listan. Du ombeds bekräfta med din nyckel.",
   "console.agents.retireAction": "Avveckla version {version}",
   "console.agents.retiredStatus": "Version {version} är avvecklad. Ingen körning startar på den igen.",

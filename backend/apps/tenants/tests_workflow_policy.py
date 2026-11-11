@@ -14,7 +14,7 @@ import importlib
 from typing import Any
 
 from django.conf import settings
-from django.db.migrations.operations import AddField
+from django.db.migrations.operations import CreateModel
 from django.test import SimpleTestCase
 
 from apps.identity.models import TenantRole
@@ -182,14 +182,14 @@ class WorkflowPolicy(ScenarioTestCase):
         self.assertEqual((response.status_code, response.json()["requiredPermission"]), (403, perms.SECURITY_MANAGE))
 
 
-class ExistingTenantsTakeTheDefaults(SimpleTestCase):
-    """The migration adds each column with the platform default, which PostgreSQL writes into
-    every tenant row that existed before it: `AddField` with a default backfills, then drops
-    the database default and leaves the model's."""
+class TheTenantTableCarriesTheDefaults(SimpleTestCase):
+    """The tenant table's migration builds each workflow column not null with the platform
+    default (shared 0009, squashed into 0001; the tenants that existed before 0009 took the
+    default when it ran)."""
 
-    def test_the_migration_adds_every_column_with_the_platform_default(self) -> None:
-        migration = importlib.import_module("apps.shared.migrations.0009_tenant_workflow_policy").Migration
-        added = {op.name: op.field for op in migration.operations if isinstance(op, AddField) and op.model_name == "tenant"}
+    def test_the_migration_builds_every_column_with_the_platform_default(self) -> None:
+        migration = importlib.import_module("apps.shared.migrations.0001_squashed_0001_tables").Migration
+        tenant = next(op for op in migration.operations if isinstance(op, CreateModel) and op.name == "Tenant")
         expected = {
             "reminder_days_before": list(settings.WORKFLOW_REMINDER_DAYS_BEFORE),
             "review_reminder_days_before": list(settings.WORKFLOW_REVIEW_REMINDER_DAYS_BEFORE),
@@ -198,6 +198,7 @@ class ExistingTenantsTakeTheDefaults(SimpleTestCase):
             "digest_weekday": settings.WORKFLOW_DIGEST_WEEKDAY,
             "triage_target_hours": settings.WORKFLOW_TRIAGE_TARGET_HOURS,
         }
+        added = {name: field for name, field in tenant.fields if name in expected}
         self.assertEqual(set(added), set(expected))
         for name, value in expected.items():
             self.assertFalse(added[name].null, name)

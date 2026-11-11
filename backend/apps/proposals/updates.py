@@ -1,23 +1,15 @@
 """What changed in the shared library since a bank last looked (PRO-03, INV-04, FP-03).
 
-A bank does not read the queue: the queue is the platform's, and a proposal is a request
-somebody made, not a fact. What a bank reads is the other end of it — the changes that were
-approved and applied — and it reads them as the library's own facts:
+A bank reads the approved and applied changes as the library's own facts, never the queue:
 
-- Every item is titled by the library record it touched, never by the proposal that carried
-  it, so one bank's wording can never reach another bank as a heading.
-- No person as proposer or reviewer, and no note: who asked for a change is nobody's
-  business outside the console, and a bank that filed one reads its own request through
-  `GET /tenant/proposals` instead. The platform agents that proposed or confirmed it are
-  named by definition key (INV-05, D-62), read from the proposal itself, so a change an
-  independent agent confirmed never reads as a person's approval, whatever kind it is.
-- The cut to the bank's own business is `taxonomy.matching`, the one footprint rule, applied
-  in the database by the same SQL function the inventory list uses, so a duty hidden from
-  the inventory is hidden here too. A change to a shared list is never cut: a list belongs
-  to every bank and to no footprint.
+- Every item is titled by the library record it touched, never by the proposal, so one
+  bank's wording never reaches another.
+- No person and no note; platform agents are named by definition key (INV-05, D-62), so an
+  agent's confirmation never reads as a person's.
+- The footprint cut is `taxonomy.matching`'s SQL function, as the inventory uses. A change
+  to a shared list is never cut.
 
-Days are the bank's own days: a change applied at 23:40 UTC is filed under the next day for
-a bank in Stockholm, because that is the day its people will say it arrived.
+Days are the bank's own days (a change at 23:40 UTC is the next day in Stockholm).
 """
 
 from __future__ import annotations
@@ -60,12 +52,9 @@ def since_for(tenant: Any, membership: Any) -> datetime.datetime:
 
 
 def _applied(*, since: datetime.datetime, kind: str | None, outside_footprint: bool, tenant_id: uuid.UUID) -> QuerySet[Proposal]:
-    """The changes applied since `since`, newest first, cut to the footprint in the database
-    rather than in Python: a duty the footprint hides is not counted, not only unprinted. A
-    change to a shared list carries no target and is never cut, and neither is a new
-    instrument or a provision, a record of the library rather than a duty. A new obligation has
-    no target either, since it did not exist when it was proposed: it is cut through the
-    first version its approval wrote."""
+    """The changes applied since `since`, newest first, cut to the footprint in the
+    database. A change to a shared list, a new instrument and a provision are never cut; a
+    new obligation is cut through the first version its approval wrote."""
     from apps.library.reading import scope_term_ids
 
     # A regulation's summary describes a record and changes no fact a bank acts on (INV-09),
@@ -121,9 +110,8 @@ def _vocabulary_refs(proposals: list[Proposal], order: list[str]) -> dict[uuid.U
             # A taxonomy dimension rather than a list: the row is a term of that dimension.
             rows = list(TaxonomyTerm.objects.filter(dimension__key=name, key__in=set(by_proposal.values())))
             labelled = vocabulary_refs(TaxonomyTermLabel, rows, order, field="term")
-        # Assigned one by one rather than merged with dict.update(): the library fence's
-        # static guard reads a call to .update() as a write, and this module names library
-        # models to read them (apps/shared/tests_library_fence.py).
+        # One by one, not dict.update(): the library fence reads .update() as a write, and
+        # this module names library models to read them.
         by_key = {row.key: labelled[row.id] for row in rows}
         for proposal_id, key in by_proposal.items():
             if key in by_key:

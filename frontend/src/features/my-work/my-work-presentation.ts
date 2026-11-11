@@ -54,11 +54,6 @@ export function permissionLimitedLines(kinds: readonly WorkItemKind[], t: Transl
   return kinds.map((kind) => t(LIMITED_LABEL[kind]));
 }
 
-/** The bank's own today, a plain date in its time zone: every day count is against it. */
-export function tenantToday(now: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone }).format(now);
-}
-
 function daysBetween(from: string, to: string): number {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 }
@@ -108,7 +103,7 @@ export function workReasons(item: Pick<WorkItem, 'reasons'>, scope: WorkScope['s
 /** The pills the record already has elsewhere: an obligation's compliance status, a change's urgency. */
 export function presentWorkItem(item: Pick<WorkItem, 'status' | 'urgency'>): PresentedPill[] {
   const pills: PresentedPill[] = [];
-  if (item.status !== null) pills.push(presentCompliance({ key: item.status.key, label: item.status.label, kind: item.status.kind ?? null }));
+  if (item.status !== null) pills.push(presentCompliance({ key: item.status.key, label: item.status.label, kind: item.status.kind }));
   const urgency = urgencyOf(item.urgency);
   if (urgency !== null) pills.push({ key: `urgency:${urgency.key}`, label: urgency.label, tone: urgencyTone[urgency.kind], order: 0 });
   return pills;

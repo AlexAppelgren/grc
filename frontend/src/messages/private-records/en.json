@@ -35,8 +35,6 @@
   "privateRecords.field.effectiveFrom": "In force from",
   "privateRecords.field.terms": "Scope",
   "privateRecords.field.originalLanguage": "Original language",
-  "privateRecords.approve": "Approve",
-  "privateRecords.reject": "Reject",
   "privateRecords.approveHint": "Approving puts it in the inventory as Private to us. Your passkey will be asked.",
   "privateRecords.approve.title": "Approve \"{title}\"?",
   "privateRecords.approve.body": "It goes into our inventory as Private to us, beside the shared library, where the register can decide it.",
@@ -57,8 +55,5 @@
   "privateRecords.empty.action": "See the regulatory scope",
   "privateRecords.loadError": "Could not load our own records",
   "privateRecords.back": "Our own records",
-  "privateRecords.notFoundBody": "There is nothing at this address in your organisation.",
-  "privateRecords.previous": "Previous",
-  "privateRecords.next": "Next",
-  "privateRecords.range": "{from}–{to} of {total}"
+  "privateRecords.notFoundBody": "There is nothing at this address in your organisation."
 }

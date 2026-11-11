@@ -1,21 +1,11 @@
 """The public registers' jobs (TEN-07, TEN-08; PUBLIC_REGISTERS.md 3.1, 3.4, 5.2).
 
-A lookup is a job: `start_lookup` writes it and hands it to the worker once the request
-commits; `run_lookup` finds the company in GLEIF, walks its children breadth first and reads
-each company's facts from the register of its country, then stores what it found or fails
-whole (`lookup_not_found`, `lookup_ambiguous`, `register_unavailable`), never with a partial
-result. Nothing in the organisation changes until a person applies it: `apply_lookup` adds or
-links the chosen companies through the organisation's own write path and stores their register
-facts. It writes no licence row and no scope term.
-
-`recheck` is the nightly re-read: for every register entry of an active legal entity it reads
-the register again and stores what changed, with an audit event naming the change. It edits
-neither the organisation nor the scope, and a register that cannot be reached leaves the stored
-facts as they are.
-
-The functions here write the bank's rows and name no library model; the register reads and the
-mapping are apps/tenants/registers_logic.py's. Nothing here logs a number or a name: a skipped
-re-read logs the entry's id.
+`start_lookup` writes a lookup and hands it to the worker; `run_lookup` finds the company in
+GLEIF, walks its children and reads each one's register, then stores the result or fails
+whole, never partially. `apply_lookup` changes the organisation only when a person applies it,
+and writes no licence row or scope term. `recheck` is the nightly re-read: it stores what
+changed with an audit event and leaves the facts as they are when a register is unreachable.
+Nothing here logs a number or a name.
 """
 
 from __future__ import annotations
@@ -23,11 +13,12 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from datetime import timedelta
 from typing import Any, cast
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils import timezone
 
 from apps.identity.models import User
@@ -35,7 +26,7 @@ from apps.reports.models import JobStatus
 from apps.reports.schemas import JobStatusValue
 from apps.shared.adapters.registers import LEI, REGISTRATION_NUMBER, LeiCompany, RegistersAdapter, RegisterUnavailable, digits, get_registers
 from apps.shared.audit import Actor, batched, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 from apps.tenants import organisation, registers_logic
 from apps.tenants.models import OrgUnit, OrgUnitKind, RegisterEntry, RegisterLookup
@@ -56,12 +47,34 @@ LOOKUP = "register_lookup"
 ENTRY = "register_entry"
 
 
-# ---------------------------------------------------------------------------------------
-# The lookup
-# ---------------------------------------------------------------------------------------
+# --- The lookup ---
+def _one_lookup_at_a_time(tenant: Tenant) -> None:
+    """One lookup per bank at a time, and at most `REGISTERS_LOOKUPS_PER_HOUR` an hour (review
+    2026-11-11 S-11): each holds a worker and sends the registers hundreds of requests. A bank's
+    starts queue on an advisory lock. A lookup still queued or running blocks a new one, 409
+    `lookup_in_progress`, unless it started more than twice `REGISTERS_JOB_SECONDS` ago (a lost
+    worker message); past the hourly number it is 429 `rate_limited`."""
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [f"{LOOKUP}:{tenant.id}"])
+    now = timezone.now()
+    lookups = RegisterLookup.objects.filter(tenant=tenant)
+    stale = now - timedelta(seconds=2 * settings.REGISTERS_JOB_SECONDS)
+    if lookups.filter(status__in=(JobStatus.QUEUED.value, JobStatus.RUNNING.value), created_at__gt=stale).exists():
+        raise ProblemError(
+            status=409, code="lookup_in_progress", detail="A lookup in the public registers is already running. Wait for it to finish."
+        )
+    if lookups.filter(created_at__gt=now - timedelta(hours=1)).count() >= settings.REGISTERS_LOOKUPS_PER_HOUR:
+        raise ProblemError(
+            status=429,
+            code="rate_limited",
+            detail=f"Your organisation has started {settings.REGISTERS_LOOKUPS_PER_HOUR} lookups in the last hour. Try again later.",
+        )
+
+
 def start_lookup(*, tenant: Tenant, actor: Actor, user: User, query: str) -> RegisterLookup:
     """`POST /tenant/register-lookups`: an LEI (upper-cased) or a registration number as typed,
-    or 422 `invalid_query` before anything is written."""
+    or 422 `invalid_query` before anything is written; 409 `lookup_in_progress` or 429
+    `rate_limited` from `_one_lookup_at_a_time`."""
     from apps.tenants import tasks  # the worker's module imports this one
 
     query = query.strip()
@@ -71,6 +84,7 @@ def start_lookup(*, tenant: Tenant, actor: Actor, user: User, query: str) -> Reg
         raise ValidationError(
             "Type an organisation number, such as 556000-0001, or a 20-character LEI.", code="invalid_query"
         )
+    _one_lookup_at_a_time(tenant)
     lookup = RegisterLookup.objects.create(tenant=tenant, query=query, requested_by=user)
     record(
         action="register_lookup.started",
@@ -92,7 +106,7 @@ def lookup_of(tenant: Tenant, lookup_id: uuid.UUID, *, lock: bool = False) -> Re
     rows = RegisterLookup.objects.select_for_update() if lock else RegisterLookup.objects
     lookup = rows.filter(tenant=tenant, pk=lookup_id).first()  # ordering: pk lookup, at most one row
     if lookup is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return lookup
 
 
@@ -101,13 +115,20 @@ def _clock() -> float:
     return time.monotonic()
 
 
-def _group(registers: RegistersAdapter, root: LeiCompany) -> list[LeiCompany]:
-    """The company and the companies under it, breadth first, at most REGISTERS_MAX_ENTITIES."""
+def _in_time(deadline: float) -> None:
+    if _clock() > deadline:
+        raise RegisterUnavailable("the registers took longer than REGISTERS_JOB_SECONDS")
+
+
+def _group(registers: RegistersAdapter, root: LeiCompany, deadline: float) -> list[LeiCompany]:
+    """The company and the companies under it, breadth first, at most REGISTERS_MAX_ENTITIES,
+    the deadline checked before each company's children and before each of their pages."""
     companies = [root]
     seen = {root.lei}
     index = 0
     while index < len(companies) and len(companies) < settings.REGISTERS_MAX_ENTITIES:
-        for child in registers.children(companies[index].lei):
+        _in_time(deadline)
+        for child in registers.children(companies[index].lei, deadline=deadline):
             if child.lei not in seen and len(companies) < settings.REGISTERS_MAX_ENTITIES:
                 seen.add(child.lei)
                 companies.append(child)
@@ -115,14 +136,14 @@ def _group(registers: RegistersAdapter, root: LeiCompany) -> list[LeiCompany]:
     return companies
 
 
-def _with_facts(registers: RegistersAdapter, company: LeiCompany, covered: dict[str, Any]) -> RegisterLookupCompany:
+def _with_facts(registers: RegistersAdapter, company: LeiCompany, covered: dict[str, Any], deadline: float) -> RegisterLookupCompany:
     """GLEIF's company with the facts of its country's register, where bleqq reads one."""
     if company.country not in covered:
         covered[company.country] = registers_logic.authority_for_country(company.country)
     authority = covered[company.country]
     read = None
     if authority is not None and REGISTRATION_NUMBER.fullmatch(company.registration_number):
-        read = registers.licence_facts(authority.key, company.registration_number)
+        read = registers.licence_facts(authority.key, company.registration_number, deadline=deadline)
     return RegisterLookupCompany(
         lei=company.lei,
         name=company.name,
@@ -177,10 +198,9 @@ def run_lookup(tenant_id: uuid.UUID, lookup_id: str) -> None:
         deadline = _clock() + settings.REGISTERS_JOB_SECONDS
         covered: dict[str, Any] = {}
         companies = []
-        for company in _group(registers, found[0]):
-            if _clock() > deadline:
-                raise RegisterUnavailable("the registers took longer than REGISTERS_JOB_SECONDS")
-            companies.append(_with_facts(registers, company, covered))
+        for company in _group(registers, found[0], deadline):
+            _in_time(deadline)
+            companies.append(_with_facts(registers, company, covered, deadline))
     except RegisterUnavailable:
         _finish(lookup, code="register_unavailable", companies=[])
         return
@@ -243,9 +263,7 @@ def lookup_out(*, tenant: Tenant, lookup: RegisterLookup, order: list[str]) -> R
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Applying a lookup
-# ---------------------------------------------------------------------------------------
+# --- Applying a lookup ---
 def _placed_ancestor(company: RegisterLookupCompany, by_lei: dict[str, RegisterLookupCompany], placed: dict[str, uuid.UUID]) -> uuid.UUID | None:
     """The unit of the nearest company above this one that was chosen, if any."""
     parent, seen = company.parent_lei, set()
@@ -357,9 +375,7 @@ def _store(tenant: Tenant, actor: Actor, unit_id: uuid.UUID, authority_id: uuid.
             _change(entry, facts, source_url, read_at, actor)
 
 
-# ---------------------------------------------------------------------------------------
-# The nightly re-read
-# ---------------------------------------------------------------------------------------
+# --- The nightly re-read ---
 def _added(before: list[str], after: list[str]) -> list[str]:
     return [item for item in dict.fromkeys(after) if item not in set(before)]
 
@@ -425,7 +441,7 @@ def recheck(tenant_id: uuid.UUID) -> None:
             try:
                 if not REGISTRATION_NUMBER.fullmatch(stored.registration_number):
                     raise RegisterUnavailable("the stored number cannot be looked up")
-                read = registers.licence_facts(entry.authority.key, stored.registration_number)
+                read = registers.licence_facts(entry.authority.key, stored.registration_number, deadline=deadline)
             except RegisterUnavailable:
                 logger.warning("register re-read skipped", extra={"register_entry_id": str(entry.id)})
                 continue

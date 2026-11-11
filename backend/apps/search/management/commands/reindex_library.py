@@ -1,15 +1,8 @@
-"""`manage.py reindex_library`: rebuild the whole search index from the library (SRC-01).
+"""`manage.py reindex_library`: rebuild the whole search index from the library (SRC-01),
+after a seed or after a change to how a chunk is built.
 
-Two jobs. After a seed, so the reference library is searchable without waiting for someone
-to approve a change to every record; and after a change to how a chunk is built — the
-citation line, the validity rule, the metadata a filter compares — which no library write
-would otherwise pick up.
-
-It is safe to run at any time and safe to run twice: the rebuild compares what the library
-says with what the index holds and touches only what differs, so a second run writes
-nothing, keeps every embedding already paid for, and costs one audit row with its counts.
-The embeddings the run owes are filled afterwards by the worker, from that row's outbox
-event, never inside this transaction.
+Safe to run any time and twice: only what differs is written, embeddings are kept, and the
+run costs one audit row whose outbox event has the worker fill the owed embeddings.
 """
 
 from __future__ import annotations

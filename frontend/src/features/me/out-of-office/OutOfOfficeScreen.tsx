@@ -6,15 +6,17 @@ import { Button, ButtonBar } from '@/components/ui/Button';
 import { controlClass, Field } from '@/components/ui/Field';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel } from '@/components/ui/Panel';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';
-import { formatLongDate } from '@/shared/utils/format';
+import { formatLongDate, tenantToday } from '@/shared/utils/format';
 import { problemFrom } from '@/shared/utils/problem';
 
 import type { OutOfOffice, Person } from './api';
-import { useOutOfOffice, usePeople, useSetOutOfOffice } from './hooks';
+import { usePeople } from '@/features/shared/reference';
+
+import { useOutOfOffice, useSetOutOfOffice } from './hooks';
 
 // Out of office (design/screens/me-out-of-office.html; TEN-04, TEN-S4): the
 // person's own last day away and the delegate who receives their approval
@@ -23,11 +25,6 @@ import { useOutOfOffice, usePeople, useSetOutOfOffice } from './hooks';
 // choice are the bank's today, never the device's. Refusals render from the
 // problem's code under the field they belong to; the delegate gains nothing,
 // the server checks what they may approve.
-
-/** The calendar day it is now in `timeZone`, as YYYY-MM-DD. */
-export function todayIn(timeZone: string, now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone }).format(now);
-}
 
 type FieldErrors = { untilDate?: string; delegateId?: string };
 
@@ -134,7 +131,7 @@ function SetForm({ selfId, onAlreadyAway }: { selfId: string | undefined; onAlre
   const save = useSetOutOfOffice();
   const [until, setUntil] = useState('');
   const [delegate, setDelegate] = useState<Person | null>(null);
-  const today = todayIn(ctx.timeZone);
+  const today = tenantToday(ctx.timeZone);
 
   const refusedField = save.isError ? fieldOf(save.error) : null;
   const errors: FieldErrors = {};
@@ -240,18 +237,18 @@ export function OutOfOfficeScreen() {
   return (
     <>
       <PageHead title={t('me.outOfOffice.title')} lede={t('me.outOfOffice.lede')} />
-      {absence.isPending ? (
-        <LoadingState />
-      ) : absence.isError ? (
-        <ErrorState title={t('me.outOfOffice.errorTitle')} onRetry={() => void absence.refetch()} />
-      ) : absence.data.away ? (
-        <AwayPanel absence={absence.data} onEnded={() => setBack(true)} />
-      ) : (
-        <>
-          {back ? <StatusLine tone="positive">{t('me.outOfOffice.back')}</StatusLine> : null}
-          <SetForm selfId={me?.user.id} onAlreadyAway={() => void absence.refetch()} />
-        </>
-      )}
+      <QueryState query={absence} errorTitle={t('me.outOfOffice.errorTitle')}>
+        {(data) =>
+          data.away ? (
+            <AwayPanel absence={data} onEnded={() => setBack(true)} />
+          ) : (
+            <>
+              {back ? <StatusLine tone="positive">{t('me.outOfOffice.back')}</StatusLine> : null}
+              <SetForm selfId={me?.user.id} onAlreadyAway={() => void absence.refetch()} />
+            </>
+          )
+        }
+      </QueryState>
     </>
   );
 }

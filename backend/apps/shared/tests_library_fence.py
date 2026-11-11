@@ -155,6 +155,7 @@ from apps.shared.authentication import ApiKeyAuth, Principal, PrincipalKind, Ses
 from apps.shared.routes import RegisteredOperation, iter_operations
 from apps.shared.tenancy import LibraryModel, library_write
 from config.api import api
+from apps.shared.permissions import gate_of
 
 APPS_DIR = Path(__file__).resolve().parent.parent
 
@@ -770,7 +771,7 @@ class ProposalDoorGuard(SimpleTestCase):
                 node = view_node(operation)
                 if operation.operation_id == "approveProposal":
                     self.assertIsNone(
-                        perms.gate_of(operation.view_func),
+                        gate_of(operation.view_func),
                         "approveProposal takes no single decorator gate: require_reviewer() decides per principal",
                     )
                     self.assertIn(
@@ -790,7 +791,7 @@ class ProposalDoorGuard(SimpleTestCase):
                     )
                 else:
                     wanted = PRIVATE_ROUTE_GATE if operation.operation_id == PRIVATE_APPROVAL else perms.Gate("permission", perms.PROPOSALS_REVIEW)
-                    self.assertEqual(perms.gate_of(operation.view_func), wanted)
+                    self.assertEqual(gate_of(operation.view_func), wanted)
                     self.assertTrue(perms.step_up_of(operation.view_func), "a library write needs a fresh passkey assertion")
                     self.assertTrue(operation.auth, "a library write needs a signed-in person")
                     for auth in operation.auth:
@@ -802,7 +803,7 @@ class ProposalDoorGuard(SimpleTestCase):
         the permission is a tenant one that no platform role holds, no key's principal passes
         and no scope names."""
         operation = next(op for op in iter_operations(api) if op.operation_id == PRIVATE_APPROVAL)
-        self.assertEqual(perms.gate_of(operation.view_func), PRIVATE_ROUTE_GATE)
+        self.assertEqual(gate_of(operation.view_func), PRIVATE_ROUTE_GATE)
         self.assertTrue(perms.step_up_of(operation.view_func), "approving a bank's own record needs a fresh passkey assertion")
         self.assertEqual({type(auth) for auth in operation.auth}, {SessionAuth}, "no API key reaches the bank's own approval")
         self.assertIn(perms.PRIVATE_RECORDS_APPROVE, perms.TENANT_PERMISSIONS)
@@ -876,7 +877,7 @@ class ProposalDoorGuard(SimpleTestCase):
                     "only a route of the watch app belongs in WATCH_WRITING_ROUTES; moving an inventory "
                     "route here would exempt it from four eyes, which is the one thing this map may not do.",
                 )
-                complaint = wrong_watch_gate(operation_id, perms.gate_of(operation.view_func), set(index.edges[node]))
+                complaint = wrong_watch_gate(operation_id, gate_of(operation.view_func), set(index.edges[node]))
                 self.assertIsNone(
                     complaint,
                     f"{_label(operation)} {complaint}. A watch route takes no step-up, so the scope or the "
@@ -928,7 +929,7 @@ class ProposalDoorGuard(SimpleTestCase):
         named |= self.constants_named_by(CURATION_CONFIRMER)
         scopes = {getattr(perms, name) for name in named} & perms.ALL_SCOPES
         for operation in iter_operations(api):
-            gate = perms.gate_of(operation.view_func)
+            gate = gate_of(operation.view_func)
             if operation.operation_id in WATCH_WRITING_ROUTES and gate and gate.kind == "scope":
                 scopes.add(gate.value)
         self.assertEqual(
@@ -1126,7 +1127,7 @@ class PlatformConfigurationGuard(SimpleTestCase):
         for operation_id, writer in PLATFORM_CONFIGURATION_ROUTES.items():
             operation = operations[operation_id]
             with self.subTest(route=_label(operation)):
-                self.assertEqual(perms.gate_of(operation.view_func), PLATFORM_CONFIGURATION_GATE)
+                self.assertEqual(gate_of(operation.view_func), PLATFORM_CONFIGURATION_GATE)
                 self.assertTrue(perms.step_up_of(operation.view_func), "platform configuration needs a fresh passkey")
                 self.assertTrue(operation.auth, "platform configuration needs a signed-in person")
                 for auth in operation.auth:

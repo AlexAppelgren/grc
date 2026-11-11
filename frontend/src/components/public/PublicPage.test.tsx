@@ -62,12 +62,16 @@ afterEach(() => {
 });
 
 describe('PublicPage', () => {
-  it('opens on the bleqq entry: one h1, its pronunciation, the deck and the two actions', async () => {
+  it('opens on the deck and its two actions, with the h1 for screen readers and the origin of the name beside the deck', async () => {
     const { container } = await renderPage();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     const entry = container.querySelector('section#bleqq') as HTMLElement;
+    // The ink logo above shows the name, so the h1 is not drawn a second time.
     expect(within(entry).getByRole('heading', { level: 1 })).toHaveTextContent('bleqq');
-    expect(within(entry).getByText('noun, from the Swedish word bläck, ink')).toBeInTheDocument();
+    expect(within(entry).getByRole('heading', { level: 1 })).toHaveClass('sr-only');
+    expect(within(entry).queryByText('[blɛkː]')).toBeNull();
+    // On a wide screen the origin sits on the right of the deck.
+    expect(within(entry).getByText('noun, from the Swedish word bläck, ink')).toHaveClass('min-[860px]:order-2', 'min-[860px]:text-right');
     expect(within(entry).getByText("One inventory of your bank's obligations.")).toBeInTheDocument();
     expect(within(entry).getByRole('link', { name: 'Try out our demo' })).toHaveAttribute('href', '#demo');
     expect(within(entry).getByRole('link', { name: 'Request access' })).toHaveAttribute('href', '#request');
@@ -155,13 +159,18 @@ describe('PublicPage', () => {
     }
   });
 
-  it('keeps Sign in and Request access in the sticky bar, the main action on the right, and every Sign in goes to the passkey flow', async () => {
-    await renderPage();
+  it('makes Sign in the main action, filled and on the right, in the sticky bar and the closing section', async () => {
+    const { container } = await renderPage('hello@example.com');
     const bar = screen.getByRole('banner');
     expect(bar).toHaveClass('sticky');
     const actions = within(bar).getAllByRole('link').slice(-2);
-    expect(actions.map((link) => link.textContent)).toEqual(['Sign in', 'Request access']);
-    expect(actions[1]).toHaveAttribute('href', '#request');
+    expect(actions.map((link) => link.textContent)).toEqual(['Request access', 'Sign in']);
+    expect(actions[0]).toHaveAttribute('href', '#request');
+    expect(actions[0]).not.toHaveClass('bg-public-paper');
+    expect(actions[1]).toHaveClass('bg-public-paper', 'max-[700px]:order-2');
+    const closing = within(container.querySelector('section#request') as HTMLElement);
+    expect(closing.getByRole('link', { name: 'Sign in' })).toHaveClass('bg-public-paper');
+    expect(closing.getByRole('link', { name: 'Request access' })).not.toHaveClass('bg-public-paper');
     for (const link of screen.getAllByRole('link', { name: 'Sign in' })) expect(link).toHaveAttribute('href', '/sign-in');
   });
 

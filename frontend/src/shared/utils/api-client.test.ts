@@ -12,6 +12,7 @@ import {
   REFRESH_PATH,
   refreshSession,
   resetApiClientForTests,
+  segment,
   setStepUpHandler,
   SIGN_OUT_PATH,
   signOut,
@@ -314,5 +315,13 @@ describe('api-client', () => {
     install(() => ({ status: 500 }));
     await expect(signOut()).rejects.toBeTruthy();
     expect(tokenStore.get()).toBeNull();
+  });
+});
+
+describe('segment', () => {
+  it('keeps an id, a key or a number one path segment, whatever it holds', () => {
+    expect(segment('a/b?c')).toBe('a%2Fb%3Fc');
+    expect(segment('ob-1')).toBe('ob-1');
+    expect(segment(2)).toBe('2');
   });
 });

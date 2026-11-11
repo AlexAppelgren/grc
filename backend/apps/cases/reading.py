@@ -1,19 +1,12 @@
 """What a case needs to know about a library change, read in the library's zone (CAS-01).
 
-Everything here reads and nothing writes, which is the point of the module. The library
-fence refuses any production module that both names a library record and calls a write
-(`apps/shared/tests_library_fence.py`), because that is how a library write gets smuggled
-in beside the proposal door. So `creation.py` writes and never names a library record, and
-the reads live here — the same split `apps/library/reading.py` makes for the proposals app.
-
-`ChangeFacts` is also the honest statement of what crosses the boundary between the two
-zones: five facts, and nothing else of the library travels into a bank's case.
+Reads only: the library fence refuses a module that both names a library record and writes
+(`tests_library_fence.py`), so `creation.py` writes and the reads live here. `ChangeFacts` is
+everything that crosses into a bank's case: five facts.
 
 A change's scope is its own terms plus the jurisdictions its authority reaches, derived at
-match time by the library's `reaching()` and never stored (FP-04, D-28, D-29), in all three
-readings here: the facts a new case is decided from, the subquery the recomputation hands
-the database, and the open cases the scope change preview counts. A change with no
-authority is not restricted by jurisdiction.
+match time and never stored (FP-04, D-28, D-29). A change with no authority is not
+restricted by jurisdiction.
 """
 
 from __future__ import annotations
@@ -65,11 +58,9 @@ def change_facts(change_id: uuid.UUID) -> ChangeFacts | None:
 
 
 def _scope_of(change: RegulatoryChange) -> Scope:
-    """The change's scope as the rule reads it: its taxonomy terms by dimension, and the
-    jurisdictions its authority reaches. A flag is a `change_term` row too and is never a
-    scope term — it describes the change, it does not say who it reaches (WAT-03). A change
-    with no terms and no authority has an empty scope and so falls inside every bank's
-    footprint."""
+    """The change's scope as the rule reads it: terms by dimension plus the jurisdictions its
+    authority reaches. A flag never scopes a change (WAT-03). An empty scope falls inside
+    every footprint."""
     scope: Scope = {}
     for link in change.term_links.filter(term__isnull=False).select_related("term__dimension"):
         term = link.term
@@ -82,10 +73,8 @@ def _scope_of(change: RegulatoryChange) -> Scope:
 
 
 def _urgency_for(change: RegulatoryChange) -> Urgency:
-    """The agent's suggestion, or the urgency list's own default row when the change carries
-    none. `change_case.urgency` is NOT NULL and the case exists from the moment the change
-    does, so a bank always has something to triage from; `urgency_confirmed` stays false
-    either way, so neither reads as a person's decision."""
+    """The agent's suggestion, or the urgency list's default row. `change_case.urgency` is
+    NOT NULL; `urgency_confirmed` stays false either way."""
     if change.suggested_urgency is not None:
         return change.suggested_urgency
     default = Urgency.objects.filter(is_default=True).first()  # ordering: Meta.ordering, ordinal first
@@ -108,13 +97,9 @@ class ObligationDetails:
 
 
 def obligation_details(obligation_id: uuid.UUID, order: list[str]) -> ObligationDetails | None:
-    """The three facts `apps/cases/links.py` renders, or None when the library holds no
-    active obligation with that id.
-
-    It lives here for the same reason `change_facts` does: `links.py` writes, so it may not
-    name a library record at all (the AST half of the library fence). None rather than a
-    refusal, because the caller answers 404 and an unknown id must look exactly like an id
-    belonging to a record the reader may not see (playbook 4.4).
+    """The three facts `links.py` renders, or None for an unknown or inactive obligation.
+    Here because `links.py` writes (library fence); None, because the caller's 404 must look
+    the same for an unknown id and a hidden one (playbook 4.4).
     """
     obligation = (
         Obligation.objects.select_related("instrument")
@@ -133,15 +118,10 @@ def obligation_details(obligation_id: uuid.UUID, order: list[str]) -> Obligation
 
 
 def scope_term_ids_of_each_case() -> Func:
-    """The scope term ids of each case's change as one `uuid[]`, for the database's own
-    footprint function, correlated on `change_id` so one statement decides a whole page of
-    cases (`apps/cases/matching.py`).
-
-    The change's own terms and the jurisdiction terms its authority reaches. A flag is a
-    `change_term` row too and never scopes a change: it says what the reform is about, not
-    who it reaches (WAT-03). It lives here rather than beside the statement that uses it
-    because that module writes, and a module that writes names no library record. No join
-    leaves the case row, because the recomputation is an UPDATE, which takes none.
+    """The scope term ids of each case's change as one `uuid[]`, correlated on `change_id`,
+    so one statement decides a page of cases (`matching.py`): own terms plus the
+    jurisdictions its authority reaches; a flag never scopes (WAT-03). No join leaves the case
+    row, because the recomputation is an UPDATE.
     """
     own = ArraySubquery(
         ChangeTerm.objects.filter(change=OuterRef("change_id"), term__isnull=False).order_by().values("term_id"),
@@ -157,15 +137,9 @@ def scope_term_ids_of_each_case() -> Func:
 
 
 def open_case_scopes(tenant_id: uuid.UUID) -> list[Scope]:
-    """The scope of each open case's change in this bank, one entry per case, for the scope
-    change preview (AC-FP1). The SQL function reads the stored footprint and the preview asks
-    about one that does not exist yet, so the preview decides in Python with the same rule.
-
-    Two queries for any number of cases: a row per case and change term, and one row with no
-    term for a change that carries none; then the jurisdictions the changes' authorities
-    reach. A closed or dismissed case is finished work and is not counted, as the
-    recomputation leaves it alone (`apps/cases/matching.py`). A flag is a `change_term` row
-    with no term and never scopes a change (WAT-03).
+    """The scope of each open case's change, one entry per case, for the scope change preview
+    (AC-FP1), which decides in Python with the same rule because it asks about a footprint
+    not yet stored. Two queries; finished cases are not counted; a flag never scopes (WAT-03).
     """
     rows = (
         ChangeCase.objects.filter(tenant_id=tenant_id)

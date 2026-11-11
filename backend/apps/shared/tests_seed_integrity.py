@@ -106,7 +106,7 @@ from apps.library.reading import today_for
 from apps.shared.e2e_seed import EXPECTED_CASE_JOURNEYS, EXPECTED_COLLAB_WORK, run_collab_jobs
 from apps.watch.models import ChangeDocument, ChangeEvent, ChangeObligation, ChangeTerm, CheckStatus, RegulatoryChange, Source, SourceCheck, SourceCheckKind
 from apps.watch.models import ChangeStatus
-from apps.taxonomy.matching import footprint_of, in_footprint, in_footprint_sql, opt_in_dimensions, restricting_dimensions
+from apps.taxonomy.matching import footprint_of, in_footprint, restricting_dimensions
 from apps.taxonomy.models import FootprintChangeRequest, FootprintHistory, FootprintTerm, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
@@ -137,6 +137,7 @@ from apps.taxonomy.models import Team
 from apps.tenants.models import InternalItem, Licence, LicenceServiceTerm, OrgUnit, TeamMember, TenantProduct, TenantProductTerm
 # acc-e2e-seed
 from apps.shared.e2e_seed import EXPECTED_J11
+from apps.shared.testing import in_footprint_sql, opt_in_dimensions
 
 # The login search.journey.spec.ts asks as (LOGINS.reader), tenant A's reader.
 READER_EMAIL = "reader@example-bank.test"

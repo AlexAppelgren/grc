@@ -38,14 +38,3 @@ export function groupSupportGrants(grants: readonly SupportAccessGrant[]): { pen
     history: grants.filter((g) => g.state !== 'pending' && g.state !== 'active'),
   };
 }
-
-/**
- * The two refusals a support session meets, by code (playbook 4.4): pass to
- * `ProblemAlert`'s `codes` wherever an action or a page may meet them.
- */
-export function supportSessionProblemCopy(t: Translate): Readonly<Record<string, string>> {
-  return {
-    support_read_only: t('supportAccess.problem.readOnly'),
-    support_access_ended: t('supportAccess.problem.ended'),
-  };
-}

@@ -6,20 +6,20 @@ import { BackLink } from '@/components/admin/AdminGate';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CheckGroup, CheckRow, Field, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
+import { SecretOnce } from '@/components/ui/SecretOnce';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from '@/features/tenant-admin/hooks';
 import { isExpired, isLive, presentCredential } from '@/features/agent-access/presentation';
 import { readsAs } from '@/features/tenant-admin/api-keys/presentation';
-import { humaniseKey } from '@/features/tenant-admin/members-presentation';
 import type { ApiKey, ApiKeyCreated } from '@/features/tenant-admin/types';
 import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { formatDate, formatDateTime } from '@/shared/utils/format';
+import { formatDate, formatDateTime, humaniseKey } from '@/shared/utils/format';
 
 // API keys (design/screens/admin-api-keys.html, ID-10, ACC-03): every
 // credential of the bank in one list, our integrations' keys, our agent access
@@ -54,30 +54,11 @@ function scopeDescription(scope: string, t: Translate): string {
 
 function NewKeyPanel({ created, onDone }: { created: ApiKeyCreated; onDone: () => void }) {
   const t = useT();
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(created.plainKey);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  };
   return (
     <Panel title={t('admin.apiKeys.newKeyTitle')} role="status" data-new-key="">
-      <pre className="m-0 mb-3 rounded-control border border-line bg-subtle p-3 font-mono whitespace-pre-wrap break-all" data-plain-key="">
-        {created.plainKey}
-      </pre>
-      <p className="text-muted">{t('admin.apiKeys.newKeyBody')}</p>
-      {copied ? <StatusLine tone="positive">{t('admin.apiKeys.copied')}</StatusLine> : null}
-      <ButtonBar>
-        <Button variant="outline" size="small" onClick={onDone}>
-          {t('common.done')}
-        </Button>
-        <Button size="small" onClick={() => void copy()}>
-          {t('admin.apiKeys.copy')}
-        </Button>
-      </ButtonBar>
+      <SecretOnce secret={created.plainKey} copyLabel={t('admin.apiKeys.copy')} onDone={onDone}>
+        <p className="text-muted">{t('admin.apiKeys.newKeyBody')}</p>
+      </SecretOnce>
     </Panel>
   );
 }
@@ -181,38 +162,29 @@ function KeyRow({ apiKey }: { apiKey: ApiKey }) {
       {isLive(apiKey, now) ? (
         <ButtonBar>
           <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
-            {t('admin.apiKeys.revoke')}
+            {t('common.revoke')}
           </Button>
         </ButtonBar>
       ) : null}
       {confirming ? (
-        <Modal
-          open
-          onOpenChange={(next) => (next ? undefined : setConfirming(false))}
+        <ConfirmDialog
           title={person === null ? t('admin.credentials.revokeKeyTitle', { name: apiKey.name }) : t('admin.credentials.revokeTokenTitle', { person: person.name, name: apiKey.name })}
-          description={person === null ? t('admin.credentials.revokeKeyBody') : t('admin.credentials.revokeTokenBody', { person: person.name })}
-        >
-          {revoke.isError ? <ProblemAlert error={revoke.error} /> : null}
-          <ButtonBar>
-            <Button variant="outline" onClick={() => setConfirming(false)} disabled={revoke.isPending}>
-              {t('admin.credentials.keep')}
-            </Button>
-            <Button
-              variant="danger"
-              disabled={revoke.isPending}
-              onClick={() =>
-                revoke.mutate(apiKey.id, {
-                  onSuccess: () => {
-                    setConfirming(false);
-                    setRevoked(true);
-                  },
-                })
-              }
-            >
-              {person === null ? t('admin.credentials.revokeKey') : t('admin.credentials.revokeToken')}
-            </Button>
-          </ButtonBar>
-        </Modal>
+          body={person === null ? t('admin.credentials.revokeKeyBody') : t('admin.credentials.revokeTokenBody', { person: person.name })}
+          action={person === null ? t('admin.credentials.revokeKey') : t('admin.credentials.revokeToken')}
+          cancelLabel={t('common.keep')}
+          danger
+          busy={revoke.isPending}
+          error={revoke.error}
+          onConfirm={() =>
+            revoke.mutate(apiKey.id, {
+              onSuccess: () => {
+                setConfirming(false);
+                setRevoked(true);
+              },
+            })
+          }
+          onClose={() => setConfirming(false)}
+        />
       ) : null}
     </Row>
   );
@@ -230,19 +202,19 @@ export function ApiKeysScreen() {
       <PageHead title={t('admin.apiKeys.title')} lede={t('admin.credentials.lede')} actions={<Button onClick={() => setCreating(true)}>{t('admin.apiKeys.create')}</Button>} />
       {created !== null ? <NewKeyPanel created={created} onDone={() => setCreated(null)} /> : null}
       {creating ? <CreateForm onCreated={setCreated} onClose={() => setCreating(false)} /> : null}
-      {keys.isPending ? (
-        <LoadingState />
-      ) : keys.isError ? (
-        <ErrorState title={t('admin.apiKeys.errorTitle')} onRetry={() => void keys.refetch()} />
-      ) : keys.data.items.length === 0 ? (
-        <EmptyState title={t('admin.apiKeys.emptyTitle')} body={t('admin.credentials.emptyBody')} />
-      ) : (
-        <Rows data-keys-list="">
-          {keys.data.items.map((apiKey) => (
-            <KeyRow key={apiKey.id} apiKey={apiKey} />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={keys} errorTitle={t('admin.apiKeys.errorTitle')}>
+        {(data) =>
+          data.items.length === 0 ? (
+            <EmptyState title={t('admin.apiKeys.emptyTitle')} body={t('admin.credentials.emptyBody')} />
+          ) : (
+            <Rows data-keys-list="">
+              {data.items.map((apiKey) => (
+                <KeyRow key={apiKey.id} apiKey={apiKey} />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
     </>
   );
 }

@@ -2,7 +2,19 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
-## Pills name an instrument in one to three words (2026-11-11, D-132)
+## The squashed migrations (2026-11-11, review B-13)
+
+- [ ] **Deploy the commit before the squash to the test environment first.** Each app now
+      builds its schema from one or two squashed migrations; on a database that applied every
+      migration they replace, `migrate` only records them and changes nothing. `origin/main`
+      (f4d3e87) has every replaced migration, so a test environment deployed from it is
+      ready; `taxonomy 0015` is not on it and stays a migration of its own after the squash,
+      so it runs there as usual. A database that applied only part of what a squash replaces
+      is refused by `migrate` (`shared.E001`, naming what it lacks): deploy the earlier commit,
+      then this one. Local and worktree databases older than that: rebuild them
+      (`migrate_from_zero`, or drop and migrate).
+
+## Pills name an instrument in one to three words (2026-11-11, D-133)
 
 An instrument whose short name runs past three words now shows its compact official reference,
 `BEK 330/2016` or `EU 2016/167`, wherever the product names it. That covers 252 of the 258 long
@@ -383,7 +395,7 @@ the first real test, then every open box a package added on 2026-09-23 and 2026-
 - [ ] A transactional email sender on an EU region for invitation codes, with SPF and DKIM on the sending domain.
 - [ ] D-09: an API key for the first embedding model to try. Until then the test deploy searches by keyword only.
 - [ ] D-07: an Anthropic API key for the test environment.
-- [ ] Set `TRUSTED_PROXY_HOPS=1` on the `api` service (security review F1, `docs/security/CHUNK1_AUTH_REVIEW_2026-09-19.md`). Railway's edge writes `X-Forwarded-For` (source: Railway's help station, not official docs); confirm on the test deploy that the security log shows your own address, not the proxy's, then mark the Verification_Log row verified.
+- [ ] `TRUSTED_PROXY_HOPS` (security review F1, `docs/security/CHUNK1_AUTH_REVIEW_2026-09-19.md`): since review 2026-11-11 L-18 a deployed environment defaults to `1` and refuses `0` at boot, so there is nothing to set; leave it unset, or remove an explicit `0`. Railway's edge writes `X-Forwarded-For` (source: Railway's help station, not official docs); confirm on the test deploy that the security log shows your own address, not the proxy's, then mark the Verification_Log row verified.
 
 ## security-review-c4 (chunk 4 security review, 2026-09-23)
 - [x] **Must two agents' keys come from two people?** Answered by Alex in chat on 2026-09-24: "Current state is fine" (D-89); H33 is an accepted cut. Found as M5 (`docs/security/CHUNK4_REVIEW_2026-09-23.md`). Since D-14's answer an independent agent is the library's whole second pair of eyes, and today one platform admin can mint the proposing key and the reviewing key and so alone push a change into the library. Default proposed, not built (H33): a `proposals:review` key only for an active agent of kind `review`, never beside `proposals:write`, and a key decision refused when the same person minted both keys or proposed the change. Say yes, or say that one admin minting both keys is acceptable.
@@ -2520,6 +2532,48 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       `https://talosintelligence.com/reputation_center/web_categorization`, Fortinet
       `https://www.fortiguard.com/webfilter`, Forcepoint `https://support.forcepoint.com/s/site-lookup`
       (checked 2026-09-28, `Verification_Log.md`).
+- [ ] **Broadcom (Symantec) rates the app host Suspicious (2026-11-11).** Its Site Review answers
+      "Suspicious" for `https://app.bleqq.com/sign-in`, "rated by our WebPulse system": the host
+      is not in Broadcom's database, so it was scored in real time on reputation. Seen from
+      outside the same day, the site's own steps are live (www redirects to the apex, the hosts
+      are split, the headers, `security.txt` and the 404 are served), so the filter step above
+      waits on nothing. A review takes one URL and a subdomain can be rated apart from its
+      domain, so submit three: `https://bleqq.com/`, `https://app.bleqq.com/sign-in` and
+      `https://api.bleqq.com/` (the app calls it on every page load; with it blocked a person
+      sees "Loading your session…" and then "Try again"). At `https://sitereview.symantec.com/`
+      look the URL up, press Other under the result, suggest Business/Economy, and say in the
+      comment what the service is, that access is by invitation and that `bleqq.com` is the
+      public page. Broadcom gives 24 to 48 hours for an accepted change. SEB IT allowing
+      `*.bleqq.com` (`r2f-host-split`, step 7) does not wait for it.
+- [x] **Two Cloudflare switches that change the sign-in page (2026-11-11; both off, checked from
+      outside at 07:44 UTC the same day).** Broadcom's rater
+      votes on what a page loads, and names "obfuscated scripts" on a new, low-traffic site as a
+      reason for a higher risk level. Cloudflare adds two scripts to our pages that the repo does
+      not contain. (1) **Email Address Obfuscation**, on by default: on sign-in and enrolment it
+      rewrites the privacy and security addresses to `/cdn-cgi/l/email-protection#…` and adds
+      `email-decode.min.js`. Turn it off: Security › Settings › Email Address Obfuscation › Off.
+      (2) **Web Analytics**, automatic setup: every page, the signed-in screens included, loads
+      `static.cloudflareinsights.com/beacon.min.js` and posts to `/cdn-cgi/rum`. That is
+      third-party analytics inside the application, which a bank's vendor review will ask about.
+      Turn it off: Web Analytics › Manage site › Disable. Then ask an agent to check from outside
+      that both scripts are gone.
+- [ ] **The app host's front door is now the public page for a visitor (2026-11-11).** From
+      SEB's network `bleqq.com` opened and `app.bleqq.com` was denied, on the same addresses and
+      the same service, so the difference was what each host answers. `https://app.bleqq.com/`
+      now answers a browser without a session with the public page, rendered on the server; a
+      signed-in browser gets the app, told apart by a marker cookie that holds no secret
+      (`cw_signed_in`). Defaults taken: the same page as on `bleqq.com`, which stays its
+      canonical address; a marker of one day; sign-in and every other app address unchanged. It
+      is not proven to change Broadcom's rating, so the review request above and SEB's allowlist
+      are still needed. `docs/runbooks/DNS_DOMAINS.md` ("The app host's front door") has the rule.
+- [ ] **One host, as in the owner's two other apps, is the larger step, and yours to decide.**
+      ESC-App and the older bleqq serve their pages and their API from one host (`/api` is
+      rewritten on the server) and keep a session cookie the web server can read. Compliance
+      Watch has two public hosts, and a filter has to rate both: with `api.bleqq.com` denied,
+      a person sees "Loading your session…" and then "Try again". Putting the API under
+      `app.bleqq.com/api` removes the second host and lets the server answer every first
+      request. It changes where the refresh cookie lives (D-06) and how the API sees a
+      person's address, so it needs your word and its own ADR.
 
 Defaults taken: the sitemap lists `/welcome` only, since `/` is the signed-in home that sends a
 visitor on to `/welcome`; robots.txt allows `/` so a crawler that starts there follows on, and `/`
@@ -2557,7 +2611,7 @@ the rules and why. Do the steps in this order; each check tells you the step wor
 - [ ] **5. Re-enrol.** The RP ID changed, so everyone re-enrols (default taken: the runbook's
       rule, the exact app host; keeping `bleqq.com` as the RP ID would spare the re-enrolment but
       let every bleqq.com site ask for the passkeys, and production moves host anyway). Yourself:
-      `python manage.py bootstrap_platform --admin-email <a new address of yours>` on the api
+      `python manage.py bootstrap_platform --admin-email <a new address of yours> --role platform_admin` on the api
       shell (it refuses your old address, which still holds its dead passkey), then enrol from
       the email. A test bank's first admin: the platform re-issues it with
       `POST /api/v1/console/tenants/{tenantId}/members/{userId}/reissue-enrolment`, for which the

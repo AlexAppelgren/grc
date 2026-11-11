@@ -1,37 +1,26 @@
 """Research requests (AGT-05, D-98, ADR 0053): a bank asks its own agents to run now, check a
-registered source or a web address, or research a topic; re-tagging library records is
+registered source or a web address, or research a topic; a re-tag of library records is
 asked in the console and answered by one batch proposal, never a direct edit.
 
-Every request opens a run with the trigger `request` and the request on it
-(`tasks.open_request_run`, through the one opener), so the request is a job and its status
-is its run's. A bank's request is checked in this order, each refusal writing nothing:
-an agent of its own at all (409 `no_tenant_agent`, since no bank commands one of bleqq's),
-the agent named (404 another bank's, 403 one it may not steer), the fields its kind takes,
-the source, the plan's monthly number (429 `plan_limit_reached`), the AI switch (422
-`feature_off`), the agent switched off or paused (409, as run now), the cap (422
-`budget_cap_reached`: the run's budget must fit under it, read under the same lock as run
-now and the scheduler, `tasks.fits_the_cap`), and only then the address, so a request
-that would be refused fetches nothing.
+Every request opens a run (trigger `request`) through the one opener, so its status is its
+run's. A bank's request is checked in this order, each refusal writing nothing: an agent of
+its own (409 `no_tenant_agent`), the agent named (404 / 403), the kind's fields, the source,
+the plan's monthly number (429 `plan_limit_reached`), the AI switch (422 `feature_off`),
+the agent stopped (409), the cap (422 `budget_cap_reached`), and only then the address.
 
-**What a bank writes stays in the bank (D-98).** The topic is the bank's own text: length
-capped by the schema, screened as untrusted (`risk_flags`), stored on the bank's request
-and nowhere else, never logged and never in an audit, outbox or run row. A bank's request
-can only open a run of the bank's own agent, so the text never reaches a platform run; the
-runner that works it reaches a model only through the logged wrapper, which the bank's
-switch stops.
+- One request per bank at a time, and the fetch holds no shared lock (S-10): the research
+  lock is `pg_try_advisory_xact_lock` (429 `research_in_progress`); an address is counted
+  against `RESEARCH_URL_RATE_PER_HOUR` in the cache before the fetch; the cap is glanced at
+  before the fetch and decided after it under the spend lock, with the run's reservation.
+- What a bank writes stays in the bank (D-98): the topic is capped, screened, stored on the
+  request only, never logged or audited, and reaches only the bank's own agent's run.
+- A web address is untrusted (AGT-07): `check_url` takes https on 443 to an all-public host,
+  never a standards publisher (D-45), follows only redirects it would accept, connects to
+  the checked address, and stores the answer as screened text. One deadline
+  (`RESEARCH_URL_TOTAL_SECONDS`) covers the whole fetch, and a watchdog shuts the socket.
 
-**A web address is untrusted input (AGT-07).** `check_url` takes https on port 443 to a
-host every address of which is public, never a standards publisher (D-45), and follows no
-redirect it would not have accepted as the first address. The connection goes to the
-address that was checked, so the name cannot move between the check and the connect. What
-comes back is screened and stored as text: never executed, never rendered as HTML. The
-whole fetch, every read and every redirect, has one deadline
-(`RESEARCH_URL_TOTAL_SECONDS`), and a watchdog shuts the socket when it passes, so a page
-that answers a byte at a time, headers or body, cannot hold the request.
-
-The console's re-tag opens a run of bleqq's `RETAG_AGENT` in no tenant's zone and reads no
-bank's row; what that run finds is filed by `file_retag` through `batch.create_batch()`,
-the one writer of a batch (PRO-04).
+The console's re-tag runs bleqq's `RETAG_AGENT` in no tenant's zone; `file_retag` files its
+findings through `batch.create_batch()` (PRO-04).
 """
 
 from __future__ import annotations
@@ -50,14 +39,15 @@ from urllib.parse import urljoin, urlsplit
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils import timezone
 
 from apps.agents import budget, tasks
 from apps.agents.models import AgentRun, ResearchRequest, ResearchRequestKind, ResearchRequestStatus, RunStatus, TenantAgent
 from apps.agents.schemas import ResearchRequestInput, ResearchRequestOut, ResearchRequestPage, RetagRequestInput
 from apps.agents.screen import screen_all
-from apps.agents.tenant_agents import lock_tenant, own_agent, refuse_stopped
+from apps.agents.tenant_agents import own_agent, refuse_stopped
+from apps.identity import rate_limit
 from apps.identity.models import User
 from apps.proposals import batch
 from apps.proposals.logic import Proposer
@@ -66,12 +56,13 @@ from apps.proposals.schemas import ObligationScopePayload
 from apps.shared import ai
 from apps.shared.audit import Actor, ActorType, batched, record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 from apps.taxonomy.schemas import PersonRef
 from apps.watch.keys import source_for_write
 
 SUBJECT_TYPE = "research_request"
+HOUR = 60 * 60
 # The one of bleqq's agents that answers a re-tag: it proposes to the library, never edits it.
 RETAG_AGENT = "watch-sweeper"
 # The field each kind a bank asks for takes; every other field must be left out.
@@ -91,9 +82,7 @@ _STATUS_OF_RUN = {
 }
 
 
-# ---------------------------------------------------------------------------------------
-# Reading
-# ---------------------------------------------------------------------------------------
+# --- Reading ---
 def _run(request: ResearchRequest) -> AgentRun | None:
     runs = list(request.runs.all())
     return max(runs, key=lambda run: (run.started_at, str(run.id))) if runs else None
@@ -131,10 +120,10 @@ def list_requests(*, tenant: Tenant, limit: int, offset: int) -> ResearchRequest
 
 
 def get_request(*, tenant: Tenant, request_id: uuid.UUID) -> ResearchRequestOut:
-    """`GET /research-requests/{requestId}`: one of the bank's own, or 404."""
+    """One of the bank's own requests, as `POST /research-requests` answers it, or 404."""
     row = _requests().filter(pk=request_id, tenant=tenant).first()  # ordering: pk lookup, at most one row
     if row is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return _out(row)
 
 
@@ -144,13 +133,11 @@ def get_retag(*, request_id: uuid.UUID) -> ResearchRequestOut:
         _requests().filter(pk=request_id, kind=ResearchRequestKind.RETAG.value, tenant__isnull=True).first()  # ordering: pk lookup, at most one row
     )
     if row is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return _out(row)
 
 
-# ---------------------------------------------------------------------------------------
-# A bank asks its own agent
-# ---------------------------------------------------------------------------------------
+# --- A bank asks its own agent ---
 def _checked_fields(body: ResearchRequestInput) -> None:
     wanted = _FIELD[body.kind]
     for field in ("source_id", "url", "topic"):
@@ -193,7 +180,7 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
         _checked_source(body.source_id)
     user, actor = _person(who)
     with transaction.atomic():
-        lock_tenant(tenant, "research_requests")
+        _hold_research(tenant)
         start, end = budget.month(tenant)
         made = ResearchRequest.objects.filter(tenant=tenant, created_at__gte=start, created_at__lt=end).count()
         if made >= settings.RESEARCH_REQUESTS_PER_MONTH:
@@ -207,11 +194,12 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
         except ProblemError as off:
             raise ValidationError(off.detail, code="feature_off") from None
         refuse_stopped(tenant_agent)
-        if not tasks.fits_the_cap(tenant, tasks.run_budget_limit()):
-            raise ValidationError(
-                "This run could cost more than is left of this month's cap, or no cap is set.", code="budget_cap_reached"
-            )
-        fetched_text = _fetch(body.url) if body.url is not None else ""
+        _refuse_over_cap(tenant, lock=False)
+        fetched_text = ""
+        if body.url is not None:
+            rate_limit.enforce("research-url", str(tenant.id), settings.RESEARCH_URL_RATE_PER_HOUR, HOUR)
+            fetched_text = _fetch(body.url)
+        _refuse_over_cap(tenant, lock=True)
         request = ResearchRequest.objects.create(
             tenant=tenant,
             tenant_agent=tenant_agent,
@@ -225,6 +213,27 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
         )
         _opened(request, user, actor, tenant_id=tenant.id, subject_title=tenant_agent.agent.key)
     return get_request(tenant=tenant, request_id=request.id)
+
+
+def _hold_research(tenant: Tenant) -> None:
+    """Take the bank's research lock for the rest of the transaction, or answer 429
+    `research_in_progress` when another request of the bank holds it (S-10)."""
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_try_advisory_xact_lock(hashtext(%s))", [f"research_requests:{tenant.id}"])
+        held = bool(cursor.fetchone()[0])
+    if not held:
+        raise ProblemError(
+            status=429,
+            code="research_in_progress",
+            detail="Your organisation's previous request is still being made. Try again when it has finished.",
+        )
+
+
+def _refuse_over_cap(tenant: Tenant, *, lock: bool) -> None:
+    if not tasks.fits_the_cap(tenant, tasks.run_budget_limit(), lock=lock):
+        raise ValidationError(
+            "This run could cost more than is left of this month's cap, or no cap is set.", code="budget_cap_reached"
+        )
 
 
 @batched()
@@ -252,9 +261,7 @@ def _opened(request: ResearchRequest, user: User, actor: Actor, *, tenant_id: uu
     )
 
 
-# ---------------------------------------------------------------------------------------
-# check_url: the one place a bank's address is fetched
-# ---------------------------------------------------------------------------------------
+# --- check_url: the one place a bank's address is fetched ---
 @dataclass(frozen=True)
 class Fetched:
     """One https answer: its status, where a redirect points, the first bytes of its body
@@ -370,9 +377,8 @@ def _cut(connection: Any) -> None:
 
 
 def _get(*, host: str, address: str, target: str, deadline: float) -> Fetched:
-    """One GET, following nothing, within the fetch's deadline (the network's door,
-    replaced in tests). A watchdog shuts the socket at the deadline, so a server that sends
-    its headers a byte at a time is cut off as one that sends its body so."""
+    """One GET, following nothing, within the fetch's deadline (the network's door, replaced
+    in tests). A watchdog shuts the socket at the deadline, so slow headers are cut off too."""
     connection = _CheckedConnection(host, address)
     connection.timeout = _left(deadline)
     watchdog = threading.Timer(deadline - time.monotonic(), _cut, args=(connection,))
@@ -412,18 +418,17 @@ def _fetch(url: str) -> str:
             continue
         if not 200 <= answer.status < 300:
             raise ValidationError("That address did not answer with a page.", code="url_unreachable")
+        # An unknown charset is a LookupError; a codec refusing `replace` (`idna`) a ValueError (L-15).
         try:
             text = answer.body.decode(answer.charset, errors="replace")
-        except LookupError:
+        except (LookupError, ValueError):
             text = answer.body.decode("utf-8", errors="replace")
         # PostgreSQL text holds no NUL; the rest is kept as it came.
         return text.replace("\x00", "")
     raise ValidationError("That address redirects too many times.", code="url_unreachable")
 
 
-# ---------------------------------------------------------------------------------------
-# The console's re-tag
-# ---------------------------------------------------------------------------------------
+# --- The console's re-tag ---
 def create_retag(*, who: Principal, body: RetagRequestInput) -> ResearchRequestOut:
     """`POST /console/research-requests`: record the re-tag and open bleqq's run for it, in
     no tenant's zone."""
@@ -437,10 +442,9 @@ def create_retag(*, who: Principal, body: RetagRequestInput) -> ResearchRequestO
 
 
 def file_retag(*, run_id: uuid.UUID, payload: ObligationScopePayload, source_label: str, source_url: str) -> Proposal:
-    """What a re-tag's run found, filed once as one batch through `batch.create_batch()`: the
-    run's agent proposes, naming its run, and the request names the batch. The door the
-    runner that works a re-tag files through (AGT-06); nothing in the library changes
-    until an independent person approves the batch."""
+    """What a re-tag's run found, filed once as one batch through `batch.create_batch()`,
+    naming its run (AGT-06). Nothing in the library changes until an independent person
+    approves the batch."""
     with transaction.atomic():
         run = (
             AgentRun.objects.select_related("agent", "research_request")
@@ -448,7 +452,7 @@ def file_retag(*, run_id: uuid.UUID, payload: ObligationScopePayload, source_lab
             .first()  # ordering: pk lookup, at most one row
         )
         if run is None or run.research_request is None:
-            raise ProblemError(status=404, code="not_found", detail="Not found.")
+            raise not_found()
         request = ResearchRequest.objects.select_for_update().get(pk=run.research_request.pk)
         if request.batch_proposal_id is not None:
             raise ProblemError(status=409, code="already_filed", detail="This re-tag has already filed its batch.")

@@ -4,7 +4,7 @@
 // `bash generate-types.sh` regenerates them). A local definition remains
 // only where the generator cannot express the shape, each with a reason.
 
-import type { components } from '@/types/api.generated';
+import type { components, operations } from '@/types/api.generated';
 
 type Schemas = components['schemas'];
 
@@ -20,7 +20,6 @@ export type ProposalApproveBody = Schemas['ProposalApproveBody'];
 export type ProposalApproveAllBody = Schemas['ProposalApproveAllBody'];
 export type ProposalApproveAll = Schemas['ProposalApproveAll'];
 export type ProposalRejectBody = Schemas['ProposalRejectBody'];
-export type TenantProposalRow = Schemas['TenantProposalRow'];
 export type TenantProposalPage = Schemas['TenantProposalPage'];
 
 /** Which end of the queue comes first (`ProposalQuery.order`): the route's two values. */
@@ -29,8 +28,8 @@ export type ProposalOrder = 'oldest' | 'newest';
 // The route's filters and its page, as the generated query schemas name them,
 // minus the nulls a caller never sends and with `order` narrowed to its two values.
 type Unnulled<T> = { [K in keyof T]?: Exclude<T[K], null> };
-export type ProposalQuery = Unnulled<Omit<Schemas['ProposalQuery'], 'order'> & Schemas['PageQuery']> & { order?: ProposalOrder };
-export type TenantProposalQuery = Unnulled<Schemas['TenantProposalQuery']>;
+export type ProposalQuery = Unnulled<Omit<NonNullable<operations['listProposals']['parameters']['query']>, 'order'>> & { order?: ProposalOrder };
+export type TenantProposalQuery = Unnulled<NonNullable<operations['listTenantProposals']['parameters']['query']>>;
 
 // Local: the fixed kinds `Proposal.kind` and `.status` carry (apps/proposals/models.py).
 // Kept narrow rather than `string` so a screen that switches over them is checked by `tsc`.
@@ -53,7 +52,6 @@ export type ProposalKind =
 
 export type ProposalStatus = 'open' | 'approved' | 'rejected' | 'superseded';
 
-export const OBLIGATION_KINDS: readonly ProposalKind[] = ['new_obligation_version'];
 export const VOCABULARY_KINDS: readonly ProposalKind[] = [
   'vocabulary_create',
   'vocabulary_relabel',
@@ -135,14 +133,12 @@ export type ProposalBatch = Schemas['ProposalBatch'];
 export type ProposalBatchRow = Schemas['ProposalBatchRow'];
 /** POST /proposal-batches/{batchId}/decide: decisions on named rows, and one for the rest. */
 export type ProposalBatchDecision = Schemas['ProposalBatchDecision'];
-export type ProposalBatchRowDecision = Schemas['ProposalBatchRowDecision'];
 
 // Local: the fixed kinds a batch row's `decision` carries (apps/proposals/models.py).
 export type BatchRowDecision = 'pending' | 'approved' | 'rejected';
 
 /** A live taxonomy term, as the re-tag form's term field matches against it (GET /taxonomy/terms). */
 export type TaxonomyTerm = Schemas['TaxonomyTermRow'];
-export type TaxonomyTermPage = Schemas['TaxonomyTermPage'];
 export type RetagRequestInput = Schemas['RetagRequestInput'];
 /** POST /console/research-requests and its status read: the request, and the batch once filed. */
 export type RetagRequest = Schemas['ResearchRequestOut'];

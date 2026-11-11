@@ -115,14 +115,13 @@ def search(request: HttpRequest, body: SearchRequest) -> SearchResponse:
     writes no audit row, because nothing changed. It is a POST so the query never travels
     in a URL: what a reader types is the bank's own text.
 
-    Errors: `rate_limited` when that reader or key has searched more than the limit above
-    in the last minute, which is a 429 to wait out and retry rather than a call to change;
+    Errors: `rate_limited` when that reader or key has searched more than the limit above in
+    the last minute, which is a 429 to wait out and retry rather than a call to change;
     `unknown_key` for a `lang` that is not one of the library's language rows;
     `validation_error` for a query over the cap, a `limit` above 100 or a filter the
     contract does not name; `unknown_filter` (422) when an agent access credential sends
-    `footprint` `all` or `watched`; `not_found` when the session or the key belongs to no bank;
-    `permission_denied` without `search.use`, or a key without `search:read`;
-    `unauthenticated` without a session or a key.
+    `footprint` `all` or `watched`; `not_found` when the session or the key belongs to no
+    bank; `permission_denied` without `search.use`, or a key without `search:read`.
     """
     # Ungated by design: logic-gate (search.use in a tenant, or a key with search:read; SRC-01, ACC-04).
     require_searcher(request)
@@ -169,9 +168,8 @@ def find_similar(request: HttpRequest, body: SimilarRequest) -> SearchResponse:
 
     Errors: `rate_limited` when that key has called more than the limit above in the last
     minute, a 429 to wait out and retry; `validation_error` for a text over the cap, a
-    `limit` above 100 or a field the contract does not name; `permission_denied` without
-    the `search:read` scope; `unauthenticated` without a key, which is also what a
-    person's session gets here.
+    `limit` above 100 or a field the contract does not name; `unauthenticated` without a
+    key, which is also what a person's session gets here.
     """
     who = principal(request)
     return hybrid.find_similar(body, caller_id=who.subject_id, tenant_id=who.tenant_id)
@@ -284,9 +282,7 @@ def rate_answer(
 
     Errors: `not_found` (404) for an answer the caller was not given themselves, or a
     session that belongs to no bank; `validation_error` (422) for a verdict other than
-    `helpful` or `wrong`, a note over the cap or a field the contract does not name;
-    `permission_denied` (403) without `search.use`; `unauthenticated` (401) without a
-    session.
+    `helpful` or `wrong`, a note over the cap or a field the contract does not name.
     """
     who = principal(request)
     ask.rate_answer(uuid_or_404(answer_id), body, tenant_id=who.tenant_id, user_id=who.subject_id)
@@ -318,9 +314,6 @@ def list_eval_questions(request: HttpRequest, page: Query[PageQuery]) -> EvalQue
     A person's session only, holding the platform permission `eval.manage`, which a library
     editor holds; no session inside a bank and no API key can read it. It changes nothing and
     writes nothing to the audit log. An empty set is a 200 with `total` 0.
-
-    Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-    depth; `permission_denied` without `eval.manage`; `unauthenticated` without a session.
     """
     items, total = eval_sets.list_questions(limit=page.limit, offset=page.offset)
     return EvalQuestionPage(items=items, total=total)
@@ -355,8 +348,7 @@ def create_eval_question(request: HttpRequest, body: EvalQuestionInput) -> tuple
     Errors: `duplicate_key` (409) when the set already has a question with that `key`;
     `unknown_key` (422) when `lang` names no language row; `validation_error` (422) for a
     body the schema refuses, including a key that breaks its pattern, a question over the
-    cap or a field the schema does not name; `permission_denied` (403) without
-    `eval.manage`; `unauthenticated` (401) without a session.
+    cap or a field the schema does not name.
     """
     return 201, eval_sets.create_question(actor=actor_for(request), body=body)
 
@@ -381,9 +373,6 @@ def list_eval_runs(request: HttpRequest, page: Query[PageQuery]) -> EvalRunPage:
     A person's session only, holding the platform permission `eval.manage`, which a library
     editor holds; no session inside a bank and no API key can read it. It changes nothing and
     writes nothing to the audit log. No run recorded yet is a 200 with `total` 0.
-
-    Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-    depth; `permission_denied` without `eval.manage`; `unauthenticated` without a session.
     """
     items, total = eval_sets.list_runs(limit=page.limit, offset=page.offset)
     return EvalRunPage(items=items, total=total)
@@ -411,7 +400,5 @@ def get_eval_baseline(request: HttpRequest) -> EvalBaselineOut:
     A person's session only, holding the platform permission `eval.manage`, which a library
     editor holds; no session inside a bank and no API key can read it. It changes nothing and
     writes nothing to the audit log.
-
-    Errors: `permission_denied` without `eval.manage`; `unauthenticated` without a session.
     """
     return eval_sets.retrieval_baseline()

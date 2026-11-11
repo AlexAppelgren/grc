@@ -61,7 +61,7 @@ from apps.shared.authentication import ApiKeyAuth, SessionAuth
 from apps.shared.permissions import requires_permission, requires_scope, requires_step_up
 from apps.shared.schemas import PageQuery
 from apps.governance import access_log
-from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, principal, require_any
+from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, if_match, principal
 from apps.taxonomy.reading import language_order
 
 router = Router(tags=["Agents"])
@@ -201,35 +201,31 @@ def finish_agent_run(
     by_alias=True,
     summary="Read what the agents have been doing",
 )
+@requires_permission(perms.AGENTS_MANAGE)
 @answers_problems
 def list_agent_runs(request: HttpRequest, query: Query[TenantRunQuery]) -> Any:
-    """Returns the agent runs the caller may see, newest first, one page at a time: when
-    each ran, which agent, which version and which model, what started it and who asked,
-    how it ended, what it counted and what it cost. Call it to show a bank what its own
-    agents have done and what that cost, the history of one of them with `tenantAgentId`,
-    the runs a person asked for with `mine`, and to investigate a run whose findings are
-    being questioned.
+    """Returns the bank's own agent runs, newest first, one page at a time: when each ran,
+    which agent, which version and which model, what started it and who asked, how it
+    ended, what it counted and what it cost. Call it to page the whole history behind the
+    latest runs `GET /agents` shows beside each agent, the history of one of them with
+    `tenantAgentId`, the runs a person asked for with `mine`, and to investigate a run whose
+    findings are being questioned.
 
-    A person's session only; an API key cannot read this, so an agent cannot read its own
-    history. Inside a bank it needs `agents.manage`, in the platform console
-    `system.health`; a member with neither is refused. A bank sees its own runs and nothing
-    else; the platform console sees the runs of bleqq's own agents. bleqq's runs reach a
-    bank as watch items and proposals rather than as run rows, so no platform cost, token
-    count or model is ever on a bank's page: `GET /agents/platform` shows what bleqq's
-    agents watch, when each next runs and how its last run ended. No bank sees another
-    bank's runs; the two filters only narrow that, and naming another bank's agent matches
-    no run rather than answering an error. Runs that started in the same instant keep one
-    stable order, so paging never skips or repeats one. It changes nothing and writes
-    nothing to the audit log. An empty list is a 200 with `total` 0 and means nothing has
-    run yet, not that something is wrong.
+    A person's session in a bank holding `agents.manage`; an API key cannot read this, so an
+    agent cannot read its own history. The platform console reads bleqq's own runs with
+    `GET /console/agent-runs`. bleqq's runs reach a bank as watch items and proposals rather
+    than as run rows, so no platform cost, token count or model is ever on a bank's page:
+    `GET /agents/platform` shows what bleqq's agents watch, when each next runs and how its
+    last run ended. No bank sees another bank's runs; the two filters only narrow that, and
+    naming another bank's agent matches no run rather than answering an error. Runs that
+    started in the same instant keep one stable order, so paging never skips or repeats one.
+    It changes nothing and writes nothing to the audit log. An empty list is a 200 with
+    `total` 0 and means nothing has run yet, not that something is wrong.
 
-    Errors: `validation_error` when `limit` is above 100, `offset` beyond the accepted
-    depth or `tenantAgentId` is not a UUID; `permission_denied` with neither
-    `agents.manage` nor `system.health`; `unauthenticated` without a session.
+    Errors: `validation_error` when `limit` is above 100, `offset` beyond the accepted depth
+    or `tenantAgentId` is not a UUID; `not_found` for a session that belongs to no bank.
     """
-    # Ungated by design: logic-gate (agents.manage in a tenant, or system.health in the console).
-    who = require_any(request, perms.AGENTS_MANAGE, perms.SYSTEM_HEALTH)
-    return runs_read.list_runs(who=who, query=query)
+    return runs_read.list_runs(tenant_id=caller_tenant(request).id, who=principal(request), query=query)
 
 
 # ---------------------------------------------------------------------------------------
@@ -258,10 +254,6 @@ def list_agent_definitions(request: HttpRequest, page: Query[PageQuery]) -> Agen
     read it. The definitions are the platform's own versioned files, loaded on deploy, and
     this call only reads them: it changes nothing and writes nothing to the audit log. An
     empty list is a 200 with `total` 0.
-
-    Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-    depth; `permission_denied` without `agent_definitions.manage`; `unauthenticated`
-    without a session.
     """
     return definitions.list_definitions(limit=page.limit, offset=page.offset)
 
@@ -291,8 +283,7 @@ def get_agent_definition(request: HttpRequest, agent_key: str = Path(..., descri
     session inside a bank and no API key reaches a definition, in any release (AGT-03). It
     reads and writes nothing to the audit log.
 
-    Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
-    `agent_definitions.manage`; `not_found` (404) for a key no definition has.
+    Errors: `not_found` (404) for a key no definition has.
     """
     return definitions.get_definition(agent_key=agent_key)
 
@@ -321,10 +312,8 @@ def publish_agent_version(
     Records one audit event naming the person, the definition, the version and the
     assertion.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without
-    `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-    `not_found` (404) for a key no definition has; `validation_error` (422) for a version
-    number the build does not ship or a missing note.
+    Errors: `not_found` (404) for a key no definition has; `validation_error` (422) for a
+    version number the build does not ship or a missing note.
     """
     return definitions.publish_version(who=principal(request), agent_key=agent_key, body=body)
 
@@ -352,9 +341,7 @@ def retire_agent_version(
     fresh passkey step-up. Records one audit event naming the person, the version and the
     assertion.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without
-    `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-    `not_found` (404) for a definition or version that does not exist.
+    Errors: `not_found` (404) for a definition or version that does not exist.
     """
     return definitions.retire_version(who=principal(request), agent_key=agent_key, version_no=version_no)
 
@@ -377,8 +364,7 @@ def get_platform_agent_settings(request: HttpRequest, agent_key: str = Path(...,
     A person's session in the platform console holding `agent_definitions.manage`. It
     reads and writes nothing to the audit log.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without
-    `agent_definitions.manage`; `not_found` (404) for a key no platform agent has.
+    Errors: `not_found` (404) for a key no platform agent has.
     """
     return platform.get_settings(agent_key=agent_key)
 
@@ -404,9 +390,7 @@ def update_platform_agent_settings(
     fresh passkey step-up. Records one audit event with the settings before and after, the
     person and the assertion, and no bank.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without
-    `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-    `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
+    Errors: `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
     jurisdiction the vocabulary does not hold, with the valid keys; `validation_error`
     (422).
     """
@@ -424,16 +408,12 @@ def update_platform_agent_settings(
 @requires_permission(perms.AGENT_DEFINITIONS_MANAGE)
 @answers_problems
 def list_platform_runs(request: HttpRequest, page: Query[PageQuery]) -> Any:
-    """Returns the runs of bleqq's own agents, oldest first, one page at a time, with the
+    """Returns the runs of bleqq's own agents, newest first, one page at a time, with the
     version each ran, what it cost and how it ended, for the console's agent pages. A
     platform run reads no bank's row, so no bank's name or figure is in it.
 
     A person's session in the platform console holding `agent_definitions.manage`. It reads
     and writes nothing to the audit log. An empty list is a 200 with `total` 0.
-
-    Errors: `unauthenticated` (401); `permission_denied` (403) without
-    `agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or
-    `offset` beyond the accepted depth.
     """
     return platform.list_runs(limit=page.limit, offset=page.offset)
 
@@ -459,9 +439,9 @@ def create_retag_request(request: HttpRequest, body: RetagRequestInput) -> Any:
     run of bleqq's agent in no bank's zone and reads no bank's record. Records one audit
     event naming the person, and one more when the run files its batch.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`,
-    and for every bank's session; `validation_error` (422) for a topic that is empty or too
-    long; `no_published_version` (409) when bleqq's agent has no version to run.
+    Errors: `permission_denied` (403) without `proposals.review`, and for every bank's
+    session; `validation_error` (422) for a topic that is empty or too long;
+    `no_published_version` (409) when bleqq's agent has no version to run.
     """
     return requests.create_retag(who=principal(request), body=body)
 
@@ -488,11 +468,10 @@ def get_retag_request(
     and decide in the queue. Poll it while `status` is `queued` or `running`.
 
     A person's session in the platform console holding `proposals.review`; a bank reads its
-    own requests with `GET /research-requests/{requestId}`. It reads and writes nothing to
+    own requests with `GET /research-requests`. It reads and writes nothing to
     the audit log.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
-    `not_found` (404) for a request that is not a re-tag.
+    Errors: `not_found` (404) for a request that is not a re-tag.
     """
     return requests.get_retag(request_id=request_id)
 
@@ -529,9 +508,6 @@ def list_platform_watch(request: HttpRequest, page: Query[PageQuery]) -> Any:
     Only active agents whose current version is not retired are listed, by key. `nextRunAt`
     is a cadence after the last run started, or now when the agent has never run or is
     overdue, and null for an agent that runs only when asked. An empty list is a 200.
-
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `watch.read`;
-    `validation_error` (422) when `limit` is above 100.
     """
     return platform_read.list_platform_watch(limit=page.limit, offset=page.offset)
 
@@ -552,9 +528,6 @@ def list_tenant_agents(request: HttpRequest, page: Query[PageQuery]) -> Any:
 
     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
     nothing to the audit log. An empty list is a 200 and means the bank has added none.
-
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) when `limit` is above 100.
     """
     tenant = caller_tenant(request)
     return tenant_agents.list_tenant_agents(tenant=tenant, limit=page.limit, offset=page.offset)
@@ -579,10 +552,10 @@ def create_tenant_agent(request: HttpRequest, body: TenantAgentInput) -> Any:
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event naming the person and the definition.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
-    naming `agent_definitions.manage` when the definition is one of bleqq's own agents,
-    which no bank adds or steers; `unknown_key` (422) for a definition key that does not
-    exist, or a scope key the vocabulary does not hold, with the valid keys in `validKeys`;
+    Errors: `permission_denied` (403) without `agents.manage`, or naming
+    `agent_definitions.manage` when the definition is one of bleqq's own agents, which no
+    bank adds or steers; `unknown_key` (422) for a definition key that does not exist, or a
+    scope key the vocabulary does not hold, with the valid keys in `validKeys`;
     `above_plan_limit` (422) for a cadence more frequent than the plan allows, or one agent
     more than it allows; `duplicate_key` (409) when the bank has already added this
     definition; `validation_error` (422).
@@ -605,20 +578,23 @@ def update_tenant_agent(
     request: HttpRequest, body: TenantAgentUpdate, tenant_agent_id: uuid.UUID = Path(..., description=_TENANT_AGENT_ID)
 ) -> Any:
     """Changes what the body sends on one of the bank's own agents: its switch, cadence,
-    run day and hour, or scope, and nothing else. Its instructions and tools are never the
-    bank's to change. Switching an agent on needs the bank's monthly cap to be set first.
+    run day and hour, scope, or pause, and nothing else. Its instructions and tools are never
+    the bank's to change. Switching an agent on needs the bank's monthly cap to be set first.
+    A paused agent answers with `pausedAt`, `pausedBy` naming the person and no `nextRunAt`;
+    a resumed one with its next run.
 
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event with the fields before and after.
+    event with the fields before and after, and one more for a pause, naming the person who
+    paused, or for a resume. Nothing is deleted: a lifted pause stays in the audit log.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for an agent the bank does not have; `unknown_key` (422) for a scope
-    key the vocabulary does not hold, with the valid keys in `validKeys`; `above_plan_limit`
-    (422) for a cadence more frequent than the plan allows; `budget_cap_required` (422) when
-    switching on before the bank has set its monthly cap; `validation_error` (422).
+    Errors: `not_found` (404) for an agent the bank does not have; `unknown_key` (422) for a
+    scope key the vocabulary does not hold, with the valid keys in `validKeys`;
+    `above_plan_limit` (422) for a cadence more frequent than the plan allows;
+    `budget_cap_required` (422) when switching on before the bank has set its monthly cap;
+    `validation_error` (422).
     """
     tenant = caller_tenant(request)
-    return tenant_agents.update_tenant_agent(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id, body=body)
+    return control.update(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id, body=body)
 
 
 @router.post(
@@ -642,69 +618,14 @@ def run_tenant_agent_now(request: HttpRequest, tenant_agent_id: uuid.UUID = Path
     opening in the audit log, naming the person, before the runner is asked to start it; a
     runner that cannot start it leaves the run recorded as failed.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for an agent the bank does not have; `agent_disabled` (409) for an
-    agent switched off; `agent_paused` (409) for a paused one; `no_published_version` (409)
-    when every version of its definition is retired; `feature_off` (422) while the bank's AI
-    features are off; `budget_cap_reached` (422) when the run could take the month's spend
-    past the cap. A refused run writes nothing.
+    Errors: `not_found` (404) for an agent the bank does not have; `agent_disabled` (409)
+    for an agent switched off; `agent_paused` (409) for a paused one; `no_published_version`
+    (409) when every version of its definition is retired; `feature_off` (422) while the
+    bank's AI features are off; `budget_cap_reached` (422) when the run could take the
+    month's spend past the cap. A refused run writes nothing.
     """
     tenant = caller_tenant(request)
     return control.run_now(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id)
-
-
-@router.post(
-    "/agents/{tenant_agent_id}/pause",
-    response=TenantAgentOut,
-    auth=SESSION,
-    operation_id="pauseTenantAgent",
-    by_alias=True,
-    summary="Pause your bank's agent",
-)
-@requires_permission(perms.AGENTS_MANAGE)
-@answers_problems
-def pause_tenant_agent(request: HttpRequest, tenant_agent_id: uuid.UUID = Path(..., description=_TENANT_AGENT_ID)) -> Any:
-    """Pauses one of the bank's own agents: it starts no run until someone resumes it, and
-    it keeps its settings and its history. A run already open is not stopped; use
-    `POST /agent-runs/{runId}/interrupt` for that. Returns the agent, with `pausedAt`,
-    `pausedBy` naming the person and no `nextRunAt`. Pausing an agent that is already paused
-    changes nothing and returns it as it is.
-
-    A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event naming the person.
-
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for an agent the bank does not have.
-    """
-    tenant = caller_tenant(request)
-    return control.pause(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id)
-
-
-@router.delete(
-    "/agents/{tenant_agent_id}/pause",
-    response=TenantAgentOut,
-    auth=SESSION,
-    operation_id="resumeTenantAgent",
-    by_alias=True,
-    summary="Resume your bank's paused agent",
-)
-@requires_permission(perms.AGENTS_MANAGE)
-@answers_problems
-def resume_tenant_agent(request: HttpRequest, tenant_agent_id: uuid.UUID = Path(..., description=_TENANT_AGENT_ID)) -> Any:
-    """Lifts the pause on one of the bank's own agents, whether a person or the monthly cap
-    paused it, so it runs on its cadence again, and returns it with its next run. Nothing is
-    deleted: the pause stays in the audit log. Resuming an agent that is not paused changes
-    nothing and returns it as it is. An agent resumed while the month's cap is still reached
-    is paused again by the cap when its next run is due.
-
-    A person's session in a bank holding `agents.manage`; no API key. Records one audit
-    event naming the person.
-
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for an agent the bank does not have.
-    """
-    tenant = caller_tenant(request)
-    return control.resume(who=principal(request), tenant=tenant, tenant_agent_id=tenant_agent_id)
 
 
 @router.post(
@@ -732,10 +653,10 @@ def interrupt_agent_run(
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event naming the person.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
-    naming `agent_definitions.manage` for a run of one of bleqq's agents; `not_found` (404)
-    for a run the bank cannot see; `run_finished` (409) for a run that has already ended,
-    which changes nothing.
+    Errors: `permission_denied` (403) without `agents.manage`, or naming
+    `agent_definitions.manage` for a run of one of bleqq's agents; `not_found` (404) for a
+    run the bank cannot see; `run_finished` (409) for a run that has already ended, which
+    changes nothing.
     """
     tenant = caller_tenant(request)
     return control.interrupt(who=principal(request), tenant=tenant, run_id=run_id)
@@ -758,8 +679,6 @@ def get_agent_budget(request: HttpRequest) -> Any:
 
     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
     nothing to the audit log.
-
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`.
     """
     return budget.get_budget(tenant=caller_tenant(request))
 
@@ -783,8 +702,7 @@ def put_agent_budget(request: HttpRequest, body: AgentBudgetInput) -> Any:
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event with the cap before and after, and one more for each agent the cap pauses.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) for a negative or malformed amount.
+    Errors: `validation_error` (422) for a negative or malformed amount.
     """
     tenant = caller_tenant(request)
     return budget.put_budget(who=principal(request), tenant=tenant, body=body)
@@ -806,9 +724,6 @@ def list_research_requests(request: HttpRequest, page: Query[PageQuery]) -> Any:
 
     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
     nothing to the audit log.
-
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `validation_error` (422) when `limit` is above 100.
     """
     tenant = caller_tenant(request)
     return requests.list_requests(tenant=tenant, limit=page.limit, offset=page.offset)
@@ -827,7 +742,7 @@ def list_research_requests(request: HttpRequest, page: Query[PageQuery]) -> Any:
 def create_research_request(request: HttpRequest, body: ResearchRequestInput) -> Any:
     """Asks one of the bank's own agents to run now, check a registered source or a web
     address now, or research a topic. The request is a job: its run opens at once and the
-    request is returned with it; read its status from `GET /research-requests/{requestId}`.
+    request is returned with it; read its status from `GET /research-requests`.
     It runs under the bank's monthly cap, and what the agent finds stays in the bank's own
     zone. A web address is fetched once, here, over https from a public host, and what came
     back is kept as text for the agent, never shown as a page. The topic is the bank's own
@@ -836,48 +751,25 @@ def create_research_request(request: HttpRequest, body: ResearchRequestInput) ->
     A person's session in a bank holding `agents.manage`; no API key. Records one audit
     event naming the person and the kind, never the topic's text or the address.
 
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
-    for an agent the bank may not steer; `not_found` (404) for an agent or source the bank
-    does not have; `no_tenant_agent` (409) when the bank has no agent of its own, since
-    bleqq's agents take no requests; `no_published_version` (409) when the agent has no
-    version to run; `validation_error` (422) for a topic or address that is empty, too long,
-    missing for its kind or sent for another kind; `source_not_checked` (422) for a source
-    the agents do not check; `url_not_allowed` (422) for an address that is not https on the
-    standard port, carries a user name, is a standards publisher's, or is or redirects to a
-    host off the public internet; `url_unreachable` (422) when the address answers no page
-    within `RESEARCH_URL_MAX_REDIRECTS` redirects; `feature_off` (422) when the bank has
-    switched its AI features off; `budget_cap_reached` (422) when the bank has set no cap or
-    this month's spend has reached it; `plan_limit_reached` (429) past the bank's
-    `RESEARCH_REQUESTS_PER_MONTH` requests this month.
+    Errors: `permission_denied` (403) without `agents.manage`, or for an agent the bank may
+    not steer; `not_found` (404) for an agent or source the bank does not have;
+    `no_tenant_agent` (409) when the bank has no agent of its own, since bleqq's agents take
+    no requests; `no_published_version` (409) when the agent has no version to run;
+    `validation_error` (422) for a topic or address that is empty, too long, missing for its
+    kind or sent for another kind; `source_not_checked` (422) for a source the agents do not
+    check; `url_not_allowed` (422) for an address that is not https on the standard port,
+    carries a user name, is a standards publisher's, or is or redirects to a host off the
+    public internet; `url_unreachable` (422) when the address answers no page within
+    `RESEARCH_URL_MAX_REDIRECTS` redirects; `feature_off` (422) when the bank has switched
+    its AI features off; `budget_cap_reached` (422) when the bank has set no cap or this
+    month's spend has reached it; `plan_limit_reached` (429) past the bank's
+    `RESEARCH_REQUESTS_PER_MONTH` requests this month; `research_in_progress` (429) while
+    another request of the bank is still being made, so try again when it has finished;
+    `rate_limited` (429) when the bank has had `RESEARCH_URL_RATE_PER_HOUR` web addresses
+    fetched in the last hour, failed fetches included.
     """
     tenant = caller_tenant(request)
     return requests.create_request(who=principal(request), tenant=tenant, body=body)
-
-
-@router.get(
-    "/research-requests/{request_id}",
-    response=ResearchRequestOut,
-    auth=SESSION,
-    operation_id="getResearchRequest",
-    by_alias=True,
-    summary="See where one of your bank's research requests stands",
-)
-@requires_permission(perms.AGENTS_MANAGE)
-@answers_problems
-def get_research_request(
-    request: HttpRequest,
-    request_id: uuid.UUID = Path(..., description="The research request, as a UUID. Another bank's request answers 404."),
-) -> Any:
-    """Returns one of the bank's research requests with its status, for a screen following
-    it until its run finishes.
-
-    A person's session in a bank holding `agents.manage`; no API key. It reads and writes
-    nothing to the audit log.
-
-    Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-    `not_found` (404) for a request the bank does not have.
-    """
-    return requests.get_request(tenant=caller_tenant(request), request_id=request_id)
 
 
 # ---------------------------------------------------------------------------------------

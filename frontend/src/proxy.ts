@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { hostSettingsFrom, routeByHost, variesByDest } from '@/shared/navigation/hosts';
+import { hostSettingsFrom, routeByHost, variesByRequest } from '@/shared/navigation/hosts';
+import { SESSION_MARKER } from '@/shared/navigation/session-marker';
 
 // The public site and the app on their own hosts (shared/navigation/hosts.ts).
 // Read at run time, so the same build serves every environment; with
@@ -16,13 +17,16 @@ export function proxy(request: NextRequest): NextResponse {
     search: request.nextUrl.search,
     protocol,
     dest: request.headers.get('sec-fetch-dest'),
+    signedIn: request.cookies.has(SESSION_MARKER),
   };
   const route = routeByHost(settings, hostRequest);
   const response =
     route.kind === 'redirect' ? NextResponse.redirect(route.url, 301) : route.kind === 'rewrite' ? NextResponse.rewrite(new URL(route.path, request.url)) : NextResponse.next();
   if (route.kind === 'pass' && route.noindex) response.headers.set('X-Robots-Tag', 'noindex');
-  // One address, two answers: never stored by the edge, and checked again by the browser each time.
-  if (variesByDest(settings, hostRequest)) response.headers.set('Cache-Control', 'private, no-cache');
+  // The same page on two hosts: a search engine is told which address is the page's own.
+  if (route.kind === 'rewrite' && route.canonical !== undefined) response.headers.set('Link', `<${route.canonical}>; rel="canonical"`);
+  // One address, more than one answer: never stored by the edge, and checked again by the browser each time.
+  if (variesByRequest(settings, hostRequest)) response.headers.set('Cache-Control', 'private, no-cache');
   return response;
 }
 

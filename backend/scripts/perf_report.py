@@ -11,14 +11,10 @@ role, the real middleware and row-level security. It refuses a deployed environm
 
 Without --record a route fails when the 95th percentile of its server time is over its
 budget, when its median is more than PERF_REGRESSION_PCT per cent above the median in the
-baseline, or when the baseline has no entry for it. The budget is read on the 95th
-percentile because that is what one request in twenty waits; the regression on the median
-because it is the number that holds still on a busy machine, so noise does not fail a route
-nobody changed. It holds still only under the same load, though: record and judge back to
-back on a machine nothing else is loading, because other work on it moves a 15 ms route by
-more than 20 % on its own (measured 2026-09-23 beside four agents' test runs). Each line
-names the route, the measured times, the budget and the query count, so the output says
-where to look.
+baseline, or when the baseline has no entry for it. The budget reads the 95th percentile
+(what one request in twenty waits); the regression reads the median, which holds still on
+a quiet machine, so record and judge back to back with nothing else loading it. Each line
+names the route, the measured times, the budget and the query count.
 
 With --record the measurements become the baseline. A route that cannot be measured (a
 wrong status or a 500, a principal the database does not hold, a budget no setting holds, a

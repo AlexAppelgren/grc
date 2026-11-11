@@ -1,7 +1,7 @@
 """Tagging a record with the bank's own tags (VOC-08): one by one, or in a previewed batch.
 
 Four routes under `vocab.manage`, each taking the subject in the body: `POST /taggings`,
-`POST /taggings/remove`, `POST /taggings/preview` and `POST /taggings/batch`. These pin
+`POST /taggings/remove` and `POST /taggings/batch` with and without `dryRun`. These pin
 the rule branches VOC-S12 does not walk: every subject kind, the three refusals, the
 idempotent repeats, the records a caller may not read (skipped, counted and never named)
 and the cap.
@@ -150,7 +150,7 @@ class TaggingTests(TestCase):
     def test_only_vocab_manage_tags_and_only_a_session_calls(self) -> None:
         one = {"tagKey": "custody", "subjectType": "obligation", "subjectId": str(self.obligations[0].id)}
         many = {"tagKey": "custody", "subjectType": "obligation", "subjectIds": [str(self.obligations[0].id)]}
-        for path, body in (("/taggings", one), ("/taggings/remove", one), ("/taggings/preview", many), ("/taggings/batch", many)):
+        for path, body in (("/taggings", one), ("/taggings/remove", one), ("/taggings/batch?dryRun=true", many), ("/taggings/batch", many)):
             with self.subTest(path=path):
                 denied = self._post(path, body, self.reader)
                 self.assertEqual(denied.status_code, 403, denied.content)
@@ -171,7 +171,7 @@ class TaggingTests(TestCase):
         first, second, third = self.obligations
         Tagging.objects.create(tenant=self.tenant, tag=self.custody, subject_type="obligation", subject_id=first.id)
         missing = uuid.uuid4()
-        response = self._batch("/taggings/preview", [first.id, second.id, third.id, self.private.id, missing, second.id])
+        response = self._batch("/taggings/batch?dryRun=true", [first.id, second.id, third.id, self.private.id, missing, second.id])
         self.assertEqual(response.status_code, 200, response.content)
         body = response.json()
         self.assertEqual(body["tag"], {"key": "custody", "kind": None, "label": "Custody"})
@@ -231,7 +231,7 @@ class TaggingTests(TestCase):
         self.assertFalse(Tagging.objects.exists())
 
     def test_a_batch_names_one_kind_and_a_known_tag(self) -> None:
-        for path in ("/taggings/preview", "/taggings/batch"):
+        for path in ("/taggings/batch?dryRun=true", "/taggings/batch"):
             with self.subTest(path=path):
                 kind = self._batch(path, [self.obligations[0].id], subject_type="gap")
                 self.assertEqual((kind.status_code, kind.json()["code"]), (422, "unsupported_subject"))
@@ -244,7 +244,7 @@ class TaggingTests(TestCase):
     @override_settings(BULK_TAGGING_MAX_RECORDS=2)
     def test_a_batch_above_the_cap_is_refused_whole(self) -> None:
         ids = [o.id for o in self.obligations]
-        for path in ("/taggings/preview", "/taggings/batch"):
+        for path in ("/taggings/batch?dryRun=true", "/taggings/batch"):
             with self.subTest(path=path):
                 response = self._batch(path, ids)
                 self.assertEqual((response.status_code, response.json()["code"]), (422, "too_many_records"))

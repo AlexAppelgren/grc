@@ -1,12 +1,11 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { useRef, useState, type KeyboardEvent, type TextareaHTMLAttributes } from 'react';
 
 import { controlClass } from '@/components/ui/Field';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { api } from '@/shared/utils/api-client';
 import { cn } from '@/shared/utils/cn';
+import { usePeople } from '@/features/shared/reference';
 
 import type { PersonRef } from './types';
 
@@ -18,10 +17,6 @@ import type { PersonRef } from './types';
 // parsed for ids.
 
 const PEOPLE_SHOWN = 8;
-
-async function listPeople(): Promise<PersonRef[]> {
-  return (await api.get<PersonRef[]>('/api/v1/reference/people')).data;
-}
 
 // "@" at the start or after a space, then the letters typed so far, up to the caret.
 const TRIGGER = /(?:^|\s)@([^\s@]*)$/;
@@ -47,7 +42,7 @@ export function MentionPicker({
   const ref = useRef<HTMLTextAreaElement>(null);
   const [query, setQuery] = useState<string | null>(null);
   const [active, setActive] = useState(0);
-  const people = useQuery({ queryKey: ['collab', 'people'], queryFn: listPeople, enabled: query !== null, staleTime: 60_000 });
+  const people = usePeople(null, query !== null);
 
   const letters = query?.toLocaleLowerCase() ?? '';
   const matches = (people.data ?? []).filter((p) => p.name.toLocaleLowerCase().includes(letters)).slice(0, PEOPLE_SHOWN);

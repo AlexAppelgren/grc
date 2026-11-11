@@ -30,7 +30,6 @@
   "shell.signOut": "Sign out",
   "shell.signingOut": "Signing out…",
   "shell.account": "Account",
-  "shell.close": "Close",
   "shell.loading": "Loading your session…",
   "shell.accountFor": "{name}, account menu",
   "shell.orgRoles": "{organisation} · {roles}",

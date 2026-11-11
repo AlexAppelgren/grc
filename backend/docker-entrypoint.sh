@@ -3,7 +3,7 @@
 # first Alpine image failed its smoke test on exactly this line (2026-09-19).
 # Entrypoint for the API image (playbook 2.2, 12).
 #
-#   1. Migrate as the migrator role (MIGRATOR_DATABASE_URL owns the tables).
+#   1. Migrate as the migrator role (MIGRATOR_DATABASE_URL owns the tables), then unset it.
 #   2. Run every idempotent reference seed as the app role, in dependency order. Each
 #      line below says what silently breaks without it. The last repo shipped four
 #      reference seeds that ran nowhere, and every failure was quiet.
@@ -24,6 +24,11 @@ fi
 
 echo "entrypoint: migrating as the migrator role"
 DATABASE_URL="$MIGRATOR_DATABASE_URL" python manage.py migrate --noinput
+# The schema owner's credential leaves the environment the moment the migration is done:
+# the seeds and gunicorn run as cw_app, and code execution or an environment disclosure in
+# the API must not yield the role that can switch row-level security off (review
+# 2026-11-11 S-13). Nothing after this line reads it.
+unset MIGRATOR_DATABASE_URL
 
 echo "entrypoint: reference seeds"
 # seed_reference runs every registered seed (apps/shared/management/commands/seed_reference.py).

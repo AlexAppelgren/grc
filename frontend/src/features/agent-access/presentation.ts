@@ -2,6 +2,7 @@ import type { PresentedPill } from '@/features/shared/presentation-types';
 import { byOrder } from '@/features/shared/presentation-types';
 import type { AccessEntry, AccessKey, OrgUnit, Product } from '@/features/agent-access/types';
 import type { MessageKey, Translate } from '@/shared/i18n';
+import { humaniseKey } from '@/shared/utils/format';
 
 // What the agent access screens read from a record's facts
 // (design/screens/admin-agent-access.html; design/system/pills-and-labels.md,
@@ -36,11 +37,6 @@ export function presentUnits(units: readonly { id: string; name: string }[], slo
 
 const KIND_KEY: Record<AccessKey['kind'], MessageKey> = { service: 'agentAccess.pill.service', personal: 'agentAccess.pill.personal' };
 
-/** A scope key read as words: `library:read` is "library read". */
-export function scopeLabel(scope: string): string {
-  return scope.replace(/[._:-]/g, ' ');
-}
-
 /** A credential's kind, then Revoked or Expired from its facts, then its scopes. */
 export function presentCredential(key: AccessKey, t: Translate, now: Date): PresentedPill[] {
   const pills: PresentedPill[] = [{ key: `kind:${key.kind}`, label: t(KIND_KEY[key.kind]), tone: 'information', order: ORDER.kind }];
@@ -49,7 +45,7 @@ export function presentCredential(key: AccessKey, t: Translate, now: Date): Pres
   } else if (isExpired(key, now)) {
     pills.push({ key: 'state:expired', label: t('agentAccess.pill.expired'), tone: 'warning', order: ORDER.credentialState });
   }
-  key.scopes.forEach((scope, i) => pills.push({ key: `scope:${scope}`, label: scopeLabel(scope), tone: 'information', order: ORDER.scopes + i }));
+  key.scopes.forEach((scope, i) => pills.push({ key: `scope:${scope}`, label: humaniseKey(scope), tone: 'information', order: ORDER.scopes + i }));
   return pills.sort(byOrder);
 }
 

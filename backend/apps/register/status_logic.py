@@ -1,15 +1,11 @@
 """Compliance status on the register entry and per legal entity (REG-02, TEN-03, D-42).
 
-A read never writes: an obligation nobody has worked on reads as the defaults at version 0,
-and an entity row appears with the first write that needs it. A write takes `If-Match`, goes
-through `ensure_register_entry()` and `record()`, and never touches applicability, which is
-its own route (D-75). "Applies" and "we comply" stay two facts, but a status other than the
-`not_assessed` category needs "applies" first: the database cannot say so once the status
-is a list row (INPUT_DELTAS, c8-register-models), so this module does. Every status change
-leaves one assessment row, so the history has the first write.
-
-The obligation's pill is the worst of the entities it applies to, ranked by the fixed
-category in `worst_of()`, never by the label or the bank's editable ordinal.
+A read never writes: an untouched obligation reads as defaults at version 0. A write takes
+`If-Match`, goes through `ensure_register_entry()` and `record()`, and never touches
+applicability (D-75). A status outside the `not_assessed` category needs "applies" first,
+checked here because the status is a list row the database cannot read. Every status change
+leaves one assessment row. The obligation's pill is the worst applying entity's, by the fixed
+category (`worst_of()`).
 """
 
 from __future__ import annotations
@@ -49,14 +45,16 @@ from apps.taxonomy.models import (
     Team,
     TeamLabel,
 )
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import Labels
+from apps.shared.vocabulary import label_of
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
 from apps.tenants.models import OrgUnit, OrgUnitKind
+from apps.shared.people import person_ref
 
 ENTRY_UPDATED = "register.status_updated"
 ENTITY_UPDATED = "register.entity_status_updated"
 
-# The model's kind in the contract's words (INPUT_DELTAS, c8-register-models).
+# The model's kind in the contract's words (INPUT_DELTAS).
 _APPLICABILITY_OUT: dict[str, ApplicabilityAnswer] = {
     Applicability.APPLIES.value: "applies",
     Applicability.DOES_NOT_APPLY.value: "not_applicable",
@@ -82,9 +80,7 @@ def worst_of(statuses: Iterable[ComplianceStatus]) -> ComplianceStatus | None:
     return min(ranked, key=lambda status: RANK[status.kind or ""]) if ranked else None
 
 
-# ---------------------------------------------------------------------------------------
-# Reading
-# ---------------------------------------------------------------------------------------
+# --- Reading ---
 def read_register(*, tenant: Tenant, order: list[str], obligation_id: uuid.UUID) -> RegisterEntry:
     """`GET /obligations/{obligationId}/register`: a fixed handful of queries however many
     entities the obligation has, and not one write. It carries the bank's reading of the rule
@@ -108,8 +104,8 @@ def read_register(*, tenant: Tenant, order: list[str], obligation_id: uuid.UUID)
         compliance_status=refs.of(shown),
         status_note=entry.status_note or None,
         risk_rating=refs.maybe(entry.risk_rating),
-        first_line_owner=_person(entry.first_line_owner),
-        compliance_contact=_person(entry.compliance_contact),
+        first_line_owner=person_ref(entry.first_line_owner, RegisterPersonRef),
+        compliance_contact=person_ref(entry.compliance_contact, RegisterPersonRef),
         owner_team=refs.maybe(entry.owner_team),
         process=entry.process or None,
         system=entry.system or None,
@@ -155,7 +151,7 @@ def _entity(scope: TenantObligationScope, refs: _Refs) -> RegisterEntityStatus:
         compliance_status=refs.of(scope.compliance_status),
         status_note=scope.status_note or None,
         risk_rating=refs.maybe(scope.risk_rating),
-        owner=_person(scope.owner),
+        owner=person_ref(scope.owner, RegisterPersonRef),
         owner_team=refs.maybe(scope.owner_team),
         process=scope.process or None,
         system=scope.system or None,
@@ -170,12 +166,8 @@ def _decision(row: TenantObligation | TenantObligationScope) -> dict[str, Any]:
         "applicability": _APPLICABILITY_OUT[row.applicability],
         "applicability_reason": row.applicability_reason or None,
         "applicability_decided_at": row.applicability_decided_at,
-        "applicability_decided_by": _person(row.applicability_decided_by),
+        "applicability_decided_by": person_ref(row.applicability_decided_by, RegisterPersonRef),
     }
-
-
-def _person(user: Any) -> RegisterPersonRef | None:
-    return None if user is None else RegisterPersonRef(id=user.id, name=user.name)
 
 
 _LABEL_MODELS: dict[type[Any], type[Any]] = {
@@ -208,9 +200,7 @@ class _Refs:
         return RegisterVocabRef(key=row.key, kind=row.kind, label=label)
 
 
-# ---------------------------------------------------------------------------------------
-# Writing
-# ---------------------------------------------------------------------------------------
+# --- Writing ---
 def update_register(
     *,
     tenant: Tenant,

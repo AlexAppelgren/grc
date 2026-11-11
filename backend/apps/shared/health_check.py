@@ -1,11 +1,14 @@
 """`/health/` (playbook 2.2, 5): checks the database, the cache, the worker and the
-pgvector extension. 200 when every component is ok; 503 naming the failing component.
-The worker ping is bounded (`limit=1`) so one reply ends it, and its timeout is a
-setting. Never authenticated, never CORS-scoped, never cached."""
+pgvector extension. 200 `{"status": "ok"}` when every component is ok, 503
+`{"status": "degraded"}` otherwise. The route is open, so the details go to the log only
+(review 2026-11-11 L-8). A result is reused for HEALTH_CACHE_SECONDS, so hammering the route
+cannot multiply worker pings and queries; the ping is bounded. Never authenticated,
+never CORS-scoped, never cached by an HTTP cache."""
 
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -86,19 +89,27 @@ def run_checks() -> list[ComponentStatus]:
     return [check() for check in CHECKS]
 
 
-@require_GET
-def health_view(request: HttpRequest) -> JsonResponse:
+# The last answer in this process and when it was taken (time.monotonic()).
+_last: tuple[float, bool] | None = None
+
+
+def healthy() -> bool:
+    """Whether every component is ok, from a run at most HEALTH_CACHE_SECONDS old."""
+    global _last
+    now = time.monotonic()
+    if _last is not None and now - _last[0] < settings.HEALTH_CACHE_SECONDS:
+        return _last[1]
     statuses = run_checks()
-    failing = [status.name for status in statuses if not status.ok]
-    body = {
-        "status": "ok" if not failing else "degraded",
-        "failing": failing,
-        "components": {
-            status.name: {"ok": status.ok, "detail": status.detail} for status in statuses
-        },
-    }
+    failing = {status.name: status.detail for status in statuses if not status.ok}
     if failing:
         logger.warning("health check failing", extra={"failing": failing})
-    response = JsonResponse(body, status=200 if not failing else 503)
+    _last = (now, not failing)
+    return not failing
+
+
+@require_GET
+def health_view(request: HttpRequest) -> JsonResponse:
+    ok = healthy()
+    response = JsonResponse({"status": "ok" if ok else "degraded"}, status=200 if ok else 503)
     response["Cache-Control"] = "no-store"
     return response

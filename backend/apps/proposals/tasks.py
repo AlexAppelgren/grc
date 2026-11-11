@@ -1,20 +1,13 @@
 """The library baseline's runner and the library's translator, on the beat and on an
-approval (D-118, ADR 0065; D-129).
+approval (D-118, ADR 0065; D-129). Not a `@tenant_task`: they file only shared proposals.
 
-Not a `@tenant_task`: it activates no tenant and files only shared proposals, as the
-command does from the API's shell. `LIBRARY_BASELINE_FILING_MINUTES` sets how often the beat
-runs it; `LIBRARY_BASELINE_ON_APPROVAL_S` queues it that many seconds after a reviewer
-approves a library instrument, so the duties follow at once (config/settings.py).
-`LIBRARY_TRANSLATION_MINUTES` sets how often the beat queues the records the translator
-asks about, one task each up to `LIBRARY_TRANSLATION_RUN_MAX`, and an approval that adds an
-obligation or an instrument's summary queues that same fan-out a few seconds later, once for
-every approval in the window, so approving thousands at once never queues thousands of model
-calls; 0 switches both off (apps/proposals/translations.py).
+`LIBRARY_BASELINE_FILING_MINUTES` and `LIBRARY_TRANSLATION_MINUTES` set the beat (0
+switches translation off); an approval queues the same work `LIBRARY_BASELINE_ON_APPROVAL_S`
+later, once per window, so approving thousands never queues thousands of model calls.
 
-Runs never overlap: a session advisory lock makes a second run wait for the first and then
-read what the first filed, so the beat and an approval can never file one entry twice. The
-queueing rides the outbox row of the approval, the one relay there is, and is registered
-from `ProposalsConfig.ready()`, never at import (apps/shared/tests_outbox.py)."""
+A session advisory lock keeps runs from overlapping. The queueing rides the approval's
+outbox row and is registered from `ProposalsConfig.ready()`, never at import
+(apps/shared/tests_outbox.py)."""
 
 from __future__ import annotations
 
@@ -94,11 +87,9 @@ def translate_library_record(target: str, record_id: str) -> None:
 
 def queue_translation(event: OutboxEvent) -> None:
     """After an approval that adds a shared obligation or an instrument's summary, queue one
-    fan-out of the beat's own a few seconds out (`LIBRARY_BASELINE_ON_APPROVAL_S`, the same
-    wait the baseline's filing takes), unless one is already queued for this window or
-    translation is switched off: approving 2,000 duties queues one fan-out of at most
-    `LIBRARY_TRANSLATION_RUN_MAX`, never 2,000 model calls at once. A bank's own record
-    (recorded in its zone) is never translated: it is never a model input (D-57)."""
+    fan-out a few seconds out (`LIBRARY_BASELINE_ON_APPROVAL_S`), unless one is queued for
+    this window or translation is off, so many approvals queue one fan-out of at most
+    `LIBRARY_TRANSLATION_RUN_MAX`. A bank's own record is never a model input (D-57)."""
     if event.tenant_id is not None or not settings.LIBRARY_TRANSLATION_MINUTES or event.topic not in TRANSLATED_ON:
         return
     wait = max(settings.LIBRARY_BASELINE_ON_APPROVAL_S, 1)

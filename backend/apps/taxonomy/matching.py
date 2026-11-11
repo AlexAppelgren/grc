@@ -1,20 +1,15 @@
-"""Footprint matching (FP-01, D-36, data-model.md §4): the one rule every surface applies
-from chunk 3 on, as a pure function and as the SQL function `taxonomy_in_footprint(tenant,
-term_ids[])` the taxonomy migrations create (0001, replaced by 0006 for opt-in dimensions,
-split by 0008 into the bank's guard, read once, and a per-row check that reads no table).
-The two are tested against each other (apps/taxonomy/tests_matching.py). A list filters with
-`in_footprint_expression()`, the same two halves, so the footprint is read once per query.
+"""Footprint matching (FP-01, D-36, data-model.md §4): the one rule every surface applies,
+as a pure function and as the SQL function `taxonomy_in_footprint(tenant, term_ids[])`,
+tested against each other (apps/taxonomy/tests_matching.py). A list filters with
+`in_footprint_expression()`, so the footprint is read once per query.
 
-The rule: for every dimension the record carries terms in, at least one of them must be
-in the footprint. A dimension the footprint has no terms in does not restrict (an empty
-restriction list means "no restriction", playbook 4.5), except an opt-in dimension (kind
-`opt_in`, the standards a bank follows): a record carrying one of its terms matches only
-when the footprint names that term, also when the footprint names no term in it at all.
-A dimension whose `restricts_footprint` is false (theme, channel, lifecycle stage)
-describes the record and never narrows the footprint; an opt-in dimension restricts
-whatever that flag says, so clearing it changes nothing. A record with no terms matches
-every tenant. An obligation's instrument regime is folded into its scope by the caller
-(apps/library/reading.py), so it is one more dimension here.
+The rule: for every dimension the record carries terms in, at least one of them must be in
+the footprint. A dimension the footprint names no term in does not restrict (playbook 4.5),
+except an opt-in dimension (the standards a bank follows): a record carrying one of its terms
+matches only when the footprint names that term. A dimension whose `restricts_footprint` is
+false never narrows; an opt-in dimension restricts whatever that flag says. A record with no
+terms matches every tenant. An obligation's instrument regime is folded into its scope by
+the caller (apps/library/reading.py).
 """
 
 from __future__ import annotations
@@ -23,7 +18,6 @@ import uuid
 from collections.abc import Collection, Iterable, Mapping
 
 from django.contrib.postgres.fields import ArrayField
-from django.db import connection
 from django.db.models import BooleanField, Func, Q, UUIDField, Value
 from django.db.models.expressions import BaseExpression
 
@@ -59,10 +53,9 @@ def in_footprint(
     *,
     restricting: Collection[str],
 ) -> bool:
-    """`record_terms` and `footprint` map a dimension key to term keys. `restricting` is
-    `restricting_dimensions()`'s answer, required and checked: it is typed as a collection so
-    the callers that pass it along need not name the class, and a `Restricting` is demanded
-    here because it is the only thing that knows which dimensions are opt-in."""
+    """`record_terms` and `footprint` map a dimension key to term keys. `restricting` must be
+    a `Restricting`, `restricting_dimensions()`'s answer, the only thing that knows which
+    dimensions are opt-in."""
     if not isinstance(restricting, Restricting):
         raise TypeError("in_footprint needs restricting_dimensions()'s answer, which names the opt-in dimensions.")
     for dimension, keys in record_terms.items():
@@ -98,11 +91,6 @@ def restricting_dimensions() -> Restricting:
     return Restricting((key for key, _kind in rows), opt_in=(key for key, kind in rows if kind == opt_in))
 
 
-def opt_in_dimensions() -> frozenset[str]:
-    """The active opt-in dimensions alone: the standards a bank follows."""
-    return restricting_dimensions().opt_in
-
-
 def in_footprint_expression(tenant_id: uuid.UUID, term_ids: BaseExpression) -> Func:
     """`taxonomy_in_footprint(tenant, term_ids)` as a list's filter: the per-row check over
     `term_ids`, handed the bank's guard as uncorrelated subqueries that PostgreSQL runs once
@@ -112,11 +100,3 @@ def in_footprint_expression(tenant_id: uuid.UUID, term_ids: BaseExpression) -> F
     return Func(term_ids, *guard, function="taxonomy_scope_admits", output_field=BooleanField())
 
 
-def in_footprint_sql(tenant_id: uuid.UUID, term_ids: Iterable[uuid.UUID]) -> bool:
-    """The database's answer, from the SQL function the migration created. Every list
-    query from chunk 3 on uses the function inside its WHERE clause; this wrapper is for
-    the surfaces that decide one record at a time and for the tests that pin the mirror."""
-    with connection.cursor() as cursor:
-        cursor.execute(f"SELECT {SQL_FUNCTION}(%s, %s::uuid[])", [str(tenant_id), [str(term_id) for term_id in term_ids]])
-        row = cursor.fetchone()
-    return bool(row and row[0])

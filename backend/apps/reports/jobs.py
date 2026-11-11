@@ -1,14 +1,10 @@
-"""Export jobs (REP-02, CAS-07; CHUNK12_TASKS c12-exports-contract-b).
+"""Export jobs (REP-02, CAS-07).
 
-`create` writes the job and hands it to the worker once the request's transaction commits,
-so a request never builds a file. A kind nobody registered answers 501 `not_built` and a
-format its exporter does not offer answers 422, both before a row is written. `download`
-streams the file back through the same permission, writes one audit row per download and
-stamps the first one. Every read and write names the caller's own tenant on top of
-row-level security, so another bank's job is a plain 404.
-
-Nothing here logs; the audit rows name the export's kind and format and the person, never
-anything from the file.
+`create` writes the job and queues it after commit, so a request never builds a file; an
+unregistered kind answers 501 `not_built` and an unoffered format 422, both before a row is
+written. `download` streams through the same permission, writes one audit row per download
+and stamps the first. Every query names the caller's tenant on top of row-level security.
+Nothing here logs; audit rows name kind, format and person, never file content.
 """
 
 from __future__ import annotations
@@ -24,7 +20,7 @@ from apps.reports import exporters, tasks
 from apps.reports.models import ExportJob, ExportKind, JobStatus
 from apps.reports.schemas import ExportInput
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 from apps.shared.storage import get_storage
 
@@ -92,7 +88,7 @@ def create(
 def get(*, tenant: Tenant, job_id: uuid.UUID) -> ExportJob:
     job = ExportJob.objects.filter(pk=job_id, tenant=tenant).first()  # ordering: pk lookup, at most one row
     if job is None:
-        raise ProblemError(status=404, code="not_found", detail="No export with that id.")
+        raise not_found("No export with that id.")
     return job
 
 
@@ -104,7 +100,7 @@ def page(*, tenant: Tenant, limit: int, offset: int) -> tuple[list[ExportJob], i
 def download(*, tenant: Tenant, actor: Actor, permissions: frozenset[str], job_id: uuid.UUID) -> tuple[ExportJob, IO[bytes]]:
     job = ExportJob.objects.select_for_update().filter(pk=job_id, tenant=tenant).first()  # ordering: pk lookup, at most one row
     if job is None:
-        raise ProblemError(status=404, code="not_found", detail="No export with that id.")
+        raise not_found("No export with that id.")
     exporter = exporters.lookup(ExportKind(job.kind))
     if exporter is not None and exporter.check is not None:
         exporter.check(tenant=tenant, permissions=permissions, subject_id=job.subject_id)

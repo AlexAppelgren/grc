@@ -13,9 +13,6 @@ the request body or of the 2xx response differs.
 
 `--write-pending` regenerates contract_drift_pending.txt for every currently missing
 operation, keeping any existing chunk annotations; a human then reviews the chunks.
-
-Proven to fail 2026-09-19 by deleting the `GET /me` line from the pending file while
-its shape still differs from the designed `Me` (exit 1, operation named), then restored.
 """
 
 from __future__ import annotations
@@ -129,8 +126,7 @@ def operations(document: dict, prefix: str) -> dict[tuple[str, str], tuple[str, 
 def explained_in_deltas(method: str, path: str, operation_id: str) -> bool:
     """A delta explains an operation only by naming it: its operationId, or the backticked
     `METHOD /path` with the designed parameter names. A bare path would match too much
-    (`/me` appears in a sentence about `/me/passkeys`), which is how `GET /me` once slipped
-    through as explained while its shape still differed."""
+    (`/me` appears in a sentence about `/me/passkeys`)."""
     text = DELTAS.read_text(encoding="utf-8")
     if operation_id and re.search(rf"`{re.escape(operation_id)}`", text):
         return True

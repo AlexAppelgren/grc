@@ -6,7 +6,6 @@ import ConsoleAgentsPage from '@/app/(console)/console/agents/page';
 import { AgentDefinitionsScreen } from '@/components/console/AgentDefinitionsScreen';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
 
 // The console's agent definitions (AGT-03, ADM-02): every agent bleqq ships
 // with its scope, version and state, each opening on its own page; and the
@@ -28,7 +27,6 @@ const definition = (key: string, extra: Record<string, unknown> = {}) => ({
 
 function server(answer: Answer) {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === DEFINITIONS_PATH) return answer;
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
   });

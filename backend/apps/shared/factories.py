@@ -1,18 +1,12 @@
 """Test factories (playbook 2.2). Plain functions, no factory library: each takes the
-fields a test cares about and fills the rest deterministically. Values come from
-arguments or counters, never from `random` (a seed must reproduce).
+fields a test cares about and fills the rest deterministically, never from `random`.
 
-Every factory that writes a tenant row activates that tenant first, because the test
-runner's own connection is the table owner and FORCE ROW LEVEL SECURITY applies to it
-too: a tenant row is invisible and unwritable until `tenancy.activate()` has run in the
-transaction (playbook 14). The activation lasts until the test's savepoint is rolled
-back, or until the next factory activates another tenant.
+Every factory that writes a tenant row activates that tenant first: FORCE ROW LEVEL SECURITY
+applies to the test runner's owner connection too (playbook 14).
 
-**No factory here writes or names a library model.** The library fence
-(apps/shared/tests_library_fence.py) treats this file as a production module, so it may
-neither open `library_write()` or `watch_write()` nor name a `LibraryModel` beside a
-write call — that is what keeps a fixture from being a way round the fence. Builders that
-need one live in the app's own `testing.py`, which the fence exempts:
+**No factory here writes or names a library model.** The library fence treats this file as
+production code, so a fixture is never a way round it. Builders that need one live in the
+app's own `testing.py`, which the fence exempts:
 
 | What you want | Where it is |
 |---|---|
@@ -86,7 +80,7 @@ def tenant(*, name: str | None = None, slug: str | None = None, timezone: str = 
         tenancy.activate(row.id)
         TenantContentLanguage.objects.create(tenant=row, language=english, sort_order=0)
         roles_logic.ensure_system_roles(row)
-        # The tenant's own lists (chunk 2, apps/taxonomy/tenant_hooks.py), as a new tenant has them.
+        # The tenant's own lists (apps/taxonomy/tenant_hooks.py), as a new tenant has them.
         ensure_tenant_vocabularies(row, actor=Actor.system("test_factory"))
     return row
 
@@ -157,11 +151,8 @@ def invitation(tenant: Tenant, *, email: str | None = None, roles: Iterable[str]
 
 def api_key(tenant: Tenant, *, name: str = "Agent key", scopes: Iterable[str] = ("library:read",)) -> SimpleNamespace:
     """A live key in `tenant`: `.id`, `.row` (the ApiKey) and `.plain_key` (shown once).
-
-    `scopes` are written as given, so a test can stand up a key a bank could only hold from
-    before the watch writes became platform-only (PLATFORM_ONLY_SCOPES): such a key works
-    without them (apps/identity/api_keys_logic.py:resolve_api_key). The default is one a
-    bank's key may hold today."""
+    `scopes` are written as given, so a test can stand up an old bank key holding a
+    platform-only scope, which works without it (`resolve_api_key`)."""
     plain, prefix, key_hash = tokens.new_api_key()
     with transaction.atomic():
         tenancy.activate(tenant.id)
@@ -194,9 +185,8 @@ def footprint_request(tenant: Tenant) -> FootprintChangeRequest:
 
 
 def scope_item(tenant: Tenant) -> ScopeItem:
-    """The tenant-isolation guard's record for the scope item route (d89-scope-items-logic,
-    OWN-01): one of the bank's own scope items, on the reference jurisdictions and terms,
-    which it seeds when they are missing (the seeds are idempotent)."""
+    """The tenant-isolation guard's record for the scope item route (OWN-01): one of the
+    bank's own scope items, seeding the reference jurisdictions and terms if missing."""
     from apps.library.models import Jurisdiction
     from apps.library.seeds import seed_jurisdictions, seed_languages
     from apps.taxonomy import terms_logic
@@ -247,7 +237,7 @@ def agent_actor(*, label: str = "Test Agent", agent_id: uuid.UUID | None = None)
     return Actor(kind=ActorType.AGENT, id=agent_id or uuid.uuid4(), label=label)
 
 
-# --- c8-reg-applicability ---------------------------------------------------------------
+# --- Register applicability ---
 def legal_entity(tenant: Tenant, *, name: str = "Example Bank AB", entity_term_id: uuid.UUID | None = None, active: bool = True) -> OrgUnit:
     """An org unit of the legal-entity kind in `tenant`, carrying the entity term whose id is
     given (a `legal_entity` dimension term, by id so this file names no library model)."""
@@ -258,7 +248,7 @@ def legal_entity(tenant: Tenant, *, name: str = "Example Bank AB", entity_term_i
         )
 
 
-# c8-reg-status: the tenant-isolation guard's record for a legal entity's register row.
+# The tenant-isolation guard's record for a legal entity's register row.
 def register_entity(tenant: Tenant) -> SimpleNamespace:
     """A legal entity of `tenant`. The route reads the entity under row-level security before
     it looks at the obligation, so another bank asking for it is refused as if it never
@@ -271,11 +261,8 @@ def register_entity(tenant: Tenant) -> SimpleNamespace:
     return SimpleNamespace(id=entity.id, params={"obligation_id": uuid.uuid4()})
 
 
-# ---------------------------------------------------------------------------------------
-# c8-tenants-contract: the tenant-isolation guard's records for the chunk 8 tenants routes
-# (TEN-02, TEN-03, TEN-06). A licence's type is a library term this file may not write;
-# apps/tenants/testing.py, which the library fence exempts, writes it.
-# ---------------------------------------------------------------------------------------
+# --- The tenant-isolation guard's records for the tenants routes (TEN-02, TEN-03, TEN-06) ---
+# A licence's type is a library term, written by apps/tenants/testing.py.
 def org_unit(tenant: Tenant, *, name: str | None = None) -> OrgUnit:
     """A department of `tenant` (a business area), which needs no legal-entity term."""
     with transaction.atomic():
@@ -310,7 +297,7 @@ def team_key(tenant: Tenant) -> SimpleNamespace:
 
 
 def support_access(tenant: Tenant) -> SupportAccess:
-    """A support-access row of `tenant`, as chunk 1's recovery writes one."""
+    """A support-access row of `tenant`, as the last-admin recovery writes one."""
     requester = platform_user()
     with transaction.atomic():
         tenancy.activate(tenant.id)
@@ -328,16 +315,14 @@ def register_lookup(tenant: Tenant) -> RegisterLookup:
 
 
 def member_personal_token(tenant: Tenant) -> SimpleNamespace:
-    """The tenant-isolation guard's record for the token routes (acc-personal-grants): a
+    """The tenant-isolation guard's record for the token routes: a
     token of a new compliance officer of `tenant`."""
     return personal_token(tenant, member_user(tenant, roles=("compliance_officer",)))
 
 
-# ---------------------------------------------------------------------------------------
-# c9-case-contract: the tenant-isolation guard's records for the case workflow routes.
-# A case names a library change, so the case itself is built by `apps/cases/testing.py`
-# (the fence exempts it); the children are this bank's own rows and are built here.
-# ---------------------------------------------------------------------------------------
+# --- The tenant-isolation guard's records for the case workflow routes ---
+# The case itself names a library change, so `apps/cases/testing.py` builds it; its
+# children are this bank's own rows.
 def case_change(tenant: Tenant) -> SimpleNamespace:
     """A change with a case of `tenant`, addressed by the change's id as every workflow
     route addresses it. Another bank has no case for it, so tenancy alone answers 404."""
@@ -388,7 +373,7 @@ def case_evidence(tenant: Tenant) -> SimpleNamespace:
     return SimpleNamespace(id=evidence.id, case=row)
 
 
-# --- c8-reg-gaps-risk (REG-03) ----------------------------------------------------------
+# --- Gaps and risk (REG-03) ---
 def gap(tenant: Tenant) -> Any:
     """The tenant-isolation guard's record for gap routes: an open gap of `tenant`, with a
     waiting risk acceptance so the approval has something to decide, on a library obligation
@@ -426,7 +411,7 @@ def gap(tenant: Tenant) -> Any:
         )
 
 
-# c8-reg-links-history (REG-05): the tenant-isolation guard's record for DELETE /internal-links/{id}.
+# The tenant-isolation guard's record for DELETE /internal-links/{id} (REG-05).
 def internal_link(tenant: Tenant) -> SimpleNamespace:
     """A live link of `tenant` to a fresh library obligation, with the item it points at.
     The obligation comes from apps/library/testing.py, the one place a test writes the
@@ -459,7 +444,7 @@ def internal_link(tenant: Tenant) -> SimpleNamespace:
     return SimpleNamespace(id=link.id, link=link)
 
 
-# c8-reg-units (REG-08, D-41): the tenant-isolation guard's record for unit routes.
+# The tenant-isolation guard's record for unit routes (REG-08, D-41).
 def soa_unit(tenant: Tenant) -> SoaUnit:
     """A live Statement of Applicability unit of `tenant`: under a fresh standard's
     conformance duty (built by apps/library/testing.py), for a legal entity whose
@@ -493,10 +478,9 @@ def soa_unit(tenant: Tenant) -> SoaUnit:
         return SoaUnit.objects.create(tenant=tenant, scope=scope, reference=f"X.{n}", title="Our own words", compliance_status=status)
 
 
-# ---------------------------------------------------------------------------------------
-# c8-ten-organisation (TEN-02): a seeded organisation tree. `seeded_legal_entity` reads the
-# seeded `legal_entity:bank` term, so it needs seed_term_dimensions() and seed_taxonomy_terms().
-# ---------------------------------------------------------------------------------------
+# --- A seeded organisation tree (TEN-02) ---
+# `seeded_legal_entity` reads `legal_entity:bank`: seed_term_dimensions() and
+# seed_taxonomy_terms() first.
 def seeded_legal_entity(tenant: Tenant, *, parent: OrgUnit | None = None, head: User | None = None) -> OrgUnit:
     """A legal entity of `tenant` carrying the seeded `bank` term."""
     term = entity_term()
@@ -510,7 +494,7 @@ def seeded_legal_entity(tenant: Tenant, *, parent: OrgUnit | None = None, head: 
 def department(
     tenant: Tenant, *, name: str | None = None, parent: OrgUnit | None = None, head: User | None = None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA
 ) -> OrgUnit:
-    """A department of `tenant` with a head, under `parent` (c8-ten-organisation, c8-ten-teams-people)."""
+    """A department of `tenant` with a head, under `parent`."""
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name or f"Unit {next(_counter)}", parent=parent, head_user=head)
@@ -525,8 +509,8 @@ def business_unit(tenant: Tenant, *, parent: OrgUnit | None = None, head: User |
         )
 
 
-# c8-ten-teams-people (TEN-02, TEN-03): a named team with its English label and department,
-# the people in it, and a department with a head.
+# A named team with its English label and department, the people in it, and a department
+# with a head (TEN-02, TEN-03).
 def team(tenant: Tenant, *, key: str, label: str, org_unit: OrgUnit | None = None, members: Iterable[User] = ()) -> Team:
     with transaction.atomic():
         tenancy.activate(tenant.id)
@@ -538,16 +522,15 @@ def team(tenant: Tenant, *, key: str, label: str, org_unit: OrgUnit | None = Non
 
 
 def headed_unit(tenant: Tenant, *, name: str, head: User | None, kind: OrgUnitKind = OrgUnitKind.BUSINESS_AREA) -> OrgUnit:
-    """A named unit of `tenant` of any kind, with its head (c8-ten-teams-people)."""
+    """A named unit of `tenant` of any kind, with its head."""
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return OrgUnit.objects.create(tenant=tenant, kind=kind.value, name=name, head_user=head)
 
 
 def case_participant(tenant: Tenant) -> SimpleNamespace:
-    """c9-case-participants: a member of `tenant` taking part in a case of `tenant`, for a
-    change no other bank has a case for. `.id` is the participation, `.params` names the
-    change, as the case participant routes address it."""
+    """A member of `tenant` taking part in a case of `tenant`, for a change no other bank has
+    a case for. `.id` is the participation, `.params` names the change."""
     from apps.collab.models import Participant
 
     row = case_change(tenant).case
@@ -559,9 +542,7 @@ def case_participant(tenant: Tenant) -> SimpleNamespace:
     return SimpleNamespace(id=participation.id, params={"change_id": row.change_id})
 
 
-# ---------------------------------------------------------------------------------------
-# c9-case-file-export: a case worked from triage to sign-off, for the case file (CAS-07).
-# ---------------------------------------------------------------------------------------
+# --- A case worked from triage to sign-off, for the case file (CAS-07) ---
 def closed_case(tenant: Tenant, *, actions: int = 2, evidence: int = 3, so_what_confirmed: bool = True) -> SimpleNamespace:
     """A case of `tenant` signed off by a second person, with everything its file prints: a
     "So what?", a saved assessment, `actions` actions (the first done, the second removed,
@@ -663,7 +644,7 @@ def closed_case(tenant: Tenant, *, actions: int = 2, evidence: int = 3, so_what_
     return SimpleNamespace(case=row, change_id=row.change_id, owner=owner, approver=approver, step_up=step_up)
 
 
-# c11-tenant-agents-budget-scope (AGT-04)
+# Tenant agents (AGT-04)
 def tenant_agent(tenant: Tenant) -> object:
     """The tenant-isolation guard's record for `PATCH /agents/{tenant_agent_id}`: one of the
     bank's own agents, on a tenant-scoped definition shared by every bank that asks."""
@@ -676,9 +657,7 @@ def tenant_agent(tenant: Tenant) -> object:
         return TenantAgent.objects.create(tenant=tenant, agent=definition)
 
 
-# ---------------------------------------------------------------------------------------
-# acc-principal-guard: an agent access entry and its two credential kinds (ACC-03).
-# ---------------------------------------------------------------------------------------
+# --- An agent access entry and its two credential kinds (ACC-03) ---
 def agent_access_entry(tenant: Tenant, *, name: str = "Trading platform coding agent") -> SimpleNamespace:
     """A live agent access entry of `tenant`, owned by its seeded compliance team and
     registered by a new admin. Activates the tenant."""
@@ -711,7 +690,7 @@ def entry_key(tenant: Tenant, entry: SimpleNamespace, *, scopes: Iterable[str] =
 
 def agent_access_key(tenant: Tenant) -> SimpleNamespace:
     """A live entry of `tenant` with one service key, addressed as the key's revoke route
-    names them (acc-entries-and-log)."""
+    names them."""
     entry = agent_access_entry(tenant)
     key = entry_key(tenant, entry)
     return SimpleNamespace(id=key.id, entry=entry, key=key, params={"uuidstr:entry_id": entry.id, "uuidstr:key_id": key.id})
@@ -738,7 +717,7 @@ def personal_token(
     return SimpleNamespace(id=row.id, row=row, plain_key=plain)
 
 
-# acc-scope-and-reach (ACC-08): the tenant-isolation guard's record for tenant reach routes.
+# ACC-08: the tenant-isolation guard's record for tenant reach routes.
 def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
     """The tenant's pending request for tenant reach, reused when one waits, because a
     second cannot."""
@@ -751,7 +730,7 @@ def tenant_reach_request(tenant: Tenant) -> TenantReachRequest:
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return TenantReachRequest.objects.create(tenant=tenant, requested_by=requester)
-# c8-duty-occurrences (REG-07): the tenant-isolation guard's record for the completion route.
+# The tenant-isolation guard's record for the completion route (REG-07).
 def duty_occurrence(tenant: Tenant) -> DutyOccurrence:
     """An upcoming occurrence of a fresh obligation's quarterly duty (both built by
     apps/library/testing.py) on `tenant`'s register entry, so the only thing between another
@@ -771,7 +750,7 @@ def duty_occurrence(tenant: Tenant) -> DutyOccurrence:
         return DutyOccurrence.objects.create(tenant=tenant, recurring_duty=duty, tenant_obligation=entry, due_date=timezone.localdate())
 
 
-# c10-reminders-escalation-reviews: the dated work reminders and escalation read.
+# The dated work reminders and escalation read.
 def action(case: ChangeCase, owner: User, *, due_date: datetime.date, title: str = "Update the policy") -> Action:
     """One open action on a bank's case, owned by `owner` and due on `due_date`."""
     with transaction.atomic():
@@ -813,7 +792,7 @@ def team_member(tenant: Tenant, team: Team, person: User) -> TeamMember:
         return TeamMember.objects.create(tenant=tenant, team=team, user=person)
 
 
-# security-review-c10: the tenant-isolation guard's records for the two chunk 10 id routes.
+# The tenant-isolation guard's records for the comment id routes.
 def comment(tenant: Tenant) -> SimpleNamespace:
     """A comment of `tenant` on one of its cases, addressed by its own id."""
     from apps.collab.models import Comment

@@ -32,6 +32,8 @@ from apps.shared.testing import (
     stub_session,
     user_principal,
 )
+from apps.shared.testing import call_route
+from apps.shared.testing import assert_refused
 
 RUN = "11111111-1111-4111-8111-111111111111"
 KEY = "22222222-2222-4222-8222-222222222222"
@@ -63,59 +65,31 @@ SESSION_ROUTES = [
 ]
 
 
-def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
-    if body is None:
-        return getattr(client, method)(url, **headers)
-    return getattr(client, method)(url, data=body, content_type="application/json", **headers)
-
-
 class AgentRouteGates(TestCase):
     def test_no_credential_is_401(self) -> None:
-        for name, method, url, body, _ in KEY_ROUTES + SESSION_ROUTES:
-            with self.subTest(operation=name):
-                response = _call(self.client, method, url, body, {})
-                self.assertEqual(response.status_code, 401)
-                self.assertEqual(response.json()["code"], "unauthenticated")
+        assert_refused(self, KEY_ROUTES + SESSION_ROUTES, {}, 401, "unauthenticated")
 
     def test_a_key_without_the_scope_is_403_naming_it(self) -> None:
         with stub_api_key(agent_principal(scopes={perms.SCOPE_LIBRARY_READ})):
-            for name, method, url, body, scope in KEY_ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_KEY)
-                    self.assertEqual(response.status_code, 403)
-                    problem = response.json()
-                    self.assertEqual(problem["code"], "permission_denied")
-                    self.assertEqual(problem["requiredPermission"], scope)
+            assert_refused(self, KEY_ROUTES, AS_KEY, 403, "permission_denied", naming=True)
 
     def test_a_session_without_the_permission_is_403_naming_it(self) -> None:
         with stub_session(user_principal(permissions={perms.LIBRARY_READ}, tenant_id=uuid.uuid4())):
-            for name, method, url, body, permission in SESSION_ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 403)
-                    problem = response.json()
-                    self.assertEqual(problem["code"], "permission_denied")
-                    self.assertEqual(problem["requiredPermission"], permission)
+            assert_refused(self, SESSION_ROUTES, AS_SESSION, 403, "permission_denied", naming=True)
 
     def test_a_person_never_opens_or_closes_a_run(self) -> None:
         """Item 14: bleqq's agents are platform-owned and platform-run. Only a key reaches
         the two run writes, so no session — tenant or platform — opens or closes a run."""
         with stub_session(user_principal(permissions=perms.ALL_PERMISSIONS, tenant_id=uuid.uuid4())):
-            for name, method, url, body, _ in KEY_ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 401)
+            assert_refused(self, KEY_ROUTES, AS_SESSION, 401)
 
     def test_a_key_never_reads_the_run_list_or_touches_a_key(self) -> None:
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            for name, method, url, body, _ in SESSION_ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_KEY)
-                    self.assertEqual(response.status_code, 401)
+            assert_refused(self, SESSION_ROUTES, AS_KEY, 401)
 
     def test_creating_a_key_needs_a_fresh_assertion_before_the_logic(self) -> None:
         with stub_session(user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE})):
-            response = _call(self.client, "post", KEYS, KEY_BODY, AS_SESSION)
+            response = call_route(self.client, "post", KEYS, KEY_BODY, AS_SESSION)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["code"], "step_up_required")
 
@@ -129,13 +103,13 @@ class AgentRouteGates(TestCase):
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
             for name, method, url, body in cases:
                 with self.subTest(operation=name, body=sorted(body)):
-                    response = _call(self.client, method, url, body, AS_KEY)
+                    response = call_route(self.client, method, url, body, AS_KEY)
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
 
     def test_a_run_id_that_is_not_a_uuid_is_404(self) -> None:
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            response = _call(self.client, "patch", f"{RUNS}/not-a-uuid", FINISH_BODY, AS_KEY)
+            response = call_route(self.client, "patch", f"{RUNS}/not-a-uuid", FINISH_BODY, AS_KEY)
         self.assertIn(response.status_code, (404, 422))
 
 
@@ -147,7 +121,7 @@ class AgentRoutesAnswerFromTheirLogic(TestCase):
         does not exist, so the honest answer is 404 — which is also the proof that the gate
         ran first and the lookup second."""
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            response = _call(self.client, "post", f"{RUNS}/{RUN}/source-checks", CHECK_BODY, AS_KEY)
+            response = call_route(self.client, "post", f"{RUNS}/{RUN}/source-checks", CHECK_BODY, AS_KEY)
         self.assertEqual(response.status_code, 404, response.content)
         self.assertEqual(response.json()["code"], "not_found")
 
@@ -171,25 +145,26 @@ class AgentRoutesAnswerFromTheirLogic(TestCase):
                 if name not in expected:
                     continue
                 with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     status, code = expected[name]
                     self.assertEqual(response.status_code, status, response.content)
                     if code is not None:
                         self.assertEqual(response.json()["code"], code)
 
-    def test_system_health_also_reads_the_run_list(self) -> None:
-        """The run log is served now, so the proof is that `system.health` passes its gate;
-        what it returns is `tests_runs.py`'s."""
+    def test_the_console_reads_bleqqs_runs_on_its_own_route_only(self) -> None:
+        """Review 2026-11-11 B-1: a bank's run log is a bank's. A console session, even one
+        holding `system.health`, is refused it with `agents.manage` named, and reads bleqq's
+        runs from `GET /console/agent-runs` under `agent_definitions.manage`."""
         with stub_session(user_principal(permissions={perms.SYSTEM_HEALTH})):
-            response = _call(self.client, "get", RUNS, None, AS_SESSION)
-        self.assertEqual(response.status_code, 200, response.content)
+            response = call_route(self.client, "get", RUNS, None, AS_SESSION)
+        self.assertEqual(response.status_code, 403, response.content)
+        self.assertEqual(response.json()["requiredPermission"], perms.AGENTS_MANAGE)
 
 
 # ---------------------------------------------------------------------------------------
 # Chunk 11 (`c11-agents-contract`, AGT-03, AGT-04, AGT-05, ADM-02): every console and
-# tenant agent operation declared behind the gate it keeps, answering 501 `not_built`
-# until the package that builds it lands. Written before the routes: every case below
-# failed with 404 or 405 until `agents/api.py` declared them.
+# tenant agent operation behind the gate it keeps. Written before the routes: every case
+# below failed with 404 or 405 until `agents/api.py` declared them.
 # ---------------------------------------------------------------------------------------
 AGENT_KEY = "watch-sweeper"
 TENANT_AGENTS = "/api/v1/agents"
@@ -220,37 +195,18 @@ TENANT_ROUTES: list[tuple[str, str, str, Any, str]] = [
     ("createTenantAgent", "post", TENANT_AGENTS, TENANT_AGENT_BODY, perms.AGENTS_MANAGE),
     ("updateTenantAgent", "patch", f"{TENANT_AGENTS}/{{id}}", {"enabled": True}, perms.AGENTS_MANAGE),
     ("runTenantAgentNow", "post", f"{TENANT_AGENTS}/{{id}}/runs", {}, perms.AGENTS_MANAGE),
-    ("pauseTenantAgent", "post", f"{TENANT_AGENTS}/{{id}}/pause", {}, perms.AGENTS_MANAGE),
-    ("resumeTenantAgent", "delete", f"{TENANT_AGENTS}/{{id}}/pause", None, perms.AGENTS_MANAGE),
     ("interruptAgentRun", "post", f"{RUNS}/{{id}}/interrupt", {}, perms.AGENTS_MANAGE),
     ("getAgentBudget", "get", BUDGET, None, perms.AGENTS_MANAGE),
     ("putAgentBudget", "put", BUDGET, {"monthlyCap": "500.00"}, perms.AGENTS_MANAGE),
     ("listResearchRequests", "get", REQUESTS, None, perms.AGENTS_MANAGE),
     ("createResearchRequest", "post", REQUESTS, REQUEST_BODY, perms.AGENTS_MANAGE),
-    ("getResearchRequest", "get", f"{REQUESTS}/{{id}}", None, perms.AGENTS_MANAGE),
     ("listPlatformWatch", "get", f"{TENANT_AGENTS}/platform", None, perms.WATCH_READ),
 ]
-# The operations served for real, which answer from their logic and no longer 501:
-# `c11-tenant-agents-budget-scope` (tests_tenant_agents.py, tests_budget.py).
-SERVED = {
-    "listTenantAgents", "createTenantAgent", "updateTenantAgent", "getAgentBudget", "putAgentBudget",
-    "listPlatformWatch",  # built by c11-run-history; tests_platform_read.py proves it
-    # `c11-tenant-controls-cap` (tests_control.py).
-    "runTenantAgentNow",
-    "pauseTenantAgent",
-    "resumeTenantAgent",
-    "interruptAgentRun",
-}
-# c11-research-requests (tests_requests.py).
-SERVED |= {"listResearchRequests", "createResearchRequest", "getResearchRequest"}
 # Which record each id route addresses: a bank's own agent, its run, or its request.
 ID_KIND = {
     "updateTenantAgent": "agent",
     "runTenantAgentNow": "agent",
-    "pauseTenantAgent": "agent",
-    "resumeTenantAgent": "agent",
     "interruptAgentRun": "run",
-    "getResearchRequest": "request",
 }
 
 
@@ -310,27 +266,19 @@ class ConsoleAgentRouteGates(TestCase):
     reaches a definition, a version, a platform setting or a platform run, in any release."""
 
     def test_no_credential_is_401(self) -> None:
-        for name, method, url, body, _, _ in CONSOLE_ROUTES:
-            with self.subTest(operation=name):
-                response = _call(self.client, method, url, body, {})
-                self.assertEqual(response.status_code, 401)
-                self.assertEqual(response.json()["code"], "unauthenticated")
+        assert_refused(self, CONSOLE_ROUTES, {}, 401, "unauthenticated")
 
     def test_a_key_of_any_scope_never_authenticates(self) -> None:
         """A key is not a session: these routes take `SessionAuth` alone, so a key holding
         every scope is refused before any gate reads it."""
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            for name, method, url, body, _, _ in CONSOLE_ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_KEY)
-                    self.assertEqual(response.status_code, 401)
-                    self.assertEqual(response.json()["code"], "unauthenticated")
+            assert_refused(self, CONSOLE_ROUTES, AS_KEY, 401, "unauthenticated")
 
     def test_a_platform_session_without_the_permission_is_403_naming_it(self) -> None:
         for name, method, url, body, permission, _ in CONSOLE_ROUTES:
             others = perms.PLATFORM_PERMISSIONS - {permission}
             with self.subTest(operation=name), stub_session(user_principal(permissions=others, step_up_at=timezone.now())):
-                response = _call(self.client, method, url, body, AS_SESSION)
+                response = call_route(self.client, method, url, body, AS_SESSION)
                 self.assertEqual(response.status_code, 403)
                 self.assertEqual(response.json()["code"], "permission_denied")
                 self.assertEqual(response.json()["requiredPermission"], permission)
@@ -341,11 +289,7 @@ class ConsoleAgentRouteGates(TestCase):
         bank = factories.tenant(slug="console-refused")
         principal = user_principal(permissions=perms.TENANT_PERMISSIONS, tenant_id=bank.id, step_up_at=timezone.now())
         with stub_session(principal):
-            for name, method, url, body, permission, _ in CONSOLE_ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 403)
-                    self.assertEqual(response.json()["requiredPermission"], permission)
+            assert_refused(self, CONSOLE_ROUTES, AS_SESSION, 403, None, naming=True)
 
     def test_the_writes_that_change_every_bank_need_a_fresh_assertion_first(self) -> None:
         stepped = [route for route in CONSOLE_ROUTES if route[5]]
@@ -355,30 +299,9 @@ class ConsoleAgentRouteGates(TestCase):
         )
         for name, method, url, body, permission, _ in stepped:
             with self.subTest(operation=name), stub_session(user_principal(permissions={permission})):
-                response = _call(self.client, method, url, body, AS_SESSION)
+                response = call_route(self.client, method, url, body, AS_SESSION)
                 self.assertEqual(response.status_code, 403)
                 self.assertEqual(response.json()["code"], "step_up_required")
-
-    def test_behind_the_gate_each_answers_not_built(self) -> None:
-        # Served since `c11-definitions-platform`: tests_definitions.py and tests_platform.py.
-        built = {
-            "getAgentDefinition",
-            "publishAgentVersion",
-            "retireAgentVersion",
-            "getPlatformAgentSettings",
-            "updatePlatformAgentSettings",
-            "listPlatformRuns",
-            # c11-research-requests: tests_requests.py.
-            "createRetagRequest",
-            "getRetagRequest",
-        }
-        for name, method, url, body, permission, _ in CONSOLE_ROUTES:
-            if name in built:
-                continue
-            with self.subTest(operation=name), stub_session(user_principal(permissions={permission}, step_up_at=timezone.now())):
-                response = _call(self.client, method, url, body, AS_SESSION)
-                self.assertEqual(response.status_code, 501, response.content)
-                self.assertEqual(response.json()["code"], "not_built")
 
     def test_the_definitions_list_carries_scope_and_version(self) -> None:
         """`GET /agent-definitions` is served: it gains the definition's scope and when its
@@ -390,7 +313,7 @@ class ConsoleAgentRouteGates(TestCase):
         with library_write("test"):
             version = AgentVersion.objects.create(agent=definition, version_number=1, model="m", prompt_path="prompt.md")
         with stub_session(user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE})):
-            response = _call(self.client, "get", f"{DEFINITIONS}?limit=100", None, AS_SESSION)
+            response = call_route(self.client, "get", f"{DEFINITIONS}?limit=100", None, AS_SESSION)
         self.assertEqual(response.status_code, 200, response.content)
         row = next(item for item in response.json()["items"] if item["id"] == str(definition.id))
         self.assertEqual(row["scope"], "tenant")
@@ -420,7 +343,7 @@ class TenantAgentRouteGates(TestCase):
     def test_no_credential_is_401(self) -> None:
         for name, method, url, body, _ in TENANT_ROUTES:
             with self.subTest(operation=name):
-                response = _call(self.client, method, self._url(name, url), body, {})
+                response = call_route(self.client, method, self._url(name, url), body, {})
                 self.assertEqual(response.status_code, 401)
                 self.assertEqual(response.json()["code"], "unauthenticated")
 
@@ -431,38 +354,26 @@ class TenantAgentRouteGates(TestCase):
             with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES, tenant_id=tenant_id)):
                 for name, method, url, body, _ in TENANT_ROUTES:
                     with self.subTest(operation=name, tenant=tenant_id):
-                        response = _call(self.client, method, self._url(name, url), body, AS_KEY)
+                        response = call_route(self.client, method, self._url(name, url), body, AS_KEY)
                         self.assertEqual(response.status_code, 401)
 
     def test_a_session_without_the_permission_is_403_naming_it(self) -> None:
         for name, method, url, body, permission in TENANT_ROUTES:
             principal = self.bank_a.principal(perms.TENANT_PERMISSIONS - {permission})
             with self.subTest(operation=name), stub_session(principal):
-                response = _call(self.client, method, self._url(name, url), body, AS_SESSION)
+                response = call_route(self.client, method, self._url(name, url), body, AS_SESSION)
                 self.assertEqual(response.status_code, 403)
                 self.assertEqual(response.json()["code"], "permission_denied")
                 self.assertEqual(response.json()["requiredPermission"], permission)
 
-    def test_inside_its_own_bank_each_answers_not_built(self) -> None:
-        with stub_session(self.bank_a.principal(frozenset({perms.AGENTS_MANAGE, perms.WATCH_READ}))):
-            for name, method, url, body, _ in TENANT_ROUTES:
-                if name in SERVED:
-                    continue
-                if name == "createResearchRequest":
-                    body = {**body, "tenantAgentId": str(self.bank_a.agent.id)}
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, self._url(name, url), body, AS_SESSION)
-                    self.assertEqual(response.status_code, 501, response.content)
-                    self.assertEqual(response.json()["code"], "not_built")
-
     def test_a_plain_reader_reaches_what_bleqq_watches(self) -> None:
         """Ruling 6: what bleqq watches is a member's read, gated by `watch.read` alone."""
         with stub_session(self.bank_a.principal(frozenset({perms.WATCH_READ}))):
-            response = _call(self.client, "get", f"{TENANT_AGENTS}/platform", None, AS_SESSION)
+            response = call_route(self.client, "get", f"{TENANT_AGENTS}/platform", None, AS_SESSION)
         self.assertEqual(response.status_code, 200, response.content)
 
-    def test_another_banks_record_is_404_before_the_501(self) -> None:
-        """AC-NFR1: the 501 is reached only inside the caller's own bank. Bank B asking for
+    def test_another_banks_record_is_404(self) -> None:
+        """AC-NFR1: a record is reached only inside the caller's own bank. Bank B asking for
         bank A's agent, run or request, or for one that does not exist, is not found."""
         with stub_session(self.bank_b.principal()):
             for name, method, url, body, _ in TENANT_ROUTES:
@@ -470,19 +381,19 @@ class TenantAgentRouteGates(TestCase):
                     continue
                 for label, target in (("another bank's", self.bank_a.record(ID_KIND[name])), ("none", uuid.uuid4())):
                     with self.subTest(operation=name, record=label):
-                        response = _call(self.client, method, _filled(url, target), body, AS_SESSION)
+                        response = call_route(self.client, method, _filled(url, target), body, AS_SESSION)
                         self.assertEqual(response.status_code, 404, response.content)
                         self.assertEqual(response.json()["code"], "not_found")
 
     def test_a_request_to_another_banks_agent_is_404(self) -> None:
         body = {**REQUEST_BODY, "tenantAgentId": str(self.bank_a.agent.id)}
         with stub_session(self.bank_b.principal()):
-            response = _call(self.client, "post", REQUESTS, body, AS_SESSION)
+            response = call_route(self.client, "post", REQUESTS, body, AS_SESSION)
         self.assertEqual(response.status_code, 404, response.content)
 
     def test_a_console_session_has_no_bank_to_steer(self) -> None:
         with stub_session(user_principal(permissions=perms.ALL_PERMISSIONS, step_up_at=timezone.now())):
-            response = _call(self.client, "get", TENANT_AGENTS, None, AS_SESSION)
+            response = call_route(self.client, "get", TENANT_AGENTS, None, AS_SESSION)
         self.assertEqual(response.status_code, 404)
 
 
@@ -509,14 +420,14 @@ class PlatformFence(TestCase):
         bleqq = agent(key=AGENT_KEY)
         bank = factories.tenant(slug="fence-create")
         with stub_session(user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=bank.id)):
-            response = _call(self.client, "post", TENANT_AGENTS, {**TENANT_AGENT_BODY, "agent": bleqq.key}, AS_SESSION)
+            response = call_route(self.client, "post", TENANT_AGENTS, {**TENANT_AGENT_BODY, "agent": bleqq.key}, AS_SESSION)
         self.assertEqual(response.status_code, 403, response.content)
         self.assertEqual(response.json()["requiredPermission"], perms.AGENT_DEFINITIONS_MANAGE)
 
     def test_an_unknown_definition_is_422_unknown_key(self) -> None:
         bank = factories.tenant(slug="fence-unknown")
         with stub_session(user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=bank.id)):
-            response = _call(self.client, "post", TENANT_AGENTS, {**TENANT_AGENT_BODY, "agent": "no-such-agent"}, AS_SESSION)
+            response = call_route(self.client, "post", TENANT_AGENTS, {**TENANT_AGENT_BODY, "agent": "no-such-agent"}, AS_SESSION)
         self.assertEqual(response.status_code, 422, response.content)
         self.assertEqual(response.json()["code"], "unknown_key")
 
@@ -536,7 +447,7 @@ class PlatformFence(TestCase):
         run = platform_run()
         bank = factories.tenant(slug="fence-interrupt")
         with stub_session(user_principal(permissions={perms.AGENTS_MANAGE}, tenant_id=bank.id)):
-            response = _call(self.client, "post", f"{RUNS}/{run.id}/interrupt", {}, AS_SESSION)
+            response = call_route(self.client, "post", f"{RUNS}/{run.id}/interrupt", {}, AS_SESSION)
         self.assertEqual(response.status_code, 403, response.content)
         self.assertEqual(response.json()["requiredPermission"], perms.AGENT_DEFINITIONS_MANAGE)
 
@@ -602,7 +513,7 @@ class RunListGainsChunk11(TestCase):
 
     def _ids(self, query: str) -> list[str]:
         with stub_session(self.bank.principal(frozenset({perms.AGENTS_MANAGE}))):
-            response = _call(self.client, "get", f"{RUNS}?limit=100{query}", None, AS_SESSION)
+            response = call_route(self.client, "get", f"{RUNS}?limit=100{query}", None, AS_SESSION)
         self.assertEqual(response.status_code, 200, response.content)
         return [row["id"] for row in response.json()["items"]]
 
@@ -622,7 +533,7 @@ class RunListGainsChunk11(TestCase):
 
     def test_each_run_carries_the_chunk_11_fields(self) -> None:
         with stub_session(self.bank.principal(frozenset({perms.AGENTS_MANAGE}))):
-            response = _call(self.client, "get", f"{RUNS}?limit=100&mine=true", None, AS_SESSION)
+            response = call_route(self.client, "get", f"{RUNS}?limit=100&mine=true", None, AS_SESSION)
         row = response.json()["items"][0]
         self.assertEqual(row["trigger"], "manual")
         self.assertEqual(row["requestedBy"], {"id": str(self.bank.admin.id), "name": self.bank.admin.name})

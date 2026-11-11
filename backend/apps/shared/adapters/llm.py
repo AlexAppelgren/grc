@@ -1,29 +1,19 @@
 """LLM adapter (playbook 16, DECISIONS D-07). `anthropic` is the Messages API over the
 standard library's HTTP client; `mock` answers from the prompt's own context chunks;
-`bedrock` is named now and implemented when D-07's EU path is contracted.
+`bedrock` waits for D-07's EU path.
 
-The wire shape was fetched from the provider's documentation on 2026-09-19 and each claim
-relied on has a row in docs/plans/Verification_Log.md: `POST /v1/messages` with the key in
-`x-api-key` (the documented fallback for `Authorization`, still supported) and the
-required `anthropic-version` and `content-type`; the SSE event flow of `message_start` /
-`content_block_delta` / `message_delta` / `message_stop`; usage that is cumulative, and
-the stop reason, on `message_delta`; errors that arrive mid-stream as an `error` event
-after a 200; a refusal that can arrive after partial output, which is then incomplete and
-discarded; and unknown event types that must be handled gracefully (versioning policy).
-Every call is streamed, which is also the documentation's advice for anything with a
-large `max_tokens`, so there is one transport path: `complete()` consumes `stream()`.
+The wire shape is recorded in docs/plans/Verification_Log.md: `POST /v1/messages` with
+`x-api-key`, `anthropic-version` and `content-type`; the SSE flow `message_start` /
+`content_block_delta` / `message_delta` / `message_stop`; cumulative usage and the stop
+reason on `message_delta`; mid-stream `error` events after a 200; a refusal after partial
+output, which is discarded; unknown event types handled gracefully. Every call is streamed;
+`complete()` consumes `stream()`.
 
-Whatever comes off the network is untrusted (security review of E3, 2026-09-19): a
-redirect is refused, a body is read within a byte limit and before a deadline, every value
-copied out of it is checked for its type, and any failure to read it is an `LlmError`.
-
-No prompt and no answer ever reaches a log, Sentry or an exception message; an API error
-contributes its `type` only, because its `message` can quote the request. The API key is
-read from the environment and appears nowhere else.
-
-No tenant-zone text is sent to a model except the question typed into Ask, which a tenant
-can switch off (D-07). That rule lives in the caller, not here; this module only moves
-prompts. Every real call writes `ai_generation` (AUD-02) from the caller too.
+Whatever comes off the network is untrusted: a redirect is refused, a body is read within a
+byte limit and a deadline, every value is type-checked, and any failure is an `LlmError`. No
+prompt or answer reaches a log, Sentry or an exception; an API error contributes its `type`
+only. The key comes from the environment. Which tenant text may reach a model (D-07), and
+the `ai_generation` row (AUD-02), are the caller's.
 """
 
 from __future__ import annotations
@@ -88,12 +78,10 @@ class LlmAdapter(ABC):
     @abstractmethod
     def stream(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Iterator[str | Completion]:
         """Yield each text delta as it arrives, then one `Completion` carrying the whole
-        answer, its usage and its stop reason. The `Completion` is always the last event;
-        a stream that cannot end in one raises `LlmError` instead, and the deltas already
-        yielded are then not a whole answer: the caller never treats them as one.
+        answer, its usage and its stop reason, always last; a stream that cannot end in one
+        raises `LlmError`, and the deltas already yielded are not a whole answer.
 
-        `deadline_s` is a caller's own shorter deadline beneath `LLM_DEADLINE_S`, for a call
-        somebody waits on inside one request (what-applies' summary)."""
+        `deadline_s` is a caller's own shorter deadline beneath `LLM_DEADLINE_S`."""
 
     def complete(self, *, system: str, prompt: str, max_tokens: int, deadline_s: float | None = None) -> Completion:
         for event in self.stream(system=system, prompt=prompt, max_tokens=max_tokens, deadline_s=deadline_s):
@@ -102,18 +90,15 @@ class LlmAdapter(ABC):
         raise LlmError("the model stream ended before the answer was complete")
 
     def asked_model(self) -> tuple[str, str]:
-        """The model and version a call is addressed to. A finished call is logged with
-        what its `Completion` reports instead; this names the model on the log row of a
-        call that never reached one: a stream the reader left early, or one that failed
-        (AUD-02)."""
+        """The model and version a call is addressed to, for the log row of a call that never
+        finished (a stream left early, or failed); a finished call logs what its `Completion`
+        reports (AUD-02)."""
         raise NotImplementedError(f"the {self.name} provider does not name the model it asks")
 
 
-# ---------------------------------------------------------------------------------------
-# The prompt's context chunks. Ask retrieves chunks and renders them with `format_context`;
-# an answer cites chunk n as "[n]" (AC-SRC2). The mock reads the same markers back, which
-# is what makes it grounded rather than inventive.
-# ---------------------------------------------------------------------------------------
+# --- The prompt's context chunks ---
+# Ask renders chunks with `format_context` and an answer cites chunk n as "[n]" (AC-SRC2);
+# the mock reads the same markers back, which keeps it grounded.
 CONTEXT_LINE = re.compile(r"^\[(\d+)\] (.+)$", re.MULTILINE)
 _FIRST_SENTENCE = re.compile(r"^(.*?\.)(?:\s|$)")
 
@@ -129,10 +114,9 @@ def _first_sentence(text: str) -> str:
 
 
 class MockLlm(LlmAdapter):
-    """Deterministic and grounded: it answers only from the context chunks in the prompt,
-    one statement per chunk with its `[n]` marker, and says nothing at all when the prompt
-    carries no chunks. Ask's scenarios assert on that answer (SRC-S4, SRC-S5) without a
-    model call, and a deployed environment refuses this provider at boot."""
+    """Deterministic and grounded: one statement per context chunk with its `[n]` marker,
+    nothing when the prompt carries none (SRC-S4, SRC-S5). A deployed environment refuses it
+    at boot."""
 
     name = "mock"
 
@@ -155,9 +139,8 @@ class MockLlm(LlmAdapter):
 
 
 class _RefuseRedirects(urllib.request.HTTPRedirectHandler):
-    """The Messages API does not redirect. urllib's own handler turns a 301, 302 or 303
-    answer to a POST into a GET to the `location` carrying the request's headers, so a
-    redirect is a failed status like any other (security review of E3, 2026-09-19)."""
+    """The Messages API does not redirect, and urllib would turn a redirected POST into a GET
+    carrying the request's headers, so a redirect is a failed status like any other."""
 
     def redirect_request(
         self,
@@ -220,10 +203,9 @@ def _may_retry(attempt: int, delay: float, deadline: float) -> bool:
 
 
 def _lines(response: Any, deadline: float) -> Iterator[bytes]:
-    """The body's lines, read one socket read at a time so both limits hold while the
-    stream is still arriving: no read starts after the deadline, so a call ends within
-    LLM_DEADLINE_S plus one LLM_TIMEOUT_S, and no more than LLM_MAX_RESPONSE_BYTES is read
-    in all, so no line can be longer either."""
+    """The body's lines, one socket read at a time so both limits hold while it arrives: a
+    call ends within LLM_DEADLINE_S plus one LLM_TIMEOUT_S, and reads at most
+    LLM_MAX_RESPONSE_BYTES."""
     budget = settings.LLM_MAX_RESPONSE_BYTES
     pending = b""
     while True:

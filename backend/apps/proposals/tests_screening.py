@@ -131,10 +131,10 @@ class ScreeningAProposal(ScenarioTestCase):
         refused = self._as_confirmer(proposal_id)
         self.assertEqual(refused.status_code, 409, refused.content)
         self.assertEqual(refused.json()["code"], FLAGGED)
-        # Correcting the text away does not clear the flag for an agent: the flag is on what
-        # the run filed, and a person reads it.
+        # Correcting the text away is no way round it: an agent corrects nothing, so a
+        # correction waits for a person as the flag does (review 2026-11-11 S-3).
         corrected = self._as_confirmer(proposal_id, {"payloadOverrides": {"summaries": {"en": CLEAN_SUMMARY}}})
-        self.assertEqual((corrected.status_code, corrected.json()["code"]), (409, FLAGGED))
+        self.assertEqual((corrected.status_code, corrected.json()["code"]), (409, "person_review_required"))
         self._untouched(proposal_id)
         approved = self._post(f"/proposals/{proposal_id}/approve", {"note": "Read the flag; the wording is the source's."}, sign_in(self.editor, step_up=True))
         self.assertEqual(approved.status_code, 200, approved.content)
@@ -144,7 +144,8 @@ class ScreeningAProposal(ScenarioTestCase):
         proposal_id = self._proposed().json()["id"]
         refused = self._as_confirmer(proposal_id, {"payloadOverrides": {"summaries": {"en": f"{CLEAN_SUMMARY} {INJECTED}"}}})
         self.assertEqual(refused.status_code, 409, refused.content)
-        self.assertEqual(refused.json()["code"], FLAGGED)
+        # No agent corrects at all (review 2026-11-11 S-3), so the text never reaches the screen.
+        self.assertEqual(refused.json()["code"], "person_review_required")
         self._untouched(proposal_id)
         self.assertEqual(Proposal.objects.get(pk=proposal_id).corrected_payload, None)
 

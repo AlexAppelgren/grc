@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
 
-import { presentApplicability, presentCompliance, presentComplianceHeader, presentGap, presentRisk, type ComplianceHeaderFacts } from './register-presentation';
+import { presentApplicability, presentCompliance, presentComplianceHeader, presentGap, type ComplianceHeaderFacts } from './register-presentation';
 
 const en = createT('en');
 const sv = createT('sv');
@@ -59,14 +59,6 @@ describe('presentCompliance', () => {
 
   it('reads a row with no category it knows as not assessed', () => {
     expect(presentCompliance({ key: 'odd', kind: null, label: 'Odd' }).tone).toBe('information');
-  });
-});
-
-describe('presentRisk', () => {
-  it('reads every risk as a neutral fact, whatever its place on the scale', () => {
-    const tones = ['low', 'medium', 'high', 'critical', null].map((kind) => presentRisk({ key: kind ?? 'custom', kind, label: 'x' }).tone);
-    expect(tones).toEqual(['information', 'information', 'information', 'information', 'information']);
-    expect(presentRisk({ key: 'high', kind: null, label: 'Hög' })).toMatchObject({ key: 'risk:high', label: 'Hög' });
   });
 });
 

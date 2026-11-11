@@ -1,4 +1,4 @@
-"""The name an instrument goes by on screen (D-132): its short name when that is one to three
+"""The name an instrument goes by on screen (D-133): its short name when that is one to three
 words, else the compact official reference, built only from what the reference says."""
 
 from __future__ import annotations

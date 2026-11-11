@@ -35,8 +35,6 @@
   "privateRecords.field.effectiveFrom": "Gäller från",
   "privateRecords.field.terms": "Omfattning",
   "privateRecords.field.originalLanguage": "Originalspråk",
-  "privateRecords.approve": "Godkänn",
-  "privateRecords.reject": "Avvisa",
   "privateRecords.approveHint": "Godkänner du läggs det in i inventeringen som Privat för oss. Du ombeds använda din passkey.",
   "privateRecords.approve.title": "Godkänna ”{title}”?",
   "privateRecords.approve.body": "Det läggs in i vår inventering som Privat för oss, bredvid det delade biblioteket, där registret kan ta ställning till det.",
@@ -57,8 +55,5 @@
   "privateRecords.empty.action": "Se den regulatoriska omfattningen",
   "privateRecords.loadError": "Det gick inte att läsa in våra egna poster",
   "privateRecords.back": "Våra egna poster",
-  "privateRecords.notFoundBody": "Det finns inget på den här adressen i din organisation.",
-  "privateRecords.previous": "Föregående",
-  "privateRecords.next": "Nästa",
-  "privateRecords.range": "{from}–{to} av {total}"
+  "privateRecords.notFoundBody": "Det finns inget på den här adressen i din organisation."
 }

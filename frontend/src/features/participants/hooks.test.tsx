@@ -10,10 +10,8 @@ import {
   useAddObligationParticipant,
   useCaseParticipants,
   useObligationParticipants,
-  usePeople,
   useRemoveCaseParticipant,
   useRemoveObligationParticipant,
-  useTeams,
 } from './hooks';
 
 // The list is keyed by the obligation; every write refetches it, a refused
@@ -23,18 +21,6 @@ describe('participant hooks', () => {
   beforeEach(() => {
     resetApiForTests();
     tokenStore.set('tok');
-  });
-
-  it('reads the picker lists only while enabled', async () => {
-    const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('people') ? [] : { items: [], total: 0 } }));
-    const { wrapper } = queryWrapper();
-    const people = renderHook(() => usePeople('register.read', false), { wrapper });
-    const teams = renderHook(() => useTeams(false), { wrapper });
-    expect([people.result.current.fetchStatus, teams.result.current.fetchStatus]).toEqual(['idle', 'idle']);
-    renderHook(() => usePeople('register.read', true), { wrapper });
-    renderHook(() => useTeams(true), { wrapper });
-    await waitFor(() => expect(sent.map((s) => s.path).sort()).toEqual(['/api/v1/reference/people', '/api/v1/tenant/teams']));
-    expect(participantKeys.obligation('ob1')).toEqual(['participants', 'obligation', 'ob1']);
   });
 
   it('refetches the list after an add, a refused add and a removal', async () => {
@@ -60,9 +46,9 @@ describe('participant hooks', () => {
     act(() => remove.result.current.mutate('p1'));
     await waitFor(() => expect(reads()).toBe(4));
     expect(sent.filter((s) => s.method !== 'get').map((s) => [s.method, s.path])).toEqual([
-      ['post', '/api/v1/obligations/ob1/participants'],
-      ['post', '/api/v1/obligations/ob1/participants'],
-      ['delete', '/api/v1/obligations/ob1/participants/p1'],
+      ['post', '/api/v1/participants'],
+      ['post', '/api/v1/participants'],
+      ['delete', '/api/v1/participants/p1'],
     ]);
   });
 
@@ -84,11 +70,11 @@ describe('participant hooks', () => {
     await waitFor(() => expect(reads()).toBe(3));
     expect(participantKeys.case('ch1')).toEqual(['participants', 'case', 'ch1']);
     expect(sent.map((s) => [s.method, s.path])).toEqual([
-      ['get', '/api/v1/changes/ch1/participants'],
-      ['post', '/api/v1/changes/ch1/participants'],
-      ['get', '/api/v1/changes/ch1/participants'],
-      ['delete', '/api/v1/changes/ch1/participants/p1'],
-      ['get', '/api/v1/changes/ch1/participants'],
+      ['get', '/api/v1/participants'],
+      ['post', '/api/v1/participants'],
+      ['get', '/api/v1/participants'],
+      ['delete', '/api/v1/participants/p1'],
+      ['get', '/api/v1/participants'],
     ]);
   });
 });

@@ -2,9 +2,8 @@
 
 import { CheckGroup, CheckRow, Select } from '@/components/ui/Field';
 import { StatusLine } from '@/components/ui/States';
-import { usePeople } from '@/features/tenant-admin/organisation/hooks';
+import { usePeople, useTeams } from '@/features/shared/reference';
 import type { Team } from '@/features/tenant-admin/teams/api';
-import { useTeams } from '@/features/tenant-admin/teams/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
 // The team pickers the admin screens share (TEN-03): the teams a member is in,

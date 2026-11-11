@@ -174,6 +174,7 @@ class BankInvitationsReachPlatformStaff(TestCase):
             email=staff.email,
             role_keys=["reader"],
             title="Analyst",
+            step_up_assertion_id=None,
         )
         self.assertTrue(Invitation.objects.filter(tenant=self.tenant, email=staff.email).exists())
         membership = invitation_logic.accept_invitation(issued, staff, timezone.now())
@@ -198,6 +199,7 @@ class BankInvitationsReachPlatformStaff(TestCase):
             email="analyst@bank.test.example",
             role_keys=["reader"],
             title="Analyst",
+            step_up_assertion_id=None,
         )
         person = invitation_logic.get_or_create_user(issued.email)
         membership = invitation_logic.accept_invitation(issued, person, timezone.now())
@@ -558,8 +560,8 @@ class ProblemReportsAreBounded(ProblemReportsTestCase):
 
     def post_report(self, body: dict[str, Any]) -> Any:
         return Client().post(
-            f"{V1}/obligations/{self.obligation.id}/problem-reports",
-            data=body,
+            f"{V1}/problem-reports",
+            data={"subjectType": "obligation", "subjectId": str(self.obligation.id), **body},
             content_type="application/json",
             **self.headers,
         )
@@ -601,8 +603,8 @@ class ProblemReportsAreBounded(ProblemReportsTestCase):
         self.assertEqual(self.reports(), 0)
 
         kept = self.client.post(
-            f"{V1}/obligations/{self.obligation.id}/problem-reports",
-            data={"description": WORDS, "versionNumber": PROBLEM_REPORT_VERSION_MAX},
+            f"{V1}/problem-reports",
+            data={"subjectType": "obligation", "subjectId": str(self.obligation.id), "description": WORDS, "versionNumber": PROBLEM_REPORT_VERSION_MAX},
             content_type="application/json",
             **sign_in(self.reader, tenant=self.tenant),
         )

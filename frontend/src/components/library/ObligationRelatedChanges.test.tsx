@@ -7,6 +7,7 @@ import { createT } from '@/shared/i18n';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { session } from '@/shared/testing/fixtures';
 
 import { ObligationRelatedChanges, presentOpenChanges } from './ObligationRelatedChanges';
 
@@ -51,7 +52,7 @@ const suggestedLink: ChangeRow = {
   keyDateLabel: null,
 };
 
-const SESSION = { user: { locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, enrolmentPending: false, permissions: ['watch.read'] };
+const SESSION = session(['watch.read']);
 
 function serve(answer: Answer): Sent[] {
   return installAdapter((sent) => (sent.path.includes('/changes') ? answer : { status: 200, data: SESSION }));

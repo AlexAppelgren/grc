@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AgentsScreen } from '@/components/admin/AgentsScreen';
@@ -6,11 +6,10 @@ import { watchFacts } from '@/components/admin/PlatformWatchPanel';
 import { RESEARCH_POLL_MS } from '@/components/admin/ResearchRequestList';
 import { requestBody } from '@/components/admin/ResearchRequestPanel';
 import { createT } from '@/shared/i18n';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH } from '@/shared/utils/api-client';
 import { defaultFormatContext } from '@/shared/utils/format';
+import { renderWith } from '@/shared/testing/render';
 
 // /admin/agents (AGT-03, AGT-04, AGT-05, ADM-01): bleqq's watch read-only for
 // every member with watch.read, and for agents.manage the bank's own agents
@@ -94,7 +93,6 @@ interface World {
 function server(world: Partial<World> = {}, extra: (sent: Sent) => Answer | undefined = () => undefined): Sent[] {
   const w: World = { agents: [], runs: [], budget: { monthlyCap: '40.00', currency: 'EUR', spentThisMonth: '7.35' }, aiEnabled: true, requests: [], ...world };
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     const answer = extra(sent);
     if (answer !== undefined) return answer;
     if (sent.method !== 'get') return { status: 500 };
@@ -111,16 +109,7 @@ function server(world: Partial<World> = {}, extra: (sent: Sent) => Answer | unde
 }
 
 function open(permissions: readonly string[]) {
-  const { wrapper: Query } = queryWrapper();
-  return render(
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <LocaleProvider locale="en">
-          <AgentsScreen />
-        </LocaleProvider>
-      </PermissionsProvider>
-    </Query>,
-  );
+  return renderWith(<AgentsScreen />, { permissions });
 }
 
 /** The element once it renders; waitFor retries until the query finds it. */
@@ -269,13 +258,13 @@ describe('admin agents screen', () => {
   });
 
   it('pauses and resumes, and a pause the cap made reads as the cap', async () => {
-    const sent = server({ agents: [ownAgent({ pausedAt: '2026-09-24T00:00:00Z' })] }, (s) => (s.method === 'delete' ? { status: 200, data: ownAgent() } : undefined));
+    const sent = server({ agents: [ownAgent({ pausedAt: '2026-09-24T00:00:00Z' })] }, (s) => (s.method === 'patch' ? { status: 200, data: ownAgent() } : undefined));
     open(ADMIN);
     await waitFor(() => expect(card()).not.toBeNull());
     expect(within(card()).getByText('Paused, monthly cap reached')).toBeInTheDocument();
     fireEvent.click(within(card()).getByRole('button', { name: 'Resume' }));
     expect(await within(card()).findByText('Resumed.')).toBeInTheDocument();
-    expect(sent.filter((s) => s.method === 'delete').map((s) => s.path)).toEqual([`${AGENTS}/ta1/pause`]);
+    expect(sent.filter((s) => s.method === 'patch').map((s) => [s.path, s.body])).toEqual([[`${AGENTS}/ta1`, { paused: false }]]);
   });
 
   it('adds an agent switched off with its schedule, and renders unknown_key from its code', async () => {

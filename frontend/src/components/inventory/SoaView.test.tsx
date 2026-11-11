@@ -1,11 +1,10 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { RegisterStatementOfApplicability } from '@/features/register/types';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { SoaView } from './SoaView';
 
@@ -78,15 +77,7 @@ function serve(answer: RegisterStatementOfApplicability | null): Sent[] {
 }
 
 function renderView() {
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <SoaView obligationId="ob-std" entity={{ id: 'e-bank', name: 'Example Bank AB' }} />
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  return renderWith(<SoaView obligationId="ob-std" entity={{ id: 'e-bank', name: 'Example Bank AB' }} />);
 }
 
 function unitRow(reference: string): HTMLElement {

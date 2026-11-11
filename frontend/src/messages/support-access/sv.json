@@ -7,7 +7,6 @@
   "supportAccess.history.title": "Historik",
   "supportAccess.history.caption": "Varje åtkomst finns kvar här. Varje sida en supportsession öppnade är en supportläsning i granskningsloggen, med adressen den öppnade och vem som öppnade den.",
   "supportAccess.history.auditLog": "Se läsningarna i granskningsloggen",
-  "supportAccess.showMore": "Visa fler",
   "supportAccess.emptyTitle": "Ingen från bleqq har bett om åtkomst",
   "supportAccess.emptyBody": "När någon gör det får medlemmarna som hanterar säkerhet ett mejl, och begäran väntar här.",
   "supportAccess.errorTitle": "Det gick inte att läsa in supportåtkomst",
@@ -31,10 +30,8 @@
   "supportAccess.approveHint": "Att godkänna kräver din nyckel. De kan läsa, aldrig ändra, och kan inte söka, fråga eller ladda ner filer.",
   "supportAccess.revokeHint": "Att återkalla avslutar åtkomsten direkt. Nästa sida de försöker öppna visar ingenting.",
   "supportAccess.needsSecurity": "Bara en medlem som hanterar säkerhet kan godkänna, avböja eller återkalla.",
-  "supportAccess.approve": "Godkänn",
   "supportAccess.approving": "Godkänner…",
   "supportAccess.decline": "Avböj",
-  "supportAccess.revoke": "Återkalla",
   "supportAccess.approved": "Godkänd. {name} kan läsa till {time}.",
   "supportAccess.declined": "Avböjd. Ingenting öppnades.",
   "supportAccess.revoked": "Återkallad. Åtkomsten för {name} upphörde {time}.",
@@ -42,10 +39,5 @@
   "supportAccess.stale": "Begäran var redan avgjord eller har förfallit. Listan visar nu hur det står.",
   "supportAccess.banner.title": "Supportåtkomst till {tenant}.",
   "supportAccess.banner.until": "Endast läsning, till {time}.",
-  "supportAccess.banner.leave": "Lämna",
-  "supportAccess.ended.title": "Supportåtkomsten har upphört",
-  "supportAccess.ended.body": "{tenant} återkallade åtkomsten, eller så stängdes tidsfönstret. Inget mer kan läsas.",
-  "supportAccess.ended.back": "Tillbaka till konsolen",
-  "supportAccess.problem.readOnly": "En supportsession kan bara läsa. Ingenting ändrades.",
-  "supportAccess.problem.ended": "Supportåtkomsten har upphört. Inget mer kan läsas."
+  "supportAccess.banner.leave": "Lämna"
 }

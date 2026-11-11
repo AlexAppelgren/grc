@@ -228,7 +228,7 @@ message that says what to do.
 | Database role | The app's role | Not superuser, not owner, no `BYPASSRLS` |
 | Tenant isolation | Every tenant-scoped GET, PATCH, DELETE with another tenant's record | 404, never 403, never data |
 | Library fence | The AST of every module writing a `LibraryModel` | Only inside `library_write()` in `proposals/apply.py`, `watch/write.py` (the watch door: the seven watch tables, no inventory table), reference seeds |
-| Library door (ADR 0058) | Every `LibraryModel` table, `search_chunk` and the reference tables, from the app registry against `pg_trigger`; every proposal kind and watch step as cw_app | The `cw_library_door_guard()` trigger of shared 0008 with exactly the doors its table accepts; as cw_app a write outside a door refused and every real writer passing; each door named by one function and `seed` by the reference seeds only; the setting's name only where the `library-door` lint allows it |
+| Library door (ADR 0058) | Every `LibraryModel` table, `search_chunk` and the reference tables, from the app registry against `pg_trigger`; every proposal kind and watch step as cw_app | The `cw_library_door_guard()` trigger (shared 0001) with exactly the doors its table accepts; as cw_app a write outside a door refused and every real writer passing; each door named by one function and `seed` by the reference seeds only; the setting's name only where the `library-door` lint allows it |
 | Four eyes | Every table in the four-eyes list | The requester-is-not-approver check constraint exists |
 | Audit on write | Every non-GET operation through its scenario test | At least one `audit_event` written; a mutating route with no scenario fails |
 | Kinds only | Every `TextChoices`, Postgres enum, generated TS union | In the tier-one allowlist with a reason |
@@ -427,10 +427,10 @@ under coverage, global and per-module floors, ruff (E4/E7/E9, F, B, DJ, S)
 and mypy with every exclusion reasoned, compliance lint (`--all`), OpenAPI and
 TypeScript drift with normalised export, frontend lint, typecheck, unit
 coverage and build, E2E on the real stack, gitleaks on every push, osv-scanner
-on committed lockfiles plus `npm audit` (through `npm run audit:gate`, which
-applies the same accepted advisories, each with a reason and an expiry, as
-`frontend/osv-scanner.toml`) under `bash -eo pipefail` and
-refusing an empty lockfile, CodeQL with its own SARIF gate (medium and above,
+on both committed lockfiles (the one dependency gate; accepted advisories live in
+`frontend/osv-scanner.toml`, each with a reason and an `ignoreUntil`, and
+`.github/scripts/osv_ignores_gate.py` refuses an entry without one) under
+`bash -eo pipefail` and refusing an empty lockfile, CodeQL with its own SARIF gate (medium and above,
 acceptances per fingerprint with a reason, stale ones reported),
 requirements coverage, contract drift against `docs/inputs/openapi.yaml`,
 API documentation against the standard (Section 1.8),
@@ -565,7 +565,7 @@ deliberately not done. No model identifiers or tool names.
 
 | Kind | Home |
 |---|---|
-| Why a line of code is the way it is | A comment beside it, naming the incident and the number |
+| Why a line of code is the way it is | A short comment beside it naming the ID; the incident and the number go in the ADR, review or commit |
 | A rule that spans files | `docs/CONVENTIONS.md`, with the bug that taught it |
 | A decision between options | `docs/adr/` |
 | A requirement's state | The app's `app.md` status cell |

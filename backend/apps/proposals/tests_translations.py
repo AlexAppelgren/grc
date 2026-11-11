@@ -114,12 +114,21 @@ class Translator(TestCase):
         self.assertEqual(AiGeneration.objects.filter(purpose="translation").count(), 1, "the call is logged all the same")
         self.assertEqual(translations.due(10), [("obligation", self.duty.id)])
 
-    def test_a_model_that_does_not_answer_is_asked_again(self) -> None:
-        self.assertEqual(self._translate(Failing(), "instrument", self.act.id), "failed")
-
-        self.assertEqual(AgentRun.objects.get(agent__key="library-translator").status, "failed")
-        self.assertFalse(AiGeneration.objects.exists())
-        self.assertIn(("instrument", self.act.id), translations.due(10))
+    def test_a_model_that_does_not_answer_is_asked_again_up_to_the_failure_limit(self) -> None:
+        """Review 2026-11-11 S-9: each failed call is logged as `failed` with its estimated cost,
+        and the record is asked again until LIBRARY_TRANSLATION_MAX_FAILURES calls with the same
+        prompt failed; then it waits for its original or the languages to change."""
+        with override_settings(LIBRARY_TRANSLATION_MAX_FAILURES=2):
+            self.assertEqual(self._translate(Failing(), "instrument", self.act.id), "failed")
+            self.assertEqual(AgentRun.objects.filter(agent__key="library-translator").latest("started_at").status, "failed")
+            failed = AiGeneration.objects.get(purpose="translation")
+            self.assertEqual((failed.stop_reason, failed.output, failed.model), ("failed", "", "mock"))
+            self.assertGreater(failed.cost_minor, 0, "a call that was sent is never logged as free")
+            self.assertIn(("instrument", self.act.id), translations.due(10))
+            self.assertEqual(self._translate(Failing(), "instrument", self.act.id), "failed")
+            self.assertEqual(AiGeneration.objects.filter(purpose="translation", stop_reason="failed").count(), 2)
+            self.assertNotIn(("instrument", self.act.id), translations.due(10))
+            self.assertEqual(self._translate(Failing(), "instrument", self.act.id), "skipped")
 
     def test_the_answer_is_read_strictly(self) -> None:
         ask = translations.asked(translations.record_texts("instrument", self.act.created_at.date(), key="fffs-2017-2"), {"en", "sv", "da"})

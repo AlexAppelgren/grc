@@ -24,11 +24,12 @@ from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.models import AuditEvent, Tenant
-from apps.shared.permissions import Gate, gate_of
+from apps.shared.permissions import Gate
 from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in, stub_session, user_principal
 from apps.taxonomy.seeds import seed_library_vocabularies
 from config.api import api
+from apps.shared.permissions import gate_of
 
 V1 = "/api/v1"
 

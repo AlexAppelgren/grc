@@ -1,13 +1,10 @@
 """bleqq's own agents in the console (AGT-03, ADR 0053): their settings, their runs and the
 fence that keeps a bank away from them.
 
-A platform agent's cadence, the jurisdictions it sweeps and its budget live on its `agent`
-row and are the same for every bank; no tenant column sits beside them and no tenant path
-writes them. `refuse_platform_agent` is the fence every tenant control calls first.
-
-The console changes a platform agent's settings, platform configuration (D-102, ADR 0062),
-through `seeds/console.py`, the one door the library fence opens to an agent row, and reads bleqq's runs: a platform surface that
-carries platform facts, so no bank's run, name or figure is on it.
+A platform agent's cadence, jurisdictions and budget live on its `agent` row, the same for
+every bank; no tenant path writes them, and `refuse_platform_agent` is the fence every tenant
+control calls first. Settings are platform configuration (D-102, ADR 0062), written through
+`seeds/console.py`. The console's run list carries no bank's run, name or figure.
 """
 
 from __future__ import annotations
@@ -31,7 +28,7 @@ from apps.agents.seeds import console
 from apps.shared import permissions as perms
 from apps.shared.audit import record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.watch.keys import resolve_keys
 
 
@@ -45,10 +42,8 @@ def _refused() -> ProblemError:
 
 
 def refuse_platform_agent(agent: Agent) -> None:
-    """A bank steers only a definition it may add as its own: one of bleqq's agents, or a
-    tenant definition not released for banks to configure, is the console's, so the 403
-    names the permission that reaches it. The database refuses the row as well (agents
-    0005); this is the answer a person reads."""
+    """A bank steers only a definition it may add as its own; anything else is the
+    console's, so the 403 names that permission. The database refuses it too (agents 0005)."""
     if agent.scope != AgentScopeKind.TENANT.value or not agent.tenant_configurable:
         raise _refused()
 
@@ -66,7 +61,7 @@ def _platform_agent(agent_key: str, *, lock: bool = False) -> Agent:
     queryset = Agent.objects.select_for_update() if lock else Agent.objects.all()
     agent = queryset.filter(key=agent_key, scope=AgentScopeKind.PLATFORM.value).first()  # ordering: key is unique
     if agent is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return agent
 
 
@@ -86,11 +81,9 @@ def get_settings(*, agent_key: str) -> PlatformAgentSettings:
 
 
 def update_settings(*, who: Principal, agent_key: str, body: PlatformAgentSettingsInput) -> PlatformAgentSettings:
-    """`PUT /agent-definitions/{agentKey}/settings`: the whole setting, for every bank at once.
-
-    The jurisdictions are checked against the live list (422 `unknown_key` with the valid
-    keys; a retired one is not valid) before anything is written. Nothing here reads a
-    bank's row: the setting is the platform's alone."""
+    """`PUT /agent-definitions/{agentKey}/settings`: the whole setting, for every bank at
+    once. Jurisdictions are checked against the live list (422 `unknown_key`) first. No bank
+    row is read."""
     actor, _ = definitions.platform_person(who)
     jurisdictions = list(dict.fromkeys(row.key for row in resolve_keys("jurisdiction", body.jurisdictions)))
     with transaction.atomic():
@@ -124,11 +117,8 @@ def _counted(queryset: QuerySet[Any], column: str, run: str = "agent_run_id") ->
 
 
 def list_runs(*, limit: int, offset: int) -> AgentRunListPage:
-    """`GET /console/agent-runs`: bleqq's own runs, newest first, one page at a time.
-
-    What each run filed is counted from the rows it filed, the source checks of the
-    coverage log included (H41), over what the run reported of itself. A bank's run is
-    never here, and no row carries a bank."""
+    """`GET /console/agent-runs`: bleqq's own runs, newest first, one page at a time. What
+    each run filed is counted from the rows it filed, source checks included (H41)."""
     from apps.proposals.models import Proposal
     from apps.watch.models import RegulatoryChange, SourceCheck, SourceCheckKind
 
@@ -143,8 +133,7 @@ def list_runs(*, limit: int, offset: int) -> AgentRunListPage:
         )
         .order_by("-started_at", "-id")[offset : offset + limit]
     )
-    # One validation of plain data for the whole page: building each row as a model and the
-    # page from models validated every row three times, most of the API budget at 100 rows.
+    # One validation of plain data for the whole page; per-row models cost most of the budget.
     return AgentRunListPage.model_validate({"items": [_run(run) for run in page], "total": platform.count()})
 
 

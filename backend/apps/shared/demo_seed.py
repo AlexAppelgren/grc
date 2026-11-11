@@ -1,33 +1,19 @@
 """The public page's demo data (design/public/README.md "The demo", D-120): the real library
 baseline, and Example Bank AB's own work made up on top of it.
 
-Alex, 2026-10-03: "I would like it to use the actual library and then the rest can be
-mocked". So the library is the whole of `apps/library/baseline/`, filed through the proposal
-door by the platform agent `library-baseline` exactly as a deploy files it
-(`apps/proposals/baseline.py`) and approved, pass after pass until nothing is due, by
-`library-confirmer`: an agent of another definition and key holding `proposals:review`
-(D-62), so every record reads machine-confirmed and names both agents, the product's steady
-state. No library row is written through the seed door (CLAUDE.md section 5, ADR 0058,
-ADR 0065); the reference seeds are the deploy's own.
+The library is the whole of `apps/library/baseline/`, filed through the proposal door by
+`library-baseline` and approved by `library-confirmer`, an agent of another definition and
+key (D-62), so every record reads machine-confirmed. No library row is written through the
+seed door (CLAUDE.md section 5, ADR 0058, ADR 0065).
 
-The bank is the E2E seed's Example Bank AB, made up as it is there, built only on stable keys
-the library holds:
+The bank is the E2E seed's Example Bank AB, built only on stable keys the library holds: its
+organisation and register, its regulatory changes (each a fact of the baseline itself; when
+it was seen and how the bank worked it are made up), its cases, last week's briefing and its
+watched markets. Every made-up date is the bank's local today plus an offset; only the reader
+signs in, with the E2E seed's fixed passkey.
 
-- its organisation and register, through the E2E seed's own builders, on the real duties that
-  sort first in its inventory, because the demo's recorder follows at most twenty records a
-  route and a list sorts by stable key;
-- its regulatory changes, each a fact of the baseline itself: the day an instrument's duties
-  start to apply, with the instrument's own authority, source and duties. Nothing says an
-  authority published anything on a day it did not; when a change was first seen and how the
-  bank worked its case are the bank's own story, and are made up;
-- its cases, worked to every category with actions, evidence, comments and people on them;
-- last week's briefing, sent for real, and the markets it watches.
-
-Every made-up date is the bank's local today plus an offset. Only the reader signs in, with
-the E2E seed's fixed passkey, so the recorder walks the app as that person.
-
-Separate from `seed_e2e` and `seed_demo` on purpose: every journey and the search evaluation
-keep their fixtures. The seed-integrity guard is apps/shared/tests_demo_seed.py."""
+Separate from `seed_e2e` and `seed_demo`, so journeys and the search evaluation keep their
+fixtures. The seed-integrity guard is apps/shared/tests_demo_seed.py."""
 
 from __future__ import annotations
 

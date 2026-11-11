@@ -1,40 +1,22 @@
 """Business logic of the proposals app (PRO-01, PRO-02, AC-PRO1, AC-PRO2, VOC-07).
 
 A proposal is the only door into the library. People and agents create them here; a
-second, independent principal decides one here — a person, or a platform key bound to an
-agent and holding `proposals:review` (PRO-S13, D-62, ADR 0054) — and apps/proposals/apply.py
-applies its payload inside `library_write()` in the same transaction as the approval's
-audit row. Nothing here writes a library row, which is why this module names no
-`LibraryModel` class (the library fence's AST guard, apps/shared/tests_library_fence.py);
-the library rows a proposal points at and cites are looked up through
-apps/library/reading.py, which is where every library read lives.
+second, independent principal decides one here, a person or a platform key bound to an
+agent and holding `proposals:review` (PRO-S13, D-62, ADR 0054), and apps/proposals/apply.py
+applies it. Nothing here writes a library row or names a `LibraryModel` (the library
+fence); library reads go through apps/library/reading.py.
 
-Four eyes (AC-PRO2) is checked here, in `_decidable`, and by the widened
-`proposal_four_eyes` check constraint on the same three pairs of columns; the API answers
-409 `four_eyes_violation`. The `Reviewer` below is who decided, a person or an agent, never
-a bare `User`; `_decidable` refuses a repeated user, a repeated key or a repeated agent
-definition, and a reviewing key that names no agent, so an unbound platform key can never
-stand in for the independent second agent the scope is for. A proposal with no proposing
-user, key or agent (none of the three match) may be decided by any reviewer.
+Four eyes (AC-PRO2) is checked in `_decidable` and by the `proposal_four_eyes` constraint:
+a repeated user, key or agent definition, and a reviewing key that names no agent, are
+refused with 409 `four_eyes_violation`.
 
-A proposal made inside a tenant (a bank's own person or its agent key) is linked to that
-tenant through `ProposalTenant`, a tenant table under forced row-level security, and its
-creation is audited under that tenant. The `proposal` row itself carries only the boolean
-`proposed_in_tenant`, so the console can withhold the proposer's identity (PRO-03) without
-learning which bank they work for.
+A proposal made inside a tenant is linked to it through `ProposalTenant` under row-level
+security; the `proposal` row carries only `proposed_in_tenant`, so the console withholds
+the proposer (PRO-03). A bank's own record (INV-07, OWN-02, OWN-03; D-57, ADR 0050, 0059)
+sets `owner_tenant_id`, decided by `create()` alone and never from a request body.
 
-A proposal of a bank's own record (INV-07, OWN-02, OWN-03; D-57, ADR 0050, ADR 0059) is the
-same row with `owner_tenant_id` set, which `create()` alone decides and never from a request
-body: from the target for a version, which follows the record it versions, and otherwise the
-bank the database is scoped to when the server files a new instrument or obligation as
-`private`: the filing session's bank, or in the worker the bank whose run it is, which
-`@tenant_task` activated. Row-level security on `proposal` then keeps the row out of the
-console and out of every other bank.
-
-Idempotency (playbook 4.3): an agent retries with the same `Idempotency-Key`. The same body
-answers the proposal it already made (200, and an audit row saying the retry happened, so
-a flapping agent shows in the log); a different body under the same key is 409
-`idempotency_conflict`, because silently keeping either version would lose the other.
+Idempotency (playbook 4.3): the same `Idempotency-Key` and body answers the proposal already
+made (audited as a retry); a different body is 409 `idempotency_conflict`.
 """
 
 from __future__ import annotations
@@ -110,86 +92,80 @@ PROVISION_TARGET = "provision"
 # The library list a rejection's reason is a row of (PRO-01, VOC-07).
 REJECTION_REASON_LIST = "rejection_reason"
 
-# The named payload schema per kind (PRO-01): apply() never reads a free-form dictionary.
-PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {
-    ProposalKind.VOCABULARY_CREATE.value: ProposalVocabularyCreatePayload,
-    ProposalKind.VOCABULARY_RELABEL.value: ProposalVocabularyRelabelPayload,
-    ProposalKind.VOCABULARY_RETIRE.value: ProposalVocabularyRetirePayload,
-    ProposalKind.VOCABULARY_RESTORE.value: ProposalVocabularyRetirePayload,
-    ProposalKind.VOCABULARY_MERGE.value: ProposalVocabularyMergePayload,
-    ProposalKind.TERM_CREATE.value: ProposalTermCreatePayload,
-    ProposalKind.TERM_UPDATE.value: ProposalTermUpdatePayload,
-    ProposalKind.NEW_OBLIGATION_VERSION.value: ProposalObligationVersionPayload,
-    ProposalKind.NEW_INSTRUMENT.value: ProposalInstrumentPayload,
-    ProposalKind.NEW_OBLIGATION.value: ProposalObligationPayload,
-    ProposalKind.NEW_PROVISION.value: ProposalProvisionPayload,
-    ProposalKind.NEW_PROVISION_VERSION.value: ProposalProvisionVersionPayload,
-    ProposalKind.NEW_RECURRING_DUTY.value: ProposalRecurringDutyPayload,
-    ProposalKind.NEW_CONTROL.value: ProposalControlPayload,
-    ProposalKind.NEW_INSTRUMENT_SUMMARY.value: ProposalInstrumentSummaryPayload,
-    ProposalKind.NEW_TRANSLATIONS.value: ProposalTranslationsPayload,
+@dataclass(frozen=True)
+class KindRule:
+    """What one proposal kind is (PRO-01). Every flag defaults to off, so a kind added later
+    names no target, is not a bank's own and waits for a person."""
+
+    payload: type[pydantic.BaseModel]  # the named schema: apply() never reads a free dict
+    family: str = ""  # "vocabulary", "term" or "obligation"
+    target: str | None = None  # the record type it names: every version and a recurring duty
+    version: bool = False  # versions a record which exists
+    new_record: bool = False  # brings a record in: names no target, sourced by https links
+    named: bool = False  # names a row by key with labels: the key its own slug, real languages
+    private: bool = False  # a bank may file it as a record of its own (INV-07, OWN-02, OWN-05)
+    private_only: bool = False  # only ever a bank's own record (OWN-05, D-99)
+    # The applied record can say an agent confirmed it (`verified_origin` and
+    # `verified_by_agent`), so an independent agent may approve it (INV-05, D-62, D-79).
+    agent_confirmable: bool = False
+
+
+_K = ProposalKind
+# The one table of proposal kinds; every set below is derived from it. A provision and its
+# versions, an instrument's summary (D-124) and machine translations (D-129) name no
+# confirming agent, so they wait for a person.
+KINDS: dict[str, KindRule] = {
+    _K.VOCABULARY_CREATE.value: KindRule(ProposalVocabularyCreatePayload, family="vocabulary", named=True, agent_confirmable=True),
+    _K.VOCABULARY_RELABEL.value: KindRule(ProposalVocabularyRelabelPayload, family="vocabulary", named=True, agent_confirmable=True),
+    _K.VOCABULARY_RETIRE.value: KindRule(ProposalVocabularyRetirePayload, family="vocabulary", agent_confirmable=True),
+    _K.VOCABULARY_RESTORE.value: KindRule(ProposalVocabularyRetirePayload, family="vocabulary", agent_confirmable=True),
+    _K.VOCABULARY_MERGE.value: KindRule(ProposalVocabularyMergePayload, family="vocabulary", agent_confirmable=True),
+    _K.TERM_CREATE.value: KindRule(ProposalTermCreatePayload, family="term", named=True, agent_confirmable=True),
+    _K.TERM_UPDATE.value: KindRule(ProposalTermUpdatePayload, family="term", named=True, agent_confirmable=True),
+    _K.NEW_OBLIGATION_VERSION.value: KindRule(
+        ProposalObligationVersionPayload, family="obligation", target=OBLIGATION_TARGET, version=True, agent_confirmable=True
+    ),
+    _K.NEW_INSTRUMENT.value: KindRule(ProposalInstrumentPayload, new_record=True, private=True, agent_confirmable=True),
+    _K.NEW_OBLIGATION.value: KindRule(ProposalObligationPayload, new_record=True, private=True, agent_confirmable=True),
+    _K.NEW_PROVISION.value: KindRule(ProposalProvisionPayload, new_record=True),
+    _K.NEW_PROVISION_VERSION.value: KindRule(ProposalProvisionVersionPayload, target=PROVISION_TARGET, version=True),
+    # Added to an obligation in force (REG-07); names its proposing agent too (library 0010).
+    _K.NEW_RECURRING_DUTY.value: KindRule(ProposalRecurringDutyPayload, target=OBLIGATION_TARGET, agent_confirmable=True),
+    # Names its bank's own obligation by key in its payload, and is read from a public page.
+    _K.NEW_CONTROL.value: KindRule(ProposalControlPayload, private=True, private_only=True),
+    _K.NEW_INSTRUMENT_SUMMARY.value: KindRule(ProposalInstrumentSummaryPayload, new_record=True),
+    _K.NEW_TRANSLATIONS.value: KindRule(ProposalTranslationsPayload, new_record=True),
 }
-VOCABULARY_KINDS = frozenset(
-    kind.value
-    for kind in (
-        ProposalKind.VOCABULARY_CREATE,
-        ProposalKind.VOCABULARY_RELABEL,
-        ProposalKind.VOCABULARY_RETIRE,
-        ProposalKind.VOCABULARY_RESTORE,
-        ProposalKind.VOCABULARY_MERGE,
-    )
-)
-OBLIGATION_KINDS = frozenset({ProposalKind.NEW_OBLIGATION_VERSION.value})
-# The kinds that version a record which exists, by the target type each one names.
-VERSION_TARGETS = {
-    ProposalKind.NEW_OBLIGATION_VERSION.value: OBLIGATION_TARGET,
-    ProposalKind.NEW_PROVISION_VERSION.value: PROVISION_TARGET,
-}
-# The kinds that name the record they are for, by its target type: every version, and a
-# recurring duty, which is added to an obligation in force (REG-07).
-RECORD_TARGETS = {**VERSION_TARGETS, ProposalKind.NEW_RECURRING_DUTY.value: OBLIGATION_TARGET}
-# The kinds that bring a new record into the library. They name no target, since the record
-# does not exist yet, and every fact they carry is sourced by an https link: a new record
-# has no provision of its own to cite (PRO-01). A record's translations name it in their
-# payload too, and are sourced by the record's own link (D-129).
-NEW_RECORD_KINDS = frozenset(
-    {
-        ProposalKind.NEW_INSTRUMENT.value,
-        ProposalKind.NEW_OBLIGATION.value,
-        ProposalKind.NEW_PROVISION.value,
-        ProposalKind.NEW_INSTRUMENT_SUMMARY.value,
-        ProposalKind.NEW_TRANSLATIONS.value,
-    }
-)
-NEW_RECORD_PAYLOADS = (
-    ProposalInstrumentPayload,
-    ProposalObligationPayload,
-    ProposalProvisionPayload,
-    ProposalInstrumentSummaryPayload,
-    ProposalTranslationsPayload,
-)
-# The kinds a bank may file as a record of its own (INV-07, OWN-02, OWN-05): what does not
-# exist in the library yet, and a control of one of the bank's own obligations. A version
-# always targets a shared record, so it is never the bank's own.
-PRIVATE_RECORD_KINDS = frozenset(
-    {ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_CONTROL.value}
-)
-# The kinds that are only ever a record of a bank's own: a control (OWN-05, D-99) is never
-# a proposal to the shared library.
-PRIVATE_ONLY_KINDS = frozenset({ProposalKind.NEW_CONTROL.value})
-# The kinds that name no target: a new record, and a control, which names its bank's own
-# obligation by key in its payload.
+
+
+def _kinds(flag: str) -> frozenset[str]:
+    return frozenset(kind for kind, rule in KINDS.items() if getattr(rule, flag))
+
+
+def _payloads(kinds: frozenset[str]) -> tuple[type[pydantic.BaseModel], ...]:
+    return tuple(dict.fromkeys(rule.payload for kind, rule in KINDS.items() if kind in kinds))
+
+
+PAYLOAD_SCHEMAS: dict[str, type[pydantic.BaseModel]] = {kind: rule.payload for kind, rule in KINDS.items()}
+VOCABULARY_KINDS = frozenset(kind for kind, rule in KINDS.items() if rule.family == "vocabulary")
+TERM_KINDS = frozenset(kind for kind, rule in KINDS.items() if rule.family == "term")
+OBLIGATION_KINDS = frozenset(kind for kind, rule in KINDS.items() if rule.family == "obligation")
+VERSION_TARGETS = {kind: rule.target for kind, rule in KINDS.items() if rule.version and rule.target}
+RECORD_TARGETS = {kind: rule.target for kind, rule in KINDS.items() if rule.target}
+NEW_RECORD_KINDS = _kinds("new_record")
+NEW_RECORD_PAYLOADS = _payloads(NEW_RECORD_KINDS)
+PRIVATE_RECORD_KINDS = _kinds("private")
+PRIVATE_ONLY_KINDS = _kinds("private_only")
 UNTARGETED_KINDS = NEW_RECORD_KINDS | PRIVATE_ONLY_KINDS
-# The payloads whose sources are https links only: a new record has no provision of its own
-# to cite, and a control is read from a public page.
-LINK_SOURCED_PAYLOADS = (*NEW_RECORD_PAYLOADS, ProposalControlPayload)
+LINK_SOURCED_PAYLOADS = _payloads(UNTARGETED_KINDS)
+# A reviewer checks a record kind's sourced facts against the same source (PRO-02).
+CORRECTABLE_KINDS = frozenset(RECORD_TARGETS) | NEW_RECORD_KINDS
+AGENT_CONFIRMABLE_KINDS = _kinds("agent_confirmable")
+NAMED_PAYLOADS = _payloads(_kinds("named"))
 # Why a provision is refused under a bank's own instrument, filed privately or not.
 PRIVATE_PROVISIONS = "An instrument of your organisation's own holds no provisions: propose its duties as obligations."
 # The two uniqueness constraints on a proposer's retry key (models.py).
 IDEMPOTENCY_CONSTRAINTS = frozenset({"proposal_idempotency_per_user", "proposal_idempotency_per_key"})
-# The kinds a reviewer may correct: each carries sourced facts from an authority, which a
-# reviewer checks against the same source (PRO-02).
-CORRECTABLE_KINDS = frozenset(RECORD_TARGETS) | NEW_RECORD_KINDS
 # The dimension an instrument's regime is a term of (D-39).
 REGIME_DIMENSION = "regime"
 # The fields of a new record's payload that say how it is written rather than what the
@@ -210,31 +186,8 @@ UNSOURCED_FIELDS = frozenset(
         "summariesFrom",
     }
 )
-TERM_KINDS = frozenset({ProposalKind.TERM_CREATE.value, ProposalKind.TERM_UPDATE.value})
 # The records a translation is for (D-129).
 TRANSLATION_TARGETS = (SubjectType.INSTRUMENT.value, SubjectType.OBLIGATION.value)
-# The kinds whose applied record can say an agent confirmed it (`verified_origin` and
-# `verified_by_agent`): an obligation version, every library list row and taxonomy term
-# (taxonomy 0007), a new instrument, a new obligation with its first version, and a
-# recurring duty (library 0010), which names its proposing agent too. Only these
-# may an independent agent approve (INV-05, D-62, D-79). A provision and its versions have no
-# such column, so `new_provision` and `new_provision_version` wait for a person, as does any
-# kind added later without that provenance: an instrument's summary (D-124) and a record's
-# machine translations (D-129), whose translation rows name no confirming agent.
-AGENT_CONFIRMABLE_KINDS = (
-    OBLIGATION_KINDS
-    | VOCABULARY_KINDS
-    | TERM_KINDS
-    | frozenset({ProposalKind.NEW_INSTRUMENT.value, ProposalKind.NEW_OBLIGATION.value, ProposalKind.NEW_RECURRING_DUTY.value})
-)
-# The payloads that name a row by key and carry labels: the key must be its own slug and
-# the labels real languages, as the vocabulary routes make them.
-NAMED_PAYLOADS = (
-    ProposalVocabularyCreatePayload,
-    ProposalVocabularyRelabelPayload,
-    ProposalTermCreatePayload,
-    ProposalTermUpdatePayload,
-)
 
 
 @dataclass(frozen=True)
@@ -257,13 +210,9 @@ class Proposer:
 class Reviewer:
     """Who decides: a person (session) holding `proposals.review`, or an agent (a platform
     API key) holding the scope `proposals:review` (PRO-S13, D-62, ADR 0054). Exactly one of
-    `user` and `api_key_id` is set; `agent_id` names the key's agent definition, which the
-    widened `proposal_four_eyes` constraint compares against the proposer's own.
-
-    `Principal.has_permission` and `has_scope` are kind-exclusive, so one decorator cannot
-    express "a session or a key"; `apps.proposals.api.require_reviewer` builds this from
-    whichever principal called, and every function below decides on it rather than on a
-    bare `User`."""
+    `user` and `api_key_id` is set; `agent_id` names the key's agent definition, which
+    `proposal_four_eyes` compares against the proposer's own. Built by
+    `apps.proposals.api.require_reviewer` from whichever principal called."""
 
     actor: Actor
     user: Any = None
@@ -272,9 +221,7 @@ class Reviewer:
     api_key_prefix: str = ""
 
 
-# ---------------------------------------------------------------------------------------
-# Validation
-# ---------------------------------------------------------------------------------------
+# --- Validation ---
 def validated_kind(kind: str) -> str:
     # A kind is filed only once its payload has a named schema, so a member added ahead of
     # its schema (`obligation_scope`, PRO-04) is refused here rather than failing below.
@@ -309,12 +256,9 @@ def validated_payload(kind: str, payload: dict[str, Any], owner_tenant_id: uuid.
 
 def _validate_target(kind: str, payload: pydantic.BaseModel, owner_tenant_id: uuid.UUID | None) -> None:
     """A vocabulary proposal names a library list that can be proposed to; a term proposal
-    names a dimension. Tenant lists never enter the queue: their admin writes them. An
-    editor or an agent can post a payload without the vocabulary routes, so their checks
-    run here too: labels in real languages (stored trimmed), a key that is its own slug,
-    and an `extra` that holds only the list's own columns, each a value of its type and
-    stored cleaned, so the queue shows what approval writes. That allowlist is also what
-    keeps a tone or a colour out of the queue (NFR-S10)."""
+    names a dimension. Tenant lists never enter the queue. The vocabulary routes' checks run
+    here too: real languages, a key that is its own slug, and an `extra` of the list's own
+    columns only, stored cleaned, which also keeps a tone or a colour out (NFR-S10)."""
     from pydantic.alias_generators import to_camel
 
     from apps.taxonomy import tenant_lists_logic as lists
@@ -369,22 +313,20 @@ def _validate_target(kind: str, payload: pydantic.BaseModel, owner_tenant_id: uu
         payload.labels = lists.validated_labels(payload.labels)
     elif isinstance(payload, ProposalVocabularyRelabelPayload | ProposalTermUpdatePayload) and payload.labels:
         payload.labels = lists.validated_labels(payload.labels)
-    if isinstance(payload, NAMED_PAYLOADS) and (not payload.key or lists.key_for(payload.labels, payload.key) != payload.key):
+    keyed: Any = payload  # one of NAMED_PAYLOADS, each with a key and labels, when the test below holds
+    if isinstance(payload, NAMED_PAYLOADS) and (not keyed.key or lists.key_for(keyed.labels, keyed.key) != keyed.key):
         raise ValidationError(
-            f"{payload.key!r} is not a key: use lowercase letters, digits and underscores.", code="validation_error"
+            f"{keyed.key!r} is not a key: use lowercase letters, digits and underscores.", code="validation_error"
         )
 
 
 def refuse_vocabulary_change(entry: Any, kind: str, keys: list[str]) -> None:
     """The two rules a change to a library list's rows obeys beyond its payload's shape,
-    checked when it is proposed and again when it is applied, for the list as it is then.
+    checked when proposed and again when applied.
 
-    A list of fixed keys (the jurisdictions, D-94) is filed by the reference seed with the
-    facts only the seed knows, a kind, a parent and a legal language, so no proposal adds a
-    value to it or merges one away: 422 `validation_error`. A proposal on a dimension row
-    whose terms mirror the jurisdiction list (FP-04, hardening H28) would change what the
-    mirror is, its footprint rule or its existence, which no deploy puts back: 422
-    `jurisdiction_term_mirrored`, as a proposal on one of its terms is."""
+    A list of fixed keys (the jurisdictions, D-94) is the seed's to add to, so no proposal
+    adds or merges a value: 422 `validation_error`. A dimension row whose terms mirror the
+    jurisdiction list (FP-04, H28) cannot be changed: 422 `jurisdiction_term_mirrored`."""
     from apps.taxonomy.terms_logic import refuse_mirrored_row
 
     if entry.fixed_keys and kind in (ProposalKind.VOCABULARY_CREATE.value, ProposalKind.VOCABULARY_MERGE.value):
@@ -397,15 +339,11 @@ def refuse_vocabulary_change(entry: Any, kind: str, keys: list[str]) -> None:
 
 
 def merge_pair(entry: Any, key: str, into: str, *, lock: bool = False) -> tuple[Any, Any]:
-    """The two rows a merge joins, checked against the list as it is now, when the merge is
-    proposed and again when it is applied (VOC-02, INV-08, D-36). A value merges only into
-    another active value of the same kind: a row's kind is what the rules read (a level of
-    the kind `standard` holds licensed text and one conformance obligation, D-35), so a
-    merge across kinds would move records from under one rule to another with no check of
-    either. Returns the source and the target.
+    """The two rows a merge joins, checked against the list as it is now (VOC-02, INV-08,
+    D-36). A value merges only into another active value of the same kind, since the rules
+    read a row's kind (D-35). Returns the source and the target.
 
-    `lock` is the apply's: both rows are locked, in id order so two merges over the same pair
-    never wait on each other crosswise, and read as they are once the lock is held (H34)."""
+    `lock` is the apply's: both rows are locked in id order and read once locked (H34)."""
     rows = entry.model._default_manager.filter(key__in=[key, into]).order_by("id")
     found = {row.key: row for row in (rows.select_for_update() if lock else rows)}
 
@@ -459,8 +397,7 @@ def _validate_obligation_payload(payload: ProposalObligationVersionPayload | Pro
 
 def _capped(texts: dict[str, str], what: str) -> dict[str, str]:
     """`texts` as given, or 422 naming the languages whose text is longer than
-    `PROPOSAL_TEXT_MAX_CHARS`: a text is queued before anyone reads it, and nothing is queued
-    that approval could not write (H35)."""
+    `PROPOSAL_TEXT_MAX_CHARS`: nothing is queued that approval could not write (H35)."""
     cap = settings.PROPOSAL_TEXT_MAX_CHARS
     long = sorted(language for language, text in texts.items() if len(text) > cap)
     if long:
@@ -486,10 +423,8 @@ def _validated_precision(precision: str) -> None:
 
 def regime_term(ref: str) -> Any:
     """The term `ref` names as an instrument's regime, which must be a term of the regime
-    dimension (D-39, INV-S12): the regime is the sector boundary, and a term of another
-    dimension would file the instrument outside every bank's regulatory scope, or inside
-    all of them. 422 `not_a_regime` otherwise. The one check, run at creation, over a
-    reviewer's correction and again at apply."""
+    dimension (D-39, INV-S12): the regime is the sector boundary. 422 `not_a_regime`
+    otherwise. Run at creation, over a correction and at apply."""
     term = terms_of([ref])[0]
     if term.dimension.key != REGIME_DIMENSION:
         raise ValidationError(
@@ -572,10 +507,9 @@ def _validate_text_payload(payload: ProposalProvisionPayload | ProposalProvision
 
 def validated_provision(payload: ProposalProvisionPayload) -> tuple[Any, Any, Any]:
     """A new provision (INV-02): a key no provision carries, a shared instrument in force, a
-    parent that is a provision of that same instrument, a live provision kind, and its text
-    checked as a version's is. Returns the instrument, the parent (or None) and the kind,
-    resolved, for the apply and the standards check. A bank's own instrument holds no
-    provisions (ADR 0050's stated cut): 422 `private_provisions_not_supported`."""
+    parent of that same instrument, a live provision kind, and its text checked as a
+    version's is. Returns the instrument, parent (or None) and kind. A bank's own instrument
+    holds no provisions (ADR 0050): 422 `private_provisions_not_supported`."""
     _validate_text_payload(payload)
     if stable_key_taken(SubjectType.PROVISION.value, payload.key):
         raise ValidationError(f"{payload.key!r} is already a provision's key.", code="duplicate_key")
@@ -607,13 +541,10 @@ def validated_instrument_summary(payload: ProposalInstrumentSummaryPayload) -> A
 
 def validated_translations(payload: ProposalTranslationsPayload) -> RecordTexts:
     """A record's machine translations (INV-05, I18N-01, D-129): an active shared instrument
-    or obligation (422 `unknown_key` otherwise), at least one text, each in a live content
-    language the record's text does not hold yet (409 `duplicate_key`, which the original's
-    own language always is), translated from that text's original, non-empty and at most
-    `LIBRARY_TRANSLATION_TEXT_MAX_CHARS`. An obligation's summaries are for its version in
-    force today, named by number, so a version that came into force meanwhile is refused
-    rather than given another version's words. Run at creation and again at apply, against
-    the library as it is then; returns the record."""
+    or obligation (else 422 `unknown_key`), each text in a live content language the record
+    does not hold yet (else 409 `duplicate_key`), from its original, non-empty and at most
+    `LIBRARY_TRANSLATION_TEXT_MAX_CHARS`. An obligation's summaries name the version in force
+    today. Run at creation and again at apply; returns the record."""
     if payload.target not in TRANSLATION_TARGETS:
         raise ValidationError(f"{payload.target!r} is not a record a translation is for. Valid targets: {', '.join(TRANSLATION_TARGETS)}.", code="unknown_key")
     record = record_texts(payload.target, timezone.localdate(), key=payload.key)
@@ -675,11 +606,9 @@ def validated_recurring_duty(payload: ProposalRecurringDutyPayload) -> Any:
 
 
 def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUID | None) -> None:
-    """A version proposal says which obligation or provision it versions, and that record
-    is here, in force and the shared library's (a bank's own record is never a target, so
-    nothing crosses from one zone to the other, INV-07). A proposal nobody could ever apply
-    never enters the queue. A new record names no target: it does not exist until the
-    proposal is approved."""
+    """A version proposal names an obligation or provision that is here, in force and the
+    shared library's (a bank's own record is never a target, INV-07), so nothing
+    unappliable enters the queue. A new record names no target."""
     if kind in UNTARGETED_KINDS and (target_type or target_id is not None):
         raise ValidationError(
             "A new record names no target: leave targetType and targetId out.", code="validation_error"
@@ -701,14 +630,11 @@ def _validate_obligation_target(kind: str, target_type: str, target_id: uuid.UUI
 def owner_of(kind: str, *, private: bool, tenant_id: uuid.UUID | None) -> uuid.UUID | None:
     """The bank a new proposal belongs to, or None for the shared library (INV-07, D-57).
 
-    Decided by the server alone. A proposal the server files as `private` is a new record of
-    the bank the database is scoped to, which is the filing session's bank or, in the
-    worker, the bank of the run (`@tenant_task`); anything else is the shared library's,
-    whoever filed it, and still reaches the console, since a target is always a shared
-    record. A private filing with no bank, or of a kind that is not a new instrument or
-    obligation, is refused rather than quietly filed as shared: a provision with 422
-    `private_provisions_not_supported`, anything else with 422 `validation_error`. A control
-    is only ever the bank's own (OWN-05), so one filed to the shared library is refused too."""
+    Decided by the server alone: a `private` filing is a new record of the bank the database
+    is scoped to (the session's, or the run's under `@tenant_task`). A private filing with
+    no bank, or of a kind that is not a new instrument or obligation, is refused (422
+    `private_provisions_not_supported` for a provision, else `validation_error`). A control
+    is only ever the bank's own (OWN-05)."""
     if not private:
         if kind in PRIVATE_ONLY_KINDS:
             raise ValidationError(
@@ -726,12 +652,10 @@ def owner_of(kind: str, *, private: bool, tenant_id: uuid.UUID | None) -> uuid.U
 
 
 def sourced_fields(payload: pydantic.BaseModel) -> list[str]:
-    """The fields of `payload` that a source has to be given for, named as the console
-    names them beside the diff: the summary per language, the effective date and the scope
-    terms. A vocabulary payload carries a label a person writes, not a sourced fact from an
-    authority, so it names none (its chunk 2 rules are unchanged). A new record's are every
-    fact it sets, its texts one per language, and never how it is written
-    (`UNSOURCED_FIELDS`). A recurring duty's are every field it sets (REG-07)."""
+    """The fields of `payload` that need a source, named as the console names them: the
+    summary per language, the effective date and the scope terms. A vocabulary payload is a
+    person's wording and names none. A new record's are every fact it sets
+    (`UNSOURCED_FIELDS` aside); a recurring duty's every field (REG-07)."""
     if isinstance(payload, NEW_RECORD_PAYLOADS):
         fields: list[str] = []
         for name, value in payload.model_dump(by_alias=True, exclude_none=True, exclude_defaults=True).items():
@@ -775,16 +699,11 @@ _LINK = URLValidator(schemes=["https"])
 def check_field_sources(payload: pydantic.BaseModel, field_sources: dict[str, str]) -> None:
     """Every changed field carries the source its value came from, and nothing else does
     (PRO-01, AC-PRO1): 422 `source_missing` for a field without one, 422
-    `validation_error` for a source that is not one.
+    `validation_error` for a source that is not one. Runs at creation and over a reviewer's
+    corrections, so no value without a source reaches the library.
 
-    The one function for that rule: it runs when the proposal is made and again over a
-    reviewer's corrections at approval, so a value nobody can trace to a source never
-    reaches the library, whoever last touched it.
-
-    An agent writes these values and a reviewer and the console read them, so each one is
-    checked here at the boundary rather than trusted: at most
-    `PROPOSAL_SOURCE_MAX_CHARS`, and either an https link or the stable key of a provision
-    the library holds. "n/a", "see above" and `javascript:` are none of those.
+    Agent-written and read by people, so checked at the boundary: at most
+    `PROPOSAL_SOURCE_MAX_CHARS`, and an https link or a held provision's stable key.
     """
     missing = [field for field in sourced_fields(payload) if not field_sources.get(field, "").strip()]
     if missing:
@@ -838,10 +757,8 @@ def is_link(value: str) -> bool:
 
 def _agreed_effective_from(payload: pydantic.BaseModel, effective_from: Any) -> Any:
     """The date the proposal row shows the reviewer, which is the date approval will write
-    (INV-04). An obligation version holds the date twice, on the row and in the payload,
-    so a row saying one date while the payload carries another is refused rather than
-    shown; a row that says nothing takes the payload's. A new obligation's first version
-    holds it the same way."""
+    (INV-04). A row date that differs from the payload's is refused; a row with none takes
+    the payload's."""
     if not isinstance(payload, ProposalObligationVersionPayload | ProposalObligationPayload | ProposalProvisionPayload | ProposalProvisionVersionPayload):
         return effective_from
     if effective_from is not None and effective_from != payload.effective_from:
@@ -870,9 +787,7 @@ def payload_dict(payload: pydantic.BaseModel) -> dict[str, Any]:
     return payload.model_dump(mode="json", by_alias=True, exclude_none=True)
 
 
-# ---------------------------------------------------------------------------------------
-# Creating
-# ---------------------------------------------------------------------------------------
+# --- Creating ---
 def create(
     *,
     kind: str,
@@ -894,20 +809,14 @@ def create(
     """Create a proposal, or answer the one an earlier identical submission made. Returns
     `(proposal, created)`.
 
-    `private` is the server's word, never a request's, that this is the bank's own new
-    record (`owner_of`); a route that files to the shared library never passes it.
+    `private` is the server's word, never a request's (`owner_of`).
 
-    A key bound to an agent names an open run of its own, so every proposal an agent filed
-    traces to the night that produced it (AGT-01); a run anyone else names is checked the
-    same way, and so is never one they did not open. That is asked first, before anything
-    else is read, so a retry must arrive while its run is still open: once the run is
-    closed, a retry answers `run_not_open` as any new filing against that run would. A new
-    proposal past the run's budget (`WATCH_RUN_MAX_PROPOSALS`) is refused with
-    `run_budget_exhausted`; a retry files nothing new, so it still answers (H41).
+    A key bound to an agent names an open run of its own (AGT-01), and any named run is
+    checked, first, so a retry after the run closed answers `run_not_open`. A new proposal
+    past `WATCH_RUN_MAX_PROPOSALS` is `run_budget_exhausted`; a retry still answers (H41).
 
-    Every text the proposer sent, from a fetched page as often as not, is read by the
-    injection screen (AGT-07, H40) and stored exactly as it arrived; what the screen finds
-    is kept on the proposal, which the queue shows, and keeps the approval for a person."""
+    Every text is read by the injection screen (AGT-07, H40) and stored as it arrived; what
+    it finds is kept on the proposal and keeps the approval for a person."""
     run = None
     runs.refuse_person_run(proposer.user, agent_run_id)
     if proposer.agent_id is not None or agent_run_id is not None:
@@ -953,11 +862,9 @@ def create(
             raise ValidationError(
                 f"An Idempotency-Key is at most {IDEMPOTENCY_KEY_MAX_CHARS} characters.", code="validation_error"
             )
-        # The key is the proposer's own: another bank or agent sending the same value files
-        # its own proposal and is never answered this one (playbook 4.3). The same person in
-        # another bank is the same proposer, so there it is a conflict, never a replay.
-        # A keyless agent is the worker filing for a bank's own run (proposals/tenant_agent.py):
-        # its key never matches a person's.
+        # The key is the proposer's own (playbook 4.3): another bank or agent sending the same
+        # value files its own proposal; the same person in another bank is a conflict, never
+        # a replay. A keyless agent (proposals/tenant_agent.py) never matches a person.
         own = (
             Q(proposed_by_user=proposer.user)
             if proposer.user is not None
@@ -1035,19 +942,15 @@ def create(
                 },
             )
     except IntegrityError as error:
-        # The same proposer's retry key already filed a proposal this session cannot read: a
-        # bank's own proposal, seen from another bank or from the console (D-57). It is a
-        # conflict, as it is when the proposal is in sight, and never a replay of a row the
-        # caller may not read.
+        # The retry key already filed a proposal this session cannot read (a bank's own, D-57):
+        # a conflict, never a replay of a row the caller may not read.
         if getattr(getattr(error.__cause__, "diag", None), "constraint_name", None) not in IDEMPOTENCY_CONSTRAINTS:
             raise
         raise ValidationError("This Idempotency-Key was already used for a different proposal.", code="idempotency_conflict") from error
     return proposal, True
 
 
-# ---------------------------------------------------------------------------------------
-# Reading
-# ---------------------------------------------------------------------------------------
+# --- Reading ---
 def _csv(value: str | None) -> list[str]:
     return [part.strip() for part in (value or "").split(",") if part.strip()]
 
@@ -1108,12 +1011,10 @@ def queue(
     not_mine: bool = False,
     order: str | None = None,
 ) -> Any:
-    """The console review queue, read by a person or by an agent's key alike (PRO-S13, D-62),
-    with the people and agents each row names joined in, so a page costs the same whatever
-    it holds. `origin` keeps an agent's proposals or a person's; `not_mine` drops the ones
-    `reviewer` filed (`filed_by`). `order` is `oldest` (the default, `filtered`'s own order)
-    or `newest`, for the decided tabs; the id breaks a tie either way. It orders this answer
-    only, so a bank's own list stays oldest first."""
+    """The console review queue, read by a person or an agent's key alike (PRO-S13, D-62),
+    with the people and agents each row names joined in. `origin` keeps an agent's proposals
+    or a person's; `not_mine` drops `filed_by(reviewer)`. `order` is `oldest` (default) or
+    `newest`, the id breaking ties."""
     order = order or "oldest"
     if order not in QUEUE_ORDERS:
         raise ValidationError(f"{order!r} is not an order. Valid values: {', '.join(QUEUE_ORDERS)}.", code="unknown_key")
@@ -1152,14 +1053,11 @@ def _agent_ref(agent: Any) -> ProposalAgentRef | None:
 
 def row(proposal: Proposal) -> ProposalRow:
     """One proposal as every answer carrying one returns it. A proposal made inside a bank
-    names no proposer (PRO-03): the console is told `from_organisation` and nothing more, so
-    a bank member's name and id reach no platform reader, whichever route answers.
+    names no proposer (PRO-03): the console is told `from_organisation` and nothing more.
 
-    Who decided is a person or an agent, never both: a `Reviewer` carries exactly one of a
-    user and a key. A correction is only ever made on the way to approving it (`approve`),
-    so its author is the approver: `corrected_by` names a person, and a correction with no
-    person on it was the approving agent's, which is named from `reviewed_by_agent` rather
-    than a column of its own."""
+    Who decided is a person or an agent, never both. A correction is made only on the way to
+    approving, so a correction with no person on it was the approving agent's
+    (`reviewed_by_agent`)."""
     agent_corrected = proposal.corrected_payload is not None and proposal.corrected_by_id is None
     return ProposalRow(
         id=proposal.id,
@@ -1205,22 +1103,20 @@ def proposer_row(proposal: Proposal) -> ProposalRow:
     return answer.model_copy(update={"reviewed_by": None, "reviewed_by_agent": None, "corrected_by": None, "corrected_by_agent": None})
 
 
-# ---------------------------------------------------------------------------------------
-# Deciding
-# ---------------------------------------------------------------------------------------
+# --- Deciding ---
 def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
-    """Lock the row, then check it under the lock (PRO-02). Two decisions on one proposal
-    queue on the lock and the second reads what the first committed: 409
-    `invalid_transition`, never a stale "open" that lets a rejection land on top of an
-    applied approval or a proposal apply twice (apps/proposals/tests_decide.py).
+    """Lock the row, then check it under the lock (PRO-02): a second decision reads what the
+    first committed and is 409 `invalid_transition`, so nothing lands twice.
 
-    Four eyes, checked here so the API answers before the database does (AC-PRO2); the
-    widened `proposal_four_eyes` constraint is the same rule and answers on its own if this
-    is ever bypassed. A repeated user, a repeated key or a repeated agent definition is the
-    same principal twice by construction, whichever pair of columns it shows up on; a
-    reviewing key that names no agent is refused too, so an unbound platform key can never
-    stand in for independence (PRO-S13, PRO-S14, D-62, ADR 0054). The API's gate refuses
-    that key first, with `agent_not_bound`; this is the same rule for any other caller."""
+    Four eyes (AC-PRO2), checked here so the API answers before the database does; the
+    `proposal_four_eyes` constraint is the same rule. A repeated user, key or agent
+    definition is the same principal twice, and a reviewing key that names no agent is
+    refused too (PRO-S13, PRO-S14, D-62, ADR 0054).
+
+    The person behind a reviewing key is its creator, so a key created by the proposing
+    person, or by the creator of the proposing key, is refused the same way (review
+    2026-11-11 S-6). The constraint cannot read a key's creator, so this rule is the
+    application's alone (tests_decide.KeyCreatorFourEyes)."""
     proposal.refresh_from_db(from_queryset=Proposal.objects.select_for_update())
     if proposal.status != ProposalStatus.OPEN.value:
         raise ValidationError("This proposal has already been decided.", code="invalid_transition")
@@ -1232,11 +1128,25 @@ def _decidable(proposal: Proposal, reviewer: Reviewer) -> None:
     same_user = reviewer.user is not None and proposal.proposed_by_user_id == reviewer.user.id
     same_key = reviewer.api_key_id is not None and proposal.proposed_by_api_key_id == reviewer.api_key_id
     same_agent = reviewer.agent_id is not None and proposal.proposed_by_agent_id == reviewer.agent_id
-    if same_user or same_key or same_agent:
+    if same_user or same_key or same_agent or _key_made_by_proposer(proposal, reviewer):
         raise ValidationError(
             "A proposal is decided by someone other than the person, key or agent who made it.",
             code="four_eyes_violation",
         )
+
+
+def _key_made_by_proposer(proposal: Proposal, reviewer: Reviewer) -> bool:
+    """Whether the reviewing key was created by the proposing person, or by the person who
+    created the proposing key (S-6). A key with no creator on record, a seeded one, names no
+    person and so matches nobody."""
+    from apps.identity.models import ApiKey
+
+    if reviewer.api_key_id is None:
+        return False
+    creators = dict(ApiKey.objects.filter(pk__in=[reviewer.api_key_id, proposal.proposed_by_api_key_id]).values_list("id", "created_by_id"))
+    made_by = creators.get(reviewer.api_key_id)
+    proposing_key_creator = None if proposal.proposed_by_api_key_id is None else creators.get(proposal.proposed_by_api_key_id)
+    return made_by is not None and made_by in (proposal.proposed_by_user_id, proposing_key_creator)
 
 
 def _not_a_batch(proposal: Proposal) -> None:
@@ -1251,9 +1161,8 @@ def _not_a_batch(proposal: Proposal) -> None:
 
 
 def as_reviewer(reviewer: "Reviewer | Any", actor: Actor) -> Reviewer:
-    """Every caller before T25 passed the deciding person as a bare `User`; the queue and
-    the tests built against that contract still do. Normalize it into a `Reviewer` with no
-    key and no agent, rather than pushing the change out to every existing call site."""
+    """Normalize a bare `User` (the deciding person, as many callers and tests still pass it)
+    into a `Reviewer` with no key and no agent."""
     if isinstance(reviewer, Reviewer):
         return reviewer
     return Reviewer(actor=actor, user=reviewer)
@@ -1261,10 +1170,8 @@ def as_reviewer(reviewer: "Reviewer | Any", actor: Actor) -> Reviewer:
 
 def _reviewer_facts(reviewer: Reviewer, run: AgentRun | None) -> dict[str, Any]:
     """What a decision's audit row names beside the actor label (AUD-01, AUD-02, AUD-S9):
-    the key an agent used, by its public prefix and never its internal id alone, and the
-    run the decision was made in, which its logged model call names too (D-80). Empty for a
-    person, whose audit row carries no key and no run at all. The key is named whether or not
-    a run came with it, so no decision by a key ever loses the prefix AUD-S9 reads."""
+    the key's public prefix, never its id alone, and the run the decision was made in
+    (D-80). Empty for a person. The prefix is named with or without a run."""
     if reviewer.api_key_id is None:
         return {}
     facts: dict[str, Any] = {"reviewingApiKeyPrefix": reviewer.api_key_prefix}
@@ -1274,16 +1181,12 @@ def _reviewer_facts(reviewer: Reviewer, run: AgentRun | None) -> dict[str, Any]:
 
 
 def _decision_run(reviewer: Reviewer, decision: AgentDecision | None, agent_run_id: uuid.UUID | None) -> AgentRun | None:
-    """The open run an agent's decision is made in, once the decision says what model call
-    is behind it (AUD-02, AGT-01, D-80); None for a person, who sends neither.
+    """The open run an agent's decision is made in (AUD-02, AGT-01, D-80); None for a person.
 
-    An agent's approval or rejection is a model call, and every model call is logged, so a
-    key's decision without its `AgentDecision` is refused rather than recorded as one nobody
-    can attribute or check. The run must be an open run of the deciding key itself
-    (`runs.require_open_run_of_key`): none, or a closed one, is `run_not_open`, and another
-    key's, another agent's included, is `not_found` as a run that never existed is, so no
-    agent counts its decisions in somebody else's run. A person's decision is not a model
-    call, so a body that says it was one is refused rather than logged as a machine's."""
+    An agent's decision is a model call, and every model call is logged, so a key's decision
+    without its `AgentDecision` is refused. The run must be an open run of the deciding key
+    itself: none or a closed one is `run_not_open`, another key's `not_found`. A person's
+    decision that claims a model call is refused too."""
     if reviewer.user is not None:
         if decision is not None or agent_run_id is not None:
             raise ValidationError(
@@ -1334,28 +1237,14 @@ def corrected(
     """The payload as the reviewer corrected it, checked as firmly as the one that arrived
     (PRO-02, AC-PRO1).
 
-    Corrections merge field by field over what was proposed, so a reviewer who rewrites the
-    wording keeps the date and the scope that came with it. The merged result goes through
-    the kind's own schema and through the same source check the proposal passed when it was
-    made: a correction that introduces a field the proposal never sourced is 422
-    `source_missing`, because the rule is that no value reaches the library without a source
-    a reader can follow, whoever typed it last.
+    Corrections merge field by field over what was proposed, then pass the kind's schema and
+    the source check: a field the proposal never sourced is 422 `source_missing`. Only
+    `CORRECTABLE_KINDS` may be corrected; a vocabulary row's wording is rejected with a
+    reason instead.
 
-    Only a version of an obligation or a provision, or a new record, may be corrected
-    (`CORRECTABLE_KINDS`). A vocabulary row's labels are wording a person writes rather than
-    a fact from an authority, so there is nothing to correct against a source, and a
-    reviewer who disagrees rejects with a reason instead.
-
-    A correction that changes what a sourced field says names the fresh source it read the
-    new value from, in `field_sources`, and only such a field takes one (H35): the
-    proposer's source vouches for the value it was given for, not for the reviewer's. The
-    proposal keeps the fresh source for that field from then on. Returns the proposer's
-    sources the fresh ones replaced, for the approval's audit row.
-
-    An agent's correction may reword a summary but not move `originalLanguage`: the
-    original is the one text stored without the machine label, so moving it would store a
-    machine translation as unlabelled and label the source-language text machine-made
-    (INV-05). It is compared as parsed, whichever spelling of the field arrived.
+    A correction that changes a sourced field names the fresh source it read, and only such a
+    field takes one (H35). Returns the proposer's sources the fresh ones replaced, for the
+    audit row. Only a person corrects (review 2026-11-11 S-3).
     """
     if proposal.kind not in CORRECTABLE_KINDS:
         raise ValidationError(
@@ -1383,19 +1272,13 @@ def corrected(
             code="validation_error",
         )
     check_field_sources(parsed, sources)
-    if reviewer.user is None and stored.get("originalLanguage") != proposal.payload.get("originalLanguage"):
-        raise ValidationError(
-            "An agent cannot change which language a summary was written in. Reject it with a reason instead.",
-            code="validation_error",
-        )
     replaced = {field: proposal.field_sources[field] for field in fresh if field in proposal.field_sources}
     proposal.corrected_payload = stored
     proposal.corrected_by = reviewer.user
     proposal.corrected_at = timezone.now()
     proposal.field_sources = sources
-    # The row's own date follows the correction, because a queue row that showed one date
-    # while the version carried another would be a proposal nobody could read straight
-    # (the same rule `_agreed_effective_from()` holds the proposer to).
+    # The row's date follows the correction, so the queue never shows one date while the
+    # version carries another (`_agreed_effective_from()`'s rule).
     proposal.effective_from = getattr(parsed, "effective_from", proposal.effective_from)
     return replaced
 
@@ -1413,39 +1296,26 @@ def approve(
     agent_run_id: uuid.UUID | None = None,
 ) -> Proposal:
     """Apply the payload and approve, in one transaction of its own (PRO-02): the library
-    row, its audit row, the proposal's own audit row and an agent's logged model call commit
-    together or not at all, whether or not a request opened a transaction around the call. A
-    worker or a shell caller that fails part way writes nothing, so its retry writes the
-    version once (apps/proposals/tests_decide.py, DecidingOutsideARequest).
+    row, its audit rows and an agent's logged model call commit together or not at all,
+    whoever called (tests_decide.DecidingOutsideARequest).
 
-    A reviewer may correct the payload on the way through (`payload_overrides`), naming in
-    `field_sources` the fresh source of every value the correction changes. What they
-    approved is stored beside what was proposed, as their own correction, so the queue and
-    the audit trail keep both. The review note stays on the proposal row and never in the
-    audit value: from R2 a proposal can be a bank's own (D-89), and a note is its reviewer's
-    words (CHUNK10 rule 13). `step_up_assertion_id` is null for an agent's decision: a key
-    holds no passkey assertion (PRO-S13, D-62, ADR 0054).
+    A reviewer may correct the payload (`payload_overrides`), naming in `field_sources` the
+    fresh source of every value the correction changes; the correction is stored beside
+    what was proposed. The review note stays on the proposal row, never in an audit value
+    (D-89). `step_up_assertion_id` is null for an agent's decision (PRO-S13, D-62, ADR 0054).
 
-    An agent's approval carries the model call behind it (`decision`) and the open run of
-    its own key it was made in (`agent_run_id`), checked before anything else is read; the
-    call is logged as one `agent_review` row and the audit row names the run (`_decision_run`,
-    AUD-02, D-80). A person sends neither.
+    An agent's approval carries its model call (`decision`) and an open run of its own key
+    (`agent_run_id`), logged as one `agent_review` row (`_decision_run`, AUD-02, D-80).
 
     An agent approves only a kind whose record can say an agent confirmed it
-    (`AGENT_CONFIRMABLE_KINDS`, INV-05, D-79): an obligation version, a new instrument, a new
-    obligation, and since Alex lifted D-79's interim refusal on 2026-09-23 every vocabulary
-    and term kind, whose rows `apply` stamps with the confirming agent and whose every label
-    it writes machine-made. A kind without that provenance, today a new provision or a
-    provision's new text, is refused to an agent with 409 `person_review_required` and waits
-    for a person. Rejecting writes no library row, so an agent may reject any kind.
+    (`AGENT_CONFIRMABLE_KINDS`, INV-05, D-79); any other is 409 `person_review_required`.
+    It approves only what the platform filed, and only as filed (review 2026-11-11 S-3): a
+    bank's proposal cites pages its proposer chose, and a correction or a fresh source alone
+    is a person's. Rejecting writes no library row, so an agent may reject any kind.
 
-    A bank's own proposal (`owner_tenant_id`, INV-07, OWN-03) is approved the same way, here,
-    by a person of that bank holding `private_records.approve`
-    (apps/proposals/private_approval.py): never by an agent, whatever its kind (ADR 0059),
-    and its audit and outbox rows are written in that bank's zone, as its record is.
-
-    `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
-    older caller; `as_reviewer` normalizes either into the same shape below.
+    A bank's own proposal (INV-07, OWN-03) is approved here by a person of that bank holding
+    `private_records.approve`, never by an agent (ADR 0059), audited in that bank's zone.
+    `as_reviewer` normalizes a `Reviewer` or a bare `User`.
     """
     from apps.proposals import apply
 
@@ -1454,6 +1324,16 @@ def approve(
     if reviewer.user is None and proposal.owner_tenant_id is not None:
         raise ValidationError(
             "A record of an organisation's own is approved by a person there, never by an agent.",
+            code="person_review_required",
+        )
+    if reviewer.user is None and proposal.proposed_in_tenant:
+        raise ValidationError(
+            "A proposal filed from an organisation is approved by a person, never by an agent.",
+            code="person_review_required",
+        )
+    if reviewer.user is None and (payload_overrides or field_sources):
+        raise ValidationError(
+            "An agent approves a proposal as it was filed. To change it, reject it with a reason or leave it for a person.",
             code="person_review_required",
         )
     # The block's rows are written as it ends, inside the transaction (ADR 0063).
@@ -1465,7 +1345,7 @@ def approve(
                 "An agent cannot approve this kind of change: a person has to approve it.",
                 code="person_review_required",
             )
-        if reviewer.user is None and (proposal.risk_flags or screen_all(_texts(payload_overrides))):
+        if reviewer.user is None and proposal.risk_flags:
             raise ValidationError(
                 "This proposal carries text the injection screen flagged, so an agent cannot "
                 "approve it: a person reads the flag and decides.",
@@ -1518,17 +1398,10 @@ def reject(
     agent_run_id: uuid.UUID | None = None,
 ) -> Proposal:
     """A rejection needs a reason (PRO-01): a code the proposer's screen can branch on and a
-    sentence they can read. The code is a live row of the `rejection_reason` library list, an
-    admin's to extend and retire, so a code from an older screen or a retired row is refused
-    rather than stored as a reason nobody can look up. The outbox event is what tells them. A
-    bank's own proposal is rejected in that bank's zone, where its audit and outbox rows go.
-
-    It runs in one transaction of its own, as `approve` does, and an agent's rejection carries
-    the model call behind it and the open run it was made in, logged and named the same way
-    (`_decision_run`, AUD-02, D-80).
-
-    `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
-    older caller; `as_reviewer` normalizes either into the same shape below."""
+    sentence they can read. The code is a live row of the `rejection_reason` list, so a
+    retired or unknown code is refused. A bank's own proposal is rejected in that bank's
+    zone. One transaction of its own, as `approve`; an agent's rejection carries its model
+    call and open run (`_decision_run`, AUD-02, D-80)."""
     from apps.taxonomy.registry import REGISTRY
 
     _not_a_batch(proposal)
@@ -1541,11 +1414,8 @@ def reject(
             raise ValidationError(
                 "Say why: choose a reason and write a note the proposer will read.", code="reason_required"
             )
-        # Through the registry rather than by naming the model: this module writes (it creates
-        # proposals), and the library fence's static guard fails closed on any module that both
-        # writes and names a concrete LibraryModel, whether or not the two are related
-        # (apps/shared/tests_library_fence.py). The reason list is a library vocabulary and this
-        # is a read of it.
+        # Through the registry, not the model: this module writes, and the library fence
+        # fails closed on a module that writes and names a LibraryModel. This is a read.
         reasons = REGISTRY[REJECTION_REASON_LIST].model
         known = reasons.objects.filter(
             key=code,

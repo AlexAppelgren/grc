@@ -1,27 +1,20 @@
 """The standards check (INV-08, FP-01, D-35, D-36, D-37): what a proposal may say about a standard.
 
 A standard's text is licensed, so the library holds only its public facts and exactly one
-conformance obligation per edition, in our own words, carrying exactly one term of an
-opt-in dimension (the standards a bank follows). Four rules, each with its own code:
+conformance obligation per edition, in our own words, carrying exactly one opt-in term.
+Four rules, each with its own code:
 
-- `licensed_text`: no provision and no provision version under a standard, every field
-  source on a standard's obligation an https link, never a pasted clause or a provision key,
-  and a new obligation's `ref_label` and any proposal's `source_label` the standard's
-  official reference, never a clause (the label lands on the obligation, H35).
-- `one_conformance_obligation`: a new obligation under a standard that already holds an
-  active one.
-- `standard_term_required`: a standard's obligation whose scope holds no opt-in term, or
-  more than one.
-- `standard_term_only_on_standards`: an opt-in term on an obligation whose instrument is
-  not a standard. Put on a law's obligation, it would hide binding law from every bank that
-  follows no standard.
+- `licensed_text`: no provision under a standard; every field source on a standard's
+  obligation an https link; `ref_label` and `source_label` the standard's official
+  reference, never a clause (H35).
+- `one_conformance_obligation`: a second active obligation under a standard.
+- `standard_term_required`: a standard's obligation with no opt-in term, or more than one.
+- `standard_term_only_on_standards`: an opt-in term on a law's obligation, which would hide
+  binding law from every bank that follows no standard.
 
-The level and the dimension are told apart by their kind, never by a key.
-
-`check()` runs where a proposal is made, where a reviewer corrects it and where it is
-applied, because a proposal filed before a rule may still wait in the queue. A payload is
-stored at creation, so a check only at apply would leave licensed text in the platform
-database (D-35).
+Levels and dimensions are told apart by kind, never by key. `check()` runs at creation,
+correction and apply: a payload is stored at creation, so checking only at apply would leave
+licensed text in the database (D-35).
 """
 
 from __future__ import annotations
@@ -88,12 +81,11 @@ def check(
     source_label: str = "",
     opt_in: Collection[uuid.UUID] | None = None,
 ) -> None:
-    """Refuse what `kind` may not say about `instrument` (see the module docstring for the
-    four codes, all 422). `term_ids` is the obligation's scope as the proposal sets it,
-    resolved, or None when it leaves the scope alone; `field_sources` and `source_label` are
-    the proposal's; `ref_label` is a new obligation's. Under a standard both labels are its
-    official reference, and the source label may be left empty. `opt_in` is what
-    `opt_in_terms()` read for many checks at once, a batch's; without it the check reads it."""
+    """Refuse what `kind` may not say about `instrument` (the four codes above, all 422).
+    `term_ids` is the scope as the proposal sets it, or None when it leaves it alone;
+    `ref_label` is a new obligation's. Under a standard both labels are its official
+    reference, and the source label may be empty. `opt_in` is `opt_in_terms()` read once
+    for a batch's many checks."""
     from apps.proposals.logic import is_link
 
     opt_in_count = 0

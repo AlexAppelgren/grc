@@ -21,6 +21,7 @@ from apps.taxonomy.models import TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from apps.tenants import registers_logic
 from apps.tenants.schemas import RegisterFacts
+from apps.tenants.testing import branch_jurisdictions, split_businesses
 
 FI = "fi"
 LICENCE_BOUND = ("regime", "service_type", "licensed_activity")
@@ -140,20 +141,20 @@ class DerivedTerms(RegisterWorld):
 class BusinessNames(SimpleTestCase):
     def test_a_name_holding_a_comma_is_one_name(self) -> None:
         self.assertEqual(
-            registers_logic.split_businesses(FI, "Värdepappersbolag, Riksbolag, livförsäkringar, Stort Institut"),
+            split_businesses(FI, "Värdepappersbolag, Riksbolag, livförsäkringar, Stort Institut"),
             (["Värdepappersbolag", "Riksbolag, livförsäkringar", "Stort Institut"], []),
         )
 
     def test_unknown_names_are_the_comma_separated_rest_in_order(self) -> None:
         self.assertEqual(
-            registers_logic.split_businesses(FI, "Nytt slag, Riksbolag, livförsäkringar, Annat, Försäkringsdistribution"),
+            split_businesses(FI, "Nytt slag, Riksbolag, livförsäkringar, Annat, Försäkringsdistribution"),
             (["Riksbolag, livförsäkringar", "Försäkringsdistribution"], ["Nytt slag", "Annat"]),
         )
-        self.assertEqual(registers_logic.split_businesses(FI, ""), ([], []))
+        self.assertEqual(split_businesses(FI, ""), ([], []))
 
     def test_a_known_name_counts_only_as_a_whole_item(self) -> None:
         # `Fondbolag` inside `Fondbolagsgruppen` is not the business `Fondbolag`.
-        self.assertEqual(registers_logic.split_businesses(FI, "Fondbolagsgruppen, Fondbolag"), (["Fondbolag"], ["Fondbolagsgruppen"]))
+        self.assertEqual(split_businesses(FI, "Fondbolagsgruppen, Fondbolag"), (["Fondbolag"], ["Fondbolagsgruppen"]))
 
 
 class MappingFileShape(SimpleTestCase):
@@ -181,13 +182,13 @@ class MappingFileShape(SimpleTestCase):
 class CountriesAndAuthorities(RegisterWorld):
     def test_branch_countries_are_matched_on_the_jurisdiction_labels(self) -> None:
         facts = self.facts("556000-0001")
-        self.assertEqual(registers_logic.branch_jurisdictions(facts), {"dk", "no"})
+        self.assertEqual(branch_jurisdictions(facts), {"dk", "no"})
         self.assertEqual([branch.jurisdiction for branch in facts.branches], ["dk", "no"])
         abroad = facts.model_copy(
             update={"branches": [*facts.branches, facts.branches[0].model_copy(update={"country_name": "Hongkong"})]}
         )
-        self.assertEqual(registers_logic.branch_jurisdictions(abroad), {"dk", "no"})
-        self.assertEqual(registers_logic.branch_jurisdictions(facts.model_copy(update={"branches": []})), set())
+        self.assertEqual(branch_jurisdictions(abroad), {"dk", "no"})
+        self.assertEqual(branch_jurisdictions(facts.model_copy(update={"branches": []})), set())
 
     def test_the_authority_is_the_one_whose_register_is_read_for_the_country(self) -> None:
         sweden = registers_logic.authority_for_country("SE")

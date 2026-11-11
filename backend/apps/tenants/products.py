@@ -14,7 +14,6 @@ from django.core.exceptions import ValidationError
 from django.db.models import Prefetch
 
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.tenants.models import TenantProduct, TenantProductTerm
 from apps.tenants.organisation import active_member, changed, iso, locked, org_unit_of, person, ref
@@ -26,14 +25,6 @@ from apps.tenants.schemas import (
     TenantProductPatch,
 )
 from apps.tenants.terms import Term, scope_terms, term_refs
-
-
-def product_of(tenant: Tenant, product_id: uuid.UUID) -> TenantProduct:
-    """The product, in the caller's bank and under its row-level security, or 404."""
-    product = TenantProduct.objects.filter(tenant=tenant, pk=product_id).first()  # ordering: pk lookup, at most one row
-    if product is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
-    return product
 
 
 def _snapshot(product: TenantProduct, terms: list[Term]) -> dict[str, Any]:

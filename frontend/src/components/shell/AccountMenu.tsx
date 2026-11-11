@@ -14,7 +14,8 @@ import { useLanguages } from '@/features/tenant-admin/hooks';
 import type { LanguageRef } from '@/features/tenant-admin/types';
 import { isLocale } from '@/shared/i18n';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
-import { ACCOUNT_PARENT, childDestinations, homeOf, PUBLIC_HOME } from '@/shared/navigation/registry';
+import { leaveForPublicPage } from '@/shared/navigation/leave';
+import { ACCOUNT_PARENT, childDestinations, homeOf } from '@/shared/navigation/registry';
 
 // The signed-in person as one quiet row in the rail's footer: name, then
 // organisation and roles, and a menu for my passkeys, my sessions, where to
@@ -95,7 +96,7 @@ export function useContextSwitch(): { options: { value: string; label: string }[
  */
 export function useSignOutToPublicPage(): { pending: boolean; signOut: () => void } {
   const router = useRouter();
-  const signOut = useSignOut(() => router.replace(isDemoFrame() ? '/' : PUBLIC_HOME));
+  const signOut = useSignOut(() => (isDemoFrame() ? router.replace('/') : leaveForPublicPage()));
   return { pending: signOut.isPending, signOut: () => signOut.mutate() };
 }
 

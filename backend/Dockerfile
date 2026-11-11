@@ -9,8 +9,12 @@
 # scanned clean the same day. Now Poetry lives only in the builder, the runtime copies the
 # finished virtualenv, and pip is removed from both because nothing installs at runtime.
 # The gate is "no MEDIUM or above finding in the image, fixed or not" (ADR 0025).
+#
+# Both stages name the base by digest, so a rebuild of the same commit gets the same
+# base and a changed upstream image arrives as a reviewed Dependabot pull request
+# (`docker` ecosystem in .github/dependabot.yml), never silently (review 2026-11-11 L-12).
 
-FROM python:3.12-alpine AS builder
+FROM python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7 AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -34,10 +38,15 @@ RUN poetry install --only main --no-root \
               /app/.venv/bin/pip /app/.venv/bin/pip3 /app/.venv/bin/pip3.12
 
 
-FROM python:3.12-alpine AS runtime
+FROM python:3.12-alpine@sha256:e064671ca452259bab50e8e2c7bd896e39e9a343bb06ca25234adf6fe18d0fc7 AS runtime
 
+# ENVIRONMENT=production unless the host says otherwise: the settings default is `local`
+# for laptops, and an image started anywhere without the variable must keep every boot
+# guard on, not boot with the public default SECRET_KEY (review 2026-11-11 S-14). Railway
+# sets ENVIRONMENT=test or the deployed name, which overrides this.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    ENVIRONMENT=production \
     PATH="/app/.venv/bin:$PATH"
 
 # Alpine security updates for the base, then the system pip goes: the runtime installs

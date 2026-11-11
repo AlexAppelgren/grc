@@ -1,13 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { RegisterEntityStatus, RegisterEntry } from '@/features/register/types';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { withPanels } from '@/features/register/testing';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { answersOf, ObligationApplicabilityPanel } from './ObligationApplicabilityPanel';
 
@@ -74,26 +72,15 @@ const SPAN = [
 
 function serve(read: RegisterEntry | number, span = SPAN, write: (sent: Sent) => { status: number; data?: unknown } = () => ({ status: 200, data: {} })): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path === '/api/v1/obligations/ob-1/register/entities') return { status: 200, data: span };
     if (sent.method === 'put') return write(sent);
     if (typeof read === 'number') return { status: read, data: { detail: 'no', code: 'server_error' } };
     return { status: 200, data: withPanels(read, { spannedEntities: span }) };
-  });
+  }, { me: ME });
 }
 
 function renderPanel(permissions: string[] = ['register.read', 'applicability.approve']) {
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <ObligationApplicabilityPanel obligationId="ob-1" />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  return renderWith(<ObligationApplicabilityPanel obligationId="ob-1" />, { permissions });
 }
 
 const puts = (sent: Sent[]) => sent.filter((call) => call.method === 'put');

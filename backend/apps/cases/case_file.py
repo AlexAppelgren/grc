@@ -1,26 +1,15 @@
 """The case file: one case's whole story as text that stands alone (CAS-07).
 
-An auditor reads it without the product beside it, so it says everything in words: the
-change and where it came from, the bank's "So what?", the assessment, every action and
-what became of it, every piece of evidence with its hash and scan, the sign-off with both
-people and the step-up that confirmed it, the dismissal or the close, every move, and
-everyone who took part, with the contributing teams on the assessment (D-20). A removed
-action, piece of evidence or participation is printed and marked, never left out: nothing is
-overwritten (playbook 4.3). An unconfirmed "So what?" is the AI's draft and is labelled
-as one, never presented as the bank's text (WAT-05).
+An auditor reads it without the product, so it says everything in words: the change and its
+source, the "So what?", the assessment, every action, every piece of evidence with hash and
+scan, the sign-off with both people and the step-up, dismissal or close, every move and every
+participant (D-20). Removed items are printed and marked, never left out (playbook 4.3). An
+unconfirmed "So what?" is labelled as the AI's draft (WAT-05).
 
-The text is written from the catalog below in the reader's language, in the manner of
-`apps/home/mail.py`: English and Swedish, and English for a language this module does not
-hold. It names no requirement, column or permission. Dates and times are in the bank's
-own time zone with the offset spelled out.
-
-One builder serves both the screen and the export (`apps/reports/exporters/case_file.py`),
-so the two cannot drift. It reads a fixed number of queries whatever the case holds — the
-case with its reasons and the sign-off's step-up, its people's names, one label query per
-reason it carries, the participants and their teams' labels, the assessment, the actions,
-the evidence and the moves — and reads the actions, the evidence and the moves as plain
-values rather than models, so a case at its caps stays inside the request budget. It reads
-and never writes.
+Written from the catalog below in the reader's language (English fallback), naming no
+requirement, column or permission; times in the bank's zone with the offset. One builder for
+the screen and the export (`apps/reports/exporters/case_file.py`), a fixed number of queries,
+reading actions, evidence and moves as plain values to stay inside the budget. Reads only.
 """
 
 from __future__ import annotations
@@ -37,16 +26,15 @@ from apps.cases.models import Action, CaseTransition, ChangeCase, Evidence, Evid
 from apps.collab.models import Participant
 from apps.identity.models import User
 from apps.shared.audit import Actor
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.vocabulary import label_for
 
 FALLBACK_LANGUAGE = "en"
 
-# What the file joins beside the case. The people it names are read by name in one query
-# of their own: a case joined to a dozen tables costs the planner longer to order than the
-# whole file takes to read.
+# What the file joins beside the case. People are read by name in a query of their own: a
+# dozen-table join costs the planner more than the whole read.
 JOINS = ("change", "urgency", "sub_status", "dismissed_reason", "close_reason")
 
 _TEXTS: dict[str, dict[str, str]] = {
@@ -229,7 +217,7 @@ def case_file(*, tenant: Tenant, actor: Actor, user: Any, order: list[str], chan
     read once, with everything the file joins beside it."""
     case = _cases(tenant).filter(change_id=change_id).first()  # ordering: unique (tenant, change)
     if case is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return _write(tenant, case, order)
 
 

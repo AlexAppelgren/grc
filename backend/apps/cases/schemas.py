@@ -16,7 +16,7 @@ every write that moves a case or changes its assessment takes `If-Match` with th
 none and still bumps `version`, so a screen holding an older copy is told. Only the sign-off approval takes a passkey step-up (playbook 4.2). No route here
 takes an idempotency key: these are a person's clicks, not an agent's retries.
 
-A vocabulary value is a key on a write and `{key, kind, label}` on a read (`CasesVocabularyRef`),
+A vocabulary value is a key on a write and `{key, kind, label}` on a read (`VocabRef`),
 drawn from one of the bank's own lists — sub-statuses, dismissal and close reasons, effort
 sizes — which the bank's admin extends without a deploy; an unknown key answers 422
 `unknown_key`.
@@ -32,9 +32,9 @@ from ninja import Field
 from pydantic import ConfigDict
 from pydantic.json_schema import JsonDict
 
-from apps.library.schemas import SHOWN_NAME, LibraryRef
-from apps.shared.schemas import CamelSchema, LibraryResponse, WriteBody
-from apps.taxonomy.schemas import PersonRef
+from apps.library.schemas import SHOWN_NAME
+from apps.shared.schemas import CamelSchema, WriteBody
+from apps.shared.schemas import NamedRef, VocabRef
 
 __all__ = ["CamelSchema"]
 
@@ -335,40 +335,8 @@ EVIDENCE_EXAMPLE: JsonDict = {
 }
 
 
-class CasesVocabularyRef(LibraryResponse):
-    """A value from one of the bank's own lists as a read answers it: key and kind, and the
-    label in the reader's language. The bank's own zone: its admin manages these rows, and
-    no other bank sees them."""
-
-    model_config = ConfigDict(json_schema_extra={"examples": [{"key": "out_of_scope", "kind": None, "label": "Out of scope"}]})
-
-    key: str = Field(
-        description=(
-            "The row's immutable key, and the only part of this reference to store, compare or "
-            "send back. It is drawn from the bank's own vocabulary that the field carrying it "
-            "names; an admin may extend, relabel or retire those rows without a deploy, so a "
-            "key you have not seen before is new data and not an error."
-        ),
-        examples=["out_of_scope"],
-    )
-    kind: str | None = Field(
-        description=(
-            "The fixed category the row sits in, where its list has one: a sub-status names "
-            "the case category it belongs to (`new`, `assigned`, `assessing`, `implementing`, "
-            "`signoff`, `closed` or `dismissed`), and a close reason one of `signed_off`, "
-            "`no_action` or `not_applicable`. Null for a list without categories, such as "
-            "dismissal reasons and effort sizes. Never a tone: a pill's tone follows its slot."
-        ),
-        examples=[None],
-    )
-    label: str = Field(
-        description=(
-            "The value's name in the reader's language, falling back to the bank's default "
-            "language and then to the key. For display only: an admin may reword it at any "
-            "time, so nothing may match on it."
-        ),
-        examples=["Out of scope"],
-    )
+# Published as `VocabRef` (review 2026-11-11 B-2); the name the logic modules import.
+CasesVocabularyRef = VocabRef
 
 
 class CasesAssessment(CamelSchema):
@@ -412,7 +380,7 @@ class CasesAssessment(CamelSchema):
         ),
         examples=["2026-10-15"],
     )
-    effort: CasesVocabularyRef | None = Field(
+    effort: VocabRef | None = Field(
         description=(
             "How big the work is, from the bank's `effort_size` vocabulary, `s`, `m` and `l` "
             f"on day one. {_TENANT_LIST} Null when nobody has sized it."
@@ -425,7 +393,7 @@ class CasesAssessment(CamelSchema):
         ),
         examples=[True],
     )
-    saved_by: PersonRef | None = Field(description=f"Who last saved it. {_PERSON} Null until it is saved.")
+    saved_by: NamedRef | None = Field(description=f"Who last saved it. {_PERSON} Null until it is saved.")
     saved_at: datetime.datetime | None = Field(
         description=f"When it was last saved, as {_TIMESTAMP}. Null until it is saved.",
         examples=["2026-09-18T10:04:00Z"],
@@ -465,14 +433,14 @@ class CasesCase(CamelSchema):
         ),
         examples=["assessing"],
     )
-    sub_status: CasesVocabularyRef | None = Field(
+    sub_status: VocabRef | None = Field(
         description=(
             "The bank's own finer step inside the category, from its `case_sub_status` "
             f"vocabulary, whose `kind` is the category it sits in; day one seeds one per category, keyed like it. {_TENANT_LIST} "
             "Null when the bank uses none here."
         )
     )
-    urgency: LibraryRef = Field(
+    urgency: VocabRef = Field(
         description=(
             "How soon this bank must act, as `{key, kind, label}` from the `urgency` library "
             "vocabulary, `act_now`, `within_3_months`, `six_months_plus`, `monitor` or "
@@ -494,36 +462,36 @@ class CasesCase(CamelSchema):
         ),
         examples=[True],
     )
-    owner: PersonRef | None = Field(description=f"Who owns the case, named at triage. {_PERSON} Null before triage.")
-    owner_team: CasesVocabularyRef | None = Field(description=OWNER_TEAM_REF)
-    triaged_by: PersonRef | None = Field(description=f"Who triaged the case. {_PERSON} Null before triage.")
+    owner: NamedRef | None = Field(description=f"Who owns the case, named at triage. {_PERSON} Null before triage.")
+    owner_team: VocabRef | None = Field(description=OWNER_TEAM_REF)
+    triaged_by: NamedRef | None = Field(description=f"Who triaged the case. {_PERSON} Null before triage.")
     triaged_at: datetime.datetime | None = Field(
         description=f"When the case was triaged, as {_TIMESTAMP}. Null before triage.", examples=["2026-09-17T08:40:00Z"]
     )
-    dismissed_reason: CasesVocabularyRef | None = Field(
+    dismissed_reason: VocabRef | None = Field(
         description=(
             "Why the bank dismissed the change, from its `dismissal_reason` vocabulary, "
             f"`out_of_scope`, `duplicate` and `already_covered` on day one. {_TENANT_LIST} "
             "Null unless the case is or was dismissed."
         )
     )
-    dismissed_by: PersonRef | None = Field(description=f"Who dismissed it. {_PERSON} Null unless it was dismissed.")
+    dismissed_by: NamedRef | None = Field(description=f"Who dismissed it. {_PERSON} Null unless it was dismissed.")
     dismissed_at: datetime.datetime | None = Field(
         description=f"When it was dismissed, as {_TIMESTAMP}. Null unless it was dismissed.", examples=[None]
     )
-    signoff_requested_by: PersonRef | None = Field(
+    signoff_requested_by: NamedRef | None = Field(
         description=f"Who asked for sign-off; this person can never sign it off. {_PERSON} Null until someone asks."
     )
     signoff_requested_at: datetime.datetime | None = Field(
         description=f"When sign-off was asked for, as {_TIMESTAMP}. Null until someone asks.", examples=[None]
     )
-    signed_off_by: PersonRef | None = Field(
+    signed_off_by: NamedRef | None = Field(
         description=(
             f"The second person who signed the case off with a passkey. {_PERSON} Never the "
             "person who asked, which the database itself refuses. Null until it is signed off."
         )
     )
-    close_reason: CasesVocabularyRef | None = Field(
+    close_reason: VocabRef | None = Field(
         description=(
             "Why the case was closed, from the bank's `close_reason` vocabulary, whose `kind` is "
             "one of `signed_off` (a second person signed it off), `no_action` or `not_applicable` "
@@ -780,14 +748,14 @@ class CasesAction(CamelSchema):
         description=f"What must be done, at most {ACTION_TITLE_MAX} characters. Tenant content.",
         examples=["Document the annual research quality criteria"],
     )
-    owner: PersonRef = Field(description=f"Who must do it. {_PERSON}")
+    owner: NamedRef = Field(description=f"Who must do it. {_PERSON}")
     due_date: datetime.date = Field(
         description="When it is due, as a plain calendar date (`2026-10-10`) the bank chose. Overdue is judged in the bank's own time zone.",
         examples=["2026-10-10"],
     )
     done: bool = Field(description="Whether the action is done. Sign-off waits until every live action is.", examples=[False])
     done_at: datetime.datetime | None = Field(description=f"When it was marked done, as {_TIMESTAMP}. Null while open.", examples=[None])
-    done_by: PersonRef | None = Field(description=f"Who marked it done. {_PERSON} Null while open.")
+    done_by: NamedRef | None = Field(description=f"Who marked it done. {_PERSON} Null while open.")
     created_at: datetime.datetime = Field(description=f"When it was added, as {_TIMESTAMP}. Set by the server.", examples=["2026-09-18T10:12:00Z"])
     version: int = Field(
         description="The action's version, starting at 1 and raised by every edit. Send it in `If-Match` on `PATCH /actions/{actionId}`.",
@@ -904,7 +872,7 @@ class CasesEvidence(CamelSchema):
         ),
         examples=["clean"],
     )
-    uploaded_by: PersonRef = Field(description=f"Who added it. {_PERSON}")
+    uploaded_by: NamedRef = Field(description=f"Who added it. {_PERSON}")
     uploaded_at: datetime.datetime = Field(description=f"When it was added, as {_TIMESTAMP}. Set by the server.", examples=["2026-09-19T13:20:00Z"])
 
 

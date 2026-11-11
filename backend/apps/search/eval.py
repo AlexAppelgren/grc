@@ -1,41 +1,20 @@
 """The real retriever of the release gate (SRC-05, AC-SRC1, playbook 16).
 
-`scripts/search_eval.py --retriever apps.search.eval:Retriever` asks it the labelled
-questions of `eval/retrieval.jsonl` and scores the stable keys it answers, best first. It
-answers through `hybrid.run_search`, the statement `POST /search` runs, over the library
-`seed_demo` loads from `apps/library/fixtures/prototype_data.json`, indexed and embedded the
-way `reindex_library` and the sweep behind it leave it. The bank asking has narrowed
-nothing, so the whole library is in its scope: a footprint with no terms restricts no
-dimension (`apps/taxonomy/matching.py`). It asks for the widest page the API serves, so a
-hit anywhere in the answer counts, which is what a question expecting no answer needs.
+`scripts/search_eval.py --retriever apps.search.eval:Retriever` asks the questions of
+`eval/retrieval.jsonl` through `hybrid.run_search`, the statement `POST /search` runs, over
+the `seed_demo` fixture library, indexed and embedded. The asking bank has an empty
+footprint, so the whole library is in scope, and the widest page is asked for.
 
-**The day it asks on is the corpus's, not the calendar's.** The fixture is dated around its
-own anchor day (`_meta.anchor_date`), and a question without an `as_of` is asked on that
-day. Asked on today's date instead, a version that comes into force next month would change
-the text searched, and the score, with no change to the code or the corpus.
-
-**Where the corpus lives: never in the development database.** A gate that seeded it would
-file sample records among whatever a developer was doing there, and score whatever they had
-changed. Inside the test runner (SRC-S8) the database already is the runner's throwaway
-one, and the corpus is built in the test's own transaction. From the command line the
-retriever does what the runner does, with the runner's own `setup_databases`: Django on
-`config.test_settings` (unless DJANGO_SETTINGS_MODULE names another), a database migrated
-from zero, every alias that mirrors `default` (`app`, the production role) pointed at it,
-and all of it dropped when the process ends. It is named
-`test_<database>_search_eval_<process id>`, so it collides neither with a `manage.py test`
-in the same worktree slot nor with a second evaluation running beside it.
-
-The tenant that asks is made with the test factory, deliberately: this code runs only in a
-throwaway database (`seed_demo` also refuses a deployed one), and a bank made there needs
-no audit trail. It is found by its slug before it is made, so every step of building the
-corpus is idempotent and four retrievers in one test share one bank.
-
-**Mock or real.** `is_mock` is true when any adapter in the chain is a mock — the embedder,
-the reranker, or both — and `name` names each one, so the harness's report says which chain
-ran and `--record` refuses a baseline a mock earned. `none` is not a mock: it is the
-contracted state before D-09 names a model, the keyword leg and the fused order alone.
-Under the test settings the embedder is always the mock, so no run of this retriever can be
-recorded until a real model is configured (docs/TODO_FOR_alex.md, D-09).
+- A question without `as_of` is asked on the fixture's `_meta.anchor_date`, so the score
+  moves only with the code or the corpus, never the calendar.
+- The corpus never lives in the development database: in the test runner it is the
+  runner's throwaway database; from the command line the retriever sets one up the same way
+  (`setup_databases`, migrated from zero, every alias of `default` pointed at it), named
+  `test_<database>_search_eval_<pid>`, and drops it at exit.
+- The tenant is made with the test factory (throwaway database only), found by slug first,
+  so building the corpus is idempotent.
+- `is_mock` is true when any adapter in the chain is a mock, so `--record` refuses a
+  baseline a mock earned; `none` (no model yet, D-09) is not a mock.
 """
 
 from __future__ import annotations
@@ -67,9 +46,7 @@ TENANT_SLUG = "search-evaluation"
 
 class Retriever:
     """`search(query, lang, as_of) -> [stable keys, best first]` over the fixture corpus.
-
-    Models are imported inside the methods: the harness imports this module before Django
-    is set up, and setting it up is the constructor's first job."""
+    Models are imported inside the methods, since Django is set up by the constructor."""
 
     def __init__(self) -> None:
         _throwaway_database()

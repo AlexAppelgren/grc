@@ -21,7 +21,7 @@ padding, the `meta` type role (13 / 18) at 500 weight, no border. A label
 wider than its container wraps inside the pill and never runs past the card.
 A label is one to three words: an instrument whose short name is longer
 shows its compact official reference instead, `BEK 330/2016` or
-`EU 2016/167` (D-132), which the API sends as `shortName`. shadcn's
+`EU 2016/167` (D-133), which the API sends as `shortName`. shadcn's
 current Badge is fully rounded too; buttons, toggles and the current nav row
 are 6 px, the current tab in the tab bar 16 px and the floating tab bar itself
 20 px, rounder but not fully rounded (`navigation.md`, Alex 2026-10-03). So the

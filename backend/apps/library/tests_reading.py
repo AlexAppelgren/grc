@@ -35,7 +35,6 @@ from apps.library import testing as build
 from apps.library.models import Instrument, InstrumentSummary, Obligation, ObligationTerm, Provision
 from apps.library.reading import instrument_scope_term_ids, instrument_scopes, obligation_scopes, scope_term_ids
 from apps.library.schemas import ObligationRow
-from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.seeds.library import seed_authorities
 from apps.proposals.models import Proposal
 from apps.shared import factories, tenancy
@@ -46,7 +45,7 @@ from apps.shared.middleware import RequestIdLogFilter
 from apps.shared.models import Tenant
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
 from apps.taxonomy.models import FootprintTerm
-from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+from apps.shared.testing import seed_reference
 
 URL = "/api/v1/obligations"
 D = datetime.date
@@ -90,14 +89,6 @@ LIST_QUERIES = 2 + 2 + 2 + 2 + 2 + 5 + 2 + 5 + 2 + 1 + 1
 DETAIL_QUERIES = 2 + 2 + 1 + 6 + 5 + 4 + 2 + 2 + 3 + 1 + 1
 # Who confirmed a version the library was seeded with: nobody, since nobody approved it.
 SEEDED = {"verifiedOrigin": "", "confirmedByAgent": None, "proposedByAgent": None}
-
-
-def seed_reference() -> None:
-    seed_languages()
-    seed_jurisdictions()
-    seed_library_vocabularies()
-    seed_taxonomy_terms()
-    seed_authorities()
 
 
 def set_footprint(tenant: Tenant, refs: tuple[str, ...]) -> None:

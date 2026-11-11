@@ -14,11 +14,18 @@ named the role and the tables it owns.
 
 from __future__ import annotations
 
+import uuid
+from typing import Any, cast
+
+import psycopg
+from django.conf import settings
 from django.db import DEFAULT_DB_ALIAS, connections
 from django.test import TestCase, override_settings
+from psycopg import sql
 
 from apps.shared import db_role_guard
 from apps.shared.db_role_guard import RoleGuardError, check_role, inspect_role
+from apps.shared.tests_production_guard import _with_database
 
 
 class DatabaseRoleGuard(TestCase):
@@ -29,7 +36,31 @@ class DatabaseRoleGuard(TestCase):
         self.assertEqual(facts.role, "cw_app")
         self.assertFalse(facts.is_superuser)
         self.assertFalse(facts.bypasses_rls)
+        self.assertFalse(facts.creates_roles)
         self.assertEqual(facts.owned_tables, ())
+
+    def test_a_member_of_the_owner_and_a_role_creator_are_refused(self) -> None:
+        """Review 2026-11-11 L-7: `GRANT cw_migrator TO cw_app` passed the guard, because
+        it read only the tables the role owns itself, and a CREATEROLE role can grant
+        itself more. Two throwaway roles live inside one superuser transaction that is
+        rolled back, so no other connection on the cluster ever sees them."""
+        test_db = connections[DEFAULT_DB_ALIAS].settings_dict["NAME"]
+        migrator = connections[DEFAULT_DB_ALIAS].settings_dict["USER"]
+        member, creator = (f"cw_l7_{name}_{uuid.uuid4().hex[:10]}" for name in ("member", "creator"))
+        with psycopg.connect(_with_database(settings.TEST_SUPERUSER_DATABASE_URL, test_db)) as admin:
+            try:
+                admin.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(member)))
+                admin.execute(sql.SQL("GRANT {} TO {}").format(sql.Identifier(migrator), sql.Identifier(member)))
+                admin.execute(sql.SQL("CREATE ROLE {} NOLOGIN CREATEROLE").format(sql.Identifier(creator)))
+                for role, problem in ((member, "owns tables"), (creator, "has CREATEROLE")):
+                    with self.subTest(role=role):
+                        admin.execute(sql.SQL("SET ROLE {}").format(sql.Identifier(role)))
+                        with self.assertRaises(RoleGuardError) as caught:
+                            check_role(cast(Any, admin))
+                        self.assertIn(problem, str(caught.exception))
+                        admin.execute("RESET ROLE")
+            finally:
+                admin.rollback()
 
     def test_the_migrator_is_refused_because_it_owns_the_tables(self) -> None:
         facts = inspect_role(connections[DEFAULT_DB_ALIAS])

@@ -1,13 +1,11 @@
 """The tier-one allowlist: enums that are kinds (playbook 15, INPUT_DELTAS §1).
 
-An enum in code is a kind: a thing the rules branch on, owned by engineering through a
-PRD bump. Everything an admin might add, rename or retire is a vocabulary row. The
-"kinds only" guard (apps/shared/tests_kinds_only.py) and scripts/compliance_check.py
-both read this file: every `TextChoices`, `IntegerChoices`, `Enum` or Postgres enum
-under apps/ must have its class name here, with the delta name it implements and a
-reason. Adding a name here is a code review question, not a formality.
+An enum in code is a kind: a thing the rules branch on, changed only through a PRD bump;
+anything an admin might add, rename or retire is a vocabulary row. The kinds-only guard
+(apps/shared/tests_kinds_only.py) and scripts/compliance_check.py read this file: every enum
+under apps/ must be named here with its delta name and a reason.
 
-This module is plain Python on purpose: the compliance lint imports it without Django.
+Plain Python on purpose: the compliance lint imports it without Django.
 """
 
 from __future__ import annotations
@@ -16,11 +14,8 @@ import enum
 
 
 class CaseStatusCategory(enum.StrEnum):
-    """The seven fixed categories the case state machine reads (D-13, VOC-04).
-
-    Here and not in apps/taxonomy/models.py so apps/cases/state.py stays a pure module
-    with no model import; apps.taxonomy.models re-exports it for every other caller.
-    """
+    """The seven fixed categories the case state machine reads (D-13, VOC-04). Here so
+    apps/cases/state.py stays a pure module; apps.taxonomy.models re-exports it."""
 
     NEW = "new"
     ASSIGNED = "assigned"
@@ -108,7 +103,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "ungated_reason",
         "Playbook 5: the five shapes a route may give for having no permission gate",
     ),
-    # Chunk 1 (identity and tenant admin basics). Each is something the rules branch on.
+    # Identity and tenant admin.
     "TenantStatus": ("tenant_status", "TEN-01: active or deactivated; every request branches on it"),
     "Weekday": ("digest_weekday", "COL-02: the seven days of the week; the digest's schedule branches on it"),
     "UserStatus": ("user_status", "ID-02, ID-03: invited, active or deactivated; sign-in branches on it"),
@@ -120,9 +115,8 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "LoginEventKind": ("login_event", "ID-11: what the security log records; the log is a ledger, not a picker"),
     "SupportAccessLevel": ("support_access_level", "ID-05, TEN-06: read or write support access"),
     "SupportAccessStatus": ("support_access_status", "TEN-06: requested, approved, declined, revoked or expired; the decisions branch on it"),
-    # Chunk 2 (vocabularies, taxonomy and footprint). Each is a category the rules read
-    # off a vocabulary row's fixed `kind`; the row's label, translations and usage note
-    # stay an admin's to change (playbook 15, INPUT_DELTAS §1).
+    # Vocabularies, taxonomy and footprint: categories the rules read off a row's fixed
+    # `kind`; the label and translations stay an admin's (playbook 15).
     "TermDimensionKind": (
         "term_dimension_kind",
         "FP-01, D-36: a scope dimension may restrict the footprint, a classification never does, and an "
@@ -161,9 +155,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "suggestion_status",
         "VOC-03: a member's suggestion is pending, accepted (the row was created) or declined; the admin's inbox branches on it",
     ),
-    # Chunk 7 (search and ask). The API's own kinds: what a hit points at, how it was
-    # matched, and what a reader said about an answer. Each has its own delta name;
-    # `search_source` above stays the chunk table's own column, which the index owns.
+    # Search and Ask: what a hit points at, how it was matched, what a reader said.
     "SearchHitType": (
         "search_hit_type",
         "SRC-01: a hit is an obligation, a provision or a change; the screen and the ranking branch on it",
@@ -181,13 +173,12 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "answer_feedback",
         "SRC-03, SRC-05: helpful or wrong; the evaluation set reads the verdict back",
     ),
-    # Chunk 3 (library and inventory).
+    # Library and inventory.
     "VerificationOutcome": (
         "verification_outcome",
         "INV-06: a re-verification found no change, found a change (a proposal follows) or could not reach the source; the re-verify queue branches on it",
     ),
-    # Chunk 5 (watch). `check_status`, `change_status` and `feed_filter` were already
-    # allowlisted above; these two are the build's own, recorded in INPUT_DELTAS §1.
+    # Watch (INPUT_DELTAS §1).
     "SourceCheckKind": (
         "source_check_kind",
         "WAT-01, AGT-01: a sweep for new documents or a re-check of one library record; the check names a subject only when it is a re-check",
@@ -196,10 +187,8 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "check_frequency",
         "WAT-01: how often a source is checked; the scheduler and the stale rule branch on it, and no admin adds a cadence",
     ),
-    # Chunk 6 (home, the briefing, the roadmap and the calendar feed). Both live as literals
-    # in apps/home/schemas.py, because the roadmap is computed and has no table of its own;
-    # they are declared here because they are kinds the code branches on, and an engineer
-    # looking for the list of kinds must find them where every other one is written down.
+    # Home, the briefing, the roadmap and the calendar feed: literals in apps/home/schemas.py,
+    # computed with no table, listed here because the code branches on them.
     "RoadmapItemKind": (
         "roadmap_item_kind",
         "HOM-03: a roadmap item is about a date the outside world set or one this bank set; "
@@ -211,7 +200,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "an action due, a review due, a gap target, a duty due, or a certificate's expiry or audit; the card "
         "and the calendar builder branch on it",
     ),
-    # Chunk 8 organisation and chunk 11 security policy (c8-org-models, tenants 0002).
+    # Organisation and security policy.
     "OrgUnitKind": (
         "org_unit_kind",
         "TEN-02, D-21: a group, legal entity, business area, business unit or function; only a legal "
@@ -226,8 +215,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "credential_policy",
         "ID-07, ADR 0048: any passkey or device-bound only; sign-in and enrolment branch on it",
     ),
-    # Chunk 8's register lists (c8-vocab-lists-rules). Categories the rules read off a
-    # tenant row's fixed `kind`; the tenant's labels, order and extra rows stay its own.
+    # The register's lists: categories the rules read off a tenant row's fixed `kind`.
     "GapCategory": (
         "gap_category",
         "REG-03, VOC-04: open, remediating, risk accepted or closed; the gap workflow, the reports and the pill tone read the category, never the tenant's label",
@@ -236,14 +224,13 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "risk_level",
         "VOC-05: low, medium or high; the pill tone reads the level a risk rating maps to, never its editable ordinal or its label",
     ),
-    # Chunk 9 (c9-case-models). The evidence scan; `c9-scanner-adapter` adds the adapters
-    # that answer it.
+    # The evidence scan.
     "ScanState": (
         "scan_state",
         "CAS-05: a stored file is pending, clean, infected or error; the download serves "
         "only `clean`, and a new row starts `pending`, so an unscanned file is never shown",
     ),
-    # Chunk 10 (c10-collab-models): the notification and the mail it may send.
+    # Notifications and their mail.
     "NotificationKind": (
         "notification_kind",
         "COL-02: what a notification is about; the inbox, the preferences, delegation and the "
@@ -260,9 +247,8 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "COL-02: queued, sent, delivered, bounced or failed; the delivery task and the "
         "provider's callback branch on it, and no admin adds a delivery state",
     ),
-    # Chunk 11 (agents 0004 and 0005, AGT-03 to AGT-06, INPUT_DELTAS §5). A definition is
-    # always bleqq's; what these say is which side of the platform fence it sits on and how
-    # the scheduler and the worker treat it and its runs.
+    # Agents (AGT-03 to AGT-06, INPUT_DELTAS §5): which side of the platform fence a
+    # definition sits on, and how the scheduler and worker treat it and its runs.
     "AgentScopeKind": (
         "agent_scope",
         "AGT-03, AGT-04, ADR 0053: one of bleqq's agents or a definition a bank may add for "
@@ -276,7 +262,7 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
     "AgentRuntime": (
         "agent_runtime",
         "AGT-06, D-54: which runner executes a definition; the worker picks its adapter by it, "
-        "and the boot refuses managed_agents on every deployed environment but test",
+        "and the boot refuses managed_agents on every environment (AGENT_RUNNER names no such value)",
     ),
     "AgentWritesTo": (
         "agent_writes_to",
@@ -300,21 +286,20 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "AGT-05: a request's lifecycle, queued to done, failed, rejected or cancelled; the "
         "worker and the request list branch on it",
     ),
-    # Chunk 8's register (c8-register-models, register 0001). `Applicability` is listed above.
+    # The register. `Applicability` is listed above.
     "AssessmentMethod": (
         "assessment_method",
         "REG-04: self-assessment, second-line review, internal audit, external audit or regulator "
         "(schema.sql); an audit result is an assessment of the two audit methods, which the standards "
         "reporting branches on",
     ),
-    # acc-foundation (identity 0007, ACC-03, D-77, ADR 0056).
+    # Credentials (ACC-03, D-77, ADR 0056).
     "CredentialKind": (
         "credential_kind",
         "ACC-03: a service key or a personal access token on one api_key table; authentication, "
         "the step-up fence and the api_key CHECKs branch on it",
     ),
-    # My work (c8-mywork-service, HOM-05, D-23). Literals in apps/home/schemas.py, because My
-    # work is computed and has no table of its own.
+    # My work (HOM-05, D-23): literals in apps/home/schemas.py, computed with no table.
     "WorkReason": (
         "work_reason",
         "HOM-05: owner or participant; the row's reason phrase branches on it with the person or team it names",
@@ -329,15 +314,21 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "HOM-05: what produced a row's date - a review, a gap target, a duty, an internal deadline, an action, "
         "a key date, a confirmed link, an applied version or a comment; the date phrase branches on it",
     ),
-    # c8-duty-occurrences (register 0004, REG-07).
+    # Recurring duties (REG-07).
     "DutyStatus": (
         "duty_status",
         "REG-07: where a dated duty occurrence stands; completion, the roadmap and Today branch on it",
     ),
-    # d89-scope-items-model (taxonomy 0012, OWN-01, D-91).
+    # Scope items (OWN-01, D-91).
     "ScopeItemStatus": (
         "scope_item_status",
         "OWN-01: a scope item is requested, in scope, declined or removed; the request logic and "
         "the bank's own agent's research branch on it, and no admin adds a state",
     ),
 }
+
+
+def choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
+    """A kind's values as Django `choices`: the value is its own label, since the API
+    returns keys and never a phrase."""
+    return [(member.value, member.value) for member in kind]

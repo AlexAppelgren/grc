@@ -1,14 +1,9 @@
 """The subject registry (CHUNK10_TASKS ruling 3): which records a notification or a comment
 may name, the permission that reads each, how to load one, and the title a person is shown.
 
-"Can this person read this record" is written once, here, and `notify()`, the comments and
-the mention check all read it. A later chunk adds a kind by adding one row; the registry
-test in `tests_notify.py` fails on a row whose permission is not a bank permission, whose
-lookup does not find its record or whose title is not a record title.
-
-A title is always the record's own title in the reader's language order (a library title,
-or the change's library title for a bank's case), never text a person typed (rule 13).
-Lookups run under the caller's row-level security, so another bank's record is not found.
+"Can this person read this record" is written once, here; a new kind is one row, and
+`tests_notify.py` checks each row. A title is always the record's own in the reader's
+language order, never typed text (rule 13). Lookups run under row-level security.
 """
 
 from __future__ import annotations
@@ -75,8 +70,8 @@ def _tenant_obligation_title(row: TenantObligation, order: list[str]) -> str:
     return _obligation_title(row.obligation, order)
 
 
-# c11-scheduler (AGT-04): one of the bank's own agents, which the cap paused. Read by the
-# people who steer those agents, and titled by its definition's key, never typed text.
+# One of the bank's own agents, which the cap paused (AGT-04). Read by those who steer the
+# agents, titled by its definition's key.
 def _tenant_agent(subject_id: uuid.UUID) -> TenantAgent | None:
     return TenantAgent.objects.select_related("agent").filter(pk=subject_id).first()  # ordering: pk lookup, at most one row
 
@@ -88,8 +83,7 @@ def _tenant_agent_title(row: TenantAgent, order: list[str]) -> str:
 SUBJECTS: dict[str, Subject] = {
     "obligation": Subject(read_permission=perms.LIBRARY_READ, lookup=_obligation, title=_obligation_title),
     "change_case": Subject(read_permission=perms.CASES_READ, lookup=_change_case, title=_change_case_title),
-    # c10-reminders-escalation-reviews: an action's reminders and escalation, and a register
-    # entry's review reminder.
+    # An action's reminders and escalation, and a register entry's review reminder.
     "action": Subject(read_permission=perms.CASES_READ, lookup=_action, title=_action_title),
     "tenant_obligation": Subject(
         read_permission=perms.REGISTER_READ, lookup=_tenant_obligation, title=_tenant_obligation_title

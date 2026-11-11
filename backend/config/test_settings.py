@@ -1,19 +1,12 @@
-"""Test settings (playbook 2.2): import everything, then override. Every override carries a
-numbered comment saying why. Tests run on PostgreSQL with pgvector, never SQLite.
+"""Test settings (playbook 2.2): import everything, then override, each override with a
+numbered reason. PostgreSQL with pgvector, never SQLite.
 
-Two database aliases:
-
-- `default` connects as cw_migrator. Django's test runner creates and drops the throwaway
-  database `test_compliance_watch`, which needs CREATEDB (granted to cw_migrator by
-  infra/db/init.sql) and table ownership for migrations. So the runner's own connection
-  is the schema owner, by design.
-- `app` connects as cw_app to the same throwaway database (TEST.MIRROR points it at
-  default's test database). Tests that must prove isolation or the role guard open this
-  alias: `connections["app"]` sees the tables the way production does, with row-level
-  security forced and no ownership. A test that uses it declares
-  `databases = {"default", "app"}`. Rows written inside a TestCase transaction on
-  `default` are invisible on `app` (different connection); use TransactionTestCase when
-  the proof needs committed rows.
+- `default` connects as cw_migrator, which owns the tables and may CREATEDB the throwaway
+  `test_compliance_watch` (infra/db/init.sql).
+- `app` connects as cw_app to the same database (TEST.MIRROR), with row-level security
+  forced and no ownership, for the isolation and role proofs (`databases = {"default",
+  "app"}`). Rows written in a TestCase transaction on `default` are invisible on `app`; use
+  TransactionTestCase for committed rows.
 """
 
 import os
@@ -56,7 +49,7 @@ TEST_SUPERUSER_DATABASE_URL = env_str(
 DB_ROLE_GUARD_ENABLED = False
 
 # (3) MD5 for any legacy hasher Django still loads. There is no auth app and no password
-#     (PRD ID-03); this only keeps a stray contrib import from spending 300 ms per hash.
+#     (PRD ID-03); this only keeps a stray contrib import from hashing slowly.
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 # (4) Eager Celery: tasks run inline in the calling transaction so a test sees their
@@ -92,15 +85,14 @@ AGENT_RUNNER = "mock"
 MAIL_PROVIDER = "mock"
 REGISTERS_PROVIDER = "mock"
 
-# (9) Stripped middleware: no CORS, no CSP, no HTTPS redirect. The security middleware is
-#     unit-tested directly in tests_middleware.py; the request ID and Server-Timing
-#     middleware stay because the audit and timing guards read their headers, and the
-#     access log's and the scope statement's because they are behaviour, not transport (ACC-08,
-#     acc-entries-and-log; ACC-07, acc-what-applies).
+# (9) Stripped middleware: no CORS, no CSP, no HTTPS redirect (tests_middleware.py tests the
+#     security middleware directly). Request ID and Server-Timing stay for the audit and
+#     timing guards; the access log and scope statement stay because they are behaviour
+#     (ACC-08, ACC-07).
 MIDDLEWARE = [
     "apps.shared.middleware.RequestIdMiddleware",
     "django.middleware.common.CommonMiddleware",
-    # c8-support-session-guard: a support session reads its allow-list and nothing else.
+    # A support session reads its allow-list and nothing else.
     "apps.shared.middleware.SupportReadOnlyMiddleware",
     "apps.governance.access_log.AccessLogMiddleware",
     "apps.shared.agent_access_guard.ScopeStatementMiddleware",

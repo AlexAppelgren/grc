@@ -1,10 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { SecurityPolicyScreen } from '@/components/admin/SecurityPolicyScreen';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH, setStepUpHandler } from '@/shared/utils/api-client';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { setStepUpHandler } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 // The bank's session limits (ID-08, ADM-01): each field shows the platform
 // maximum beside it, a save goes through the passkey step-up (the api client
@@ -22,8 +22,7 @@ const policy = {
   sessionAbsoluteHoursDefault: 12,
   sessionAbsoluteHoursMax: 24,
   updatedAt: null,
-  updatedBy: null,
-};
+  updatedBy: null };
 
 type Answer = { status: number; data: unknown };
 
@@ -33,7 +32,6 @@ const stepUpRequired: Answer = { status: 403, data: { code: 'step_up_required', 
 function server(answer?: (count: number, body: unknown) => Answer): Sent[] {
   let puts = 0;
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === PATH && sent.method === 'get') return { status: 200, data: policy };
     if (sent.path === PATH && sent.method === 'put') {
       puts += 1;
@@ -49,12 +47,7 @@ const IDLE = 'Sign out after this long without activity, in minutes';
 const ABSOLUTE = 'Sign out after this long in all, in hours';
 
 async function renderScreen(): Promise<void> {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <SecurityPolicyScreen />
-    </Query>,
-  );
+  renderWith(<SecurityPolicyScreen />);
   await screen.findByLabelText(IDLE);
 }
 
@@ -107,8 +100,7 @@ describe('the security page', () => {
   it('renders the 422 above_platform_maximum under the field it names, by its code', async () => {
     server(() => ({
       status: 422,
-      data: { code: 'above_platform_maximum', detail: 'server words', errors: [{ field: 'sessionAbsoluteHours', message: 'server words' }] },
-    }));
+      data: { code: 'above_platform_maximum', detail: 'server words', errors: [{ field: 'sessionAbsoluteHours', message: 'server words' }] } }));
     await renderScreen();
     fireEvent.change(screen.getByLabelText(ABSOLUTE), { target: { value: '25' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -135,31 +127,18 @@ describe('the security page', () => {
     let answered = false;
     const reachBeforePolicy: boolean[] = [];
     installAdapter((sent) => {
-      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (sent.path === '/api/v1/tenant/reach') reachBeforePolicy.push(!answered);
       if (sent.path === PATH) answered = true;
       return { status: 404, data: { code: 'not_found', detail: '' } };
     });
-    const { wrapper: Query } = queryWrapper();
-    render(
-      <Query>
-        <PermissionsProvider permissions={['security.manage']}>
-          <SecurityPolicyScreen />
-        </PermissionsProvider>
-      </Query>,
-    );
+    renderWith(<SecurityPolicyScreen />, { permissions: ['security.manage'] });
     await waitFor(() => expect(reachBeforePolicy.length).toBeGreaterThan(0));
     expect(reachBeforePolicy[0]).toBe(true);
   });
 
   it('offers a retry when the policy cannot be read', async () => {
-    installAdapter((sent) => (sent.path === REFRESH_PATH ? { status: 200, data: { accessToken: 'tok' } } : { status: 500, data: { code: 'server_error', detail: '' } }));
-    const { wrapper: Query } = queryWrapper();
-    render(
-      <Query>
-        <SecurityPolicyScreen />
-      </Query>,
-    );
+    installAdapter(() => ({ status: 500, data: { code: 'server_error', detail: '' } }));
+    renderWith(<SecurityPolicyScreen />);
     expect(await screen.findByText('Could not load the security policy')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled());
   });

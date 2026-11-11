@@ -1,31 +1,22 @@
-"""Models of the taxonomy app (VOC-01, VOC-02, VOC-07, FP-01, FP-02, FP-04, I18N-01; INPUT_DELTAS
-§1; schema v0.3 `taxonomy_term`, `footprint_term`, `footprint_history`, `tenant_tag`,
-`tagging`).
+"""Models of the taxonomy app (VOC-01, VOC-02, VOC-07, FP-01, FP-02, FP-04, I18N-01;
+INPUT_DELTAS §1).
 
 Three tiers (playbook 15):
 
 - Tier 1, kinds in code: the enums at the top, each in apps/shared/kinds.py.
 - Tier 2, library vocabularies: `LibraryVocabulary` subclasses with a label table each,
-  written only by an approved proposal (apps/proposals/apply.py) or a reference seed.
-  `TaxonomyTerm` is the one library list with a parent and a dimension.
-- Tier 3, tenant vocabularies: `TenantListVocabulary` subclasses under forced RLS, with
-  a label table that carries the tenant too. System rows are seeded per tenant by
-  apps/taxonomy/tenant_hooks.py and can be relabelled but not removed.
+  written only by an approved proposal or a reference seed. `TaxonomyTerm` is the one
+  library list with a parent and a dimension.
+- Tier 3, tenant vocabularies: `TenantListVocabulary` subclasses under forced RLS. System
+  rows are seeded per tenant and can be relabelled but not removed.
 
-A row's fixed `kind` is what the rules read: the lifecycle of a change type, the tone of
-an urgency, the category of a compliance status or case sub-status, whether a dimension
-restricts the footprint. Everything else on the row is an admin's.
+A row's fixed `kind` is what the rules read; everything else on the row is an admin's.
 
-The footprint (FP-01, FP-02): `FootprintTerm` rows are the company's terms; a change is
-a `FootprintChangeRequest` with a preview, decided by a second person (check constraint
-`footprint_change_request_four_eyes`), and every term switched leaves one
-`FootprintHistory` row (append-only) and one audit event. A request may also add or remove
-a `ScopeItem` (OWN-01, D-89): a regulation the library does not cover, which the bank's own
-agent researches and which no term matching ever reads.
-
-Markets (FP-04): the countries in the footprint are the ones the company operates in;
-`WatchedMarket` rows are the ones it watches instead. A market's level is computed from
-the two, never stored.
+The footprint (FP-01, FP-02): `FootprintTerm` rows, changed only through a
+`FootprintChangeRequest` a second person decides (`footprint_change_request_four_eyes`), each
+term switched leaving an append-only `FootprintHistory` row and an audit event. A request may
+add or remove a `ScopeItem` (OWN-01, D-89), which no matching reads. Markets (FP-04): a
+level is computed from the footprint and `WatchedMarket`, never stored.
 """
 
 from __future__ import annotations
@@ -42,7 +33,7 @@ from django.db import models
 from apps.shared.audit import AppendOnlyModel
 # Defined in kinds.py so the pure case state machine (apps/cases/state.py) reads them
 # without importing a model; every caller that imports them from here keeps working.
-from apps.shared.kinds import CaseStatusCategory as CaseStatusCategory
+from apps.shared.kinds import CaseStatusCategory as CaseStatusCategory, choices
 from apps.shared.kinds import CloseReason as CloseReason
 from apps.shared.tenancy import LibraryModel, TenantModel
 from apps.shared.vocabulary import (
@@ -54,13 +45,7 @@ from apps.shared.vocabulary import (
 )
 
 
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
-
-
-# ---------------------------------------------------------------------------------------
-# Kinds (tier one, apps/shared/kinds.py)
-# ---------------------------------------------------------------------------------------
+# --- Kinds (tier one, apps/shared/kinds.py) ---
 class PillTone(enum.StrEnum):
     """The six pill tones (NFR-03, design/system/pills-and-labels.md), named as Green names
     them. A vocabulary row whose kind is a tone (urgency) renders with it; never a seventh."""
@@ -171,16 +156,14 @@ class SuggestionStatus(enum.StrEnum):
     DECLINED = "declined"
 
 
-# ---------------------------------------------------------------------------------------
-# Tier 2: library vocabularies
-# ---------------------------------------------------------------------------------------
+# --- Tier 2: library vocabularies ---
 class TermDimension(LibraryVocabulary):
     """A taxonomy dimension (schema v0.3 `term_dimension`): `restricts_footprint` says
     whether a record's terms in it narrow the footprint (FP-01); `kind` says whether it
     describes scope, classifies or is opted into (an opt-in dimension restricts whatever the
     flag says, D-36)."""
 
-    KIND_CHOICES = _choices(TermDimensionKind)
+    KIND_CHOICES = choices(TermDimensionKind)
 
     restricts_footprint = models.BooleanField(default=True)
 
@@ -203,7 +186,7 @@ class InstrumentLevel(LibraryVocabulary):
     """Jurisdiction-neutral instrument levels with a binding default and a rank. The kind
     is optional: null on every level but `standard` (D-37)."""
 
-    KIND_CHOICES = _choices(InstrumentLevelKind)
+    KIND_CHOICES = choices(InstrumentLevelKind)
 
     binding_default = models.BooleanField(default=True)
     rank = models.PositiveIntegerField(default=0)
@@ -226,7 +209,7 @@ class InstrumentLevelLabel(LibraryVocabularyLabel):
 class ProvisionKind(LibraryVocabulary):
     """Provision kinds, optionally per jurisdiction, with a fixed structural kind."""
 
-    KIND_CHOICES = _choices(ProvisionStructuralKind)
+    KIND_CHOICES = choices(ProvisionStructuralKind)
 
     jurisdiction = models.ForeignKey("library.Jurisdiction", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
 
@@ -246,7 +229,7 @@ class ProvisionKindLabel(LibraryVocabularyLabel):
 
 
 class ChangeType(LibraryVocabulary):
-    KIND_CHOICES = _choices(ChangeLifecycleKind)
+    KIND_CHOICES = choices(ChangeLifecycleKind)
 
     class Meta:
         db_table = "change_type"
@@ -313,8 +296,8 @@ class SourceKindLabel(LibraryVocabularyLabel):
 
 class Urgency(LibraryVocabulary):
     """Urgency: `kind` is the pill tone (a tier-one kind), `ordinal` the fixed severity
-    order, `sla_days` the editable expectation. KIND_CHOICES is not declared because a
-    tone is not a category that must never go empty; the logic validates it."""
+    order, `sla_days` the editable expectation. No KIND_CHOICES: a tone need not keep a
+    row; the logic validates it."""
 
     KIND_VALUES = frozenset(tone.value for tone in PillTone)
 
@@ -391,22 +374,15 @@ class RejectionReasonLabel(LibraryVocabularyLabel):
         constraints = [models.UniqueConstraint(fields=["vocabulary", "language"], name="rejection_reason_label_unique")]
 
 
-# ---------------------------------------------------------------------------------------
-# Taxonomy terms (library)
-# ---------------------------------------------------------------------------------------
+# --- Taxonomy terms (library) ---
 class TaxonomyTerm(LibraryModel):
-    """One term of one dimension (schema v0.3 `taxonomy_term`): immutable key unique per
-    dimension, labels per language, an optional parent, retired never deleted. A new term
-    is a proposal (VOC-07). Not a `Vocabulary` subclass because a term list has no
-    default row and its kind is its dimension.
+    """One term of one dimension: immutable key unique per dimension, labels per language,
+    an optional parent, retired never deleted. A new term is a proposal (VOC-07). Not a
+    `Vocabulary`: a term list has no default row and its kind is its dimension.
 
-    `jurisdiction` is set on the terms that mirror a jurisdiction row (FP-04, D-28,
-    ADR 0026): the reference seed keeps them in step, and the rules that refuse a proposal
-    or a tagging in a mirrored dimension read this column rather than a dimension key.
-
-    `verified_origin`, `verified_by_agent` and `applied_by_proposal` are the term's
-    machine-confirmed provenance, kept exactly as on every library list
-    (`LibraryVocabulary`, INV-05, D-62, D-79); blank and null on a seeded term."""
+    `jurisdiction` is set on the terms that mirror a jurisdiction row (FP-04, D-28, ADR
+    0026); the rules on mirrored dimensions read this column, never a dimension key. The
+    provenance columns are a `LibraryVocabulary`'s (INV-05, D-62, D-79)."""
 
     dimension = models.ForeignKey(TermDimension, on_delete=models.PROTECT, related_name="terms")
     key = models.SlugField(max_length=80)
@@ -440,9 +416,7 @@ class TaxonomyTermLabel(LibraryVocabularyLabel):
         constraints = [models.UniqueConstraint(fields=["term", "language"], name="taxonomy_term_label_unique")]
 
 
-# ---------------------------------------------------------------------------------------
-# Tier 3: tenant vocabularies (under forced RLS)
-# ---------------------------------------------------------------------------------------
+# --- Tier 3: tenant vocabularies (under forced RLS) ---
 class TenantTag(TenantListVocabulary):
     class Meta:
         db_table = "tenant_tag"
@@ -517,7 +491,7 @@ class ComplianceStatus(TenantListVocabulary):
     """A tenant's compliance scale (VOC-05): `kind` is the fixed category, `ordinal` the
     fixed order reports sort by."""
 
-    KIND_CHOICES = _choices(ComplianceCategory)
+    KIND_CHOICES = choices(ComplianceCategory)
 
     ordinal = models.PositiveIntegerField(default=0)
 
@@ -541,7 +515,7 @@ class RiskRating(TenantListVocabulary):
     """A tenant's risk scale (VOC-05): `kind` is the fixed level the tone reads, `ordinal`
     the bank's own order, which an admin may edit."""
 
-    KIND_CHOICES = _choices(RiskLevel)
+    KIND_CHOICES = choices(RiskLevel)
 
     ordinal = models.PositiveIntegerField(default=0)
 
@@ -564,7 +538,7 @@ class RiskRatingLabel(VocabularyLabel):
 class CaseSubStatus(TenantListVocabulary):
     """A tenant's case sub-statuses inside the seven fixed categories (VOC-04, D-13)."""
 
-    KIND_CHOICES = _choices(CaseStatusCategory)
+    KIND_CHOICES = choices(CaseStatusCategory)
 
     class Meta:
         db_table = "case_sub_status"
@@ -603,7 +577,7 @@ class ClosureReason(TenantListVocabulary):
     """A tenant's closure reasons (VOC-06), each inside a fixed `CloseReason` category.
     Named ClosureReason because `CloseReason` is the kind (apps/shared/kinds.py)."""
 
-    KIND_CHOICES = _choices(CloseReason)
+    KIND_CHOICES = choices(CloseReason)
 
     class Meta:
         db_table = "close_reason"
@@ -624,7 +598,7 @@ class ClosureReasonLabel(VocabularyLabel):
 class GapStatus(TenantListVocabulary):
     """A tenant's gap statuses (REG-03, VOC-04), each inside a fixed `GapCategory`."""
 
-    KIND_CHOICES = _choices(GapCategory)
+    KIND_CHOICES = choices(GapCategory)
 
     class Meta:
         db_table = "gap_status"
@@ -681,10 +655,9 @@ class RiskAcceptanceReasonLabel(VocabularyLabel):
 
 
 class Team(TenantListVocabulary):
-    """A team that can own work (TEN-03, INPUT_DELTAS §1): a tenant list, so create, rename
-    and retire are the generic list routes under `vocab.manage`. `UNIQUE (tenant_id, id)` is
-    added in SQL (taxonomy 0009) so membership and departments can point at a team with a
-    composite key. `org_unit` is the department the team belongs to (D-21, taxonomy 0010), a
+    """A team that can own work (TEN-03): a tenant list, so the generic list routes under
+    `vocab.manage` write it. `UNIQUE (tenant_id, id)` (taxonomy 0009) lets membership and
+    departments point at it with a composite key; `org_unit` is its department (D-21), a
     composite key to the same bank's unit."""
 
     email = models.EmailField(blank=True)
@@ -718,7 +691,7 @@ class VocabularySuggestion(TenantModel):
     suggested_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=16, choices=_choices(SuggestionStatus), default=SuggestionStatus.PENDING.value)
+    status = models.CharField(max_length=16, choices=choices(SuggestionStatus), default=SuggestionStatus.PENDING.value)
 
     class Meta:
         db_table = "vocabulary_suggestion"
@@ -728,9 +701,7 @@ class VocabularySuggestion(TenantModel):
         return f"{self.list_name}:{self.key}"
 
 
-# ---------------------------------------------------------------------------------------
-# Footprint (tenant)
-# ---------------------------------------------------------------------------------------
+# --- Footprint (tenant) ---
 class FootprintTerm(TenantModel):
     """One term in the company's footprint (schema v0.3 `footprint_term`)."""
 
@@ -757,13 +728,17 @@ class FootprintChangeRequest(TenantModel):
     adds = models.ManyToManyField(TaxonomyTerm, through="taxonomy.FootprintChangeAdd", related_name="+")
     removes = models.ManyToManyField(TaxonomyTerm, through="taxonomy.FootprintChangeRemove", related_name="+")
     preview = models.JSONField(default=dict, blank=True)  # schema: FootprintPreview
-    status = models.CharField(max_length=16, choices=_choices(ApprovalStatus), default=ApprovalStatus.PENDING.value)
+    status = models.CharField(max_length=16, choices=choices(ApprovalStatus), default=ApprovalStatus.PENDING.value)
     decided_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     decided_at = models.DateTimeField(null=True, blank=True)
     decision_note = models.TextField(blank=True)
     # The requester approved it as the bank's only member able to (D-125): the one case the
     # four-eyes check constraint lets through.
     sole_approver = models.BooleanField(default=False)
+    # The requester was the bank's only possible approver when they asked (review 2026-11-11
+    # S-5): the D-125 exception holds only for such a request. The constraint requires it
+    # beside `sole_approver`.
+    requester_sole_approver = models.BooleanField(default=False)
     version = models.PositiveIntegerField(default=1)
 
     class Meta:
@@ -780,12 +755,10 @@ class FootprintChangeRequest(TenantModel):
             # The target of a scope-item row's composite key (taxonomy 0012).
             models.UniqueConstraint(fields=["tenant", "id"], name="footprint_change_request_tenant_id_unique"),
         ]
-        # The four-eyes check constraint `footprint_change_request_four_eyes` is created by
-        # RunSQL in migration 0001 as `decided_by_id IS NULL OR decided_by_id <> requested_by_id`,
-        # widened by taxonomy 0014 with `OR sole_approver` (D-125).
-        # Django can only spell "not equal" as NOT (a = b AND a IS NOT NULL), which is the
-        # same rule but not the definition the four-eyes guard reads back from pg_constraint
-        # (apps/shared/tests_four_eyes.py), so the database states it in its own words.
+        # `footprint_change_request_four_eyes` is RunSQL: `decided_by_id IS NULL OR
+        # decided_by_id <> requested_by_id OR (sole_approver AND requester_sole_approver)`
+        # (D-125, review 2026-11-11 S-5), stated in the database's own words because the
+        # four-eyes guard reads it back from pg_constraint (apps/shared/tests_four_eyes.py).
 
     def __str__(self) -> str:
         return f"{self.status} {self.id}"
@@ -820,12 +793,10 @@ class FootprintChangeRemove(TenantModel):
 
 
 class FootprintHistory(AppendOnlyModel, TenantModel):
-    """"What was our footprint on that date" without parsing the audit log (schema v0.3
-    `footprint_history`): one row per term or scope item added or removed, with the request,
-    the actor and the step-up assertion that unlocked it. Append-only in Python and by
-    trigger. A row names exactly one of a term or a scope item (CHECK
-    `footprint_history_term_or_scope_item`, taxonomy 0012), so replaying the terms never
-    reads an item and an item never widens a term (OWN-01)."""
+    """"What was our footprint on that date" without parsing the audit log: one row per term
+    or scope item added or removed, with the request, the actor and the step-up assertion.
+    Append-only in Python and by trigger. A row names exactly one of a term or a scope item
+    (CHECK `footprint_history_term_or_scope_item`), so an item never widens a term (OWN-01)."""
 
     # A ledger row: a monotonic big integer id breaks ties between rows written in the same
     # transaction, so "the footprint as of" replays them in the order they happened.
@@ -836,7 +807,7 @@ class FootprintHistory(AppendOnlyModel, TenantModel):
     # takes the term out of the company's scope and `added` puts it back. Replaying the bank's
     # scope reads only the rows without one.
     org_unit = models.ForeignKey("tenants.OrgUnit", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    action = models.CharField(max_length=16, choices=_choices(FootprintAction))
+    action = models.CharField(max_length=16, choices=choices(FootprintAction))
     request = models.ForeignKey(FootprintChangeRequest, null=True, blank=True, on_delete=models.PROTECT, related_name="history")
     changed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     changed_at = models.DateTimeField(auto_now_add=True)
@@ -859,9 +830,7 @@ class FootprintHistory(AppendOnlyModel, TenantModel):
         return f"{self.action} {self.term_id or self.scope_item_id}"
 
 
-# ---------------------------------------------------------------------------------------
-# Scope items (tenant; OWN-01, D-89, D-91, ADR 0059)
-# ---------------------------------------------------------------------------------------
+# --- Scope items (tenant; OWN-01, D-89, D-91, ADR 0059) ---
 _HTTPS = URLValidator(schemes=["https"])
 # Names that never resolve to a public host: RFC 6761's special-use names and the private
 # suffixes networks use for themselves (RFC 8375, RFC 6762).
@@ -869,11 +838,10 @@ _PRIVATE_SUFFIXES = (".localhost", ".local", ".internal", ".home.arpa", ".lan", 
 
 
 def validate_public_https_url(value: str) -> None:
-    """A scope item's source address is an https page on a public host (OWN-01, D-91):
-    never another scheme, a user or password, a port other than https's own, an address
-    that is not global, `localhost`, a one-label name or a private suffix. This is the
-    boundary's check on what a person typed; the fetch checks the host again as it resolves
-    it, because a public name can still point inward (AGT-07)."""
+    """A scope item's source address is an https page on a public host (OWN-01, D-91): no
+    other scheme, credentials, port, non-global address, `localhost`, one-label name or
+    private suffix. The fetch checks the host again as it resolves it, because a public
+    name can still point inward (AGT-07)."""
     _HTTPS(value)
     parts = urlsplit(value)
     host = (parts.hostname or "").rstrip(".").lower()
@@ -900,13 +868,11 @@ def validate_scope_item_description(value: str) -> None:
 
 class ScopeItem(TenantModel):
     """A regulation or area the shared library does not cover yet, which the bank's own
-    agent researches (OWN-01, D-89, D-91, ADR 0059): a name, a description, the jurisdiction
-    and the regime term it belongs to, an official reference where one exists and the
-    public https page to research. It is written only by a person's regulatory scope request
-    (`FootprintChangeScopeItem`) and in scope only once a second person approved it; no key
-    and no agent writes one. It is not a term: FP-01's matching never reads it, so approving
-    it widens nothing. Every reference is also a composite `(tenant_id, …)` key where the
-    target is a tenant row (taxonomy 0012)."""
+    agent researches (OWN-01, D-89, D-91, ADR 0059): name, description, jurisdiction, regime
+    term, official reference and the public https page to research. Written only by a
+    person's scope request and in scope only once a second person approved it; no key or
+    agent writes one. Not a term: matching never reads it, so approving it widens nothing.
+    References to tenant rows are composite `(tenant_id, …)` keys."""
 
     key = models.SlugField(max_length=80)
     name = models.CharField(max_length=200)
@@ -915,7 +881,7 @@ class ScopeItem(TenantModel):
     regime_term = models.ForeignKey(TaxonomyTerm, on_delete=models.PROTECT, related_name="+")
     official_reference = models.CharField(max_length=200, blank=True)
     source_url = models.URLField(max_length=2000, validators=[validate_public_https_url])
-    status = models.CharField(max_length=16, choices=_choices(ScopeItemStatus), default=ScopeItemStatus.REQUESTED.value)
+    status = models.CharField(max_length=16, choices=choices(ScopeItemStatus), default=ScopeItemStatus.REQUESTED.value)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -940,7 +906,7 @@ class FootprintChangeScopeItem(TenantModel):
 
     request = models.ForeignKey(FootprintChangeRequest, on_delete=models.CASCADE, related_name="scope_item_links")
     scope_item = models.ForeignKey(ScopeItem, on_delete=models.PROTECT, related_name="request_links")
-    action = models.CharField(max_length=16, choices=_choices(FootprintAction))
+    action = models.CharField(max_length=16, choices=choices(FootprintAction))
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -955,14 +921,12 @@ class FootprintChangeScopeItem(TenantModel):
 class FootprintChangeEntityTerm(TenantModel):
     """One company line on a regulatory scope request (FP-05, PUBLIC_REGISTERS.md 5.1): a
     licence-bound term taken out of one legal entity's own scope (`removed`) or put back
-    (`added`). It rides on the request like a scope item, so the same one-waiting rule,
-    four-eyes check and passkey decide it, and one request can carry the bank's change and
-    every company's."""
+    (`added`), decided with the request like a scope item."""
 
     request = models.ForeignKey(FootprintChangeRequest, on_delete=models.CASCADE, related_name="entity_links")
     org_unit = models.ForeignKey("tenants.OrgUnit", on_delete=models.PROTECT, related_name="+")
     term = models.ForeignKey(TaxonomyTerm, on_delete=models.PROTECT, related_name="+")
-    action = models.CharField(max_length=16, choices=_choices(FootprintAction))
+    action = models.CharField(max_length=16, choices=choices(FootprintAction))
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -997,18 +961,12 @@ class EntityScopeExclusion(TenantModel):
         return f"{self.org_unit_id}:-{self.term_id}"
 
 
-# ---------------------------------------------------------------------------------------
-# Markets (tenant)
-# ---------------------------------------------------------------------------------------
+# --- Markets (tenant) ---
 class WatchedMarket(TenantModel):
     """A market the company watches (FP-04, D-30, INPUT_DELTAS §1): a jurisdiction it does
     not operate in but wants to see. Watching hides nothing, so it is a direct audited
-    write rather than a footprint change request.
-
-    The level is computed, never stored: a market is operating when its term is in the
-    footprint, otherwise watching when a row here names it, otherwise not followed. So a
-    market watched before it became operating reads as watched again once operating stops
-    (D-31), and footprint approval never touches these rows."""
+    write. The level is computed, never stored (D-31), so footprint approval never touches
+    these rows."""
 
     jurisdiction = models.ForeignKey("library.Jurisdiction", on_delete=models.PROTECT, related_name="+")
     added_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")

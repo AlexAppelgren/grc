@@ -1,14 +1,9 @@
-"""The collab mail catalog (COL-02, I18N-01): one dictionary of keys to plain-text templates
-per language, the subject and body of each reminder, the escalation and the weekly digest,
-plus the header and footer every one of them shares.
+"""The collab mail catalog (COL-02, I18N-01): per language, the subject and body of each
+reminder, the escalation and the digest, plus the shared header and footer. Both catalogs
+hold the same keys (a test pins it).
 
-English and Swedish, which is what R2's banks read; `c13-i18n-server` adds da, nb and fi as
-modules beside these two. Both catalogs hold exactly the same keys, which a test pins.
-
-A placeholder names a field of `collab.mail.MailContext` (a record title, a date, a count, a
-person's name or a link), or `recipient` and `product`, which the composer fills itself.
-Nothing else can reach a mail, so no template can ask for a comment, a note or an
-assessment (CHUNK10_TASKS rule 13).
+A placeholder names a field of `collab.mail.MailContext`, or `recipient` and `product`, so no
+template can ask for a comment, note or assessment (CHUNK10_TASKS rule 13).
 """
 
 from __future__ import annotations

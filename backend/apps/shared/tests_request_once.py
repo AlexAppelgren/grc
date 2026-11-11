@@ -33,8 +33,10 @@ from apps.taxonomy.models import Urgency, UrgencyLabel
 from apps.taxonomy.reading import Labels, language_order
 from apps.watch import testing as watch_build
 from apps.shared.tests_support_session import grant
+from apps.shared.testing import identity_lookup_active
 
 V1 = "/api/v1"
+COOKIE = session_logic.refresh_cookie_name()
 # A session request's cost before its route (the savepoint pair of the test's transaction
 # aside): the signed bank activated, then the session with its person, its bank, the grants
 # and the latest step-up in one read. Eight in all on 2026-09-28, six of them the auth
@@ -67,7 +69,7 @@ class FixedCost(TestCase):
         tenancy.clear_tenant()
         principal = session_logic.resolve_access_token(token, want=PrincipalKind.USER)
         assert principal is not None
-        self.assertFalse(tenancy.identity_lookup_active())
+        self.assertFalse(identity_lookup_active())
         self.assertEqual(tenancy.database_tenant_id(), self.tenant.id)
         self.assertEqual(tenancy.active_tenant_id(), self.tenant.id)
         # What the read loaded rides on the principal.
@@ -78,7 +80,7 @@ class FixedCost(TestCase):
         with self.assertRaises(RuntimeError), tenancy.identity_lookup() as lookup:
             lookup.then_activate(self.tenant.id)
             raise RuntimeError("the credential's row was unreadable")
-        self.assertFalse(tenancy.identity_lookup_active())
+        self.assertFalse(identity_lookup_active())
         self.assertIsNone(tenancy.database_tenant_id())
 
     def test_the_step_up_rides_on_the_grants_read(self) -> None:
@@ -134,7 +136,7 @@ class StillRefused(ScenarioTestCase):
     def test_another_banks_id_is_not_found(self) -> None:
         theirs = factories.org_unit(self.other, name="Their unit")
         headers = sign_in(self.user, tenant=self.tenant)
-        self.assertEqual(self.client.get(f"{V1}/tenant/org-units/{theirs.id}/licences", **headers).status_code, 404)
+        self.assertEqual(self.client.post(f"{V1}/tenant/org-units/{theirs.id}/licences", data={"licenceType": "bank"}, content_type="application/json", **headers).status_code, 404)
 
     def test_a_revoked_key_is_refused_on_its_next_request(self) -> None:
         key = factories.api_key(self.tenant)
@@ -248,6 +250,6 @@ class RefreshAnswersMe(ScenarioTestCase):
         row = grant(self.tenant, platform, admin)
         entered = self.client.post(f"{V1}/console/support-access/{row.id}/enter", **sign_in(platform, tenant=None, step_up=True))
         self.assertEqual(entered.status_code, 200, entered.content)
-        refreshed = self.client.post(f"{V1}/auth/refresh", HTTP_COOKIE=f"cw_refresh={entered.cookies['cw_refresh'].value}")
+        refreshed = self.client.post(f"{V1}/auth/refresh", HTTP_COOKIE=f"{COOKIE}={entered.cookies[COOKIE].value}")
         self.assertEqual(refreshed.status_code, 200, refreshed.content)
         self.assertIsNone(refreshed.json()["me"])

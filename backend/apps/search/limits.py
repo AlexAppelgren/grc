@@ -1,31 +1,16 @@
 """What one caller may spend on search and on Ask in a minute (NFR-02, playbook 11.2).
 
-Both routes cost more than an ordinary read. A search runs two legs and a reranker over
-the whole index; Ask adds a model call on top of that, which costs money as well as time.
-A bucket per caller is what keeps one runaway client — a script behind a person's session,
-an agent in a retry loop — from spending the budget every other reader is measured
-against, and it is per caller rather than per bank so that one busy colleague does not
-lock the bank out.
+Both cost more than an ordinary read, and Ask costs money. A bucket per caller (not per bank,
+so one busy colleague cannot lock the bank out) stops one runaway client from spending
+everyone's budget. Mechanics are `apps.identity.rate_limit.enforce`: a fixed window keyed on
+a hash of the caller's id, 429 `rate_limited`; nothing the caller typed reaches the key.
 
-The mechanics are the auth ceremonies' (`apps.identity.rate_limit.enforce`): a fixed
-window in the cache, keyed on a hash of the caller's id so no id sits in the cache as
-itself, and a hit answers 429 `rate_limited` in the problem shape. Nothing of what the
-caller typed reaches the key or the refusal: the caller's own id is all that travels
-(playbook 4.7).
+Open Ask streams are capped too (H47): a stream holds a server thread until the model
+finishes. `ask_stream_slot` takes one of `ASK_STREAMS_PER_USER` slots and returns its
+release; a lost slot expires `ASK_STREAM_SLOT_TTL_S` after the caller's last take.
 
-**Open Ask streams are capped as well as counted** (hardening H47). The rate bounds how
-often a caller asks, not how long each answer holds a server thread: a stream lasts until
-the model finishes, up to `LLM_DEADLINE_S`, so a few callers could hold every thread for
-every bank. `ask_stream_slot` takes one of `ASK_STREAMS_PER_USER` slots before the first
-byte and hands back the function that gives it back, which the stream calls when it
-closes. It is keyed on a caller id like the buckets, so an agent's key can hold slots of
-its own under the same counter. A worker lost mid-stream never gives its slot back; the
-counter expires `ASK_STREAM_SLOT_TTL_S` after the caller's last take, which is longer than
-any model call can run, so a lost slot is lost for minutes, not for ever.
-
-There is no `e2e_exempt` here, which the auth buckets need. A journey searches a handful
-of times, not sixty, so these limits are never in a journey's way, and exempting them
-would leave the thing they protect untested against the real stack.
+No `e2e_exempt`: a journey searches a handful of times, and exempting these would leave
+them untested on the real stack.
 """
 
 from __future__ import annotations
