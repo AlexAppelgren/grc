@@ -155,6 +155,17 @@ describe('the batch review', () => {
     expect(within(first).getAllByText('Safeguarding')).toHaveLength(2);
   });
 
+  it('renders a source address that is not http or https as text, never as a link', async () => {
+    // Review 2026-11-11 L-14: the batch's and the rows' addresses come from the API, and
+    // the batch's went into href unchecked; both now pass externalHref.
+    const unsafe = 'javascript:alert(1)';
+    serve(batch({ sourceLabel: '', sourceUrl: unsafe, rows: [row('r-1', 'Keep client money in a segregated account', { source: unsafe })] }));
+    renderScreen();
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.getByText(unsafe)).toBeInTheDocument();
+    expect(screen.queryAllByRole('link').map((link) => link.getAttribute('href'))).toEqual(['/console/queue']);
+  });
+
   it('decides a row as a draft that can be undone, and a rejection only with a reason', async () => {
     serve(batch());
     renderScreen();

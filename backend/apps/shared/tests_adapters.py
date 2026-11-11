@@ -10,6 +10,7 @@ from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, override_settings
 
+from apps.agents.models import RunStatus
 from apps.shared import storage
 from apps.shared.adapters import agent_runner, embedder, llm, mailer, registers
 
@@ -73,6 +74,16 @@ class AgentRunnerAdapter(SimpleTestCase):
     def test_managed_agents_is_named_but_not_yet_implemented(self) -> None:
         with self.assertRaises(NotImplementedError):
             agent_runner.get_agent_runner().start(run_id=uuid.uuid4(), definition_key="w", definition_version=1)
+
+    @override_settings(AGENT_RUNNER="none")
+    def test_none_starts_nothing_and_stops_at_once(self) -> None:
+        """Review 2026-11-11 S-7: `none` is what a deployed environment sets while D-54
+        refuses `managed_agents`; a start raises (the opener closes the run as failed)."""
+        runner = agent_runner.get_agent_runner()
+        with self.assertRaises(NotImplementedError):
+            runner.start(run_id=uuid.uuid4(), definition_key="w", definition_version=1)
+        handle = agent_runner.RunHandle(run_id=uuid.uuid4(), external_id="", status=RunStatus.RUNNING, started_at=None)
+        self.assertEqual(runner.interrupt(handle).status, RunStatus.INTERRUPTED)
 
     @override_settings(AGENT_RUNNER="lambda")
     def test_unknown_provider_is_refused(self) -> None:

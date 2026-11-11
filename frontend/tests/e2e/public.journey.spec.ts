@@ -6,6 +6,21 @@ import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, LOGINS, signInAs, signOut } from './support/passkeys';
 
 const PLATE = 'Agents watch the regulators. You make the decisions.';
+// The web app's content policy (next.config.ts, review 2026-11-11 S-12): everything from
+// its own origin, the API's calls to the API, and no frame, plugin or form elsewhere.
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  `connect-src 'self' ${new URL(BACKEND_URL).origin}`,
+  "frame-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
 
 // The public page (design/public/): what a visitor who is not signed in sees at
 // the front door, and the way from it into the passkey sign-in flow. The page
@@ -104,7 +119,7 @@ test.describe('public page', () => {
   test('no other site can frame the app, while its own public page frames the demo', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     const response = await page.goto('/welcome');
-    expect(response?.headers()['content-security-policy']).toBe("frame-ancestors 'self'");
+    expect(response?.headers()['content-security-policy']).toBe(CONTENT_SECURITY_POLICY);
     expect(response?.headers()['x-frame-options']).toBe('SAMEORIGIN');
     const app = page.url();
 
@@ -120,8 +135,9 @@ test.describe('public page', () => {
 // security headers.
 test.describe('site trust', () => {
   const HEADERS = {
-    'content-security-policy': "frame-ancestors 'self'",
+    'content-security-policy': CONTENT_SECURITY_POLICY,
     'x-frame-options': 'SAMEORIGIN',
+    'cross-origin-opener-policy': 'same-origin',
     'strict-transport-security': 'max-age=31536000',
     'x-content-type-options': 'nosniff',
     'referrer-policy': 'strict-origin-when-cross-origin',

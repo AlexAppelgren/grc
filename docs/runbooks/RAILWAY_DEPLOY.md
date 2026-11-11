@@ -40,7 +40,7 @@ at a role that can bypass row-level security.
 | `REDIS_URL`, `SECRET_KEY`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` | api, worker, beat | |
 | `PRODUCT_NAME` | api, web | `bleqq compliance` |
 | `WEBAUTHN_RP_ID`, `WEBAUTHN_ORIGINS` | api | the exact test host, and its `https://` origin |
-| `TRUSTED_PROXY_HOPS` | api | `1`: Railway's edge is the one proxy writing `X-Forwarded-For`, so the per-IP rate limits and the security log read the client address from it. Left at `0` the header is ignored and every request keys on the proxy's address |
+| `TRUSTED_PROXY_HOPS` | api | unset, which is `1` when deployed: Railway's edge is the one proxy writing `X-Forwarded-For`, so the per-IP rate limits and the security log read the client address from it. `0` is refused at boot when deployed, because every request would key on the proxy's address |
 | `STORAGE_*` | api, worker | bucket endpoint, name, keys |
 | `MAIL_*` | api, worker | the transactional sender |
 | `LLM_PROVIDER`, `ANTHROPIC_API_KEY` | api, worker | `anthropic` |
@@ -52,12 +52,13 @@ at a role that can bypass row-level security.
 ## First run
 
 1. Deploy `db`, `redis`, `bucket`. Run the role script.
-2. Deploy `api`. Check `/health/` answers 200 with every component named.
+2. Deploy `api`. Check `/health/` answers 200 (`{"status": "ok"}`). On 503 the api log line `health check failing` names the failing component; the body never does.
 3. Deploy `worker`, `beat`, `web`. Attach the test host to `web`.
 4. `python manage.py bootstrap_platform --admin-email you@…` (lands with chunk 1; after Phase 0 only `seed_reference`, `seed_e2e`, `migrate_from_zero` and `export_openapi` exist) creates the first
    platform admin invitation. Open the emailed link, enter the code, enrol a
    passkey.
 5. In the console, create the first tenant and invite its admin.
-6. Optional: `python manage.py seed_demo` (lands with chunk 3) loads the prototype's sample data
-   into a demo tenant. It refuses to run when `ENVIRONMENT` is a production
-   name.
+6. There is no demo data on a deployed environment: `seed_demo`, `seed_public_demo` and
+   `seed_e2e` refuse every deployed environment and are not in the image at all
+   (`backend/.dockerignore`, review 2026-11-11 B-3). They run from a checkout, on a laptop
+   or in CI.

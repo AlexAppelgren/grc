@@ -6,7 +6,7 @@ through `record()`.
 
 `mock` starts a run that completes at once with no findings and reports it in events seeded
 from the run id, so a test never depends on the clock. `managed_agents` stays named and
-unbuilt: D-54 and ADR 0047 refuse it on every deployed environment."""
+unbuilt: D-54 and ADR 0047 refuse it on every deployed environment. `none` starts nothing."""
 
 from __future__ import annotations
 
@@ -120,9 +120,31 @@ class ManagedAgentsRunner(AgentRunnerAdapter):
         raise NotImplementedError(MANAGED_AGENTS_REFUSED)
 
 
+NO_RUNNER = "No agent runner is configured (AGENT_RUNNER=none), so no agent run can start."
+
+
+class NoAgentRunner(AgentRunnerAdapter):
+    """`none` (ADR 0047): the value a deployed environment sets until the in-worker EU
+    runner exists, since D-54 refuses `managed_agents` and rule 5 refuses `mock`. A start
+    raises, so the opener closes the recorded run as failed and nothing reads as running;
+    a stop succeeds, because nothing runs anywhere."""
+
+    name = "none"
+
+    def start(self, *, run_id: uuid.UUID, definition_key: str, definition_version: int) -> RunHandle:
+        raise NotImplementedError(NO_RUNNER)
+
+    def poll(self, handle: RunHandle) -> list[RunnerEvent]:
+        raise NotImplementedError(NO_RUNNER)
+
+    def interrupt(self, handle: RunHandle) -> RunHandle:
+        return replace(handle, status=RunStatus.INTERRUPTED)
+
+
 PROVIDERS: dict[str, type[AgentRunnerAdapter]] = {
     "mock": MockAgentRunner,
     "managed_agents": ManagedAgentsRunner,
+    "none": NoAgentRunner,
 }
 
 

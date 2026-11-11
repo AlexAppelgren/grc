@@ -823,7 +823,7 @@ D); CI is insurance, not first detection.
 | Frontend lint, typecheck, unit coverage, build | Lint and type errors, coverage drops, broken build |
 | E2E (real stack) | Broken journeys, undeclared API failures, page exceptions |
 | Secret scan (gitleaks, always on push) | Committed secrets. Allowlist entries are exact literals with a stated reason, never a relaxed rule |
-| Dependency CVEs (osv-scanner on the **committed** lockfiles + `npm audit`) | Known-vulnerable dependencies. The scan refuses to run on an empty lockfile, and the step runs under `bash -eo pipefail` so a broken pipe fails instead of passing on the last exit code |
+| Dependency CVEs (osv-scanner on the **committed** lockfiles) | Known-vulnerable dependencies. The scan refuses to run on an empty lockfile, an accepted advisory without an expiry fails it, and the step runs under `bash -eo pipefail` so a broken pipe fails instead of passing on the last exit code |
 | CodeQL (own SARIF gate, medium and above) | Injection, traversal, unsafe deserialisation. Findings are accepted per fingerprint with a reason, never per rule; stale acceptances are reported so the list cannot rot into a mute |
 | Requirements coverage | A PRD requirement with no scenario, or a scenario with no test |
 | Contract drift | A designed operation in `docs/inputs/openapi.yaml` that is missing or reshaped without an entry in `INPUT_DELTAS.md` |
@@ -1381,7 +1381,7 @@ never allowed.
 | `specs` | `backend/apps/*/app.md`, `PRD.md`, `docs/inputs/openapi.yaml` | 3, 4, 5, plus the contract-drift and API-documentation gates: everything in the backend job that reads text rather than running code. No migration, no suite, no coverage, no search evaluation, no browser |
 | `frontend` | frontend code, `openapi.json`, `generate-types.sh` | 6, 7, 11, and E2E |
 | `lockfiles` | the lockfiles, `frontend/THIRD_PARTY_NOTICES.md`, `scripts/**` | dependency CVEs and licences |
-| `containers` | the Dockerfiles, `.dockerignore`, `backend/entrypoint.sh` | the image scans |
+| `containers` | the Dockerfiles, `.dockerignore`, `backend/docker-entrypoint.sh` | the image scans |
 | `python` / `javascript` | `**/*.py` / `**/*.{ts,tsx,js,jsx,mjs,cjs}` | that CodeQL language |
 
 Item 10, the secret scan, always runs, and so does the tier guard below. Nothing

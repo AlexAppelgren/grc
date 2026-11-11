@@ -91,7 +91,10 @@ filter vendors, and only the owner can do it.
   `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: strict-origin-when-cross-origin` and a
   `Permissions-Policy` denying camera, microphone, geolocation, payment and
-  USB, beside the existing frame rules (`frontend/next.config.ts`). WebAuthn
+  USB, `Cross-Origin-Opener-Policy: same-origin`, and a content policy that
+  allows only our own origin and the API (`default-src 'self'`, no plugin,
+  no other base or form target, frames from our own origin only; review
+  2026-11-11 S-12), beside the existing frame rules (`frontend/next.config.ts`). WebAuthn
   stays at its default of our own origin. HSTS carries no
   `includeSubDomains` or `preload` until every `bleqq.com` subdomain is known
   to serve HTTPS: both are hard to take back.

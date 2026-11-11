@@ -8,10 +8,14 @@ role), and its --reenrol option (platform staff's own recovery, ID-05)."""
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import tempfile
 from io import StringIO
 from pathlib import Path
 from unittest import mock
 
+from django.conf import settings
 from django.core.management import CommandError, call_command
 from django.test import SimpleTestCase, TestCase, override_settings
 
@@ -290,3 +294,26 @@ class BootstrapPlatformReenrol(TestCase):
         self.assertFalse(User.objects.filter(email="nobody@bleqq.test").exists())
         self.assertTrue(WebAuthnCredential.objects.filter(user=member, retired_at__isnull=True).exists())
         self.assertEqual(AuditEvent.objects.count(), audit_rows)
+
+
+class Entrypoint(SimpleTestCase):
+    def test_the_schema_owner_credential_is_gone_after_the_migration(self) -> None:
+        """Review 2026-11-11 S-13: the API kept MIGRATOR_DATABASE_URL in its environment
+        after the migration, so code execution or an environment disclosure yielded the
+        role that owns every table. The entrypoint runs with stand-ins for python and
+        gunicorn that write down what each call saw."""
+        with tempfile.TemporaryDirectory() as bin_dir:
+            calls = Path(bin_dir) / "calls"
+            stub = f'#!/bin/sh\necho "$(basename "$0") $* | db=$DATABASE_URL | migrator=${{MIGRATOR_DATABASE_URL:-}}" >> {calls}\n'
+            for name in ("python", "gunicorn"):
+                (Path(bin_dir) / name).write_text(stub, encoding="utf-8")
+                (Path(bin_dir) / name).chmod(0o755)
+            env = {"PATH": f"{bin_dir}:{os.environ['PATH']}", "DATABASE_URL": "app-url", "MIGRATOR_DATABASE_URL": "owner-url"}
+            entrypoint = Path(settings.BASE_DIR) / "docker-entrypoint.sh"
+            subprocess.run(["sh", str(entrypoint)], env=env, check=True, capture_output=True, timeout=30)
+            lines = calls.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(lines), 3, lines)
+        self.assertEqual(lines[0], "python manage.py migrate --noinput | db=owner-url | migrator=owner-url")
+        self.assertEqual(lines[1], "python manage.py seed_reference | db=app-url | migrator=")
+        self.assertTrue(lines[2].startswith("gunicorn config.wsgi:application"), lines[2])
+        self.assertTrue(lines[2].endswith("| db=app-url | migrator="), lines[2])

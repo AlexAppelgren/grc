@@ -35,7 +35,7 @@
 #   real library baseline, a made-up bank)       what its screens ask, or answers stale   demo
 # Secret scan (gitleaks, every push)            Committed secrets                        secrets
 # Dependency CVEs (osv-scanner on the committed
-#   lockfiles + npm audit; nightly regardless)  Known-vulnerable dependencies            cve
+#   lockfiles; nightly regardless)              Known-vulnerable dependencies            cve
 # Dependency licences                           Copyleft dependencies, missing Apache
 #                                               attribution for @sebgroup/*             licences
 # Container image scan (Trivy, HIGH+CRITICAL)   Vulnerable OS packages in the images     container-scan
@@ -196,7 +196,7 @@ jobs:
               - 'backend/Dockerfile'
               - 'frontend/Dockerfile'
               - '**/.dockerignore'
-              - 'backend/entrypoint.sh'
+              - 'backend/docker-entrypoint.sh'
 
       # A push to main of a commit scripts/ship.sh already ran through the full CI on
       # `candidate` (workflow_dispatch, every gate and the full E2E suite) and saw pass:
@@ -927,7 +927,7 @@ jobs:
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "true"
 
   # ---------------------------------------------------------------------------
-  # Dependency CVEs on the COMMITTED lockfiles, plus npm audit. Also nightly
+  # Dependency CVEs on the COMMITTED lockfiles (both, through osv-scanner). Also nightly
   # regardless of changes: advisories publish against lockfiles that did not move.
   # ---------------------------------------------------------------------------
   cve:
@@ -951,18 +951,17 @@ jobs:
           done
           git ls-files --error-unmatch backend/poetry.lock frontend/package-lock.json
 
+      - name: Every accepted advisory has an expiry
+        run: |
+          python3 .github/scripts/osv_ignores_gate.py self-test
+          python3 .github/scripts/osv_ignores_gate.py
+
       - name: osv-scanner on the committed lockfiles
         uses: google/osv-scanner-action/osv-scanner-action@a345acffa64b0eaede81a3d9aae6141214d9c8fc # v2.6.0
         with:
           scan-args: |-
             --lockfile=backend/poetry.lock
             --lockfile=frontend/package-lock.json
-
-      - name: npm audit (moderate and above, less the accepted advisories in frontend/osv-scanner.toml)
-        shell: bash -eo pipefail {0}
-        working-directory: frontend
-        run: |
-          npm run audit:gate
 
   # ---------------------------------------------------------------------------
   # Licences: no copyleft in either tree, Apache attribution for @sebgroup/*.

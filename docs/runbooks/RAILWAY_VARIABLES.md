@@ -11,7 +11,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 
 | Variable | Services | Local | CI | Railway test | Notes |
 |---|---|---|---|---|---|
-| `ENVIRONMENT` | api, worker, beat | `local` | `ci` | `test` | `local`, `test` and `ci` are the only names that are not "deployed". Anything else (including `prod`, `Production`, `demo`, `dev`, or unset) fails closed with every guard on. `test` is the one deployed name where mock adapters are allowed and the UI shows a banner |
+| `ENVIRONMENT` | api, worker, beat | `local` | `ci` | `test` | `local`, `test` and `ci` are the only names that are not "deployed". Anything else (including `prod`, `Production`, `demo` and `dev`) fails closed with every guard on. Unset, the settings read `local` (a laptop), but the API image sets `ENVIRONMENT=production` in its runtime stage, so an image started without the variable is deployed with every guard on `test` is the one deployed name where mock adapters are allowed and the UI shows a banner |
 | `RAILWAY_ENVIRONMENT_NAME` | all | unset | unset | set by Railway | Presence alone means deployed, whatever `ENVIRONMENT` says |
 | `DEBUG` | api | `true` | `false` | `false` | Refused when deployed |
 | `SECRET_KEY` | api, worker, beat | `django-insecure-dev-only` | a generated value | Railway secret | A missing or default value is refused outside DEBUG |
@@ -21,7 +21,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | Variable | Services | Local | CI | Railway test | Notes |
 |---|---|---|---|---|---|
 | `DATABASE_URL` | api, worker, beat | `postgres://cw_app:cw-app-dev-only@localhost:5432/compliance_watch` | the `cw_app` string against the service container | the `cw_app` connection string | The app refuses to boot if this role is a superuser, owns the tables or has `BYPASSRLS` (ADR 0022) |
-| `MIGRATOR_DATABASE_URL` | api (entrypoint), CI | `postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/compliance_watch` | the `cw_migrator` string | the `cw_migrator` connection string | Used only by `migrate`, `migrate_from_zero` and the test runner's database creation |
+| `MIGRATOR_DATABASE_URL` | api (entrypoint), CI | `postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/compliance_watch` | the `cw_migrator` string | the `cw_migrator` connection string | Used only by `migrate`, `migrate_from_zero` and the test runner's database creation. The entrypoint unsets it right after `migrate`, so the seeds and gunicorn never hold it |
 | `REDIS_URL` | api, worker, beat | `redis://localhost:6379/0` | the service container | Railway Redis URL | Celery broker and cache |
 
 ## Hosts and identity
@@ -33,6 +33,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `PRODUCT_NAME` | api, web | `Compliance Watch` | same | `bleqq compliance` | The display name; a rebrand is a variable |
 | `WEBAUTHN_RP_ID` | api | `localhost` | `localhost` | the exact test host (`DNS_DOMAINS.md`) | A passkey belongs to one RP ID (D-02, ADR 0002). Required when deployed |
 | `WEBAUTHN_ORIGINS` | api | `http://localhost:3000` | `http://localhost:3000` | `https://<test host>` | Comma-separated allowed origins for the ceremonies |
+| `TRUSTED_PROXY_HOPS` | api, worker, beat | `0` | `0` | unset (`1`) | Proxies of ours that append to `X-Forwarded-For`; the per-IP limits and the security log read the client from it. Unset, it is `1` when deployed (Railway's edge) and `0` elsewhere, where the header is ignored. `0` is refused on every deployed environment, `test` included (rule 11) |
 
 ## Storage, mail, models, agents
 
@@ -60,7 +61,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `EVIDENCE_MAX_BYTES` | api | `26214400` | `26214400` | `26214400` | The largest evidence file in bytes, 25 MB (CAS-05); a larger one is refused with 422 before it is stored |
 | `EVIDENCE_SCAN_RETRIES` | worker | `2` | `2` | `2` | How many more times a failed malware scan is tried before the file stays `error` and cannot be downloaded (CAS-05) |
 | `CASE_EVIDENCE_MAX` | api | `200` | `200` | `200` | Live evidence one case may hold, so one case cannot push its case file past the response budget (CAS-05) |
-| `LLM_PROVIDER` | api, worker | `mock` | `mock` | `anthropic` | `mock`, `anthropic`, `bedrock` (D-07, ADR 0007) |
+| `LLM_PROVIDER` | api, worker | `mock` | `mock` | `anthropic` | `mock`, `anthropic`, `bedrock` (D-07, ADR 0007). `anthropic` is refused on every deployed environment but `test` (D-54, ADR 0047, rule 10) |
 | `ANTHROPIC_API_KEY` | api, worker | unset | unset | Railway secret | Only read when `LLM_PROVIDER=anthropic` |
 | `LLM_MODEL` | api, worker | `claude-opus-5` | `claude-opus-5` | `claude-opus-5` | The Messages API model id (E3) |
 | `LLM_MAX_TOKENS` | api, worker | `4096` | `4096` | `4096` | A ceiling: a caller asking for more gets this |
@@ -95,7 +96,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `FOOTPRINT_CHANGE_MAX_TERMS` | api | `50` | `50` | `50` | The most terms, and the most scope items, one regulatory scope request may add or remove, each list on its own; a longer list is refused with 422 (FP-02, OWN-01, H24). At least 1 or the app refuses to boot |
 | `ASK_RETRIEVAL_DEPTH` | api | `6` | `6` | `6` | How many passages of the reader's own ranking Ask gives the model, best first: the whole of what an answer may rest on, each one a numbered citation. From 1 to `AI_GENERATION_CITATIONS_MAX`, or the app refuses to boot (SRC-03) |
 | `ASK_MAX_TOKENS` | api | `1024` | `1024` | `1024` | The most one Ask answer may write, beneath the `LLM_MAX_TOKENS` ceiling: an answer is a few cited sentences. At least 1, or the app refuses to boot (SRC-03) |
-| `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
+| `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock`, `managed_agents` or `none` (D-08, ADR 0008). `managed_agents` is refused on every deployed environment but `test` (D-54, rule 10); `none` starts no run, every run closes as failed, until the in-worker EU runner exists |
 | `AGENT_RESEARCH_TOPIC_MAX_CHARS` | api | `500` | `500` | `500` | The longest topic a research request or a console re-tag request may carry, in characters (AGT-05, c11-agents-contract); a longer one answers 422 `validation_error` |
 | `AGENT_MIN_CADENCE` | api | `weekly` | `weekly` | `weekly` | The most frequent cadence a bank may give one of its own agents: `daily`, `weekly` or `monthly`, and `manual` is always allowed; a more frequent one answers 422 `above_plan_limit`. Any other value and the app refuses to boot (AGT-04, c11-tenant-agents-budget-scope) |
 | `AGENTS_PER_TENANT_MAX` | api | `3` | `3` | `3` | How many agents of its own a bank may add; one more answers 422 `above_plan_limit` (AGT-04, c11-tenant-agents-budget-scope) |
@@ -117,7 +118,8 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | Variable | Services | Local | CI | Railway test | Notes |
 |---|---|---|---|---|---|
 | `E2E_MODE` | api (E2E only) | set by Playwright's `webServer` | set by the E2E job | never | Makes the enrolment code deterministic and enables `seed_e2e`. Refused on two independent legs when deployed |
-| `SENTRY_DSN` | all | unset | unset | optional, EU region DSN | `send_default_pii=False`, bodies never sent, scrubbers on events and transactions |
+| `SENTRY_DSN` | all | unset | unset | optional, EU region DSN | `send_default_pii=False`, bodies never sent, scrubbers on events and transactions, no outbound-request spans and no trace headers to other hosts. A host not ending `.ingest.de.sentry.io` is refused on every deployed environment but `test` (D-54, rule 10) |
+| `HEALTH_CACHE_SECONDS` | api | `5` | `5` | `5` | `/health/` reuses its last answer this many seconds per process, 0 to 60, so the open route cannot make every request ping the worker. The body is the status alone; failing components go to the log |
 | `API_BUDGET_MS` | api | `250` | `250` | `250` | A WARNING with the request ID above it |
 | `SEARCH_BUDGET_MS` | api | `800` | `800` | `800` | Hybrid search's budget without the reranker, in `Server-Timing` (NFR-02). The search tests hold the route to it, and a performance pass names it as the budget of the search rows it adds to `backend/perf/routes.py` |
 | `SEARCH_RERANKED_BUDGET_MS` | api | `1500` | `1500` | `1500` | The same with the reranker on (NFR-02) |
@@ -193,6 +195,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `APP_HOST` | web | empty | empty (the host-split journey's own server sets `localhost:3001`) | `app.bleqq.com` | The one host that serves the app. There every page sends `X-Robots-Tag: noindex` and `/welcome` moves to the first `PUBLIC_SITE_HOST`. Read at run time. Does nothing unless `PUBLIC_SITE_HOST` is set too; any other host (the service's own `*.up.railway.app` address, the health check) behaves as before |
 | `NEXT_PUBLIC_SUPPORT_CONTACT` | web | empty | empty | the address that answers access requests | An email address. The public page's "Write to us" opens a mail to it; empty hides the link. Baked at build time |
 | `NEXT_PUBLIC_BULK_TAGGING_MAX_RECORDS` | web | `200` | `200` | the api's `BULK_TAGGING_MAX_RECORDS` | How many obligations the inventory lets one bulk tagging name before it refuses without calling (VOC-08). Keep it equal to the api's cap, which still refuses above its own number. Baked at build time |
+| `E2E_DEV_PAGES` | web (E2E only) | unset; `1` to see `/dev/pills` | set to `1` by Playwright's `webServer` | never | `1` serves the developer pages under `/dev` (the pill gallery, the Green spike); anything else answers 404 there. Read per request |
 | `NEXT_PUBLIC_RESEARCH_POLL_MS` | web | `5000` | `5000` | `5000` | How often, in milliseconds, `/admin/agents` re-reads a research request still queued or running from its status endpoint (AGT-05). Lower it and a finished request shows sooner at the cost of more reads. Baked at build time |
 
 ## Rules
