@@ -29,6 +29,7 @@ test.describe('public page', () => {
     allowFreshContext(apiGuard);
     await page.goto('/');
     await expect(page).toHaveURL(/\/welcome$/);
+    await expect(page).toHaveTitle('bleqq | Agentic Compliance');
     await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
     await expect(page.locator('[data-ink]')).toBeVisible();
     await expect(page.getByText("One inventory of your bank's obligations.")).toBeVisible();
