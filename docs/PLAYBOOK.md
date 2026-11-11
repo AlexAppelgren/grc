@@ -1381,7 +1381,7 @@ never allowed.
 | `specs` | `backend/apps/*/app.md`, `PRD.md`, `docs/inputs/openapi.yaml` | 3, 4, 5, plus the contract-drift and API-documentation gates: everything in the backend job that reads text rather than running code. No migration, no suite, no coverage, no search evaluation, no browser |
 | `frontend` | frontend code, `openapi.json`, `generate-types.sh` | 6, 7, 11, and E2E |
 | `lockfiles` | the lockfiles, `frontend/THIRD_PARTY_NOTICES.md`, `scripts/**` | dependency CVEs and licences |
-| `containers` | the Dockerfiles, `.dockerignore`, `backend/entrypoint.sh` | the image scans |
+| `containers` | the Dockerfiles, `.dockerignore`, `backend/docker-entrypoint.sh` | the image scans |
 | `python` / `javascript` | `**/*.py` / `**/*.{ts,tsx,js,jsx,mjs,cjs}` | that CodeQL language |
 
 Item 10, the secret scan, always runs, and so does the tier guard below. Nothing

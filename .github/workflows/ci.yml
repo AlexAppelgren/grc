@@ -196,7 +196,7 @@ jobs:
               - 'backend/Dockerfile'
               - 'frontend/Dockerfile'
               - '**/.dockerignore'
-              - 'backend/entrypoint.sh'
+              - 'backend/docker-entrypoint.sh'
 
       # A push to main of a commit scripts/ship.sh already ran through the full CI on
       # `candidate` (workflow_dispatch, every gate and the full E2E suite) and saw pass:
