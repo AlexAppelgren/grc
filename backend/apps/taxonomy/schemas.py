@@ -2184,8 +2184,10 @@ class FootprintRequestPage(CamelSchema):
         default=False,
         description=(
             "True when the caller may approve their own request, because they are the organisation's only "
-            "active member holding `footprint.approve` and the platform allows it (D-125); false otherwise, "
-            "and then a request is approved by someone other than the person who asked for it."
+            "member holding `footprint.approve`, whatever that member's account status, and the platform "
+            "allows it (D-125); false otherwise, and then a request is approved by someone other than the "
+            "person who asked for it. A request counts as the caller's to approve alone only when they were "
+            "already the only such member when they made it."
         ),
         examples=[False],
     )

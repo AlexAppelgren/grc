@@ -30,9 +30,10 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.db import DEFAULT_DB_ALIAS, IntegrityError, connection, connections, transaction
 from django.test import TestCase, TransactionTestCase, override_settings
+from django.utils import timezone
 
 from apps.cases import testing as cases_build
-from apps.identity.models import User
+from apps.identity.models import Membership, MembershipRole, User, UserStatus
 from apps.library import testing as build
 from apps.library.seeds import seed_jurisdictions, seed_languages
 from apps.library.tests_reading import as_app_role
@@ -469,3 +470,47 @@ class SoleApprover(TestCase):
         waiting = self._create()
         with self.assertRaises(IntegrityError), transaction.atomic():
             FootprintChangeRequest.objects.filter(pk=waiting.pk).update(decided_by=self.admin, status="approved")
+
+    def _second_approver_then_ask(self) -> tuple[Any, FootprintChangeRequest]:
+        """A second member able to approve when the request is made: the requester is not then
+        the only one, and the request records it."""
+        other = factories.member(self.tenant, roles=("approver",))
+        tenancy.activate(self.tenant.id)
+        waiting = self._create()
+        self.assertFalse(waiting.requester_sole_approver)
+        return other, waiting
+
+    def _refused_alone(self, waiting: FootprintChangeRequest) -> None:
+        self.assertTrue(footprint_logic.sole_approver(self.tenant, self.admin), "the requester is now the only approver")
+        with self.assertRaises(ValidationError) as refused:
+            self._approve_own(waiting)
+        self.assertEqual(refused.exception.code, "four_eyes_violation")
+        waiting.refresh_from_db()
+        self.assertEqual(waiting.status, ApprovalStatus.PENDING.value)
+
+    def test_removing_the_other_approver_after_asking_does_not_make_the_requester_sole(self) -> None:
+        """Review 2026-11-11 S-5: the second approver is removed from the bank after the request."""
+        other, waiting = self._second_approver_then_ask()
+        Membership.objects.filter(pk=other.pk).update(deactivated_at=timezone.now())
+        self._refused_alone(waiting)
+
+    def test_changing_the_other_approvers_roles_after_asking_does_not_make_the_requester_sole(self) -> None:
+        """Review 2026-11-11 S-5: the second approver loses `footprint.approve` after the request."""
+        other, waiting = self._second_approver_then_ask()
+        MembershipRole.objects.filter(membership=other).delete()
+        self._refused_alone(waiting)
+
+    def test_re_issuing_the_other_approvers_enrolment_leaves_them_counted(self) -> None:
+        """Review 2026-11-11 S-5: an `invited` account still holds its grants, so it still counts."""
+        other, waiting = self._second_approver_then_ask()
+        User.objects.filter(pk=other.user_id).update(status=UserStatus.INVITED.value)
+        self.assertFalse(footprint_logic.sole_approver(self.tenant, self.admin))
+        with self.assertRaises(ValidationError) as refused:
+            self._approve_own(waiting)
+        self.assertEqual(refused.exception.code, "four_eyes_violation")
+
+    def test_the_database_refuses_a_marked_self_approval_of_a_request_not_made_alone(self) -> None:
+        """Review 2026-11-11 S-5: the mark alone does not pass the check constraint."""
+        _, waiting = self._second_approver_then_ask()
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            FootprintChangeRequest.objects.filter(pk=waiting.pk).update(decided_by=self.admin, status="approved", sole_approver=True)
