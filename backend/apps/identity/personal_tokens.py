@@ -1,17 +1,13 @@
 """Personal access tokens (ACC-03, ADR 0056, AGENT_ACCESS.md section 8).
 
-A member holding `tokens.create` mints a token for themselves from a session with a fresh
-passkey assertion. The token acts as that member: it reads with the scopes it was given,
-each one a read the member's own permissions back (`api_keys_logic.SCOPE_BACKING`), and it
-may name one live agent access entry of the bank, whose scope then narrows it and whose
-reach it then carries. It always expires, no later than `PERSONAL_TOKEN_MAX_DAYS` from now,
-and is shown once and stored as a hash. It can never open a session or step up: the agent
-access guard refuses it on every step-up route, this one included, so a token cannot mint a
-token.
+A member holding `tokens.create` mints a token for themselves with a fresh passkey
+assertion. It acts as that member, with scopes the member's own permissions back
+(`api_keys_logic.SCOPE_BACKING`), optionally narrowed to one live agent access entry. It
+always expires within `PERSONAL_TOKEN_MAX_DAYS`, is shown once and stored as a hash, and can
+never open a session or step up, so a token cannot mint a token.
 
-A member lists and revokes their own tokens without `tokens.create`, so a person who lost
-the permission can still stop what they minted. An administrator sees and revokes every
-credential of the bank through `/tenant/api-keys` (`api_keys_logic`).
+A member lists and revokes their own tokens without `tokens.create`; an administrator sees
+and revokes every credential of the bank through `/tenant/api-keys`.
 """
 
 from __future__ import annotations

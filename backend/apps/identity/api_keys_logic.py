@@ -2,18 +2,13 @@
 prefix plus the secret's hash, revocable, with a throttled last-used stamp. Scopes are
 the constants in apps/shared/permissions.py and none reaches a library edit.
 
-Two kinds of key. A bank's own key carries its tenant and may hold only
-`TENANT_KEY_SCOPES`: reads, and filing a proposal. A platform key carries no tenant, is
-bound to one agent definition and is minted from the console under
-`agent_definitions.manage` (AGT-01, D-61, D-62): it is what bleqq's own agents run on, so
-it alone may hold the watch writes and the review scope.
-
-Two credential kinds share the table (ACC-03, ADR 0056). A service key bound to an agent
-access entry reads as that entry and stops the moment the entry is revoked. A personal
-access token acts as the member who minted it: it stops the moment the person, their
-membership or a permission one of its scopes stands on is gone (`SCOPE_BACKING`), checked
-on every request rather than by a sweep. `tenant:read` reaches a bank's register only
-through an entry, so a bank's credential bound to none is resolved without it.
+A bank's own key carries its tenant and holds only `TENANT_KEY_SCOPES`. A platform key
+carries no tenant, is bound to one agent definition and is minted under
+`agent_definitions.manage` (AGT-01, D-61, D-62); it alone may hold the watch writes and the
+review scope. A service key bound to an agent access entry reads as that entry (ACC-03, ADR
+0056). A personal access token acts as the member who minted it and stops the moment a
+permission one of its scopes stands on is gone (`SCOPE_BACKING`), checked on every request.
+`tenant:read` reaches a bank's register only through an entry.
 """
 
 from __future__ import annotations
@@ -39,10 +34,9 @@ from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.models import Tenant
 
-# What an agent's kind may hold beyond the reads and `agent-runs:write` every agent needs
-# (H43, D-62). A review agent decides what another definition filed, so it holds
-# `proposals:review` and none of the filing scopes; every other kind files and never
-# decides, so no key of one can approve its own definition's work.
+# What an agent's kind may hold beyond the reads and `agent-runs:write` (H43, D-62): a review
+# agent holds `proposals:review` and no filing scope, every other kind files and never
+# decides, so no key can approve its own definition's work.
 FILING_SCOPES: frozenset[str] = frozenset({perms.SCOPE_SOURCES_WRITE, perms.SCOPE_CHANGES_WRITE, perms.SCOPE_PROPOSALS_WRITE})
 
 
@@ -112,11 +106,8 @@ def resolve_api_key(plain: str) -> Principal | None:
         return None
     prefix, presented_hash = parsed
     now = timezone.now()
-    # The key with its agent and its bank (neither sits under row-level security) in one
-    # read; the bank is entered in the statement that ends the lookup. A platform key's own
-    # zone is "no tenant", not "whatever the last request left active": a prior
-    # tenant-scoped request in the same connection must never leak its context into this
-    # one (H15).
+    # The key with its agent and its bank in one read. A platform key's zone is "no tenant",
+    # never whatever an earlier request on the connection left active (H15).
     with tenancy.identity_lookup() as lookup:
         key = ApiKey.objects.select_related("agent", "tenant__default_language").filter(key_prefix=prefix).first()  # ordering: key_prefix is unique, at most one row
         usable = (
@@ -137,10 +128,9 @@ def resolve_api_key(plain: str) -> Principal | None:
     if not _backed(key):
         return None
     held = frozenset(key.scopes)
-    # A bank's key created before the watch writes became platform-only may still list one;
-    # it works without it rather than breaking the integration (D-61). `tenant:read` reads a
-    # bank's register only as an entry whose reach it carries, so a bank's credential bound
-    # to no entry is resolved without it (ACC-04, D-72).
+    # An old bank key may still list a watch write; it works without it (D-61). `tenant:read`
+    # needs an entry's reach, so a bank credential bound to no entry goes without it (ACC-04,
+    # D-72).
     withheld = held - perms.TENANT_KEY_SCOPES if key.tenant_id is not None else frozenset()
     if key.tenant_id is not None and entry is None:
         withheld |= held & {perms.SCOPE_TENANT_READ}
@@ -225,12 +215,9 @@ def validate_scopes(values: Iterable[str], allowed: frozenset[str]) -> list[str]
     return wanted
 
 
-# ---------------------------------------------------------------------------------------
-# One mint and one revoke for every credential (review 2026-11-11 L-17, B-9). Each kind's
-# own checks (its scope allow-list, its expiry rule, its agent or entry) stay with the
-# function that calls these; the row, its security log row and its audit row are written
-# here, the same way for all four.
-# ---------------------------------------------------------------------------------------
+# --- One mint and one revoke for every credential (review 2026-11-11 L-17, B-9) ---
+# Each kind's own checks stay with its caller; the row, its security log row and its audit
+# row are written here, the same way for all four.
 def _label(key: ApiKey) -> str:
     if key.kind == CredentialKind.PERSONAL.value:
         return "Personal access token"
@@ -346,9 +333,7 @@ def revoke_credential(key: ApiKey, *, user: User, now: datetime) -> None:
     )
 
 
-# ---------------------------------------------------------------------------------------
-# A bank's own keys
-# ---------------------------------------------------------------------------------------
+# --- A bank's own keys ---
 def list_api_keys(tenant_id: uuid.UUID, *, limit: int, offset: int) -> tuple[list[ApiKey], int]:
     """Every credential of the bank, newest first (ACC-03): its unbound keys, the service keys
     of its agent access entries and every member's personal token, each with the entry or
@@ -386,13 +371,10 @@ def revoke_api_key(*, tenant: Tenant, actor: Actor, revoked_by: User, key_id: uu
     return revoke_key(key, actor=actor, revoked_by=revoked_by, action="api_key.revoked")
 
 
-# ---------------------------------------------------------------------------------------
-# The service keys of an agent access entry (ACC-01, ACC-03, acc-entries-and-log). Minted
-# under `agent_access.manage` with a step-up by the agents app, which has checked the entry
-# is live and the bank's; hold only `AGENT_ACCESS_SCOPES`, expire no later than
-# `AGENT_ACCESS_KEY_MAX_DAYS` from now (that far by default), and are shown once. Revoking
-# the entry revokes every credential bound to it, its keys and the tokens that name it.
-# ---------------------------------------------------------------------------------------
+# --- The service keys of an agent access entry (ACC-01, ACC-03) ---
+# Minted under `agent_access.manage` with a step-up by the agents app, which has checked the
+# entry; hold only `AGENT_ACCESS_SCOPES`, expire within `AGENT_ACCESS_KEY_MAX_DAYS`, shown
+# once. Revoking the entry revokes every credential bound to it.
 def create_entry_key(
     *,
     tenant: Tenant,
@@ -464,14 +446,11 @@ def revoke_entry_credentials(*, tenant: Tenant, entry_id: uuid.UUID, revoked_by:
     return [key.key_prefix for key in live]
 
 
-# ---------------------------------------------------------------------------------------
-# Platform agent keys (ID-10, AGT-01). Reached only through `agent_definitions.manage`,
-# which no bank session can hold (session_logic.build_principal), so every caller is a
-# platform session. The two writes still assert the platform zone rather than inherit one:
-# the row belongs to no tenant, and the mixed table accepts it only from that zone (H15,
-# D-78). A key holds the scopes its agent's kind takes, `proposals:review` for a review
-# agent (D-62, H43); none reaches a library row (AC-PRO1, ID-S21).
-# ---------------------------------------------------------------------------------------
+# --- Platform agent keys (ID-10, AGT-01) ---
+# Reached only through `agent_definitions.manage`, which no bank session holds. The writes
+# still assert the platform zone: the mixed table accepts the row only from there (H15,
+# D-78). A key holds its agent kind's scopes (D-62, H43); none reaches a library row
+# (AC-PRO1, ID-S21).
 def list_agent_keys(*, limit: int, offset: int) -> tuple[list[ApiKey], int]:
     """Every platform key, newest first, bound or not: an unbound one is listed so that it
     can be seen and revoked, never hidden."""

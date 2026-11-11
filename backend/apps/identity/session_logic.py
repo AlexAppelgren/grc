@@ -1,27 +1,18 @@
 """Sessions (D-06, ADR 0006): a short-lived HMAC access token, a rotating refresh token in
 an HttpOnly cookie scoped to the auth path, a `user_session` row behind every refresh so
-a person or an admin revokes at once. Idle and absolute limits are enforced on refresh;
-they are the bank's security policy (ID-08), the platform defaults where it sets none, and
-never above the SESSION_*_MAX settings. A replay inside the grace window answers like the
-original, a replay after it revokes the whole session (ID-S9).
+a person or an admin revokes at once. Idle and absolute limits are the bank's policy
+(ID-08), never above the SESSION_*_MAX settings. A replay inside the grace window answers
+like the original; after it, it revokes the whole session (ID-S9).
 
-`resolve_access_token` is what the three auth classes call. The signed token names the
-session's bank (ADR 0064), so the resolver activates that bank first and reads the session,
-its person, its bank, the grants and the latest step-up in one statement under it: every
-query of the request is scoped from the first (playbook 14), and the identity-lookup flag is
-never switched on for a request's credential. A claim that is not the stored session's bank
-finds no row, or a row the resolver refuses; either way the token answers 401, and a
-mismatch is logged to the security log and ends the session (`_refuse_claim`).
+`resolve_access_token` is what the auth classes call. The signed token names the session's
+bank (ADR 0064): the resolver activates it first and reads the session, person, bank,
+grants and step-up in one statement under it, so every query is scoped (playbook 14). A
+claim that is not the stored session's bank answers 401, is logged and ends the session.
 
-A support session (TEN-06, ADR 0042) is minted here and nowhere else: a platform person
-enters one bank under a grant it approved, and the session activates that bank exactly as a
-member's does, then re-reads the grant under the bank's own policies on every request. The
-one window onto a grant before any bank is active, `app.platform_user_id`, is also set here
-and nowhere else (`own_grants`); `apps/shared/tests_support_session.py` pins both.
-
-One account may be a bank's member and platform staff (D-122, ADR 0067), but a session is in
-one zone: `switch_context` is how the person moves, behind a fresh step-up, to a new session
-in another context they hold (`held_banks`, `holds_platform`)."""
+A support session (TEN-06, ADR 0042) is minted here and nowhere else, and so is the one
+window onto a grant before a bank is active, `app.platform_user_id` (`own_grants`);
+`apps/shared/tests_support_session.py` pins both. A session is in one zone; `switch_context`
+moves a person to another context they hold (D-122, ADR 0067)."""
 
 from __future__ import annotations
 
@@ -61,9 +52,8 @@ from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.errors import ProblemError, not_found
 from apps.tenants.models import SecurityPolicy, SupportAccess
 
-# What a support session holds (D-49, ADR 0042): the seven reads and nothing else. No search
-# or Ask, which would spend the bank's AI budget, no role rows and no platform grant. Which
-# routes it reaches is `SUPPORT_READ_ROUTES` (apps/shared/routes.py), not this set alone.
+# What a support session holds (D-49, ADR 0042): the seven reads and nothing else; no search
+# or Ask, which spend the bank's AI budget. Routes: `SUPPORT_READ_ROUTES` (apps/shared/routes.py).
 SUPPORT_PERMISSIONS: frozenset[str] = frozenset(
     {
         perms.LIBRARY_READ,
@@ -90,16 +80,12 @@ def actor_of(user: User) -> Actor:
     return Actor(kind=ActorType.USER, id=user.id, label=user.name)
 
 
-# ---------------------------------------------------------------------------------------
-# Limits (ID-08)
-# ---------------------------------------------------------------------------------------
+# --- Limits (ID-08) ---
 def limits(tenant_id: uuid.UUID | None) -> tuple[timedelta, timedelta]:
     """The idle and absolute limits of a session in `tenant_id`: its bank's policy, the
-    platform default where the bank sets none (or for a platform session), and never above
-    the platform maximum, even for a row written around the policy route's check. The idle
-    limit is never below `SESSION_IDLE_MINUTES_MIN`, which outlasts an access token, so a
-    person who is working is never signed out as idle. Activates
-    the tenant, as every session in it runs there."""
+    platform default where the bank sets none, never above the platform maximum. The idle
+    limit is never below `SESSION_IDLE_MINUTES_MIN`, which outlasts an access token.
+    Activates the tenant, as every session in it runs there."""
     idle, absolute = settings.SESSION_IDLE_MINUTES_DEFAULT, settings.SESSION_ABSOLUTE_HOURS_DEFAULT
     if tenant_id is not None:
         tenancy.activate(tenant_id)
@@ -113,15 +99,11 @@ def limits(tenant_id: uuid.UUID | None) -> tuple[timedelta, timedelta]:
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Cookies
-# ---------------------------------------------------------------------------------------
+# --- Cookies ---
 def refresh_cookie_name() -> str:
-    """`__Secure-cw_refresh` wherever the cookie is `Secure`: a browser then refuses the
-    name from a page that is not https, or without the flag, so no other site or a script
-    on plain http can plant or shadow it (review 2026-11-11 L-5). The plain name only where
-    `REFRESH_COOKIE_SECURE` is off (local development over http), where the prefix would
-    make the browser drop the cookie."""
+    """`__Secure-cw_refresh` wherever the cookie is `Secure`, so no other site or plain-http
+    script can plant or shadow it (review 2026-11-11 L-5). The plain name only where
+    `REFRESH_COOKIE_SECURE` is off (local http), where the prefix would drop the cookie."""
     base = settings.REFRESH_COOKIE_NAME
     return f"__Secure-{base}" if settings.REFRESH_COOKIE_SECURE else base
 
@@ -131,13 +113,10 @@ def presented_refresh(request: HttpRequest) -> str | None:
 
 
 def guard_cookie_route(request: HttpRequest) -> None:
-    """Refresh and sign-out take the cookie as their only credential, so each is bounded
-    per address like every other auth step (review 2026-11-11 L-4), in a bucket of its
-    own so a busy office's refreshes never use up its sign-ins, and refused with 403
-    `origin_refused` when a browser names an `Origin` the API does not serve (L-5);
-    `SameSite=Strict` already keeps the cookie off another site's request, and this says
-    so on the server as well. A request with no `Origin` (a same-origin navigation, a
-    server-side client) is not refused for that."""
+    """Refresh and sign-out take the cookie as their only credential, so each is rate limited
+    per address in a bucket of its own (review 2026-11-11 L-4) and refused with 403
+    `origin_refused` when a browser names an `Origin` the API does not serve (L-5), on top of
+    `SameSite=Strict`. A request with no `Origin` is not refused for that."""
     rate_limit.enforce("session:ip", client_ip(request) or "", settings.AUTH_RATE_PER_IP_PER_MINUTE, 60, e2e_exempt=True)
     origin = request.headers.get("Origin")
     if origin is not None and origin not in settings.CORS_ALLOWED_ORIGINS:
@@ -164,9 +143,7 @@ def clear_refresh_cookie(response: HttpResponse) -> None:
     response.delete_cookie(refresh_cookie_name(), path=settings.REFRESH_COOKIE_PATH, samesite="Strict")
 
 
-# ---------------------------------------------------------------------------------------
-# Creating sessions
-# ---------------------------------------------------------------------------------------
+# --- Creating sessions ---
 def held_banks(user: User) -> list[tuple[uuid.UUID, str]]:
     """The banks the person is an active member of, as (id, name), oldest membership first.
     Read through the identity lookup: under a bank's zone the person's other memberships do
@@ -224,9 +201,7 @@ def create_session(
     return SessionBundle(session=session, access_token=access_token, expires_in=expires_in, refresh_value=refresh_value)
 
 
-# ---------------------------------------------------------------------------------------
-# Resolving an access token into a principal
-# ---------------------------------------------------------------------------------------
+# --- Resolving an access token into a principal ---
 def _live(session: UserSession, now: datetime) -> bool:
     return session.revoked_at is None and session.expires_at > now
 
@@ -273,22 +248,16 @@ def _read_session(session_id: uuid.UUID) -> UserSession | None:
 
 def build_principal(session: UserSession) -> Principal | None:
     """Flatten the person's grants in the session's tenant (plus platform grants) into a
-    Principal, from the session as `_read_session` loads it (a session loaded any other
-    way is read again that way, under the zone that is active).
+    Principal, from the session as `_read_session` loads it.
 
-    None when a full session in a tenant stands on no active membership there
-    (deactivated, or never created): the token then resolves to nothing, so no route that
-    takes "any member" as its grant answers a non-member (security review 2026-09-19,
-    finding F7). An enrolment session has no membership yet by definition.
+    None when a full session in a tenant stands on no active membership there, so no "any
+    member" route answers a non-member (F7). An enrolment session has no membership yet.
 
-    A session holds the permissions of its own zone and no others (hardening H2, H13). A
-    tenant session reads the membership's role rows and keeps what `TENANT_PERMISSIONS`
-    names, so a row written around the seeds and the role editor cannot smuggle
-    `proposals.review` past the library fence; a platform session reads the platform
-    assignments and keeps what `PLATFORM_PERMISSIONS` names. One account may hold both
-    (D-122, ADR 0067), and still a platform grant is never read in a bank session, nor a
-    membership's in a platform session: the query reads one zone's grants by the
-    session's own `tenant_id`."""
+    A session holds the permissions of its own zone and no others (H2, H13): a tenant session
+    keeps what `TENANT_PERMISSIONS` names, so a row written around the role editor cannot
+    smuggle `proposals.review` past the library fence, and a platform session keeps what
+    `PLATFORM_PERMISSIONS` names. One account may hold both (D-122, ADR 0067); the query
+    reads one zone's grants by the session's own `tenant_id`."""
     if not hasattr(session, "tenant_grants"):
         loaded = _read_session(session.id)
         if loaded is None:
@@ -364,9 +333,8 @@ def resolve_access_token(token: str, *, want: PrincipalKind) -> Principal | None
     if claims.kind not in wanted_kinds:
         return None
     support = claims.kind == SessionKind.SUPPORT.value
-    # The signed bank first (ADR 0064), then the one read under it. Row-level security shows
-    # the session only in its own zone, and a platform session's row to a bank as well (the
-    # mixed read), so the comparison below is what refuses a claim the row does not match.
+    # The signed bank first (ADR 0064), then the one read under it. A platform session's row
+    # shows in a bank too (the mixed read), so the comparison below refuses a mismatch.
     if claims.tenant_id is not None:
         tenancy.activate(claims.tenant_id)
     else:
@@ -375,11 +343,9 @@ def resolve_access_token(token: str, *, want: PrincipalKind) -> Principal | None
     if session is None or session.tenant_id != claims.tenant_id:
         _refuse_claim(claims)
         return None
-    # An enrolment session belongs to an account awaiting its passkey (`invited`), and a
-    # deactivated one has none; every other session needs an `active` account, so a
-    # re-enrolment, which sets the account back to `invited`, ends its sessions in every zone
-    # at once, even where row-level security hid them from the revocation (review 2026-11-11
-    # S-2). Registration refuses an enrolment session of an enrolled account on its own.
+    # Only an enrolment session may stand on an `invited` account; every other needs it
+    # `active`, so a re-enrolment ends its sessions in every zone at once, even those
+    # row-level security hid from the revocation (review 2026-11-11 S-2).
     if claims.kind == SessionKind.ENROLMENT.value:
         standing = session.user.status != UserStatus.DEACTIVATED.value
     else:
@@ -398,12 +364,10 @@ TENANT_CLAIM_MISMATCH = "tenant_claim_mismatch"
 
 
 def _refuse_claim(claims: tokens.AccessClaims) -> None:
-    """A signed token whose session the claimed zone did not show. Look the row up by id
-    across the zones, leave the claimed bank for the row's own zone (or no bank when there
-    is no row), and when the row stands in another zone than the claim, log the refusal to
-    the security log and end the session: only a party holding the signing key can make
-    such a token, since the claim is copied from the row when a token is issued and a
-    session never changes bank (ADR 0064)."""
+    """A signed token whose session the claimed zone did not show. Look the row up across
+    the zones and leave the claimed bank; when the row stands in another zone than the
+    claim, log the refusal and end the session: only a holder of the signing key can make
+    such a token (ADR 0064)."""
     with tenancy.identity_lookup() as lookup:
         stored = UserSession.objects.select_related("user").filter(pk=claims.session_id).first()  # ordering: pk lookup, at most one row
         lookup.then_activate(stored.tenant_id if stored is not None else None)
@@ -431,9 +395,7 @@ def resolve_refreshed(access_token: str) -> Principal | None:
     return resolve_access_token(access_token, want=PrincipalKind.ENROLMENT if claims.kind == SessionKind.ENROLMENT.value else PrincipalKind.USER)
 
 
-# ---------------------------------------------------------------------------------------
-# Support sessions (TEN-06, D-49, ADR 0042)
-# ---------------------------------------------------------------------------------------
+# --- Support sessions (TEN-06, D-49, ADR 0042) ---
 def _grant_live(session: UserSession) -> bool:
     """Whether the grant a support session stands on is still open, read after the session's
     bank is active and under its own policies, so the read proves the grant is that bank's."""
@@ -508,9 +470,7 @@ def create_support_session(
     return SessionBundle(session=session, access_token=access_token, expires_in=expires_in, refresh_value=refresh_value)
 
 
-# ---------------------------------------------------------------------------------------
-# Switching context (D-122, ADR 0067)
-# ---------------------------------------------------------------------------------------
+# --- Switching context (D-122, ADR 0067) ---
 CONTEXT_SWITCHED = "context_switched"
 
 
@@ -518,16 +478,13 @@ def switch_context(
     *, principal: Principal, tenant_id: uuid.UUID | None, step_up_assertion_id: uuid.UUID, request: HttpRequest
 ) -> SessionBundle:
     """Replace the caller's full session with one in another context they hold: a bank they
-    are an active member of (`tenant_id`), or the console (None) when they hold an active
-    platform role. The route has already demanded a fresh step-up on the current session;
-    the assertion stays with that session, which the switch ends, so each switch costs one.
+    are an active member of (`tenant_id`), or the console (None) with an active platform
+    role. The step-up stays with the old session, which the switch ends, so each switch
+    costs one.
 
-    The old session is revoked in its own zone first, then the zone is changed and the new
-    session written there, so neither zone ever holds the other's session row. A context the
-    person does not hold, or the one they are in, is a 404 and writes nothing. The security
-    log records a passkey sign-in to the new zone with the reason `context_switched`; the
-    audit trail records the revocation in the old zone and the switch, with the step-up, in
-    the new one, naming no other bank."""
+    The old session is revoked in its own zone, then the new one written in the new zone,
+    so neither zone holds the other's row. A context not held, or the current one, is a 404
+    and writes nothing. The security log and the audit trail name no other bank."""
     user = principal.user or User.objects.get(pk=principal.subject_id)
     held = holds_platform(user) if tenant_id is None else any(bank == tenant_id for bank, _ in held_banks(user))
     if not held or tenant_id == principal.tenant_id:
@@ -535,9 +492,8 @@ def switch_context(
     actor = actor_of(user)
     assert principal.session_id is not None  # a person's session always names itself
     old = UserSession.objects.select_related("user").get(pk=principal.session_id, user=user)
-    # The step-up belongs to the session it was made on, so ending that session spends it:
-    # of two switches sent with one assertion, only the one whose conditional revocation
-    # lands goes on, and the other starts no session (review 2026-11-11 L-6).
+    # Ending the session spends its step-up: of two switches sent with one assertion,
+    # only the one whose revocation lands goes on (review 2026-11-11 L-6).
     if not revoke_session(old, reason=CONTEXT_SWITCHED, actor=actor, request=request):
         raise ValidationError("Sign in again.", code="unauthenticated")
     if tenant_id is None:
@@ -567,9 +523,7 @@ def switch_context(
     return bundle
 
 
-# ---------------------------------------------------------------------------------------
-# Refresh, sign-out, revocation
-# ---------------------------------------------------------------------------------------
+# --- Refresh, sign-out, revocation ---
 def _load_by_refresh(value: str | None) -> tuple[UserSession | None, str | None]:
     parsed = tokens.parse_refresh_token(value or "")
     if parsed is None:
@@ -639,9 +593,8 @@ def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, s
         revoke_session(session, reason="support_access_ended", actor=actor_of(session.user), request=request)
         raise ProblemError(status=401, code="support_access_ended", detail="The bank's support access has ended.")
     new_value, new_hash = tokens.new_refresh_token(session.id)
-    # One conditional UPDATE on the secret that was read: of two refreshes presenting the
-    # same token, one rotates it and the other is then the replay it is (review 2026-11-11
-    # L-6), answered by the grace window as a tab that came second would be.
+    # One conditional UPDATE on the secret that was read: of two refreshes with one token,
+    # the second is the replay the grace window answers (review 2026-11-11 L-6).
     rotated = UserSession.objects.filter(pk=session.pk, refresh_token_hash=session.refresh_token_hash, revoked_at__isnull=True).update(
         previous_refresh_hash=session.refresh_token_hash,
         refresh_token_hash=new_hash,
@@ -681,14 +634,10 @@ def _holds_secret(session: UserSession, presented_hash: str, now: datetime) -> b
 
 
 def sign_out(value: str | None, request: HttpRequest | None) -> None:
-    """Idempotent: a stale or missing cookie still answers 204. A stale cookie is still a
-    write for the audit rule (AC-AUD1), recorded with no subject; a call with no cookie at
-    all changes nothing and writes nothing, so it cannot fill the audit trail and its
-    outbox (review 2026-11-11 L-4).
-
-    The cookie is the only credential here, and a session id is no secret (every
-    `session.created` audit row names one), so a cookie naming a session without holding
-    its refresh secret signs nobody out and writes nothing in that person's name."""
+    """Idempotent: a stale or missing cookie still answers 204. A stale cookie is audited
+    with no subject (AC-AUD1); no cookie writes nothing, so it cannot fill the audit trail
+    (review 2026-11-11 L-4). A session id is no secret, so a cookie without the refresh
+    secret signs nobody out and writes nothing in that person's name."""
     if not value:
         return
     session, presented_hash = _load_by_refresh(value)
@@ -748,10 +697,8 @@ def revoke_session(session: UserSession, *, reason: str, actor: Actor, request: 
 
 def _in_zone(user: User, tenant_id: uuid.UUID | None) -> QuerySet[UserSession]:
     """The person's sessions in one zone: the bank `tenant_id`, or the platform zone when
-    None. A bank's zone also reads the platform sessions (the mixed read) but may not change
-    them, so every read that may lead to a write names the zone rather than taking whatever
-    row-level security shows (review 2026-11-11 S-2: a re-enrolment from a bank raised
-    `NotUpdated` on the person's console session)."""
+    None. A bank's zone also reads platform sessions but may not change them, so every read
+    that may lead to a write names the zone (review 2026-11-11 S-2)."""
     return UserSession.objects.filter(_zone(tenant_id), user=user)
 
 

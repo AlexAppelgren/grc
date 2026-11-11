@@ -1,18 +1,13 @@
 """`/me`: the caller's own account (ID-04, AC-ID2). The enrolment session may read it and
 sees `enrolmentPending` true; it may change nothing else.
 
-`counts` and `lastVisitAt` (f03-T48, D-23) are Today's "Decide now" source: `docs/inputs/
-openapi.yaml` put a `decideNow` field on `Home` and D-23 moved it here instead, so a queue
-count has one source. `_figures()` reads every count as a subquery of one statement, and
-each is filtered by the caller's own permission rather than refused: a member
-without `cases.triage` or `proposals.create` reads a true 0, never a 403 that would take
-the panel away (chunk 6 default). The session's tenant is already activated by the time
-this runs (`session_logic.resolve_access_token`), so every read below is under row-level
-security without activating it again.
+`counts` and `lastVisitAt` are Today's "Decide now" source (D-23), so a queue count has one
+source. `_figures()` reads every count as a subquery of one statement, each filtered by the
+caller's own permission: a member without it reads 0, never a 403. The session's tenant is
+already active, so every read is under row-level security.
 
-R2's four decision counts (x-decide-now-counts: CAS-06, REG-03, TEN-06, ACC-08) count what
-the caller may decide and never a request they made themselves, which four eyes would
-refuse them. D-75 removed applicability requests, so there is no applicability count."""
+The decision counts (CAS-06, REG-03, TEN-06, ACC-08) count what the caller may decide and
+never their own request, which four eyes would refuse. D-75 removed applicability requests."""
 
 from __future__ import annotations
 
@@ -41,10 +36,8 @@ from apps.shared.models import Tenant
 from apps.taxonomy.models import ApprovalStatus, CaseStatusCategory, GapCategory
 from apps.tenants.models import DEPARTMENT_KINDS, OrgUnit
 
-# The two categories a case has finished in (D-13): excluded from "assigned to me" so a
-# closed or dismissed case a person once owned does not sit in their queue forever. The
-# same pair `apps/home/roadmap.py` excludes from the roadmap; identity does not import
-# from home; two lines is not worth a cross-app dependency for.
+# The categories a case has finished in (D-13), left out of "assigned to me". The same pair
+# `apps/home/roadmap.py` excludes; identity does not import from home.
 _FINISHED_CASES = (CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value)
 
 def _tenant_out(tenant: Tenant | None) -> dict[str, Any] | None:
@@ -81,11 +74,8 @@ def _count_subqueries(principal: Principal) -> dict[str, Any]:
     if principal.has_permission(perms.CASES_TRIAGE):
         counts["triage"] = _count(ChangeCase.objects.filter(status=CaseStatusCategory.NEW.value))
     if principal.has_permission(perms.PROPOSALS_CREATE):
-        # A proposal itself carries no tenant_id (PRO-01: the library is shared). Which
-        # bank made it is `ProposalTenant`, a tenant table of its own under row-level
-        # security (PRO-03) filed at the same time as the proposal; reading through it
-        # rather than the proposer's current membership means a proposal counts here even
-        # after its author has since left the bank.
+        # A proposal carries no tenant_id (PRO-01); `ProposalTenant` (PRO-03) names the bank
+        # that made it, so a proposal still counts after its author has left.
         counts["proposals"] = _count(ProposalTenant.objects.filter(proposal__status=ProposalStatus.OPEN.value))
     counts["assignedToMe"] = _count(ChangeCase.objects.filter(owner_id=me).exclude(status__in=_FINISHED_CASES))
     # Row-level security keeps this to the session's bank; every member reads their own.
@@ -273,19 +263,11 @@ def update_me(
 def mark_visit(principal: Principal) -> None:
     """Move the caller's "seen the library" bookmark to now (PRO-03, AUD-01).
 
-    The bookmark is a column of the caller's own membership, so the tenant app writes it
-    for the person who is signed in and for nobody else; the library-updates screen reads
-    it back to decide which updates are new to them. It is a reading habit, not a
-    judgement about a regulation, so it stays inside the bank that owns the membership row
-    and never reaches the library zone.
-
-    Platform staff read the library itself rather than a bank's view of it, so a session
-    with no tenant has no bookmark to move: 404, like every other tenant route, with
-    nothing written.
-
-    Each move writes an audit and an outbox row kept for ten years, so a visit within
-    `VISIT_MIN_INTERVAL_SECONDS` of the last one writes nothing at all (hardening H38): the
-    bookmark it would have moved is already that recent.
+    The bookmark is a column of the caller's own membership, read back by the
+    library-updates screen; it stays in the bank and never reaches the library zone. A
+    session with no tenant has no bookmark: 404, nothing written. A visit within
+    `VISIT_MIN_INTERVAL_SECONDS` of the last writes nothing, sparing the ten-year audit and
+    outbox rows (H38).
     """
     membership = None
     if principal.tenant_id is not None:

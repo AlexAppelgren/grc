@@ -1,16 +1,13 @@
-"""Models of the identity app (PRD ID-01 to ID-11, INPUT_DELTAS §2, schema v0.3 section 1 as
-corrected by the chunk 1 brief).
+"""Models of the identity app (PRD ID-01 to ID-11, INPUT_DELTAS §2).
 
 Nobody has a password: `User` carries none (apps/shared/tests_no_passwords.py). Tokens,
-codes and keys are stored hashed (SHA-256 for random tokens, a salted SHA-256 for the
-six-digit code) in `apps/identity/tokens.py`, never here.
+codes and keys are stored hashed in `apps/identity/tokens.py`, never here.
 
 Zones: `User`, `PlatformRole`, `PlatformRoleAssignment`, `OtpCode`, `AuthChallenge`,
 `WebAuthnCredential` and `StepUpAssertion` belong to no tenant. `TenantRole`,
 `Membership` (and the two through tables) are tenant tables under forced RLS.
-`Invitation`, `UserSession`, `ApiKey` and `LoginEvent` have a nullable tenant (platform
-invitations, platform sessions, platform keys, platform events) and carry the mixed
-policy; the first three also carry the identity-lookup clause because the auth layer
+`Invitation`, `UserSession`, `ApiKey` and `LoginEvent` have a nullable tenant and carry the
+mixed policy; the first three also carry the identity-lookup clause because the auth layer
 reads them before a tenant is known (apps/shared/tenancy.py).
 """
 
@@ -30,9 +27,7 @@ from apps.shared.vocabulary import TenantVocabulary, Vocabulary, VocabularyLabel
 from apps.shared.kinds import choices
 
 
-# ---------------------------------------------------------------------------------------
-# Kinds (tier one, apps/shared/kinds.py)
-# ---------------------------------------------------------------------------------------
+# --- Kinds (tier one, apps/shared/kinds.py) ---
 class UserStatus(enum.StrEnum):
     INVITED = "invited"
     ACTIVE = "active"
@@ -103,9 +98,8 @@ class LoginEventKind(enum.StrEnum):
     # A bank's key presented a scope only a platform key may hold (PLATFORM_ONLY_SCOPES) and
     # worked without it; `failure_reason` names the scopes. Throttled with `key_used`.
     KEY_SCOPES_WITHHELD = "key_scopes_withheld"
-    # A calendar client fetched a subscribed feed with its token (HOM-04, D-52, ADR 0045).
-    # The only credential in the product that is not a passkey, a session or a key, so its
-    # use belongs in the same log; throttled like `key_used` and recording no address.
+    # A calendar client fetched a subscribed feed with its token (HOM-04, D-52, ADR 0045):
+    # the one credential that is not a passkey, session or key. Throttled, no address.
     FEED_USED = "feed_used"
     # A personal access token was minted, used (throttled like `key_used`) or revoked
     # (ACC-03, ADR 0056), and a credential of an agent access entry or a token went over
@@ -119,9 +113,7 @@ class LoginEventKind(enum.StrEnum):
     ACCESS_TOKEN_REFUSED = "access_token_refused"  # noqa: S105 an enum value, not a credential
 
 
-# ---------------------------------------------------------------------------------------
-# People
-# ---------------------------------------------------------------------------------------
+# --- People ---
 class User(models.Model):
     """A person (table `app_user`). Not Django's auth user; no password field anywhere."""
 
@@ -180,9 +172,7 @@ class PlatformRoleAssignment(models.Model):
         return f"{self.user_id}:{self.role_id}"
 
 
-# ---------------------------------------------------------------------------------------
-# Roles and memberships (tenant zone)
-# ---------------------------------------------------------------------------------------
+# --- Roles and memberships (tenant zone) ---
 class TenantRole(TenantVocabulary):
     """A tenant role (ID-09): system rows seeded per tenant from PRD §6 plus the tenant's
     own, each an array of permission constants. Nothing compares a role's key."""
@@ -245,9 +235,7 @@ class MembershipRole(TenantModel):
         return f"{self.membership_id}:{self.role_id}"
 
 
-# ---------------------------------------------------------------------------------------
-# Invitations and codes
-# ---------------------------------------------------------------------------------------
+# --- Invitations and codes ---
 class Invitation(models.Model):
     """A single-use, hashed, 72-hour token that opens the emailed-code path (ID-01, ID-05).
     `tenant` is null for a platform invitation (bootstrap_platform); the mixed policy with
@@ -319,9 +307,7 @@ class OtpCode(models.Model):
         return str(self.id)
 
 
-# ---------------------------------------------------------------------------------------
-# WebAuthn
-# ---------------------------------------------------------------------------------------
+# --- WebAuthn ---
 class AuthChallenge(models.Model):
     """A short-lived challenge for one ceremony (registration, sign-in, step-up)."""
 
@@ -370,9 +356,7 @@ class WebAuthnCredential(models.Model):
         return self.nickname or str(self.id)
 
 
-# ---------------------------------------------------------------------------------------
-# Sessions, step-up, keys
-# ---------------------------------------------------------------------------------------
+# --- Sessions, step-up, keys ---
 class UserSession(models.Model):
     """One signed-in device (D-06, ADR 0006). A row behind every refresh so a person or an
     admin can revoke at once. `tenant` is null for a platform session.
@@ -439,12 +423,10 @@ class ApiKey(models.Model):
     """A scoped key for agents and integrations (ID-10). `tenant` null is a platform key.
     A key bound to an `agent` names that agent as the actor of everything it writes.
 
-    `kind` (ACC-03, identity 0007): every key before it is a `service` key. A service key
-    bound to an `agent_access` entry acts as that entry and needs a tenant; a `personal`
-    access token acts as `acts_as_user`, a member of its tenant, always expires and is
-    never an agent's. Both read only: a credential of an entry, and every token, holds
-    nothing beyond `AGENT_ACCESS_SCOPES` (ADR 0055). CHECKs hold each rule, and the entry
-    and the person are composite `(tenant_id, …)` keys, so neither can be another bank's."""
+    `kind` (ACC-03): a `service` key bound to an `agent_access` entry acts as that entry and
+    needs a tenant; a `personal` token acts as `acts_as_user`, always expires and is never an
+    agent's. Both hold nothing beyond `AGENT_ACCESS_SCOPES` (ADR 0055). CHECKs hold each rule,
+    and the entry and the person are composite `(tenant_id, …)` keys."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
