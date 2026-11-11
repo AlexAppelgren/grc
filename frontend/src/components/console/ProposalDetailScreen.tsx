@@ -30,7 +30,6 @@ import {
   languageTexts,
   newObligationPayloadOf,
   obligationPayloadOf,
-  precisionOf,
   presentProposal,
   proposerLine,
   scopeTermPills,
@@ -44,7 +43,7 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
 import { cn } from '@/shared/utils/cn';
 import { externalHref } from '@/shared/utils/external-href';
-import { formatDate, formatDateTime, formatPartialDate } from '@/shared/utils/format';
+import { datePrecisionOf, formatDate, formatDateTime, formatPartialDate } from '@/shared/utils/format';
 import { hasProblemCode } from '@/shared/utils/problem';
 
 // /console/queue/[proposalId] (design/screens/console-queue.html; PRO-01,
@@ -221,10 +220,10 @@ function NewInstrumentFacts({ proposal, footer }: { proposal: ProposalRow; foote
           {labelOf(payload.regime)}
         </Fact>
         <Fact field="inForceFrom" label={t('console.queue.field.inForceFrom')}>
-          {payload.inForceFrom ? formatPartialDate(payload.inForceFrom, precisionOf(payload.inForceFromPrecision), ctx) : t('console.queue.detail.notSet')}
+          {payload.inForceFrom ? formatPartialDate(payload.inForceFrom, datePrecisionOf(payload.inForceFromPrecision), ctx) : t('console.queue.detail.notSet')}
         </Fact>
         <Fact field="inForceTo" label={t('console.queue.field.inForceTo')}>
-          {payload.inForceTo ? formatPartialDate(payload.inForceTo, precisionOf(payload.inForceToPrecision), ctx) : t('console.queue.detail.noEnd')}
+          {payload.inForceTo ? formatPartialDate(payload.inForceTo, datePrecisionOf(payload.inForceToPrecision), ctx) : t('console.queue.detail.noEnd')}
         </Fact>
         {implementsNote === '' ? null : (
           <Fact field="implementsNote" label={t('console.queue.field.implementsNote')}>
@@ -267,7 +266,7 @@ function NewObligationFacts({ proposal, footer }: { proposal: ProposalDetail; fo
           {labelOfKey(dutyTypes.data, payload.dutyType)}
         </Fact>
         <Fact field="effectiveFrom" label={t('console.queue.field.effectiveFrom')}>
-          {payload.effectiveFrom ? formatPartialDate(payload.effectiveFrom, precisionOf(payload.effectiveFromPrecision), ctx) : t('console.queue.detail.sinceDutyBegan')}
+          {payload.effectiveFrom ? formatPartialDate(payload.effectiveFrom, datePrecisionOf(payload.effectiveFromPrecision), ctx) : t('console.queue.detail.sinceDutyBegan')}
         </Fact>
         <Fact field="terms" label={t('console.queue.field.scope')}>
           {terms.length === 0 ? t('console.queue.detail.noTerms') : <PillRow pills={scopeTermPills(terms, labelOf)} />}

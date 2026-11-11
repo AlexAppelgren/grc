@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest';
 
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 
-import { DiffText, type DiffSegment } from './DiffText';
+import type { DiffSegment } from '@/features/library/types';
+
+import { DiffText } from './DiffText';
 
 const segments: DiffSegment[] = [
   { op: 'equal', text: 'Research may be received only if it is paid from own resources.' },

@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import { PillRow } from '@/components/ui/PillRow';
 import { useFormatContext } from '@/features/identity/hooks';
+import { complianceOf } from '@/features/library/api';
 import { machineConfirmedLabel, outsideFootprintLabel, presentObligation, watchedMarketLabel, type ObligationFacts } from '@/features/library/obligation-presentation';
 import type { Obligation } from '@/features/library/types';
 import { verifiedLabel, versionLabel } from '@/features/library/version-presentation';
@@ -49,7 +50,8 @@ export function factsOf(obligation: RowFacts): ObligationFacts {
 export function pillsOf(obligation: RowFacts, t: Translate): PresentedPill[] {
   const pills = presentObligation(factsOf(obligation), 'row', t);
   if (obligation.applicability !== 'under_assessment') pills.push(presentApplicability(obligation.applicability, t));
-  if (obligation.complianceStatus !== null) pills.push(presentCompliance(obligation.complianceStatus));
+  const compliance = complianceOf(obligation.complianceStatus);
+  if (compliance !== null) pills.push(presentCompliance(compliance));
   return pills.sort(byOrder);
 }
 

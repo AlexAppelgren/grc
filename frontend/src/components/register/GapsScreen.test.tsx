@@ -219,6 +219,7 @@ describe('the gaps list', () => {
       if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (sent.path === '/api/v1/me') return { status: 200, data: me(SARA) };
       if (sent.path === '/api/v1/gaps') return { status: 200, data: { items: [gap()], total: 45 } };
+      if (sent.path === '/api/v1/obligations/ob-1') return { status: 200, data: obligation };
       return { status: 200, data: { items: [], total: 0, entities: [] } };
     });
     renderIn(<GapsScreen />, EDITOR);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDate, formatDateTime, formatLongDate, formatPartialDate, type FormatContext } from './format';
+import { datePrecisionOf, formatDate, formatDateTime, formatLongDate, formatPartialDate, type FormatContext } from './format';
 
 const stockholm: FormatContext = { locale: 'en', timeZone: 'Europe/Stockholm' };
 const swedish: FormatContext = { locale: 'sv', timeZone: 'Europe/Stockholm' };
@@ -68,5 +68,17 @@ describe('formatPartialDate', () => {
 
   it('returns an unparseable value unchanged', () => {
     expect(formatPartialDate('soon', 'day', stockholm)).toBe('soon');
+  });
+});
+
+describe('datePrecisionOf', () => {
+  it('reads a date precision it knows, and a day otherwise', () => {
+    expect(datePrecisionOf('month')).toBe('month');
+    expect(datePrecisionOf('year')).toBe('year');
+    expect(datePrecisionOf(undefined)).toBe('day');
+    expect(datePrecisionOf(null)).toBe('day');
+    expect(datePrecisionOf('decade')).toBe('day');
+    // The formatter narrows what the server sent the same way, never crashing on a precision it has no rule for.
+    expect(formatPartialDate('2026-10-01', 'decade', stockholm)).toBe(formatPartialDate('2026-10-01', 'day', stockholm));
   });
 });

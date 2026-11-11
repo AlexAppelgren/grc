@@ -55,7 +55,7 @@ export function ObligationTagsPanel({ obligationId }: { obligationId: string }) 
       ) : (
         <ul className="m-0 mb-2 flex list-none flex-wrap items-center gap-1.5 p-0">
           {tags.map((tag) => {
-            const pill = presentVocabularyValue(LIST, { key: tag.key, kind: tag.kind, label: tag.label, extra: {} });
+            const pill = presentVocabularyValue(LIST, { key: tag.key, kind: tag.kind ?? null, label: tag.label, extra: {} });
             return (
               <li key={tag.key} className="inline-flex items-center gap-0.5" data-obligation-tag={tag.key}>
                 <Pill tone={pill.tone} outlined={pill.outlined}>

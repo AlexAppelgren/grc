@@ -3,7 +3,6 @@ import { byOrder, type PresentedPill } from '@/features/shared/presentation-type
 import { proposalStatusTone, slotTone } from '@/features/shared/tone-by-kind';
 import type { MessageKey, Translate } from '@/shared/i18n';
 import { STEP_UP_REQUIRED_CODE } from '@/shared/utils/api-client';
-import type { DatePrecision } from '@/shared/utils/format';
 import { NETWORK_PROBLEM_CODE, problemFrom } from '@/shared/utils/problem';
 
 import {
@@ -246,13 +245,6 @@ export function languageTexts(texts: Readonly<Record<string, string>>, originalL
   return Object.entries(texts)
     .map(([language, text]): LanguageText => ({ language, text, mark: language === originalLanguage ? 'original' : isMachine ? 'machine' : 'none' }))
     .sort((a, b) => Number(b.mark === 'original') - Number(a.mark === 'original') || a.language.localeCompare(b.language));
-}
-
-const PRECISIONS: readonly DatePrecision[] = ['day', 'month', 'quarter', 'year'];
-
-/** A legal date's precision as the payload names it, `day` when it names none or one the client does not know. */
-export function precisionOf(value: string | undefined): DatePrecision {
-  return PRECISIONS.find((precision) => precision === value) ?? 'day';
 }
 
 /** The label of `key` in a list read from its own rows, or the key itself while the list is loading or holds no such row. */

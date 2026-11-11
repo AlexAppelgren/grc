@@ -123,6 +123,11 @@ const research: ObligationDetail = {
     createdModel: 'agent pipeline 0.3',
     ...nobody,
   },
+  applicability: 'under_assessment',
+  complianceStatus: null,
+  firstLineOwner: null,
+  ownerTeam: null,
+  provisions: [],
 };
 
 const ME = {
@@ -153,6 +158,8 @@ const versionDiff: VersionDiff = {
   toEffective: { date: '2026-10-01', precision: 'day' },
   language: 'en',
   isMachine: true,
+  fromConfirmation: null,
+  toConfirmation: null,
   segments: [
     { op: 'equal', text: 'Research from third parties may be received only if…' },
     { op: 'insert', text: 'The institution sets criteria for an annual assessment.' },

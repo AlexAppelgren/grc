@@ -1,4 +1,3 @@
-import { partialDateOf } from '@/features/library/api';
 import { inForceLabel } from '@/features/library/version-presentation';
 import { byOrder, type PresentedPill } from '@/features/shared/presentation-types';
 import { slotTone } from '@/features/shared/tone-by-kind';
@@ -67,7 +66,7 @@ export function titleOf(row: Pick<LibraryUpdateRow, 'target' | 'kind' | 'instrum
 
 /** "In force from Q4 2026": the legal date the new wording binds from, at the precision it is known to. */
 export function inForceLine(row: Pick<LibraryUpdateRow, 'effectiveFrom'>, t: Translate, ctx: FormatContext): string | null {
-  const from = partialDateOf(row.effectiveFrom);
+  const from = row.effectiveFrom ?? null;
   return from === null ? null : inForceLabel(from, null, t, ctx);
 }
 

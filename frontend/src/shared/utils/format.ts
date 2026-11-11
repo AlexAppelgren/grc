@@ -12,6 +12,13 @@ export const defaultFormatContext: FormatContext = { locale: defaultLocale, time
 
 export type DatePrecision = 'day' | 'month' | 'quarter' | 'year';
 
+const PRECISIONS: readonly DatePrecision[] = ['day', 'month', 'quarter', 'year'];
+
+/** A legal date's precision as the server names it, `day` when it names none or one the client does not know. */
+export function datePrecisionOf(value: string | null | undefined): DatePrecision {
+  return PRECISIONS.find((precision) => precision === value) ?? 'day';
+}
+
 const PLAIN_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const PARTIAL = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/;
 
@@ -54,12 +61,14 @@ export function formatLongDate(value: string | Date, ctx: FormatContext = defaul
 
 // A partial date is a string plus its precision: "2026" / year,
 // "2026-09" / month or quarter, "2026-09-12" / day. Precision beyond what the
-// string carries is treated as what the string carries.
+// string carries is treated as what the string carries, and a precision the
+// formatter has no rule for as the day the string carries.
 export function formatPartialDate(
   value: string,
-  precision: DatePrecision,
+  sentPrecision: string | null | undefined,
   ctx: FormatContext = defaultFormatContext,
 ): string {
+  const precision = datePrecisionOf(sentPrecision);
   const m = PARTIAL.exec(value);
   if (!m) return value;
   const year = Number(m[1]);

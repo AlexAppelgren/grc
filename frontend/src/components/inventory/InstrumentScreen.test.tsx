@@ -47,6 +47,7 @@ const fffs: InstrumentDetail = {
       direction: 'incoming',
       instrument: { key: 'fffs-2026-11', shortName: 'FFFS 2026:11' },
       note: 'Amends FFFS 2017:2, in force 1 October 2026.',
+      fromRef: '',
       toRef: '',
     },
     {
@@ -54,6 +55,7 @@ const fffs: InstrumentDetail = {
       direction: 'outgoing',
       instrument: { key: 'celex-32017l0593', shortName: 'Delegated directive (EU) 2017/593' },
       note: '',
+      fromRef: '',
       toRef: '',
     },
   ],
@@ -237,8 +239,8 @@ describe('InstrumentScreen', () => {
     // The directive's card sees FFFS 2017:2 implementing it (incoming implements);
     // the amending instrument's card sees its own amendment going out.
     const lineage: InstrumentDetail['lineage'] = [
-      { relation: { key: 'implements', kind: null, label: 'Implements' }, direction: 'incoming', instrument: { key: 'fffs-2017-2', shortName: 'FFFS 2017:2' }, note: '', toRef: '' },
-      { relation: { key: 'amends', kind: null, label: 'Amends' }, direction: 'outgoing', instrument: { key: 'fffs-2017-1', shortName: 'FFFS 2017:1' }, note: '', toRef: '9 kap. 6 §' },
+      { relation: { key: 'implements', kind: null, label: 'Implements' }, direction: 'incoming', instrument: { key: 'fffs-2017-2', shortName: 'FFFS 2017:2' }, note: '', fromRef: '', toRef: '' },
+      { relation: { key: 'amends', kind: null, label: 'Amends' }, direction: 'outgoing', instrument: { key: 'fffs-2017-1', shortName: 'FFFS 2017:1' }, note: '', fromRef: '', toRef: '9 kap. 6 §' },
     ];
     serve({ ...fffs, lineage });
     renderIn(<InstrumentScreen instrumentId="in-1" />);
