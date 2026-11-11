@@ -152,9 +152,6 @@ class EachKindOpensARun(RequestCase):
         tenancy.activate(self.bank.id)
         AgentRun.objects.filter(research_request_id=out["id"]).update(status="succeeded")
         tenancy.clear_tenant()
-        read = self.read(f"{REQUESTS}/{out['id']}")
-        self.assertEqual(read.status_code, 200, read.content)
-        self.assertEqual(read.json()["status"], "done")
         listed = self.read(REQUESTS).json()
         self.assertEqual([row["id"] for row in listed["items"]], [out["id"]])
         self.assertEqual(listed["items"][0]["status"], "done")
@@ -198,8 +195,7 @@ class WhoMayAsk(RequestCase):
         self.assertEqual(self.requests_of(self.bank), [])
 
     def test_another_banks_request_is_404_and_never_listed(self) -> None:
-        mine = self.ask({"kind": "research_topic", "topic": TOPIC}).json()
-        self.refused(self.read(f"{REQUESTS}/{mine['id']}", bank=self.other, admin=self.other_admin), 404, "not_found")
+        self.ask({"kind": "research_topic", "topic": TOPIC})
         self.assertEqual(self.read(REQUESTS, bank=self.other, admin=self.other_admin).json(), {"items": [], "total": 0})
 
 
@@ -408,7 +404,7 @@ class TheConsolesRetag(RetagCase):
 
     def test_the_retag_is_404_to_a_bank(self) -> None:
         retag = self.retag()
-        self.refused(self.read(f"{REQUESTS}/{retag['id']}"), 404, "not_found")
+        self.assertNotIn(retag["id"], [row["id"] for row in self.read(REQUESTS).json()["items"]])
 
     def test_a_banks_request_is_404_in_the_console(self) -> None:
         mine = self.ask({"kind": "run_now"}).json()

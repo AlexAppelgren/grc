@@ -7,7 +7,7 @@ What is proved here is what a bank's session sees and what it never sees:
   requests with `mine`;
 - never a run of bleqq's own agents: those reach a bank as watch items and proposals, so no
   platform cost, token count or model is ever in a bank's list, and no figure on the page
-  includes one. The console still reads the library's runs, as chunk 5 built it;
+  includes one. The console reads the library's runs on its own route;
 - never another bank's run, and naming another bank's agent matches nothing;
 - paging at 20 by default and 100 at most, in a stable order when two runs start in the
   same microsecond, inside the API budget with `Server-Timing` reported.
@@ -171,11 +171,13 @@ class ABanksOwnRunHistory(TestCase):
         body = self.read(tenant=self.other)
         self.assertEqual([row["id"] for row in body["items"]], [str(self.other_run.id)])
 
-    def test_the_console_still_reads_the_librarys_runs_and_no_banks(self) -> None:
-        principal = user_principal(permissions={perms.SYSTEM_HEALTH})
+    def test_the_console_reads_the_librarys_runs_and_no_banks_on_its_own_route(self) -> None:
+        principal = user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE})
         with stub_session(principal):
-            body = self.client.get(RUNS, **AS_SESSION).json()
+            body = self.client.get("/api/v1/console/agent-runs", **AS_SESSION).json()
+            refused = self.client.get(RUNS, **AS_SESSION)
         self.assertEqual([row["id"] for row in body["items"]], [str(self.library.id)])
+        self.assertEqual(refused.status_code, 403, "a bank's run log is never the console's")
 
     # `GET /agents` carries each agent's latest runs, so the admin page asks once instead of
     # once per agent (the 2026-09-28 request audit): the same rows `GET /agent-runs?tenantAgentId=`

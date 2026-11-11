@@ -15,7 +15,7 @@ export type ChangePage = Schemas['WatchChangePage'];
 export type ChangeDetail = Schemas['WatchChangeDetail'];
 export type ObligationChangePage = Schemas['WatchObligationChangePage'];
 export type SourceCoverage = Schemas['WatchSourceCoverage'];
-export type LibraryRef = Schemas['LibraryRef'];
+export type LibraryRef = Schemas['VocabRef'];
 /** A platform agent named by its definition key: who suggested or confirmed a curated fact (D-74). */
 export type AgentRef = Schemas['AgentRef'];
 /** This bank's decision about one suggested obligation link, as the change read carries it. */

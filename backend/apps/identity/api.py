@@ -25,69 +25,13 @@ from apps.identity import (
     session_logic,
 )
 from apps.identity.models import ApiKey, User
-from apps.identity.schemas import (
-    CredentialEntryRef,
-    AgentKeyCreate,
-    AgentKeyCreated,
-    AgentKeyOut,
-    AgentKeysPage,
-    ApiKeyCreate,
-    ApiKeyCreated,
-    ApiKeyOut,
-    ApiKeysPage,
-    CodeRequestBody,
-    CodeVerifyBody,
-    ContextSwitchBody,
-    Empty,
-    ENROLMENT_SESSION_EXAMPLE,
-    InvitationAcceptBody,
-    InvitationAccepted,
-    InvitationCodeVerifyBody,
-    InvitationOpenBody,
-    InvitationOut,
-    InvitationsPage,
-    Me,
-    MemberInvite,
-    MemberOut,
-    MemberPatch,
-    MemberTeamsBody,
-    MembersPage,
-    MePatch,
-    MEMBER_SESSIONS_EXAMPLE,
-    MY_PASSKEYS_EXAMPLE,
-    MY_SESSIONS_EXAMPLE,
-    PasskeyAssertBody,
-    PasskeyOut,
-    PasskeyPatch,
-    PasskeyRegisterBody,
-    PasskeyRegistered,
-    PersonalTokenCreate,
-    PersonalTokenCreated,
-    PersonalTokenOut,
-    PersonalTokensPage,
-    PERMISSIONS_EXAMPLE,
-    PermissionOut,
-    RefreshResult,
-    RoleCreate,
-    ROLES_EXAMPLE,
-    RoleOut,
-    RoleRef,
-    RolePatch,
-    SecurityEventOut,
-    SecurityLogPage,
-    SessionOut,
-    SessionTokens,
-    STEP_UP_OPTIONS_EXAMPLE,
-    StepUpResult,
-    WebAuthnCreationOptions,
-    WebAuthnRequestOptions,
-)
+from apps.identity.schemas import AgentKeyCreate, AgentKeyCreated, AgentKeyOut, AgentKeysPage, ApiKeyCreate, ApiKeyCreated, ApiKeyOut, ApiKeysPage, CodeRequestBody, CodeVerifyBody, ContextSwitchBody, Empty, ENROLMENT_SESSION_EXAMPLE, InvitationAccepted, InvitationCodeVerifyBody, InvitationOpenBody, InvitationOut, InvitationsPage, Me, MemberInvite, MemberOut, MemberPatch, MemberTeamsBody, MembersPage, MePatch, MEMBER_SESSIONS_EXAMPLE, MY_PASSKEYS_EXAMPLE, MY_SESSIONS_EXAMPLE, PasskeyAssertBody, PasskeyOut, PasskeyPatch, PasskeyRegisterBody, PasskeyRegistered, PersonalTokenCreate, PersonalTokenCreated, PersonalTokenOut, PersonalTokensPage, PERMISSIONS_EXAMPLE, PermissionOut, RefreshResult, RoleCreate, ROLES_EXAMPLE, RoleOut, RolePatch, SecurityEventOut, SecurityLogPage, SessionOut, SessionTokens, STEP_UP_OPTIONS_EXAMPLE, StepUpResult, WebAuthnCreationOptions, WebAuthnRequestOptions
 from apps.shared import permissions as perms
 from apps.shared.authentication import EnrolmentAuth, Principal, PrincipalKind, SessionAuth
 from apps.shared.models import Tenant
 from apps.shared.permissions import enforce_recent_sign_in_or_step_up, enforce_step_up, requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
-from apps.taxonomy.schemas import PersonRef
+from apps.shared.schemas import NamedRef, VocabRef
 
 router = Router(tags=["Identity"])
 
@@ -340,8 +284,6 @@ def passkey_register_options(request: HttpRequest) -> WebAuthnCreationOptions:
     Needs a session of either kind and no permission: a person can only ever register a
     passkey for their own account. It stores the challenge and writes the audit event
     `auth.challenge_issued`.
-
-    Errors: `unauthenticated` (401) without a live session.
     """
     # Ungated by design: capability (the enrolment or full session is the grant).
     return WebAuthnCreationOptions.model_validate(passkey_logic.registration_options(_principal(request)))
@@ -381,8 +323,8 @@ def passkey_register_verify(request: HttpRequest, body: PasskeyRegisterBody, res
     lifetime, and start again from the options call; `invalid_credential` (400) when the
     credential cannot be read; `registration_failed` (400) when it does not verify or that
     passkey is already registered; `step_up_required` (403) when a full session is older
-    than the step-up window and holds no fresh assertion; `unauthenticated` (401) without a live session; `validation_error` (422) for a malformed
-    body.
+    than the step-up window and holds no fresh assertion; `validation_error` (422) for a
+    malformed body.
     """
     # Ungated by design: capability. From a full session, adding an authentication factor
     # needs a session younger than the step-up window or a fresh assertion (security
@@ -498,8 +440,7 @@ def step_up_options(request: HttpRequest) -> WebAuthnRequestOptions:
     Needs a full session and no permission; an agent's API key can never step up. It stores
     the challenge and writes the audit event `auth.challenge_issued`.
 
-    Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
-    enrolment session.
+    Errors: `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: self.
     return WebAuthnRequestOptions.model_validate(passkey_logic.step_up_options(_principal(request)))
@@ -530,8 +471,8 @@ def step_up_verify(request: HttpRequest, body: PasskeyAssertBody) -> StepUpResul
 
     Errors: `step_up_failed` (400) for every refusal (a passkey that is not the caller's or
     is retired, a spent or expired challenge, a user handle naming someone else, a bad
-    signature); `unauthenticated` (401) without a live session; `enrolment_only` (403) from
-    an enrolment session; `validation_error` (422) for a malformed body.
+    signature); `enrolment_only` (403) from an enrolment session; `validation_error` (422)
+    for a malformed body.
     """
     # Ungated by design: self.
     assertion = passkey_logic.verify_step_up(_principal(request), body.credential.model_dump(by_alias=True, exclude_none=True), request)
@@ -673,8 +614,8 @@ def update_me(request: HttpRequest, body: MePatch) -> Me:
     that is not an active language or a switch that does not exist, and then nothing is
     saved; `not_found` (404) for switches sent from a platform session, which belongs to no
     bank; `validation_error` (422) for a name over 200 characters, a language key over 8 or
-    a switch that is not true, false or null; `unauthenticated` (401) without a live
-    session; `enrolment_only` (403) from an enrolment session.
+    a switch that is not true, false or null; `enrolment_only` (403) from an enrolment
+    session.
     """
     # Ungated by design: self.
     return Me.model_validate(
@@ -747,12 +688,11 @@ def switch_context(request: HttpRequest, body: ContextSwitchBody, response: Http
     and the audit events `session.created` and `session.context_switched`, the latter
     carrying the step-up.
 
-    Errors: `step_up_required` (403) without a fresh passkey assertion on this session;
-    `not_found` (404) for a bank the person is not an active member of, the console for a
-    person without an active platform role, or the place this session is already in, and
-    nothing is written; `validation_error` (422) when `tenantId` is missing or not a UUID or
-    null; `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
-    enrolment session; `support_read_only` (403) from a support session.
+    Errors: `not_found` (404) for a bank the person is not an active member of, the console
+    for a person without an active platform role, or the place this session is already in,
+    and nothing is written; `validation_error` (422) when `tenantId` is missing or not a
+    UUID or null; `enrolment_only` (403) from an enrolment session; `support_read_only`
+    (403) from a support session.
     """
     # Ungated by design: self. Moves the caller's own session to a context they hold.
     bundle = session_logic.switch_context(
@@ -774,7 +714,7 @@ def switch_context(request: HttpRequest, body: ContextSwitchBody, response: Http
 )
 @requires_step_up
 @_quoting_settings
-def accept_invitation(request: HttpRequest, body: InvitationAcceptBody) -> InvitationAccepted:
+def accept_invitation(request: HttpRequest, body: InvitationOpenBody) -> InvitationAccepted:
     """For a person who already holds a passkey, such as platform staff or a member of another
     bank, and has been invited into a bank: the emailed code is only for enrolling a first
     passkey and is never sent to them, so they sign in and send the token from the link
@@ -789,13 +729,11 @@ def accept_invitation(request: HttpRequest, body: InvitationAcceptBody) -> Invit
     with the reason "invitation_accepted" to the security log and the audit event
     `invitation.accepted`, carrying the step-up. The invitation then stops working.
 
-    Errors: `step_up_required` (403) without a fresh passkey assertion on this session;
-    `invitation_expired` (410) when the token is unknown, already used, past its
-    $invitation_hours hours, revoked or replaced, a re-enrolment, or sent to another address,
-    one answer for all of them, and nothing is written; `validation_error` (422) for a
-    missing token or one over 128 characters; `unauthenticated` (401) without a live session;
-    `enrolment_only` (403) from an enrolment session; `support_read_only` (403) from a
-    support session.
+    Errors: `invitation_expired` (410) when the token is unknown, already used, past its
+    $invitation_hours hours, revoked or replaced, a re-enrolment, or sent to another
+    address, one answer for all of them, and nothing is written; `validation_error` (422)
+    for a missing token or one over 128 characters; `enrolment_only` (403) from an enrolment
+    session; `support_read_only` (403) from a support session.
     """
     # Ungated by design: self. The caller joins with their own address's invitation alone.
     tenant = invitation_logic.accept_signed_in(
@@ -845,8 +783,7 @@ def list_my_passkeys(request: HttpRequest) -> list[PasskeyOut]:
     Self-service: needs a full session and no permission, and lists only the caller's own. It
     changes nothing and writes no audit event.
 
-    Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
-    enrolment session.
+    Errors: `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: self.
     return [PasskeyOut.model_validate(passkey_logic.passkey_out(row)) for row in passkey_logic.list_passkeys(_principal(request).subject_id)]
@@ -870,8 +807,7 @@ def rename_my_passkey(request: HttpRequest, body: PasskeyPatch, passkey_id: uuid
 
     Errors: `not_found` (404) when the passkey does not exist, is retired or belongs to
     someone else, one answer for all three; `validation_error` (422) for a name over 100
-    characters; `unauthenticated` (401) without a live session; `enrolment_only` (403) from
-    an enrolment session.
+    characters; `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: self.
     return PasskeyOut.model_validate(passkey_logic.passkey_out(passkey_logic.rename_passkey(_principal(request), passkey_id, body.nickname)))
@@ -901,8 +837,7 @@ def remove_my_passkey(request: HttpRequest, passkey_id: uuid.UUID = _PASSKEY_ID)
     Errors: `last_passkey` (409) for the only live passkey; `not_found` (404) when the
     passkey does not exist, is already retired or belongs to someone else;
     `step_up_required` (403) when the session is older than the step-up window and holds no
-    fresh assertion; `unauthenticated` (401) without a live session; `enrolment_only` (403)
-    from an enrolment session.
+    fresh assertion; `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: self. Removing an authentication factor needs a session younger
     # than the step-up window or a fresh assertion (F9, narrowed).
@@ -939,8 +874,7 @@ def list_my_sessions(request: HttpRequest) -> list[SessionOut]:
     Self-service: needs a full session and no permission, and lists only the caller's own. It
     changes nothing and writes no audit event.
 
-    Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
-    enrolment session.
+    Errors: `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: self.
     principal = _principal(request)
@@ -968,8 +902,8 @@ def revoke_my_session(request: HttpRequest, session_id: uuid.UUID = _SESSION_ID)
     themselves.
 
     Errors: `not_found` (404) when the session does not exist, belongs to someone else or is
-    one of the caller's own in another bank, one answer for all three; `unauthenticated`
-    (401) without a live session; `enrolment_only` (403) from an enrolment session.
+    one of the caller's own in another bank, one answer for all three; `enrolment_only`
+    (403) from an enrolment session.
     """
     # Ungated by design: self.
     session_logic.revoke_own_session(_principal(request), session_id, request)
@@ -990,9 +924,9 @@ _TOKEN_ID = Path(
 )
 
 
-def _entry_ref(key: ApiKey) -> CredentialEntryRef | None:
+def _entry_ref(key: ApiKey) -> NamedRef | None:
     entry = key.agent_access
-    return None if entry is None else CredentialEntryRef(id=entry.id, name=entry.name)
+    return None if entry is None else NamedRef(id=entry.id, name=entry.name)
 
 
 def _token_out(key: ApiKey) -> PersonalTokenOut:
@@ -1028,9 +962,7 @@ def list_my_tokens(request: HttpRequest, page: PageQuery = Query(...)) -> Person
     `tokens.create` still sees what they minted. A token cannot list tokens. It changes
     nothing and writes no audit event. An empty page is a 200 with `total` 0.
 
-    Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
-    depth; `not_found` (404) on a platform session, which has no bank; `unauthenticated` (401)
-    without a live session.
+    Errors: `not_found` (404) on a platform session, which has no bank.
     """
     # Ungated by design: self.
     items, total = personal_tokens.list_own(_tenant_id(request), _principal(request).subject_id, limit=page.limit, offset=page.offset)
@@ -1069,13 +1001,12 @@ def create_my_token(request: HttpRequest, body: PersonalTokenCreate) -> tuple[in
     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
     opening the passkey prompt and retrying, and always to a key or token; `unknown_key`
     (422) for a scope a token may not hold, the message naming the valid ones, or for an
-    entry the bank has not got or has revoked; `scope_not_held` (422) for a scope the caller's
-    permissions do not back; `entry_required` (422) for `tenant:read` without an entry;
-    `expiry_in_past` (422) for an expiry that is not in the future; `expiry_too_late` (422)
-    for one beyond $token_max_days days; `name_required` (422) for a name of spaces alone;
-    `validation_error` (422) for a missing expiry, an empty scope list, a name over 200
-    characters or a field the body does not take; `permission_denied` (403) without
-    `tokens.create`; `unauthenticated` (401) without a live session.
+    entry the bank has not got or has revoked; `scope_not_held` (422) for a scope the
+    caller's permissions do not back; `entry_required` (422) for `tenant:read` without an
+    entry; `expiry_in_past` (422) for an expiry that is not in the future; `expiry_too_late`
+    (422) for one beyond $token_max_days days; `name_required` (422) for a name of spaces
+    alone; `validation_error` (422) for a missing expiry, an empty scope list, a name over
+    200 characters or a field the body does not take.
     """
     user = _actor_user(request)
     key, plain = personal_tokens.mint(
@@ -1113,9 +1044,8 @@ def revoke_my_token(request: HttpRequest, token_id: uuid.UUID = _TOKEN_ID) -> tu
     Writes "token_revoked" to the security log the first time and the audit event
     `personal_token.revoked` each time.
 
-    Errors: `not_found` (404) when the caller has no token with that identifier in this bank,
-    one answer for someone else's token, a service key and an unknown identifier;
-    `unauthenticated` (401) without a live session.
+    Errors: `not_found` (404) when the caller has no token with that identifier in this
+    bank, one answer for someone else's token, a service key and an unknown identifier.
     """
     # Ungated by design: self.
     user = _actor_user(request)
@@ -1180,9 +1110,7 @@ def list_members(request: HttpRequest, page: PageQuery = Query(...)) -> MembersP
     Needs `members.manage` on a person's session in the bank; API keys cannot reach it. It
     changes nothing and writes no audit event. An empty page is a 200 with an empty list.
 
-    Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
-    depth; `permission_denied` (403) without `members.manage`; `unauthenticated` (401)
-    without a live session; `enrolment_only` (403) from an enrolment session.
+    Errors: `enrolment_only` (403) from an enrolment session.
     """
     items, total = members_logic.list_members(_tenant_id(request), _order(request), limit=page.limit, offset=page.offset)
     return MembersPage(items=[MemberOut.model_validate(item) for item in items], total=total)
@@ -1212,13 +1140,10 @@ def invite_member(request: HttpRequest, body: MemberInvite) -> tuple[int, Invita
     grant any role, `admin` included. Records the audit event `invitation.created` with the
     roles, the expiry and the step-up assertion; the token is never recorded.
 
-    Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
-    opening the passkey prompt and retrying; `already_member` (409) when the address belongs
-    to a current member;
+    Errors: `already_member` (409) when the address belongs to a current member;
     `unknown_key` (422) for a role key the bank does not have or has retired;
-    `invalid_email` (422) for an address without an `@`; `validation_error` (422) for an empty role list or a field over its length;
-    `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
-    live session.
+    `invalid_email` (422) for an address without an `@`; `validation_error` (422) for an
+    empty role list or a field over its length.
     """
     actor_user = _actor_user(request)
     invitation = members_logic.invite_member(
@@ -1260,8 +1185,7 @@ def update_member(request: HttpRequest, body: MemberPatch, user_id: uuid.UUID = 
     the change would leave nobody holding `members.manage`; `roles_required` (422) for an
     empty role list; `unknown_key` (422) for a role the bank does not have or has retired;
     `not_found` (404) when the person is not a current member; `validation_error` (422) for
-    a title over 200 characters; `permission_denied` (403) without `members.manage`;
-    `unauthenticated` (401) without a live session.
+    a title over 200 characters.
     """
     # Step-up when the roles change (playbook 4.2: role and permission changes).
     assertion_id = enforce_step_up(request) if body.role_keys is not None else None
@@ -1308,10 +1232,9 @@ def set_member_teams(request: HttpRequest, body: MemberTeamsBody, user_id: uuid.
     after, even when nothing changed.
 
     Errors: `unknown_member` (422) when the person is not a current member of this bank;
-    `unknown_key` (422) for a team the bank does not have, or a retired team the member is not
-    already in, and then nothing is saved; `validation_error` (422) for a missing `teams`, more
-    than 50 keys or a key over 80 characters; `permission_denied` (403) without
-    `members.manage`; `unauthenticated` (401) without a live session.
+    `unknown_key` (422) for a team the bank does not have, or a retired team the member is
+    not already in, and then nothing is saved; `validation_error` (422) for a missing
+    `teams`, more than 50 keys or a key over 80 characters.
     """
     membership = members_logic.set_member_teams(
         tenant=_tenant(request), actor=session_logic.actor_of(_actor_user(request)), user_id=user_id, keys=body.teams
@@ -1339,8 +1262,7 @@ def list_member_sessions(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) 
 
     Needs `members.manage`. It changes nothing and writes no audit event.
 
-    Errors: `not_found` (404) when the person is not a current member; `permission_denied`
-    (403) without `members.manage`; `unauthenticated` (401) without a live session.
+    Errors: `not_found` (404) when the person is not a current member.
     """
     return [_session_out(row, None) for row in members_logic.member_sessions(_tenant_id(request), user_id)]
 
@@ -1366,8 +1288,7 @@ def revoke_member_sessions(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID
     "revoked_by_admin", the audit event `session.revoked` for each, and
     `member.sessions_revoked` with how many there were.
 
-    Errors: `not_found` (404) when the person is not a current member; `permission_denied`
-    (403) without `members.manage`; `unauthenticated` (401) without a live session.
+    Errors: `not_found` (404) when the person is not a current member.
     """
     members_logic.revoke_member_sessions(tenant=_tenant(request), actor=session_logic.actor_of(_actor_user(request)), user_id=user_id, request=request)
     return 204, None
@@ -1400,13 +1321,10 @@ def reissue_enrolment(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> 
     `enrolment.reissued` for the new invitation and `member.enrolment_reissued` with how many
     sessions and passkeys were affected and the step-up assertion.
 
-    Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
-    opening the passkey prompt and retrying; `not_found` (404) when the person is not a
-    current member; `account_held_elsewhere` (409) when the person is also an active member
-    of another bank or holds a platform role, whose passkeys open those places too, so only
-    the platform owner may re-issue their enrolment, and nothing is written;
-    `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
-    live session.
+    Errors: `not_found` (404) when the person is not a current member;
+    `account_held_elsewhere` (409) when the person is also an active member of another bank
+    or holds a platform role, whose passkeys open those places too, so only the platform
+    owner may re-issue their enrolment, and nothing is written.
     """
     actor_user = _actor_user(request)
     members_logic.reissue_enrolment(
@@ -1437,10 +1355,6 @@ def list_invitations(request: HttpRequest, page: PageQuery = Query(...)) -> Invi
 
     Needs `members.manage`. It changes nothing and writes no audit event. An empty page is a
     200 with an empty list.
-
-    Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
-    depth; `permission_denied` (403) without `members.manage`; `unauthenticated` (401)
-    without a live session.
     """
     items, total = members_logic.list_invitations(_tenant_id(request), _order(request), limit=page.limit, offset=page.offset)
     return InvitationsPage(items=[InvitationOut.model_validate(item) for item in items], total=total)
@@ -1466,8 +1380,7 @@ def resend_invitation(request: HttpRequest, invitation_id: uuid.UUID = _INVITATI
     the token is never recorded.
 
     Errors: `invitation_closed` (409) when the invitation was already accepted or revoked;
-    `not_found` (404) when this bank has no such invitation; `permission_denied` (403)
-    without `members.manage`; `unauthenticated` (401) without a live session.
+    `not_found` (404) when this bank has no such invitation.
     """
     tenant = _tenant(request)
     invitation = members_logic.tenant_invitation(tenant.id, invitation_id)
@@ -1492,8 +1405,7 @@ def revoke_invitation(request: HttpRequest, invitation_id: uuid.UUID = _INVITATI
 
     Needs `members.manage`. Records the audit event `invitation.revoked`, the retry included.
 
-    Errors: `not_found` (404) when this bank has no such invitation; `permission_denied`
-    (403) without `members.manage`; `unauthenticated` (401) without a live session.
+    Errors: `not_found` (404) when this bank has no such invitation.
     """
     tenant = _tenant(request)
     invitation = members_logic.tenant_invitation(tenant.id, invitation_id)
@@ -1524,8 +1436,7 @@ def list_roles(request: HttpRequest) -> list[RoleOut]:
     event.
 
     Errors: `not_found` (404) from a platform session, which belongs to no bank;
-    `unauthenticated` (401) without a live session; `enrolment_only` (403) from an enrolment
-    session.
+    `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: capability (any member; pickers need labels).
     order = _order(request)
@@ -1553,12 +1464,10 @@ def create_role(request: HttpRequest, body: RoleCreate) -> tuple[int, RoleOut]:
     minutes. Records the audit event `role.created` with the key, labels and permissions and
     the step-up assertion.
 
-    Errors: `step_up_required` (403) without a fresh step-up; `duplicate_key` (409) for a
-    key the bank already has, retired roles included; `key_required` (422) for a blank key;
-    `label_required` (422) when no label is given; `unknown_key` (422) for a language the
-    product does not offer or a key that is not a bank permission; `validation_error` (422)
-    for a field over its length; `permission_denied` (403) without `roles.manage`;
-    `unauthenticated` (401) without a live session.
+    Errors: `duplicate_key` (409) for a key the bank already has, retired roles included;
+    `key_required` (422) for a blank key; `label_required` (422) when no label is given;
+    `unknown_key` (422) for a language the product does not offer or a key that is not a
+    bank permission; `validation_error` (422) for a field over its length.
     """
     role = roles_logic.create_role(
         tenant=_tenant(request),
@@ -1598,9 +1507,7 @@ def update_role(request: HttpRequest, body: RolePatch, key: str = _ROLE_KEY) -> 
     `system_role` (422) for a change of a system role's permissions; `label_required` (422)
     when every label sent is blank; `unknown_key` (422) for a language the product does not
     offer or a key that is not a bank permission; `not_found` (404) when the bank has no
-    role with that key; `validation_error` (422) for a note over 1000 characters;
-    `permission_denied` (403) without `roles.manage`; `unauthenticated` (401) without a live
-    session.
+    role with that key; `validation_error` (422) for a note over 1000 characters.
     """
     # Step-up when the permissions change (playbook 4.2).
     assertion_id = enforce_step_up(request) if body.permissions is not None else None
@@ -1639,8 +1546,7 @@ def retire_role(request: HttpRequest, key: str = _ROLE_KEY) -> RoleOut:
 
     Errors: `role_in_use` (409) while a current member holds the role, the message saying
     how many; `system_role` (422) for a system role; `not_found` (404) when the bank has no
-    role with that key; `permission_denied` (403) without `roles.manage`; `unauthenticated`
-    (401) without a live session.
+    role with that key.
     """
     tenant = _tenant(request)
     role = roles_logic.tenant_role_by_key(tenant.id, key)
@@ -1665,8 +1571,7 @@ def list_permissions(request: HttpRequest) -> list[PermissionOut]:
     Any signed-in session may read it, with no permission; API keys cannot. It changes
     nothing and writes no audit event.
 
-    Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
-    enrolment session.
+    Errors: `enrolment_only` (403) from an enrolment session.
     """
     # Ungated by design: capability (any session; the role editor lists the constants).
     return [
@@ -1698,10 +1603,6 @@ def list_api_keys(request: HttpRequest, page: PageQuery = Query(...)) -> ApiKeys
 
     Needs `integrations.manage` on a person's session in the bank; an API key cannot list
     keys. It changes nothing and writes no audit event. An empty page is a 200 with `total` 0.
-
-    Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
-    depth; `permission_denied` (403) without `integrations.manage`; `unauthenticated` (401)
-    without a live session.
     """
     items, total = api_keys_logic.list_api_keys(_tenant_id(request), limit=page.limit, offset=page.offset)
     return ApiKeysPage(items=[_api_key_out(row) for row in items], total=total)
@@ -1720,7 +1621,7 @@ def _api_key_out(key: ApiKey) -> ApiKeyOut:
         last_used_at=key.last_used_at,
         kind=key.kind,  # type: ignore[arg-type]
         agent_access=_entry_ref(key),
-        person=None if person is None else PersonRef(id=person.id, name=person.name),
+        person=None if person is None else NamedRef(id=person.id, name=person.name),
     )
 
 
@@ -1752,12 +1653,10 @@ def create_api_key(request: HttpRequest, body: ApiKeyCreate) -> tuple[int, ApiKe
     `api_key.created` with the prefix, scopes and expiry, never the secret, and with the
     step-up assertion.
 
-    Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
-    opening the passkey prompt and retrying; `unknown_key` (422) for a scope a bank's key may
-    not hold, the message naming the valid scopes; `name_required` (422) for a name of spaces
-    alone; `expiry_in_past` (422) for an expiry that is not in the future; `validation_error`
-    (422) for an empty scope list or a name over 200 characters; `permission_denied` (403)
-    without `integrations.manage`; `unauthenticated` (401) without a live session.
+    Errors: `unknown_key` (422) for a scope a bank's key may not hold, the message naming
+    the valid scopes; `name_required` (422) for a name of spaces alone; `expiry_in_past`
+    (422) for an expiry that is not in the future; `validation_error` (422) for an empty
+    scope list or a name over 200 characters.
     """
     actor_user = _actor_user(request)
     key, plain = api_keys_logic.create_api_key(
@@ -1799,9 +1698,7 @@ def revoke_api_key(request: HttpRequest, key_id: uuid.UUID = _API_KEY_ID) -> tup
     "key_revoked" to the security log the first time, "token_revoked" for a personal access
     token, and the audit event `api_key.revoked` each time.
 
-    Errors: `not_found` (404) when the bank has no credential with that identifier;
-    `permission_denied` (403) without `integrations.manage`; `unauthenticated` (401) without
-    a live session.
+    Errors: `not_found` (404) when the bank has no credential with that identifier.
     """
     actor_user = _actor_user(request)
     api_keys_logic.revoke_api_key(tenant=_tenant(request), actor=session_logic.actor_of(actor_user), revoked_by=actor_user, key_id=key_id)
@@ -1824,7 +1721,7 @@ def _agent_key_out(key: ApiKey) -> AgentKeyOut:
         scopes=sorted(key.scopes),
         agent_id=key.agent_id,
         # The label names the version, as a reviewing agent's audit label does (proposals/api.py).
-        agent=RoleRef(key=agent.key, kind=None, label=f"{agent.key} v{agent.current_version}") if agent is not None else None,
+        agent=VocabRef(key=agent.key, kind=None, label=f"{agent.key} v{agent.current_version}") if agent is not None else None,
         created_at=key.created_at,
         expires_at=key.expires_at,
         revoked_at=key.revoked_at,
@@ -1853,10 +1750,6 @@ def list_agent_keys(request: HttpRequest, page: PageQuery = Query(...)) -> Agent
     shown again after creation: a row carries its eight-character prefix and nothing more.
     It changes nothing and writes nothing to the audit log. An empty list is a 200 with
     `total` 0.
-
-    Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-    depth; `permission_denied` without `agent_definitions.manage`; `unauthenticated`
-    without a session.
     """
     keys, total = api_keys_logic.list_agent_keys(limit=page.limit, offset=page.offset)
     return AgentKeysPage(items=[_agent_key_out(key) for key in keys], total=total)
@@ -1894,15 +1787,12 @@ def create_agent_key(request: HttpRequest, body: AgentKeyCreate) -> tuple[int, A
     that confirmed it; the security log records the event "key_created". Answers 201 with
     the key.
 
-    Errors: `step_up_required` without a fresh passkey assertion, which the console answers
-    by opening the passkey prompt and retrying; `unknown_key` when `agentId` names no agent
-    definition or a scope does not exist, the message naming the valid scopes;
-    `agent_inactive` (422) when the agent is retired or switched off; `scope_not_for_kind`
-    (422) for a scope the agent's kind does not take, the message naming it;
-    `name_required` for a name of spaces alone; `expiry_in_past` for an expiry that is not
-    in the future; `validation_error` for a field the schema refuses, a field it does not
-    name among them; `permission_denied` without `agent_definitions.manage`;
-    `unauthenticated` without a session.
+    Errors: `unknown_key` when `agentId` names no agent definition or a scope does not
+    exist, the message naming the valid scopes; `agent_inactive` (422) when the agent is
+    retired or switched off; `scope_not_for_kind` (422) for a scope the agent's kind does
+    not take, the message naming it; `name_required` for a name of spaces alone;
+    `expiry_in_past` for an expiry that is not in the future; `validation_error` for a field
+    the schema refuses, a field it does not name among them.
     """
     actor_user = _actor_user(request)
     key, plain = api_keys_logic.create_agent_key(
@@ -1989,9 +1879,7 @@ def list_security_log(request: HttpRequest, page: PageQuery = Query(...)) -> Sec
     Reading it changes nothing and writes no audit event. An empty page is a 200 with an
     empty list.
 
-    Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
-    depth; `permission_denied` (403) without `security.manage`; `unauthenticated` (401)
-    without a live session; `enrolment_only` (403) from an enrolment session.
+    Errors: `enrolment_only` (403) from an enrolment session.
     """
     items, total = security_log.list_events(_tenant_id(request), limit=page.limit, offset=page.offset)
     return SecurityLogPage(items=[SecurityEventOut.model_validate(row) for row in items], total=total)

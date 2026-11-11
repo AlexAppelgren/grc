@@ -50,7 +50,7 @@ const people = [{ id: 'u-sara', name: 'Sara Lindqvist' }];
 function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sent[] {
   return installAdapter((sent) => {
     if (sent.method === 'get' && sent.path === UNITS) return { status: 200, data: { items: [{ ...bank, licences: [banking, withdrawn] }, { ...group, licences: [] }, { ...retail, licences: [] }], total: 3 } };
-    if (sent.path === '/api/v1/taxonomy/dimensions') return { status: 200, data: dimensions };
+    if (sent.path === '/api/v1/vocab/term_dimension') return { status: 200, data: dimensions };
     if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: terms };
     if (sent.path === '/api/v1/reference/people') return { status: 200, data: people };
     if (sent.method !== 'get' && write !== undefined) return write(sent);

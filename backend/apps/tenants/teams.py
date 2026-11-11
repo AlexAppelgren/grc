@@ -11,7 +11,7 @@ from typing import Any
 from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, QuerySet
 
-from apps.identity.models import Membership, User
+from apps.identity.models import Membership
 from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 from apps.shared.vocabulary import label_for
@@ -73,11 +73,3 @@ def list_teams(*, tenant: Tenant, order: list[str], limit: int, offset: int) -> 
     return {"items": items, "total": queryset.count()}
 
 
-def list_team_members(*, tenant: Tenant, key: str, limit: int, offset: int) -> dict[str, Any]:
-    """`GET /tenant/teams/{key}/members`: the team's current members by name, ids and names only."""
-    team = team_of(tenant, key)
-    queryset = User.objects.filter(
-        id__in=TeamMember.objects.filter(tenant=tenant, team=team).values("user_id"),
-    ).filter(id__in=_current_members(tenant).values("user_id")).order_by("name", "id")
-    items = [{"id": person.id, "name": person.name} for person in queryset[offset : offset + limit]]
-    return {"items": items, "total": queryset.count()}

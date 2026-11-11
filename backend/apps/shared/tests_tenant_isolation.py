@@ -47,7 +47,7 @@ class TenantIsolationGuard(TestCase):
         registered = {(op.method, op.path) for op in iter_operations(api)}
         for method, path, _model_label, factory_name in TENANT_SCOPED_ROUTES:
             with self.subTest(route=f"{method} {path}"):
-                self.assertIn((method, path), registered, "registry names a route Ninja did not register")
+                self.assertIn((method, path.partition("?")[0]), registered, "registry names a route Ninja did not register")
                 self.assertTrue(hasattr(factories, factory_name), f"no factory {factory_name} in factories.py")
 
     def test_other_tenants_record_answers_404_for_each_route(self) -> None:

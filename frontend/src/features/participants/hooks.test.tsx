@@ -46,9 +46,9 @@ describe('participant hooks', () => {
     act(() => remove.result.current.mutate('p1'));
     await waitFor(() => expect(reads()).toBe(4));
     expect(sent.filter((s) => s.method !== 'get').map((s) => [s.method, s.path])).toEqual([
-      ['post', '/api/v1/obligations/ob1/participants'],
-      ['post', '/api/v1/obligations/ob1/participants'],
-      ['delete', '/api/v1/obligations/ob1/participants/p1'],
+      ['post', '/api/v1/participants'],
+      ['post', '/api/v1/participants'],
+      ['delete', '/api/v1/participants/p1'],
     ]);
   });
 
@@ -70,11 +70,11 @@ describe('participant hooks', () => {
     await waitFor(() => expect(reads()).toBe(3));
     expect(participantKeys.case('ch1')).toEqual(['participants', 'case', 'ch1']);
     expect(sent.map((s) => [s.method, s.path])).toEqual([
-      ['get', '/api/v1/changes/ch1/participants'],
-      ['post', '/api/v1/changes/ch1/participants'],
-      ['get', '/api/v1/changes/ch1/participants'],
-      ['delete', '/api/v1/changes/ch1/participants/p1'],
-      ['get', '/api/v1/changes/ch1/participants'],
+      ['get', '/api/v1/participants'],
+      ['post', '/api/v1/participants'],
+      ['get', '/api/v1/participants'],
+      ['delete', '/api/v1/participants/p1'],
+      ['get', '/api/v1/participants'],
     ]);
   });
 });

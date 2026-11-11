@@ -599,7 +599,7 @@ And tenant B's fetch of the item answers 404
 > `scope_item.removed` audit and outbox row carrying ids and keys only, and a rejection or
 > withdrawal makes it `declined`. `GET /tenant/footprint` lists the items in scope with
 > `research` (`waiting_for_agent` until the bank's own agent's research, d89-agent-research,
-> reports more), and `GET /tenant/footprint/scope-items/{scopeItemId}` reads one. Each list
+> reports more), and each request carries the items it adds and removes. Each list
 > of the request is capped by `FOOTPRINT_CHANGE_MAX_TERMS` and the decision note at 2000
 > characters (H24). Every route takes a person's session; `tests_scope_items.NoOtherWriter`
 > fails when any module but the request logic writes a scope item. The `@e2e` half is

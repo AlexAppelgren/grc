@@ -232,7 +232,7 @@ describe('contributor teams', () => {
   function serveTeams(write: Answer = { status: 204 }): Sent[] {
     return installAdapter((sent) => {
       if (sent.method !== 'get') return sent.method === 'post' ? { status: 201, data: LEGAL } : write;
-      if (sent.path === '/api/v1/changes/c-1/participants') return { status: 200, data: { items: [ERIK, LEGAL], total: 2 } };
+      if (sent.path === '/api/v1/participants') return { status: 200, data: { items: [ERIK, LEGAL], total: 2 } };
       if (sent.path === '/api/v1/tenant/teams') return { status: 200, data: { items: TEAMS, total: TEAMS.length } };
       const list = sent.path.replace('/api/v1/vocab/', '');
       if (list in LISTS) return { status: 200, data: { items: LISTS[list], total: LISTS[list]!.length } };
@@ -247,7 +247,7 @@ describe('contributor teams', () => {
     fireEvent.click(await within(teams).findByRole('button', { name: 'Remove Legal' }));
     await waitFor(() => expect(writes(sent)).toHaveLength(1));
     expect(within(teams).queryByText('Erik Holm')).not.toBeInTheDocument();
-    expect(writes(sent).map((s) => [s.method, s.path])).toEqual([['delete', '/api/v1/changes/c-1/participants/p-legal']]);
+    expect(writes(sent).map((s) => [s.method, s.path])).toEqual([['delete', '/api/v1/participants/p-legal']]);
   });
 
   it('adds a team from a picker of teams alone, with one call that never saves the assessment', async () => {
@@ -258,7 +258,7 @@ describe('contributor teams', () => {
     fireEvent.click(await within(dialog).findByRole('radio', { name: /Retail compliance/ }));
     fireEvent.click(within(dialog).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(writes(sent).map((s) => [s.method, s.path, s.body])).toEqual([['post', '/api/v1/changes/c-1/participants', { teamKey: 'retail_compliance' }]]);
+    expect(writes(sent).map((s) => [s.method, s.path, s.body])).toEqual([['post', '/api/v1/participants', { subjectType: 'change', subjectId: 'c-1', teamKey: 'retail_compliance' }]]);
     expect(sent.some((s) => s.path === '/api/v1/reference/people')).toBe(false);
   });
 

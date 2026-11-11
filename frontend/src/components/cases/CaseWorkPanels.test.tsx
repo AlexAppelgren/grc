@@ -8,7 +8,7 @@ import type { components } from '@/types/api.generated';
 
 import { CaseWorkPanels, casePanelsFor } from './CaseWorkPanels';
 
-type CaseVocabularyRef = components['schemas']['CasesVocabularyRef'];
+type CaseVocabularyRef = components['schemas']['VocabRef'];
 
 // Which panels a case shows, from its fixed category and, once closed, from
 // its close reason's fixed kind (design/screens/tenant-change.html, "Shown

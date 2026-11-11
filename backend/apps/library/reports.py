@@ -20,7 +20,9 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 
 from apps.identity.rate_limit import enforce
+from apps.library import reading
 from apps.library.models import Language, ProblemReport, SubjectType
+from apps.library.schemas import ProblemReportBody
 from apps.shared.audit import Actor, record
 
 ACTION = "library.problem_reported"
@@ -80,3 +82,23 @@ def create_report(
         after={"reportId": str(report.id), "versionNumber": version_number, "language": language},
     )
     return report
+
+
+def report_on(*, body: ProblemReportBody, tenant_id: uuid.UUID, reporter: Any, actor: Actor) -> ProblemReport:
+    """`POST /problem-reports`: file a report on an obligation or an instrument the caller
+    can read; another bank's private record answers 404 as one that does not exist."""
+    if body.subject_type == SubjectType.OBLIGATION.value:
+        record: Any = reading.obligation_subject(body.subject_id)
+    else:
+        record = reading.instrument_subject(body.subject_id)
+    return create_report(
+        subject_type=SubjectType(body.subject_type),
+        subject_id=record.id,
+        subject_title=record.stable_key,
+        tenant_id=tenant_id,
+        reporter=reporter,
+        actor=actor,
+        description=body.description,
+        version_number=body.version_number,
+        language=body.language,
+    )

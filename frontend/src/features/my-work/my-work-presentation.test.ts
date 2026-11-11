@@ -162,11 +162,6 @@ describe('presentWorkItem', () => {
     expect(presentWorkItem({ status: null, urgency: null })).toEqual([]);
   });
 
-  it('draws a status that arrives without a kind the same as one whose kind is null', () => {
-    const withoutKind = presentWorkItem({ status: { key: 'partly_ok', label: 'Partly compliant' }, urgency: null });
-    expect(withoutKind).toEqual(presentWorkItem({ status: { key: 'partly_ok', kind: null, label: 'Partly compliant' }, urgency: null }));
-    expect(withoutKind).toEqual([expect.objectContaining({ label: 'Partly compliant' })]);
-  });
 });
 
 describe('links', () => {

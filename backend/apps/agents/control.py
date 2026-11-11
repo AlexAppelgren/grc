@@ -23,7 +23,7 @@ from apps.agents import tasks, tenant_agents
 from apps.agents.models import AgentRun, RunStatus, RunTrigger
 from apps.agents.platform import refuse_platform_agent, refuse_platform_run
 from apps.agents.runs_read import _item as run_item
-from apps.agents.schemas import AgentRunListItem
+from apps.agents.schemas import AgentRunListItem, TenantAgentUpdate
 from apps.identity.models import User
 from apps.shared.adapters.agent_runner import RunHandle, get_agent_runner
 from apps.shared.audit import Actor, ActorType, record
@@ -52,8 +52,22 @@ def run_now(
     return 202, run_item(run)
 
 
+def update(*, who: Principal, tenant: Tenant, tenant_agent_id: uuid.UUID, body: TenantAgentUpdate) -> dict[str, Any]:
+    """`PATCH /agents/{tenantAgentId}`: the settings the body sends, then its `paused`, in one
+    transaction. Each records its own audit event, so a pause still names who paused
+    (review 2026-11-11 B-14)."""
+    with transaction.atomic():
+        if body.paused is None or body.model_fields_set - {"paused"}:
+            changed = tenant_agents.update_tenant_agent(who=who, tenant=tenant, tenant_agent_id=tenant_agent_id, body=body)
+            if body.paused is None:
+                return changed
+        if body.paused:
+            return pause(who=who, tenant=tenant, tenant_agent_id=tenant_agent_id)
+        return resume(who=who, tenant=tenant, tenant_agent_id=tenant_agent_id)
+
+
 def pause(*, who: Principal, tenant: Tenant, tenant_agent_id: uuid.UUID) -> dict[str, Any]:
-    """`POST /agents/{tenantAgentId}/pause`. Pausing a paused agent changes nothing."""
+    """`PATCH /agents/{tenantAgentId}` with `paused: true`. Pausing a paused agent changes nothing."""
     with transaction.atomic():
         agent = tenant_agents.own_agent(tenant_agent_id)
         tenant_agents.pause(agent, PAUSED_BY_PERSON, by=_person(who))
@@ -61,7 +75,7 @@ def pause(*, who: Principal, tenant: Tenant, tenant_agent_id: uuid.UUID) -> dict
 
 
 def resume(*, who: Principal, tenant: Tenant, tenant_agent_id: uuid.UUID) -> dict[str, Any]:
-    """`DELETE /agents/{tenantAgentId}/pause`: clear the pause and schedule the next run.
+    """`PATCH /agents/{tenantAgentId}` with `paused: false`: clear the pause and schedule the next run.
     Resuming an agent that is not paused changes nothing and records nothing."""
     with transaction.atomic():
         agent = tenant_agents.own_agent(tenant_agent_id)

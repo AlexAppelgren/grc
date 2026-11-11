@@ -4,7 +4,7 @@
 // `bash generate-types.sh` regenerates them). A local definition remains
 // only where the generator cannot express the shape, each with a reason.
 
-import type { components } from '@/types/api.generated';
+import type { components, operations } from '@/types/api.generated';
 
 type Schemas = components['schemas'];
 
@@ -28,8 +28,8 @@ export type ProposalOrder = 'oldest' | 'newest';
 // The route's filters and its page, as the generated query schemas name them,
 // minus the nulls a caller never sends and with `order` narrowed to its two values.
 type Unnulled<T> = { [K in keyof T]?: Exclude<T[K], null> };
-export type ProposalQuery = Unnulled<Omit<Schemas['ProposalQuery'], 'order'> & Schemas['PageQuery']> & { order?: ProposalOrder };
-export type TenantProposalQuery = Unnulled<Schemas['TenantProposalQuery']>;
+export type ProposalQuery = Unnulled<Omit<NonNullable<operations['listProposals']['parameters']['query']>, 'order'>> & { order?: ProposalOrder };
+export type TenantProposalQuery = Unnulled<NonNullable<operations['listTenantProposals']['parameters']['query']>>;
 
 // Local: the fixed kinds `Proposal.kind` and `.status` carry (apps/proposals/models.py).
 // Kept narrow rather than `string` so a screen that switches over them is checked by `tsc`.

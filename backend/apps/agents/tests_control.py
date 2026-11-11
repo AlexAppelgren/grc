@@ -167,13 +167,23 @@ class RunningNow(ControlCase):
 
 
 class PausingAndResuming(ControlCase):
+    def test_a_pause_beside_a_setting_records_both_and_still_names_the_person(self) -> None:
+        """Review 2026-11-11 B-14: the pause rides on the agent's PATCH, and the audit row of
+        the pause keeps naming who paused, apart from the settings change."""
+        answer = self.call("patch", f"{AGENTS}/{self.own.id}", {"cadence": "weekly", "paused": True})
+        self.assertEqual(answer.status_code, 200, answer.content)
+        self.assertEqual(answer.json()["pausedBy"]["id"], str(self.admin.id))
+        [paused] = self.audit("agents.tenant_agent_paused")
+        self.assertEqual(paused.actor_id, self.admin.id)
+        self.assertEqual(len(self.audit("agents.tenant_agent_changed")), 1)
+
     def test_pause_stops_the_schedule_and_names_the_person(self) -> None:
-        answer = self.call("post", f"{AGENTS}/{self.own.id}/pause", {})
+        answer = self.call("patch", f"{AGENTS}/{self.own.id}", {"paused": True})
         self.assertEqual(answer.status_code, 200, answer.content)
         self.assertIsNotNone(answer.json()["pausedAt"])
         self.assertEqual(answer.json()["pausedBy"]["id"], str(self.admin.id))
         self.assertIsNone(answer.json()["nextRunAt"])
-        again = self.call("post", f"{AGENTS}/{self.own.id}/pause", {})
+        again = self.call("patch", f"{AGENTS}/{self.own.id}", {"paused": True})
         self.assertEqual(again.status_code, 200, again.content)
         paused = self.audit("agents.tenant_agent_paused")
         self.assertEqual(len(paused), 1, "pausing a paused agent records nothing")
@@ -182,12 +192,12 @@ class PausingAndResuming(ControlCase):
 
     def test_pause_leaves_an_open_run_running(self) -> None:
         run_id = self.run_now().json()["id"]
-        self.call("post", f"{AGENTS}/{self.own.id}/pause", {})
+        self.call("patch", f"{AGENTS}/{self.own.id}", {"paused": True})
         self.assertEqual(self.stored(run_id).status, RunStatus.RUNNING.value)
 
     def test_resume_clears_the_pause_and_schedules_the_next_run(self) -> None:
-        self.call("post", f"{AGENTS}/{self.own.id}/pause", {})
-        answer = self.call("delete", f"{AGENTS}/{self.own.id}/pause")
+        self.call("patch", f"{AGENTS}/{self.own.id}", {"paused": True})
+        answer = self.call("patch", f"{AGENTS}/{self.own.id}", {"paused": False})
         self.assertEqual(answer.status_code, 200, answer.content)
         self.assertIsNone(answer.json()["pausedAt"])
         self.assertIsNone(answer.json()["pausedBy"])
@@ -203,17 +213,17 @@ class PausingAndResuming(ControlCase):
         self.assertEqual(resumed[0].tenant_id, self.bank.id)
 
     def test_resuming_an_agent_that_is_not_paused_records_nothing(self) -> None:
-        answer = self.call("delete", f"{AGENTS}/{self.own.id}/pause")
+        answer = self.call("patch", f"{AGENTS}/{self.own.id}", {"paused": False})
         self.assertEqual(answer.status_code, 200, answer.content)
         self.assertEqual(self.audit("agents.tenant_agent_resumed"), [])
 
     def test_another_bank_reaches_neither(self) -> None:
-        for method, body in (("post", {}), ("delete", None)):
-            with self.subTest(method):
+        for paused in (True, False):
+            with self.subTest(paused=paused):
                 answer = self.call(
-                    method,
-                    f"{AGENTS}/{self.own.id}/pause",
-                    body,
+                    "patch",
+                    f"{AGENTS}/{self.own.id}",
+                    {"paused": paused},
                     bank=self.other,
                     admin=self.other_admin,
                 )

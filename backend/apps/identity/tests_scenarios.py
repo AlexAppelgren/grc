@@ -64,7 +64,8 @@ from apps.shared.models import AuditEvent
 from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in
 from config.api import api
-from apps.shared.testing import b64url_decode, gate_of
+from apps.shared.permissions import gate_of
+from apps.shared.testing import b64url_decode
 
 ANNA = "anna@bank.example"
 CHROME_ON_WINDOWS = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"

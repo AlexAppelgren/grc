@@ -28,9 +28,8 @@ from typing import Annotated, Any
 from django.http import HttpRequest
 from ninja import Path, Query, Router
 
-from apps.identity.schemas import RoleRef
-from apps.library import reading, reports
-from apps.library.models import Language, SubjectType
+from apps.library import reading
+from apps.library.models import Language
 from apps.library.schemas import (
     InstrumentDetail,
     InstrumentPage,
@@ -42,8 +41,6 @@ from apps.library.schemas import (
     ObligationDetail,
     ObligationPage,
     ObligationQuery,
-    ProblemReportBody,
-    ProblemReportCreated,
     ProvisionNode,
     ReverificationBody,
     SAMPLE_PROVISION_TREE,
@@ -59,7 +56,7 @@ from apps.shared.permissions import requires_permission, requires_step_up
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.http import actor_for, answers_problems, caller_tenant, caller_user, principal, require_library_read
 from apps.taxonomy.reading import language_order
-from apps.taxonomy.schemas import PersonRef
+from apps.shared.schemas import NamedRef, VocabRef
 
 router = Router(tags=["Library"])
 
@@ -69,49 +66,13 @@ SESSION_OR_KEY = [SessionAuth(), ApiKeyAuth()]
 # ---------------------------------------------------------------------------------------
 # What the published contract says about the writes (docs/plans/briefs/API_DOCUMENTATION.md)
 # ---------------------------------------------------------------------------------------
-# Long prose belongs beside the route, not inside the decorator's argument list, and the two
-# report routes say the same thing about the same record. A backticked snake_case word in an
+# Long prose belongs beside the route, not inside the decorator's argument list. A backticked snake_case word in an
 # operation description is read as an RFC 9457 code by the documentation gate, so the three
 # verification outcomes appear here unquoted on purpose.
-_SUBJECT_ID = (
-    "The {record} the report is about, by its identifier (a UUID). It has to be one the caller "
-    "can already read, so another bank's private record and an identifier that names nothing "
-    "both answer 404 rather than telling you which of the two it was."
-)
-OBLIGATION_ID_DESCRIPTION = _SUBJECT_ID.format(record="obligation")
-INSTRUMENT_ID_DESCRIPTION = _SUBJECT_ID.format(record="instrument")
 REVERIFY_ID_DESCRIPTION = (
     "The obligation that was checked, by its identifier (a UUID). A library editor works in no "
     "bank and so addresses the shared library alone: a record a bank owns privately answers 404 "
     "here, exactly as an identifier that names nothing does."
-)
-
-REPORT_DESCRIPTION = (
-    "Files a reader's \"this looks wrong\" report against one {record} of the shared library. "
-    "Call it when someone reading a record believes a public fact is wrong. Nothing in the "
-    "library changes here: a proposal is the only door into it.\n\n"
-    "{extra}"
-    "The report is created inside the bank the caller is signed in to and stays there. No bleqq "
-    "editor, no other bank, no agent and no model ever reads it, and no console surface lists it "
-    "(Alex, 2026-09-19). The loop back to the library is closed the other way round: bleqq's "
-    "watch agents re-check library records against their sources on every run, find the "
-    "deviation themselves, and propose the correction for a second, independent principal to "
-    "approve.\n\n"
-    "The reporter and the bank are taken from the caller's session and never from the body, so "
-    "do not send them; versionNumber and language record which words were on screen.\n\n"
-    "Needs the `problems.report` permission, which every member of a bank holds and no platform "
-    "role does. Answers 201 with the report's id, its status and when it was filed, and never "
-    "reads the reader's own words back. Writes one audit event, library.problem_reported, "
-    "carrying the record, the report's id and the version and language on screen, and never the "
-    "text itself.\n\n"
-    "Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) "
-    "without the permission, including for every platform role; `not_found` (404) when the "
-    "{record} is not one this caller may read; `validation_error` (422) when the body is "
-    "malformed, the text is longer than 4000 characters or holds a NUL character, or the path "
-    "segment is not a UUID; `description_required` (422) when the description is only "
-    "whitespace; `unknown_key` (422) when the language is not an active content language; "
-    "`rate_limited` (429) when this person has filed 30 reports in the last hour "
-    "(`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry."
 )
 
 REVERIFY_DESCRIPTION = (
@@ -240,14 +201,14 @@ _AUTHORITIES_EXAMPLE = {
 
 @router.get(
     "/reference/languages",
-    response=list[RoleRef],
+    response=list[VocabRef],
     auth=SessionAuth(),
     operation_id="listLanguages",
     by_alias=True,
     summary="List the languages a record can be read in",
     openapi_extra=_LANGUAGES_EXAMPLE,
 )
-def list_languages(request: HttpRequest) -> list[RoleRef]:
+def list_languages(request: HttpRequest) -> list[VocabRef]:
     """Every content language the platform is serving, as key, kind and label: what fills a
     language picker on a person's profile, on a bank's default-language setting and behind
     "Show original" on a record. Swedish, Danish, Norwegian, Finnish and English are active
@@ -266,7 +227,7 @@ def list_languages(request: HttpRequest) -> list[RoleRef]:
     """
     # Ungated by design: capability (any session; a reference read for pickers, I18N-01).
     return [
-        RoleRef(key=language.key, kind=None, label=language.name)
+        VocabRef(key=language.key, kind=None, label=language.name)
         for language in Language.objects.filter(active=True).order_by("key")
     ]
 
@@ -312,23 +273,23 @@ def list_obligations(request: HttpRequest, query: Query[ObligationQuery], page: 
     why each of them would have been hidden; setting it to watched lists only what the
     markets the bank watches add, each row naming its jurisdiction.
 
-    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope, or for an overlay filter sent by a
-    caller in a bank who does not hold `register.read`; `unknown_filter` (422) when a
-    caller that belongs to no bank, such as a platform key, sends tenantTag or an overlay
-    filter, since it has no tags or register of its own; `not_found` (404) when such a caller
-    reads the list at all; `unknown_filter` (422) when an agent access credential sends
-    footprint all or watched; `tenant_reach_off` (403) when one sends an overlay or tenantTag
-    filter while it may not read the bank's register (it lacks `tenant:read`, or tenant reach
-    is off for the bank or its entry); `validation_error` (422) when a term filter is not written
-    dimension:key, when instrument, dutyType, complianceStatus, ownerTeam or any term, tag or
-    tenantTag value is longer than 80 characters, when applicability is not applies,
-    not_applicable or under_assessment, when owner is not a UUID, when more than 20 terms, tags or
-    tenant tags are sent, when footprint is not in, all or watched, when the retired
-    outsideFootprint is sent, when the phrase is longer than 200 characters or when the page
-    size or offset is out of range; `unknown_key` (422) when a term filter names no active
-    term, a tag filter no library tag or a tenantTag filter none of the bank's own tags,
-    listing every one that was not found.
+    Errors to branch on: `permission_denied` (403) without library.read or the library:read
+    scope, or for an overlay filter sent by a caller in a bank who does not hold
+    `register.read`; `unknown_filter` (422) when a caller that belongs to no bank, such as a
+    platform key, sends tenantTag or an overlay filter, since it has no tags or register of
+    its own; `not_found` (404) when such a caller reads the list at all; `unknown_filter`
+    (422) when an agent access credential sends footprint all or watched; `tenant_reach_off`
+    (403) when one sends an overlay or tenantTag filter while it may not read the bank's
+    register (it lacks `tenant:read`, or tenant reach is off for the bank or its entry);
+    `validation_error` (422) when a term filter is not written dimension:key, when
+    instrument, dutyType, complianceStatus, ownerTeam or any term, tag or tenantTag value is
+    longer than 80 characters, when applicability is not applies, not_applicable or
+    under_assessment, when owner is not a UUID, when more than 20 terms, tags or tenant tags
+    are sent, when footprint is not in, all or watched, when the retired outsideFootprint is
+    sent, when the phrase is longer than 200 characters or when the page size or offset is
+    out of range; `unknown_key` (422) when a term filter names no active term, a tag filter
+    no library tag or a tenantTag filter none of the bank's own tags, listing every one that
+    was not found.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     require_library_read(request)
@@ -383,12 +344,11 @@ def get_obligation(
     first version answers the record with a null version and a null summary rather than a
     404.
 
-    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope; `not_found` (404) when no
-    obligation has that id or key or it is one this caller may not see, the two answering
-    alike so that nothing can be probed for; `validation_error` (422) when the path segment
-    is neither a UUID nor a key (letters, digits, hyphens and underscores, at most 120
-    characters) or asOf is not a date.
+    Errors to branch on: `permission_denied` (403) without library.read or the library:read
+    scope; `not_found` (404) when no obligation has that id or key or it is one this caller
+    may not see, the two answering alike so that nothing can be probed for;
+    `validation_error` (422) when the path segment is neither a UUID nor a key (letters,
+    digits, hyphens and underscores, at most 120 characters) or asOf is not a date.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-03, AGT-02).
     who = require_library_read(request)
@@ -430,13 +390,12 @@ def get_obligation_diff(
     something. An agent access entry's key or token reads the diff of a duty it could open
     itself, and gets the 404 of a missing duty for any other.
 
-    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope; `not_found` (404) when no
-    obligation has that id or it is one this caller may not see; `unknown_key` (422) when a
-    version number is asked for that this obligation has no version for; `validation_error`
-    (422) when the obligation has fewer than two versions and neither number was given, when
-    the two versions share no language at all, when lang is longer than 8 characters, or
-    when the path segment is not a UUID.
+    Errors to branch on: `permission_denied` (403) without library.read or the library:read
+    scope; `not_found` (404) when no obligation has that id or it is one this caller may not
+    see; `unknown_key` (422) when a version number is asked for that this obligation has no
+    version for; `validation_error` (422) when the obligation has fewer than two versions
+    and neither number was given, when the two versions share no language at all, when lang
+    is longer than 8 characters, or when the path segment is not a UUID.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-04, AGT-02).
     who = require_library_read(request)
@@ -476,14 +435,13 @@ def list_instruments(request: HttpRequest, query: Query[InstrumentQuery], page: 
     `asOf` filters are deferred: "as of" applies to obligations only, and the Instruments
     tab lists every visible instrument with its own in-force dates.
 
-    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope, which is checked first, so a
-    platform key without the scope gets this; `not_found` (404) when the caller is a
-    platform key carrying the scope, since it belongs to no bank; `unknown_filter` (422)
-    when an agent access credential sends footprint all or watched; `validation_error` (422)
-    when footprint is not in, all or watched, when the retired outsideFootprint is sent,
-    when regime is longer than 80 characters, when the phrase is longer than 200 characters
-    or the page size or offset is out of range.
+    Errors to branch on: `permission_denied` (403) without library.read or the library:read
+    scope, which is checked first, so a platform key without the scope gets this;
+    `not_found` (404) when the caller is a platform key carrying the scope, since it belongs
+    to no bank; `unknown_filter` (422) when an agent access credential sends footprint all
+    or watched; `validation_error` (422) when footprint is not in, all or watched, when the
+    retired outsideFootprint is sent, when regime is longer than 80 characters, when the
+    phrase is longer than 200 characters or the page size or offset is out of range.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-01, AGT-02).
     who = require_library_read(request)
@@ -520,12 +478,11 @@ def get_instrument(
     entry's scope, and its lineage names only instruments it could open; any other is the
     404 of an instrument that does not exist.
 
-    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope, which is checked first;
-    `not_found` (404) when no instrument has that id or it is one this caller may not
-    see, the two answering alike so that no id can be probed for, and when the caller is
-    a platform key carrying the scope; `validation_error` (422) when the path segment is
-    not a UUID.
+    Errors to branch on: `permission_denied` (403) without library.read or the library:read
+    scope, which is checked first; `not_found` (404) when no instrument has that id or it is
+    one this caller may not see, the two answering alike so that no id can be probed for,
+    and when the caller is a platform key carrying the scope; `validation_error` (422) when
+    the path segment is not a UUID.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-01, AGT-02).
     who = require_library_read(request)
@@ -569,11 +526,10 @@ def list_instrument_provisions(
     entry's key or token reads the tree of an instrument it could open, and each node names
     only the citing duties it could open itself.
 
-    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope, which is checked first;
-    `not_found` (404) when no instrument has that id or it is one this caller may not
-    see, and when the caller is a platform key carrying the scope; `validation_error`
-    (422) when the path segment is not a UUID or asOf is not a date.
+    Errors to branch on: `permission_denied` (403) without library.read or the library:read
+    scope, which is checked first; `not_found` (404) when no instrument has that id or it is
+    one this caller may not see, and when the caller is a platform key carrying the scope;
+    `validation_error` (422) when the path segment is not a UUID or asOf is not a date.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-02, AGT-02).
     who = require_library_read(request)
@@ -612,13 +568,12 @@ def get_provision_diff(
     belongs to no bank and answers 404 even when it carries `library:read`. An agent access
     entry's key or token reads only a provision of an instrument it could open.
 
-    Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-    (403) without library.read or the library:read scope, which is checked first;
-    `not_found` (404) when no provision has that id or it is one this caller may not see,
-    and when the caller is a platform key carrying the scope; `unknown_key` (422) when
-    a version number is asked for that this provision has no version for;
-    `validation_error` (422) when the provision has fewer than two versions and neither
-    number was given, when the two versions share no language at all, when lang is
+    Errors to branch on: `permission_denied` (403) without library.read or the library:read
+    scope, which is checked first; `not_found` (404) when no provision has that id or it is
+    one this caller may not see, and when the caller is a platform key carrying the scope;
+    `unknown_key` (422) when a version number is asked for that this provision has no
+    version for; `validation_error` (422) when the provision has fewer than two versions and
+    neither number was given, when the two versions share no language at all, when lang is
     longer than 8 characters, or when the path segment is not a UUID.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; INV-04, AGT-02).
@@ -653,8 +608,7 @@ def list_authorities(request: HttpRequest) -> Any:
     Ordered by the authority's key, so the list a picker renders is the same on every call.
     An empty library would be a 200 with an empty array.
 
-    Errors: `permission_denied` without `library.read` or `library:read`; `unauthenticated`
-    without a credential.
+    Errors: `permission_denied` without `library.read` or `library:read`.
     """
     # Ungated by design: logic-gate (library.read in a tenant, or a key with library:read; FP-04, AGT-02).
     # A short fixed reference list, answered as a plain array like the other reference reads.
@@ -701,86 +655,6 @@ def get_record_sources(
 
 
 @router.post(
-    "/obligations/{obligation_id}/problem-reports",
-    response={201: ProblemReportCreated},
-    auth=SESSION,
-    operation_id="reportObligationProblem",
-    by_alias=True,
-    summary="Tell us an obligation looks wrong",
-    description=REPORT_DESCRIPTION.format(
-        record="obligation",
-        extra=(
-            "The obligation has to be one this caller can already read: a shared record, or one "
-            "their own bank owns privately.\n\n"
-        ),
-    ),
-)
-@requires_permission(perms.PROBLEMS_REPORT)
-@answers_problems
-def report_obligation_problem(
-    request: HttpRequest,
-    obligation_id: Annotated[uuid.UUID, Path(description=OBLIGATION_ID_DESCRIPTION)],
-    body: ProblemReportBody,
-) -> Any:
-    tenant = caller_tenant(request)
-    reporter = caller_user(request)
-    obligation = reading.obligation_subject(obligation_id)
-    report = reports.create_report(
-        subject_type=SubjectType.OBLIGATION,
-        subject_id=obligation.id,
-        subject_title=obligation.stable_key,
-        tenant_id=tenant.id,
-        reporter=reporter,
-        actor=actor_for(request, reporter),
-        description=body.description,
-        version_number=body.version_number,
-        language=body.language,
-    )
-    return 201, ProblemReportCreated(id=report.id, status=report.status, created_at=report.created_at)
-
-
-@router.post(
-    "/instruments/{instrument_id}/problem-reports",
-    response={201: ProblemReportCreated},
-    auth=SESSION,
-    operation_id="reportInstrumentProblem",
-    by_alias=True,
-    summary="Tell us an instrument or one of its provisions looks wrong",
-    description=REPORT_DESCRIPTION.format(
-        record="instrument",
-        extra=(
-            "A provision is reported through the instrument whose card shows it, so there is no "
-            "separate provision route; say which provision in the text. The instrument has to be "
-            "one this caller can already read: a shared record, or one their own bank owns "
-            "privately.\n\n"
-        ),
-    ),
-)
-@requires_permission(perms.PROBLEMS_REPORT)
-@answers_problems
-def report_instrument_problem(
-    request: HttpRequest,
-    instrument_id: Annotated[uuid.UUID, Path(description=INSTRUMENT_ID_DESCRIPTION)],
-    body: ProblemReportBody,
-) -> Any:
-    tenant = caller_tenant(request)
-    reporter = caller_user(request)
-    instrument = reading.instrument_subject(instrument_id)
-    report = reports.create_report(
-        subject_type=SubjectType.INSTRUMENT,
-        subject_id=instrument.id,
-        subject_title=instrument.stable_key,
-        tenant_id=tenant.id,
-        reporter=reporter,
-        actor=actor_for(request, reporter),
-        description=body.description,
-        version_number=body.version_number,
-        language=body.language,
-    )
-    return 201, ProblemReportCreated(id=report.id, status=report.status, created_at=report.created_at)
-
-
-@router.post(
     "/obligations/{obligation_id}/verifications",
     response={201: VerificationCreated},
     auth=SESSION,
@@ -816,5 +690,5 @@ def reverify_obligation(
         outcome=verification.outcome,
         verified_at=verification.verified_at,
         last_verified_at=obligation.last_verified_at,
-        verified_by=None if stamped_by is None else PersonRef(id=stamped_by.id, name=stamped_by.name),
+        verified_by=None if stamped_by is None else NamedRef(id=stamped_by.id, name=stamped_by.name),
     )

@@ -554,8 +554,8 @@ class AgentsScenarioTests(TestCase):
         The budget cap pauses runs and the AI off switch stops every model call (AGT-04).
 
         Built over putAgentBudget, getAgentBudget, the bank's beat, runTenantAgentNow,
-        resumeTenantAgent, setTenantAi and ask. The cap pauses through the one pause
-        pauseTenantAgent uses, with no person. The clock is the test's, so "this month" never depends on
+        updateTenantAgent's `paused`, setTenantAi and ask. The cap pauses through the one pause
+        updateTenantAgent's `paused: true` uses, with no person. The clock is the test's, so "this month" never depends on
         when the test runs.
         """
         from decimal import Decimal
@@ -613,7 +613,7 @@ class AgentsScenarioTests(TestCase):
         self.assertEqual(switched.status_code, 200, switched.content)
         with frozen(WEDNESDAY + datetime.timedelta(days=1)):
             self._as(admin, "put", "/api/v1/tenant/agent-budget", {"monthlyCap": "500.00"})
-        resumed = self._as(admin, "delete", f"/api/v1/agents/{world.agent.id}/pause")
+        resumed = self._as(admin, "patch", f"/api/v1/agents/{world.agent.id}", {"paused": False})
         self.assertEqual(resumed.status_code, 200, resumed.content)
         tenancy.activate(world.bank.id)
         self.assertEqual(
@@ -955,7 +955,7 @@ class AgentsScenarioTests(TestCase):
         """AGT-S12
 
         Out-of-scope documents are counted and never registered, and the eval set gates it (AGT-08, SRC-05).
-        Operations: `startAgentRun`, `recordSourceCheck`, `finishAgentRun`, `listAgentRuns`.
+        Operations: `startAgentRun`, `recordSourceCheck`, `finishAgentRun`, `listPlatformRuns`.
         """
         gate = _search_eval()
         rows = gate.load_jsonl(gate.EVAL / "classification.jsonl")
@@ -1062,8 +1062,8 @@ class AgentsScenarioTests(TestCase):
         # Then the run history shows the count 2 and no change and no proposal counted; the two
         # source checks are the rows logged against the run, and nothing was registered or
         # proposed under it. The server's own refusal of a change with no regime is WAT-S11's.
-        with stub_session(user_principal(permissions={perms.SYSTEM_HEALTH})):
-            history = self.client.get("/api/v1/agent-runs", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
+        with stub_session(user_principal(permissions={perms.AGENT_DEFINITIONS_MANAGE})):
+            history = self.client.get("/api/v1/console/agent-runs", HTTP_AUTHORIZATION=f"Bearer {SESSION_TOKEN_FOR_TESTS}")
         self.assertEqual(history.status_code, 200, history.content)
         run = next(item for item in history.json()["items"] if item["id"] == run_id)
         self.assertEqual(run["status"], "succeeded")

@@ -29,7 +29,7 @@ from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.routes import RegisteredOperation, iter_operations
 from config.api import api
-from apps.shared.testing import gate_of
+from apps.shared.permissions import gate_of
 
 FENCES = ("refuse_platform_agent", "refuse_platform_run")
 NAMING_FIELDS = {"agent", "tenant_agent_id"}
@@ -41,8 +41,6 @@ REQUESTS: dict[str, dict[str, Any]] = {
     "createTenantAgent": {"body": {"agent": "{definition}", "cadence": "weekly", "scope": {"jurisdictions": [], "terms": []}}},
     "updateTenantAgent": {"body": {"cadence": "weekly"}},
     "runTenantAgentNow": {"body": {}},
-    "pauseTenantAgent": {"body": {}},
-    "resumeTenantAgent": {"body": None},
     "interruptAgentRun": {"body": {}},
     "createResearchRequest": {"body": {"kind": "research_topic", "tenantAgentId": "{agent}", "topic": "DORA subcontracting"}},
 }

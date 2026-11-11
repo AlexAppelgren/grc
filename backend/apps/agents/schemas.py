@@ -26,10 +26,10 @@ from pydantic import ConfigDict, JsonValue
 
 from django.conf import settings
 
-from apps.library.schemas import LibraryRef, LocalizedText, ObligationInstrumentRef, ObligationVersionRef
+from apps.library.schemas import LocalizedText, ObligationInstrumentRef, ObligationVersionRef
 from apps.register.schemas import RegisterDecision
 from apps.shared.schemas import CamelSchema, PageQuery, SingleLineName, WriteBody
-from apps.taxonomy.schemas import PersonRef
+from apps.shared.schemas import NamedRef, VocabRef
 
 __all__ = [
     "AgentAccessInput",
@@ -602,7 +602,7 @@ class AgentVersionOut(CamelSchema):
     published_at: datetime = Field(
         description="When the version was published, as a UTC timestamp in ISO 8601, set by the server."
     )
-    published_by: PersonRef | None = Field(
+    published_by: NamedRef | None = Field(
         description=(
             "The platform administrator who published the version, by id and name. Null for a "
             "first version the build loaded, which nobody published by hand."
@@ -770,7 +770,7 @@ class TenantAgentOut(CamelSchema):
             "A paused agent starts no run until someone resumes it."
         )
     )
-    paused_by: PersonRef | None = Field(
+    paused_by: NamedRef | None = Field(
         description=(
             "The person who paused the agent. Null when it is not paused, or when the budget cap "
             "paused it rather than a person."
@@ -818,7 +818,7 @@ class TenantAgentInput(WriteBody):
 class TenantAgentUpdate(WriteBody):
     """`PATCH /agents/{tenantAgentId}`: change what the body sends and nothing else."""
 
-    model_config = ConfigDict(json_schema_extra={"examples": [{"enabled": True, "cadence": "daily"}]})
+    model_config = ConfigDict(json_schema_extra={"examples": [{"enabled": True, "cadence": "daily"}, {"paused": True}]})
 
     enabled: bool | None = Field(default=None, description="Switch the agent on or off; by default null, which leaves it.")
     cadence: Cadence | None = Field(default=None, description=f"The new cadence; by default null, which leaves it. {_CADENCE}")
@@ -829,6 +829,16 @@ class TenantAgentUpdate(WriteBody):
         default=None, ge=0, le=23, description="The new run hour, a minimum of 0 and a maximum of 23; by default null, which leaves it."
     )
     scope: TenantAgentScope | None = Field(default=None, description="The new scope, whole; by default null, which leaves it.")
+    paused: bool | None = Field(
+        default=None,
+        description=(
+            "`true` pauses the agent: it starts no run until someone resumes it, keeps its settings and history, "
+            "and an open run is not stopped (interrupt that with `POST /agent-runs/{runId}/interrupt`). `false` "
+            "resumes it, whether a person or the monthly cap paused it; an agent resumed while the month's cap is "
+            "still reached is paused again by the cap when its next run is due. By default null, which leaves it. "
+            "Pausing a paused agent or resuming one that is not paused changes nothing."
+        ),
+    )
 
 
 class TenantRunQuery(PageQuery):
@@ -870,7 +880,7 @@ class AgentRunListItem(AgentRunOut):
             "`request`: a research request. `api`: a platform agent's key opened it."
         )
     )
-    requested_by: PersonRef | None = Field(
+    requested_by: NamedRef | None = Field(
         description="The person who asked for the run, by id and name, or null when nobody did (a schedule or a key)."
     )
     cost: Decimal | None = Field(
@@ -981,7 +991,7 @@ class ResearchRequestOut(CamelSchema):
             "before it ran, such as at the budget cap. `cancelled`: withdrawn before it ran."
         )
     )
-    requested_by: PersonRef = Field(description="The person who made the request, by id and name.")
+    requested_by: NamedRef = Field(description="The person who made the request, by id and name.")
     created_at: datetime = Field(description="When the request was made, as a UTC timestamp in ISO 8601.")
     completed_at: datetime | None = Field(
         description="When its run finished, as a UTC timestamp in ISO 8601, or null while it has not."
@@ -1126,11 +1136,8 @@ _ENTRY_EXAMPLE: dict[str, JsonValue] = {
 }
 
 
-class AgentAccessUnitRef(CamelSchema):
-    """A department or a product of the bank that an entry serves, by id and name."""
-
-    id: uuid.UUID = Field(description="The department's or product's identifier in the bank's organisation, a UUID that never changes.")
-    name: str = Field(description="Its name as the bank's organisation gives it, for display only; nothing may match on it.")
+# Published as `NamedRef` (review 2026-11-11 B-2); the name the logic modules import.
+AgentAccessUnitRef = NamedRef
 
 
 class AgentAccessTeamRef(CamelSchema):
@@ -1175,7 +1182,7 @@ class AgentAccessKeyOut(CamelSchema):
         examples=["service"],
     )
     scopes: list[str] = Field(description="What it may read, as scope keys, sorted. " + _ACCESS_SCOPES_TEXT)
-    person: PersonRef | None = Field(
+    person: NamedRef | None = Field(
         default=None, description="The member a personal access token acts as; null for a service key, which acts as the entry."
     )
     created_at: datetime = Field(description="When it was created, a UTC timestamp set by the server.")
@@ -1225,14 +1232,14 @@ class AgentAccessOut(CamelSchema):
             "starts with `compliance`. Read `GET /vocab/team` for the live set."
         )
     )
-    departments: list[AgentAccessUnitRef] = Field(
+    departments: list[NamedRef] = Field(
         description=(
             "The departments the agent serves, by name. The entry reads the terms of their products "
             "and of every unit below them. With `products`, they can only narrow what the bank "
             "itself sees; naming neither narrows nothing."
         )
     )
-    products: list[AgentAccessUnitRef] = Field(description="The products the agent serves, by name, narrowing as the departments do.")
+    products: list[NamedRef] = Field(description="The products the agent serves, by name, narrowing as the departments do.")
     tenant_reach: bool = Field(
         description=(
             "The entry's own half of tenant reach: true lets its `tenant:read` credentials read the "
@@ -1243,8 +1250,8 @@ class AgentAccessOut(CamelSchema):
     )
     active: bool = Field(description="True until the entry is revoked; a revoked entry's credentials all stop and never work again.")
     revoked_at: datetime | None = Field(default=None, description="When the entry was revoked, a UTC timestamp; null while active.")
-    revoked_by: PersonRef | None = Field(default=None, description="Who revoked it; null while active.")
-    created_by: PersonRef = Field(description="The member who registered the entry.")
+    revoked_by: NamedRef | None = Field(default=None, description="Who revoked it; null while active.")
+    created_by: NamedRef = Field(description="The member who registered the entry.")
     created_at: datetime = Field(description="When it was registered, a UTC timestamp set by the server.")
     version: int = Field(
         description="The entry's version, starting at 1 and raised by one on every change. Send it in `If-Match` to be told, with `stale_write` (409), that someone changed it first.",
@@ -1381,13 +1388,13 @@ class AgentAccessScopeStatement(CamelSchema):
 
     model_config = ConfigDict(json_schema_extra={"examples": [_SCOPE_EXAMPLE]})
 
-    entry: AgentAccessUnitRef | None = Field(
+    entry: NamedRef | None = Field(
         description="The agent access entry the credential reads as, by id and name; null for a personal access token that names no entry and reads as its person."
     )
-    departments: list[AgentAccessUnitRef] = Field(
+    departments: list[NamedRef] = Field(
         description="The departments the entry serves, by name; its scope is the terms of their products and of every unit below them, within the bank's footprint."
     )
-    products: list[AgentAccessUnitRef] = Field(description="The products the entry serves, by name, narrowing as the departments do.")
+    products: list[NamedRef] = Field(description="The products the entry serves, by name, narrowing as the departments do.")
     narrowed: bool = Field(
         description=(
             "True when the departments or products narrow what the credential reads to their terms; "
@@ -1429,16 +1436,16 @@ class WhatAppliesOutsideTerm(CamelSchema):
     """One term of the bank's footprint that the description touches and the entry's scope
     leaves out, named by label and never by any record carrying it."""
 
-    dimension: LibraryRef = Field(
+    dimension: VocabRef = Field(
         description=(
             "The taxonomy dimension the term sits in, as `{key, kind, label}`, such as "
             "`licensed_activity`, Licensed activity. Dimensions are vocabulary rows, not a closed "
             "enum: a platform admin may extend, relabel or retire them without a deploy, so read "
-            "`GET /taxonomy/dimensions` for the live set and match on the key, never the label. "
+            "`GET /vocab/term_dimension` for the live set and match on the key, never the label. "
             "The `kind` is one of three kinds fixed in code: `scope`, `classification` or `opt_in`."
         )
     )
-    term: LibraryRef = Field(
+    term: VocabRef = Field(
         description=(
             "The term itself, as `{key, kind, label}`, such as `card_issuing`, Card issuing. Terms "
             "are vocabulary rows, not a closed enum: a platform admin may add one through an "

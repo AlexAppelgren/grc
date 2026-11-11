@@ -155,7 +155,7 @@ from apps.shared.authentication import ApiKeyAuth, Principal, PrincipalKind, Ses
 from apps.shared.routes import RegisteredOperation, iter_operations
 from apps.shared.tenancy import LibraryModel, library_write
 from config.api import api
-from apps.shared.testing import gate_of
+from apps.shared.permissions import gate_of
 
 APPS_DIR = Path(__file__).resolve().parent.parent
 

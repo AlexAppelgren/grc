@@ -166,7 +166,7 @@ class ExportOpenApi(SimpleTestCase):
         call_command("export_openapi", "--out", str(out), stdout=stdout)
         document = json.loads(out.read_text(encoding="utf-8"))
         self.assertIn("/api/v1/me", document["paths"])
-        self.assertIn("/api/v1/reference/product", document["paths"])
+        self.assertIn("/api/v1/me", document["paths"])
         self.assertNotIn("servers", document)
         self.assertEqual(document["paths"]["/api/v1/me"]["get"]["responses"]["200"]["description"], "OK")
         self.assertEqual(list(document), sorted(document))

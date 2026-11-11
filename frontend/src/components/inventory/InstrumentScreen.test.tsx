@@ -115,8 +115,8 @@ function serve(answer: InstrumentDetail | number, obligations: Obligation[] = [r
     if (sent.path === '/api/v1/obligations') return { status: 200, data: { items: obligations, total } };
     if (sent.path.endsWith('/provisions')) return { status: 200, data: [] };
     // The record's "Reported problems" (AUD-03): the bank has filed none on it.
-    if (sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
-    if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
+    if (sent.method === 'get' && sent.path === '/api/v1/problem-reports') return { status: 200, data: { items: [], total: 0 } };
+    if (sent.method === 'post' && sent.path === '/api/v1/problem-reports') return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
     return { status: 200, data: answer };
   }, { me: ME });
@@ -432,7 +432,7 @@ describe('InstrumentScreen', () => {
     const withReport = renderIn(<InstrumentScreen instrumentId="in-1" />);
     expect(await screen.findByText('No problems reported on this record.')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Reported problems' })).toBeInTheDocument();
-    expect(sent.filter((call) => call.path === '/api/v1/problem-reports').map((call) => call.params)).toEqual([
+    expect(sent.filter((call) => call.method === 'get' && call.path === '/api/v1/problem-reports').map((call) => call.params)).toEqual([
       { subjectType: 'instrument', subjectId: fffs.id, limit: 20, offset: 0 },
     ]);
     withReport.unmount();

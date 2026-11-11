@@ -134,7 +134,7 @@ class VocabularyEdges(ScenarioTestCase):
         self.assertNotIn("tenant_tag", lists)
         self.assertEqual(self._get("/vocab/tenant_tag", self.editor).status_code, 403)
         self.assertEqual(self._get("/tenant/footprint", self.editor).status_code, 404)
-        dimensions = {row["key"]: row for row in self._get("/taxonomy/dimensions", self.editor).json()["items"]}
+        dimensions = {row["key"]: row for row in self._get("/vocab/term_dimension", self.editor).json()["items"]}
         self.assertFalse(dimensions["theme"]["extra"]["restrictsFootprint"])
         self.assertTrue(dimensions["service_type"]["extra"]["restrictsFootprint"])
         self.assertEqual(dimensions["theme"]["kind"], "classification")

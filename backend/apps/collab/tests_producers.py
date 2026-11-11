@@ -44,6 +44,7 @@ from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.watch import testing as watch_build
 from apps.watch.curation import CURATION_CONFIRMED
 from apps.shared.testing import handlers_for
+from apps.collab.testing import PARTICIPANTS, participant_body, participants_url
 
 V1 = "/api/v1"
 TITLES = {"en": "Assess the quality of investment research paid for", "sv": "Bedöm kvaliteten på betald analys"}
@@ -174,10 +175,10 @@ class ParticipantAdded(TestCase):
         for person in (self.anna, self.karin):
             factories.team_member(self.tenant, self.legal, person)
         self.as_anna = sign_in(self.anna, tenant=self.tenant)
-        self.url = f"{V1}/obligations/{self.obligation.id}/participants"
+        self.url = participants_url("obligation", self.obligation.id)
 
     def add(self, payload: dict[str, str]) -> Any:
-        return self.client.post(self.url, payload, content_type="application/json", **self.as_anna)
+        return self.client.post(PARTICIPANTS, participant_body(self.url, payload), content_type="application/json", **self.as_anna)
 
     def test_a_person_added_is_one_call_naming_them_and_nobody_else(self) -> None:
         calls = Counting(self)
@@ -222,8 +223,7 @@ class ParticipantAdded(TestCase):
         watch_build.seed_watch_reference()
         row = case_build.case(self.tenant, watch_build.change(), owner=self.anna)
         calls = Counting(self)
-        response = self.client.post(
-            f"{V1}/changes/{row.change_id}/participants", {"userId": str(self.erik.id)}, content_type="application/json", **self.as_anna
+        response = self.client.post(PARTICIPANTS, participant_body(participants_url("change", row.change_id), {"userId": str(self.erik.id)}), content_type="application/json", **self.as_anna
         )
         self.assertEqual(response.status_code, 201, response.content)
         self.assertEqual(len(calls.calls), 1)
@@ -388,10 +388,7 @@ def run_col_s10(case: ScenarioTestCase) -> None:
     case.addCleanup(MockMailer.reset)
 
     # When Erik is added to a case
-    added = case.client.post(
-        f"{V1}/changes/{row.change_id}/participants",
-        {"userId": str(bank.erik.id)},
-        content_type="application/json",
+    added = case.client.post(PARTICIPANTS, participant_body(participants_url("change", row.change_id), {"userId": str(bank.erik.id)}), content_type="application/json",
         **sign_in(officer, tenant=bank.tenant),
     )
     case.assertEqual(added.status_code, 201, added.content)

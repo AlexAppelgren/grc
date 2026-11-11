@@ -10,7 +10,7 @@ import type { CreationOptionsJson, RequestOptionsJson } from '@/shared/webauthn'
 type Schemas = components['schemas'];
 
 /** A vocabulary row as the API sends it: key and kind, and the label in the user's language. */
-export type RoleRef = Schemas['RoleRef'];
+export type RoleRef = Schemas['VocabRef'];
 
 export type Me = Schemas['Me'];
 export type MeUpdate = Schemas['MePatch'];

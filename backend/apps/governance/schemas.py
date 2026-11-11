@@ -20,7 +20,7 @@ from pydantic.json_schema import JsonDict
 # and which a governance import would turn into a cycle; it is re-exported here for the
 # modules that already read it from this app.
 from apps.shared.schemas import AiCitation, AuditSnapshot, CamelSchema, WriteBody
-from apps.taxonomy.schemas import PersonRef
+from apps.shared.schemas import NamedRef
 
 
 class AuditEventQuery(CamelSchema):
@@ -378,22 +378,8 @@ class AiGenerationQuery(CamelSchema):
     )
 
 
-class AiGenerationReviewer(CamelSchema):
-    """The person who stood behind a model's output: id and name, the only personal data
-    the log carries about them (playbook 4.7)."""
-
-    model_config = ConfigDict(
-        json_schema_extra={"examples": [{"id": "8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30", "name": "Anna Lindqvist"}]}
-    )
-
-    id: uuid.UUID = Field(
-        description="The person's user id, as a UUID.",
-        examples=["8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30"],
-    )
-    name: str = Field(
-        description="The person's name as it stands now, at most 200 characters, for display.",
-        examples=["Anna Lindqvist"],
-    )
+# Published as `NamedRef` (review 2026-11-11 B-2); the name the logic modules import.
+AiGenerationReviewer = NamedRef
 
 
 class AiGenerationRow(CamelSchema):
@@ -529,7 +515,7 @@ class AiGenerationRow(CamelSchema):
         ),
         examples=["draft"],
     )
-    reviewed_by: AiGenerationReviewer | None = Field(
+    reviewed_by: NamedRef | None = Field(
         description=(
             "Who moved the row out of `draft`, computed for the reading bank as `status` is: "
             "on a shared “So what?” the person at this bank who confirmed or rewrote "
@@ -682,18 +668,8 @@ class ProblemReportQuery(CamelSchema):
     )
 
 
-class ProblemReportPerson(CamelSchema):
-    """A member of this bank on a report: id and name, the only personal data a report
-    carries about them (playbook 4.7)."""
-
-    id: uuid.UUID = Field(
-        description="The person's user id, as a UUID. Match on this, never on the name.",
-        examples=["8f3b6a0e-2c71-4d95-b8e4-1a7c9d2f5e30"],
-    )
-    name: str = Field(
-        description="The person's display name as it stands now, for display only.",
-        examples=["Erik Holm"],
-    )
+# Published as `NamedRef` (review 2026-11-11 B-2); the name the logic modules import.
+ProblemReportPerson = NamedRef
 
 
 class ProblemReportRow(CamelSchema):
@@ -774,7 +750,7 @@ class ProblemReportRow(CamelSchema):
         ),
         examples=["sv"],
     )
-    reporter: ProblemReportPerson = Field(description="The member who filed the report.")
+    reporter: NamedRef = Field(description="The member who filed the report.")
     status: ProblemReportStatusKind = Field(
         description=f"Where the report stands, a fixed kind: {_REPORT_STATUSES}.",
         examples=["answered"],
@@ -783,7 +759,7 @@ class ProblemReportRow(CamelSchema):
         description="When the report was filed, as an RFC 3339 timestamp in UTC.",
         examples=["2026-09-20T09:14:22Z"],
     )
-    closed_by: ProblemReportPerson | None = Field(
+    closed_by: NamedRef | None = Field(
         description="The member who closed the report: the reporter, or a colleague holding `proposals.create`. Null while it is open."
     )
     closed_at: datetime | None = Field(
@@ -882,11 +858,11 @@ class TenantReachRequestRow(CamelSchema):
         ),
         examples=["pending"],
     )
-    requested_by: PersonRef = Field(description="The member holding `security.manage` who asked for reach, by id and name.")
+    requested_by: NamedRef = Field(description="The member holding `security.manage` who asked for reach, by id and name.")
     requested_at: datetime = Field(
         description="When the request was made, a UTC timestamp set by the server.", examples=["2026-09-25T08:10:00Z"]
     )
-    decided_by: PersonRef | None = Field(
+    decided_by: NamedRef | None = Field(
         default=None,
         description=(
             "The second member who approved or rejected it, by id and name, never the requester: "
@@ -929,7 +905,7 @@ class TenantReachView(CamelSchema):
         ),
         examples=[False],
     )
-    changed_by: PersonRef | None = Field(
+    changed_by: NamedRef | None = Field(
         default=None,
         description=(
             "The member who last switched reach on (by approving a request) or off, by id and name; "
@@ -1030,7 +1006,7 @@ class AgentAccessCallRow(CamelSchema):
     id: uuid.UUID = Field(description="The row's permanent identifier, a UUID the server issues.")
     at: datetime = Field(description="When the call was made, a UTC timestamp set by the server.", examples=["2026-09-25T09:14:03Z"])
     credential: AgentAccessCredentialRef = Field(description="The service key or personal access token the call was made with.")
-    person: PersonRef | None = Field(
+    person: NamedRef | None = Field(
         default=None,
         description=(
             "The member a personal access token acts as, by id and name; null for a service key, "

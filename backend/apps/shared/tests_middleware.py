@@ -29,15 +29,15 @@ from apps.shared.testing import sentry_init_kwargs
 
 class RequestId(TestCase):
     def test_a_supplied_request_id_is_echoed_and_a_missing_one_is_minted(self) -> None:
-        response = self.client.get("/api/v1/reference/product", HTTP_X_REQUEST_ID="abc-123")
+        response = self.client.get("/api/v1/me", HTTP_X_REQUEST_ID="abc-123")
         self.assertEqual(response["X-Request-ID"], "abc-123")
-        response = self.client.get("/api/v1/reference/product")
+        response = self.client.get("/api/v1/me")
         self.assertEqual(len(response["X-Request-ID"]), 32)
 
     def test_a_hostile_request_id_is_replaced(self) -> None:
-        response = self.client.get("/api/v1/reference/product", HTTP_X_REQUEST_ID="x\ninjected")
+        response = self.client.get("/api/v1/me", HTTP_X_REQUEST_ID="x\ninjected")
         self.assertNotIn("\n", response["X-Request-ID"])
-        response = self.client.get("/api/v1/reference/product", HTTP_X_REQUEST_ID="a" * 300)
+        response = self.client.get("/api/v1/me", HTTP_X_REQUEST_ID="a" * 300)
         self.assertEqual(len(response["X-Request-ID"]), 32)
 
     def test_log_records_carry_the_request_id(self) -> None:
@@ -71,15 +71,15 @@ class RequestId(TestCase):
 
 class ServerTiming(TestCase):
     def test_every_response_carries_app_timing(self) -> None:
-        response = self.client.get("/api/v1/reference/product")
+        response = self.client.get("/api/v1/me")
         self.assertRegex(response["Server-Timing"], r"^app;dur=\d+\.\d$")
 
     @override_settings(API_BUDGET_MS=0)
     def test_over_budget_logs_a_warning_with_the_route_only(self) -> None:
         with self.assertLogs("apps.shared.middleware", level="WARNING") as logs:
-            self.client.get("/api/v1/reference/product?secret=1")
+            self.client.get("/api/v1/me?secret=1")
         record = logs.records[0]
-        self.assertIn("reference/product", getattr(record, "route"))  # noqa: B009
+        self.assertIn("api/v1/me", getattr(record, "route"))  # noqa: B009
         self.assertFalse(hasattr(record, "path"))
         self.assertEqual(getattr(record, "budget_ms"), 0)  # noqa: B009
         self.assertNotIn("secret", record.getMessage())
@@ -117,7 +117,7 @@ class ContentSecurityPolicy(SimpleTestCase):
         answers may be sniffed into another content type."""
         from django.conf import settings
 
-        response = self._run("/api/v1/reference/product")
+        response = self._run("/api/v1/me")
         self.assertEqual(response["Referrer-Policy"], "no-referrer")
         self.assertEqual(response["X-Content-Type-Options"], "nosniff")
         self.assertEqual(settings.SECURE_REFERRER_POLICY, "no-referrer")
@@ -182,7 +182,7 @@ class SentryScrubbers(SimpleTestCase):
         for hook in (sentry_scrub.before_send, sentry_scrub.before_send_transaction):
             scrubbed = cast(dict, hook(cast(Any, dict(event, request=dict(event["request"]))), {}))
             self.assertEqual(scrubbed["request"]["url"], f"https://api.example/api/v1/auth/invitations/{sentry_scrub.REDACTED}/open")
-        self.assertEqual(sentry_scrub.scrub_url("https://api.example/api/v1/reference/product?x=1"), "https://api.example/api/v1/reference/product?x=1")
+        self.assertEqual(sentry_scrub.scrub_url("https://api.example/api/v1/me?x=1"), "https://api.example/api/v1/me?x=1")
 
     def test_an_access_line_breadcrumb_loses_its_query_and_addresses(self) -> None:
         """Security review 2026-09-19: gunicorn's access line reached a captured event as a

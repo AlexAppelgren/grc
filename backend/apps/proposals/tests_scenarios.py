@@ -632,7 +632,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
 
         # "This looks wrong" files a report, and it stays inside the bank (AUD-03).
         words = "The new wording drops the annual review the decision keeps."
-        reported = self._post(f"/obligations/{obligation.id}/problem-reports", {"description": words}, officer)
+        reported = self._post("/problem-reports", {"subjectType": "obligation", "subjectId": str(obligation.id), "description": words}, officer)
         self.assertEqual(reported.status_code, 201, reported.content)
         report_id = reported.json()["id"]
         self.activate(self.tenant)
@@ -652,7 +652,10 @@ class ProposalsScenarioTests(ScenarioTestCase):
             "report_id": report_id,
         }
         # Each route's body is one its schema accepts, so the refusal is the gate's and not a 422.
-        bodies = {"PATCH": {"status": "fixed", "resolutionNote": "A platform note."}}
+        bodies = {
+            "PATCH": {"status": "fixed", "resolutionNote": "A platform note."},
+            "POST": {"subjectType": "obligation", "subjectId": str(obligation.id), "description": "A platform note."},
+        }
         filing = [op for op in iter_operations(api) if "problem-report" in op.path]
         self.assertTrue(filing, "the report routes are what this drives")
         reads = [

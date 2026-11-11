@@ -29,7 +29,6 @@ from apps.tenants.schemas import (
     RegisterFacts,
     TenantLicence,
     TenantLicenceBody,
-    TenantLicencePage,
     TenantLicencePatch,
     TenantOrgUnit,
     TenantOrgUnitBody,
@@ -392,14 +391,6 @@ def _set_services(tenant: Tenant, licence: Licence, terms: list[Term]) -> None:
 
 def _services_of(licence: Licence) -> list[Term]:
     return [row.term for row in LicenceServiceTerm.objects.filter(licence=licence).select_related("term").order_by("term__key")]
-
-
-def list_licences(*, tenant: Tenant, order: list[str], org_unit_id: uuid.UUID, limit: int, offset: int) -> TenantLicencePage:
-    """`GET /tenant/org-units/{orgUnitId}/licences`: withdrawn ones included."""
-    unit = org_unit_of(tenant, org_unit_id)
-    queryset = _licences(tenant).filter(org_unit=unit)
-    licences = list(queryset.order_by("granted_on", "id")[offset : offset + limit])
-    return TenantLicencePage(items=_licences_out(licences, order), total=queryset.count())
 
 
 def create_licence(

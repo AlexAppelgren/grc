@@ -98,14 +98,6 @@ export async function runTenantAgentNow(tenantAgentId: string): Promise<AgentRun
   return (await api.post<AgentRun>(`${TENANT_AGENTS}/${segment(tenantAgentId)}/runs`, {})).data;
 }
 
-export async function pauseTenantAgent(tenantAgentId: string): Promise<TenantAgent> {
-  return (await api.post<TenantAgent>(`${TENANT_AGENTS}/${segment(tenantAgentId)}/pause`, {})).data;
-}
-
-export async function resumeTenantAgent(tenantAgentId: string): Promise<TenantAgent> {
-  return (await api.delete<TenantAgent>(`${TENANT_AGENTS}/${segment(tenantAgentId)}/pause`)).data;
-}
-
 export async function interruptAgentRun(runId: string): Promise<AgentRun> {
   return (await api.post<AgentRun>(`${V1}/agent-runs/${segment(runId)}/interrupt`, {})).data;
 }

@@ -32,7 +32,6 @@ import type {
 const FOOTPRINT = '/api/v1/tenant/footprint';
 const REQUESTS = `${FOOTPRINT}/requests`;
 const WATCHING = `${FOOTPRINT}/watching`;
-const TAXONOMY = '/api/v1/taxonomy';
 
 type Schemas = components['schemas'];
 
@@ -69,7 +68,7 @@ export function scopeItemOf(raw: Schemas['ScopeItemRow']): ScopeItem {
     key: raw.key,
     name: raw.name,
     description: raw.description,
-    jurisdiction: { key: raw.jurisdiction.key, kind: raw.jurisdiction.kind ?? null, label: raw.jurisdiction.label },
+    jurisdiction: raw.jurisdiction,
     regimeTerm: termOf(raw.regimeTerm),
     officialReference: raw.officialReference,
     sourceUrl: raw.sourceUrl,
@@ -106,15 +105,15 @@ export function requestOf(raw: Schemas['FootprintRequestRow']): FootprintChangeR
 }
 
 export function marketOf(raw: Schemas['MarketRow']): Market {
-  return { jurisdiction: { key: raw.jurisdiction.key, kind: raw.jurisdiction.kind ?? null, label: raw.jurisdiction.label }, level: raw.level };
+  return { jurisdiction: raw.jurisdiction, level: raw.level };
 }
 
 export function footprintOf(raw: Schemas['FootprintView']): Footprint {
   return {
     dimensions: raw.dimensions.map((d) => ({
-      dimension: { key: d.dimension.key, kind: d.dimension.kind ?? null, label: d.dimension.label },
+      dimension: d.dimension,
       restrictsFootprint: d.restrictsFootprint,
-      terms: (d.terms ?? []).map((term) => ({ key: term.key, kind: term.kind ?? null, label: term.label })),
+      terms: d.terms ?? [],
       allSelected: d.allSelected,
     })),
     pendingRequest: raw.pendingRequest === null || raw.pendingRequest === undefined ? null : requestOf(raw.pendingRequest),
@@ -190,6 +189,6 @@ export async function listTerms(dimension?: string): Promise<TaxonomyTerm[]> {
 
 /** Dimensions are vocabulary rows; `restrictsFootprint` rides in their list-specific facts. */
 export async function listDimensions(): Promise<TaxonomyDimension[]> {
-  const rows = (await api.get<Schemas['TaxonomyDimensionPage']>(`${TAXONOMY}/dimensions`)).data.items;
+  const rows = (await api.get<Schemas['VocabularyRowPage']>('/api/v1/vocab/term_dimension')).data.items;
   return rows.map((row) => ({ key: row.key, kind: row.kind ?? null, label: row.label, restrictsFootprint: row.extra?.restrictsFootprint === true }));
 }

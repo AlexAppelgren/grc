@@ -65,8 +65,6 @@ describe('agents api', () => {
     await agents.createTenantAgent({ agent: 'source-checker', cadence: 'weekly', runWeekday: 1, runHour: 6, scope });
     await agents.updateTenantAgent('ta1', { enabled: false });
     await agents.runTenantAgentNow('ta1');
-    await agents.pauseTenantAgent('ta1');
-    await agents.resumeTenantAgent('ta1');
     await agents.interruptAgentRun('r1');
     await agents.getAgentBudget();
     await agents.putAgentBudget({ monthlyCap: '100.00' });
@@ -79,8 +77,6 @@ describe('agents api', () => {
       ['post', '/api/v1/agents'],
       ['patch', '/api/v1/agents/ta1'],
       ['post', '/api/v1/agents/ta1/runs'],
-      ['post', '/api/v1/agents/ta1/pause'],
-      ['delete', '/api/v1/agents/ta1/pause'],
       ['post', '/api/v1/agent-runs/r1/interrupt'],
       ['get', '/api/v1/tenant/agent-budget'],
       ['put', '/api/v1/tenant/agent-budget'],
@@ -90,9 +86,9 @@ describe('agents api', () => {
     expect(sent[0]?.params).toEqual({ limit: 20 });
     expect(sent[2]?.body).toEqual({ agent: 'source-checker', cadence: 'weekly', runWeekday: 1, runHour: 6, scope });
     expect(sent[3]?.body).toEqual({ enabled: false });
-    expect(sent[9]?.body).toEqual({ monthlyCap: '100.00' });
-    expect(sent[10]?.params).toEqual({ offset: 20 });
-    expect(sent[11]?.body).toEqual({ kind: 'research_topic', tenantAgentId: 'ta1', topic: 'Custody', sourceId: null, url: null });
+    expect(sent[7]?.body).toEqual({ monthlyCap: '100.00' });
+    expect(sent[8]?.params).toEqual({ offset: 20 });
+    expect(sent[9]?.body).toEqual({ kind: 'research_topic', tenantAgentId: 'ta1', topic: 'Custody', sourceId: null, url: null });
   });
 
   it('passes a refusal on to the caller as an error', async () => {

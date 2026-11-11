@@ -71,7 +71,6 @@ REGISTER_ROUTES: list[tuple[str, str, str, Any, str, bool]] = [
     ("approveRiskAcceptance", "post", f"/api/v1/gaps/{RECORD}/accept-risk/approve", None, perms.RISK_ACCEPT_APPROVE, True),
     ("reopenGap", "post", f"/api/v1/gaps/{RECORD}/reopen", None, perms.GAPS_EDIT, False),
     ("listAssessments", "get", f"/api/v1/obligations/{OBLIGATION}/assessments", None, perms.REGISTER_READ, False),
-    ("getInterpretation", "get", f"/api/v1/obligations/{OBLIGATION}/interpretation", None, perms.REGISTER_READ, False),
     ("saveInterpretation", "put", f"/api/v1/obligations/{OBLIGATION}/interpretation", INTERPRETATION_BODY, perms.REGISTER_EDIT, False),
     ("listInternalLinks", "get", f"/api/v1/obligations/{OBLIGATION}/internal-links", None, perms.REGISTER_READ, False),
     ("addInternalLink", "post", f"/api/v1/obligations/{OBLIGATION}/internal-links", LINK_BODY, perms.REGISTER_EDIT, False),
@@ -198,7 +197,6 @@ BUILT = {
     "updateRegisterEntity",
     # c8-reg-links-history: tests_history.py, tests_links.py
     "listAssessments",
-    "getInterpretation",
     "saveInterpretation",
     "listInternalLinks",
     "addInternalLink",

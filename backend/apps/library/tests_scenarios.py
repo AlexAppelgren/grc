@@ -13,7 +13,7 @@ d89-child-rls's, the children following their parent's zone (library 0012), all 
 support-grant clause, which d89-private-records adds with the approval inside the bank.
 
 Operations exercised (the audit-on-write guard reads these names):
-reportObligationProblem, reportInstrumentProblem, reverifyObligation.
+reportProblem, reverifyObligation.
 
 What a reader writes in a report is tenant content (playbook 4.7), so INV-S7 hunts a
 sentinel sentence through every place it must not reach: the audit row, the outbox
@@ -412,8 +412,8 @@ class LibraryScenarioTests(ScenarioTestCase):
         # created and they see it acknowledged.
         with captured_logs() as logs:
             response = self._post(
-                f"/obligations/{self.obligation.id}/problem-reports",
-                self._report(versionNumber=1, language="en"),
+                "/problem-reports",
+                self._report(subjectType="obligation", subjectId=str(self.obligation.id), versionNumber=1, language="en"),
                 reader,
             )
         self.assertEqual(response.status_code, 201)
@@ -443,32 +443,29 @@ class LibraryScenarioTests(ScenarioTestCase):
 
         # An instrument is reported the same way; its provisions are reported through it.
         instrument_response = self._post(
-            f"/instruments/{self.instrument.id}/problem-reports", self._report(), reader
+            "/problem-reports", self._report(subjectType="instrument", subjectId=str(self.instrument.id)), reader
         )
         self.assertEqual(instrument_response.status_code, 201)
         self.activate(self.tenant)
         self.assertEqual(ProblemReport.objects.filter(subject_type="instrument").count(), 1)
 
         # A description of nothing is not a report.
-        self.assertEqual(self._post(f"/obligations/{self.obligation.id}/problem-reports", {"description": "   "}, reader).status_code, 422)
+        on_duty = {"subjectType": "obligation", "subjectId": str(self.obligation.id)}
+        self.assertEqual(self._post("/problem-reports", {**on_duty, "description": "   "}, reader).status_code, 422)
 
         # A subject the caller cannot see is a 404, never a 403 that confirms it exists:
         # another bank's private record and an id that names nothing read the same.
-        for path in (
-            f"/obligations/{self.private.id}/problem-reports",
-            f"/obligations/{uuid.uuid4()}/problem-reports",
-            f"/instruments/{uuid.uuid4()}/problem-reports",
-        ):
-            with self.subTest(path=path):
-                self.assertEqual(self._post(path, self._report(), reader).status_code, 404)
-        # A path segment that is not an id at all is a malformed request, not a record being
-        # hidden, and answers the 422 every other record route gives it (getObligation).
-        self.assertEqual(self._post("/obligations/not-a-uuid/problem-reports", self._report(), reader).status_code, 422)
+        for kind, missing in (("obligation", self.private.id), ("obligation", uuid.uuid4()), ("instrument", uuid.uuid4())):
+            with self.subTest(kind=kind, subject=missing):
+                self.assertEqual(self._post("/problem-reports", self._report(subjectType=kind, subjectId=str(missing)), reader).status_code, 404)
+        # An id that is not an id at all is a malformed request, not a record being hidden,
+        # and answers the 422 every other record route gives it (getObligation).
+        self.assertEqual(self._post("/problem-reports", self._report(subjectType="obligation", subjectId="not-a-uuid"), reader).status_code, 422)
 
         # Without problems.report there is no way in. The platform's own editor holds no
         # tenant permission, so bleqq never files a report inside a bank either.
         stranger = sign_in(self.editor)
-        refused = self._post(f"/obligations/{self.obligation.id}/problem-reports", self._report(), stranger)
+        refused = self._post("/problem-reports", self._report(**on_duty), stranger)
         self.assertEqual(refused.status_code, 403)
         self.assertEqual(refused.json()["requiredPermission"], perms.PROBLEMS_REPORT)
 

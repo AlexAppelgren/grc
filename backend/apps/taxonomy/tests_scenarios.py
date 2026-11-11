@@ -11,7 +11,7 @@ Operations exercised (the audit-on-write guard reads these names): createVocabul
 updateVocabularyRow, reorderVocabulary, retireVocabularyRow, restoreVocabularyRow, mergeVocabularyRow,
 suggestVocabularyRow, declineVocabularySuggestion, createTerm, updateTerm,
 createFootprintRequest, approveFootprintRequest, rejectFootprintRequest,
-withdrawFootprintRequest, tagRecord, untagRecord, previewTagging, tagRecords.
+withdrawFootprintRequest, tagRecord, untagRecord, tagRecords (with and without dryRun).
 
 Prefixes hosted: ACC, FP, I18N, VOC.
 """
@@ -588,7 +588,7 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         body = {"tagKey": "custody", "subjectType": "obligation", "subjectIds": ids}
         # The preview lists the six and which already carry the tag, and writes nothing.
         audit_before = set(AuditEvent.objects.values_list("id", flat=True))
-        preview = self._preview("/taggings/preview", body, headers)
+        preview = self._preview("/taggings/batch?dryRun=true", body, headers)
         self.assertEqual(preview.status_code, 200, preview.content)
         shown = preview.json()
         self.assertEqual(set(shown["gained"]["ids"]) | set(shown["alreadyTagged"]["ids"]), set(ids))
@@ -2095,11 +2095,9 @@ class TaxonomyScenarioTests(ScenarioTestCase):
         self.assertEqual((added.actor_id, str(added.subject_id)), (self.approver.id, in_scope["id"]))
         self.assertIsNotNone(added.step_up_assertion_id)
         self.assertEqual(OutboxEvent.objects.get(audit_event=added).payload["key"], "local_crypto_asset_rules")
-        # Tenant B's fetch of the item answers 404.
+        # Tenant B's regulatory scope carries none of it.
         other = factories.tenant(slug="bank-b")
         member_of_b = sign_in(factories.member(other, roles=("admin",)).user, tenant=other)
-        fetched = self._get(f"/tenant/footprint/scope-items/{in_scope['id']}", member_of_b)
-        self.assertEqual((fetched.status_code, fetched.json()["code"]), (404, "not_found"))
         self.assertEqual(self._footprint(member_of_b)["scopeItems"], [])
 
     def test_acc_s2(self) -> None:

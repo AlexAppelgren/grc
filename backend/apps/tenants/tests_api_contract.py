@@ -81,7 +81,6 @@ class Records:
         self.member = factories.member_user(tenant, roles=("reader",))
         self.org_unit = factories.org_unit(tenant=tenant)
         self.product = factories.tenant_product(tenant=tenant)
-        self.team = factories.team_key(tenant=tenant)
         self.grant = factories.support_access(tenant=tenant)
         self.licence = factories.licence(tenant=tenant)
         self.lookup = factories.register_lookup(tenant=tenant)
@@ -89,19 +88,17 @@ class Records:
     def routes(self) -> list[tuple[str, str, str, Any, str | None, bool]]:
         """(operationId, method, url, body, permission or None for any member, step-up)."""
         unit, licence, product = self.org_unit.id, self.licence.id, self.product.id
-        member, team, grant = self.member.id, self.team.id, self.grant.id
+        member, grant = self.member.id, self.grant.id
         return [
             ("listOrgUnits", "get", "/api/v1/tenant/org-units", None, None, False),
             ("createOrgUnit", "post", "/api/v1/tenant/org-units", ORG_UNIT_BODY, perms.VOCAB_MANAGE, False),
             ("updateOrgUnit", "patch", f"/api/v1/tenant/org-units/{unit}", ORG_UNIT_PATCH, perms.VOCAB_MANAGE, False),
-            ("listLicences", "get", f"/api/v1/tenant/org-units/{unit}/licences", None, None, False),
             ("createLicence", "post", f"/api/v1/tenant/org-units/{unit}/licences", LICENCE_BODY, perms.VOCAB_MANAGE, False),
             ("updateLicence", "patch", f"/api/v1/tenant/licences/{licence}", LICENCE_PATCH, perms.VOCAB_MANAGE, False),
             ("listProducts", "get", "/api/v1/tenant/products", None, None, False),
             ("createProduct", "post", "/api/v1/tenant/products", PRODUCT_BODY, perms.VOCAB_MANAGE, False),
             ("updateProduct", "patch", f"/api/v1/tenant/products/{product}", PRODUCT_PATCH, perms.VOCAB_MANAGE, False),
             ("listTeams", "get", "/api/v1/tenant/teams", None, None, False),
-            ("listTeamMembers", "get", f"/api/v1/tenant/teams/{team}/members", None, None, False),
             ("listPeople", "get", "/api/v1/reference/people", None, None, False),
             ("getMemberOpenWork", "get", f"/api/v1/tenant/members/{member}/open-work", None, perms.MEMBERS_MANAGE, False),
             ("removeMember", "post", f"/api/v1/tenant/members/{member}/remove", REMOVE_BODY, perms.MEMBERS_MANAGE, True),
@@ -330,7 +327,6 @@ class TenantsRouteStubs(TenantsContractCase):
         "listOrgUnits",
         "createOrgUnit",
         "updateOrgUnit",
-        "listLicences",
         "createLicence",
         "updateLicence",
         "listProducts",
@@ -338,7 +334,6 @@ class TenantsRouteStubs(TenantsContractCase):
         "updateProduct",
         # c8-ten-teams-people: built, and proven in tests_teams.py and tests_reference_people.py.
         "listTeams",
-        "listTeamMembers",
         "listPeople",
         # c8-ten-support-grants (TEN-06): tests_support_access.py.
         "requestConsoleSupportAccess",

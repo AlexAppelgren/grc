@@ -262,7 +262,7 @@ test.describe('participants, comments and mentions', () => {
     const named = (name: string) => panel.locator('[data-participant-id]').filter({ has: page.getByRole('heading', { name, exact: true }) });
     const writes: string[] = [];
     page.on('request', (r) => {
-      if (/\/changes\/[^/]+\/participants/.test(r.url()) && r.method() !== 'GET') writes.push(r.method());
+      if (/\/api\/v1\/participants/.test(r.url()) && r.method() !== 'GET') writes.push(r.method());
     });
     let added: string | null = null;
     let johanRemoved = false;

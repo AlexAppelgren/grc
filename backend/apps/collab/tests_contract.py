@@ -36,7 +36,7 @@ from apps.shared.testing import (
     user_principal,
 )
 from config.api import api
-from apps.shared.testing import gate_of
+from apps.shared.permissions import gate_of
 from apps.shared.testing import call_route
 from apps.shared.testing import assert_refused
 

@@ -20,7 +20,7 @@ function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sen
   return installAdapter((sent) => {
     if (sent.method === 'get' && sent.path === PRODUCTS) return { status: 200, data: { items: [cardCredit, custody], total: 2 } };
     if (sent.path === '/api/v1/tenant/org-units') return { status: 200, data: { items: [bank], total: 1 } };
-    if (sent.path === '/api/v1/taxonomy/dimensions') return { status: 200, data: dimensions };
+    if (sent.path === '/api/v1/vocab/term_dimension') return { status: 200, data: dimensions };
     if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: terms };
     if (sent.path === '/api/v1/reference/people') return { status: 200, data: [{ id: 'u1', name: 'Johan Berg' }] };
     if (sent.method !== 'get' && write !== undefined) return write(sent);

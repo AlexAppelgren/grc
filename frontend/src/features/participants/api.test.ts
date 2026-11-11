@@ -13,27 +13,23 @@ describe('participants api', () => {
     tokenStore.set('tok');
   });
 
-  it('reads, adds and removes on the obligation’s own routes, and reads the picker’s lists', async () => {
+  it('reads, adds and removes on one route per verb, naming the record in the query or the body', async () => {
     const sent = installAdapter((s) => ({ status: s.method === 'delete' ? 204 : 200, data: { ok: s.path } }));
-    expect(await participants.listObligationParticipants('ob 1')).toEqual({ ok: '/api/v1/obligations/ob%201/participants' });
-    await participants.addObligationParticipant('ob1', { teamKey: 'legal' });
-    await participants.removeObligationParticipant('ob1', 'p 1');
+    const onObligation = { subjectType: 'obligation', subjectId: 'ob1' } as const;
+    const onCase = { subjectType: 'change', subjectId: 'ch1' } as const;
+    expect(await participants.listParticipants(onObligation)).toEqual({ ok: '/api/v1/participants' });
+    await participants.addParticipant(onObligation, { teamKey: 'legal' });
+    await participants.removeParticipant(onObligation, 'p 1');
+    await participants.listParticipants(onCase);
+    await participants.addParticipant(onCase, { userId: 'u1' });
+    await participants.removeParticipant(onCase, 'p 1');
     expect(sent.map((s) => [s.method, s.path, s.params, s.body])).toEqual([
-      ['get', '/api/v1/obligations/ob%201/participants', { limit: participants.PARTICIPANTS_PAGE }, null],
-      ['post', '/api/v1/obligations/ob1/participants', null, { teamKey: 'legal' }],
-      ['delete', '/api/v1/obligations/ob1/participants/p%201', null, null],
-    ]);
-  });
-
-  it('reads, adds and removes on the case’s routes, addressed by the change', async () => {
-    const sent = installAdapter((s) => ({ status: s.method === 'delete' ? 204 : 200, data: { ok: s.path } }));
-    expect(await participants.listCaseParticipants('ch 1')).toEqual({ ok: '/api/v1/changes/ch%201/participants' });
-    await participants.addCaseParticipant('ch1', { userId: 'u1' });
-    await participants.removeCaseParticipant('ch1', 'p 1');
-    expect(sent.map((s) => [s.method, s.path, s.params, s.body])).toEqual([
-      ['get', '/api/v1/changes/ch%201/participants', { limit: participants.PARTICIPANTS_PAGE }, null],
-      ['post', '/api/v1/changes/ch1/participants', null, { userId: 'u1' }],
-      ['delete', '/api/v1/changes/ch1/participants/p%201', null, null],
+      ['get', '/api/v1/participants', { ...onObligation, limit: participants.PARTICIPANTS_PAGE }, null],
+      ['post', '/api/v1/participants', null, { ...onObligation, teamKey: 'legal' }],
+      ['delete', '/api/v1/participants/p%201', onObligation, null],
+      ['get', '/api/v1/participants', { ...onCase, limit: participants.PARTICIPANTS_PAGE }, null],
+      ['post', '/api/v1/participants', null, { ...onCase, userId: 'u1' }],
+      ['delete', '/api/v1/participants/p%201', onCase, null],
     ]);
   });
 });

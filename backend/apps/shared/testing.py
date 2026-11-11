@@ -23,7 +23,7 @@ from django.db.models import Model
 from django.test import Client, TestCase
 from sentry_sdk.integrations import logging as sentry_logging
 
-from apps.shared import authentication, outbox, permissions, tenancy
+from apps.shared import authentication, outbox, tenancy
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.taxonomy import matching
@@ -234,10 +234,6 @@ def handlers_for(kind: str) -> tuple[outbox.Handler, ...]:
     """Who acts on this kind, in registration order: a consumer's own test proves it is the
     only handler for its kind."""
     return tuple(outbox._HANDLERS.get(kind, ()))
-
-
-def gate_of(view: Callable[..., Any]) -> permissions.Gate | None:
-    return getattr(view, "__cw_gate__", None)
 
 
 def is_tenant_task(fn: Callable[..., Any]) -> bool:

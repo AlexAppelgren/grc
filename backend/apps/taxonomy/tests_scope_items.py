@@ -9,7 +9,7 @@ item (`NoOtherWriter`), so no agent path can. H24's caps on the request's lists 
 decision note are proven over the real routes.
 
 Operations exercised (the audit-on-write guard reads these names): createFootprintRequest,
-approveFootprintRequest, rejectFootprintRequest, withdrawFootprintRequest, getScopeItem.
+approveFootprintRequest, rejectFootprintRequest, withdrawFootprintRequest, getFootprint.
 """
 
 from __future__ import annotations
@@ -204,15 +204,12 @@ class AskingForAScopeItem(ScopeItemBank):
         self.approve(self.ask({"scopeItemAdds": [ITEM]}))
         self.activate(self.tenant)
         item = ScopeItem.objects.get(tenant=self.tenant)
-        own = self.get(f"/tenant/footprint/scope-items/{item.id}", sign_in(self.reader, tenant=self.tenant))
-        self.assertEqual((own.status_code, own.json()["key"], own.json()["research"]), (200, item.key, "waiting_for_agent"))
+        [own] = self.get("/tenant/footprint", sign_in(self.reader, tenant=self.tenant)).json()["scopeItems"]
+        self.assertEqual((own["id"], own["key"], own["research"]), (str(item.id), item.key, "waiting_for_agent"))
         other = factories.tenant(slug="other-bank")
         stranger = factories.member(other, roles=("admin",)).user
         headers = sign_in(stranger, tenant=other)
-        fetched = self.get(f"/tenant/footprint/scope-items/{item.id}", headers)
-        self.assertEqual((fetched.status_code, fetched.json()["code"]), (404, "not_found"))
         self.assertEqual(self.get("/tenant/footprint", headers).json()["scopeItems"], [])
-        self.assertEqual(self.get("/tenant/footprint/scope-items/not-a-uuid", headers).status_code, 404)
 
 
 class TheBoundaryRefuses(ScopeItemBank):
@@ -282,15 +279,12 @@ class NoKeyReachesAScopeItem(ScopeItemBank):
         from apps.agents import testing as agent_build
 
         waiting = self.ask({"scopeItemAdds": [ITEM]})
-        self.activate(self.tenant)
-        item = ScopeItem.objects.get(tenant=self.tenant)
         bank_key = factories.api_key(self.tenant, scopes=("library:read", "search:read"))
         with tenancy.platform_zone():
             platform_key = agent_build.agent_key(scopes=("proposals:write", "proposals:review", "library:read"))
         routes: tuple[tuple[str, str, dict[str, Any] | None], ...] = (
             ("GET", "/tenant/footprint", None),
             ("GET", REQUESTS, None),
-            ("GET", f"/tenant/footprint/scope-items/{item.id}", None),
             ("POST", REQUESTS, {"scopeItemAdds": [{**ITEM, "name": "Another rule"}]}),
             ("POST", f"{REQUESTS}?dryRun=true", {"scopeItemAdds": [ITEM]}),
             ("POST", f"{REQUESTS}/{waiting['id']}/approve", {}),

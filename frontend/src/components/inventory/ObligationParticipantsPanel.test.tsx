@@ -66,7 +66,7 @@ describe('ObligationParticipantsPanel', () => {
     expect(within(row('p-legal')).queryByRole('button')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add a participant' })).toBeNull();
     fireEvent.click(within(row('p-erik')).getByRole('button', { name: 'Leave' }));
-    await waitFor(() => expect(sent.find((s) => s.method === 'delete')?.path).toBe('/api/v1/obligations/ob-1/participants/p-erik'));
+    await waitFor(() => expect(sent.find((s) => s.method === 'delete')?.path).toBe('/api/v1/participants/p-erik'));
   });
 
   it('stands on its own when the register entry cannot be read, and says when nobody takes part', async () => {
@@ -80,12 +80,12 @@ describe('ObligationParticipantsPanel', () => {
     const sent = serve({ meId: 'u-anna', write: (s) => (s.method === 'post' ? { status: 201, data: legal } : { status: 204 }) });
     renderPanel(EDITOR);
     fireEvent.click(await within(await waitFor(() => row('p-legal'))).findByRole('button', { name: 'Remove' }));
-    await waitFor(() => expect(sent.find((s) => s.method === 'delete')?.path).toBe('/api/v1/obligations/ob-1/participants/p-legal'));
+    await waitFor(() => expect(sent.find((s) => s.method === 'delete')?.path).toBe('/api/v1/participants/p-legal'));
     fireEvent.click(screen.getByRole('button', { name: 'Add a participant' }));
     fireEvent.change(screen.getByRole('searchbox', { name: 'Person or team' }), { target: { value: 'leg' } });
     fireEvent.click(await screen.findByRole('radio', { name: /Legal/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-    await waitFor(() => expect(sent.find((s) => s.method === 'post')?.body).toEqual({ teamKey: 'legal' }));
+    await waitFor(() => expect(sent.find((s) => s.method === 'post')?.body).toEqual({ subjectType: 'obligation', subjectId: 'ob-1', teamKey: 'legal' }));
     expect(sent.find((s) => s.path === '/api/v1/reference/people')?.params).toEqual({ permission: 'register.read' });
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
@@ -97,6 +97,6 @@ describe('ObligationParticipantsPanel', () => {
     fireEvent.click(await screen.findByRole('radio', { name: /Erik Holm/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     expect(await screen.findByText('Erik Holm already takes part in this obligation.')).toBeTruthy();
-    expect(sent.find((s) => s.method === 'post')?.body).toEqual({ userId: 'u-erik' });
+    expect(sent.find((s) => s.method === 'post')?.body).toEqual({ subjectType: 'obligation', subjectId: 'ob-1', userId: 'u-erik' });
   });
 });

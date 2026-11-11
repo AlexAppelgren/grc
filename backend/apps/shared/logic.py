@@ -6,11 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 
 from apps.shared.adapters.mailer import MockMailer
-from apps.shared.schemas import MailOutboxMessage, ProductInfo
-
-
-def product_info() -> ProductInfo:
-    return ProductInfo(product_name=settings.PRODUCT_NAME)
+from apps.shared.schemas import MailOutboxMessage
 
 
 def mail_outbox() -> list[MailOutboxMessage]:

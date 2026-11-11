@@ -72,7 +72,7 @@ export function useObligationDiff(obligationId: string, lang: string, enabled: b
  * and colleagues there take it up (D-50).
  */
 export function useReportObligationProblem(obligationId: string): UseMutationResult<ProblemReportCreated, unknown, ProblemReportBody> {
-  return useMutation({ mutationFn: (body) => library.reportObligationProblem(obligationId, body) });
+  return useMutation({ mutationFn: (body) => library.reportProblem('obligation', obligationId, body) });
 }
 
 /** One of the bank's tags going on (`on`) or coming off the obligation. */
@@ -171,9 +171,9 @@ export function useInstrument(instrumentId: string): UseQueryResult<InstrumentDe
   });
 }
 
-/** "This looks wrong" on an instrument card; the report stays inside the reader's own bank, so nothing here invalidates. */
+/** "This looks wrong" on an instrument card, which also reports its provisions; the report stays inside the reader's own bank, so nothing here invalidates. */
 export function useReportInstrumentProblem(instrumentId: string): UseMutationResult<ProblemReportCreated, unknown, ProblemReportBody> {
-  return useMutation({ mutationFn: (body) => library.reportInstrumentProblem(instrumentId, body) });
+  return useMutation({ mutationFn: (body) => library.reportProblem('instrument', instrumentId, body) });
 }
 
 /**

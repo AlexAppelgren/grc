@@ -4,7 +4,7 @@
 // local definition remains only where the generator cannot express the shape,
 // each with a one-line reason.
 
-import type { components } from '@/types/api.generated';
+import type { components, operations } from '@/types/api.generated';
 
 type Schemas = components['schemas'];
 
@@ -29,4 +29,4 @@ export interface ConsoleTenantPage {
 }
 
 // Partial: `limit` and `offset` have server defaults, which the generator renders as required fields.
-export type PageQuery = Partial<Schemas['PageQuery']>;
+export type PageQuery = NonNullable<operations['listMembers']['parameters']['query']>;

@@ -33,8 +33,6 @@ import {
   interruptAgentRun,
   listPlatformWatch,
   MAX_PAGE,
-  pauseTenantAgent,
-  resumeTenantAgent,
   runTenantAgentNow,
   updateTenantAgent,
 } from '@/features/agents/api';
@@ -163,9 +161,9 @@ function AgentCard({ agent, aiEnabled, capReached, platform }: { agent: TenantAg
         case 'patch':
           return updateTenantAgent(agent.id, action.body);
         case 'pause':
-          return pauseTenantAgent(agent.id);
+          return updateTenantAgent(agent.id, { paused: true });
         case 'resume':
-          return resumeTenantAgent(agent.id);
+          return updateTenantAgent(agent.id, { paused: false });
         case 'run':
           return runTenantAgentNow(agent.id);
         case 'stop':

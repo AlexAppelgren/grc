@@ -20,7 +20,7 @@ from apps.identity.models import TenantRole
 from apps.shared import factories, permissions as p, tenancy
 from apps.shared.errors import ProblemError
 from apps.shared.testing import agent_principal, enrolment_principal, user_principal
-from apps.shared.testing import gate_of
+from apps.shared.permissions import gate_of
 
 PRD_TENANT_PERMISSIONS = {
     "library.read", "watch.read", "roadmap.read", "search.use", "comments.write", "problems.report",

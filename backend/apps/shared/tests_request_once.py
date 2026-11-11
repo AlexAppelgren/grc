@@ -136,7 +136,7 @@ class StillRefused(ScenarioTestCase):
     def test_another_banks_id_is_not_found(self) -> None:
         theirs = factories.org_unit(self.other, name="Their unit")
         headers = sign_in(self.user, tenant=self.tenant)
-        self.assertEqual(self.client.get(f"{V1}/tenant/org-units/{theirs.id}/licences", **headers).status_code, 404)
+        self.assertEqual(self.client.post(f"{V1}/tenant/org-units/{theirs.id}/licences", data={"licenceType": "bank"}, content_type="application/json", **headers).status_code, 404)
 
     def test_a_revoked_key_is_refused_on_its_next_request(self) -> None:
         key = factories.api_key(self.tenant)

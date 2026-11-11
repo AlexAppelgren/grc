@@ -89,13 +89,12 @@ def create_export(request: HttpRequest, body: ExportInput) -> Any:
     worker records the file's SHA-256 when it is built. The file is kept for a limited
     number of days (`expiresAt`).
 
-    Errors: `step_up_required` without a fresh passkey confirmation; `permission_denied`
-    without `exports.create`; `unauthenticated` without a session; `not_built` (501) for a
-    kind whose file is not built yet, before any job is written; `format_not_offered` for a
-    format the kind does not come in; `validation_error` for a body that is not the shape
-    above, or a case file that names no case in `subjectId` or another kind that names one;
-    for a case file, `not_found` when `subjectId` is not a case of the caller's bank, and
-    `permission_denied` without `cases.read`, both before any job is written.
+    Errors: `not_built` (501) for a kind whose file is not built yet, before any job is
+    written; `format_not_offered` for a format the kind does not come in; `validation_error`
+    for a body that is not the shape above, or a case file that names no case in `subjectId`
+    or another kind that names one; for a case file, `not_found` when `subjectId` is not a
+    case of the caller's bank, and `permission_denied` without `cases.read`, both before any
+    job is written.
     """
     user = caller_user(request)
     job = jobs.create(
@@ -126,9 +125,6 @@ def list_exports(request: HttpRequest, page: Query[PageQuery]) -> Any:
     A person's session holding `exports.create` in their own bank; only that bank's jobs are
     ever listed. It only reads and writes nothing to the audit log. An empty list is a 200
     with `total` 0.
-
-    Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-    depth; `permission_denied` without `exports.create`; `unauthenticated` without a session.
     """
     rows, total = jobs.page(tenant=caller_tenant(request), limit=page.limit, offset=page.offset)
     return ExportJobPage(items=[_out(row) for row in rows], total=total)
@@ -153,8 +149,7 @@ def get_export(request: HttpRequest, export_id: uuid.UUID = Path(..., descriptio
     nothing to the audit log.
 
     Errors: `not_found` when no job of this bank has that id, which is also what another
-    bank's job answers; `permission_denied` without `exports.create`; `unauthenticated`
-    without a session.
+    bank's job answers.
     """
     return _out(jobs.get(tenant=caller_tenant(request), job_id=export_id))
 
@@ -182,8 +177,7 @@ def download_export(request: HttpRequest, export_id: uuid.UUID = Path(..., descr
     Errors: `not_found` when no job of this bank has that id, which is also what another
     bank's job answers; `export_not_ready` (409) while the job is queued, running or failed;
     `export_expired` (409) once `expiresAt` has passed, when a new export is needed;
-    `permission_denied` without `exports.create`, or for a case file without `cases.read`;
-    `unauthenticated` without a session.
+    `permission_denied` without `exports.create`, or for a case file without `cases.read`.
     """
     user = caller_user(request)
     job, stream = jobs.download(

@@ -45,7 +45,7 @@ const DIFF_OPS: readonly DiffOp[] = ['equal', 'insert', 'delete'];
  * the tone map knows: a tone is chosen by kind, never by a person, so a kind
  * nobody has a tone for is not rendered at all.
  */
-export function complianceOf(raw: Schemas['LibraryRef'] | null | undefined): KindRef<ComplianceKind> | null {
+export function complianceOf(raw: Schemas['VocabRef'] | null | undefined): KindRef<ComplianceKind> | null {
   if (raw === null || raw === undefined) return null;
   const kind = COMPLIANCE_KINDS.find((known) => known === raw.kind);
   return kind === undefined ? null : { key: raw.key, label: raw.label, kind };
@@ -100,8 +100,8 @@ export async function getObligationDiff(obligationId: string, lang?: string): Pr
  * stays inside the bank that filed it, so nothing here logs it and nothing
  * sends it anywhere else.
  */
-export async function reportObligationProblem(obligationId: string, body: ProblemReportBody): Promise<ProblemReportCreated> {
-  return (await api.post<ProblemReportCreated>(`${OBLIGATIONS}/${obligationId}/problem-reports`, body)).data;
+export async function reportProblem(subjectType: 'obligation' | 'instrument', subjectId: string, body: ProblemReportBody): Promise<ProblemReportCreated> {
+  return (await api.post<ProblemReportCreated>('/api/v1/problem-reports', { ...body, subjectType, subjectId })).data;
 }
 
 // The bank's own tags on an obligation (VOC-08): markers in the bank's zone, never a
@@ -111,23 +111,19 @@ const TAGGINGS = '/api/v1/taggings';
 
 export async function tagObligation(obligationId: string, tagKey: string): Promise<LibraryRef[]> {
   const body: Schemas['TaggingBody'] = { tagKey, subjectType: 'obligation', subjectId: obligationId };
-  return tagsOf((await api.post<Schemas['TaggingRecordTags']>(TAGGINGS, body)).data);
+  return (await api.post<Schemas['TaggingRecordTags']>(TAGGINGS, body)).data.tags;
 }
 
 export async function untagObligation(obligationId: string, tagKey: string): Promise<LibraryRef[]> {
   const body: Schemas['TaggingBody'] = { tagKey, subjectType: 'obligation', subjectId: obligationId };
-  return tagsOf((await api.post<Schemas['TaggingRecordTags']>(`${TAGGINGS}/remove`, body)).data);
+  return (await api.post<Schemas['TaggingRecordTags']>(`${TAGGINGS}/remove`, body)).data.tags;
 }
 
-/** The bank's own tags carry no kind of their own; they read as library references with none. */
-function tagsOf(raw: Schemas['TaggingRecordTags']): LibraryRef[] {
-  return raw.tags.map((tag) => ({ key: tag.key, kind: tag.kind ?? null, label: tag.label }));
-}
 
 /** VOC-08: what one tag on many obligations would do. A read with a body: nothing is written. */
 export async function previewObligationTagging(tagKey: string, obligationIds: readonly string[]): Promise<TaggingBatch> {
   const body: Schemas['TaggingBatchBody'] = { tagKey, subjectType: 'obligation', subjectIds: [...obligationIds] };
-  return (await api.post<TaggingBatch>(`${TAGGINGS}/preview`, body)).data;
+  return (await api.post<TaggingBatch>(`${TAGGINGS}/batch`, body, { params: { dryRun: true } })).data;
 }
 
 /** VOC-08: one tag on many obligations in one transaction, audited once by the server. */
@@ -146,11 +142,6 @@ export async function listInstruments(query: InstrumentQuery & PageQuery = {}): 
 
 export async function getInstrument(instrumentId: string): Promise<InstrumentDetail> {
   return (await api.get<InstrumentDetail>(`${INSTRUMENTS}/${instrumentId}`)).data;
-}
-
-/** "This looks wrong" on an instrument card; a provision is reported through the instrument whose card shows it. */
-export async function reportInstrumentProblem(instrumentId: string, body: ProblemReportBody): Promise<ProblemReportCreated> {
-  return (await api.post<ProblemReportCreated>(`${INSTRUMENTS}/${instrumentId}/problem-reports`, body)).data;
 }
 
 // The provision tree (INV-02, INV-04, INV-05): every text version a provision has ever

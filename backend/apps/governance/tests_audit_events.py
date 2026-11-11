@@ -29,7 +29,7 @@ from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in, stub_session, user_principal
 from apps.taxonomy.seeds import seed_library_vocabularies
 from config.api import api
-from apps.shared.testing import gate_of
+from apps.shared.permissions import gate_of
 
 V1 = "/api/v1"
 

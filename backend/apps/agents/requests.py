@@ -120,7 +120,7 @@ def list_requests(*, tenant: Tenant, limit: int, offset: int) -> ResearchRequest
 
 
 def get_request(*, tenant: Tenant, request_id: uuid.UUID) -> ResearchRequestOut:
-    """`GET /research-requests/{requestId}`: one of the bank's own, or 404."""
+    """One of the bank's own requests, as `POST /research-requests` answers it, or 404."""
     row = _requests().filter(pk=request_id, tenant=tenant).first()  # ordering: pk lookup, at most one row
     if row is None:
         raise not_found()

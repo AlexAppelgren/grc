@@ -28,6 +28,7 @@ from pydantic import ConfigDict, model_validator
 from apps.collab.schemas import CollabCommentPage, CollabParticipantPage
 from apps.governance.schemas import ProblemReportPage
 from apps.shared.schemas import CamelSchema, WriteBody
+from apps.shared.schemas import NamedRef, VocabRef
 
 if TYPE_CHECKING:
     # The watch schemas import the library's, which import these: `RegisterPanels` names the
@@ -157,41 +158,12 @@ _ENTITY_EXAMPLE: dict[str, Any] = {
 # ---------------------------------------------------------------------------------------
 # References
 # ---------------------------------------------------------------------------------------
-class RegisterVocabRef(CamelSchema):
-    """A value of one of the bank's own lists as the register shows it: key, kind and label
-    together, so a screen shows a name while an integration stores what never moves."""
-
-    key: str = Field(
-        description=(
-            "The stable key of the row in the bank's own vocabulary, such as `partly_compliant` "
-            "in `compliance_status`, `high` in `risk_rating`, `open` in `gap_status` or "
-            "`policy` in `link_kind`. The bank's admin may add, relabel or retire rows, so an "
-            "unfamiliar key is new data and not an error; read `GET /vocab/{listName}` for the "
-            "live set. Store and compare the key, never the label."
-        )
-    )
-    kind: str | None = Field(
-        description=(
-            "The fixed category the row belongs to, which decides the pill's tone and every rule "
-            "the server applies: for `compliance_status` one of `compliant`, `partly`, `gap` or "
-            "`not_assessed`; for `gap_status` one of `open`, `remediating`, `risk_accepted` or "
-            "`closed`. Null for a list whose rows carry no category, such as `risk_rating` or "
-            "`link_kind`."
-        )
-    )
-    label: str = Field(
-        description=(
-            "The row's name in the reader's language, for showing and for nothing else. The bank "
-            "may reword and translate it at any time, so never store it or match on it."
-        )
-    )
+# Published as `VocabRef` (review 2026-11-11 B-2); the name the logic modules import.
+RegisterVocabRef = VocabRef
 
 
-class RegisterPersonRef(CamelSchema):
-    """A member of the bank named on a register row."""
-
-    id: uuid.UUID = Field(description="The person's user UUID in this bank; stable for as long as they are a member.")
-    name: str = Field(description="The person's display name, for showing beside the row. It may change; keep the id.")
+# Published as `NamedRef` (review 2026-11-11 B-2); the name the logic modules import.
+RegisterPersonRef = NamedRef
 
 
 # ---------------------------------------------------------------------------------------
@@ -216,8 +188,8 @@ class RegisterEntityStatus(CamelSchema):
     applicability: Applicability = Field(description=_APPLICABILITY)
     applicability_reason: str | None = Field(description=_APPLICABILITY_REASON)
     applicability_decided_at: datetime.datetime | None = Field(description=_DECIDED_AT)
-    applicability_decided_by: RegisterPersonRef | None = Field(description=_DECIDED_BY)
-    compliance_status: RegisterVocabRef = Field(
+    applicability_decided_by: NamedRef | None = Field(description=_DECIDED_BY)
+    compliance_status: VocabRef = Field(
         description=(
             "How this entity complies, as a row of the bank's own `compliance_status` "
             "vocabulary; its admin may add rows under the fixed categories, so read "
@@ -226,17 +198,17 @@ class RegisterEntityStatus(CamelSchema):
         )
     )
     status_note: str | None = Field(description="The bank's note on the status, in its own words; null when none was written.")
-    risk_rating: RegisterVocabRef | None = Field(
+    risk_rating: VocabRef | None = Field(
         description=(
             "The bank's risk rating for this entity, as a row of its own `risk_rating` "
             "vocabulary, which its admin may extend; read `GET /vocab/risk_rating` for the live "
             "set. Null until rated."
         )
     )
-    owner: RegisterPersonRef | None = Field(
+    owner: NamedRef | None = Field(
         description="The member who owns the obligation for this entity; null when nobody does, or when a team owns it instead."
     )
-    owner_team: RegisterVocabRef | None = Field(description=f"{_TEAM_REF} An entity's row is owned by a person or a team, never both.")
+    owner_team: VocabRef | None = Field(description=f"{_TEAM_REF} An entity's row is owned by a person or a team, never both.")
     process: str | None = Field(description="The bank's own business process the obligation is met in, by its name; null when not recorded.")
     system: str | None = Field(description="The bank's own system the obligation is met in, by its name; null when not recorded.")
     evidence_location: str | None = Field(
@@ -287,8 +259,8 @@ class RegisterEntry(CamelSchema):
     applicability: Applicability = Field(description=_APPLICABILITY)
     applicability_reason: str | None = Field(description=_APPLICABILITY_REASON)
     applicability_decided_at: datetime.datetime | None = Field(description=_DECIDED_AT)
-    applicability_decided_by: RegisterPersonRef | None = Field(description=_DECIDED_BY)
-    compliance_status: RegisterVocabRef = Field(
+    applicability_decided_by: NamedRef | None = Field(description=_DECIDED_BY)
+    compliance_status: VocabRef = Field(
         description=(
             "How the bank complies, as a row of its own `compliance_status` vocabulary, which "
             "its admin may extend under fixed categories; read `GET /vocab/compliance_status` "
@@ -299,16 +271,16 @@ class RegisterEntry(CamelSchema):
         )
     )
     status_note: str | None = Field(description="The bank's note on the status, in its own words; null when none was written.")
-    risk_rating: RegisterVocabRef | None = Field(
+    risk_rating: VocabRef | None = Field(
         description=(
             "The bank's risk rating for the obligation, as a row of its own `risk_rating` "
             "vocabulary, which its admin may extend; read `GET /vocab/risk_rating` for the live "
             "set. Null until rated."
         )
     )
-    first_line_owner: RegisterPersonRef | None = Field(description="The first-line member who owns meeting the obligation; null when nobody does yet.")
-    compliance_contact: RegisterPersonRef | None = Field(description="The compliance member who follows the obligation; null when nobody does yet.")
-    owner_team: RegisterVocabRef | None = Field(description=_TEAM_REF)
+    first_line_owner: NamedRef | None = Field(description="The first-line member who owns meeting the obligation; null when nobody does yet.")
+    compliance_contact: NamedRef | None = Field(description="The compliance member who follows the obligation; null when nobody does yet.")
+    owner_team: VocabRef | None = Field(description=_TEAM_REF)
     process: str | None = Field(description="The bank's own business process the obligation is met in, by its name; null when not recorded.")
     system: str | None = Field(description="The bank's own system the obligation is met in, by its name; null when not recorded.")
     evidence_location: str | None = Field(
@@ -331,8 +303,8 @@ class RegisterEntry(CamelSchema):
     interpretation: RegisterInterpretation = Field(
         description=(
             "\"How we read this rule\": the bank's current reading and every earlier one, "
-            "exactly as `GET /obligations/{obligationId}/interpretation` answers it, carried "
-            "here so the obligation page reads both in one call. `current` is null when the "
+            "exactly as `PUT /obligations/{obligationId}/interpretation` answers after a save, "
+            "so the obligation page reads both in one call. `current` is null when the "
             "bank has written none. Internal legal judgement that never leaves the bank."
         )
     )
@@ -533,7 +505,7 @@ class RegisterApplicability(CamelSchema):
     applicability: Applicability = Field(description=_APPLICABILITY)
     reason: str = Field(description="Why, in the bank's own words, as the person gave it. Tenant content that never leaves the bank.")
     decided_at: datetime.datetime = Field(description="The UTC timestamp at which the answer was stored, set by the server.")
-    decided_by: RegisterPersonRef = Field(description="The person who set the answer after confirming it, as the audit event names them.")
+    decided_by: NamedRef = Field(description="The person who set the answer after confirming it, as the audit event names them.")
     version: int = Field(description=_VERSION)
 
 
@@ -619,16 +591,16 @@ _GAP_EXAMPLE: dict[str, Any] = {
 class RegisterRiskAcceptance(CamelSchema):
     """A request to accept a gap's risk, and its approval by a second person with a step-up."""
 
-    reason: RegisterVocabRef = Field(
+    reason: VocabRef = Field(
         description=(
             "Why the risk is accepted, as a row of the bank's own risk-acceptance reason "
             "vocabulary, which its admin may extend; read the vocabulary endpoint for the live set."
         )
     )
     note: str | None = Field(description="The requester's note in their own words; null when none was written.")
-    requested_by: RegisterPersonRef = Field(description="The person who asked for the risk to be accepted.")
+    requested_by: NamedRef = Field(description="The person who asked for the risk to be accepted.")
     requested_at: datetime.datetime = Field(description="The UTC timestamp of the request, set by the server.")
-    approved_by: RegisterPersonRef | None = Field(
+    approved_by: NamedRef | None = Field(
         description=(
             "The second person who approved it with a passkey step-up, never the person who "
             "asked for it. Null while the acceptance is waiting for approval."
@@ -650,29 +622,29 @@ class RegisterGap(CamelSchema):
     unit_id: uuid.UUID | None = Field(description="The Statement of Applicability unit the gap is in, as a UUID; null when it is not about one unit.")
     title: str = Field(description="What falls short, in a line of the bank's own words.")
     description: str | None = Field(description="The longer account of the gap in the bank's own words; null when none was written.")
-    severity: RegisterVocabRef = Field(
+    severity: VocabRef = Field(
         description=(
             "How serious the gap is, as a row of the bank's own `risk_rating` vocabulary, which "
             "its admin may extend; read `GET /vocab/risk_rating` for the live set."
         )
     )
-    source: RegisterVocabRef = Field(
+    source: VocabRef = Field(
         description=(
             "Where the gap was found, as a row of the bank's own `gap_source` vocabulary, which "
             "its admin may extend; read `GET /vocab/gap_source` for the live set."
         )
     )
-    status: RegisterVocabRef = Field(
+    status: VocabRef = Field(
         description=(
             "Where the gap stands, as a row of the bank's own `gap_status` vocabulary, which its "
             "admin may extend under the fixed categories; the kind is one of `open`, "
             "`remediating`, `risk_accepted` or `closed` and decides the pill's tone."
         )
     )
-    owner: RegisterPersonRef | None = Field(
+    owner: NamedRef | None = Field(
         description="The member who owns closing the gap; null when a team owns it or nobody does yet."
     )
-    owner_team: RegisterVocabRef | None = Field(
+    owner_team: VocabRef | None = Field(
         description=(
             "The team that owns closing the gap, as a row of the bank's own `team` vocabulary, "
             "which its admin may extend; read `GET /vocab/team` for the live set. Null when a "
@@ -684,7 +656,7 @@ class RegisterGap(CamelSchema):
     )
     remediation: str | None = Field(description="The bank's plan for closing the gap, in its own words; null when none was written.")
     identified_at: datetime.datetime = Field(description="The UTC timestamp at which the gap was recorded, set by the server.")
-    identified_by: RegisterPersonRef = Field(description="The person who recorded the gap.")
+    identified_by: NamedRef = Field(description="The person who recorded the gap.")
     risk_acceptance: RegisterRiskAcceptance | None = Field(
         description="The request to accept the gap's risk and its approval, null when nobody has asked."
     )
@@ -805,7 +777,7 @@ class RegisterAssessment(CamelSchema):
     org_unit_id: uuid.UUID | None = Field(description="The legal entity assessed, as a UUID; null for the obligation as a whole.")
     org_unit_name: str | None = Field(description="The legal entity's name for showing; null for the obligation as a whole.")
     assessed_at: datetime.datetime = Field(description="The UTC timestamp of the assessment, set by the server.")
-    assessed_by: RegisterPersonRef = Field(description="The person who assessed the status.")
+    assessed_by: NamedRef = Field(description="The person who assessed the status.")
     method: AssessmentMethod = Field(
         description=(
             "How the status was assessed: `self_assessment` by the first line, "
@@ -813,13 +785,13 @@ class RegisterAssessment(CamelSchema):
             "`regulator` in a supervisory review. A fixed kind."
         )
     )
-    status: RegisterVocabRef = Field(
+    status: VocabRef = Field(
         description=(
             "The status assessed, as a row of the bank's own `compliance_status` vocabulary, "
             "which its admin may extend; the label is read today, the key as it was then."
         )
     )
-    risk_rating: RegisterVocabRef | None = Field(
+    risk_rating: VocabRef | None = Field(
         description="The risk rated at the time, as a row of the bank's own `risk_rating` vocabulary, which its admin may extend; null when not rated."
     )
     rationale: str = Field(description="Why the status was what it was, in the assessor's own words.")
@@ -848,7 +820,7 @@ class RegisterInterpretationVersion(CamelSchema):
 
     version_no: int = Field(description="The version number, 1 for the first reading and one higher for every later one.")
     text: str = Field(description="How the bank reads the rule, in its own words. Internal legal judgement that never leaves the bank.")
-    author: RegisterPersonRef = Field(description="The person who wrote this version.")
+    author: NamedRef = Field(description="The person who wrote this version.")
     written_at: datetime.datetime = Field(description="The UTC timestamp at which this version was written, set by the server.")
 
 
@@ -921,7 +893,7 @@ class RegisterInternalLink(CamelSchema):
     model_config = ConfigDict(json_schema_extra={"examples": [_LINK_EXAMPLE]})
 
     id: uuid.UUID = Field(description="The link's UUID in this bank.")
-    kind: RegisterVocabRef = Field(
+    kind: VocabRef = Field(
         description=(
             "What the linked item is, as a row of the bank's own `link_kind` vocabulary, seeded "
             "as `policy`, `procedure` and `control`; its admin may add rows such as a process or "
@@ -941,7 +913,7 @@ class RegisterInternalLink(CamelSchema):
             "survives the link's removal."
         )
     )
-    created_by: RegisterPersonRef = Field(description="The person who made the link.")
+    created_by: NamedRef = Field(description="The person who made the link.")
     created_at: datetime.datetime = Field(description="The UTC timestamp at which the link was made, set by the server.")
 
 
@@ -983,7 +955,7 @@ class RegisterInternalItem(CamelSchema):
     model_config = ConfigDict(json_schema_extra={"examples": [_ITEM_EXAMPLE]})
 
     id: uuid.UUID = Field(description="The item's UUID in this bank; send it as `internalItemId` to link it.")
-    kind: RegisterVocabRef = Field(
+    kind: VocabRef = Field(
         description=(
             "What the item is, as a row of the bank's own `link_kind` vocabulary, seeded as "
             "`policy`, `procedure` and `control`; its admin may add rows such as a process or a "
@@ -1093,8 +1065,8 @@ class RegisterUnit(CamelSchema):
     applicability: Applicability = Field(description=_APPLICABILITY)
     applicability_reason: str | None = Field(description=_APPLICABILITY_REASON)
     applicability_decided_at: datetime.datetime | None = Field(description=_DECIDED_AT)
-    applicability_decided_by: RegisterPersonRef | None = Field(description=_DECIDED_BY)
-    compliance_status: RegisterVocabRef = Field(
+    applicability_decided_by: NamedRef | None = Field(description=_DECIDED_BY)
+    compliance_status: VocabRef = Field(
         description=(
             "How the bank complies with the unit, as a row of its own `compliance_status` "
             "vocabulary, which its admin may extend. The conformance row's status is never "
@@ -1287,7 +1259,7 @@ class RegisterUnitDecision(CamelSchema):
     applicability: Applicability = Field(description=_APPLICABILITY)
     reason: str = Field(description="Why, in the bank's own words, as the person gave it. Tenant content that never leaves the bank.")
     decided_at: datetime.datetime = Field(description="The UTC timestamp at which the answer was stored.")
-    decided_by: RegisterPersonRef = Field(description="The person who set the answer after confirming it.")
+    decided_by: NamedRef = Field(description="The person who set the answer after confirming it.")
 
 
 class RegisterStatementUnit(RegisterUnit):
@@ -1361,9 +1333,9 @@ class RegisterDutyOccurrence(CamelSchema):
         )
     )
     org_unit_id: uuid.UUID | None = Field(description="The legal entity the occurrence is for, as a UUID; null for the bank as a whole.")
-    owner: RegisterPersonRef | None = Field(description="The member who owns the occurrence; null when nobody does yet.")
+    owner: NamedRef | None = Field(description="The member who owns the occurrence; null when nobody does yet.")
     completed_at: datetime.datetime | None = Field(description="The UTC timestamp of completion, null until completed.")
-    completed_by: RegisterPersonRef | None = Field(description="The person who completed it, null until completed.")
+    completed_by: NamedRef | None = Field(description="The person who completed it, null until completed.")
     note: str | None = Field(description="The completer's note in their own words; null when none was written.")
 
 
@@ -1504,10 +1476,10 @@ class RegisterDecisionEntity(CamelSchema):
     org_unit_name: str = Field(description="The legal entity's name as the bank's organisation holds it, for showing.")
     applicability: Applicability = Field(description=_APPLICABILITY)
     applicability_reason: str | None = Field(description=_APPLICABILITY_REASON)
-    compliance_status: RegisterVocabRef = Field(description=_AGENT_STATUS)
+    compliance_status: VocabRef = Field(description=_AGENT_STATUS)
     status_note: str | None = Field(description=_AGENT_STATUS_NOTE)
-    owner: RegisterPersonRef | None = Field(description="The member who owns meeting the obligation in this entity; null when a team or nobody does.")
-    owner_team: RegisterVocabRef | None = Field(description=_TEAM_REF)
+    owner: NamedRef | None = Field(description="The member who owns meeting the obligation in this entity; null when a team or nobody does.")
+    owner_team: VocabRef | None = Field(description=_TEAM_REF)
     process: str | None = Field(description=_AGENT_PROCESS)
     system: str | None = Field(description=_AGENT_SYSTEM)
     next_review_date: datetime.date | None = Field(description=_AGENT_REVIEW)
@@ -1519,7 +1491,7 @@ class RegisterDecisionItem(CamelSchema):
 
     model_config = ConfigDict(json_schema_extra={"examples": [_AGENT_ITEM_EXAMPLE]})
 
-    kind: RegisterVocabRef = Field(
+    kind: VocabRef = Field(
         description=(
             "What the linked item is, as a row of the bank's own `link_kind` vocabulary, seeded as "
             "`policy`, `procedure` and `control`; its admin may add rows such as a process or a system."
@@ -1546,15 +1518,15 @@ class RegisterDecision(CamelSchema):
     )
     applicability: Applicability = Field(description=_APPLICABILITY)
     applicability_reason: str | None = Field(description=_APPLICABILITY_REASON)
-    compliance_status: RegisterVocabRef = Field(
+    compliance_status: VocabRef = Field(
         description=f"{_AGENT_STATUS} Where legal entities the obligation applies to have rows, it is the worst of theirs by category: gap, then partly, then not assessed, then compliant."
     )
     status_note: str | None = Field(description=_AGENT_STATUS_NOTE)
     interpretation: str | None = Field(
         description="How the bank reads this rule, the version in force, in its own words; null when it has written none. Earlier versions are not included."
     )
-    owner: RegisterPersonRef | None = Field(description="The first-line member who owns meeting the obligation; null when nobody does yet.")
-    owner_team: RegisterVocabRef | None = Field(description=_TEAM_REF)
+    owner: NamedRef | None = Field(description="The first-line member who owns meeting the obligation; null when nobody does yet.")
+    owner_team: VocabRef | None = Field(description=_TEAM_REF)
     process: str | None = Field(description=_AGENT_PROCESS)
     system: str | None = Field(description=_AGENT_SYSTEM)
     next_review_date: datetime.date | None = Field(description=_AGENT_REVIEW)

@@ -41,8 +41,8 @@ def iter_operations(api: NinjaAPI) -> Iterator[RegisteredOperation]:
 
 
 # Tenant-scoped routes, so the tenant-isolation guard requests tenant A's record as tenant B
-# and demands a 404. Entries are (method, path, model label, factory name in
-# apps/shared/factories.py).
+# and demands a 404. Entries are (method, path with its query where the route reads its
+# record from one, model label, factory name in apps/shared/factories.py).
 TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("PATCH", "/tenant/members/{user_id}", "identity.Membership", "member_user"),
     ("GET", "/tenant/members/{user_id}/sessions", "identity.Membership", "member_user"),
@@ -59,10 +59,8 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # Tenants (TEN-02, TEN-03, TEN-05, TEN-06). The licence create is proved in
     # apps/tenants/tests_api_contract.py.
     ("PATCH", "/tenant/org-units/{org_unit_id}", "tenants.OrgUnit", "org_unit"),
-    ("GET", "/tenant/org-units/{org_unit_id}/licences", "tenants.OrgUnit", "org_unit"),
     ("PATCH", "/tenant/licences/{licence_id}", "tenants.Licence", "licence"),
     ("PATCH", "/tenant/products/{product_id}", "tenants.TenantProduct", "tenant_product"),
-    ("GET", "/tenant/teams/{key}/members", "taxonomy.Team", "team_key"),
     ("GET", "/tenant/members/{user_id}/open-work", "identity.Membership", "member_user"),
     ("POST", "/tenant/members/{user_id}/remove", "identity.Membership", "member_user"),
     ("POST", "/tenant/support-access/{grant_id}/approve", "tenants.SupportAccess", "support_access"),
@@ -98,9 +96,10 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # A Statement of Applicability unit (REG-08).
     ("PATCH", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
     ("DELETE", "/units/{unit_id}", "register.SoaUnit", "soa_unit"),
-    # A participant on a register entry for an obligation private to tenant A (COL-04).
-    ("GET", "/obligations/{obligation_id}/participants", "collab.Participant", "obligation_participant"),
-    ("DELETE", "/obligations/{obligation_id}/participants/{participant_id}", "collab.Participant", "obligation_participant"),
+    # A participant on a register entry for an obligation private to tenant A (COL-04); the
+    # subject rides in the query, which the guard fills too (B-14).
+    ("GET", "/participants?subjectType=obligation&subjectId={obligation_id}", "collab.Participant", "obligation_participant"),
+    ("DELETE", "/participants/{participant_id}?subjectType=obligation&subjectId={obligation_id}", "collab.Participant", "obligation_participant"),
     # Tenant agents (AGT-04).
     ("PATCH", "/agents/{tenant_agent_id}", "agents.TenantAgent", "tenant_agent"),
     # ACC-08: deciding a request for tenant reach.
@@ -109,16 +108,14 @@ TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     # A dated duty occurrence (REG-07).
     ("POST", "/duty-occurrences/{occurrence_id}/complete", "register.DutyOccurrence", "duty_occurrence"),
     # A participant on a case of tenant A, for a change tenant B has no case for (COL-04).
-    ("GET", "/changes/{change_id}/participants", "collab.Participant", "case_participant"),
-    ("DELETE", "/changes/{change_id}/participants/{participant_id}", "collab.Participant", "case_participant"),
+    ("GET", "/participants?subjectType=change&subjectId={change_id}", "collab.Participant", "case_participant"),
+    ("DELETE", "/participants/{participant_id}?subjectType=change&subjectId={change_id}", "collab.Participant", "case_participant"),
     # ACC-01, ACC-03, ACC-08: an agent access entry, its keys and its log.
     ("GET", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
     ("PATCH", "/agent-access/{uuidstr:entry_id}", "agents.AgentAccess", "agent_access_entry"),
     ("POST", "/agent-access/{uuidstr:entry_id}/revoke", "agents.AgentAccess", "agent_access_entry"),
     ("POST", "/agent-access/{uuidstr:entry_id}/keys/{uuidstr:key_id}/revoke", "identity.ApiKey", "agent_access_key"),
     ("GET", "/agent-access/{uuidstr:entry_id}/calls", "agents.AgentAccess", "agent_access_entry"),
-    # One of the bank's own scope items (OWN-01).
-    ("GET", "/tenant/footprint/scope-items/{scope_item_id}", "taxonomy.ScopeItem", "scope_item"),
     # A comment of tenant A on its own case, and a notification of one of its members.
     ("DELETE", "/comments/{comment_id}", "collab.Comment", "comment"),
     ("POST", "/notifications/{notification_id}/read", "collab.Notification", "notification"),
@@ -145,7 +142,6 @@ SUPPORT_READ_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/library-updates"),
         ("GET", "/sources"),
         ("GET", "/sources/coverage"),
-        ("GET", "/taxonomy/dimensions"),
         ("GET", "/taxonomy/terms"),
         # watch.read: the feed, a change and the weekly briefing.
         ("GET", "/changes"),
