@@ -1,15 +1,10 @@
 """The export runner (REP-02, CAS-07).
 
-`run_export` is a `@tenant_task`: the tenant id is its first argument and it runs activated
-in its own transaction, so the file's key, its hash and the audit row land together or not
-at all. It checks the tenant again: the job is read by its id *and* the tenant it was queued
-for, under that tenant's row-level security, so a job id handed to the wrong tenant finds
-nothing.
-
-It is idempotent: only a `queued` job is built, under a row lock, so a second delivery of
-the same message finds the job finished and changes nothing. A builder's `ValidationError`
-fails the job with its user-facing text; anything else propagates, the transaction rolls
-back, and the job stays queued for a retry. Nothing here logs the file or its contents.
+`run_export` is a `@tenant_task` running in one transaction, so the file's key, hash and
+audit row land together. The job is read by id and tenant under row-level security, so a job
+id handed to the wrong tenant finds nothing. Idempotent: only a `queued` job is built, under a
+row lock. A builder's `ValidationError` fails the job with its text; anything else rolls back
+and leaves it queued for a retry. Nothing here logs the file.
 """
 
 from __future__ import annotations

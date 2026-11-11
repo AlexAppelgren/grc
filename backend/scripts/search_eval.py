@@ -25,7 +25,7 @@ Status rules:
 
 The mock evaluators read a `predictions` field from the rows when every row has one
 (unit tests and dry runs). A real evaluator is named as `module:Class` with
-`--retriever` and `--classifier`; chunk 5 supplies the classifier, and the retriever is
+`--retriever` and `--classifier`; the retriever is
 `apps.search.eval:Retriever` (hybrid search over the fixture corpus, in a throwaway
 database). A retrieval row whose `expected` is empty is a question with no answer: it
 scores right only when the retriever returns nothing. A row with `via: "ask"` is scored
@@ -34,10 +34,6 @@ question about a standard's control is one Search answers with the conformance d
 Ask must not answer at all. Every run says which tracks have no
 recorded baseline, because a drop in those fails nothing yet. Exit 0 when the gate passes,
 1 otherwise. `--self-test` runs eval/tests_scoring.py.
-
-Proven to fail 2026-09-19 with a recorded baseline and no evaluator (exit 1, track
-named), and with a mock prediction set scoring under the floor (exit 1, metric named);
-both through the self-test.
 """
 
 from __future__ import annotations
@@ -74,7 +70,7 @@ K = 10
 VIA = ("search", "ask")
 
 
-# ---------------------------------------------------------------- evaluator interfaces
+# --- evaluator interfaces ---
 class Retriever(Protocol):
     name: str
     is_mock: bool
@@ -138,7 +134,7 @@ def load_evaluator(spec: str) -> object:
     return cls()
 
 
-# ---------------------------------------------------------------- loading
+# --- loading ---
 def display(path: Path) -> str:
     return path.relative_to(BACKEND).as_posix() if path.is_relative_to(BACKEND) else path.name
 
@@ -239,7 +235,7 @@ def validate_tolerance(data: dict) -> None:
             raise ValueError(f"tolerance.json: {metric} must be a number between 0 and 1")
 
 
-# ---------------------------------------------------------------- scoring
+# --- scoring ---
 def recall_at_k(expected: list[str], predicted: list[str], k: int = K) -> float:
     if not expected:  # a no-answer question: right only when nothing at all came back
         return 0.0 if predicted else 1.0
@@ -360,7 +356,7 @@ def _breakdown(per_row: list[tuple[dict, dict[str, float]]], key: str, metrics: 
     return {g: {m: mean([s[m] for s in scores]) for m in metrics} for g, scores in sorted(groups.items())}
 
 
-# ---------------------------------------------------------------- the gate
+# --- the gate ---
 def decide(track: str, result: TrackResult, baseline: dict, tolerance: dict) -> list[str]:
     """Returns the failures for one track, empty when it passes."""
     recorded = bool(baseline["tracks"][track]["recorded"])
@@ -395,7 +391,7 @@ def record(baseline: dict, results: dict[str, TrackResult], now: datetime | None
     return updated
 
 
-# ---------------------------------------------------------------- reporting
+# --- reporting ---
 def report(track: str, result: TrackResult, baseline: dict, tolerance: dict) -> list[str]:
     lines = []
     recorded = bool(baseline["tracks"][track]["recorded"])
@@ -417,7 +413,7 @@ def report(track: str, result: TrackResult, baseline: dict, tolerance: dict) -> 
     return lines
 
 
-# ---------------------------------------------------------------- entry points
+# --- entry points ---
 @dataclass
 class Paths:
     retrieval: Path = EVAL / "retrieval.jsonl"

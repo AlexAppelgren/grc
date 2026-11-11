@@ -1,28 +1,14 @@
 """Celery tasks of the collab app (COL-02, playbook 12).
 
-`deliver_mail` is the one door a collab mail leaves through. It is a `@tenant_task`: the
-tenant id is its first argument and it runs activated inside its own transaction, so the
-`email_message` row and the send commit together. The row is the idempotency key: its
-unique `(tenant, user, template, subject_type, subject_id, sent_on)`, with `sent_on` the
-bank's local date, makes a second send of the same mail the same day find the row and do
-nothing, however many workers retry it; the weekly digest's `sent_on` is the first day of
-the bank's week, so it goes once a week (`collab/digest.py`). A send the relay refused keeps
-its row as `failed` with the error's kind, and the next run tries that row again rather than
-adding another.
+`deliver_mail` (`@tenant_task`) is the one door a collab mail leaves through; its
+`email_message` row and the send commit together. The row's unique `(tenant, user,
+template, subject_type, subject_id, sent_on)`, `sent_on` being the bank-local date (or the
+week's first day for the digest), makes a retry find it and do nothing. A refused send
+keeps its row as `failed` and is retried on that row.
 
-`send_reminders` is the hourly beat entry: it hands on the banks whose local wall time has
-just reached `REMINDER_SEND_HOUR`, one `send_tenant_reminders` and one
-`send_tenant_escalations` each (fan out, never chain). Each is a `@tenant_task` that runs
-`reminders.py` or `escalation.py` for one bank inside its own transaction.
-
-`send_digests` is the weekly digest's entry on the same hourly beat and the same timezone
-rule: it hands on the banks whose local wall time has just reached `DIGEST_SEND_HOUR` on
-their own `digest_weekday`, one `send_tenant_digests` each, which runs `digest.send_all()`.
-A bank whose day has not come is not enqueued, and `deliver_mail`'s weekly key makes a
-second round in the same week send nothing.
-
-Nothing here logs a recipient's address, a subject or a body (playbook 4.7): the row's id,
-its template and its status are all that leave.
+`send_reminders` and `send_digests` run hourly and hand on each bank whose local time just
+reached `REMINDER_SEND_HOUR` (or `DIGEST_SEND_HOUR` on its `digest_weekday`), fanning out
+one tenant task per job. Nothing here logs an address, subject or body (playbook 4.7).
 """
 
 from __future__ import annotations
@@ -76,8 +62,8 @@ def deliver_mail(
     tenant = Tenant.objects.get(pk=tenant_id)
     sent_on = today_for(tenant)
     if template == digest.TEMPLATE:
-        # Composed here from My work as it stands, so no record title rides the queue, and
-        # once a week rather than once a day. Nothing open any more: no mail and no row.
+        # Composed here from My work as it stands, so no title rides the queue. Nothing open,
+        # no mail and no row.
         composed = digest.compose(membership)
         if composed is None:
             return

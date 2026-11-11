@@ -1,35 +1,14 @@
-"""Business logic of the home app. Raises ValidationError with user-facing text; every
-write goes through record(); every threshold comes from settings (playbook 3).
+"""Today (HOM-01): `home_today()` fans out five independent reads into one answer, so the
+query count is fixed (playbook 10, pinned at two sizes). The bank's in-scope register entries
+are resolved once first, since the scope rule is Today's costliest condition (H115). Reads
+only; the tenant half under row-level security.
 
-Today is the one screen that must not chain: `home_today()` fans out the reads it needs and
-answers them in one object (HOM-01, playbook 10). Five independent reads — the bank's own
-date, the roadmap's first items with its count, the week's lead change, the health of the
-sources and where the bank stands — and none of them is the input to another, so the query
-count is fixed and a test pins it at two sizes. The one thing two of them share is asked
-first: the bank's register entries inside its regulatory scope, which the roadmap's register
-deadlines and the standing panel both filter by, because the scope rule is the costliest
-condition Today asks and asking it once per read made Today its slowest screen (H115).
+The ISO week (in the bank's time zone) and `week_cases()`, the one selector of a week's lead,
+live here so Today and the weekly briefing can never disagree.
 
-A read module: nothing here writes, so no `record()` call belongs in it. What it reads is
-two zones at once — the library's changes beside this bank's own cases — and the tenant half
-is read under row-level security with the caller's tenant activated, never by filtering in
-Python.
-
-Two things live here rather than in `briefing.py` because Today and the weekly briefing must
-never disagree about them, and the way to make that true is one function rather than two:
-
-- **Which week it is.** The ISO week, Monday to Sunday, resolved in the bank's own time
-  zone, which is what `briefing.week_start` stores.
-- **What leads it.** `week_cases()` is the one selector: the week's open, in-scope cases,
-  most urgent first and then by key date. Today's lead card is its first row and the
-  briefing's items are the same list capped; that is why the lead card and the mail can
-  never name two different changes.
-
-Each panel is filtered by the reader's own permissions rather than the page being refused. A
-reader without `watch.read` gets a 200 with `lead` and `sources` null, and one without
-`register.read` with `standing` null and no register deadline in "Coming up", and the
-screen hides those panels, because a 403 would take the whole of Today away from somebody
-who is allowed to see most of it.
+Each panel is filtered by the reader's permissions rather than the page refused: without
+`watch.read`, `lead` and `sources` are null; without `register.read`, `standing` is null and
+"Coming up" carries no register deadline.
 """
 
 from __future__ import annotations
@@ -56,9 +35,7 @@ from apps.watch.models import CheckStatus
 from apps.watch.schemas import WatchChangeRow
 
 
-# ---------------------------------------------------------------------------------------
-# The week, as the bank reads it (HOM-01, HOM-02)
-# ---------------------------------------------------------------------------------------
+# --- The week, as the bank reads it (HOM-01, HOM-02) ---
 def week_start_of(day: datetime.date) -> datetime.date:
     """The Monday of the ISO week `day` falls in. A plain date, because a week a bank reads
     is the week its own calendar shows and not a moment."""
@@ -66,32 +43,22 @@ def week_start_of(day: datetime.date) -> datetime.date:
 
 
 def week_window(tenant: Tenant, week_start: datetime.date) -> tuple[datetime.datetime, datetime.datetime]:
-    """Monday 00:00 to the following Monday 00:00 in the bank's own time zone, as the two
-    instants a sighting is compared against. A sighting is a timestamp, which is why the
-    week needs a zone to be resolved at all; a key date is a plain date and needs none."""
+    """Monday 00:00 to the next Monday 00:00 in the bank's time zone, the two instants a
+    sighting timestamp is compared against."""
     start = datetime.datetime.combine(week_start, datetime.time.min, tzinfo=ZoneInfo(tenant.timezone))
     return start, start + datetime.timedelta(days=7)
 
 
 def week_cases(tenant: Tenant, week_start: datetime.date, *, limit: int) -> list[ChangeCase]:
     """The week's open, in-scope cases, most urgent first and then by key date (HOM-01,
-    HOM-02, FP-03).
+    HOM-02, FP-03); the one selector behind Today's lead card and the briefing's items.
 
-    The one selector behind Today's lead card and the weekly briefing's items, so the two
-    can never name different changes. Three rules decide what is in it, and each belongs to
-    somebody else:
+    - Sighted this week: `first_seen_at` in the ISO week, the window of the feed's `?week=`.
+    - Still open: not in the `closed` or `dismissed` category.
+    - In scope: `change_case.footprint_match`, read and never recomputed, so the briefing
+      cannot drift from the feed (FP-03).
 
-    - **The change was sighted this week.** `first_seen_at` inside the ISO week in the
-      bank's own time zone, which is the same window the feed's `?week=` filter uses.
-    - **The bank still has work on it.** A case in the `closed` or `dismissed` category is
-      finished, and a finished case does not lead a week.
-    - **It is inside the bank's regulatory scope.** `change_case.footprint_match` is the
-      verdict `apps/cases/creation.py` computed from the one scope rule; it is read here and
-      never recomputed, so the briefing cannot drift from the feed (FP-03).
-
-    Most urgent first is the urgency row's own `ordinal`, the fixed severity order the whole
-    product reads, and never a phrase. A change registered before anybody published its date
-    sorts last rather than first, because a missing date is not an early one.
+    Urgency sorts by the row's `ordinal`; an undated change sorts last.
     """
     sighted_from, sighted_until = week_window(tenant, week_start)
     return list(
@@ -107,49 +74,33 @@ def week_cases(tenant: Tenant, week_start: datetime.date, *, limit: int) -> list
 
 
 def week_rows(tenant: Tenant, order: list[str], cases: list[ChangeCase]) -> list[WatchChangeRow]:
-    """Those cases as the watch feed shows them, in the order they were chosen. One shape
-    has one owner: the row is built by `apps/watch/reading.py`, so the lead card, the
-    briefing and the feed can never render one reform three ways."""
+    """Those cases as the watch feed shows them, in the order chosen, built by
+    `apps/watch/reading.py` so a reform renders one way everywhere."""
     rows = watch_reads.change_rows(tenant, order, [case.change_id for case in cases])
     return [rows[case.change_id] for case in cases]
 
 
-# ---------------------------------------------------------------------------------------
-# How the watching is going (HOM-01)
-# ---------------------------------------------------------------------------------------
+# --- How the watching is going (HOM-01) ---
 def source_health(order: list[str]) -> HomeSourceHealth:
-    """The source panel's three numbers, from chunk 5's coverage read (WAT-01).
-
-    A source whose automated checks are switched off is counted in neither figure: it is
-    meant not to be checked, so counting it would make a deliberate choice look like a gap.
-    Everything else is either healthy or named in `failed`, so `checked` below `total`
-    always means a real gap and the panel never says a number it cannot explain. A source
-    nobody has checked yet is a gap too: it is not stale — nothing has failed — but we
-    cannot say a change was not missed, which is the question this panel answers.
+    """The source panel's three numbers (WAT-01). A source with automated checks switched off
+    counts in neither figure, so `checked` below `total` always means a real gap; a source
+    nobody has checked yet is a gap too, since we cannot say a change was not missed.
     """
     rows = [row for row in watch_sources.source_coverage(order) if row.source.active]
     failed = [row for row in rows if row.overdue or row.last_status != CheckStatus.OK.value]
     return HomeSourceHealth(checked=len(rows) - len(failed), total=len(rows), failed=failed)
 
 
-# ---------------------------------------------------------------------------------------
-# Where the bank stands (HOM-01, REG-02, REG-03, FP-03)
-# ---------------------------------------------------------------------------------------
+# --- Where the bank stands (HOM-01, REG-02, REG-03, FP-03) ---
 def standing(in_scope: list[uuid.UUID]) -> HomeStanding:
-    """How many obligations inside the regulatory scope apply, per compliance category, and
-    how many gaps on them are open. Three queries however large the register is.
+    """How many in-scope obligations apply, per compliance category, and how many gaps on
+    them are open. Three queries however large the register is.
 
-    One count per register entry, so an obligation spanning several legal entities, a
-    standard's conformance obligation included, is counted once. It applies when the entry
-    or any of its entity rows says so, and it is counted in the worst category of the entity
-    rows that apply, else in the entry's own: `worst_of()`, the rule behind the obligation's
-    pill, so the panel and the page can never disagree. A product's row sits under its
-    entity's and is left out, as on the page. Gaps are counted whatever the answer on their
-    obligation, because "applies" and "we comply" are separate facts.
-
-    `in_scope` is the bank's register entries inside its regulatory scope
-    (`roadmap.in_scope_entries()`), the answer "Coming up" filters by too: the scope rule is
-    the costliest condition either asks, so Today asks it once for both (H115).
+    One count per register entry, applying when the entry or any entity row says so, in the
+    worst category of the applying entity rows (`worst_of()`, the pill's rule), else the
+    entry's own. Product rows are left out, as on the page. Gaps count whatever the answer,
+    because "applies" and "we comply" are separate facts. `in_scope` comes from
+    `roadmap.in_scope_entries()`, asked once for both panels (H115).
     """
     entries = TenantObligation.objects.filter(id__in=in_scope)
     applying_scopes: dict[uuid.UUID, list[ComplianceStatus]] = {}
@@ -173,28 +124,18 @@ def standing(in_scope: list[uuid.UUID]) -> HomeStanding:
     )
 
 
-# ---------------------------------------------------------------------------------------
-# GET /home (HOM-01, NFR-02)
-# ---------------------------------------------------------------------------------------
+# --- GET /home (HOM-01, NFR-02) ---
 def home_today(
     tenant: Tenant, order: list[str], *, watch_reader: bool, register_reader: bool = False, cases_reader: bool = False
 ) -> Home:
-    """Everything the timeline home shows, in one call (HOM-01).
+    """Everything the timeline home shows, in one call (HOM-01): five independent reads with
+    a fixed query count (`tests_home.py`).
 
-    Five independent reads, none of them chained behind another: a fixed number of queries
-    however many dates the bank has ahead of it, which `tests_home.py` pins at two sizes. The
-    bank's in-scope register entries are resolved once, before them, for the two that need
-    them.
-
-    The week's briefing items are read once, up to `BRIEFING_MAX_ITEMS`: the first is the
-    lead and their number is `briefingCount`, so the screen never chains
-    `GET /briefings/current` behind this call for "N more items this week".
-
-    `lead`, `briefingCount` and `sources` are null for a reader without `watch.read`, and `standing` for one
-    without `register.read`, and the reads behind them are not made at all — the permission
-    decides before the query, so a reader who may not see a panel never pays for it either.
-    The same `register.read` decides whether the register's deadlines are in "Coming up", and
-    `cases.read` whether the case workflow's are.
+    The week's briefing items are read once, up to `BRIEFING_MAX_ITEMS`: the first is the lead
+    and their number is `briefingCount`, so the screen never chains `GET /briefings/current`.
+    A panel the reader may not see is null and its read is never made: `watch.read` for
+    `lead`, `briefingCount` and `sources`, `register.read` for `standing` and the register's
+    deadlines, `cases.read` for the case workflow's.
     """
     today = today_for(tenant)
     in_scope = roadmap.in_scope_entries(tenant) if register_reader else None
@@ -214,7 +155,5 @@ def home_today(
 
 
 def _lead(tenant: Tenant, order: list[str], week: list[ChangeCase]) -> WatchChangeRow | None:
-    """The change of the running week that most deserves attention: the first of the week's
-    briefing items, which is the same change the week's briefing leads with. Null in a week
-    with nothing open and in scope, which is a quiet week rather than a failure."""
+    """The running week's lead: the first briefing item. Null in a quiet week."""
     return week_rows(tenant, order, week[:1])[0] if week else None

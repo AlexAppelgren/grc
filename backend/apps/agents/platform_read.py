@@ -1,11 +1,7 @@
-"""What bleqq watches, as any member of a bank reads it (AGT-03, ruling 6): each platform
-agent's name, purpose, jurisdictions, cadence, next run and how its last run ended, and
-nothing else (the TODO default: no prompt, tool, budget, run row or cost).
-
-Only library rows feed the answer: the agent definitions and their runs that carry no
-tenant. A bank's own run of the same definition is not how bleqq's watch last ended, so it
-is filtered out; another bank's run is already fenced by row-level security. An agent has no display name of
-its own, so `name` is its stable key and the screen renders the words.
+"""What bleqq watches, as any member of a bank reads it (AGT-03): each platform agent's key,
+purpose, jurisdictions, cadence, next run and how its last library run ended, and nothing
+else (no prompt, tool, budget, run row or cost). Library rows only; a bank's own run of the
+same definition is filtered out. `name` is the stable key; the screen renders the words.
 """
 
 from __future__ import annotations
@@ -19,8 +15,7 @@ from django.utils.timezone import now as clock
 from apps.agents.models import Agent, AgentCadence, AgentRun, AgentScopeKind, AgentVersion, RunStatus
 from apps.agents.schemas import Cadence, PlatformWatchItem, PlatformWatchLastRun, PlatformWatchPage
 
-# What each cadence word means as a span, keyed on the immutable kind (as
-# `watch/sources.py:CADENCE` does for a source). `manual` has none: nobody's schedule starts it.
+# What each cadence word means as a span (as `watch/sources.py:CADENCE`); `manual` has none.
 _SPAN = {
     AgentCadence.DAILY.value: datetime.timedelta(days=1),
     AgentCadence.WEEKLY.value: datetime.timedelta(days=7),
@@ -59,8 +54,7 @@ def _item(agent: Agent, last: AgentRun | None, now: datetime.datetime) -> Platfo
         name=agent.key,
         purpose=agent.description,
         jurisdictions=scope.get("jurisdictions", []),
-        # Kinds in code (`AgentCadence`, `RunStatus`): the columns hold one of the values the
-        # schema publishes, so the casts state what the choices already fix.
+        # The columns hold kinds the schema publishes; the casts state what the choices fix.
         cadence=cast(Cadence, agent.default_cadence),
         next_run_at=_next_run(agent.default_cadence, last, now),
         last_run=(

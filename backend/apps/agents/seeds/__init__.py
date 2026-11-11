@@ -1,18 +1,12 @@
-"""Reference seed of the agents app (AGT-03), run by `manage.py seed_reference` on every
-deploy: the platform's versioned definitions in `backend/agents/<agent>/v<n>/` become
-`agent` rows, matched on the definition's immutable `id`, each with its first published
-`agent_version`.
+"""Reference seed of the agents app (AGT-03), run by `seed_reference` on every deploy: each
+shipped definition in `backend/agents/<agent>/v<n>/` becomes an `agent` row, matched on its
+immutable `id`, with its first published `agent_version`.
 
-Library rows, so the writes sit inside `library_write()` and each created row leaves an
-audit event, as the taxonomy and library seeds do. An existing row is left alone: a new
-version folder is published by a platform admin (AGT-03, chunk 11), not by a deploy
-silently rewriting what a run already points at. The one exception is an agent seeded
-before versions existed (agents 0004) with no version row at all: it gets the row of the
-version it is on, when that is the folder this build ships.
-
-The definition says whether an agent is one of bleqq's or one a bank may add for itself
-(`scope`, `tenant_configurable`, `writes_to`), so the platform fence is set by the file and
-never by hand. A definition's scope never changes once seeded (agents 0004).
+Library rows, written inside `library_write()` with an audit event each. An existing row is
+left alone: a new version is published by a platform admin, never by a deploy rewriting what
+a run points at; the one exception is an agent with no version row at all (pre agents 0004).
+A definition's `scope`, `tenant_configurable` and `writes_to` set the platform fence from
+the file, and its scope never changes once seeded.
 """
 
 from __future__ import annotations
@@ -24,14 +18,10 @@ from apps.shared.tenancy import library_write
 
 SEED_REASON = "seed_reference"
 ACTOR = Actor.system(SEED_REASON)
-# The definitions this build ships, newest version folder each. Frozen here rather than
-# globbed: a folder half-added to the tree never becomes an agent by accident. The sweeper
-# proposes and the confirmer decides (kind `review`, D-62, D-80): two definitions, so the
-# second pair of eyes on a proposal is never the definition that filed it. The third is the
-# one a bank may add for itself (AGT-04, ruling 1): bleqq's definition, a bank's agent. The
-# fourth is the bank's own researcher for a scope item the library does not cover (OWN-02).
-# The fifth files the library baseline, the starting inventory, as proposals (D-118). The
-# sixth translates the library's titles and summaries into the languages a record lacks (D-129).
+# The definitions this build ships, newest version folder each, frozen so a half-added folder
+# never becomes an agent: the sweeper proposes and the confirmer decides (D-62, D-80), a
+# definition a bank may add (AGT-04), the bank's scope researcher (OWN-02), the library
+# baseline filer (D-118) and the translator (D-129).
 SHIPPED: tuple[tuple[str, int], ...] = (
     ("watch-sweeper", 1),
     ("library-confirmer", 2),

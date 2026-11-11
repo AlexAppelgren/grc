@@ -1,9 +1,7 @@
-"""The case as every workflow move answers it (`CasesCase`, CAS-02 to CAS-08).
-
-One builder, so every move reports the case the same way: the people named, the bank's own
-reasons labelled in the reader's language, and the moves the state machine allows for that
-reader. `canRequestSignoff` is read off the same `allowed_transitions()` the request's own
-guard runs, so the screen and the server never disagree (CAS-06). It reads and never writes.
+"""The case as every workflow move answers it (`CasesCase`, CAS-02 to CAS-08): the people,
+the bank's reasons labelled, and the moves the state machine allows the reader.
+`canRequestSignoff` comes from the same `allowed_transitions()` the request's guard runs
+(CAS-06). Reads only.
 """
 
 from __future__ import annotations

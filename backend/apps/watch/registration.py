@@ -1,44 +1,21 @@
 """Registering a reform a run sighted, and the pages it was found on (WAT-02, AGT-01,
-AGT-07, CAS-01, AUD-01).
+AGT-07, CAS-01, AUD-01). Its outbox row opens a case in every bank (`apps/cases/creation.py`).
 
-This is where a sweep's finding becomes a library row, and it is the one call in the watch
-pipeline that starts something in every bank: the outbox row it writes is what opens a case
-for each of them (`apps/cases/creation.py`, ruling 32). So four rules shape it.
+- One record per reform: `stable_key` is the reform's permanent name. A known key is the
+  merge of AC-WAT1: 200 with the existing change, new pages attached as duplicates, missing
+  milestones added, no stored field overwritten. Idempotent without an idempotency key; a
+  merge writes `change.updated`, never `change.registered`, so no second case is attempted.
+- Only against an open run: no run or a closed one is 422 `run_not_open`, another key's run
+  404. A bank's key writes nothing (403 `tenant_agents_not_available`).
+- Fetched content is untrusted (AGT-07, playbook 11.2): every string read off a page goes
+  through `agents/screen.py`, and what it finds goes in `change_document.risk_flags`. The
+  text is stored as it arrived, as evidence, never executed or followed. A flag marks the
+  page suspicious, not the reform.
+- Everything a run files is a suggestion naming its suggester (WAT-03, WAT-04, D-74); nothing
+  here writes `suggested = false`.
 
-**One record per reform, and a retry is not a second one.** `stable_key` is the reform's
-permanent name, chosen by the agent and never changed. Posting a key the library already
-holds is the merge of AC-WAT1: the answer is 200 with the change that exists, the new pages
-are attached to it as duplicates, a milestone it did not have is added, and not one field
-of the change already stored is overwritten. That is what makes the call idempotent without
-a stored idempotency key — an agent retries, and `stableKey` is the natural key a retry
-carries. A merge writes `change.updated` and never `change.registered`, so no second case
-is attempted anywhere.
-
-**Nothing is registered against a run that is not open.** A change points at the run that
-found it, so a key's registration that names no run, or a closed one, is refused (422
-`run_not_open`), another key's run is not found (404), and either stores nothing: a finished
-account of a night's work is not something anything may be added to afterwards. A bank's
-key writes nothing here at all (403 `tenant_agents_not_available`, `runs.refuse_tenant_key`):
-in R1 every run and everything it files is the platform's.
-
-**Fetched content is untrusted** (AGT-07, playbook 11.2). Every string the run read off a
-page — the reform's title and summary, and each page's own headline — goes through
-`agents/screen.py` before it is stored, and what the screen finds is recorded in
-`change_document.risk_flags` beside the page it came from. The text itself is stored
-exactly as it arrived, because it is evidence: it is never executed, never rendered as
-HTML, and never followed as an instruction. A flag says the page is suspicious, never that
-the reform is.
-
-**Everything a run files is a suggestion.** The type, the flags, the scope terms and the
-obligation links all arrive with `suggested` true and nobody named as having confirmed
-them, whoever sent them, each naming the run's agent and key, or the person who filed it,
-as its suggester (WAT-03, WAT-04, D-74). No line of this module writes `suggested = false`.
-
-Every write goes through `watch_write()` (apps/watch/write.py), which reaches the seven
-watch tables and no inventory table, and through `record()` in the same transaction. This
-module writes, so it names no library record: `apps/watch/keys.py` resolves what a caller
-named and renders what a call answers, which is the split the library fence's AST guard
-demands (apps/shared/tests_library_fence.py).
+Writes go through `watch_write()` and `record()`; `keys.py` resolves and renders the library
+rows (library fence).
 """
 
 from __future__ import annotations
@@ -73,30 +50,25 @@ from apps.watch.write import watch_write
 
 SUBJECT_TYPE = "regulatory_change"
 
-# The kind `apps/cases/creation.py` listens for on the outbox cursor: a reform nobody had
-# seen before, which opens one case in every active bank. A merge is `UPDATED`, which
-# nothing fans out, so re-registering the same reform opens no second case anywhere.
+# The kind `apps/cases/creation.py` listens for: a new reform, one case per active bank. A
+# merge is `UPDATED`, which nothing fans out.
 REGISTERED = "change.registered"
 UPDATED = "change.updated"
 DOCUMENT_ADDED = "regulatory_change.document_added"
 DOCUMENT_REPLAYED = "regulatory_change.document_replayed"
 
 
-# ---------------------------------------------------------------------------------------
-# POST /changes
-# ---------------------------------------------------------------------------------------
+# --- POST /changes ---
 def register_change(
     *, who: Principal, actor: Actor, order: list[str], body: WatchChangeInput
 ) -> tuple[int, WatchChange]:
-    """File a reform a run sighted: 201 with the new change, or 200 with the one the
-    library already holds under this stable key.
+    """File a reform a run sighted: 201 with the new change, or 200 with the one the library
+    already holds under this stable key.
 
-    Every key is resolved and every refusal raised before the write opens, so a call naming
-    a vocabulary row the library does not hold stores nothing at all (AC-WAT2). A key must
-    name an open run of its own, and a bank's key is refused outright; a library editor
-    names none, and a run one names is not theirs. A new change past the run's budget
-    (`WATCH_RUN_MAX_CHANGES`) is refused with `run_budget_exhausted`; a second sighting
-    registers no new change, so it is not counted (H41).
+    Every refusal comes before the write, so an unknown vocabulary key stores nothing
+    (AC-WAT2). A key must name an open run of its own; a bank's key is refused; a library
+    editor names none. A new change past `WATCH_RUN_MAX_CHANGES` is `run_budget_exhausted`; a
+    second sighting is not counted (H41).
     """
     run = (
         runs.require_open_run(who, body.agent_run_id)
@@ -113,8 +85,7 @@ def register_change(
     )
     authority_id = keys.authority_named(body.authority_code or "")
     links = curation.one_link_per_obligation(body.obligation_links)
-    # Read for its refusal, before the write opens: an obligation the library does not hold,
-    # or has retired, never reaches a link, and no key scope reaches the inventory (AC-PRO1).
+    # Refused before the write: an unknown or retired obligation never gets a link (AC-PRO1).
     keys.obligations_for(list(links))
     risk_flags = _screened([body.title, body.summary])
     _at_most_one_primary(body.documents)
@@ -122,15 +93,14 @@ def register_change(
     existing = keys.change_with_stable_key(body.stable_key)
     if existing is not None:
         return 200, _merge(existing, actor=actor, order=order, body=body, risk_flags=risk_flags, run=run)
-    # A merge touches no stored term, so only a new change must name its regime (D-39), and
-    # only a new change's standard term must come from a standards body (D-38).
+    # A merge touches no stored term, so only a new change must name its regime (D-39) and
+    # take a standard term only from a standards body (D-38).
     keys.require_regime(terms)
     keys.require_standards_body(terms, authority_id)
 
     origin = OriginType.AGENT.value if who.kind is PrincipalKind.AGENT else OriginType.USER.value
-    # Who suggested what this call files, copied by the one write path, because a check
-    # constraint cannot read a key to find its agent (D-74): the run's agent and key, or the
-    # library editor filing by hand, who names no run and then cannot confirm it alone.
+    # The suggester, copied here because a check constraint cannot read a key's agent (D-74):
+    # the run's agent and key, or the editor filing by hand, who then cannot confirm alone.
     suggester = {
         "suggested_by_id": who.subject_id if who.kind is PrincipalKind.USER else None,
         "suggested_by_agent_id": None if run is None else run.agent_id,
@@ -177,8 +147,8 @@ def register_change(
                 obligation_id=obligation_id, origin=origin, confidence=link.confidence, **suggester
             )
         if body.so_what is not None:
-            # The one writer of the draft column, which also records the call that produced
-            # it, in this transaction, as the agent reported it (D-66, AUD-02, WAT-05).
+            # The one writer of the draft, recording its model call as the agent reported it
+            # (D-66, AUD-02, WAT-05).
             so_what_draft.store(
                 change, body.so_what, actor=actor, agent_run_id=None if run is None else run.id
             )
@@ -210,14 +180,10 @@ def register_change(
 def _log_suggested_classification(
     change: keys.ChangeRow, body: WatchChangeInput, *, run: AgentRun, parts: list[str]
 ) -> None:
-    """The run's classification of a new change — its type, flags, scope terms and urgency —
-    as the one `scope_suggestion` row AUD-02 asks for, in this transaction (D-66).
-
-    bleqq made no model call here, so the model metadata is the run's own account: the
-    model and version it filed a “So what?” under when the filing carries one, else the
-    model and pipeline version it opened the run with. The row says so
-    (`model_metadata_reported_by_agent`). A library editor's registration is a person's
-    classification and a merge stores no scope, so neither writes one.
+    """The run's classification of a new change as the one `scope_suggestion` AI log row
+    AUD-02 asks for (D-66). bleqq made no model call here, so the model metadata is the run's
+    own account (`model_metadata_reported_by_agent`). An editor's registration and a merge
+    write none.
     """
     model, version = (
         (run.model, run.pipeline_version)
@@ -246,13 +212,10 @@ def _merge(
     risk_flags: list[str],
     run: AgentRun | None,
 ) -> WatchChange:
-    """A second sighting of a reform the library already holds (AC-WAT1).
-
-    It adds and never replaces: a page the change does not carry is attached as a duplicate,
-    a milestone it does not carry is added, a drafted “So what?” is filed only when the
-    change has none, and every field of the change itself is left as it was. Correcting a
-    stored fact is `PATCH /changes/{changeId}`, which is a deliberate act by a run that read
-    the source again or by a library editor — not a side effect of a retry.
+    """A second sighting of a reform the library already holds (AC-WAT1). It adds and never
+    replaces: missing pages, milestones and a missing drafted "So what?" are added; the
+    change's own fields stay. Correcting a fact is `PATCH /changes/{changeId}`, never a retry's
+    side effect.
     """
     added_documents: list[str] = []
     added_events: list[str] = []
@@ -267,9 +230,7 @@ def _merge(
                 _add_document(change, page, risk_flags=risk_flags, duplicate=True)
                 added_documents.append(url)
         if body.so_what is not None and not change.so_what_draft:
-            # The same rule as a page and a milestone: a reform the library already holds
-            # takes what it is missing and keeps what it has, so a retry cannot rewrite a
-            # draft and a run that has one to give is not silently ignored (D-66).
+            # As for pages and milestones: take what is missing, keep what is there (D-66).
             so_what_draft.store(change, body.so_what, actor=actor, agent_run_id=None if run is None else run.id)
         record(
             action=UPDATED,
@@ -284,18 +245,12 @@ def _merge(
     return keys.change_out(change, order)
 
 
-# ---------------------------------------------------------------------------------------
-# POST /changes/{changeId}/documents
-# ---------------------------------------------------------------------------------------
+# --- POST /changes/{changeId}/documents ---
 def add_document(
     *, who: Principal, actor: Actor, order: list[str], change_id: uuid.UUID, body: WatchChangeDocumentInput
 ) -> tuple[int, WatchChangeDocument]:
-    """Attach one fetched page to a change already registered. A bank's key is refused
-    before anything is read.
-
-    `(change, url)` is unique, so the same page posted twice answers the page that is
-    already there rather than doubling it — which is what makes this safe for a run to
-    retry.
+    """Attach one fetched page to a registered change; a bank's key is refused first.
+    `(change, url)` is unique, so a retry answers the existing page.
     """
     runs.refuse_tenant_key(who)
     change = keys.change_for_write(change_id)
@@ -336,9 +291,7 @@ def add_document(
     return 201, keys.document_out(document)
 
 
-# ---------------------------------------------------------------------------------------
-# The rows themselves
-# ---------------------------------------------------------------------------------------
+# --- The rows themselves ---
 def _add_event(change: keys.ChangeRow, entry: WatchChangeEventInput) -> None:
     """One milestone of the reform's path. The date is a plain date with a precision and
     never a timestamp, so a screen never prints a day the source did not state (WAT-02)."""
@@ -355,12 +308,9 @@ def _add_event(change: keys.ChangeRow, entry: WatchChangeEventInput) -> None:
 def _add_document(
     change: keys.ChangeRow, page: WatchChangeDocumentInput, *, risk_flags: list[str], duplicate: bool
 ) -> keys.DocumentRow:
-    """One page the reform was found on, with what the screen found in everything this call
-    read off it.
-
-    The stored flags are the screen's own findings on the reform's title and summary and on
-    this page's headline, plus whatever the run reported from the body text the server never
-    sees. The run's list can only add to ours, never remove from it.
+    """One page the reform was found on, with the screen's findings on the title, summary and
+    this page's headline plus whatever the run reported from the body. The run's list can
+    only add to ours.
     """
     return change.documents.create(
         url=str(page.url),

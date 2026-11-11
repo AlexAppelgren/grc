@@ -1,11 +1,10 @@
-"""The bank's one monthly cap on its own agents (AGT-04, ruling 3). bleqq's agents run at
-bleqq's cost and no figure here includes them (D-61): the spend is the sum of what the
-bank's own agents' runs cost in the current calendar month of the bank's own time zone.
+"""The bank's one monthly cap on its own agents (AGT-04). bleqq's agents run at bleqq's cost
+and are never counted (D-61): the spend is what the bank's own agents' runs cost in the
+current calendar month of the bank's time zone.
 
-`spend`, `at_cap` and `cap_of` are what the scheduler, the controls and research requests
-read before a run starts. The cap row is created on the first write. A cap at or below the
-month's spend is accepted, because a bank must always be able to stop spending, and it
-pauses the bank's running agents at once through `tenant_agents.pause`.
+`spend`, `at_cap` and `cap_of` are read before a run starts. A cap at or below the month's
+spend is accepted, since a bank must always be able to stop spending, and pauses its
+running agents at once (`tenant_agents.pause`).
 """
 
 from __future__ import annotations
@@ -62,9 +61,8 @@ def spend(tenant: Tenant) -> Decimal:
 
 def held(tenant: Tenant) -> Decimal:
     """What the month's runs of the bank's own agents have spent or may still spend: a
-    finished run its cost, an open run the more of its cost so far and its budget limit.
-    The cap before a run reads this, so runs opened one after another, before any of them
-    has reported a cost, cannot together promise more than the cap holds."""
+    finished run its cost, an open run the larger of its cost so far and its budget limit,
+    so runs opened back to back cannot together promise more than the cap."""
     start, end = month(tenant)
     money = DecimalField(max_digits=14, decimal_places=4)
     cost = Coalesce(F("cost"), Value(Decimal(0)), output_field=money)

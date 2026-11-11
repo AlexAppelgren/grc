@@ -5,8 +5,7 @@ with no test, fails the build.
 Sources and grammar (agreed with the docs agent, Appendix B):
 
 - PRD.md requirement IDs: table rows `| <PREFIX>-<nn> | ... |` (ID-01, NFR-05, ...). The
-  journey prefix `J-` is excluded: PRD §5's journey table has the same row shape, so
-  from J-10 onwards a journey would otherwise be read as a requirement (2026-09-19).
+  journey prefix `J-` is excluded: PRD §5's journey table has the same row shape.
 - backend/apps/*/app.md scenario headings, exactly:
       ### <PREFIX>-S<n> — <Title> `@integration`[ `@e2e`] (<refs>)
   where <refs> is a comma-separated list of requirement IDs (ID-03), acceptance criteria
@@ -22,9 +21,6 @@ Sources and grammar (agreed with the docs agent, Appendix B):
 
 Also refused: a requirement ID in an app.md table that the PRD does not know, a scenario
 ID used twice, a test method in tests_scenarios.py with no matching heading.
-
-Proven to fail 2026-09-19 by renaming ID-S1 to ID-S99 in identity/app.md (exit 1, the
-missing test named), then restored.
 """
 
 from __future__ import annotations

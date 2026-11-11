@@ -1,11 +1,9 @@
-"""Business logic of the collab app. Raises ValidationError with user-facing text; every
-write goes through record(); every threshold comes from settings (playbook 3).
+"""Business logic of the collab app.
 
-`notify()` is the only writer of a notification row in the product (CHUNK10_TASKS ruling
-1), with D-34's recipient check written once inside it: an active member of the bank, whose
-roles read the subject, told once per event, unless they switched the kind off. A guard in
-`apps/shared/tests_hardening.py` fails on any other writer. The delegation hop (TEN-04) is
-written once inside it too, after the check and before the rows.
+`notify()` is the only writer of a notification row (CHUNK10_TASKS ruling 1;
+`tests_hardening.py` fails on any other), with D-34's recipient check inside it: an active
+member whose roles read the subject, told once per event, unless they switched the kind off.
+The delegation hop (TEN-04) runs inside it too, after the check and before the rows.
 """
 
 from __future__ import annotations
@@ -27,9 +25,8 @@ from apps.shared.models import Tenant
 
 logger = logging.getLogger(__name__)
 
-# The kinds a person may switch off, and the switch that does it. Every other kind is
-# always delivered: an escalation is the bank's control, not the person's (COL-02), and a
-# sign-off or an approval request is four eyes waiting on them.
+# The kinds a person may switch off. Every other kind always arrives: an escalation is the
+# bank's control (COL-02), and a sign-off or approval request is four eyes waiting on them.
 MUTABLE_KINDS: dict[NotificationKind, str] = {
     NotificationKind.MENTION: "mentions",
     NotificationKind.DUE_SOON: "reminders",
@@ -39,7 +36,7 @@ MUTABLE_KINDS: dict[NotificationKind, str] = {
 }
 
 # The kinds that follow an away person to their delegate (TEN-04): work waiting on someone.
-# A mention is addressed to a human being and stays with them, as does anything else.
+# A mention is addressed to a person and stays with them.
 DELEGATED_KINDS = frozenset(
     {
         NotificationKind.DUE_SOON,
@@ -63,15 +60,12 @@ def notify(
 ) -> list[Notification]:
     """Tell the candidates about one record, and return the rows written.
 
-    `candidates` are `(user id, reason)` pairs: the owner, a participant, a person
-    mentioned. A person named for several reasons gets one row. Only active members of the
-    bank whose roles hold the subject's read permission are told, and only when their
-    preference for the kind is on, read afresh on every call. Work waiting on someone away
-    (`DELEGATED_KINDS`) goes to their delegate instead, with `on_behalf_of` naming them
-    (`_delegated`); `actor_id`, the person whose write caused the notice, is never that
-    delegate, so a sign-off request cannot land with the person who asked. Each row's title is the record's own title in that recipient's
-    language. The rows are written in the caller's transaction, so they commit with the
-    write that caused them or not at all.
+    `candidates` are `(user id, reason)` pairs; a person named twice gets one row. Only active
+    members whose roles read the subject and whose preference for the kind is on are told.
+    `DELEGATED_KINDS` go to an away person's delegate, with `on_behalf_of` naming them; the
+    delegate is never `actor_id`, so a sign-off request cannot land with its requester.
+    Titles are the record's own in each recipient's language. Rows are written in the
+    caller's transaction.
     """
     if not connection.in_atomic_block:
         raise NotInTransaction(
@@ -138,16 +132,13 @@ def _readers(tenant_id: uuid.UUID, user_ids: Iterable[uuid.UUID], read_permissio
 def _delegated(
     tenant: Tenant, passing: list[Membership], read_permission: str, actor_id: uuid.UUID | None
 ) -> dict[uuid.UUID, tuple[Membership, uuid.UUID | None]]:
-    """The delegation hop (TEN-04), the one place that knows about out of office: each
-    recipient, keyed by user id, with the absent person they are told for, if any.
+    """The delegation hop (TEN-04): each recipient, keyed by user id, with the absent person
+    they are told for, if any.
 
-    A recipient away through the bank's local today, with a delegate, is replaced by that
-    delegate, who must pass the same recipient check; a delegate who does not, or who
-    caused the notice (`actor_id`), is skipped and the absent person keeps the notice, so
-    it is never dropped. One hop only: the delegate's own absence is not followed, so a
-    cycle ends after one step. The absent
-    person's preference decides, because it is their notice; the delegate gains no
-    permission, and a delegate told on their own account gets one row, without the stamp.
+    A recipient away through the bank's today, with a delegate, is replaced by that delegate,
+    who must pass the same check; a delegate who fails it or caused the notice is skipped and
+    the absent person keeps it, so nothing is dropped. One hop only, so a cycle ends. The
+    absent person's preference decides; the delegate gains no permission.
     """
     today = today_for(tenant)
     away = {

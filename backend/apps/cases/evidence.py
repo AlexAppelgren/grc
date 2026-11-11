@@ -1,18 +1,13 @@
 """Evidence: attached, scanned, hashed and streamed (CAS-05; D-11, D-101).
 
-A file arrives in the request itself as multipart form data (CHUNK9 ruling 4) and is
-untrusted from its first byte. The server says what it is: the header, the name's
-extension and the bytes must all agree on one type of `EVIDENCE_ALLOWED_TYPES`, the size
-is the bytes received, and the SHA-256 is computed here. A file outside the list or over
-`EVIDENCE_MAX_BYTES` is refused before a byte reaches storage. The bytes are stored under
-a key made of the tenant, the case and a random part, never the name, and the row starts
-`pending`: `tasks.scan_evidence` decides, and a download serves only `clean`.
-
-A file leaves only through the streaming download (ruling 5), one permission check and one
-audit row per download (D-11). A link stores an https address and nothing fetches it; a
-reference stores a name. Removal sets `removed_at` and nothing else.
-
-A name is tenant content: it never reaches a log, an audit value or a storage key.
+A file arrives as multipart form data and is untrusted from its first byte: header,
+extension and bytes must agree on one type of `EVIDENCE_ALLOWED_TYPES`, the size is the
+bytes received, the SHA-256 is computed here, and anything else or over
+`EVIDENCE_MAX_BYTES` is refused before storage. The key is tenant, case and a random part,
+never the name. The row starts `pending`; `tasks.scan_evidence` decides and a download
+serves only `clean`, through one permission check and one audit row (D-11). A link is
+stored and never fetched. Removal sets `removed_at` only. A name is tenant content: never in
+a log, audit value or storage key.
 """
 
 from __future__ import annotations

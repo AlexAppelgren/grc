@@ -1,14 +1,10 @@
 """The console's writes to bleqq's agent definitions (AGT-03, ADM-02, D-102, ADR 0062):
-publishing a shipped version folder, retiring a version, and a platform agent's settings.
+publishing a shipped version, retiring a version, and a platform agent's settings.
 
-`agent` and `agent_version` are platform configuration, not library facts: nothing in them
-enters the inventory, so no proposal carries them. They keep the fence's machinery, and
-publishing is the same load the reference seed beside this module does, from the same
-reader, so it sits behind the same door (`library_write`, the `seed` door the database
-accepts for these tables). The library fence names these three writers and the one console
-route each may be reached from (`PlatformConfigurationGuard`), and refuses this module any
-other library model. It writes rows and nothing else: who may call it, what is valid and
-the audit row are the caller's (`definitions.py`, `platform.py`), in the same transaction.
+Platform configuration, not library facts, so no proposal carries them, but they sit behind
+the same door as the reference seed (`library_write`, the `seed` door). The library fence
+names these writers and their one console route each (`PlatformConfigurationGuard`). Rows
+only: permission, validation and the audit row are the caller's, in the same transaction.
 """
 
 from __future__ import annotations

@@ -1,28 +1,16 @@
 """Escalation of overdue actions to the head of the owner's department, once (COL-02, D-21,
 CHUNK10_TASKS ruling 7).
 
-`tasks.send_tenant_escalations` runs this for one bank at its local `REMINDER_SEND_HOUR`,
-beside the reminders and in the same fan-out. An open action (not done, not removed) whose
-due date is at least the bank's `escalate_after_days` behind its local today escalates with
-kind `escalation` to:
+Runs per bank at its local `REMINDER_SEND_HOUR`. An open action overdue by at least the
+bank's `escalate_after_days` escalates to the heads of the owner's teams' departments
+(`org_unit.head_user`, D-21), every active holder of `escalate_to_role` (by key), and the
+owner. Each is told once through `notify()`, whatever their preferences (an escalation is
+the bank's control), with the delegation hop. With no head to find, the role holders alone
+are told and the audit row says so.
 
-- the head of each department the owner's teams belong to (`team.org_unit`, whose
-  `head_user` is the head, D-21);
-- every active member holding the bank's `escalate_to_role`, compared as a role key;
-- the owner, because an escalation about your work that you do not see is a surprise in a
-  meeting.
-
-Each person is told once through `notify()`'s recipient check, whatever their
-notification preferences (an escalation is the bank's control, not the person's), and the
-delegation hop applies. Where the owner is in no team, no team has a department, or no
-department has a head, the role holders alone are told and the audit row says so, so the
-missing head is visible rather than silent.
-
-**Once.** The `action.escalated` audit row, written through `record()` in the same
-transaction as the notifications, is the mark: an action with one is never escalated again,
-so an action that stays overdue does not escalate every day, and an escalation that found
-nobody to tell is not retried. A per-bank advisory lock makes an overlapping run wait for
-the first one's rows. The audit row carries ids, dates and counts, never the action's title.
+Once: the `action.escalated` audit row, written with the notifications, marks the action, so
+it never escalates again and an escalation that found nobody is not retried. A per-bank
+advisory lock serialises overlapping runs. The audit row carries ids, dates and counts only.
 """
 
 from __future__ import annotations

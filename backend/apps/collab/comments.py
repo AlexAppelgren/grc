@@ -1,17 +1,12 @@
-"""Comments on one record of one bank (COL-01), read, written, edited and deleted by their
-author, with the mentions that notify (COL-02), and never logged.
+"""Comments on one record of one bank (COL-01), with the mentions that notify (COL-02), never
+logged.
 
-The subject registry in `collab/subjects.py` decides which records take comments and who may
-read each: a kind it does not hold is 422 `unsupported_subject`, and a record the caller may
-not read, or that the bank does not hold, is 404, so the answer never says whether it exists.
-The route has already refused a caller without a member session in a bank, and without
-`comments.write` where the call writes.
-
-The text is tenant content (CHUNK10_TASKS rule 13): the audit row takes the record's own
-title as its subject title and ids in `after`, the log line carries ids, and the mention's
-notification carries the record's title through `notify()`, in the comment's transaction.
-An edit is the author's own inside `COMMENT_EDIT_MINUTES` and keeps the text it replaced in
-an append-only revision (ruling 10); a delete is soft and the author's own.
+The subject registry (`collab/subjects.py`) decides which records take comments and who may
+read each: an unknown kind is 422 `unsupported_subject`; an unreadable or absent record is
+the same 404. The text is tenant content (CHUNK10_TASKS rule 13): audit rows, log lines and
+notifications carry the record's title and ids. An edit is the author's own within
+`COMMENT_EDIT_MINUTES` and keeps the replaced text in an append-only revision; a delete is
+soft and the author's own.
 """
 
 from __future__ import annotations

@@ -1,14 +1,10 @@
-"""The malware scan of a piece of evidence (CAS-05, D-101; c9-evidence).
+"""The malware scan of a piece of evidence (CAS-05, D-101).
 
-`scan_evidence` is a `@tenant_task`, queued when the request that stored the file commits.
-It reads the bytes, asks the configured scanner, and writes the verdict and one audit row
-in the one transaction the decorator opens. A failed scan is tried again up to
-`EVIDENCE_SCAN_RETRIES` more times and then stays `error`; an infected file's bytes are
-deleted from storage once the verdict commits, while its row, its name and its hash stay.
-A file already decided is left alone, so a redelivered task changes nothing.
-
-Nothing here logs a filename or a byte: the name is handed to the scanner, which reads it
-for the mock's markers only, and the audit row carries the verdict and the signature.
+`scan_evidence` is a `@tenant_task` queued after the storing request commits: it reads the
+bytes, asks the configured scanner and writes the verdict and one audit row in one
+transaction. A failed scan is retried up to `EVIDENCE_SCAN_RETRIES` times, then stays
+`error`; an infected file's bytes are deleted once the verdict commits, its row and hash
+kept. A decided file is left alone. Nothing logs a filename or a byte.
 """
 
 from __future__ import annotations

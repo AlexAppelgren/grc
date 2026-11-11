@@ -1,13 +1,9 @@
-"""Models of the reports app (REP-02, CAS-07; schema v0.3 `export_job`, INPUT_DELTAS §18).
+"""Models of the reports app (REP-02, CAS-07; INPUT_DELTAS §18).
 
-One tenant table: an export job, under enabled and forced row-level security. A job is not
-a ledger — its row moves from `queued` to `succeeded` or `failed` and records its first
-download — so it is a plain `TenantModel`. The file itself never lives in the database: the
-worker writes it through the storage seam (apps/shared/storage.py) under a key built from
-the tenant id and the job id, and the download streams it back through a permission-checked,
-audited route (playbook 4.6, D-11).
-
-`ImportJob` is chunk 12's (REP-03, R3) and deliberately not here.
+An export job is a plain `TenantModel` under forced row-level security: it moves from
+`queued` to `succeeded` or `failed` and records its first download. The file never lives in
+the database: the worker writes it through apps/shared/storage.py and the download streams
+it back through a permission-checked, audited route (playbook 4.6, D-11).
 """
 
 from __future__ import annotations

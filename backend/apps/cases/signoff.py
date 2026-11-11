@@ -1,15 +1,11 @@
 """Sign-off: requested by one person, approved by a second with a passkey, or sent back
 (CAS-06, CAS-08).
 
-Each move goes through `logic.transition()`, so the guards stay in `state.py`: no open
-action and one piece of evidence the scanner passed before the request, and a second
-person to approve. The requester's own approval is refused there before anything is
-written, and the database's `change_case_four_eyes` CHECK refuses it again should that
-guard ever be wrong. Signing off closes the bank's case and nothing else: no library or
-register row moves, and it says nothing about whether the bank complies (REG-02).
-
-A note is tenant content. It is kept on the case (`closed_note`) and on the transition
-ledger row, never in the audit values (R2_CROSS_CUTTING (m)).
+Moves go through `logic.transition()`, so the guards stay in `state.py`: no open action and
+one clean piece of evidence before the request, a second person to approve. The database's
+`change_case_four_eyes` CHECK refuses the requester again should the guard be wrong. Signing
+off closes the case and nothing else; it says nothing about compliance (REG-02). The note
+stays on the case and the ledger row, never in audit values (R2_CROSS_CUTTING (m)).
 """
 
 from __future__ import annotations

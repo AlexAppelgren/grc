@@ -1,21 +1,10 @@
-"""Watch builders for tests (playbook 8.1): the source registry and its coverage log, a
-change with its timeline, its pages, its classification and its obligation links, plus the
-two assertions every watch test repeats.
+"""Watch builders for tests (playbook 8.1): sources and coverage, a change with its
+timeline, pages, classification and obligation links, and two shared assertions.
 
-Every builder writes inside `watch_write()`, the one door to the seven watch tables
-(apps/watch/write.py). This module may open it because the library fence exempts
-`testing.py` modules (apps/shared/tests_library_fence.py), exactly as it exempts
-`apps/library/testing.py`. That is also why these builders are not in
-`apps/shared/factories.py`: that module is a production module to the fence guard, so it
-may neither open the door nor name a library model beside a write.
-
-The values are the prototype's (`backend/apps/library/fixtures/prototype_data.json`) —
-Finansinspektionen, fi.se, the research-payments reform — so a test reads data a person
-would recognise, and they are deterministic: a key gets a suffix from a counter, never
-from `random`, and every date is a fixed date rather than one derived from "now".
-
-Nothing here creates a case. `c5-cases-creation` owns that, and a fixture that quietly
-made one would hide the very thing CAS-01 has to prove.
+Every builder writes inside `watch_write()`, which the library fence allows a `testing.py`
+module (and not `apps/shared/factories.py`). Values are the prototype's
+(`prototype_data.json`) and deterministic: counters, never `random`, and fixed dates. Nothing
+here creates a case: CAS-01 has to be proved, not assumed.
 """
 
 from __future__ import annotations
@@ -53,20 +42,14 @@ from apps.watch.write import watch_write
 
 REASON = "test builder"
 
-# A fixed anchor rather than `timezone.now()`, so a fixture cannot drift into or out of a
-# window as the clock moves (playbook 8.3). It is the prototype's own anchor week.
+# A fixed anchor, the prototype's week, so a fixture never drifts with the clock (playbook 8.3).
 ANCHOR = datetime.datetime(2026, 9, 16, 6, 2, tzinfo=datetime.UTC)
 
 
 def _sighted_at(stable_key: str) -> datetime.datetime:
-    """A sighting time of this change's own, derived from its key.
-
-    Every change used to be sighted at `ANCHOR` exactly, and the feed orders by sighting
-    time and then by id. An id is a random uuid, so which change landed on page one changed
-    from run to run, and a query whose `IN` clause is empty does not execute: the console's
-    query-count test counted 16 here and 15 in CI, for a page holding a different change
-    (2026-09-21). Derived from the key rather than a counter, so the same key is the same
-    moment in every run, on every machine, whatever order the rows were built in."""
+    """A sighting time of this change's own, derived from its key, so the feed's order (by
+    sighting, then id) is the same on every run and machine; a shared instant left the order
+    to random uuids."""
     return ANCHOR - datetime.timedelta(seconds=zlib.crc32(stable_key.encode()) % 3600)
 PUBLISHED_ON = datetime.date(2026, 9, 15)
 KEY_DATE = datetime.date(2026, 10, 1)
@@ -75,11 +58,8 @@ _counter = itertools.count(1)
 
 
 def seed_watch_reference() -> None:
-    """The vocabulary and reference rows every chunk 5 test needs — languages,
-    jurisdictions, the library vocabularies (change types, flags, source kinds, urgency
-    levels), the taxonomy terms including the regimes, and the authorities — through the
-    reference seeds themselves, so a test never invents a key the product does not have.
-    Idempotent: call it from `setUpTestData` in every watch, case or agent test."""
+    """The reference rows every watch, case or agent test needs, through the reference seeds
+    themselves, so a test never invents a key. Idempotent; call it from `setUpTestData`."""
     seed_languages()
     seed_jurisdictions()
     seed_library_vocabularies()
@@ -93,9 +73,7 @@ def term(ref: str) -> TaxonomyTerm:
     return TaxonomyTerm.objects.select_related("dimension").get(dimension__key=dimension, key=key)
 
 
-# ---------------------------------------------------------------------------------------
-# WAT-01: the registry and the coverage log
-# ---------------------------------------------------------------------------------------
+# --- WAT-01: the registry and the coverage log ---
 def source(
     *,
     name: str | None = None,
@@ -145,9 +123,7 @@ def source_check(
         )
 
 
-# ---------------------------------------------------------------------------------------
-# WAT-02, WAT-03, WAT-04: the change and everything on it
-# ---------------------------------------------------------------------------------------
+# --- WAT-02, WAT-03, WAT-04: the change and everything on it ---
 def change(
     *,
     stable_key: str | None = None,
@@ -250,10 +226,8 @@ def term_link(
     confidence: float | None = 0.74,
     suggested: bool = True,
 ) -> ChangeTerm:
-    """A flag or a scope term on a change — exactly one of the two, never a `text[]`
-    (INPUT_DELTAS §1). It arrives as a suggestion with the agent's confidence and stays one
-    until it is confirmed (WAT-03), suggested by the agent and key of the change's own run,
-    as the registration copies them (D-74)."""
+    """A flag or a scope term on a change, exactly one, never a `text[]` (INPUT_DELTAS §1): a
+    suggestion with the agent's confidence by the change's run (WAT-03, D-74)."""
     if (term_ref is None) == (flag_key is None):
         raise ValueError("A change term link names exactly one of a taxonomy term or a flag.")
     with watch_write(REASON):
@@ -276,10 +250,8 @@ def obligation_link(
     origin: OriginType = OriginType.AGENT,
     confidence: float | None = 0.82,
 ) -> ChangeObligation:
-    """An obligation the change affects, as the agent of the change's own run suggested it.
-    A bank's own decision about the link lives on its case and never here (WAT-04, ruling
-    C). Written in the obligation's zone, as its child (library 0012): the shared library's
-    from a session with no bank, a bank's own record's from that bank."""
+    """An obligation the change affects, suggested by the change's run (WAT-04, ruling C).
+    Written in the obligation's zone, as its child (library 0012)."""
     with transaction.atomic(), tenancy.platform_zone(), watch_write(REASON):
         if obligation.owner_tenant_id is not None:
             tenancy.activate(obligation.owner_tenant_id)
@@ -301,9 +273,8 @@ def change_with_timeline(
     run: AgentRun | None = None,
     **change_fields: Any,  # compliance: allow-kwargs test helper forwarding `change()` fields
 ) -> RegulatoryChange:
-    """The change most chunk 5 tests want: a reform with a two-entry timeline, its primary
-    page, a regime term and a flag, every classification still a suggestion. Its scope is
-    what a footprint is matched against, which is why the regime is explicit."""
+    """The common change: a two-entry timeline, primary page, a regime term (so the footprint
+    has something to match) and a flag, every classification still a suggestion."""
     row = change(run=run, **change_fields)
     event(row, label="Consultation closed", event_date=datetime.date(2026, 6, 1), sort_order=1)
     event(row, label="In force", event_date=KEY_DATE, precision=DatePrecision.DAY, occurred=False, sort_order=2)
@@ -315,13 +286,10 @@ def change_with_timeline(
     return row
 
 
-# ---------------------------------------------------------------------------------------
-# The two assertions every watch test repeats
-# ---------------------------------------------------------------------------------------
+# --- The two assertions every watch test repeats ---
 def is_a_suggestion(link: ChangeTerm | ChangeObligation) -> bool:
-    """True while nobody has confirmed the link: no person, key or agent is named and no
-    time is stamped. A `ChangeTerm` also says so on its `suggested` column, and they must
-    all agree — the database's check constraint is what makes that true (WAT-03, D-74)."""
+    """True while nobody has confirmed the link; the check constraint keeps `suggested` and
+    the confirmation columns in agreement (WAT-03, D-74)."""
     unconfirmed = (
         link.confirmed_by_id is None
         and link.confirmed_by_api_key_id is None
@@ -334,17 +302,9 @@ def is_a_suggestion(link: ChangeTerm | ChangeObligation) -> bool:
 
 
 def cases_per_tenant(row: RegulatoryChange, tenants: Iterable[Any]) -> dict[Any, int]:
-    """How many cases each of `tenants` holds for the change, each counted with that
-    tenant activated. CAS-01's "exactly one case per bank per change" reads as
-    `{tenant: 1 for tenant in tenants}`.
-
-    Counted one tenant at a time on purpose: FORCE ROW LEVEL SECURITY applies to the test
-    runner's own connection as well as to cw_app, so a single unactivated count answers
-    whatever the last activated tenant could see — which once made a two-bank fixture look
-    like a one-bank one. Activating each in turn is the only honest count.
-
-    A watch fixture creates none of these rows: case creation is `c5-cases-creation`'s job
-    and CAS-01 has to be proved, not assumed.
+    """How many cases each of `tenants` holds for the change (`{tenant: 1, ...}` for CAS-01),
+    counted one tenant at a time: forced row-level security applies to the test connection
+    too, so an unactivated count would answer whatever the last tenant could see.
     """
     from django.db import transaction
 

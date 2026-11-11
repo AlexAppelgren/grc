@@ -1,21 +1,14 @@
 """The content screen (AGT-07, playbook 11.2): fetched text is data, never instructions.
 
-`screen(text)` returns the risk-flag keys a fetched body earns, today only
-`embedded_instructions`. It is deterministic and pure: no model call, no network, no
-state, and the text it is given is never altered. A hit is recorded beside the stored
-document in `change_document.risk_flags`; the change is still registered from the
-factual content around the hit and the passage is never followed
-(`agents/watch-sweeper/v1/prompt.md`).
+`screen(text)` returns the risk-flag keys a fetched body earns (`embedded_instructions`).
+Pure and deterministic: no model, network or state, and the text is never altered. A hit is
+recorded in `change_document.risk_flags`; the passage is never followed.
 
-The screen reads a normalised copy of the text so that casing, irregular spacing,
-invisible characters and compatibility forms cannot hide a phrase, and it looks for the
-six shapes an injection takes: an instruction phrase, a role or system prefix, a claim of
-authority, an aside addressed to an AI, a tool-call shaped payload, and HTML comments or
-hidden elements. Phrases are matched in the five content languages (en, sv, da, nb, fi).
-
-Every pattern is a bounded alternation over fixed words: no nested quantifier, so a
-hostile page cannot make the screen backtrack (`tests_screen.py` screens 200 KB well
-inside a tenth of its budget).
+It reads a normalised copy, so casing, spacing, invisible characters and compatibility forms
+cannot hide a phrase, and looks for six shapes: an instruction phrase, a role prefix, a claim
+of authority, an aside to an AI, a tool-call payload, and HTML comments or hidden elements,
+in the five content languages. Every pattern is a bounded alternation with no nested
+quantifier, so a hostile page cannot make it backtrack (`tests_screen.py`).
 """
 
 from __future__ import annotations

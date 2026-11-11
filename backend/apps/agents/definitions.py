@@ -1,14 +1,10 @@
 """The platform's agent definitions and their versions (AGT-03, ADM-02, ID-10).
 
-The list is what a platform administrator binds a key to; one definition's detail carries
-every version it published. A version is published from the folder the build ships
-(`backend/agents/<agent>/v<n>/`), read by the reference seed's own reader, and never from a
-body pasted into a request, so what runs is what was reviewed into the tree. A published
-version is never rewritten: a run points at the version it opened with (`runs.open_run`),
-and retiring one only stops new runs. Every write needs a fresh passkey at the route and
-leaves one audit row with no tenant, because it changes what runs for every bank at once.
-The rows are platform configuration (D-102, ADR 0062), written through the console's door
-in `seeds/console.py`, the one place the library fence lets an agent definition be written.
+A version is published from the folder the build ships (`backend/agents/<agent>/v<n>/`),
+never from a request body, so what runs is what was reviewed. A published version is never
+rewritten (a run points at it); retiring stops new runs only. Every write needs a fresh
+passkey and leaves one tenantless audit row. The rows are platform configuration (D-102,
+ADR 0062), written through `seeds/console.py`.
 """
 
 from __future__ import annotations
@@ -119,10 +115,8 @@ def _shipped(agent: Agent, version_no: int) -> reader.Definition:
 
 
 def publish_version(*, who: Principal, agent_key: str, body: AgentVersionInput) -> AgentVersionOut:
-    """`POST /agent-definitions/{agentKey}/versions`: publish the next shipped version.
-
-    The agent's row is locked first, so two publishes of one number wait for each other and
-    the second answers `version_exists` rather than a constraint error."""
+    """`POST /agent-definitions/{agentKey}/versions`: publish the next shipped version. The
+    agent's row is locked first, so a concurrent publish answers `version_exists`."""
     actor, person_id = platform_person(who)
     with transaction.atomic():
         agent = _agent(agent_key, lock=True)
@@ -192,10 +186,8 @@ def retire_version(*, who: Principal, agent_key: str, version_no: int) -> AgentV
 
 
 def version_to_run(agent_id: uuid.UUID) -> uuid.UUID | None:
-    """The version a run of this agent opens with (AGT-06): its newest one still published.
-    Every version retired is 409 `no_published_version`, since a retired version starts no
-    new run. None for a definition that has never had a version row, which only a build
-    older than agents 0004 left behind."""
+    """The version a run of this agent opens with (AGT-06): its newest published one; all
+    retired is 409 `no_published_version`. None only for a pre-versioning definition."""
     versions = AgentVersion.objects.filter(agent_id=agent_id)
     newest = versions.filter(retired_at__isnull=True).order_by("-version_number").values_list("id", flat=True).first()
     if newest is None and versions.exists():

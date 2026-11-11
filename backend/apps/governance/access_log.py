@@ -1,20 +1,14 @@
 """The access log of the agents a bank runs itself (ACC-08, AGENT_ACCESS.md section 9).
 
-Every request an agent access credential makes leaves one `AgentAccessCall` row: the
-credential, the entry it reads as, the person a personal token acts as, the tool (the
-operation the request reached), the filters, the record count, the scope applied, the time
-it took and its status. Never the content (playbook 4.7): a filter is kept as its name, and
-its value only when the value is a key; a free-text parameter keeps its name alone.
+One `AgentAccessCall` row per request an agent access credential makes: credential, entry,
+acting person, tool, filters, record count, scope, duration and status. Never the content
+(playbook 4.7): a filter keeps its value only when the value is a key.
 
-`begin` is called by the agent access guard once the credential passed its rate limit, so a
-refused write or step-up is logged with its 403, while a request refused for its rate is
-not: the security log already holds one row per window for it, and a runaway agent must not
-flood this one. `AccessLogMiddleware` writes the row after the response, in a transaction of
-its own, so a call whose request rolled back is still logged. A route that knows better than
-the query string (a read with a body, the MCP server's tool) says so through `note`; the MCP
-server hands it the answer of the route behind the tool, whose status and count the row keeps.
-
-`list_calls` is the entry's log for `GET /agent-access/{id}/calls`.
+`begin` runs once the credential passed its rate limit, so a refused write or step-up is
+logged with its 403 while a rate refusal is not (the security log keeps one row per window,
+and a runaway agent must not flood this one). `AccessLogMiddleware` writes the row after the
+response in its own transaction, so a rolled-back call is still logged. A route that knows
+better than the query string (a body read, an MCP tool) says so through `note`.
 """
 
 from __future__ import annotations
@@ -180,9 +174,7 @@ class AccessLogMiddleware:
         return response
 
 
-# ---------------------------------------------------------------------------------------
-# Reading the log
-# ---------------------------------------------------------------------------------------
+# --- Reading the log ---
 def list_calls(tenant_id: uuid.UUID, entry_id: uuid.UUID, *, limit: int, offset: int) -> tuple[list[AgentAccessCallRow], int]:
     """The entry's calls, newest first. An entry of another bank, or none, is 404."""
     from apps.agents.models import AgentAccess

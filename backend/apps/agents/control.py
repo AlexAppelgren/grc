@@ -1,17 +1,14 @@
 """Run now, pause, resume and interrupt a bank's own agent (AGT-04, AGT-06, ADR 0053).
 
-Each control loads its record under row-level security first, so another bank's agent or
-run is not found, then passes the platform fence, so one of bleqq's agents or runs is
-refused naming `agent_definitions.manage`. Each writes its audit row through `record()` in
-the request's transaction.
+Each control loads its record under row-level security (another bank's is not found), then
+the platform fence refuses one of bleqq's naming `agent_definitions.manage`; each audits
+through `record()`.
 
-- **Run now** opens through the scheduler of record (`tasks.open_tenant_run`), which checks
-  the AI switch and the cap and writes the run row before the runner is asked. A paused or
-  switched-off agent is refused here first, each with its own code.
-- **Pause** and **resume** change the agent's schedule and never touch a run already open.
-- **Interrupt** (`stop`) asks the runner to stop the run and records it as interrupted, with
-  when and by whom. The cap's second point stops a run through the same function with no
-  person (`runner_events.py`).
+- Run now opens through `tasks.open_tenant_run` (AI switch and cap checked, run row written
+  before the runner); a paused or switched-off agent is refused first.
+- Pause and resume change the schedule, never an open run.
+- Interrupt (`stop`) asks the runner to stop and records who and when; the cap's second
+  point stops a run the same way with no person (`runner_events.py`).
 """
 
 from __future__ import annotations
@@ -105,8 +102,7 @@ def interrupt(*, who: Principal, tenant: Tenant, run_id: uuid.UUID) -> AgentRunL
     """`POST /agent-runs/{runId}/interrupt`. Row-level security lets a bank read a library
     run, so one is found and then fenced; another bank's run is not found."""
     with transaction.atomic():
-        # Read, then lock: a library run is readable from a bank's zone but never lockable
-        # there, so it is found and refused by name before the lock is asked for.
+        # Read, then lock: a library run is readable but never lockable from a bank's zone.
         found = (
             AgentRun.objects.select_related("agent").filter(pk=run_id).first()
         )  # ordering: pk lookup

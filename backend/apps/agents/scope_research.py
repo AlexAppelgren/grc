@@ -1,33 +1,20 @@
 """An approved scope item opens research by the bank's own agent (OWN-02, AGT-05; D-89, D-91,
 D-98, ADR 0059, ADR 0061).
 
-**Opening.** `open_research` is the outbox handler of `scope_item.added`, the event a second
-person's passkey approval of a regulatory scope request writes (taxonomy's
-`footprint_logic`). It runs in the bank's zone and opens one research request of the kind
-`scope_item` for the bank's own `scope-researcher`, with its run, through the one opener
-(`tasks.open_request_run`), with no API key. It opens nothing, and writes one
-`scope_item.research_waiting` audit row naming why, while the bank has no such agent
-switched on and not paused (`no_tenant_agent`), has switched its AI off (`feature_off`) or
-has reached its monthly cap (`budget_cap_reached`): the item then reads "waiting for your
-agent". An item is researched once, so a redelivered event opens nothing twice (and a
-unique index says the same). The person the research is asked for by is the approver.
-
-**What reaches the model** is `run_input`, the one builder of the run's input, and it holds
-D-98's second exception beside Ask to its guards: the item's id, key and its jurisdiction
-and regime term keys, and its name, official reference and source address, each cut to
-`SCOPE_RESEARCH_TEXT_MAX_CHARS`, screened as untrusted (AGT-07; the flags travel with
-them), only for a running scope-item research run of the bank's own agent (never a platform
-run), and never while the bank's AI is off. The item's description, every other scope item
-and every record of the bank's own never reach it (D-57). The runner reaches a model with
-it only through the logged wrapper (`apps/shared/ai.py`, which
-`apps/shared/tests_ai_wrapper.py` keeps the only door).
-
-**Nothing typed is logged.** The audit rows here carry ids, keys and flags; the name, the
-reference and the address stay on the item row.
-
-**What comes back** is `runner_events.apply_finding`'s: the bank's own proposals, through
-`proposals/tenant_agent.py`. Nothing here, and nothing a run reaches, writes a scope item, a
-term of the regulatory scope or a scope request (`tests_scope_research.NoRunWritesTheScope`).
+- Opening: `open_research` handles `scope_item.added` in the bank's zone and opens one
+  `scope_item` request with its run for the bank's `scope-researcher`, through the one
+  opener, no API key. With no such agent on (`no_tenant_agent`), AI off (`feature_off`) or
+  the cap reached (`budget_cap_reached`) it opens nothing and audits
+  `scope_item.research_waiting`. Once per item (a unique index too). The approver is the
+  person it is asked for by.
+- What reaches the model is `run_input` alone (D-98's second exception): the item's id, key,
+  jurisdiction and regime term keys, and its name, reference and address, each capped at
+  `SCOPE_RESEARCH_TEXT_MAX_CHARS` and screened (AGT-07), only for the bank's own running
+  research run with AI on, through the logged wrapper. Never the description, another item
+  or any bank record (D-57).
+- Nothing typed is logged: audit rows carry ids, keys and flags.
+- What comes back goes through `runner_events.apply_finding` to `proposals/tenant_agent.py`;
+  nothing here writes the scope (`tests_scope_research.NoRunWritesTheScope`).
 """
 
 from __future__ import annotations
@@ -56,8 +43,7 @@ SCOPE_ITEM_ADDED = "scope_item.added"
 # The bleqq-authored, tenant-scoped definition that researches a scope item.
 RESEARCHER = "scope-researcher"
 ACTOR = Actor.system("scope research")
-# The item's own audit subject, spelled as taxonomy's `footprint_logic` spells it, so the
-# audit guards read it as a bank's row (apps/shared/tests_hardening.py).
+# The item's audit subject, spelled as taxonomy's `footprint_logic` spells it.
 SCOPE_ITEM_SUBJECT = "scope_item"
 
 

@@ -1,14 +1,10 @@
 """A person's notification inbox (COL-02): their own rows, newest first, and marking them
 read.
 
-Every function takes the caller and reads only rows whose `user` is the caller, under the
-bank's row-level security, so no parameter reaches another person's or another bank's row.
-A row whose record the caller can no longer read is still listed with the title it was
-written with: that title was already shown to them, and hiding it would quietly empty the
-inbox; its link answers 404 when followed (CHUNK10_TASKS, `c10-notifications-api-b`).
-
-Listing is a read and writes no audit row. The two marks record one `notification.read`
-event each, holding ids only, never a title.
+Every query is the caller's own rows under row-level security, so no parameter reaches
+anyone else's. A row whose record the caller can no longer read still lists with the title
+it was written with (already shown to them); its link answers 404. Listing writes no audit
+row; each mark records one `notification.read` event with ids only.
 """
 
 from __future__ import annotations

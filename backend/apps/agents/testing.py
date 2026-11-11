@@ -1,18 +1,9 @@
-"""Agent builders for tests (playbook 8.1): a platform agent definition, a key bound to
-it and a platform run to anchor everything that run writes, and a definition a bank may
-add as its own agent.
+"""Agent builders for tests (playbook 8.1): a platform definition, a key bound to it, a
+platform run, and a definition a bank may add.
 
-`Agent` is a library row, so it is written inside `library_write()`. This module may do
-that because the library fence exempts `testing.py` modules
-(apps/shared/tests_library_fence.py), exactly as it exempts `apps/library/testing.py`;
-`apps/shared/factories.py` is a production module to that guard and so never names a
-library model beside a write.
-
-R1 runs are platform runs and nothing else (AGT-01, Alex's item 14): bleqq's watch agents
-are part of the base package, so the key that opens a run carries no tenant and the run it
-opens carries none either. `AgentRun.save()` copies the key's tenant, so a tenant-bound
-key here would quietly produce a tenant run; `platform_run()` refuses one rather than let
-a test prove something about a shape R1 does not have.
+`Agent` is a library row, written inside `library_write()`, which the library fence allows a
+`testing.py` module. `platform_run()` refuses a tenant-bound key, since `AgentRun.save()`
+copies the key's tenant and would quietly make a tenant run.
 """
 
 from __future__ import annotations
@@ -39,8 +30,7 @@ REASON = "test builder"
 SWEEPER_KEY = "watch-sweeper"
 SWEEPER_MODEL = "agent pipeline 0.4"
 SWEEPER_PIPELINE = "0.4"
-# The scopes a platform watch key holds in R1 (ID-10, PARALLEL_PLAN 7.2). No scope reaches
-# an inventory table, and no tenant-created key carries any of them.
+# The scopes a platform watch key holds (ID-10); none reaches an inventory table.
 WATCH_SCOPES: tuple[str, ...] = ("agent-runs:write", "sources:write", "changes:write", "library:read")
 
 
@@ -76,9 +66,8 @@ def agent_key(*, agent_row: Agent | None = None, scopes: Iterable[str] = WATCH_S
     """A live platform key bound to an agent: `.id`, `.row` (the ApiKey), `.agent` and
     `.plain_key` (the value a caller sends as `X-Api-Key`, shown once).
 
-    No tenant: a key bound to an agent is the platform's, and no tenant route creates one
-    (ID-10, rule 13). It is written with no tenant activated, which is the only session the
-    mixed write rule accepts a platform row from (hardening H15).
+    No tenant: an agent-bound key is the platform's (ID-10), written with no tenant active
+    (H15).
     """
     row_agent = agent_row if agent_row is not None else agent()
     plain, prefix, key_hash = tokens.new_api_key()
@@ -135,10 +124,9 @@ REJECTION_DECISION: dict[str, Any] = {
 
 
 def decision(key: SimpleNamespace) -> dict[str, Any]:
-    """What a confirming agent's approve or reject body carries beside its verdict (D-80,
-    AUD-02, AGT-01): the model call behind the decision, and a run of its own key, opened
-    here, to count the decision in. Written with no tenant activated, as a platform run is.
-    The call is an approval's; a rejection sends `"decision": REJECTION_DECISION` over it."""
+    """What a confirming agent's approve or reject body carries (D-80, AUD-02, AGT-01): the
+    model call and a fresh run of its own key. A rejection overrides `decision` with
+    `REJECTION_DECISION`."""
     return {"decision": DECISION, "agentRunId": str(platform_run(key=key).id)}
 
 

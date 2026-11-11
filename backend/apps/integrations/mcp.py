@@ -1,21 +1,16 @@
-"""The MCP server a bank's own agents read through (ACC-05, ADR 0055): one endpoint,
-`POST /mcp`, speaking JSON-RPC 2.0 over Streamable HTTP, hand-written on the standard
-library with no MCP dependency (ADR 0019 pins).
+"""The MCP server a bank's own agents read through (ACC-05, ADR 0055): `POST /mcp`, JSON-RPC
+2.0 over Streamable HTTP, on the standard library (ADR 0019 pins).
 
-Stateless in both protocol eras it serves (docs/plans/Verification_Log.md, 2026-09-25):
+Stateless in both protocol eras it serves (Verification_Log.md):
+- Revision 2026-07-28 has no handshake: each request carries its revision and capabilities
+  in `params._meta`, mirrored in the `MCP-Protocol-Version` and `Mcp-Method` headers, which
+  must match. Methods: `server/discover`, `tools/list`.
+- Revisions 2025-11-25 and 2025-06-18 open with `initialize`, answered without a session,
+  then carry the revision in `MCP-Protocol-Version`. Methods: `ping`, `tools/list`.
 
-- Revision 2026-07-28, the current one, has no handshake: every request carries its
-  revision and client capabilities in `params._meta`, mirrored in the
-  `MCP-Protocol-Version` and `Mcp-Method` headers, which must match the body.
-  `server/discover` and `tools/list` are its methods here.
-- Revisions 2025-11-25 and 2025-06-18 open with `initialize`, which this server answers
-  without minting a session, then carry the revision in `MCP-Protocol-Version` alone.
-  `ping` and `tools/list` are their methods here.
-
-A body is untrusted input: it is parsed here, never by a schema that answers 422, so a
-malformed message gets the JSON-RPC error the protocol names. A batch is refused. The tool
-list follows the credential, and `tools/call` runs the REST route behind the tool
-(apps/integrations/mcp_tools.py), in both eras.
+The body is untrusted and parsed here, so a malformed message gets the JSON-RPC error rather
+than a 422. A batch is refused. `tools/call` runs the REST route behind the tool
+(mcp_tools.py).
 """
 
 from __future__ import annotations
@@ -82,10 +77,8 @@ class Answer:
     message: McpMessage | None
 
 
-# ---------------------------------------------------------------------------------------
-# The tools, in the order tools/list gives them. Each names the scope its route needs;
-# the register tool also needs the entry's reach into the bank's register (ACC-04, D-72).
-# ---------------------------------------------------------------------------------------
+# --- The tools, in tools/list order; each names its route's scope, and the register tool
+# also needs the entry's reach into the bank's register (ACC-04, D-72) ---
 @dataclass(frozen=True)
 class ToolSpec:
     tool: McpTool
@@ -205,9 +198,7 @@ def tools_for(principal: Principal) -> list[McpTool]:
     return offered
 
 
-# ---------------------------------------------------------------------------------------
-# The transport
-# ---------------------------------------------------------------------------------------
+# --- The transport ---
 def _server_info() -> McpImplementation:
     return McpImplementation(name=f"{settings.PRODUCT_NAME} MCP", version=SERVER_VERSION)
 

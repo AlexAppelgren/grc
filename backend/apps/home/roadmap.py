@@ -1,50 +1,18 @@
-"""The roadmap by quarter (HOM-03, FP-03).
+"""The roadmap by quarter (HOM-03, FP-03): the one roadmap query. `roadmap_items()` answers
+`GET /roadmap`, `coming_up()` Today's "Coming up" and `calendar_items()` a calendar
+subscription, all from the same branches. Reads only, under row-level security.
 
-One module owns the roadmap query, so no second one is ever written: `roadmap_items()`
-answers `GET /roadmap`, `coming_up()` answers Today's "Coming up" panel and
-`calendar_items()` a calendar subscription, all three from the same rows, rather than
-asking the same question a second way (chunk 6 ruling 5).
+The regulatory branch lists a change while the bank has an open case on it (not `closed` or
+`dismissed`), the case's stored `footprint_match` says it is in scope (never recomputed,
+FP-03), and its date is ahead of `today_for()`. A date stated as a month, quarter or year
+stays while its period runs (H22).
 
-A read module: nothing here writes. What it reads is two zones at once — the library's
-dated changes beside this bank's own cases — under row-level security with the caller's
-tenant activated, never by filtering in Python.
-
-Three rules decide what is on the roadmap, and each belongs to somebody else:
-
-- **The bank has open work on it.** A case in the `closed` or `dismissed` category is
-  finished, and a date nobody is working towards any more is not something coming.
-- **The date is inside the bank's regulatory scope.** `change_case.footprint_match` is the
-  verdict `apps/cases/creation.py` computed from the one scope rule in
-  `apps/library/reading.py` and `apps/cases/matching.py` keeps current. It is read here and
-  never recomputed, so the roadmap cannot drift from the feed and the inventory (FP-03).
-- **The date is still ahead** of the bank's own today, which is `today_for()` and nothing
-  else. A date that has passed leaves the roadmap and stays on the change itself. A date the
-  source stated as a month, a quarter or a year is stored on some day of that period, so it
-  is ahead while its period has not ended (H22): "Q4 2026" stays through 31 December however
-  early in the quarter it was stored.
-
-Beside that regulatory branch sit the bank's own deadlines, `internal` and shown as "Our
-deadline" with their owner (HOM-03, D-43, AC-TEN1), each one query:
-
-- **Next reviews** of a register entry and of one legal entity's row, a compliant one
-  included, unless the answer there is "does not apply".
-- **Gap targets** of a gap that is open or being remediated; an accepted or closed gap has
-  no target left to meet.
-- **A certificate's expiry and its next audit**, from the entity's licence row, left out
-  once the row is withdrawn.
-- **A recurring duty's open occurrence** (REG-07); completing it drops it, and the next one
-  it generates takes its place.
-- **An open case's internal deadline** from its impact assessment (CAS-03), and **the due
-  date of an action** that is neither done nor removed (CAS-04), each with its owner.
-
-The register branches follow the regulatory scope as the regulatory branch does (FP-03) and
-are read only for a reader holding `register.read`; the case branches read the case's own
-footprint verdict, as the regulatory branch does, and only for a reader holding
-`cases.read`; a certificate is any member's to see, as its own list is. The bank's own
-deadlines never reach `calendar_items()`: a calendar carries public facts only (D-43, D-52).
-What the screen draws its quarter roster from is computed here as well, because a
-quarter near a year boundary is the bank's own question: two banks an hour apart can be in
-two quarters, and each reads the one it is in.
+The bank's own deadlines (`internal`, "Our deadline", HOM-03, D-43, AC-TEN1), one query each:
+next reviews of entries and entity rows that apply, targets of open or remediating gaps,
+certificate expiry and next audit, a duty's open occurrence (REG-07), an open case's internal
+deadline (CAS-03) and live actions' due dates (CAS-04). Register branches need
+`register.read` and follow the regulatory scope; case branches need `cases.read`. None
+reaches `calendar_items()`: a calendar carries public facts only (D-43, D-52).
 """
 
 from __future__ import annotations
@@ -85,21 +53,18 @@ from apps.watch.reading import urgency_refs
 from apps.watch.schemas import CaseCategory, Origin, WatchObligationLink
 from apps.watch.schemas import DatePrecision as Precision
 
-# The regulatory branch: a change's own key date. Both are tier-one kinds
-# (apps/shared/kinds.py, apps/home/schemas.py); the screen picks its pill from the first and
-# the calendar builder its summary line from the second.
+# The regulatory branch's tier-one kinds (apps/shared/kinds.py): the screen's pill and the
+# calendar's summary line.
 ITEM_KIND: RoadmapItemKind = "regulatory"
 ITEM_TYPE: RoadmapItemType = "change_date"
 INTERNAL: RoadmapItemKind = "internal"
 DAY: Precision = "day"
 
-# The gaps with a target still to meet (REG-03). Listed rather than excluded, the opposite of
-# FINISHED below: a category added later must say it is still open before a count reads it.
+# Gaps with a target still to meet (REG-03). Listed, so a new category must say it is open.
 OPEN_GAPS = (GapCategory.OPEN.value, GapCategory.REMEDIATING.value)
 
-# The two categories a bank has finished with (D-13). Excluded rather than listed, so a
-# category added to the state machine later is on the roadmap unless somebody says it is
-# finished, which is the safe direction for a list of what is coming.
+# The categories a bank has finished with (D-13). Excluded, so a new category stays on the
+# roadmap unless someone says it is finished: the safe direction for what is coming.
 FINISHED = (CaseStatusCategory.CLOSED.value, CaseStatusCategory.DISMISSED.value)
 
 
@@ -109,9 +74,7 @@ def quarter_of(day: datetime.date) -> str:
     return f"{day.year}-Q{(day.month - 1) // 3 + 1}"
 
 
-# ---------------------------------------------------------------------------------------
-# What is on the roadmap
-# ---------------------------------------------------------------------------------------
+# --- What is on the roadmap ---
 def _dated(rows: QuerySet[Any], field: str, query: HomeRoadmapQuery, today: datetime.date) -> QuerySet[Any]:
     """`rows` whose `field` falls inside the window, earliest first with the row's id as a
     stable tiebreak, so two dates on one day never swap between two reads."""
@@ -119,9 +82,8 @@ def _dated(rows: QuerySet[Any], field: str, query: HomeRoadmapQuery, today: date
 
 
 def _window_start(query: HomeRoadmapQuery, today: datetime.date) -> datetime.date:
-    """The window starts at the bank's own today even when `from` is earlier: the roadmap
-    holds no item whose date has gone, so an earlier `from` widens nothing rather than
-    reopening the past."""
+    """The bank's own today, even when `from` is earlier: an earlier `from` never reopens
+    the past."""
     return today if query.date_from is None else max(today, query.date_from)
 
 
@@ -148,11 +110,9 @@ def _open_cases() -> QuerySet[ChangeCase]:
 
 
 def _cases(tenant: Tenant, query: HomeRoadmapQuery) -> QuerySet[ChangeCase]:
-    """The bank's open work on a dated change inside its regulatory scope.
-
-    A key date stated less exactly than a day stays while its period runs (H22): whatever
-    day of the period it was stored on, it is ahead exactly when the period is at or after
-    the one the window starts in, so each precision compares with the start of its period.
+    """The bank's open work on a dated change inside its regulatory scope. A key date stated
+    less exactly than a day compares by the start of its period, so it stays while its period
+    runs (H22).
     """
     since = _window_start(query, today_for(tenant))
     ahead = Q(change__key_date__gte=since)
@@ -164,9 +124,7 @@ def _cases(tenant: Tenant, query: HomeRoadmapQuery) -> QuerySet[ChangeCase]:
 def _item(case: ChangeCase, urgency: LibraryRef, obligations: list[WatchObligationLink]) -> HomeRoadmapItem:
     """One dated thing on the bank's calendar: library facts (the date, what the date is,
     the reform's title and who published it) beside this bank's own case status."""
-    # `_cases()` filters on a key date inside the window, so every row that reaches here
-    # has one; the column is nullable because a change may be registered before its date
-    # is known.
+    # `_cases()` guarantees a key date; the column is nullable for undated changes.
     day = cast(datetime.date, case.change.key_date)
     return HomeRoadmapItem(
         id=f"{ITEM_TYPE}:{case.id}",
@@ -188,13 +146,9 @@ def _item(case: ChangeCase, urgency: LibraryRef, obligations: list[WatchObligati
 
 
 def _items(cases: Sequence[ChangeCase], order: list[str]) -> list[HomeRoadmapItem]:
-    """The rows as the screen reads them. Four queries however many items there are: the
-    urgency rows named by the page and their labels, the confirmed obligation links, and
-    those obligations' titles."""
-    # Through the watch app's own rule, never `vocabulary_refs()`: an urgency row's `kind`
-    # column is its pill tone, and a tone is nobody's to send (NFR-03). Reading it the other
-    # way put the tone on every roadmap item until 2026-09-21, against this module's own
-    # documented example.
+    """The rows as the screen reads them, in four queries however many items there are."""
+    # Through the watch app's own rule, never `vocabulary_refs()`: an urgency row's `kind` is
+    # its pill tone, and a tone is nobody's to send (NFR-03).
     urgencies = urgency_refs({case.urgency_id for case in cases}, order)
     links = _obligation_links([case.change_id for case in cases], order)
     return [_item(case, urgencies[case.urgency_id], links.get(case.change_id, [])) for case in cases]
@@ -204,13 +158,9 @@ def _obligation_links(
     change_ids: Collection[uuid.UUID], order: list[str]
 ) -> dict[uuid.UUID, list[WatchObligationLink]]:
     """The obligations each change touches, most confident first, as the watch feed answers
-    them (WAT-04).
-
-    Only confirmed links: an agent's suggestion is not a checked fact, and the roadmap is
-    where a person plans work. Each says who confirmed it exactly as the change page does, so
-    a link an independent agent confirmed reads machine-confirmed, naming both agents, and
-    never as a person's verification (D-74). A bank's own decision about a link lives on its
-    case and never reaches a library row, so nothing here is one bank's judgement.
+    them (WAT-04). Confirmed links only, since a person plans work here; an agent-confirmed
+    link reads machine-confirmed, never as a person's verification (D-74). No bank's own
+    judgement is read.
     """
     links = list(
         ChangeObligation.objects.filter(change_id__in=change_ids)
@@ -238,9 +188,7 @@ def _obligation_links(
     return by_change
 
 
-# ---------------------------------------------------------------------------------------
-# The bank's own deadlines (HOM-03, REG-02, REG-03, REG-07, TEN-02, CAS-03, CAS-04, D-43)
-# ---------------------------------------------------------------------------------------
+# --- The bank's own deadlines (HOM-03, REG-02, REG-03, REG-07, TEN-02, CAS-03, CAS-04, D-43) ---
 @dataclass(frozen=True)
 class _Deadline:
     """One of the bank's own dates while it is being assembled: what produced it, the
@@ -261,17 +209,15 @@ class _Deadline:
 
 
 def in_scope_obligations(tenant: Tenant) -> QuerySet[Obligation, Any]:
-    """The ids of the library obligations inside the bank's regulatory scope, as a subquery:
-    the inventory's own filter (FP-03), so the register's dates and standing count what the
-    inventory lists and nothing else."""
+    """The library obligations inside the bank's regulatory scope, as a subquery: the
+    inventory's own filter (FP-03)."""
     return in_view(Obligation.objects.all(), tenant, "in").values("id")
 
 
 def in_scope_entries(tenant: Tenant) -> list[uuid.UUID]:
-    """The ids of the bank's register entries whose obligation is inside its regulatory scope.
-    The scope rule is the costliest condition the roadmap asks, so it is asked once here and
-    the four register branches, and on Today the standing panel, filter by the answer rather
-    than each asking it again (H115)."""
+    """The ids of the bank's register entries whose obligation is inside its regulatory
+    scope. The costliest condition, asked once for every register branch and Today's standing
+    panel (H115)."""
     return list(TenantObligation.objects.filter(obligation_id__in=in_scope_obligations(tenant)).values_list("id", flat=True))
 
 
@@ -399,9 +345,8 @@ def _certificate(item_type: RoadmapItemType, licence: Licence, day: datetime.dat
 
 
 def _deadline_items(deadlines: Sequence[_Deadline], order: list[str]) -> list[HomeRoadmapItem]:
-    """The bank's own dates as roadmap items, named in a fixed number of queries however
-    many there are: the reviewed obligations' titles (two), the owning teams' labels and the
-    certificates' type labels (one each), each skipped when nothing needs it."""
+    """The bank's own dates as roadmap items, in a fixed number of queries, each skipped when
+    nothing needs it."""
     reviewed = {deadline.obligation_id for deadline in deadlines if deadline.item_type == "review_due"}
     headings = obligation_headings(cast(set[uuid.UUID], reviewed), order)
     teams = vocabulary_refs(TeamLabel, [deadline.team for deadline in deadlines if deadline.team is not None], order)
@@ -466,16 +411,10 @@ def _read(
     cases_reader: bool,
     limit: int | None = None,
 ) -> tuple[list[HomeRoadmapItem], int]:
-    """Every branch the filter names, merged in date order, and how many items they hold.
-    The register's four branches only with `in_scope`, the bank's register entries inside
-    its regulatory scope (`in_scope_entries()`), which a caller without `register.read` never
-    passes.
-
-    With `limit`, each branch reads at most that many rows, so the first `limit` of the merge
-    are the first `limit` of the whole roadmap without reading all of it, and one count over
-    every branch at once says how many there are: a page query per branch and a single count,
-    however many rows there are. A count per branch was eight more queries on every load of
-    Today (H115).
+    """Every branch the filter names, merged in date order, and the total. The register
+    branches only with `in_scope` (`in_scope_entries()`), never passed without
+    `register.read`. With `limit`, each branch reads at most that many rows and one count
+    spans every branch: a page query per branch and a single count (H115).
     """
     items: list[HomeRoadmapItem] = []
     branches: list[QuerySet[Any]] = []
@@ -496,30 +435,24 @@ def _read(
     items.sort(key=lambda item: (item.date, item.id))
     if limit is None:
         return items, len(items)
-    # Every branch's rows are one record each, keyed by a uuid, so their ids stack into one
-    # count; a branch with nothing to ask (an empty `IN`) is left out of the union by Django.
+    # Every branch row is one uuid-keyed record, so the ids stack into one count; Django drops
+    # an empty `IN` branch from the union.
     first, *rest = [rows.order_by().values_list("pk") for rows in branches]
     return items[:limit], first.union(*rest, all=True).count()
 
 
 def _quarters(items: Iterable[HomeRoadmapItem]) -> list[str]:
-    """The quarter keys present, in date order and each once. The items are already in date
-    order, so the roster follows them and never shows an empty heading."""
+    """The quarter keys present, in date order and each once, so no heading is empty."""
     return list(dict.fromkeys(item.quarter for item in items))
 
 
-# ---------------------------------------------------------------------------------------
-# The three reads (chunk 6 ruling 5: these are the only roadmap queries there are)
-# ---------------------------------------------------------------------------------------
+# --- The three reads (the only roadmap queries there are) ---
 def roadmap_items(
     tenant: Tenant, order: list[str], query: HomeRoadmapQuery, *, register_reader: bool = False, cases_reader: bool = False
 ) -> HomeRoadmap:
-    """`GET /roadmap`: every dated change the bank has open work on and every deadline of
-    its own inside the window the filters name, with the quarter keys the screen draws its
-    roster from. The register's deadlines only for a `register_reader` and the case
-    workflow's only for a `cases_reader`; without the flags a caller gets the dates every
-    member may see. An empty answer means nothing is dated
-    ahead, not that something failed.
+    """`GET /roadmap`: every dated change the bank has open work on and its own deadlines in
+    the window, with the quarter keys for the roster. Register deadlines only for a
+    `register_reader`, case deadlines only for a `cases_reader`. Empty means nothing ahead.
     """
     in_scope = in_scope_entries(tenant) if register_reader else None
     items, _count = _read(tenant, order, query, in_scope=in_scope, cases_reader=cases_reader)
@@ -529,33 +462,19 @@ def roadmap_items(
 def coming_up(
     tenant: Tenant, order: list[str], limit: int, *, in_scope: list[uuid.UUID] | None = None, cases_reader: bool = False
 ) -> tuple[list[HomeRoadmapItem], int]:
-    """The first `limit` roadmap items and how many there are in all, for Today's "Coming
-    up" panel and the count beside it (HOM-01).
-
-    The same branches as `GET /roadmap` with no filter, so the panel and the page can never
-    disagree about what is next. `limit` is the caller's, because the length of Today's list
-    is Today's decision (`HOME_COMING_UP_ITEMS`). The register's deadlines only with
-    `in_scope`, which Today resolves once for this panel and its standing panel both (H115).
+    """The first `limit` roadmap items and the total, for Today's "Coming up" (HOM-01): the
+    same branches as `GET /roadmap`, so panel and page agree. `limit` is Today's setting
+    (`HOME_COMING_UP_ITEMS`); register deadlines only with `in_scope` (H115).
     """
     return _read(tenant, order, HomeRoadmapQuery(), in_scope=in_scope, cases_reader=cases_reader, limit=limit)
 
 
 def calendar_items(tenant: Tenant, order: list[str]) -> list[tuple[str, HomeRoadmapItem]]:
-    """What a calendar subscription carries (HOM-04, ADR 0045, AC-TEN1): the roadmap's own
-    rows, narrowed twice, each beside its change's stable key, which is the event's UID.
-
-    - **The dates the outside world set, and no other.** This reads `_cases()`, the
-      regulatory branch, alone. The bank's own deadlines — a next review, a gap target, a
-      certificate's expiry or audit, a duty's occurrence, a case's internal deadline or an
-      action's due date — come from `_internal_branches()`, which this never
-      calls, so none of them reaches a calendar a provider outside the bank can read.
-    - **Stated to the day.** An all-day event is one day. A date the source gave as a month
-      or a quarter would be pinned to a day nobody published, so it stays on the roadmap
-      and off the calendar.
-
-    The stable key rides beside the item rather than in it because it is the calendar's
-    identifier and not the screen's: an item's own `id` names the bank's case, and a UID
-    leaves the bank.
+    """What a calendar subscription carries (HOM-04, ADR 0045, AC-TEN1): the regulatory
+    branch `_cases()` alone, never `_internal_branches()`, so no bank deadline reaches a
+    calendar; and only dates stated to the day, since an all-day event must not pin a day
+    nobody published. Each item comes with its change's stable key, the event UID, because
+    the item's own `id` names the bank's case.
     """
     cases = list(
         _cases(tenant, HomeRoadmapQuery(kind="regulatory")).filter(change__key_date_precision=DatePrecision.DAY.value)

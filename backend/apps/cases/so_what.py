@@ -1,26 +1,15 @@
 """This bank's own "So what?" on a case (WAT-05).
 
-Three things happen to one field, and keeping them apart is the point of the module:
+- The library's draft arrives unconfirmed: `creation.py` copies it into each case, and
+  `apply_draft()` brings untouched copies up to a later draft. A confirmed or rewritten copy
+  is never touched; an agent never overwrites a bank's words.
+- A person confirms it: the words stay the model's, now stood behind by a named person, so
+  the screen stops labelling them AI output (WAT-05, AUD-02).
+- A person rewrites it: saving is the decision, so it confirms as well.
 
-- **The library's draft arrives.** A run files what a change means and the words are copied
-  into every bank's case unconfirmed, by `apps/cases/creation.py` when the case is opened
-  and by `apply_draft()` below when a later run improves the draft. A copy a person has
-  already confirmed or rewritten is never touched: a bank's words are its own, and an agent
-  never overwrites them.
-- **A person confirms them.** The words stay the model's; what changes is that a named
-  person at a named time stood behind them, which is what stops the screen labelling them
-  AI output (WAT-05, AUD-02).
-- **A person rewrites them.** The bank's own wording replaces the draft, and saving is
-  itself the decision, so it confirms as well.
-
-All three write one bank's own row and nothing else. The library's `ai_generation` row is
-not moved by any of them: it has no tenant, two banks confirming would fight over one
-shared row, and the split write policy refuses a bank session that reaches for it anyway
-(chunk 5 ruling I). Moving that row's review state is a platform act and chunk 7 builds it.
-
-Tenant zone only. The text a bank saves never leaves its tenant: not to another bank, not
-to a log, not to Sentry, not to an outbox payload and not to a model endpoint (NFR-01,
-NFR-04, D-07). The audit row says that the wording was saved and never what it says.
+All three write one bank's row. The library's `ai_generation` row is never moved: it has no
+tenant and the split write policy refuses a bank session anyway. The text never leaves the
+tenant (NFR-01, NFR-04, D-07); the audit row says the wording was saved, never what it says.
 """
 
 from __future__ import annotations
@@ -44,12 +33,10 @@ SUBJECT_TYPE = "change_case"
 SAVED = "case.so_what_saved"
 CONFIRMED = "case.so_what_confirmed"
 
-# The kind `apps/watch/so_what_draft.py` writes when a run files or improves a change's
-# drafted wording. One handler, one kind.
+# The kind `apps/watch/so_what_draft.py` writes when a run files or improves a draft.
 SO_WHAT_DRAFTED = "regulatory_change.so_what_drafted"
 
-# Nobody in the bank asked for this: a run wrote a better draft and the product brought the
-# bank's untouched copy up to it. A system actor is what the audit log should say.
+# A run improved the draft and the product brought the bank's untouched copy up to it.
 DRAFT_ACTOR = Actor.system("so-what-drafted")
 DRAFT_APPLIED = "case.so_what_draft_applied"
 
@@ -60,9 +47,7 @@ def register() -> None:
     outbox.register_handler(SO_WHAT_DRAFTED, apply_draft)
 
 
-# ---------------------------------------------------------------------------------------
-# PUT /changes/{changeId}/so-what and POST /changes/{changeId}/so-what/confirm
-# ---------------------------------------------------------------------------------------
+# --- PUT /changes/{changeId}/so-what and POST /changes/{changeId}/so-what/confirm ---
 def save_so_what(*, tenant: Tenant, actor: Actor, user: Any, change_id: uuid.UUID, text: str) -> CasesSoWhat:
     """This bank's own wording, replacing the draft. Saving is the decision, so it confirms."""
     case = _case_for(tenant, change_id)
@@ -70,10 +55,8 @@ def save_so_what(*, tenant: Tenant, actor: Actor, user: Any, change_id: uuid.UUI
 
 
 def confirm_so_what(*, tenant: Tenant, actor: Actor, user: Any, change_id: uuid.UUID) -> CasesSoWhat:
-    """The draft accepted as it stands: the words stay the model's, now stood behind.
-
-    A case with no draft to confirm answers 404 rather than storing an empty confirmation,
-    because "this bank confirmed nothing" is not a position anybody should be able to quote.
+    """The draft accepted as it stands: the words stay the model's, now stood behind. No
+    draft is 404, never an empty confirmation.
     """
     case = _case_for(tenant, change_id)
     if not case.so_what_text:
@@ -95,12 +78,9 @@ def _case_for(tenant: Tenant, change_id: uuid.UUID) -> ChangeCase:
 
 
 def _write(case: ChangeCase, *, actor: Actor, user: Any, text: str, action: str) -> CasesSoWhat:
-    """One bank's row, its audit row and its outbox row in one transaction (AUD-01).
-
-    Neither the wording before nor the wording after reaches the audit values: the text is
-    tenant content and an audit row is read by everyone in the bank who holds `audit.read`,
-    carried to a webhook and streamed to a SIEM (playbook 4.7). What is recorded is that
-    the bank's own wording now stands, and who stood behind it.
+    """One bank's row, its audit row and its outbox row in one transaction (AUD-01). No
+    wording reaches the audit values: it is tenant content, and audit rows travel to webhooks
+    and SIEMs (playbook 4.7).
     """
     was_confirmed = case.so_what_confirmed
     case.so_what_text = text
@@ -142,16 +122,11 @@ def so_what_of(case: ChangeCase) -> CasesSoWhat:
     )
 
 
-# ---------------------------------------------------------------------------------------
-# The library's draft reaching the banks (WAT-05, D-66)
-# ---------------------------------------------------------------------------------------
+# --- The library's draft reaching the banks (WAT-05, D-66) ---
 def apply_draft(event: OutboxEvent) -> None:
     """A run filed or improved a change's drafted wording: bring every untouched copy up to
-    it, one statement per bank.
-
-    Runs in the library's zone, because the event belongs to no bank. A bank that has
-    confirmed or rewritten its own wording is left alone — that is the whole rule — and a
-    bank with no case for the change yet gets the draft when its case is opened.
+    it, one statement per bank, from the library's zone. A confirmed or rewritten copy is left
+    alone; a bank with no case yet gets the draft when its case opens.
     """
     change_id = event.audit_event.subject_id
     facts = None if change_id is None else reading.change_facts(change_id)
@@ -162,9 +137,7 @@ def apply_draft(event: OutboxEvent) -> None:
 
 
 def _active_tenant_ids() -> list[uuid.UUID]:
-    """Every active bank, read once and in full before the first bank's zone is entered, as
-    `apps/cases/creation.py` reads it: the writes that follow each move the session into a
-    different zone."""
+    """Every active bank, read in full before the first bank's zone is entered."""
     return list(
         Tenant.objects.filter(status=TenantStatus.ACTIVE.value).order_by("slug").values_list("id", flat=True)
     )
@@ -172,11 +145,8 @@ def _active_tenant_ids() -> list[uuid.UUID]:
 
 @tenancy.tenant_task
 def _apply_draft_in_tenant(tenant_id: uuid.UUID, *, facts: reading.ChangeFacts) -> None:
-    """This bank's copy, in this bank's zone, in one statement.
-
-    One audit row per bank naming how many copies moved, never one per case: this is a
-    library draft arriving, not a decision anybody made, and it sets no urgency, opens no
-    triage and notifies nobody.
+    """This bank's copy, in this bank's zone, in one statement, with one audit row naming how
+    many moved: a draft arriving, not a decision, so no urgency, triage or notice.
     """
     with transaction.atomic():
         moved = (

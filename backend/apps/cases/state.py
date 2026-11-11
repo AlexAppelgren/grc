@@ -1,18 +1,13 @@
-"""The case state machine (CAS-02, CAS-06, CAS-08; data-model "Case status machine").
+"""The case state machine (CAS-02, CAS-06, CAS-08).
 
-One pure module: no database, no model, no query. It decides every case move from the
-seven fixed categories and a small `CaseFacts` value, and everything else reads it —
-`allowedTransitions` on a case response is `allowed_transitions()`, and every move goes
-through `check_transition()` before anything is written. No other file holds a
-transition table.
+Pure: no database, no model, no query. It decides every move from the seven fixed
+categories and a `CaseFacts` value; `allowed_transitions()` feeds `allowedTransitions` and
+every move passes `check_transition()` first. No other file holds a transition table.
 
-A sub-status is not a state. A tenant's sub-statuses are vocabulary rows that sit inside
-one category (VOC-04); this module takes and returns categories only, so an admin who
-adds, renames or retires a sub-status never changes what a case may do next.
-
-The categories and guards are fixed (CLAUDE.md section 5). Every refusal is an
-`InvalidTransition` — Django's `ValidationError` with a `code` — which config/api.py turns
-into RFC 9457 problem details, so the client branches on the code and no trace leaves.
+A sub-status is a vocabulary row inside one category (VOC-04) and never a state, so an admin
+editing sub-statuses never changes what a case may do. Categories and guards are fixed
+(CLAUDE.md section 5). Every refusal is an `InvalidTransition` with a `code`, answered as RFC
+9457 problem details.
 """
 
 from __future__ import annotations
@@ -59,11 +54,9 @@ REFUSAL_CODES = frozenset(
 
 @dataclass(frozen=True, kw_only=True)
 class CaseFacts:
-    """What the guards read about a case, the move and the person making it.
-
-    Built fresh for every read and every move; never stored. The fields a move itself
-    supplies — the owner a triage names, the reason a dismissal or a close gives — are
-    read only by `check_transition()`, because a read cannot know them.
+    """What the guards read about a case, the move and the person making it, built fresh for
+    every read and move. Fields a move supplies (owner, reason) are read only by
+    `check_transition()`.
     """
 
     owner_set: bool  # the case has an owner, or the triage names one
@@ -144,10 +137,8 @@ def check_transition(
 
 
 def allowed_transitions(category: CaseStatusCategory, facts: CaseFacts) -> list[CaseStatusCategory]:
-    """The categories a case may move to from `category`, for every category.
-
-    Guards on what the move supplies are left to `check_transition()`: a new case lists
-    triage although nobody has named its owner yet, because the triage names one.
+    """The categories a case may move to from `category`. Guards on what the move supplies
+    are left to `check_transition()`, so a new case lists triage before it has an owner.
     """
     return [
         to_status

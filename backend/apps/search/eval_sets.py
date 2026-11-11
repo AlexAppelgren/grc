@@ -1,21 +1,17 @@
 """The evaluation set kept in the console's database (SRC-05, ADM-02).
 
-`backend/eval/retrieval.jsonl` is what the release gate reads, and it stays the gate's
-source: CI has no console database. The tables of search 0002 hold the same questions so
-platform staff can read them, add one and see the runs, and three commands keep the two in
-step:
+`backend/eval/retrieval.jsonl` stays the release gate's source (CI has no console database).
+The tables of search 0002 hold the same questions for platform staff:
 
-- `seed_eval_questions` files every line of the file as a row, create-only: a key already
-  in the table is left exactly as it is, so a question retired in the console stays retired.
-- `dump_eval_questions` writes the active rows back over the file, keeping its comment
-  header and its order, new keys last, so a question added in the console reaches the gate
-  through a reviewed commit.
-- `record_eval_run` asks the active questions through a retriever, scored by the gate's own
-  functions, and records the run.
+- `seed_eval_questions` files each line as a row, create-only, so a retired question stays
+  retired.
+- `dump_eval_questions` writes the active rows back over the file (header and order kept,
+  new keys last), so a console question reaches the gate through a reviewed commit.
+- `record_eval_run` scores the active questions with the gate's own functions and records
+  the run.
 
-Both tables refuse any session with a tenant active (search 0002), so every function here
-runs in the platform's zone: the console's session, a command, a seed. The audit rows carry
-keys and counts, never a question's text: a row with no tenant is in the shared zone.
+Both tables refuse a session with a tenant active, so everything here runs in the
+platform's zone. Audit rows carry keys and counts, never a question's text.
 """
 
 from __future__ import annotations
@@ -70,9 +66,7 @@ class Retriever(Protocol):
     def ask(self, query: str, lang: str, as_of: Any) -> list[str]: ...
 
 
-# ---------------------------------------------------------------------------------------
-# The file the gate reads
-# ---------------------------------------------------------------------------------------
+# --- The file the gate reads ---
 def _is_row(line: str) -> bool:
     return bool(line.strip()) and not line.startswith("#")
 
@@ -157,9 +151,7 @@ def dump_questions(path: Path = RETRIEVAL_SET) -> int:
     return len(body)
 
 
-# ---------------------------------------------------------------------------------------
-# The console's routes
-# ---------------------------------------------------------------------------------------
+# --- The console's routes ---
 def _question_out(question: EvalQuestion) -> EvalQuestionOut:
     return EvalQuestionOut(
         id=question.id,
@@ -251,9 +243,7 @@ def retrieval_baseline() -> EvalBaselineOut:
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Runs
-# ---------------------------------------------------------------------------------------
+# --- Runs ---
 @functools.cache
 def harness() -> ModuleType:
     """`scripts/search_eval.py`, the release gate itself, so a recorded run is scored by the

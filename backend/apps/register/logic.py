@@ -1,10 +1,6 @@
-"""Business logic of the register app. Raises ValidationError with user-facing text; every
-write goes through record(); every threshold comes from settings (playbook 3).
-
-This module holds only `ensure_register_entry()` and `ensure_register_entries()`, which it
-calls and which is the one creator of a register entry (proved by the AST guard in
-tests_models.py), and the loaders the register's logic modules
-share; each feature's rules live in a module of its own (CHUNK8_TASKS.md plan rule 3)."""
+"""Business logic of the register app: `ensure_register_entry()` and
+`ensure_register_entries()`, the one creator of a register entry (AST guard in
+tests_models.py), and the shared loaders. Each feature's rules live in a module of its own."""
 
 from __future__ import annotations
 
@@ -22,13 +18,11 @@ ENTRY_CREATED = "register.entry_created"
 
 
 def ensure_register_entry(*, tenant_id: uuid.UUID, obligation_id: uuid.UUID, actor: Actor) -> TenantObligation:
-    """The bank's register entry on `obligation_id`, created on the first write that
-    needs it, with its `register.entry_created` audit event in the same transaction. A read
-    never calls this: an obligation nobody has worked on has no entry.
+    """The bank's register entry on `obligation_id`, created on the first write that needs
+    it with its `register.entry_created` audit event. A read never calls this.
 
-    The obligation is read under row-level security first, because the foreign key is checked
-    without it: another bank's private obligation is `not_found`, exactly as an id that
-    never existed. Then `ensure_register_entries()` creates it."""
+    The obligation is read under row-level security first, because the foreign key is
+    checked without it: another bank's private obligation is `not_found`."""
     existing = TenantObligation.objects.filter(obligation_id=obligation_id).first()  # ordering: unique per bank, at most one row
     if existing is not None:
         return existing
@@ -46,16 +40,13 @@ def ensure_register_entries(
     actor: Actor,
     status: ComplianceStatus,
 ) -> dict[uuid.UUID, TenantObligation]:
-    """The bank's register entries on the obligations of `headings`, locked, the missing ones
-    created in one INSERT that skips an entry that already exists, then read back in one
-    locking query. Each entry this call created gets its `register.entry_created` event; one
-    another write created first gets none from here.
+    """The bank's register entries on the obligations of `headings`, locked: the missing ones
+    created in one INSERT that skips existing rows, then read back in one locking query. Only
+    entries this call created get a `register.entry_created` event.
 
-    `headings` is the caller's proof that the bank can see each obligation: it was read under
-    row-level security (`obligation_headings()`), which the foreign key alone does not check.
-    `tenant_id` is the activated bank's, which the tables' policies check on insert. A new
-    entry is not assessed and carries the bank's default compliance `status`, which the caller
-    reads once for everything its write creates."""
+    `headings` is the caller's proof, read under row-level security (`obligation_headings()`),
+    that the bank can see each obligation; the foreign key alone does not check it. A new
+    entry carries the bank's default compliance `status`."""
     new = {
         obligation_id: TenantObligation(tenant_id=tenant_id, obligation_id=obligation_id, compliance_status=status)
         for obligation_id in sorted(headings)

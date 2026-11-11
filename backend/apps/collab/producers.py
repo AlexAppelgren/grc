@@ -1,24 +1,17 @@
 """The notices that taking part and a changed item send (COL-02, COL-04, HOM-05, D-25, D-97).
 
-Each producer names candidates and a reason and decides nothing else: who is an active
-member, who can read the record, who switched the kind off and who hears once are
-`notify()`'s alone. The person who performed the act is never a candidate.
+Each producer names candidates and a reason; who is told is `notify()`'s alone, and the actor
+is never a candidate.
 
-- **`participant_added`** is sent from the add itself, in the transaction that writes the
-  participant row and its audit event, to the person added or to the members of the team
-  added.
-- **`involved_item_changed`** follows the two library events D-25 names and no third: a
-  confirmed WAT-04 link from a change to an obligation (`regulatory_change.curation_confirmed`,
-  confirmed by a person or by an independent agent, D-97) and a new version applied to an
-  obligation (`obligation.version_applied`). Both are the library's events, written with no
-  tenant, so this module reads them off the one ordered cursor rather than being called from
-  library or watch code: the handlers are registered from `CollabConfig.ready()` and fan out
-  one `@tenant_task` per active bank, each writing only its own bank's notices. A suggestion
-  nobody confirmed writes no `curation_confirmed` row, so it notifies nobody.
+- `participant_added` is sent in the add's own transaction, to the person or team members.
+- `involved_item_changed` follows the two library events D-25 names: a confirmed WAT-04 link
+  (`regulatory_change.curation_confirmed`, by a person or independent agent, D-97) and an
+  applied obligation version. Both are tenantless, so they are read off the ordered outbox
+  cursor (handlers registered in `CollabConfig.ready()`) and fan out one `@tenant_task` per
+  bank. An unconfirmed suggestion notifies nobody.
 
-The people involved in a bank's register entry are the ones My work counts (HOM-05): its
-first-line owner and owning team, the owners and owning teams of its rows per legal entity,
-and its live participants, people and teams. A team reaches its members.
+The people involved in an entry are the ones My work counts (HOM-05): owner and owning team,
+entity-row owners and teams, and live participants; a team reaches its members.
 """
 
 from __future__ import annotations
@@ -49,9 +42,7 @@ def register() -> None:
     outbox.register_handler(VERSION_APPLIED, after_version_applied)
 
 
-# ---------------------------------------------------------------------------------------
-# participant_added
-# ---------------------------------------------------------------------------------------
+# --- participant_added ---
 def participant_added(
     *,
     tenant_id: uuid.UUID,
@@ -77,9 +68,7 @@ def participant_added(
     )
 
 
-# ---------------------------------------------------------------------------------------
-# involved_item_changed
-# ---------------------------------------------------------------------------------------
+# --- involved_item_changed ---
 def after_link_confirmed(event: OutboxEvent) -> None:
     """The obligations whose link to a change this confirmation confirmed, each told to the
     people involved in it at every bank. Type, flag and term confirmations name no item."""

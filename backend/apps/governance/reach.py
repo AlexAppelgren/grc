@@ -1,15 +1,10 @@
 """Tenant reach (ACC-08, D-72, ADR 0057): whether a bank's own register may reach the agents
 it runs itself.
 
-It is an egress decision about the bank's confidential judgement, so it carries the four
-eyes that exports and tenant exit carry: one person holding `security.manage` requests it
-and a different one approves it, each with a fresh passkey assertion. The check here answers
-409 `four_eyes_violation`; the `tenant_reach_request_four_eyes` check constraint is the
-database's word on it. Switching it off needs one person and takes effect from the next
-read, because it is the lever a security function reaches for at three in the morning.
-
-`tenant_reach_on(tenant)` is the one question the register reads for an agent access
-credential ask, before any entry's own toggle counts. No state row reads as off."""
+An egress decision, so four eyes with a passkey on each side: one `security.manage` holder
+requests, another approves (409 `four_eyes_violation`; the check constraint is the
+database's word). Switching it off needs one person and applies from the next read.
+`tenant_reach_on` is the one question the register asks; no state row reads as off."""
 
 from __future__ import annotations
 
