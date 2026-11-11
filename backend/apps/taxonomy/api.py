@@ -1398,7 +1398,8 @@ def list_jurisdictions(request: HttpRequest) -> list[JurisdictionRow]:
     """
     # Ungated by design: capability (any session; a reference read for pickers, I18N-01).
     from apps.library.models import Jurisdiction, JurisdictionLabel
-    from apps.taxonomy.reading import Labels, label_of
+    from apps.taxonomy.reading import Labels
+    from apps.shared.vocabulary import label_of
 
     order = reading.language_order(request)
     rows = list(Jurisdiction.objects.filter(active=True).select_related("parent", "default_language").order_by("sort_order", "key"))

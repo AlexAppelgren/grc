@@ -27,10 +27,7 @@ from django.utils import timezone
 from apps.proposals.models import OriginType
 from apps.shared.tenancy import LibraryModel
 from apps.shared.vocabulary import Vocabulary, VocabularyLabel
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class Language(models.Model):
@@ -85,7 +82,7 @@ class Jurisdiction(Vocabulary):
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="children")
     default_language = models.ForeignKey(Language, on_delete=models.PROTECT, related_name="+")
     version = models.PositiveIntegerField(default=1)
-    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_origin = models.CharField(max_length=16, choices=choices(OriginType), blank=True, default="")
     verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
 
@@ -154,7 +151,7 @@ class VerificationOutcome(enum.StrEnum):
 
 
 def _precision() -> models.CharField:
-    return models.CharField(max_length=8, choices=_choices(DatePrecision), default=DatePrecision.DAY.value)
+    return models.CharField(max_length=8, choices=choices(DatePrecision), default=DatePrecision.DAY.value)
 
 
 def _trigram(field: str, name: str) -> GinIndex:
@@ -229,9 +226,9 @@ class Instrument(LibraryModel):
     in_force_to = models.DateField(null=True, blank=True)
     in_force_to_precision = _precision()
     implements_note = models.TextField(blank=True)
-    status = models.CharField(max_length=16, choices=_choices(RecordStatus), default=RecordStatus.ACTIVE.value)
+    status = models.CharField(max_length=16, choices=choices(RecordStatus), default=RecordStatus.ACTIVE.value)
     owner_tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    created_origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    created_origin = models.CharField(max_length=16, choices=choices(OriginType))
     created_by_agent_run = models.UUIDField(null=True, blank=True)
     last_verified_at = models.DateTimeField(null=True, blank=True)
     verified_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -240,7 +237,7 @@ class Instrument(LibraryModel):
     # `verified_by`'s own re-verification stamp. Blank/null until a proposal that changes
     # this table is applied; no kind creates or versions an instrument yet, so these two
     # columns exist for the shape schema v0.3 names and are set once that apply path exists.
-    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_origin = models.CharField(max_length=16, choices=choices(OriginType), blank=True, default="")
     verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -327,7 +324,7 @@ class Provision(LibraryModel):
     heading = models.TextField(blank=True)
     path = models.CharField(max_length=500)
     sort_order = models.IntegerField(default=0)
-    status = models.CharField(max_length=16, choices=_choices(RecordStatus), default=RecordStatus.ACTIVE.value)
+    status = models.CharField(max_length=16, choices=choices(RecordStatus), default=RecordStatus.ACTIVE.value)
 
     class Meta:
         db_table = "provision"
@@ -392,9 +389,9 @@ class Obligation(LibraryModel):
     trigger_frequency = models.TextField(blank=True)
     retention = models.TextField(blank=True)
     sanction_exposure = models.TextField(blank=True)
-    status = models.CharField(max_length=16, choices=_choices(RecordStatus), default=RecordStatus.ACTIVE.value)
+    status = models.CharField(max_length=16, choices=choices(RecordStatus), default=RecordStatus.ACTIVE.value)
     owner_tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    created_origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    created_origin = models.CharField(max_length=16, choices=choices(OriginType))
     created_by_agent_run = models.UUIDField(null=True, blank=True)
     created_model = models.CharField(max_length=200, blank=True)
     source_url = models.URLField(max_length=2000)
@@ -407,7 +404,7 @@ class Obligation(LibraryModel):
     # version row (`ObligationVersion.verified_origin`/`verified_by_agent`), read there and
     # never overwritten; these two columns are the same shape for the obligation row itself,
     # for the kind chunk 5 or later adds.
-    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_origin = models.CharField(max_length=16, choices=choices(OriginType), blank=True, default="")
     verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     provisions = models.ManyToManyField(Provision, through="library.ObligationProvision", related_name="obligations")
@@ -451,7 +448,7 @@ class ObligationVersion(LibraryModel):
     # means an independent agent confirmed it (`verified_by_agent` names it; the proposing
     # agent is `applied_by_proposal.proposed_by_agent`, so both are named without a second
     # column here); `user` means `approved_by` names the person who did, exactly as before.
-    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_origin = models.CharField(max_length=16, choices=choices(OriginType), blank=True, default="")
     verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -536,11 +533,11 @@ class Verification(LibraryModel):
     """Every re-verification of a record against its source, not only the latest stamp
     (INV-06): the one library write outside a proposal, still inside library_write()."""
 
-    subject_type = models.CharField(max_length=32, choices=_choices(SubjectType))
+    subject_type = models.CharField(max_length=32, choices=choices(SubjectType))
     subject_id = models.UUIDField()
     verified_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     verified_at = models.DateTimeField(default=timezone.now)
-    outcome = models.CharField(max_length=32, choices=_choices(VerificationOutcome))
+    outcome = models.CharField(max_length=32, choices=choices(VerificationOutcome))
     note = models.TextField(blank=True)
 
     class Meta:
@@ -574,11 +571,11 @@ class RecurringDuty(LibraryModel):
     due_rule_note = models.TextField(blank=True)
     recipient_authority = models.ForeignKey(Authority, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     lead_days = models.PositiveIntegerField(default=0)
-    status = models.CharField(max_length=16, choices=_choices(RecordStatus), default=RecordStatus.ACTIVE.value)
+    status = models.CharField(max_length=16, choices=choices(RecordStatus), default=RecordStatus.ACTIVE.value)
     applied_by_proposal = models.ForeignKey("proposals.Proposal", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    created_origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    created_origin = models.CharField(max_length=16, choices=choices(OriginType))
     created_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    verified_origin = models.CharField(max_length=16, choices=_choices(OriginType), blank=True, default="")
+    verified_origin = models.CharField(max_length=16, choices=choices(OriginType), blank=True, default="")
     verified_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     approved_at = models.DateTimeField(null=True, blank=True)
@@ -631,12 +628,12 @@ class ProblemReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     reporter = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
-    subject_type = models.CharField(max_length=32, choices=_choices(SubjectType))
+    subject_type = models.CharField(max_length=32, choices=choices(SubjectType))
     subject_id = models.UUIDField()
     text = models.TextField()
     version_number = models.PositiveIntegerField(null=True, blank=True)
     language = models.ForeignKey(Language, to_field="key", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    status = models.CharField(max_length=16, choices=_choices(ReportStatus), default=ReportStatus.OPEN.value)
+    status = models.CharField(max_length=16, choices=choices(ReportStatus), default=ReportStatus.OPEN.value)
     resolution_note = models.TextField(blank=True, default="")
     closed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     closed_at = models.DateTimeField(null=True, blank=True)

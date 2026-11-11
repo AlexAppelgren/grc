@@ -113,7 +113,7 @@ from apps.search.schemas import (
     SimilarRequest,
 )
 from apps.shared.adapters import embedder, reranker
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 from apps.taxonomy import matching
 from apps.taxonomy.models import InstrumentLevelKind
@@ -595,7 +595,7 @@ def tenant_of(tenant_id: uuid.UUID | None) -> Tenant:
         else None
     )
     if tenant is None:
-        raise ProblemError(status=404, code="not_found", detail="Sign in to a company to search the library.")
+        raise not_found("Sign in to a company to search the library.")
     return tenant
 
 

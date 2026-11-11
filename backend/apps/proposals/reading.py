@@ -57,7 +57,8 @@ from apps.proposals.schemas import (
     TenantProposalRow,
 )
 from apps.shared.models import AuditEvent
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import Labels
+from apps.shared.vocabulary import label_of
 from apps.taxonomy.registry import REGISTRY
 
 # The audit action the approval of an obligation version writes, whose `before.terms` is

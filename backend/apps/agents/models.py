@@ -31,6 +31,7 @@ from django.db import models
 
 from apps.shared.tenancy import LibraryModel, TenantModel
 from apps.shared.vocabulary import KeyIsImmutable
+from apps.shared.kinds import choices
 
 
 class AgentKind(enum.StrEnum):
@@ -132,10 +133,6 @@ class ResearchRequestStatus(enum.StrEnum):
     CANCELLED = "cancelled"
 
 
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
-
-
 class Agent(LibraryModel):
     """One research agent, owned by the platform (AGT-03). `key` is the definition's `id`
     and never changes; `current_version` is the version folder the seed loaded."""
@@ -145,11 +142,11 @@ class Agent(LibraryModel):
     description = models.TextField(blank=True)
     active = models.BooleanField(default=False)
     current_version = models.PositiveIntegerField()
-    scope = models.CharField(max_length=16, choices=_choices(AgentScopeKind), default=AgentScopeKind.PLATFORM.value)
+    scope = models.CharField(max_length=16, choices=choices(AgentScopeKind), default=AgentScopeKind.PLATFORM.value)
     tenant_configurable = models.BooleanField(default=False)
-    runtime = models.CharField(max_length=16, choices=_choices(AgentRuntime), default=AgentRuntime.AGENT_SDK.value)
-    default_cadence = models.CharField(max_length=16, choices=_choices(AgentCadence), default=AgentCadence.WEEKLY.value)
-    writes_to = models.CharField(max_length=16, choices=_choices(AgentWritesTo), default=AgentWritesTo.LIBRARY.value)
+    runtime = models.CharField(max_length=16, choices=choices(AgentRuntime), default=AgentRuntime.AGENT_SDK.value)
+    default_cadence = models.CharField(max_length=16, choices=choices(AgentCadence), default=AgentCadence.WEEKLY.value)
+    writes_to = models.CharField(max_length=16, choices=choices(AgentWritesTo), default=AgentWritesTo.LIBRARY.value)
     # What a platform agent carries in place of a bank's controls; a tenant row carries neither.
     platform_scope = models.JSONField(null=True, blank=True)  # schema: PlatformAgentScope
     platform_monthly_budget = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -224,7 +221,7 @@ class TenantAgent(TenantModel):
 
     agent = models.ForeignKey(Agent, on_delete=models.PROTECT, related_name="tenant_agents")
     enabled = models.BooleanField(default=False)
-    cadence = models.CharField(max_length=16, choices=_choices(AgentCadence), default=AgentCadence.WEEKLY.value)
+    cadence = models.CharField(max_length=16, choices=choices(AgentCadence), default=AgentCadence.WEEKLY.value)
     run_weekday = models.PositiveSmallIntegerField(null=True, blank=True)
     run_hour = models.PositiveSmallIntegerField(null=True, blank=True)
     next_run_at = models.DateTimeField(null=True, blank=True)
@@ -274,12 +271,12 @@ class ResearchRequest(models.Model):
         TenantAgent, null=True, blank=True, on_delete=models.PROTECT, related_name="research_requests"
     )
     requested_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
-    kind = models.CharField(max_length=16, choices=_choices(ResearchRequestKind))
+    kind = models.CharField(max_length=16, choices=choices(ResearchRequestKind))
     topic = models.TextField(blank=True)
     source = models.ForeignKey("watch.Source", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     url = models.URLField(max_length=2000, blank=True)
     status = models.CharField(
-        max_length=16, choices=_choices(ResearchRequestStatus), default=ResearchRequestStatus.QUEUED.value
+        max_length=16, choices=choices(ResearchRequestStatus), default=ResearchRequestStatus.QUEUED.value
     )
     result_summary = models.TextField(blank=True)
     # c11-research-requests: what a `check_url` fetched, kept as text and never rendered or
@@ -368,7 +365,7 @@ class AgentRun(models.Model):
     api_key = models.ForeignKey(
         "identity.ApiKey", null=True, blank=True, on_delete=models.PROTECT, related_name="agent_runs"
     )
-    trigger = models.CharField(max_length=16, choices=_choices(RunTrigger), default=RunTrigger.API.value)
+    trigger = models.CharField(max_length=16, choices=choices(RunTrigger), default=RunTrigger.API.value)
     requested_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     started_at = models.DateTimeField(auto_now_add=True)

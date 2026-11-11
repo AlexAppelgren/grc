@@ -17,10 +17,7 @@ import enum
 from django.db import models
 
 from apps.shared.tenancy import TenantModel
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class JobStatus(enum.StrEnum):
@@ -62,12 +59,12 @@ class ExportJob(TenantModel):
     download and never moves again: the tenant exit refuses an export nobody downloaded.
     """
 
-    kind = models.CharField(max_length=32, choices=_choices(ExportKind))
+    kind = models.CharField(max_length=32, choices=choices(ExportKind))
     # What the export is about when the kind is about one record: the case for a case file.
     subject_id = models.UUIDField(null=True, blank=True)
     format = models.CharField(max_length=8, choices=[(value, value) for value in EXPORT_FORMATS])
     filters = models.JSONField(default=dict, blank=True)  # schema: ExportFilters
-    status = models.CharField(max_length=16, choices=_choices(JobStatus), default=JobStatus.QUEUED.value)
+    status = models.CharField(max_length=16, choices=choices(JobStatus), default=JobStatus.QUEUED.value)
     storage_key = models.CharField(max_length=255, null=True, blank=True)
     # The SHA-256 of the produced file, hex encoded.
     content_hash = models.CharField(max_length=64, null=True, blank=True)

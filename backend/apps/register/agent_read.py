@@ -44,12 +44,13 @@ from apps.register.schemas import (
 )
 from apps.register.status_logic import _APPLICABILITY_OUT, _Refs, worst_of
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 from apps.shared.vocabulary import label_for
 from apps.taxonomy import matching
 from apps.taxonomy.models import ComplianceStatus, InstrumentLevelKind
 from apps.tenants.models import InternalItem
+from apps.shared.people import person_ref
 
 # The entry's guard for the second pass (taxonomy 0011's `taxonomy_entry_admits`, taken
 # apart so each piece is an uncorrelated subquery rather than a per-row call).
@@ -137,7 +138,7 @@ def read_decision(*, tenant: Tenant, principal: Principal, order: list[str], obl
     entry_id = require_reach(tenant, principal)
     obligation = _readable(tenant, entry_id).filter(pk=obligation_id).values_list("stable_key", flat=True).first()  # ordering: pk lookup, at most one row
     if obligation is None:
-        raise ProblemError(status=404, code="not_found", detail="That obligation is not here.")
+        raise not_found("That obligation is not here.")
     row = _with_children(TenantObligation.objects.filter(obligation_id=obligation_id)).first()  # ordering: unique per bank, at most one row
     if row is None:
         status = ComplianceStatus.objects.get(is_default=True, active=True)
@@ -170,7 +171,7 @@ def _decision(row: Any, refs: _Refs, order: list[str]) -> RegisterDecision:
         compliance_status=refs.of(worst_of(applying) or row.compliance_status),
         status_note=row.status_note or None,
         interpretation=row.reading,
-        owner=_person(row.first_line_owner),
+        owner=person_ref(row.first_line_owner, RegisterPersonRef),
         owner_team=refs.maybe(row.owner_team),
         process=row.process or None,
         system=row.system or None,
@@ -188,7 +189,7 @@ def _entity(scope: TenantObligationScope, refs: _Refs) -> RegisterDecisionEntity
         applicability_reason=scope.applicability_reason or None,
         compliance_status=refs.of(scope.compliance_status),
         status_note=scope.status_note or None,
-        owner=_person(scope.owner),
+        owner=person_ref(scope.owner, RegisterPersonRef),
         owner_team=refs.maybe(scope.owner_team),
         process=scope.process or None,
         system=scope.system or None,
@@ -207,5 +208,3 @@ def _item(link: InternalLink, order: list[str]) -> RegisterDecisionItem:
     )
 
 
-def _person(user: Any) -> RegisterPersonRef | None:
-    return None if user is None else RegisterPersonRef(id=user.id, name=user.name)

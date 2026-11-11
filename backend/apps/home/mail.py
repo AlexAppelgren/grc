@@ -29,9 +29,9 @@ import datetime
 import uuid
 
 from django.conf import settings
-from django.db import transaction
 
 from apps.shared.adapters.mailer import OutgoingMail
+from apps.shared.tasks import queue_after_commit
 
 FALLBACK_LANGUAGE = "en"
 
@@ -102,9 +102,4 @@ def send(tenant_id: uuid.UUID, message_id: uuid.UUID) -> None:
     """Deliver one queued briefing mail once the caller's transaction commits."""
     from apps.home import tasks
 
-    args = (str(tenant_id), str(message_id))
-    if settings.CELERY_TASK_ALWAYS_EAGER:
-        # Tests: inline, now. `on_commit` never fires inside a TestCase transaction.
-        tasks.deliver_briefing.apply(args=args)
-        return
-    transaction.on_commit(lambda: tasks.deliver_briefing.delay(*args))
+    queue_after_commit(tasks.deliver_briefing, (str(tenant_id), str(message_id)))

@@ -37,7 +37,7 @@ from apps.cases.models import ChangeCase
 from apps.cases.schemas import CasesSoWhat
 from apps.shared import outbox, tenancy
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import OutboxEvent, Tenant, TenantStatus
 
 SUBJECT_TYPE = "change_case"
@@ -77,7 +77,7 @@ def confirm_so_what(*, tenant: Tenant, actor: Actor, user: Any, change_id: uuid.
     """
     case = _case_for(tenant, change_id)
     if not case.so_what_text:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return _write(case, actor=actor, user=user, text=case.so_what_text, action=CONFIRMED)
 
 
@@ -90,7 +90,7 @@ def _case_for(tenant: Tenant, change_id: uuid.UUID) -> ChangeCase:
         .first()  # ordering: unique (tenant, change), at most one row
     )
     if case is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return case
 
 

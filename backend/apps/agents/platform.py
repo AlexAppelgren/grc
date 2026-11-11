@@ -31,7 +31,7 @@ from apps.agents.seeds import console
 from apps.shared import permissions as perms
 from apps.shared.audit import record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.watch.keys import resolve_keys
 
 
@@ -66,7 +66,7 @@ def _platform_agent(agent_key: str, *, lock: bool = False) -> Agent:
     queryset = Agent.objects.select_for_update() if lock else Agent.objects.all()
     agent = queryset.filter(key=agent_key, scope=AgentScopeKind.PLATFORM.value).first()  # ordering: key is unique
     if agent is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return agent
 
 

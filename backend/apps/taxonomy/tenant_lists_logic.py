@@ -39,7 +39,8 @@ from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
 from apps.shared.vocabulary import Vocabulary, VocabularyLabel
 from apps.taxonomy import repoint
-from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, extra_of, label_of
+from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, extra_of
+from apps.shared.vocabulary import label_of, write_labels
 from apps.taxonomy.registry import REGISTRY, VocabularyList
 from apps.taxonomy.schemas import (
     PersonRef,
@@ -411,32 +412,6 @@ def _next_sort_order(entry: VocabularyList, tenant_id: uuid.UUID | None) -> int:
     return 0 if highest is None else highest + 1
 
 
-def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str], tenant: Tenant | None) -> None:
-    """Write translation rows (D-12). The first labels a row gets name its original: English
-    when English is among them, otherwise the language the person wrote in. A person's edit
-    is never machine output, so `is_machine` is cleared on the languages they touched."""
-    existing = {label.language: label for label in entry.label_model._default_manager.filter(vocabulary=row)}
-    original = None
-    if not any(label.is_original for label in existing.values()):
-        original = ORIGINAL_LANGUAGE if ORIGINAL_LANGUAGE in labels else next(iter(labels))
-    for language, text in labels.items():
-        label = existing.get(language)
-        if label is not None:
-            label.text = text
-            label.is_machine = False
-            label.save(update_fields=["text", "is_machine"])
-            continue
-        fields: dict[str, Any] = {
-            "vocabulary": row,
-            "language": language,
-            "text": text,
-            "is_original": language == original,
-        }
-        if tenant is not None:
-            fields["tenant"] = tenant
-        entry.label_model._default_manager.create(**fields)
-
-
 def _refuse_full_list(entry: VocabularyList, tenant_id: uuid.UUID) -> None:
     """A tenant list holds at most TENANT_LIST_MAX_ROWS rows, retired ones included, so
     `GET /vocab/{list}`, which answers a whole list, stays bounded (H32)."""
@@ -480,7 +455,7 @@ def create_row(
     }
     fields.update(extra_columns(entry, extra, tenant.id))
     row = entry.model._default_manager.create(**fields)
-    _write_labels(entry, row, cleaned, tenant)
+    write_labels(entry.label_model, {"vocabulary": row} if tenant is None else {"vocabulary": row, "tenant": tenant}, cleaned, is_machine=False)
     record(
         action="vocabulary.created",
         actor=actor,
@@ -520,7 +495,7 @@ def patch_row(
     cleaned = validated_labels(labels) if labels else {}
     columns = extra_columns(entry, extra, tenant.id)  # checked before anything is written
     if cleaned:
-        _write_labels(entry, row, cleaned, tenant)
+        write_labels(entry.label_model, {"vocabulary": row} if tenant is None else {"vocabulary": row, "tenant": tenant}, cleaned, is_machine=False)
     if usage_note is not None:
         row.usage_note = usage_note.strip()
     if sort_order is not None:

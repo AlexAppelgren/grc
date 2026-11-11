@@ -161,14 +161,44 @@ class TenantListVocabulary(TenantVocabulary):
         ordering = ["sort_order", "key"]
 
 
+def write_labels(label_model: type[Any], owner: dict[str, Any], labels: dict[str, str], *, is_machine: bool) -> None:
+    """Write `labels` onto one row's translation rows (D-12); `owner` names the row (its
+    `vocabulary` or `term`, and a tenant row's `tenant`). The first labels a row gets name its
+    original: English when among them, otherwise the first written. Every label written
+    carries `is_machine`: set by an agent's approval and never cleared by one, cleared by a
+    person's edit or approval, so each label carries its own mark (INV-05, D-12, D-62)."""
+    manager = label_model._default_manager
+    existing = {label.language: label for label in manager.filter(**owner)}
+    original = None
+    if not any(label.is_original for label in existing.values()):
+        original = "en" if "en" in labels else next(iter(labels), None)
+    for language, text in labels.items():
+        label = existing.get(language)
+        if label is None:
+            manager.create(**owner, language=language, text=text, is_original=language == original, is_machine=is_machine)
+            continue
+        label.text = text
+        label.is_machine = is_machine
+        label.save(update_fields=["text", "is_machine"])
+
+
+def label_of(labels: dict[str, str], order: list[str], *, original: str | None, key: str) -> str:
+    """The one label resolver: the label in the first language of `order` that has one, then
+    the original, then any label, then the key itself (never an empty string: an unlabelled
+    row still renders). Nothing stores a label, so a rename is instant."""
+    for code in order:
+        if labels.get(code):
+            return labels[code]
+    if original and labels.get(original):
+        return labels[original]
+    for text in labels.values():
+        if text:
+            return text
+    return key
+
+
 def label_for(row: Vocabulary, language_order: list[str]) -> str:
-    """The label in the first language of `language_order` that has one, then the
-    original, then the key. Nothing stores a label, so a rename is instant."""
-    labels = {label.language: label for label in row.labels.all()}  # type: ignore[attr-defined]
-    for code in language_order:
-        if code in labels:
-            return labels[code].text
-    for label in labels.values():
-        if label.is_original:
-            return label.text
-    return row.key
+    """`label_of` over a row's own labels, read through its `labels` relation."""
+    rows = list(row.labels.all())  # type: ignore[attr-defined]
+    original = next((label.language for label in rows if label.is_original), None)
+    return label_of({label.language: label.text for label in rows}, language_order, original=original, key=row.key)

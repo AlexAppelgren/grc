@@ -7,9 +7,9 @@ are platform support's own words, written for the bank; nothing here is logged."
 from __future__ import annotations
 
 from django.conf import settings
-from django.db import transaction
 
 from apps.identity import tasks
+from apps.shared.tasks import queue_after_commit
 
 
 def send_support_request(to: str, *, tenant_name: str, requester: str, purpose: str, ticket_ref: str, hours: int) -> None:
@@ -21,8 +21,4 @@ def send_support_request(to: str, *, tenant_name: str, requester: str, purpose: 
         "Nothing is granted until an administrator approves it under Support access, and the "
         f"request lapses if nobody decides within {settings.SUPPORT_ACCESS_REQUEST_TTL_HOURS} hours."
     )
-    if settings.CELERY_TASK_ALWAYS_EAGER:
-        # Tests: inline, now, as identity's mail does; `on_commit` never fires in a TestCase.
-        tasks.deliver_mail.apply(args=(to, subject, body))
-        return
-    transaction.on_commit(lambda: tasks.deliver_mail.delay(to, subject, body))
+    queue_after_commit(tasks.deliver_mail, (to, subject, body))

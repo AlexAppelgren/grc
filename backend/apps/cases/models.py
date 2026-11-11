@@ -33,10 +33,7 @@ from apps.shared.adapters.scanner import ScanState
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.tenancy import TenantModel
 from apps.taxonomy.models import CaseStatusCategory
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class CaseLinkDecision(enum.StrEnum):
@@ -129,7 +126,7 @@ class ChangeCase(TenantModel):
 
     change = models.ForeignKey("watch.RegulatoryChange", on_delete=models.PROTECT, related_name="cases")
     status = models.CharField(
-        max_length=16, choices=_choices(CaseStatusCategory), default=CaseStatusCategory.NEW.value
+        max_length=16, choices=choices(CaseStatusCategory), default=CaseStatusCategory.NEW.value
     )
     urgency = models.ForeignKey("taxonomy.Urgency", on_delete=models.PROTECT, related_name="+")
     # False until a person triages: the value above is the agent's suggestion, and the
@@ -241,7 +238,7 @@ class CaseObligationLink(TenantModel):
 
     case = models.ForeignKey(ChangeCase, on_delete=models.CASCADE, related_name="obligation_links")
     obligation = models.ForeignKey("library.Obligation", on_delete=models.PROTECT, related_name="+")
-    decision = models.CharField(max_length=16, choices=_choices(CaseLinkDecision))
+    decision = models.CharField(max_length=16, choices=choices(CaseLinkDecision))
     decided_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     decided_at = models.DateTimeField(auto_now_add=True)
 
@@ -272,7 +269,7 @@ class ImpactAssessment(TenantModel):
 
     case = models.OneToOneField(ChangeCase, on_delete=models.PROTECT, related_name="assessment")
     applies = models.CharField(
-        max_length=16, choices=_choices(AssessmentApplies), default=AssessmentApplies.YES.value
+        max_length=16, choices=choices(AssessmentApplies), default=AssessmentApplies.YES.value
     )
     why = models.TextField(blank=True)
     what_must_change = models.TextField(blank=True)
@@ -367,8 +364,8 @@ class CaseTransition(AppendOnlyModel, TenantModel):
     """
 
     case = models.ForeignKey(ChangeCase, on_delete=models.PROTECT, related_name="+")
-    from_status = models.CharField(max_length=16, choices=_choices(CaseStatusCategory), blank=True)
-    to_status = models.CharField(max_length=16, choices=_choices(CaseStatusCategory))
+    from_status = models.CharField(max_length=16, choices=choices(CaseStatusCategory), blank=True)
+    to_status = models.CharField(max_length=16, choices=choices(CaseStatusCategory))
     at = models.DateTimeField(auto_now_add=True)
     by_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     note = models.TextField(blank=True)
@@ -396,7 +393,7 @@ class Evidence(TenantModel):
     """
 
     case = models.ForeignKey(ChangeCase, on_delete=models.PROTECT, related_name="evidence")
-    kind = models.CharField(max_length=16, choices=_choices(EvidenceKind))
+    kind = models.CharField(max_length=16, choices=choices(EvidenceKind))
     name = models.TextField()
     storage_key = models.TextField(blank=True)
     url = models.TextField(blank=True)
@@ -406,7 +403,7 @@ class Evidence(TenantModel):
     uploaded_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     removed_at = models.DateTimeField(null=True, blank=True)
-    scan_state = models.CharField(max_length=16, choices=_choices(ScanState), default=ScanState.PENDING.value)
+    scan_state = models.CharField(max_length=16, choices=choices(ScanState), default=ScanState.PENDING.value)
     scanned_at = models.DateTimeField(null=True, blank=True)
 
     objects = _RemovedNotDeletedQuerySet.as_manager()

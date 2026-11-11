@@ -35,9 +35,11 @@ from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal
 from apps.shared.models import Tenant
 from apps.taxonomy.models import Team, TeamLabel
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import Labels
+from apps.shared.vocabulary import label_of
 from apps.taxonomy.schemas import PersonRef
 from apps.tenants.models import OrgUnit, TenantProduct
+from apps.shared.people import person_ref
 
 SUBJECT_TYPE = "agent_access"
 
@@ -83,10 +85,6 @@ def list_entries(tenant_id: uuid.UUID, *, limit: int, offset: int) -> tuple[list
     return list(queryset[offset : offset + limit]), queryset.count()
 
 
-def _person(user: Any) -> PersonRef | None:
-    return None if user is None else PersonRef(id=user.id, name=user.name)
-
-
 def key_out(key: ApiKey) -> AgentAccessKeyOut:
     return AgentAccessKeyOut(
         id=key.id,
@@ -94,7 +92,7 @@ def key_out(key: ApiKey) -> AgentAccessKeyOut:
         key_prefix=key.key_prefix,
         kind=key.kind,  # type: ignore[arg-type]
         scopes=sorted(key.scopes),
-        person=_person(key.acts_as_user),
+        person=person_ref(key.acts_as_user),
         created_at=key.created_at,
         expires_at=key.expires_at,
         revoked_at=key.revoked_at,
@@ -119,7 +117,7 @@ def views(rows: list[AgentAccess], order: list[str]) -> list[AgentAccessOut]:
             tenant_reach=row.tenant_reach,
             active=row.active,
             revoked_at=row.revoked_at,
-            revoked_by=_person(row.revoked_by),
+            revoked_by=person_ref(row.revoked_by),
             created_by=PersonRef(id=row.created_by.id, name=row.created_by.name),
             created_at=row.created_at,
             version=row.version,

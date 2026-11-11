@@ -417,7 +417,7 @@ class TenantsScenarioTests(ScenarioTestCase):
         second = self.client.post(url, data=body, content_type="application/json", **console).json()["id"]
         declined = self.client.post(f"/api/v1/tenant/support-access/{second}/decline", **bank)
         self.assertEqual(declined.json()["state"], "declined")
-        self.assertEqual(self.client.post(f"/api/v1/tenant/support-access/{second}/approve", **bank).status_code, 422)
+        self.assertEqual(self.client.post(f"/api/v1/tenant/support-access/{second}/approve", **bank).status_code, 409)
 
     def test_adm_s1(self) -> None:
         """ADM-S1

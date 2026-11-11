@@ -31,11 +31,12 @@ from apps.cases.models import Action, ChangeCase
 from apps.cases.schemas import CasesAction, CasesActionBody, CasesActionPage, CasesActionPatch
 from apps.identity.models import Membership, UserStatus
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import Tenant
 from apps.shared.schemas import PageQuery
 from apps.taxonomy.schemas import PersonRef
+from apps.shared.people import person_ref
 
 SUBJECT_TYPE = "action"
 ADDED = "case.action_added"
@@ -140,7 +141,7 @@ def _locked_action(tenant: Tenant, action_id: uuid.UUID, expected_version: int |
         .first()  # ordering: pk lookup, at most one row
     )
     if row is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     row.case = case
     _check_open_to_work(case)
     if expected_version is None or expected_version != row.version:
@@ -182,10 +183,6 @@ def _record(action: str, row: Action, actor: Actor, *, before: dict[str, Any], s
     )
 
 
-def _person(user: Any) -> PersonRef | None:
-    return None if user is None else PersonRef(id=user.id, name=user.name)
-
-
 def _out(row: Action, change_id: uuid.UUID) -> CasesAction:
     return CasesAction(
         id=row.id,
@@ -195,7 +192,7 @@ def _out(row: Action, change_id: uuid.UUID) -> CasesAction:
         due_date=row.due_date,
         done=row.done_at is not None,
         done_at=row.done_at,
-        done_by=_person(row.done_by),
+        done_by=person_ref(row.done_by),
         created_at=row.created_at,
         version=row.version,
     )

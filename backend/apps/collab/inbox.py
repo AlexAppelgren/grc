@@ -23,7 +23,7 @@ from apps.collab.models import Notification
 from apps.identity.models import User
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared import tenancy
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def mark_read(*, user: User, notification_id: uuid.UUID) -> None:
     is not the caller's own, in their bank, is 404 and never 403, so no id can be probed."""
     row = _own(user).filter(pk=notification_id).first()  # ordering: pk lookup, at most one row
     if row is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     if row.read_at is None:
         _mark(user, [row.id])
 

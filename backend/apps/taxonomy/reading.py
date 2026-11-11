@@ -58,20 +58,6 @@ def language_order(request: HttpRequest, *, tenant: Any = None) -> list[str]:
     return order
 
 
-def label_of(labels: dict[str, str], order: list[str], *, original: str | None, key: str) -> str:
-    """The label in the first language of `order` that has one, then the original, then the
-    key itself (never an empty string: an unlabelled row still renders)."""
-    for code in order:
-        if labels.get(code):
-            return labels[code]
-    if original and labels.get(original):
-        return labels[original]
-    for text in labels.values():
-        if text:
-            return text
-    return key
-
-
 class Labels:
     """Every label row of one list, grouped by the row it belongs to, read in one query."""
 

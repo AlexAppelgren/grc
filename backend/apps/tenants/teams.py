@@ -15,7 +15,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Count, Q, QuerySet
 
 from apps.identity.models import Membership, User
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 from apps.shared.vocabulary import label_for
 from apps.taxonomy.models import Team
@@ -26,7 +26,7 @@ def team_of(tenant: Tenant, key: str) -> Team:
     """The team, active or retired, in the caller's bank and under its row-level security, or 404."""
     team = Team.objects.filter(tenant=tenant, key=key).first()  # ordering: unique (tenant, key), at most one row
     if team is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return team
 
 
@@ -43,7 +43,7 @@ def department_id(tenant_id: uuid.UUID, value: Any) -> uuid.UUID | None:
         raise ValidationError("orgUnitId: Choose a department of your organisation.", code="validation_error") from exc
     unit = OrgUnit.objects.filter(tenant_id=tenant_id, pk=unit_id).first()  # ordering: pk lookup, at most one row
     if unit is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     if unit.kind not in DEPARTMENT_KINDS or not unit.active:
         raise ValidationError("orgUnitId: A team sits in an active department, never in a group or a legal entity.", code="validation_error")
     return unit.pk

@@ -38,6 +38,7 @@ from django.utils import timezone
 
 from apps.reports.models import JobStatus
 from apps.shared.tenancy import TenantModel
+from apps.shared.kinds import choices
 
 
 class SupportAccessLevel(enum.StrEnum):
@@ -149,10 +150,6 @@ class CredentialPolicyKind(enum.StrEnum):
     DEVICE_BOUND = "device_bound"
 
 
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(value.value, value.value) for value in kind]
-
-
 class NeverDeleted(TenantModel):
     """Deactivated or withdrawn, never deleted (CLAUDE.md section 5). Only the retention
     purge and tenant exit remove a row, as the schema owner (D-53, D-56)."""
@@ -172,7 +169,7 @@ class OrgUnit(NeverDeleted):
     here and needs nothing of this table beyond `UNIQUE (tenant_id, id)`."""
 
     parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="children")
-    kind = models.CharField(max_length=16, choices=_choices(OrgUnitKind))
+    kind = models.CharField(max_length=16, choices=choices(OrgUnitKind))
     name = models.CharField(max_length=200)
     org_number = models.CharField(max_length=40, blank=True)
     lei = models.CharField(max_length=20, blank=True)
@@ -252,7 +249,7 @@ class TenantProduct(NeverDeleted):
     org_unit = models.ForeignKey(OrgUnit, null=True, blank=True, on_delete=models.PROTECT, related_name="products")
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    status = models.CharField(max_length=8, choices=_choices(ProductStatusKind), default=ProductStatusKind.LIVE.value)
+    status = models.CharField(max_length=8, choices=choices(ProductStatusKind), default=ProductStatusKind.LIVE.value)
     launch_date = models.DateField(null=True, blank=True)
     owner_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     version = models.PositiveIntegerField(default=1)
@@ -315,7 +312,7 @@ class SecurityPolicy(TenantModel):
     checks. `allowed_authenticators` is a list of AAGUIDs."""
 
     credential_policy = models.CharField(
-        max_length=16, choices=_choices(CredentialPolicyKind), default=CredentialPolicyKind.ANY_PASSKEY.value
+        max_length=16, choices=choices(CredentialPolicyKind), default=CredentialPolicyKind.ANY_PASSKEY.value
     )
     allowed_authenticators = models.JSONField(default=list, blank=True)  # schema: AllowedAuthenticators
     device_bound_from = models.DateField(null=True, blank=True)
@@ -363,7 +360,7 @@ class RegisterLookup(TenantModel):
     organisation changes until a person applies the result."""
 
     query = models.CharField(max_length=40)
-    status = models.CharField(max_length=16, choices=_choices(JobStatus), default=JobStatus.QUEUED.value)
+    status = models.CharField(max_length=16, choices=choices(JobStatus), default=JobStatus.QUEUED.value)
     requested_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)

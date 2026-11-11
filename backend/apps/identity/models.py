@@ -27,10 +27,7 @@ from apps.shared.audit import AppendOnlyModel
 from apps.shared.fields import CIEmailField
 from apps.shared.tenancy import TenantModel
 from apps.shared.vocabulary import TenantVocabulary, Vocabulary, VocabularyLabel
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 # ---------------------------------------------------------------------------------------
@@ -132,7 +129,7 @@ class User(models.Model):
     email = CIEmailField(max_length=254, unique=True)
     name = models.CharField(max_length=200)
     locale = models.ForeignKey("library.Language", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    status = models.CharField(max_length=16, choices=_choices(UserStatus), default=UserStatus.INVITED.value)
+    status = models.CharField(max_length=16, choices=choices(UserStatus), default=UserStatus.INVITED.value)
     created_at = models.DateTimeField(auto_now_add=True)
     last_seen_at = models.DateTimeField(null=True, blank=True)
     deactivated_at = models.DateTimeField(null=True, blank=True)
@@ -262,7 +259,7 @@ class Invitation(models.Model):
     roles = models.ManyToManyField(TenantRole, through="identity.InvitationRole", related_name="+")
     title = models.CharField(max_length=200, blank=True)
     token_hash = models.CharField(max_length=64, unique=True)
-    kind = models.CharField(max_length=16, choices=_choices(InvitationKind), default=InvitationKind.INVITE.value)
+    kind = models.CharField(max_length=16, choices=choices(InvitationKind), default=InvitationKind.INVITE.value)
     invited_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
@@ -329,7 +326,7 @@ class AuthChallenge(models.Model):
     """A short-lived challenge for one ceremony (registration, sign-in, step-up)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    kind = models.CharField(max_length=16, choices=_choices(ChallengeKind))
+    kind = models.CharField(max_length=16, choices=choices(ChallengeKind))
     challenge = models.CharField(max_length=128, unique=True)  # base64url of the random bytes
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE, related_name="challenges")
     session = models.ForeignKey(
@@ -359,7 +356,7 @@ class WebAuthnCredential(models.Model):
     aaguid = models.CharField(max_length=36, blank=True)
     backup_eligible = models.BooleanField(default=False)
     backed_up = models.BooleanField(default=False)
-    device_type = models.CharField(max_length=16, choices=_choices(PasskeyDeviceType))
+    device_type = models.CharField(max_length=16, choices=choices(PasskeyDeviceType))
     nickname = models.CharField(max_length=100, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_used_at = models.DateTimeField(null=True, blank=True)
@@ -387,7 +384,7 @@ class UserSession(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    kind = models.CharField(max_length=16, choices=_choices(SessionKind))
+    kind = models.CharField(max_length=16, choices=choices(SessionKind))
     refresh_token_hash = models.CharField(max_length=64, unique=True)
     previous_refresh_hash = models.CharField(max_length=64, null=True, blank=True)
     rotated_at = models.DateTimeField(null=True, blank=True)
@@ -451,7 +448,7 @@ class ApiKey(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    kind = models.CharField(max_length=16, choices=_choices(CredentialKind), default=CredentialKind.SERVICE.value)
+    kind = models.CharField(max_length=16, choices=choices(CredentialKind), default=CredentialKind.SERVICE.value)
     agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="api_keys")
     agent_access = models.ForeignKey(
         "agents.AgentAccess", null=True, blank=True, on_delete=models.PROTECT, related_name="api_keys"
@@ -513,8 +510,8 @@ class LoginEvent(AppendOnlyModel):
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="login_events")
     api_key = models.ForeignKey(ApiKey, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     email = CIEmailField(max_length=254, blank=True)
-    method = models.CharField(max_length=16, choices=_choices(LoginMethod))
-    event = models.CharField(max_length=32, choices=_choices(LoginEventKind))
+    method = models.CharField(max_length=16, choices=choices(LoginMethod))
+    event = models.CharField(max_length=32, choices=choices(LoginEventKind))
     success = models.BooleanField()
     failure_reason = models.CharField(max_length=100, blank=True)
     ip = models.GenericIPAddressField(null=True, blank=True)

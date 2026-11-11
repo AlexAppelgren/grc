@@ -35,7 +35,7 @@ from apps.agents.schemas import TenantAgentInput, TenantAgentScope, TenantAgentU
 from apps.identity.models import User
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
 from apps.watch.keys import resolve_keys
@@ -59,7 +59,7 @@ def own_agent(tenant_agent_id: uuid.UUID, *, lock: bool = False) -> TenantAgent:
         queryset = queryset.select_for_update(of=("self",))
     agent = queryset.filter(pk=tenant_agent_id).first()  # ordering: pk lookup, at most one row
     if agent is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     refuse_platform_agent(agent.agent)
     return agent
 

@@ -159,10 +159,10 @@ def _rows(reports: list[ProblemReport], order: list[str]) -> list[ProblemReportR
                 description=report.text,
                 version_number=report.version_number,
                 language=report.language_id,
-                reporter=_person(report.reporter),
+                reporter=ProblemReportPerson.model_validate(report.reporter),
                 status=cast(ProblemReportStatusKind, report.status),
                 created_at=report.created_at,
-                closed_by=_person(report.closed_by) if closed else None,
+                closed_by=ProblemReportPerson.model_validate(report.closed_by) if closed else None,
                 closed_at=report.closed_at,
                 resolution_note=report.resolution_note if closed else None,
             )
@@ -170,5 +170,3 @@ def _rows(reports: list[ProblemReport], order: list[str]) -> list[ProblemReportR
     return rows
 
 
-def _person(user: Any) -> ProblemReportPerson:
-    return ProblemReportPerson(id=user.id, name=user.name)

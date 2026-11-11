@@ -341,3 +341,9 @@ TIER_ONE_KINDS: dict[str, tuple[str, str]] = {
         "the bank's own agent's research branch on it, and no admin adds a state",
     ),
 }
+
+
+def choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
+    """A kind's values as Django `choices`: the value is its own label, since the API
+    returns keys and never a phrase."""
+    return [(member.value, member.value) for member in kind]

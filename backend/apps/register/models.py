@@ -29,6 +29,7 @@ from django.utils import timezone
 
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.tenancy import TenantModel
+from apps.shared.kinds import choices
 
 
 class Applicability(enum.StrEnum):
@@ -64,12 +65,8 @@ class DutyStatus(enum.StrEnum):
     NOT_APPLICABLE = "not_applicable"
 
 
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(value.value, value.value) for value in kind]
-
-
 def _applicability() -> models.CharField:
-    return models.CharField(max_length=16, choices=_choices(Applicability), default=Applicability.NOT_ASSESSED.value)
+    return models.CharField(max_length=16, choices=choices(Applicability), default=Applicability.NOT_ASSESSED.value)
 
 
 def _person(*, null: bool = True) -> models.ForeignKey:
@@ -196,7 +193,7 @@ class ComplianceAssessment(AppendOnlyModel, TenantModel):
     tenant_obligation = models.ForeignKey(TenantObligation, on_delete=models.PROTECT, related_name="+")
     scope = models.ForeignKey(TenantObligationScope, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     method = models.CharField(
-        max_length=24, choices=_choices(AssessmentMethod), default=AssessmentMethod.SELF_ASSESSMENT.value
+        max_length=24, choices=choices(AssessmentMethod), default=AssessmentMethod.SELF_ASSESSMENT.value
     )
     status = models.ForeignKey("taxonomy.ComplianceStatus", on_delete=models.PROTECT, related_name="+")
     risk_rating = models.ForeignKey("taxonomy.RiskRating", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -339,7 +336,7 @@ class DutyOccurrence(TenantModel):
     tenant_obligation = models.ForeignKey(TenantObligation, on_delete=models.PROTECT, related_name="duty_occurrences")
     org_unit = models.ForeignKey("tenants.OrgUnit", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     due_date = models.DateField()
-    status = models.CharField(max_length=16, choices=_choices(DutyStatus), default=DutyStatus.UPCOMING.value)
+    status = models.CharField(max_length=16, choices=choices(DutyStatus), default=DutyStatus.UPCOMING.value)
     owner = _person()
     owner_team = models.ForeignKey("taxonomy.Team", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     completed_at = models.DateTimeField(null=True, blank=True)

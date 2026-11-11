@@ -78,7 +78,7 @@ from apps.proposals.schemas import ObligationScopePayload
 from apps.shared import ai
 from apps.shared.audit import Actor, ActorType, batched, record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 from apps.taxonomy.schemas import PersonRef
 from apps.watch.keys import source_for_write
@@ -147,7 +147,7 @@ def get_request(*, tenant: Tenant, request_id: uuid.UUID) -> ResearchRequestOut:
     """`GET /research-requests/{requestId}`: one of the bank's own, or 404."""
     row = _requests().filter(pk=request_id, tenant=tenant).first()  # ordering: pk lookup, at most one row
     if row is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return _out(row)
 
 
@@ -157,7 +157,7 @@ def get_retag(*, request_id: uuid.UUID) -> ResearchRequestOut:
         _requests().filter(pk=request_id, kind=ResearchRequestKind.RETAG.value, tenant__isnull=True).first()  # ordering: pk lookup, at most one row
     )
     if row is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return _out(row)
 
 
@@ -485,7 +485,7 @@ def file_retag(*, run_id: uuid.UUID, payload: ObligationScopePayload, source_lab
             .first()  # ordering: pk lookup, at most one row
         )
         if run is None or run.research_request is None:
-            raise ProblemError(status=404, code="not_found", detail="Not found.")
+            raise not_found()
         request = ResearchRequest.objects.select_for_update().get(pk=run.research_request.pk)
         if request.batch_proposal_id is not None:
             raise ProblemError(status=409, code="already_filed", detail="This re-tag has already filed its batch.")
