@@ -253,9 +253,26 @@ signed-in person to their home without a passkey prompt. Every `/` on the app
 host goes out `Cache-Control: private, no-cache`, since one address now has
 more than one answer there as well.
 
-Not proven: that this changes Broadcom's rating. It makes the app host answer
-a rater what the host that passes answers. The review request and the bank's
-allowlist stay the way to replace a rating that is already stored.
+What followed, the same day. At 10:00 UTC the app host was still denied from
+SEB's network at every address, its new front door included, while
+`bleqq.com` and `api.bleqq.com` opened: the rating sat on the one host. The
+owner had sent Broadcom a review request for `http://app.bleqq.com/`,
+suggesting Business/Economy. Its answer, reviewed at 11:00:32 UTC: "After
+evaluation of the submitted content, our automated categorization system has
+left this URL categorized as: Finance." The address it evaluated is the front
+door, which had answered the public page since 09:36 UTC and three words
+before. That fits the change, and does not prove it: Broadcom does not say
+what its system weighed. A bank's proxy takes a changed category "usually
+within few hours" (Broadcom); until SEB's shows it, the block page there says
+nothing about the site.
+
+If a host is rated again and it has to open sooner than a review answers:
+`APP_HOST` may name the first public host, and one host then serves the public
+page at `/` for a visitor and the app for a signed-in browser. Tried against
+the real stack on 2026-11-11 with a temporary journey, not kept in the suite.
+The API's `WEBAUTHN_RP_ID`, `WEBAUTHN_ORIGINS`, `CORS_ALLOWED_ORIGINS` and
+`APP_BASE_URL` follow that host, every passkey is enrolled again, and the
+passkeys' scope widens to the whole domain, so it is the owner's decision.
 
 `sitemap.xml` lists `https://<first PUBLIC_SITE_HOST>/` once the hosts are
 split, `https://bleqq.com/welcome` before. `robots.txt` is the same file on

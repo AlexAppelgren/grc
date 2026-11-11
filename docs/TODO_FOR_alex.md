@@ -2532,7 +2532,12 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       `https://talosintelligence.com/reputation_center/web_categorization`, Fortinet
       `https://www.fortiguard.com/webfilter`, Forcepoint `https://support.forcepoint.com/s/site-lookup`
       (checked 2026-09-28, `Verification_Log.md`).
-- [ ] **Broadcom (Symantec) rates the app host Suspicious (2026-11-11).** Its Site Review answers
+- [x] **Broadcom (Symantec) rated the app host Suspicious; it answers Finance since 2026-11-11,
+      11:00 UTC.** The owner's request for `http://app.bleqq.com/` came back the same day: the
+      automated system "has left this URL categorized as: Finance". Still open: confirm from
+      SEB's network once the proxies hold the new category (Broadcom: usually within a few
+      hours), and look `https://app.bleqq.com/sign-in` up in Site Review; submit it too if it
+      still reads Suspicious. What was found before, for the record: Its Site Review answered
       "Suspicious" for `https://app.bleqq.com/sign-in`, "rated by our WebPulse system": the host
       is not in Broadcom's database, so it was scored in real time on reputation. Seen from
       outside the same day, the site's own steps are live (www redirects to the apex, the hosts
