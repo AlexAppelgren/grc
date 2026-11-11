@@ -13,6 +13,7 @@ class SharedConfig(AppConfig):
         # Boot guard 7 of the production-safety block: refuse a database role that can
         # bypass row-level security (playbook 11.1, AC-NFR2). It opens the default
         # connection, which settings.py must not do, so it runs here.
+        from apps.shared import migration_guard  # noqa: F401  registers the database check
         from apps.shared.db_role_guard import check_at_boot
 
         check_at_boot()
