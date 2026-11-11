@@ -239,6 +239,14 @@ class QueueReads(ScenarioTestCase):
         answer: dict[str, Any] = approved.json()
         return answer
 
+    def _corrected_by_its_agent(self, proposal: Proposal) -> None:
+        """A row as an agent's approval with a correction left it before review 2026-11-11 S-3,
+        which no route writes any more: the corrected payload, and no person named on it. The
+        reads still name that agent for the rows decided then."""
+        proposal.refresh_from_db()
+        corrected = {**proposal.payload, "summaries": {**proposal.payload["summaries"], "sv": LATER_SV}}
+        Proposal.objects.filter(pk=proposal.pk).update(corrected_payload=corrected, corrected_at=timezone.now())
+
     def _rows(self, caller: dict[str, Any], query: str = "") -> dict[str, Any]:
         listed = self.client.get(f"{V1}/proposals{query}", **caller)
         self.assertEqual(listed.status_code, 200, listed.content)
@@ -303,7 +311,8 @@ class QueueReads(ScenarioTestCase):
         confirmer = self._agent_key(agent_row=agents_testing.agent(key="library-confirmer-reading", version=3))
         corrected = self._version_proposal(self.obligation, proposer=self._agent_proposer(filer))
         confirmed = self._version_proposal(self._obligation("obl-another-duty"), proposer=self._agent_proposer(filer))
-        self._approve(corrected, confirmer, {"summaries": {"sv": LATER_SV}})
+        self._approve(corrected, confirmer)
+        self._corrected_by_its_agent(corrected)
         self._approve(confirmed, confirmer)
 
         filed_by = {"key": filer.agent.key, "version": 1}
@@ -664,7 +673,8 @@ class QueueReads(ScenarioTestCase):
         filer = self._agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
         confirmer = self._agent_key()
         first = self._version_proposal(self.obligation, proposer=self._agent_proposer(filer))
-        self._approve(first, confirmer, {"summaries": {"sv": LATER_SV}})
+        self._approve(first, confirmer)
+        self._corrected_by_its_agent(first)
         readers = (sign_in(self.editor), {"HTTP_X_API_KEY": confirmer.plain_key})
         one = [self._queries(reader, "") for reader in readers]
         second = self._version_proposal(self._obligation("obl-another-2"), proposer=self._agent_proposer(filer))

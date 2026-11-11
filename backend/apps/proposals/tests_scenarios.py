@@ -1108,34 +1108,23 @@ class ProposalsScenarioTests(ScenarioTestCase):
             refused = self._post(f"/proposals/{proposal['id']}/approve", without, reviewer_headers)
             self.assertEqual((refused.status_code, refused.json()["code"]), (status, code), refused.content)
 
-        # Its correction may not move which language the summary was written in: that would
-        # store the machine translation as the unlabelled original (INV-05). Refused, and
-        # like the two above, nothing applies.
-        moved = self._post(f"/proposals/{proposal['id']}/approve", {"payloadOverrides": {"originalLanguage": "en"}, **sent}, reviewer_headers)
-        self.assertEqual(moved.status_code, 422, moved.content)
-        self.assertEqual(moved.json()["code"], "validation_error")
+        # It corrects nothing: a correction, moving the original language or rewording a
+        # summary, waits for a person (review 2026-11-11 S-3). Refused, and like the two
+        # above, nothing applies.
+        corrected_sv = "Institutet bedömer kundens kunskap och erfarenhet innan rådgivning."
+        for overrides in ({"originalLanguage": "en"}, {"summaries": {"sv": corrected_sv, "en": "The institution assesses the client."}}):
+            moved = self._post(f"/proposals/{proposal['id']}/approve", {"payloadOverrides": overrides, "fieldSources": {"summaries.sv": "https://www.fi.se/"}, **sent}, reviewer_headers)
+            self.assertEqual((moved.status_code, moved.json()["code"]), (409, "person_review_required"), moved.content)
         self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
         self.assertEqual(list(obligation.versions.values_list("version_number", flat=True)), [1])
         self.assertFalse(AiGeneration.objects.filter(subject_id=proposal["id"]).exists(), "a refused decision logs no model call")
 
-        # It corrects the wording and approves through the same route a person calls, and
-        # the decision applies exactly as a person's does, in one transaction. Its
-        # correction claims the translation is a person's; no person confirmed it, so the
-        # translation stays labelled machine-made (INV-05).
-        corrected_sv = "Institutet bedömer kundens kunskap och erfarenhet innan rådgivning."
-        approved = self._post(
-            f"/proposals/{proposal['id']}/approve",
-            {
-                "note": "Confirmed against the source.",
-                "payloadOverrides": {
-                    "summaries": {"sv": corrected_sv, "en": "The institution assesses the client's knowledge and experience before advising."},
-                    "isMachine": False,
-                },
-                "fieldSources": {"summaries.sv": "https://www.fi.se/", "summaries.en": "https://www.fi.se/"},
-                **sent,
-            },
-            reviewer_headers,
-        )
+        # It approves the proposal as filed through the same route a person calls, and the
+        # decision applies exactly as a person's does, in one transaction. The proposal
+        # claims its translation is a person's; no person confirmed it, so the translation
+        # stays labelled machine-made (INV-05).
+        Proposal.objects.filter(pk=proposal["id"]).update(payload={**proposal["payload"], "isMachine": False})
+        approved = self._post(f"/proposals/{proposal['id']}/approve", {"note": "Confirmed against the source.", **sent}, reviewer_headers)
         self.assertEqual(approved.status_code, 200, approved.content)
         self.assertEqual(approved.json()["status"], "approved")
         # The model call behind the approval is in the AI output log, as the agent's own
@@ -1152,17 +1141,16 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(
             {text.language_id: (text.text, text.is_original, text.is_machine) for text in version.summaries.all()},
             {
-                "sv": (corrected_sv, True, False),
-                "en": ("The institution assesses the client's knowledge and experience before advising.", False, True),
+                "sv": (proposal["payload"]["summaries"]["sv"], True, False),
+                "en": (proposal["payload"]["summaries"]["en"], False, True),
             },
         )
         self.assertIsNone(version.approved_by_id)
         self.assertEqual(version.verified_by_agent_id, reviewer_key.agent.id)
-        # The correction is the agent's: no person is named as its author, and the decision
-        # names the key and the agent definition that made it.
+        # Nothing was corrected, and the decision names the key and the agent definition that
+        # made it.
         decided = Proposal.objects.get(pk=proposal["id"])
-        self.assertEqual((decided.corrected_payload or {})["summaries"]["sv"], corrected_sv)
-        self.assertIsNotNone(decided.corrected_at)
+        self.assertIsNone(decided.corrected_payload)
         self.assertIsNone(decided.corrected_by_id)
         self.assertIsNone(decided.reviewed_by_id)
         self.assertEqual(decided.reviewed_by_api_key_id, reviewer_key.id)
@@ -1178,7 +1166,7 @@ class ProposalsScenarioTests(ScenarioTestCase):
         self.assertEqual(event.after["reviewingApiKeyPrefix"], reviewer_key.row.key_prefix)
         self.assertEqual(event.after["agentRunId"], sent["agentRunId"])
         self.assertIsNone(event.step_up_assertion_id)
-        self.assertTrue(event.after["corrected"])
+        self.assertFalse(event.after["corrected"])
 
         # A platform key bound to an agent but without the review scope answers 403 naming
         # the scope, on every route of the queue, and leaves the proposal as it was, even
@@ -1296,6 +1284,18 @@ class ProposalsScenarioTests(ScenarioTestCase):
         )
         self.assertEqual(same_agent.status_code, 409, same_agent.content)
         self.assertEqual(same_agent.json()["code"], "four_eyes_violation")
+
+        # A key of another definition that the proposing key's creator also created is that
+        # person on both sides, refused the same way (review 2026-11-11 S-6).
+        creator = factories.platform_user(roles=("platform_admin",), email="key-creator@bleqq.test")
+        tenancy.clear_tenant()
+        ApiKey.objects.filter(pk=proposer_key.id).update(created_by=creator)
+        same_creator = agents_testing.reviewer_api_key()
+        ApiKey.objects.filter(pk=same_creator.id).update(created_by=creator)
+        by_creator = self._post(
+            f"/proposals/{proposal['id']}/approve", agents_testing.decision(same_creator), {"HTTP_X_API_KEY": same_creator.plain_key}
+        )
+        self.assertEqual((by_creator.status_code, by_creator.json()["code"]), (409, "four_eyes_violation"), by_creator.content)
         self.assertEqual(Proposal.objects.get(pk=proposal["id"]).status, ProposalStatus.OPEN.value)
         self.assertFalse(AiGeneration.objects.filter(subject_id=proposal["id"]).exists(), "a refused decision logs no model call")
 

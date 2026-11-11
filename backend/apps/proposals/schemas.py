@@ -517,8 +517,10 @@ class ProposalRow(CamelSchema):
         default=None,
         description=(
             "The independent agent that corrected the payload on the way to approving it, which is always "
-            "the agent that approved it. Null when nobody corrected it and when a person did. What was "
-            "proposed stays in `payload` beside the correction, so the audit trail keeps both."
+            "the agent that approved it. Null when nobody corrected it and when a person did. Only a "
+            "proposal decided before 2026-11-11 can carry one: since then an agent approves a proposal as "
+            "it was filed. What was proposed stays in `payload` beside the correction, so the audit trail "
+            "keeps both."
         ),
     )
     reviewed_at: datetime | None = Field(default=None, description="When the decision was made, by a person or by an agent: a UTC timestamp, date and time together. Null while the proposal is open.")
@@ -1629,7 +1631,8 @@ class ProposalApproveBody(WriteBody):
             "fresh source in `fieldSources`. Each summary is at most "
             f"{settings.PROPOSAL_TEXT_MAX_CHARS} characters per language. What is applied is kept beside what was proposed, as "
             "the reviewer's own correction: a reader must not take the proposal's payload as the text "
-            "the library now holds."
+            "the library now holds. A person's field only: an agent's key that sends it answers 409 "
+            "`person_review_required`, because an agent approves a proposal as it was filed."
         ),
     )
     field_sources: dict[str, str] | None = Field(  # schema: ProposalFieldSources
@@ -1643,7 +1646,8 @@ class ProposalApproveBody(WriteBody):
             "or a standard's obligation. A changed value without one answers 422 `source_missing`; a "
             "source for a field the correction leaves as proposed answers 422 `validation_error`. The "
             "proposal keeps these sources for the corrected fields from then on. Optional, and left out "
-            "when nothing is corrected."
+            "when nothing is corrected. A person's field only, as `payloadOverrides` is: an agent's key "
+            "that sends it answers 409 `person_review_required`."
         ),
         examples=[{"summaries.sv": "https://www.fi.se/sv/publicerat/nyheter/2026/analysbetalningar/"}],
     )

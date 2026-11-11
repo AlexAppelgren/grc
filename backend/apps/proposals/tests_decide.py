@@ -506,3 +506,140 @@ class DecidingAProposal(ScenarioTestCase):
         approved = self._post(f"/proposals/{flag}/approve", {}, sign_in(self.second_editor, step_up=True))
         self.assertEqual(approved.status_code, 200, approved.content)
         self.assertTrue(Flag.objects.filter(key=FLAG["key"]).exists())
+
+
+class AgentApprovesOnlyAsFiled(ScenarioTestCase):
+    """Review 2026-11-11 S-3: an agent approves only a proposal a platform agent or a platform
+    person filed, and only as it was filed. A bank member's proposal cites pages its proposer
+    chose, and a correction made and approved in one call has one author, so each waits for a
+    person (409 `person_review_required`) and applies nothing."""
+
+    def setUp(self) -> None:
+        _seed()
+        self.reviewer = factories.platform_user(roles=("library_editor",), email="editor2@bleqq.test")
+        self.tenant = factories.tenant(slug="s3-bank")
+        self.member = factories.member(self.tenant, roles=("compliance_officer",)).user
+        tenancy.clear_tenant()
+        self.confirming = agents_testing.reviewer_api_key()
+
+    def _post(self, path: str, body: dict[str, Any], headers: dict[str, Any]) -> Any:
+        return self.client.post(f"{V1}{path}", data=body, content_type="application/json", **headers)
+
+    def _approve_as_agent(self, proposal_id: str, body: dict[str, Any] | None = None) -> Any:
+        tenancy.clear_tenant()
+        sent = {**(body or {}), **agents_testing.decision(self.confirming)}
+        return self._post(f"/proposals/{proposal_id}/approve", sent, {"HTTP_X_API_KEY": self.confirming.plain_key})
+
+    def _untouched(self, proposal_id: str) -> None:
+        self.assertEqual(Proposal.objects.get(pk=proposal_id).status, ProposalStatus.OPEN.value)
+        self.assertFalse(AiGeneration.objects.filter(subject_id=proposal_id).exists(), "a refused decision logs no model call")
+
+    def test_a_proposal_a_bank_member_filed_waits_for_a_person(self) -> None:
+        """Review 2026-11-11 S-3: filed from a bank, refused to the agent, approved by a person."""
+        filed = self._post(
+            "/proposals",
+            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": FLAG},
+            sign_in(self.member, tenant=self.tenant),
+        )
+        self.assertEqual(filed.status_code, 201, filed.content)
+        proposal_id = filed.json()["id"]
+        self.assertTrue(Proposal.objects.get(pk=proposal_id).proposed_in_tenant)
+        refused = self._approve_as_agent(proposal_id)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (409, "person_review_required"), refused.content)
+        self._untouched(proposal_id)
+        self.assertFalse(Flag.objects.filter(key=FLAG["key"]).exists())
+        approved = self._post(f"/proposals/{proposal_id}/approve", {}, sign_in(self.reviewer, step_up=True))
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+    def test_an_agent_cannot_correct_and_approve_in_one_call(self) -> None:
+        """Review 2026-11-11 S-3: `payloadOverrides`, and `fieldSources` alone, are a person's."""
+        obligation = build.obligation(build.instrument(key="s3-instrument", regime="regime:securities"), key="obl-s3")
+        tenancy.clear_tenant()
+        proposing = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        filed = self._post(
+            "/proposals",
+            {
+                "kind": "new_obligation_version",
+                "title": "Refresh the wording against the source",
+                "targetType": "obligation",
+                "targetId": str(obligation.id),
+                "payload": {"summaries": {"en": "The duty as the source now reads it."}, "originalLanguage": "en", "isMachine": True},
+                "fieldSources": {"summaries.en": "https://www.fi.se/"},
+                "agentRunId": str(agents_testing.platform_run(key=proposing).id),
+            },
+            {"HTTP_X_API_KEY": proposing.plain_key},
+        )
+        self.assertEqual(filed.status_code, 201, filed.content)
+        proposal_id = filed.json()["id"]
+        corrected = {"payloadOverrides": {"summaries": {"en": "A wording the agent wrote itself."}}, "fieldSources": {"summaries.en": "https://www.fi.se/"}}
+        for body in (corrected, {"fieldSources": {"summaries.en": "https://example.com/"}}):
+            with self.subTest(body=sorted(body)):
+                refused = self._approve_as_agent(proposal_id, body)
+                self.assertEqual((refused.status_code, refused.json()["code"]), (409, "person_review_required"), refused.content)
+                self._untouched(proposal_id)
+        self.assertEqual(list(obligation.versions.values_list("version_number", flat=True)), [1])
+        # As filed, the same agent approves it.
+        approved = self._approve_as_agent(proposal_id)
+        self.assertEqual(approved.status_code, 200, approved.content)
+        self.assertIsNone(approved.json()["correctedByAgent"])
+
+
+class KeyCreatorFourEyes(ScenarioTestCase):
+    """Review 2026-11-11 S-6: the person behind a key is the one who created it, so a reviewing
+    key created by the proposing person, or by the creator of the proposing key, is the same
+    person on both sides (409 `four_eyes_violation`). A key someone else created decides."""
+
+    def setUp(self) -> None:
+        _seed()
+        self.admin = factories.platform_user(roles=("platform_admin", "library_editor"), email="admin@bleqq.test")
+        self.other = factories.platform_user(roles=("platform_admin",), email="admin2@bleqq.test")
+        tenancy.clear_tenant()
+
+    def _post(self, path: str, body: dict[str, Any], headers: dict[str, Any]) -> Any:
+        return self.client.post(f"{V1}{path}", data=body, content_type="application/json", **headers)
+
+    def _reviewing_key(self, created_by: Any) -> Any:
+        key = agents_testing.reviewer_api_key()
+        key.row.created_by = created_by
+        key.row.save(update_fields=["created_by"])
+        return key
+
+    def _verdict(self, proposal_id: str, key: Any) -> Any:
+        tenancy.clear_tenant()
+        return self._post(f"/proposals/{proposal_id}/approve", agents_testing.decision(key), {"HTTP_X_API_KEY": key.plain_key})
+
+    def test_a_key_created_by_the_proposing_person_cannot_approve(self) -> None:
+        """Review 2026-11-11 S-6: the proposer creates the reviewing key and is refused."""
+        filed = self._post("/proposals", {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": FLAG}, sign_in(self.admin))
+        self.assertEqual(filed.status_code, 201, filed.content)
+        refused = self._verdict(filed.json()["id"], self._reviewing_key(self.admin))
+        self.assertEqual((refused.status_code, refused.json()["code"]), (409, "four_eyes_violation"), refused.content)
+        self.assertFalse(Flag.objects.filter(key=FLAG["key"]).exists())
+        approved = self._verdict(filed.json()["id"], self._reviewing_key(self.other))
+        self.assertEqual(approved.status_code, 200, approved.content)
+
+    def test_two_keys_created_by_one_person_cannot_confirm_each_other(self) -> None:
+        """Review 2026-11-11 S-6: one person created the proposing and the reviewing key."""
+        proposing = agents_testing.agent_key(scopes=(perms.SCOPE_PROPOSALS_WRITE,))
+        proposing.row.created_by = self.admin
+        proposing.row.save(update_fields=["created_by"])
+        filed = self._post(
+            "/proposals",
+            {"kind": "term_create", "title": "Add crypto-assets", "payload": TERM, "agentRunId": str(agents_testing.platform_run(key=proposing).id)},
+            {"HTTP_X_API_KEY": proposing.plain_key},
+        )
+        self.assertEqual(filed.status_code, 201, filed.content)
+        proposal_id = filed.json()["id"]
+        same_person = self._reviewing_key(self.admin)
+        refused = self._verdict(proposal_id, same_person)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (409, "four_eyes_violation"), refused.content)
+        tenancy.clear_tenant()
+        rejected = self._post(
+            f"/proposals/{proposal_id}/reject",
+            {"rejectionCode": "duplicate", "note": "Filed twice.", **agents_testing.decision(same_person), "decision": agents_testing.REJECTION_DECISION},
+            {"HTTP_X_API_KEY": same_person.plain_key},
+        )
+        self.assertEqual((rejected.status_code, rejected.json()["code"]), (409, "four_eyes_violation"), rejected.content)
+        self.assertEqual(Proposal.objects.get(pk=proposal_id).status, ProposalStatus.OPEN.value)
+        approved = self._verdict(proposal_id, self._reviewing_key(self.other))
+        self.assertEqual(approved.status_code, 200, approved.content)
