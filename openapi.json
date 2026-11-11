@@ -57631,7 +57631,7 @@
     },
     "/api/v1/tenant/support-access/{grant_id}/approve": {
       "post": {
-        "description": "Approves a pending request and answers with it, now `active`: the window of the hours it\nasked for starts now, and the platform person may enter the bank read-only until it ends\nor the bank revokes it. They can never write, search, ask, or download evidence or an\nexport.\n\nNeeds `security.manage` and a fresh passkey step-up. The approver is never the platform\nperson who asked. Recorded in the audit log as `support_access.approved` with the step-up\nassertion, in the same transaction.\n\nErrors: `not_found` (404) for a request that is not the bank's own; `four_eyes_violation`\n(409) when the approver is the person who asked; `invalid_transition` (422) for a request\nthat is no longer pending, because it was decided or lapsed; `step_up_required` (403)\nwithout a fresh passkey assertion; `permission_denied` (403) without `security.manage`;\n`unauthenticated` (401).",
+        "description": "Approves a pending request and answers with it, now `active`: the window of the hours it\nasked for starts now, and the platform person may enter the bank read-only until it ends\nor the bank revokes it. They can never write, search, ask, or download evidence or an\nexport.\n\nNeeds `security.manage` and a fresh passkey step-up. The approver is never the platform\nperson who asked. Recorded in the audit log as `support_access.approved` with the step-up\nassertion, in the same transaction.\n\nErrors: `not_found` (404) for a request that is not the bank's own; `four_eyes_violation`\n(409) when the approver is the person who asked; `invalid_transition` (409) for a request\nthat is no longer pending, because it was decided or lapsed; `step_up_required` (403)\nwithout a fresh passkey assertion; `permission_denied` (403) without `security.manage`;\n`unauthenticated` (401).",
         "operationId": "approveSupportAccess",
         "parameters": [
           {
@@ -57672,7 +57672,7 @@
     },
     "/api/v1/tenant/support-access/{grant_id}/decline": {
       "post": {
-        "description": "Declines a pending request and answers with it, now `declined`; nothing was ever\ngranted. No step-up, because a refusal never needs one.\n\nNeeds `security.manage`. Recorded in the audit log as `support_access.declined`.\n\nErrors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`\n(422) for a request that is no longer pending, because it was decided or lapsed;\n`permission_denied` (403) without `security.manage`; `unauthenticated` (401).",
+        "description": "Declines a pending request and answers with it, now `declined`; nothing was ever\ngranted. No step-up, because a refusal never needs one.\n\nNeeds `security.manage`. Recorded in the audit log as `support_access.declined`.\n\nErrors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`\n(409) for a request that is no longer pending, because it was decided or lapsed;\n`permission_denied` (403) without `security.manage`; `unauthenticated` (401).",
         "operationId": "declineSupportAccess",
         "parameters": [
           {
@@ -57713,7 +57713,7 @@
     },
     "/api/v1/tenant/support-access/{grant_id}/revoke": {
       "post": {
-        "description": "Ends an active grant at once and answers with it, now `revoked`: the support session's\nnext request answers 401 and the ones after it 404. No step-up, because ending access never\nneeds one.\n\nNeeds `security.manage`. Recorded in the audit log as `support_access.revoked`.\n\nErrors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`\n(422) for a grant that is not open, because it is still pending, was declined or revoked,\nor its window passed; `permission_denied` (403) without `security.manage`;\n`unauthenticated` (401).",
+        "description": "Ends an active grant at once and answers with it, now `revoked`: the support session's\nnext request answers 401 and the ones after it 404. No step-up, because ending access never\nneeds one.\n\nNeeds `security.manage`. Recorded in the audit log as `support_access.revoked`.\n\nErrors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`\n(409) for a grant that is not open, because it is still pending, was declined or revoked,\nor its window passed; `permission_denied` (403) without `security.manage`;\n`unauthenticated` (401).",
         "operationId": "revokeSupportAccess",
         "parameters": [
           {

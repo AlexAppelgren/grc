@@ -9326,7 +9326,7 @@ export interface paths {
          *     assertion, in the same transaction.
          *
          *     Errors: `not_found` (404) for a request that is not the bank's own; `four_eyes_violation`
-         *     (409) when the approver is the person who asked; `invalid_transition` (422) for a request
+         *     (409) when the approver is the person who asked; `invalid_transition` (409) for a request
          *     that is no longer pending, because it was decided or lapsed; `step_up_required` (403)
          *     without a fresh passkey assertion; `permission_denied` (403) without `security.manage`;
          *     `unauthenticated` (401).
@@ -9355,7 +9355,7 @@ export interface paths {
          *     Needs `security.manage`. Recorded in the audit log as `support_access.declined`.
          *
          *     Errors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`
-         *     (422) for a request that is no longer pending, because it was decided or lapsed;
+         *     (409) for a request that is no longer pending, because it was decided or lapsed;
          *     `permission_denied` (403) without `security.manage`; `unauthenticated` (401).
          */
         post: operations["declineSupportAccess"];
@@ -9383,7 +9383,7 @@ export interface paths {
          *     Needs `security.manage`. Recorded in the audit log as `support_access.revoked`.
          *
          *     Errors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`
-         *     (422) for a grant that is not open, because it is still pending, was declined or revoked,
+         *     (409) for a grant that is not open, because it is still pending, was declined or revoked,
          *     or its window passed; `permission_denied` (403) without `security.manage`;
          *     `unauthenticated` (401).
          */
