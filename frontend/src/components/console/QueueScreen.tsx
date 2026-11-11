@@ -10,12 +10,13 @@ import { Button, ButtonBar } from '@/components/ui/Button';
 import { Chip, ChipRow } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
 import { Tabs, TabPanel, type TabDef } from '@/components/ui/Tabs';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
+import { Pager } from '@/components/ui/Pager';
 import { useFormatContext } from '@/features/identity/hooks';
 import { presentProposal, proposerLine, refusalReason, selectionBlock, sourceLine, targetLine } from '@/features/proposals/proposal-presentation';
 import { useApproveAll, useApproveMany, useProposals, type ApproveManyOutcome } from '@/features/proposals/hooks';
@@ -356,14 +357,16 @@ export function QueueScreen() {
         ) : null}
         {approveAll.start.isError ? <ProblemAlert error={approveAll.start.error} codes={{ step_up_required: t('problem.stepUpCancelled') }} /> : null}
         {allRun?.status === 'finished' && watchedRun !== null && allRun.startedAt === watchedRun ? <ApproveManyResult result={allResult(allRun, t)} onDismiss={() => setWatchedRun(null)} /> : null}
-        <Modal open={confirmingAll} onOpenChange={setConfirmingAll} title={t('console.queue.approveAll.title', { count: total })} description={t('console.queue.approveAll.body')}>
-          <ButtonBar>
-            <Button variant="outline" onClick={() => setConfirmingAll(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button onClick={startAll}>{t('console.queue.approveAll.button', { count: total })}</Button>
-          </ButtonBar>
-        </Modal>
+        {confirmingAll ? (
+          <ConfirmDialog
+            title={t('console.queue.approveAll.title', { count: total })}
+            body={t('console.queue.approveAll.body')}
+            action={t('console.queue.approveAll.button', { count: total })}
+            busy={false}
+            onConfirm={startAll}
+            onClose={() => setConfirmingAll(false)}
+          />
+        ) : null}
 
         {approveMany.isSuccess ? <ApproveManyResult result={selectionResult(approveMany.data, t)} onDismiss={() => approveMany.reset()} /> : null}
         {busy || (waiting && chosen.length > 0) ? (
@@ -387,14 +390,16 @@ export function QueueScreen() {
             )}
           </div>
         ) : null}
-        <Modal open={confirming} onOpenChange={setConfirming} title={t('console.queue.approveMany.title', { count: chosen.length })} description={t('console.queue.approveMany.body')}>
-          <ButtonBar>
-            <Button variant="outline" onClick={() => setConfirming(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button onClick={start}>{t('console.queue.select.approve', { count: chosen.length })}</Button>
-          </ButtonBar>
-        </Modal>
+        {confirming ? (
+          <ConfirmDialog
+            title={t('console.queue.approveMany.title', { count: chosen.length })}
+            body={t('console.queue.approveMany.body')}
+            action={t('console.queue.select.approve', { count: chosen.length })}
+            busy={false}
+            onConfirm={start}
+            onClose={() => setConfirming(false)}
+          />
+        ) : null}
 
         {query.isPending ? (
           <LoadingState rows={3} />
@@ -427,17 +432,14 @@ export function QueueScreen() {
               ))}
             </div>
             {offset > 0 || total > offset + rows.length ? (
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-meta text-muted" data-queue-paging="">
-                <span>{t(order === 'newest' ? 'console.queue.more.newest' : 'console.queue.more.oldest', { from: offset + 1, to: offset + rows.length, total })}</span>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="small" disabled={offset === 0} onClick={() => go(tab, {}, Math.max(0, offset - QUEUE_PAGE))}>
-                    {t('console.queue.previous')}
-                  </Button>
-                  <Button variant="outline" size="small" disabled={offset + QUEUE_PAGE >= total} onClick={() => go(tab, {}, offset + QUEUE_PAGE)}>
-                    {t('console.queue.next')}
-                  </Button>
-                </div>
-              </div>
+              <Pager
+                offset={offset}
+                limit={QUEUE_PAGE}
+                shown={rows.length}
+                total={total}
+                range={t(order === 'newest' ? 'console.queue.more.newest' : 'console.queue.more.oldest', { from: offset + 1, to: offset + rows.length, total })}
+                onOffset={(next) => go(tab, {}, next)}
+              />
             ) : null}
           </>
         )}

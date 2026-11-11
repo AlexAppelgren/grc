@@ -159,7 +159,7 @@ export function ProposalCorrectionForm({ proposal }: { proposal: ProposalRow }) 
       {approve.isError ? <ProblemAlert error={approve.error} /> : null}
       <ButtonBar>
         <Button variant="danger" disabled={approve.isPending} onClick={() => setRejecting(true)}>
-          {t('console.queue.reject')}
+          {t('common.reject')}
         </Button>
         <Button disabled={approve.isPending} onClick={submit}>
           {t('console.queue.approve')}

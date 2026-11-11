@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CheckGroup, CheckRow, Field, Select, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { QueryState, StatusLine } from '@/components/ui/States';
+import { SecretOnce } from '@/components/ui/SecretOnce';
+import { ConfirmDialog, FormDialog } from '@/components/ui/Dialogs';
 import { isExpired, scopeLabel } from '@/features/agent-access/presentation';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useCreateMyToken, useMyTokens, useRevokeMyToken, useTokenEntries } from '@/features/personal-tokens/hooks';
@@ -32,30 +33,11 @@ const AGENT_ACCESS_MANAGE = 'agent_access.manage';
 function NewToken({ created, onDone }: { created: PersonalTokenCreated; onDone: () => void }) {
   const t = useT();
   const ctx = useFormatContext();
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(created.plainKey);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  };
   return (
     <Panel title={t('me.tokens.newTitle')} role="status" data-new-key="">
-      <pre className="m-0 mb-3 rounded-control border border-line bg-subtle p-3 font-mono break-all whitespace-pre-wrap" data-plain-key="">
-        {created.plainKey}
-      </pre>
-      <p className="text-muted">{t('me.tokens.newBody', { date: formatDate(created.expiresAt, ctx) })}</p>
-      {copied ? <StatusLine tone="positive">{t('me.tokens.copied')}</StatusLine> : null}
-      <ButtonBar>
-        <Button variant="outline" size="small" onClick={onDone}>
-          {t('common.done')}
-        </Button>
-        <Button size="small" onClick={() => void copy()}>
-          {t('me.tokens.copy')}
-        </Button>
-      </ButtonBar>
+      <SecretOnce secret={created.plainKey} copyLabel={t('me.tokens.copy')} onDone={onDone}>
+        <p className="text-muted">{t('me.tokens.newBody', { date: formatDate(created.expiresAt, ctx) })}</p>
+      </SecretOnce>
     </Panel>
   );
 }
@@ -73,8 +55,7 @@ function CreateDialog({ permissions, onClose, onCreated }: { permissions: readon
   const [expires, setExpires] = useState('');
   const [problem, setProblem] = useState<Problem | null>(null);
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     const trimmed = name.trim();
     const missing: Problem | null =
       trimmed === '' ? 'name' : scopes.length === 0 ? 'scopes' : scopes.includes('tenant:read') && entryId === '' ? 'entry' : expires === '' ? 'expires' : null;
@@ -86,57 +67,55 @@ function CreateDialog({ permissions, onClose, onCreated }: { permissions: readon
 
   const liveEntries = (entries.data?.items ?? []).filter((entry) => entry.active);
   return (
-    <Modal open onOpenChange={(next) => (next ? undefined : onClose())} title={t('me.tokens.create')}>
-      <form onSubmit={submit} noValidate aria-busy={create.isPending} data-token-form="">
-        <Field id="token-name" label={t('me.tokens.name')} hint={t('me.tokens.nameHint')} error={problem === 'name' ? t('me.tokens.nameRequired') : undefined}>
-          <TextInput id="token-name" maxLength={200} value={name} onChange={(e) => setName(e.target.value)} aria-invalid={problem === 'name' ? true : undefined} />
+    <FormDialog
+      title={t('me.tokens.create')}
+      submitLabel={t('me.tokens.submit')}
+      pending={create.isPending}
+      error={create.error}
+      codes={mintRefusals(t)}
+      onSubmit={submit}
+      onClose={onClose}
+      formProps={{ 'data-token-form': '' }}
+    >
+      <Field id="token-name" label={t('me.tokens.name')} hint={t('me.tokens.nameHint')} error={problem === 'name' ? t('me.tokens.nameRequired') : undefined}>
+        <TextInput id="token-name" maxLength={200} value={name} onChange={(e) => setName(e.target.value)} aria-invalid={problem === 'name' ? true : undefined} />
+      </Field>
+      <CheckGroup legend={t('me.tokens.scopes')} hint={t('me.tokens.scopesHint')} error={problem === 'scopes' ? t('me.tokens.scopesRequired') : undefined}>
+        {TOKEN_SCOPES.map((scope) => {
+          const held = permissions.includes(SCOPE_PERMISSION[scope]);
+          // tenant:read reads only through a named entry, which needs the entry list.
+          const reachable = scope !== 'tenant:read' || canNameEntry;
+          const hint = !held ? t('me.tokens.scopeNotHeld', { permission: humanisePermission(SCOPE_PERMISSION[scope]) }) : reachable ? t(SCOPE_HINT[scope]) : t('me.tokens.entryRequired');
+          return (
+            <CheckRow
+              key={scope}
+              id={`token-scope-${scope}`}
+              label={scopeLabel(scope)}
+              hint={hint}
+              checked={scopes.includes(scope)}
+              disabled={!held || !reachable}
+              onChange={(on) => setScopes((current) => (on ? [...current, scope] : current.filter((s) => s !== scope)))}
+            />
+          );
+        })}
+      </CheckGroup>
+      {canNameEntry ? (
+        <Field id="token-entry" label={t('me.tokens.entry')} hint={t('me.tokens.entryHint')} error={problem === 'entry' ? t('me.tokens.entryRequired') : undefined}>
+          <Select id="token-entry" value={entryId} onChange={(e) => setEntryId(e.target.value)}>
+            <option value="">{t('me.tokens.entryNone')}</option>
+            {liveEntries.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.name}
+              </option>
+            ))}
+          </Select>
         </Field>
-        <CheckGroup legend={t('me.tokens.scopes')} hint={t('me.tokens.scopesHint')} error={problem === 'scopes' ? t('me.tokens.scopesRequired') : undefined}>
-          {TOKEN_SCOPES.map((scope) => {
-            const held = permissions.includes(SCOPE_PERMISSION[scope]);
-            // tenant:read reads only through a named entry, which needs the entry list.
-            const reachable = scope !== 'tenant:read' || canNameEntry;
-            const hint = !held ? t('me.tokens.scopeNotHeld', { permission: humanisePermission(SCOPE_PERMISSION[scope]) }) : reachable ? t(SCOPE_HINT[scope]) : t('me.tokens.entryRequired');
-            return (
-              <CheckRow
-                key={scope}
-                id={`token-scope-${scope}`}
-                label={scopeLabel(scope)}
-                hint={hint}
-                checked={scopes.includes(scope)}
-                disabled={!held || !reachable}
-                onChange={(on) => setScopes((current) => (on ? [...current, scope] : current.filter((s) => s !== scope)))}
-              />
-            );
-          })}
-        </CheckGroup>
-        {canNameEntry ? (
-          <Field id="token-entry" label={t('me.tokens.entry')} hint={t('me.tokens.entryHint')} error={problem === 'entry' ? t('me.tokens.entryRequired') : undefined}>
-            <Select id="token-entry" value={entryId} onChange={(e) => setEntryId(e.target.value)}>
-              <option value="">{t('me.tokens.entryNone')}</option>
-              {liveEntries.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        ) : null}
-        <Field id="token-expires" label={t('me.tokens.expires')} hint={t('me.tokens.expiresHint')} error={problem === 'expires' ? t('me.tokens.expiresRequired') : undefined}>
-          <TextInput id="token-expires" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} aria-invalid={problem === 'expires' ? true : undefined} />
-        </Field>
-        {create.isError ? <ProblemAlert error={create.error} codes={mintRefusals(t)} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose} disabled={create.isPending}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={create.isPending}>
-            {t('me.tokens.submit')}
-          </Button>
-        </ButtonBar>
-        <p className="mt-2 text-meta text-muted">{t('me.tokens.stepUpHint')}</p>
-      </form>
-    </Modal>
+      ) : null}
+      <Field id="token-expires" label={t('me.tokens.expires')} hint={t('me.tokens.expiresHint')} error={problem === 'expires' ? t('me.tokens.expiresRequired') : undefined}>
+        <TextInput id="token-expires" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} aria-invalid={problem === 'expires' ? true : undefined} />
+      </Field>
+      <p className="mt-2 text-meta text-muted">{t('me.tokens.stepUpHint')}</p>
+    </FormDialog>
   );
 }
 
@@ -171,33 +150,29 @@ function TokenRow({ token }: { token: PersonalToken }) {
       {isLiveToken(token, now) ? (
         <ButtonBar>
           <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
-            {t('me.tokens.revoke')}
+            {t('common.revoke')}
           </Button>
         </ButtonBar>
       ) : null}
       {confirming ? (
-        <Modal open onOpenChange={(next) => (next ? undefined : setConfirming(false))} title={t('me.tokens.revokeTitle', { name: token.name })} description={t('me.tokens.revokeBody')}>
-          {revoke.isError ? <ProblemAlert error={revoke.error} /> : null}
-          <ButtonBar>
-            <Button variant="outline" onClick={() => setConfirming(false)} disabled={revoke.isPending}>
-              {t('me.tokens.keep')}
-            </Button>
-            <Button
-              variant="danger"
-              disabled={revoke.isPending}
-              onClick={() =>
-                revoke.mutate(token.id, {
-                  onSuccess: () => {
-                    setConfirming(false);
-                    setRevoked(true);
-                  },
-                })
-              }
-            >
-              {t('me.tokens.revokeConfirm')}
-            </Button>
-          </ButtonBar>
-        </Modal>
+        <ConfirmDialog
+          title={t('me.tokens.revokeTitle', { name: token.name })}
+          body={t('me.tokens.revokeBody')}
+          action={t('me.tokens.revokeConfirm')}
+          cancelLabel={t('common.keep')}
+          danger
+          busy={revoke.isPending}
+          error={revoke.error}
+          onConfirm={() =>
+            revoke.mutate(token.id, {
+              onSuccess: () => {
+                setConfirming(false);
+                setRevoked(true);
+              },
+            })
+          }
+          onClose={() => setConfirming(false)}
+        />
       ) : null}
     </Row>
   );
@@ -217,23 +192,23 @@ export function TokensScreen() {
       <PageHead title={t('me.tokens.title')} lede={t('me.tokens.lede')} actions={canCreate ? <Button onClick={open}>{t('me.tokens.create')}</Button> : undefined} />
       {canCreate ? null : <Notice>{t('me.tokens.cannotCreate', { permission: humanisePermission(TOKENS_CREATE) })}</Notice>}
       {created !== null ? <NewToken created={created} onDone={() => setCreated(null)} /> : null}
-      {tokens.isPending ? (
-        <LoadingState />
-      ) : tokens.isError ? (
-        <ErrorState title={t('me.tokens.errorTitle')} onRetry={() => void tokens.refetch()} />
-      ) : tokens.data.items.length === 0 ? (
-        <EmptyState
-          title={t('me.tokens.emptyTitle')}
-          body={canCreate ? t('me.tokens.emptyBody') : t('me.tokens.cannotCreate', { permission: humanisePermission(TOKENS_CREATE) })}
-          action={canCreate ? { label: t('me.tokens.create'), href: '#', onClick: open } : undefined}
-        />
-      ) : (
-        <Rows data-tokens-list="">
-          {tokens.data.items.map((token) => (
-            <TokenRow key={token.id} token={token} />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={tokens} errorTitle={t('me.tokens.errorTitle')}>
+        {(data) =>
+          data.items.length === 0 ? (
+            <EmptyState
+              title={t('me.tokens.emptyTitle')}
+              body={canCreate ? t('me.tokens.emptyBody') : t('me.tokens.cannotCreate', { permission: humanisePermission(TOKENS_CREATE) })}
+              action={canCreate ? { label: t('me.tokens.create'), href: '#', onClick: open } : undefined}
+            />
+          ) : (
+            <Rows data-tokens-list="">
+              {data.items.map((token) => (
+                <TokenRow key={token.id} token={token} />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
       {creating ? (
         <CreateDialog
           permissions={permissions}

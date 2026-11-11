@@ -254,7 +254,7 @@ export function WatchFeedScreen() {
               <p className="text-meta text-muted">{t('watch.showing', { shown: items.length, total })}</p>
               {feed.hasNextPage === true ? (
                 <Button variant="outline" size="small" disabled={feed.isFetchingNextPage} onClick={() => void feed.fetchNextPage()}>
-                  {t('watch.showMore')}
+                  {t('common.showMore')}
                 </Button>
               ) : null}
             </div>
@@ -284,7 +284,7 @@ function FeedEmpty({
       <EmptyState
         title={t('watch.empty.filters.title')}
         body={t('watch.empty.filters.body')}
-        action={{ label: t('watch.filter.clear'), href: hrefOf(pathname, EMPTY_FILTERS, tab), onClick: onClear }}
+        action={{ label: t('common.clearFilters'), href: hrefOf(pathname, EMPTY_FILTERS, tab), onClick: onClear }}
       />
     );
   }

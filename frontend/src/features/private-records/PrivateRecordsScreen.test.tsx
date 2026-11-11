@@ -134,7 +134,7 @@ describe('the queue', () => {
     expect(await screen.findByRole('button', { name: 'Previous' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     await waitFor(() => expect(document.querySelector('[data-private-proposal-id="p-20"]')).not.toBeNull());
-    expect(screen.getByText('21–21 of 25')).toBeInTheDocument();
+    expect(screen.getByText('21 to 21 of 25')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Previous' }));

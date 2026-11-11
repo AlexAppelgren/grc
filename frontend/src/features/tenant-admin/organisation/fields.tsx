@@ -1,14 +1,10 @@
 'use client';
 
-import type { FormEvent, ReactNode } from 'react';
-
-import { Button, ButtonBar } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { Field, Select } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
-import { ProblemAlert } from '@/components/ui/States';
 import type { TermGroup } from '@/features/tenant-admin/organisation/organisation-presentation';
 import { usePeople } from '@/features/tenant-admin/organisation/hooks';
+import type { Translate } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
 // The pickers the organisation forms share: a term from the dimensions
@@ -87,30 +83,10 @@ export function PersonSelect({ id, label, hint, error, value, current, onChange 
 }
 
 /**
- * The dialog every organisation form sits in. A refused write shows here
- * unless its fields took it; a stale write gets the screen's own sentence,
- * and the list behind the dialog has already refetched the row as it stands.
+ * The sentences an organisation form's refusal reads in. A stale write gets
+ * the screen's own sentence, and the list behind the dialog has already
+ * refetched the row as it stands.
  */
-export function DialogForm({ title, error, formLevel, pending, onSubmit, onClose, children }: { title: string; error: unknown; formLevel: boolean; pending: boolean; onSubmit: () => void; onClose: () => void; children: ReactNode }) {
-  const t = useT();
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    onSubmit();
-  };
-  return (
-    <Modal open onOpenChange={(open) => !open && onClose()} title={title}>
-      <form onSubmit={submit} noValidate aria-busy={pending}>
-        {children}
-        {formLevel ? <ProblemAlert error={error} codes={{ stale_write: t('admin.org.form.stale') }} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={pending}>
-            {t('common.save')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
-  );
+export function orgFormCodes(t: Translate): Readonly<Record<string, string>> {
+  return { stale_write: t('admin.org.form.stale') };
 }

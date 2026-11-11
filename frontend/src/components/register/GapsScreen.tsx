@@ -14,6 +14,7 @@ import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
+import { Pager } from '@/components/ui/Pager';
 import { useObligationTitle } from '@/features/gaps/hooks';
 import { gapActions, gapPills, isWaiting, ownerName, targetLine } from '@/features/gaps/gap-view';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
@@ -104,7 +105,7 @@ export function GapRecord({ gap, withObligation, wide }: { gap: RegisterGap; wit
             {gapActions(gap, meId, permissions).edit ? (
               <ButtonBar>
                 <Button variant="outline" size="small" onClick={() => setEditing(true)}>
-                  {t('gaps.record.edit')}
+                  {t('common.edit')}
                 </Button>
               </ButtonBar>
             ) : null}
@@ -177,7 +178,7 @@ function GapFilters({ onChange }: { onChange: (name: string, value: string) => v
         <TextInput type="date" value={params.get('targetTo') ?? ''} onChange={(e) => onChange('targetTo', e.target.value)} data-gap-filter="targetTo" />
       </label>
       <Button variant="ghost" className="self-end" onClick={() => router.replace(pathname)}>
-        {t('gaps.filters.clear')}
+        {t('common.clearFilters')}
       </Button>
     </form>
   );
@@ -223,7 +224,7 @@ function GapList({ params, meId, onPage }: { params: URLSearchParams; meId: stri
   const { items, total } = gaps.data;
   if (total === 0) {
     return filtered ? (
-      <EmptyState title={t('gaps.noMatch.title')} body={t('gaps.noMatch.body')} action={{ label: t('gaps.filters.clear'), href: pathname }} />
+      <EmptyState title={t('gaps.noMatch.title')} body={t('gaps.noMatch.body')} action={{ label: t('common.clearFilters'), href: pathname }} />
     ) : (
       <EmptyState title={t('gaps.empty.title')} body={t('gaps.empty.body')} action={{ label: t('gaps.empty.action'), href: '/inventory' }} />
     );
@@ -241,16 +242,7 @@ function GapList({ params, meId, onPage }: { params: URLSearchParams; meId: stri
           </Row>
         ))}
       </Rows>
-      {total > PAGE ? (
-        <ButtonBar>
-          <Button variant="outline" size="small" disabled={page === 0} onClick={() => onPage(page - 1)}>
-            {t('gaps.pager.previous')}
-          </Button>
-          <Button variant="outline" size="small" disabled={(page + 1) * PAGE >= total} onClick={() => onPage(page + 1)}>
-            {t('gaps.pager.next')}
-          </Button>
-        </ButtonBar>
-      ) : null}
+      {total > PAGE ? <Pager offset={page * PAGE} limit={PAGE} shown={items.length} total={total} onOffset={(offset) => onPage(offset / PAGE)} /> : null}
     </>
   );
 }

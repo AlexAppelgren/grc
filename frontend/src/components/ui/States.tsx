@@ -1,6 +1,8 @@
 'use client';
 
+import type { UseQueryResult } from '@tanstack/react-query';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/Button';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -36,6 +38,17 @@ export function ErrorState({ title, onRetry }: { title: string; onRetry?: () => 
       ) : null}
     </div>
   );
+}
+
+/**
+ * One read's three states: loading while it is pending, the error with a
+ * retry when it failed, and its data to `children` once it is there (an
+ * empty answer included, which the caller words).
+ */
+export function QueryState<T>({ query, rows, errorTitle, children }: { query: UseQueryResult<T>; rows?: number; errorTitle: string; children: (data: T) => ReactNode }) {
+  if (query.isPending) return <LoadingState rows={rows} />;
+  if (query.isError) return <ErrorState title={errorTitle} onRetry={() => void query.refetch()} />;
+  return <>{children(query.data)}</>;
 }
 
 // 404 for an addressed record that is not there, which includes another
@@ -83,7 +96,7 @@ export function ProblemAlert({ error, codes = {}, className }: { error: unknown;
   );
 }
 
-export function StatusLine({ children, tone = 'muted' }: { children: React.ReactNode; tone?: 'muted' | 'positive' }) {
+export function StatusLine({ children, tone = 'muted' }: { children: ReactNode; tone?: 'muted' | 'positive' }) {
   return (
     <p role="status" className={tone === 'positive' ? 'mt-2.5 text-meta text-positive' : 'mt-2.5 text-meta text-muted'}>
       {children}

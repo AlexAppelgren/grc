@@ -425,7 +425,7 @@ function SimpleDecisionActions({ proposal }: { proposal: ProposalRow }) {
       {approve.isError ? <ProblemAlert error={approve.error} /> : null}
       <ButtonBar>
         <Button variant="danger" disabled={approve.isPending} onClick={() => setRejecting(true)}>
-          {t('console.queue.reject')}
+          {t('common.reject')}
         </Button>
         <Button disabled={approve.isPending} onClick={() => approve.mutate({ note: '' })}>
           {t('console.queue.approve')}

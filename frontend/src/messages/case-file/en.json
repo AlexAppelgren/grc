@@ -3,7 +3,6 @@
   "caseFile.intro": "The whole case as one text that stands alone, for an auditor or a file.",
   "caseFile.show": "Show case file",
   "caseFile.textLabel": "Case file text",
-  "caseFile.close": "Close",
   "caseFile.errorTitle": "Could not load the case file",
   "caseFile.export": "Export",
   "caseFile.exportPreparing": "Preparing the file…",

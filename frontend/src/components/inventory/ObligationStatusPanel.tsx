@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
 import { Facts, type Fact } from '@/components/inventory/ObligationPanels';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextArea, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
 import { useFormatContext } from '@/features/identity/hooks';
 import { isStaleWrite, usePeople, useRegisterEntry, useReloadRegister, useUpdateRegister, useUpdateRegisterEntity } from '@/features/register/hooks';
 import { presentCompliance, presentComplianceHeader } from '@/features/register/register-presentation';
@@ -167,7 +167,7 @@ export function ObligationStatusPanel({ obligationId }: { obligationId: string }
           setEditing(next);
         }}
       >
-        {t('obligationStatus.edit')}
+        {t('common.edit')}
       </Button>
     </ButtonBar>
   ) : null);
@@ -213,7 +213,7 @@ export function ObligationStatusPanel({ obligationId }: { obligationId: string }
             {edit({ kind: 'whole' })}
           </div>
         )}
-        {saved ? <StatusLine tone="positive">{t('obligationStatus.saved')}</StatusLine> : null}
+        {saved ? <StatusLine tone="positive">{t('common.saved')}</StatusLine> : null}
       </Panel>
       <Panel title={t('obligationStatus.handleHeading')} data-handle-panel="">
         <Facts facts={handled} />
@@ -256,8 +256,7 @@ function EditDialog({ obligationId, entry, editing, onClose }: { obligationId: s
   const row = editing.kind === 'entity' ? editing.entity : entry;
   const set = (field: keyof Values) => (event: { target: { value: string } }) => setValues({ ...values, [field]: event.target.value });
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     const body = changesOf(before, values, editing);
     if (Object.keys(body).length === 0) return onClose(false);
     const done = { onSuccess: () => onClose(true) };
@@ -276,132 +275,128 @@ function EditDialog({ obligationId, entry, editing, onClose }: { obligationId: s
   const owner = editing.kind === 'entity' ? editing.entity.owner : entry.firstLineOwner;
 
   return (
-    <Modal open onOpenChange={(stay) => (stay ? undefined : onClose(false))} title={title}>
-      <form onSubmit={submit} noValidate aria-busy={save.isPending}>
-        {standingForm ? (
-          <>
-            <Field id="status-value" label={t('obligationStatus.status')} hint={t('obligationStatus.statusHint')}>
-              <Select id="status-value" value={values.status} onChange={set('status')}>
-                {withCurrent<{ key: string; label: string }>(statuses.data ?? [], row.complianceStatus).map((status) => (
-                  <option key={status.key} value={status.key}>
-                    {status.label}
+    <FormDialog
+      title={title}
+      submitLabel={t('common.save')}
+      pending={save.isPending}
+      onSubmit={submit}
+      onClose={() => onClose(false)}
+    >
+      {standingForm ? (
+        <>
+          <Field id="status-value" label={t('obligationStatus.status')} hint={t('obligationStatus.statusHint')}>
+            <Select id="status-value" value={values.status} onChange={set('status')}>
+              {withCurrent<{ key: string; label: string }>(statuses.data ?? [], row.complianceStatus).map((status) => (
+                <option key={status.key} value={status.key}>
+                  {status.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field id="status-rationale" label={t('obligationStatus.rationale')}>
+            <TextArea id="status-rationale" value={values.rationale} maxLength={NOTE_MAX} onChange={set('rationale')} />
+          </Field>
+          <Field id="status-note" label={t('obligationStatus.statusNote')}>
+            <TextArea id="status-note" value={values.note} maxLength={NOTE_MAX} onChange={set('note')} />
+          </Field>
+          <Field id="status-risk" label={t('obligationStatus.risk')}>
+            <Select id="status-risk" value={values.risk} onChange={set('risk')}>
+              {before.risk === '' ? <option value="">{t('obligationStatus.notSet')}</option> : null}
+              {withCurrent<{ key: string; label: string }>(risks.data ?? [], row.riskRating).map((risk) => (
+                <option key={risk.key} value={risk.key}>
+                  {risk.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field
+            id="status-owner"
+            label={editing.kind === 'entity' ? t('obligationStatus.owner') : t('obligationStatus.firstLineOwner')}
+            hint={editing.kind === 'entity' ? t('obligationStatus.ownerHint') : undefined}
+          >
+            <Select id="status-owner" value={values.owner} onChange={set('owner')}>
+              {before.owner === '' ? <option value="">{t('obligationStatus.notSet')}</option> : null}
+              <optgroup label={t('obligationStatus.people')}>
+                {withCurrent(members, owner).map((person) => (
+                  <option key={person.id} value={`${PERSON}${person.id}`}>
+                    {person.name}
                   </option>
                 ))}
-              </Select>
-            </Field>
-            <Field id="status-rationale" label={t('obligationStatus.rationale')}>
-              <TextArea id="status-rationale" value={values.rationale} maxLength={NOTE_MAX} onChange={set('rationale')} />
-            </Field>
-            <Field id="status-note" label={t('obligationStatus.statusNote')}>
-              <TextArea id="status-note" value={values.note} maxLength={NOTE_MAX} onChange={set('note')} />
-            </Field>
-            <Field id="status-risk" label={t('obligationStatus.risk')}>
-              <Select id="status-risk" value={values.risk} onChange={set('risk')}>
-                {before.risk === '' ? <option value="">{t('obligationStatus.notSet')}</option> : null}
-                {withCurrent<{ key: string; label: string }>(risks.data ?? [], row.riskRating).map((risk) => (
-                  <option key={risk.key} value={risk.key}>
-                    {risk.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field
-              id="status-owner"
-              label={editing.kind === 'entity' ? t('obligationStatus.owner') : t('obligationStatus.firstLineOwner')}
-              hint={editing.kind === 'entity' ? t('obligationStatus.ownerHint') : undefined}
-            >
-              <Select id="status-owner" value={values.owner} onChange={set('owner')}>
-                {before.owner === '' ? <option value="">{t('obligationStatus.notSet')}</option> : null}
-                <optgroup label={t('obligationStatus.people')}>
-                  {withCurrent(members, owner).map((person) => (
-                    <option key={person.id} value={`${PERSON}${person.id}`}>
-                      {person.name}
+              </optgroup>
+              {editing.kind === 'entity' ? (
+                <optgroup label={t('obligationStatus.teams')}>
+                  {withCurrent<{ key: string; label: string }>(teamRows, editing.entity.ownerTeam).map((team) => (
+                    <option key={team.key} value={`${TEAM}${team.key}`}>
+                      {team.label}
                     </option>
                   ))}
                 </optgroup>
-                {editing.kind === 'entity' ? (
-                  <optgroup label={t('obligationStatus.teams')}>
-                    {withCurrent<{ key: string; label: string }>(teamRows, editing.entity.ownerTeam).map((team) => (
-                      <option key={team.key} value={`${TEAM}${team.key}`}>
-                        {team.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ) : null}
-              </Select>
-            </Field>
-            {editing.kind === 'whole' ? (
-              <>
-                <Field id="status-team" label={t('obligationStatus.ownerTeam')}>
-                  <Select id="status-team" value={values.team} onChange={set('team')}>
-                    {before.team === '' ? <option value="">{t('obligationStatus.notSet')}</option> : null}
-                    {withCurrent<{ key: string; label: string }>(teamRows, entry.ownerTeam).map((team) => (
-                      <option key={team.key} value={team.key}>
-                        {team.label}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field id="status-contact" label={t('obligationStatus.contact')}>
-                  <Select id="status-contact" value={values.contact} onChange={set('contact')}>
-                    {before.contact === '' ? <option value="">{t('obligationStatus.notSet')}</option> : null}
-                    {withCurrent(members, entry.complianceContact).map((person) => (
-                      <option key={person.id} value={person.id}>
-                        {person.name}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </>
-            ) : null}
-            <Field id="status-review" label={t('obligationStatus.nextReview')}>
-              <TextInput id="status-review" type="date" value={values.review} onChange={set('review')} />
-            </Field>
-          </>
-        ) : null}
-        {editing.kind === 'whole' ? null : (
-          <>
-            <Field id="status-process" label={t('obligationStatus.process')}>
-              <TextInput id="status-process" value={values.process} maxLength={NAME_MAX} onChange={set('process')} />
-            </Field>
-            <Field id="status-system" label={t('obligationStatus.system')}>
-              <TextInput id="status-system" value={values.system} maxLength={NAME_MAX} onChange={set('system')} />
-            </Field>
-            <Field id="status-evidence" label={t('obligationStatus.evidence')}>
-              <TextInput id="status-evidence" value={values.evidence} maxLength={NAME_MAX} onChange={set('evidence')} />
-            </Field>
-          </>
-        )}
-        {save.isError ? (
-          isStaleWrite(save.error) ? (
-            <div role="alert" className="mt-2.5 text-meta text-negative" data-stale-write="">
-              {t('obligationStatus.stale')}
-              <ButtonBar className="mt-2 justify-start">
-                <Button
-                  variant="outline"
-                  size="small"
-                  onClick={() => {
-                    void reload();
-                    onClose(false);
-                  }}
-                >
-                  {t('obligationStatus.reload')}
-                </Button>
-              </ButtonBar>
-            </div>
-          ) : (
-            <ProblemAlert error={save.error} />
-          )
-        ) : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={() => onClose(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={save.isPending}>
-            {t('common.save')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+              ) : null}
+            </Select>
+          </Field>
+          {editing.kind === 'whole' ? (
+            <>
+              <Field id="status-team" label={t('obligationStatus.ownerTeam')}>
+                <Select id="status-team" value={values.team} onChange={set('team')}>
+                  {before.team === '' ? <option value="">{t('obligationStatus.notSet')}</option> : null}
+                  {withCurrent<{ key: string; label: string }>(teamRows, entry.ownerTeam).map((team) => (
+                    <option key={team.key} value={team.key}>
+                      {team.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field id="status-contact" label={t('obligationStatus.contact')}>
+                <Select id="status-contact" value={values.contact} onChange={set('contact')}>
+                  {before.contact === '' ? <option value="">{t('obligationStatus.notSet')}</option> : null}
+                  {withCurrent(members, entry.complianceContact).map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {person.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </>
+          ) : null}
+          <Field id="status-review" label={t('obligationStatus.nextReview')}>
+            <TextInput id="status-review" type="date" value={values.review} onChange={set('review')} />
+          </Field>
+        </>
+      ) : null}
+      {editing.kind === 'whole' ? null : (
+        <>
+          <Field id="status-process" label={t('obligationStatus.process')}>
+            <TextInput id="status-process" value={values.process} maxLength={NAME_MAX} onChange={set('process')} />
+          </Field>
+          <Field id="status-system" label={t('obligationStatus.system')}>
+            <TextInput id="status-system" value={values.system} maxLength={NAME_MAX} onChange={set('system')} />
+          </Field>
+          <Field id="status-evidence" label={t('obligationStatus.evidence')}>
+            <TextInput id="status-evidence" value={values.evidence} maxLength={NAME_MAX} onChange={set('evidence')} />
+          </Field>
+        </>
+      )}
+      {save.isError ? (
+        isStaleWrite(save.error) ? (
+          <div role="alert" className="mt-2.5 text-meta text-negative" data-stale-write="">
+            {t('obligationStatus.stale')}
+            <ButtonBar className="mt-2 justify-start">
+              <Button
+                variant="outline"
+                size="small"
+                onClick={() => {
+                  void reload();
+                  onClose(false);
+                }}
+              >
+                {t('common.reload')}
+              </Button>
+            </ButtonBar>
+          </div>
+        ) : (
+          <ProblemAlert error={save.error} />
+        )
+      ) : null}
+    </FormDialog>
   );
 }

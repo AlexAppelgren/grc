@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
+import { Pager } from '@/components/ui/Pager';
 import { useFormatContext } from '@/features/identity/hooks';
 import { isStaleWrite, PANEL_PAGE, useAssessments, useInterpretation, useReloadRegister, useSaveInterpretation } from '@/features/register/hooks';
 import { presentCompliance } from '@/features/register/register-presentation';
@@ -60,7 +61,7 @@ function ReadingEditor({ obligationId, current, onOpenChange }: { obligationId: 
         <ButtonBar>
           {isStaleWrite(save.error) ? (
             <Button variant="outline" onClick={() => void reload().then(() => onOpenChange(false))}>
-              {t('obligationHistory.reload')}
+              {t('common.reload')}
             </Button>
           ) : (
             <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -175,17 +176,7 @@ function History({ obligationId }: { obligationId: string }) {
           <AssessmentRow key={assessment.id} assessment={assessment} />
         ))}
       </div>
-      {total > HISTORY_PAGE ? (
-        <ButtonBar className="justify-between">
-          <Button variant="ghost" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - HISTORY_PAGE))}>
-            {t('obligationHistory.newer')}
-          </Button>
-          <Meta>{t('obligationHistory.range', { from: offset + 1, to: offset + items.length, total })}</Meta>
-          <Button variant="ghost" size="small" disabled={offset + items.length >= total} onClick={() => setOffset(offset + HISTORY_PAGE)}>
-            {t('obligationHistory.older')}
-          </Button>
-        </ButtonBar>
-      ) : null}
+      {total > HISTORY_PAGE ? <Pager inTime offset={offset} limit={HISTORY_PAGE} shown={items.length} total={total} onOffset={setOffset} /> : null}
     </>
   );
 }

@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { Pill } from '@/components/ui/Pill';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
 import { downloadEvidence } from '@/features/cases/api';
 import { isDownloadable, presentScanState } from '@/features/cases/case-presentation';
 import { useAddEvidence, useCaseEvidence, useRemoveEvidence } from '@/features/cases/hooks';
@@ -105,7 +106,7 @@ function EvidenceRow({ evidence, canRemove, canDownload, onRemove, onDownload }:
       <div className="flex gap-2">
         {canRemove ? (
           <Button variant="ghost" size="small" onClick={onRemove}>
-            {t('caseEvidence.remove')}
+            {t('common.remove')}
           </Button>
         ) : null}
         {canDownload && isDownloadable(evidence) ? (
@@ -286,21 +287,17 @@ export function EvidencePanel({ change, workflow }: CasePanelProps) {
         </ButtonBar>
       ) : null}
       {canAttach ? <AttachDialog changeId={change.id} open={attaching} onClose={() => setAttaching(false)} onAttached={setAttached} /> : null}
-      <Modal
-        open={removing !== null}
-        onOpenChange={(open) => (open ? undefined : setRemoving(null))}
-        title={t('caseEvidence.removeTitle', { name: removing?.name ?? '' })}
-        description={t('caseEvidence.removeBody')}
-      >
-        <ButtonBar>
-          <Button variant="outline" onClick={() => setRemoving(null)}>
-            {t('common.cancel')}
-          </Button>
-          <Button variant="danger" disabled={remove.isPending} onClick={confirmRemove}>
-            {t('caseEvidence.remove')}
-          </Button>
-        </ButtonBar>
-      </Modal>
+      {removing !== null ? (
+        <ConfirmDialog
+          title={t('caseEvidence.removeTitle', { name: removing?.name ?? '' })}
+          body={t('caseEvidence.removeBody')}
+          action={t('common.remove')}
+          danger
+          busy={remove.isPending}
+          onConfirm={confirmRemove}
+          onClose={() => setRemoving(null)}
+        />
+      ) : null}
     </Panel>
   );
 }

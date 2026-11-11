@@ -38,10 +38,10 @@ export function ListPager({
       {perPage === 'all' ? null : (
         <>
           <Button variant="outline" size="small" disabled={page === 0} onClick={() => onPage(page - 1)}>
-            {t('inventory.pager.previous')}
+            {t('common.pager.previous')}
           </Button>
           <Button variant="outline" size="small" disabled={last} onClick={() => onPage(page + 1)}>
-            {t('inventory.pager.next')}
+            {t('common.pager.next')}
           </Button>
         </>
       )}

@@ -323,7 +323,7 @@ function BulkTagDialog({ rows, onClose, onDone }: { rows: readonly Obligation[];
               </Button>
             </>
           ) : shown.gained.count === 0 ? (
-            <Button onClick={onClose}>{t('inventory.bulk.close')}</Button>
+            <Button onClick={onClose}>{t('common.close')}</Button>
           ) : (
             <>
               <Button variant="ghost" onClick={back} disabled={commit.isPending}>

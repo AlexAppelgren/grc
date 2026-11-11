@@ -5,11 +5,11 @@ import { useRef, useState } from 'react';
 import { BackLink } from '@/components/admin/AdminGate';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextArea } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert } from '@/components/ui/States';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -103,35 +103,36 @@ function RejectDialog({ proposal, open, onClose, onRejected }: { proposal: Priva
   };
 
   return (
-    <Modal open={open} onOpenChange={(next) => (next ? undefined : close())} title={t('privateRecords.reject.title')}>
-      <Field id="private-reject-reason" label={t('privateRecords.reject.reason')}>
-        <Select id="private-reject-reason" value={reasonKey} aria-required="true" aria-invalid={tried && reasonKey === ''} onChange={(e) => setReasonKey(e.target.value)}>
-          <option value="">{t('privateRecords.reject.reasonPlaceholder')}</option>
-          {(reasons.data ?? []).map((reason) => (
-            <option key={reason.key} value={reason.key}>
-              {reason.label}
-            </option>
-          ))}
-        </Select>
-      </Field>
-      <Field
-        id="private-reject-note"
-        label={t('privateRecords.reject.note')}
-        hint={t('privateRecords.reject.hint')}
-        error={tried && missing ? t('privateRecords.reject.required') : undefined}
+    open ? (
+      <ConfirmDialog
+        title={t('privateRecords.reject.title')}
+        action={t('common.reject')}
+        danger
+        busy={reject.isPending}
+        error={reject.error}
+        onConfirm={submit}
+        onClose={close}
       >
-        <TextArea id="private-reject-note" aria-required="true" aria-invalid={tried && note.trim() === ''} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      {reject.isError ? <ProblemAlert error={reject.error} /> : null}
-      <ButtonBar>
-        <Button variant="outline" onClick={close} disabled={reject.isPending}>
-          {t('common.cancel')}
-        </Button>
-        <Button variant="danger" disabled={reject.isPending} onClick={submit}>
-          {t('privateRecords.reject')}
-        </Button>
-      </ButtonBar>
-    </Modal>
+        <Field id="private-reject-reason" label={t('privateRecords.reject.reason')}>
+          <Select id="private-reject-reason" value={reasonKey} aria-required="true" aria-invalid={tried && reasonKey === ''} onChange={(e) => setReasonKey(e.target.value)}>
+            <option value="">{t('privateRecords.reject.reasonPlaceholder')}</option>
+            {(reasons.data ?? []).map((reason) => (
+              <option key={reason.key} value={reason.key}>
+                {reason.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field
+          id="private-reject-note"
+          label={t('privateRecords.reject.note')}
+          hint={t('privateRecords.reject.hint')}
+          error={tried && missing ? t('privateRecords.reject.required') : undefined}
+        >
+          <TextArea id="private-reject-note" aria-required="true" aria-invalid={tried && note.trim() === ''} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} />
+        </Field>
+      </ConfirmDialog>
+    ) : null
   );
 }
 
@@ -176,29 +177,26 @@ function Decision({ proposal, onReload }: { proposal: PrivateProposalRow; onRelo
         <span className="text-meta text-muted">{t('privateRecords.approveHint')}</span>
         <ButtonBar className="mt-0">
           <Button variant="danger" disabled={approve.isPending} onClick={() => setRejecting(true)}>
-            {t('privateRecords.reject')}
+            {t('common.reject')}
           </Button>
           <Button disabled={approve.isPending} onClick={() => setConfirming(true)}>
-            {t('privateRecords.approve')}
+            {t('common.approve')}
           </Button>
         </ButtonBar>
       </div>
-      <Modal open={confirming} onOpenChange={setConfirming} title={t('privateRecords.approve.title', { title: proposal.title })} description={t('privateRecords.approve.body')}>
-        <ButtonBar>
-          <Button variant="outline" onClick={() => setConfirming(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            disabled={approve.isPending}
-            onClick={() => {
-              setConfirming(false);
-              approve.mutate({ note: '' }, { onSuccess: () => announce('approved') });
-            }}
-          >
-            {t('privateRecords.approve.submit')}
-          </Button>
-        </ButtonBar>
-      </Modal>
+      {confirming ? (
+        <ConfirmDialog
+          title={t('privateRecords.approve.title', { title: proposal.title })}
+          body={t('privateRecords.approve.body')}
+          action={t('privateRecords.approve.submit')}
+          busy={approve.isPending}
+          onConfirm={() => {
+                setConfirming(false);
+                approve.mutate({ note: '' }, { onSuccess: () => announce('approved') });
+              }}
+          onClose={() => setConfirming(false)}
+        />
+      ) : null}
       <RejectDialog
         proposal={proposal}
         open={rejecting}

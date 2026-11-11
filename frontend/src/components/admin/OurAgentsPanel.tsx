@@ -23,10 +23,10 @@ import { AgentRunsList } from '@/components/admin/AgentRunsList';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CheckGroup, CheckRow, Field, Select } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
 import { CADENCE_KEY, presentTenantAgentState } from '@/features/agents/agents-presentation';
 import {
   createTenantAgent,
@@ -75,8 +75,7 @@ export function scheduleBody(schedule: Schedule, terms: string[]): { cadence: Ag
     cadence: schedule.cadence,
     runWeekday: WEEKDAY_CADENCES.includes(schedule.cadence) ? schedule.runWeekday : null,
     runHour: schedule.cadence === 'manual' ? null : schedule.runHour,
-    scope: { jurisdictions: schedule.jurisdictions, terms },
-  };
+    scope: { jurisdictions: schedule.jurisdictions, terms } };
 }
 
 function ScheduleFields({ id, schedule, onChange }: { id: string; schedule: Schedule; onChange: (next: Schedule) => void }) {
@@ -174,8 +173,7 @@ function AgentCard({ agent, aiEnabled, capReached, platform }: { agent: TenantAg
       }
     },
     onMutate: () => setStatus(null),
-    onSuccess: invalidate,
-  });
+    onSuccess: invalidate });
 
   const name = bankAgentName(agent.agent, t);
   const what = bankAgentWhat(agent.agent, t);
@@ -198,9 +196,8 @@ function AgentCard({ agent, aiEnabled, capReached, platform }: { agent: TenantAg
       {
         onSuccess: () => {
           setEditing(false);
-          setStatus(t('adminAgents.saved'));
-        },
-      },
+          setStatus(t('common.saved'));
+        } },
     );
   };
 
@@ -294,7 +291,7 @@ function AgentCard({ agent, aiEnabled, capReached, platform }: { agent: TenantAg
                   {t('common.cancel')}
                 </Button>
                 <Button type="submit" size="small" disabled={act.isPending}>
-                  {t('adminAgents.save')}
+                  {t('common.save')}
                 </Button>
               </ButtonBar>
             </form>
@@ -320,17 +317,26 @@ function AddAgentModal({ open, onClose, taken, onAdded }: { open: boolean; onClo
       await queryClient.invalidateQueries({ queryKey: bankAgentKeys.list });
       onAdded(bankAgentName(agentKey, t));
       onClose();
-    },
-  });
+    } });
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     add.mutate();
   };
 
   return (
-    <Modal open={open} onOpenChange={(isOpen) => (isOpen ? undefined : onClose())} title={t('adminAgents.add.title')} description={t('adminAgents.add.note')}>
-      <form onSubmit={submit} noValidate aria-busy={add.isPending} data-add-agent-form="">
+    open ? (
+      <FormDialog
+        title={t('adminAgents.add.title')}
+        description={t('adminAgents.add.note')}
+        submitLabel={t('adminAgents.add.submit')}
+        pending={add.isPending}
+        submitDisabled={add.isPending || agentKey === ''}
+        error={add.error}
+        codes={refusals(t)}
+        onSubmit={submit}
+        onClose={onClose}
+        formProps={{ 'data-add-agent-form': '' }}
+      >
         <fieldset className="mb-3 grid gap-0 border-0 p-0">
           <legend className="mb-1 font-medium">{t('adminAgents.add.what')}</legend>
           {offered.map((key) => (
@@ -344,17 +350,8 @@ function AddAgentModal({ open, onClose, taken, onAdded }: { open: boolean; onClo
           ))}
         </fieldset>
         <ScheduleFields id="new-agent" schedule={schedule} onChange={setSchedule} />
-        {add.isError ? <ProblemAlert error={add.error} codes={refusals(t)} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose} disabled={add.isPending}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={add.isPending || agentKey === ''}>
-            {t('adminAgents.add.submit')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+      </FormDialog>
+    ) : null
   );
 }
 
@@ -383,22 +380,22 @@ export function OurAgentsPanel({ agents, aiEnabled }: { agents: UseQueryResult<T
         {items.length > 0 ? addButton : null}
       </div>
       {status === null ? null : <StatusLine tone="positive">{status}</StatusLine>}
-      {agents.isPending ? (
-        <LoadingState rows={2} />
-      ) : agents.isError ? (
-        <ErrorState title={t('adminAgents.our.errorTitle')} onRetry={() => void agents.refetch()} />
-      ) : items.length === 0 ? (
-        <>
-          <EmptyState title={t('adminAgents.our.emptyTitle')} body={t('adminAgents.our.emptyBody')} />
-          {addButton === null ? null : <div className="mt-3 flex justify-center">{addButton}</div>}
-        </>
-      ) : (
-        <Rows>
-          {items.map((agent) => (
-            <AgentCard key={agent.id} agent={agent} aiEnabled={aiEnabled} capReached={capReached} platform={platformKeys.has(agent.agent)} />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={agents} rows={2} errorTitle={t('adminAgents.our.errorTitle')}>
+        {() =>
+          items.length === 0 ? (
+            <>
+              <EmptyState title={t('adminAgents.our.emptyTitle')} body={t('adminAgents.our.emptyBody')} />
+              {addButton === null ? null : <div className="mt-3 flex justify-center">{addButton}</div>}
+            </>
+          ) : (
+            <Rows>
+              {items.map((agent) => (
+                <AgentCard key={agent.id} agent={agent} aiEnabled={aiEnabled} capReached={capReached} platform={platformKeys.has(agent.agent)} />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
       {adding ? <AddAgentModal open onClose={() => setAdding(false)} taken={taken} onAdded={(name) => setStatus(t('adminAgents.add.done', { name }))} /> : null}
     </Panel>
   );

@@ -9,7 +9,9 @@ import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
+import { SecretOnce } from '@/components/ui/SecretOnce';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
 import { presentCalendarFeed } from '@/features/calendar-feeds/calendar-feeds-presentation';
 import { useCalendarFeeds, useCreateCalendarFeed, useRevokeCalendarFeed } from '@/features/calendar-feeds/hooks';
 import type { CalendarFeed } from '@/features/calendar-feeds/types';
@@ -30,29 +32,11 @@ import { formatDateTime } from '@/shared/utils/format';
 
 function AddressDialog({ url, onDone }: { url: string; onDone: () => void }) {
   const t = useT();
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  };
   // Only Done ends the dialog: Escape or a click outside would drop the one
   // copy of the address and leave a live feed nobody saw.
   return (
     <Modal open onOpenChange={() => undefined} title={t('calendarFeeds.addressTitle')} description={t('calendarFeeds.addressBody')}>
-      <pre className="m-0 rounded-control border border-line bg-subtle p-3 font-mono break-all whitespace-pre-wrap" data-feed-address="">
-        {url}
-      </pre>
-      {copied ? <StatusLine tone="positive">{t('calendarFeeds.copied')}</StatusLine> : null}
-      <ButtonBar>
-        <Button variant="outline" onClick={onDone}>
-          {t('common.done')}
-        </Button>
-        <Button onClick={() => void copy()}>{t('calendarFeeds.copy')}</Button>
-      </ButtonBar>
+      <SecretOnce secret={url} copyLabel={t('calendarFeeds.copy')} address onDone={onDone} />
     </Modal>
   );
 }
@@ -80,21 +64,22 @@ function FeedRow({ feed }: { feed: CalendarFeed }) {
       {feed.revokedAt === null ? (
         <ButtonBar>
           <Button variant="danger" size="small" aria-label={t('calendarFeeds.revokeFeed', { date: created })} onClick={() => setConfirming(true)}>
-            {t('calendarFeeds.revoke')}
+            {t('common.revoke')}
           </Button>
         </ButtonBar>
       ) : null}
-      <Modal open={confirming} onOpenChange={(next) => (next ? undefined : close())} title={t('calendarFeeds.revokeTitle', { date: created })} description={t('calendarFeeds.revokeBody')}>
-        {revoke.isError ? <ProblemAlert error={revoke.error} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={close} disabled={revoke.isPending}>
-            {t('common.cancel')}
-          </Button>
-          <Button variant="danger" disabled={revoke.isPending} onClick={() => revoke.mutate(feed.id, { onSuccess: close })}>
-            {t('calendarFeeds.revoke')}
-          </Button>
-        </ButtonBar>
-      </Modal>
+      {confirming ? (
+        <ConfirmDialog
+          title={t('calendarFeeds.revokeTitle', { date: created })}
+          body={t('calendarFeeds.revokeBody')}
+          action={t('common.revoke')}
+          danger
+          busy={revoke.isPending}
+          error={revoke.error}
+          onConfirm={() => revoke.mutate(feed.id, { onSuccess: close })}
+          onClose={close}
+        />
+      ) : null}
     </Row>
   );
 }

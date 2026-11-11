@@ -65,8 +65,6 @@
   "adminAgents.stop.confirm": "Stop the run",
   "adminAgents.stop.done": "Stopped. The run shows as stopped under Recent runs.",
   "adminAgents.change": "Change when and what",
-  "adminAgents.save": "Save",
-  "adminAgents.saved": "Saved.",
   "adminAgents.schedule.day": "Run day",
   "adminAgents.schedule.monthlyDay": "Runs on the month's first",
   "adminAgents.schedule.hour": "Run hour",

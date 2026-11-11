@@ -129,11 +129,11 @@ function BatchRowCard({
         ) : (
           <ButtonBar className="mt-3">
             <Button variant="outline" size="small" onClick={() => setRejecting(true)}>
-              {t('console.batch.row.reject')}
+              {t('common.reject')}
             </Button>
             {row.stale === true ? null : (
               <Button size="small" onClick={() => onDraft({ decision: 'approved', rejectionCode: '' })}>
-                {t('console.batch.row.approve')}
+                {t('common.approve')}
               </Button>
             )}
           </ButtonBar>

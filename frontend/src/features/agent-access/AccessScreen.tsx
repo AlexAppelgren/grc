@@ -10,7 +10,7 @@ import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, StatusLine } from '@/components/ui/States';
+import { QueryState, StatusLine } from '@/components/ui/States';
 import { EntryDialog } from '@/features/agent-access/EntryDialog';
 import { useAccessEntries, useTenantReach } from '@/features/agent-access/hooks';
 import { credentialCounts, presentEntry, presentUnits } from '@/features/agent-access/presentation';
@@ -143,19 +143,19 @@ export function AccessScreen() {
           }}
         />
       ) : null}
-      {entries.isPending ? (
-        <LoadingState />
-      ) : entries.isError ? (
-        <ErrorState title={t('agentAccess.errorTitle')} onRetry={() => void entries.refetch()} />
-      ) : entries.data.items.length === 0 ? (
-        <EmptyState title={t('agentAccess.emptyTitle')} body={t('agentAccess.emptyBody')} />
-      ) : (
-        <Rows data-access-list="">
-          {entries.data.items.map((entry) => (
-            <EntryRow key={entry.id} entry={entry} orgReach={orgReach} />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={entries} errorTitle={t('agentAccess.errorTitle')}>
+        {(data) =>
+          data.items.length === 0 ? (
+            <EmptyState title={t('agentAccess.emptyTitle')} body={t('agentAccess.emptyBody')} />
+          ) : (
+            <Rows data-access-list="">
+              {data.items.map((entry) => (
+                <EntryRow key={entry.id} entry={entry} orgReach={orgReach} />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
       <p className="mt-2 text-meta text-muted">{t('agentAccess.registerHint')}</p>
     </>
   );

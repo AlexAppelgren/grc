@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
-import { Button, ButtonBar } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { CheckGroup, CheckRow, Field, Select, TextArea, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { ProblemAlert } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
 import { useOrgUnits, useProducts, useRegisterEntry, useUpdateEntry } from '@/features/agent-access/hooks';
 import { productsUnder, readsNothing, refusals } from '@/features/agent-access/presentation';
 import type { AccessEntry } from '@/features/agent-access/types';
@@ -77,8 +77,7 @@ export function EntryDialog({
     setDraft((current) => ({ ...current, [field]: value }));
   };
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     const name = draft.name.trim();
     const purpose = draft.purpose.trim();
     const refused: Missing[] = [...(name === '' ? ['name' as const] : []), ...(purpose === '' ? ['purpose' as const] : []), ...(draft.ownerTeam === '' ? ['ownerTeam' as const] : [])];
@@ -90,8 +89,15 @@ export function EntryDialog({
   };
 
   return (
-    <Modal open={open} onOpenChange={(next) => (next ? undefined : onClose())} title={entry === undefined ? t('agentAccess.dialog.registerTitle') : t('agentAccess.dialog.editTitle', { name: entry.name })}>
-      <form onSubmit={submit} noValidate aria-busy={save.isPending} data-entry-form="">
+    open ? (
+      <FormDialog
+        title={entry === undefined ? t('agentAccess.dialog.registerTitle') : t('agentAccess.dialog.editTitle', { name: entry.name })}
+        submitLabel={entry === undefined ? t('agentAccess.dialog.register') : t('common.save')}
+        pending={save.isPending}
+        onSubmit={submit}
+        onClose={onClose}
+        formProps={{ 'data-entry-form': '' }}
+      >
         {stale ? (
           <Notice tone="bad" data-stale="">
             {t('agentAccess.stale')}{' '}
@@ -151,16 +157,8 @@ export function EntryDialog({
         ) : null}
         {entry !== undefined ? <p className="text-meta text-muted">{t('agentAccess.dialog.editApplies')}</p> : null}
         {save.isError && !stale ? <ProblemAlert error={save.error} codes={refusals(t)} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose} disabled={save.isPending}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={save.isPending}>
-            {entry === undefined ? t('agentAccess.dialog.register') : t('agentAccess.dialog.save')}
-          </Button>
-        </ButtonBar>
         <p className="mt-2 text-meta text-muted">{entry === undefined ? t('agentAccess.registerHint') : t('agentAccess.dialog.saveHint')}</p>
-      </form>
-    </Modal>
+      </FormDialog>
+    ) : null
   );
 }

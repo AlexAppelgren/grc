@@ -6,7 +6,7 @@ import { GapForm } from '@/components/register/GapForm';
 import { GapRecord, GapSummary } from '@/components/register/GapsScreen';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Panel, Row, Rows } from '@/components/ui/Panel';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { QueryState } from '@/components/ui/States';
 import { GAPS_EDIT, REGISTER_READ } from '@/features/gaps/gap-view';
 import { useObligation } from '@/features/library/hooks';
 import { OBLIGATION_GAPS_PAGE, useObligationGaps } from '@/features/register/hooks';
@@ -32,24 +32,24 @@ function GapsPanelBody({ obligationId }: { obligationId: string }) {
 
   return (
     <Panel title={t('obligationGaps.heading')} data-gaps-panel="">
-      {gaps.isPending ? (
-        <LoadingState rows={1} />
-      ) : gaps.isError ? (
-        <ErrorState title={t('obligationGaps.errorTitle')} onRetry={() => void gaps.refetch()} />
-      ) : items.length === 0 ? (
-        <p className="text-meta text-muted" data-gaps-empty="">
-          {t('obligationGaps.none')}
-        </p>
-      ) : (
-        <Rows>
-          {items.map((gap) => (
-            <Row key={gap.id} data-gap={gap.id} data-gap-status={gap.status.kind ?? undefined}>
-              <GapSummary gap={gap} withObligation={false} expanded={open === gap.id} onToggle={() => setOpen(open === gap.id ? null : gap.id)} />
-              {open === gap.id ? <GapRecord gap={gap} withObligation={false} wide={false} /> : null}
-            </Row>
-          ))}
-        </Rows>
-      )}
+      <QueryState query={gaps} rows={1} errorTitle={t('obligationGaps.errorTitle')}>
+        {() =>
+          items.length === 0 ? (
+            <p className="text-meta text-muted" data-gaps-empty="">
+              {t('obligationGaps.none')}
+            </p>
+          ) : (
+            <Rows>
+              {items.map((gap) => (
+                <Row key={gap.id} data-gap={gap.id} data-gap-status={gap.status.kind ?? undefined}>
+                  <GapSummary gap={gap} withObligation={false} expanded={open === gap.id} onToggle={() => setOpen(open === gap.id ? null : gap.id)} />
+                  {open === gap.id ? <GapRecord gap={gap} withObligation={false} wide={false} /> : null}
+                </Row>
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
       {edits ? (
         <ButtonBar>
           <Button variant="ghost" size="small" onClick={() => setRecording(true)}>

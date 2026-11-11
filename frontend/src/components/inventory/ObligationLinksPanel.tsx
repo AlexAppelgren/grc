@@ -6,7 +6,8 @@ import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextInput } from '@/components/ui/Field';
 import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
-import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
+import { LoadingState, ProblemAlert, QueryState } from '@/components/ui/States';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
 import { useAddInternalLink, useInternalItems, useInternalLinks, useRemoveInternalLink } from '@/features/register/hooks';
 import type { RegisterInternalItemPage, RegisterInternalLink, RegisterInternalLinkBody } from '@/features/register/types';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
@@ -62,8 +63,7 @@ function LinkDialog({ obligationId, onOpenChange }: { obligationId: string; onOp
   const refusals = {
     already_linked: t('obligationLinks.alreadyLinked'),
     duplicate_key: t('obligationLinks.duplicate'),
-    unknown_key: t('obligationLinks.unknownKind'),
-  };
+    unknown_key: t('obligationLinks.unknownKind') };
   const ready = mode === 'pick' ? picked !== null : chosenKind !== '' && name.trim() !== '';
 
   return (
@@ -147,17 +147,15 @@ function RemoveDialog({ link, onOpenChange }: { link: RegisterInternalLink; onOp
   const t = useT();
   const remove = useRemoveInternalLink();
   return (
-    <Modal open onOpenChange={onOpenChange} title={t('obligationLinks.removeTitle', { name: link.label })} description={t('obligationLinks.removeBody')}>
-      {remove.isError ? <ProblemAlert error={remove.error} /> : null}
-      <ButtonBar>
-        <Button variant="outline" onClick={() => onOpenChange(false)}>
-          {t('common.cancel')}
-        </Button>
-        <Button disabled={remove.isPending} onClick={() => remove.mutate(link.id, { onSuccess: () => onOpenChange(false) })}>
-          {t('obligationLinks.removeConfirm')}
-        </Button>
-      </ButtonBar>
-    </Modal>
+    <ConfirmDialog
+      title={t('obligationLinks.removeTitle', { name: link.label })}
+      body={t('obligationLinks.removeBody')}
+      action={t('obligationLinks.removeConfirm')}
+      busy={remove.isPending}
+      error={remove.error}
+      onConfirm={() => remove.mutate(link.id, { onSuccess: () => onOpenChange(false) })}
+      onClose={() => onOpenChange(false)}
+    />
   );
 }
 
@@ -185,7 +183,7 @@ function LinkRow({ link, onRemove }: { link: RegisterInternalLink; onRemove: (()
       </h3>
       {onRemove === null ? null : (
         <Button variant="ghost" size="small" className="mt-2" onClick={onRemove}>
-          {t('obligationLinks.remove')}
+          {t('common.remove')}
         </Button>
       )}
     </Row>
@@ -203,24 +201,24 @@ export function ObligationLinksPanel({ obligationId }: { obligationId: string })
 
   return (
     <Panel title={t('obligationLinks.heading')} data-links-panel="">
-      {links.isPending ? (
-        <LoadingState rows={1} />
-      ) : links.isError ? (
-        <ErrorState title={t('obligationLinks.errorTitle')} onRetry={() => void links.refetch()} />
-      ) : items.length === 0 ? (
-        <p className="text-meta text-muted" data-links-empty="">
-          {t('obligationLinks.empty')}
-        </p>
-      ) : (
-        <>
-          <Rows>
-            {items.map((link) => (
-              <LinkRow key={link.id} link={link} onRemove={canEdit ? () => setRemoving(link) : null} />
-            ))}
-          </Rows>
-          {total > items.length ? <Meta className="mt-3">{t('obligationLinks.more', { shown: items.length, total })}</Meta> : null}
-        </>
-      )}
+      <QueryState query={links} rows={1} errorTitle={t('obligationLinks.errorTitle')}>
+        {() =>
+          items.length === 0 ? (
+            <p className="text-meta text-muted" data-links-empty="">
+              {t('obligationLinks.empty')}
+            </p>
+          ) : (
+            <>
+              <Rows>
+                {items.map((link) => (
+                  <LinkRow key={link.id} link={link} onRemove={canEdit ? () => setRemoving(link) : null} />
+                ))}
+              </Rows>
+              {total > items.length ? <Meta className="mt-3">{t('obligationLinks.more', { shown: items.length, total })}</Meta> : null}
+            </>
+          )
+        }
+      </QueryState>
       {canEdit ? (
         <ButtonBar>
           <Button size="small" onClick={() => setAdding(true)}>

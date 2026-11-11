@@ -4,7 +4,7 @@ import { BackLink } from '@/components/admin/AdminGate';
 import { SessionPolicyPanel } from '@/components/admin/SessionPolicyPanel';
 import { TenantReachPanel } from '@/components/admin/TenantReachPanel';
 import { PageHead } from '@/components/ui/PageHead';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { QueryState } from '@/components/ui/States';
 import { useSecurityPolicy } from '@/features/security-policy/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
@@ -19,13 +19,11 @@ export function SecurityPolicyScreen() {
     <>
       <BackLink href="/admin" label={t('admin.back')} />
       <PageHead title={t('admin.security.title')} lede={t('admin.security.lede')} />
-      {policy.isPending ? (
-        <LoadingState />
-      ) : policy.isError ? (
-        <ErrorState title={t('admin.security.errorTitle')} onRetry={() => void policy.refetch()} />
-      ) : (
-        <SessionPolicyPanel policy={policy.data} />
-      )}
+      <QueryState query={policy} errorTitle={t('admin.security.errorTitle')}>
+        {(data) => (
+          <SessionPolicyPanel policy={data} />
+        )}
+      </QueryState>
       {/* Tenant reach reads its own route, so it mounts beside the policy read, never after it. */}
       <TenantReachPanel />
     </>

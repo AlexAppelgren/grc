@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
 import { Notice } from '@/components/ui/Notice';
 import { Panel } from '@/components/ui/Panel';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
 import { useApproveReach, useRejectReach, useRequestReach, useSwitchOffReach, useTenantReach } from '@/features/agent-access/hooks';
 import type { TenantReach, TenantReachRequest } from '@/features/agent-access/types';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
@@ -134,16 +134,16 @@ function On({ reach, onDone }: { reach: TenantReach; onDone: (done: Done) => voi
         </Button>
       </ButtonBar>
       {confirming ? (
-        <Modal open onOpenChange={(next) => (next ? undefined : setConfirming(false))} title={t('agentAccess.tenantReach.offTitle')} description={t('agentAccess.tenantReach.offBody')}>
-          {off.isError ? <ProblemAlert error={off.error} codes={refusals(t)} /> : null}
-          <ButtonBar>
-            <Button variant="outline" disabled={off.isPending} onClick={() => setConfirming(false)}>
-              {t('agentAccess.tenantReach.keepOn')}
-            </Button>
-            <Button
-              variant="danger"
-              disabled={off.isPending}
-              onClick={() =>
+        <ConfirmDialog
+          title={t('agentAccess.tenantReach.offTitle')}
+          body={t('agentAccess.tenantReach.offBody')}
+          action={t('agentAccess.tenantReach.switchOff')}
+          cancelLabel={t('agentAccess.tenantReach.keepOn')}
+          danger
+          busy={off.isPending}
+          error={off.error}
+          codes={refusals(t)}
+          onConfirm={() =>
                 off.mutate(undefined, {
                   onSuccess: () => {
                     setConfirming(false);
@@ -151,12 +151,10 @@ function On({ reach, onDone }: { reach: TenantReach; onDone: (done: Done) => voi
                   },
                 })
               }
-            >
-              {t('agentAccess.tenantReach.switchOff')}
-            </Button>
-          </ButtonBar>
+          onClose={() => setConfirming(false)}
+        >
           <p className="mt-2 text-right text-meta text-muted">{t('agentAccess.tenantReach.offStepUp')}</p>
-        </Modal>
+        </ConfirmDialog>
       ) : null}
     </>
   );

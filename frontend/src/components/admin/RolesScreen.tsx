@@ -9,7 +9,7 @@ import { CheckGroup, CheckRow, Field, TextInput } from '@/components/ui/Field';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { useCreateRole, usePermissionsReference, useRetireRole, useRoles, useUpdateRole } from '@/features/tenant-admin/hooks';
 import { humaniseKey, presentPermissions, presentRole } from '@/features/tenant-admin/members-presentation';
 import type { PermissionRef, TenantRole } from '@/features/tenant-admin/types';
@@ -149,7 +149,7 @@ function RoleRow({ role, onEdit }: { role: TenantRole; onEdit: (editing: Editing
       <ButtonBar>
         {role.isSystem ? (
           <Button variant="outline" size="small" onClick={() => onEdit({ mode: 'rename', role })}>
-            {t('admin.roles.rename')}
+            {t('common.rename')}
           </Button>
         ) : confirming ? (
           <>
@@ -157,16 +157,16 @@ function RoleRow({ role, onEdit }: { role: TenantRole; onEdit: (editing: Editing
               {t('common.cancel')}
             </Button>
             <Button variant="danger" size="small" disabled={retire.isPending} onClick={() => retire.mutate(role.key, { onSettled: () => setConfirming(false) })}>
-              {t('admin.roles.retire')}
+              {t('common.retire')}
             </Button>
           </>
         ) : (
           <>
             <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
-              {t('admin.roles.retire')}
+              {t('common.retire')}
             </Button>
             <Button variant="outline" size="small" onClick={() => onEdit({ mode: 'edit', role })}>
-              {t('admin.roles.edit')}
+              {t('common.edit')}
             </Button>
           </>
         )}
@@ -185,19 +185,19 @@ export function RolesScreen() {
       <BackLink href="/admin" label={t('admin.back')} />
       <PageHead title={t('admin.roles.title')} lede={t('admin.roles.lede')} actions={<Button onClick={() => setEditing({ mode: 'create' })}>{t('admin.roles.create')}</Button>} />
       {editing !== null ? <RoleForm key={editing.mode === 'create' ? 'create' : `${editing.mode}:${editing.role.key}`} editing={editing} onClose={() => setEditing(null)} /> : null}
-      {roles.isPending ? (
-        <LoadingState rows={3} />
-      ) : roles.isError ? (
-        <ErrorState title={t('admin.roles.errorTitle')} onRetry={() => void roles.refetch()} />
-      ) : roles.data.length === 0 ? (
-        <EmptyState title={t('admin.roles.emptyTitle')} body={t('admin.roles.emptyBody')} />
-      ) : (
-        <Rows data-roles-list="">
-          {roles.data.map((role) => (
-            <RoleRow key={role.key} role={role} onEdit={setEditing} />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={roles} rows={3} errorTitle={t('admin.roles.errorTitle')}>
+        {(data) =>
+          data.length === 0 ? (
+            <EmptyState title={t('admin.roles.emptyTitle')} body={t('admin.roles.emptyBody')} />
+          ) : (
+            <Rows data-roles-list="">
+              {data.map((role) => (
+                <RoleRow key={role.key} role={role} onEdit={setEditing} />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
     </>
   );
 }

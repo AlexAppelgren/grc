@@ -108,7 +108,7 @@ export function DemoFrame() {
           >
             <Dialog.Title className="sr-only">{t('public.demo.label')}</Dialog.Title>
             <Bar onStartOver={startOver}>
-              <Dialog.Close className={BAR_BUTTON}>{t('public.demo.close')}</Dialog.Close>
+              <Dialog.Close className={BAR_BUTTON}>{t('common.close')}</Dialog.Close>
             </Bar>
             <Frame run={run} className="min-h-0 flex-1" />
           </Dialog.Content>

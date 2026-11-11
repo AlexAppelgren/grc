@@ -5,10 +5,10 @@ import { useState, type FormEvent } from 'react';
 import { Pill } from '@/components/ui/Pill';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { Notice } from '@/components/ui/Notice';
 import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
 import { daysLeftText, presentOverdue } from '@/features/cases/case-presentation';
 import { staleWriteOf, useAddAction, useCaseActions, useDeleteAction, useReloadCase, useUpdateAction } from '@/features/cases/hooks';
 import type { CaseAction, CaseCategory, CasePanelProps } from '@/features/cases/types';
@@ -155,7 +155,7 @@ function ActionRow({ action, today, canComplete, canRemove, busy, onDone, onRemo
       </div>
       {canRemove ? (
         <Button variant="ghost" size="small" onClick={onRemove}>
-          {t('caseActions.remove')}
+          {t('common.remove')}
         </Button>
       ) : null}
     </div>
@@ -222,21 +222,17 @@ export function ActionsPanel({ change, workflow }: CasePanelProps) {
     <Panel title={t('caseActions.heading')} data-case-panel="actions">
       {workflow.category === 'signoff' ? <Notice data-actions-locked="">{t('caseActions.locked')}</Notice> : null}
       {body}
-      <Modal
-        open={removing !== null}
-        onOpenChange={(open) => (open ? undefined : setRemoving(null))}
-        title={t('caseActions.removeTitle', { title: removing?.title ?? '' })}
-        description={t('caseActions.removeBody')}
-      >
-        <ButtonBar>
-          <Button variant="outline" onClick={() => setRemoving(null)}>
-            {t('common.cancel')}
-          </Button>
-          <Button variant="danger" disabled={remove.isPending} onClick={confirmRemove}>
-            {t('caseActions.remove')}
-          </Button>
-        </ButtonBar>
-      </Modal>
+      {removing !== null ? (
+        <ConfirmDialog
+          title={t('caseActions.removeTitle', { title: removing?.title ?? '' })}
+          body={t('caseActions.removeBody')}
+          action={t('common.remove')}
+          danger
+          busy={remove.isPending}
+          onConfirm={confirmRemove}
+          onClose={() => setRemoving(null)}
+        />
+      ) : null}
     </Panel>
   );
 }

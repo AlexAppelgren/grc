@@ -27,8 +27,6 @@
   "console.agentKeys.secretTitle": "Kopiera nyckeln nu",
   "console.agentKeys.secretBody": "Vi sparar bara en hash av den, så det här är sista gången den syns. Lägg den där agentkörningen förvarar sina hemligheter.",
   "console.agentKeys.copy": "Kopiera nyckeln",
-  "console.agentKeys.copied": "Kopierad.",
-  "console.agentKeys.revoke": "Återkalla",
   "console.agentKeys.revokeBody": "Agenten slutar fungera i samma stund, och en körning den har öppen misslyckas. Nyckeln ligger kvar i listan och i säkerhetsloggen; den kan inte slås på igen.",
   "console.agentKeys.revokeAction": "Återkalla nyckeln",
   "console.agentKeys.emptyTitle": "Inga agentnycklar",

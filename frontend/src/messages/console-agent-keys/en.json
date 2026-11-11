@@ -27,8 +27,6 @@
   "console.agentKeys.secretTitle": "Copy the key now",
   "console.agentKeys.secretBody": "We keep only a hash of it, so this is the last time it is on screen. Put it where the agent runner keeps its secrets.",
   "console.agentKeys.copy": "Copy the key",
-  "console.agentKeys.copied": "Copied.",
-  "console.agentKeys.revoke": "Revoke",
   "console.agentKeys.revokeBody": "The agent stops working the moment you do, and a run it has open will fail. The key stays in the list and in the security log; it cannot be turned back on.",
   "console.agentKeys.revokeAction": "Revoke the key",
   "console.agentKeys.emptyTitle": "No agent keys",

@@ -6,7 +6,7 @@ import { bankAgentKeys, bankAgentName } from '@/components/admin/admin-agents';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { QueryState } from '@/components/ui/States';
 import { presentResearchRequest } from '@/features/agents/agents-presentation';
 import { listResearchRequests } from '@/features/agents/api';
 import type { ResearchRequest, ResearchRequestState, TenantAgent } from '@/features/agents/types';
@@ -70,19 +70,19 @@ export function ResearchRequestList({ agents }: { agents: readonly TenantAgent[]
 
   return (
     <Panel title={t('adminAgents.research.listTitle')} data-research-list="">
-      {requests.isPending ? (
-        <LoadingState rows={1} />
-      ) : requests.isError ? (
-        <ErrorState title={t('adminAgents.research.errorTitle')} onRetry={() => void requests.refetch()} />
-      ) : requests.data.items.length === 0 ? (
-        <EmptyState title={t('adminAgents.research.emptyTitle')} body={t('adminAgents.research.emptyBody')} />
-      ) : (
-        <Rows>
-          {requests.data.items.map((request) => (
-            <RequestRow key={request.id} request={request} agents={agents} />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={requests} rows={1} errorTitle={t('adminAgents.research.errorTitle')}>
+        {(data) =>
+          data.items.length === 0 ? (
+            <EmptyState title={t('adminAgents.research.emptyTitle')} body={t('adminAgents.research.emptyBody')} />
+          ) : (
+            <Rows>
+              {data.items.map((request) => (
+                <RequestRow key={request.id} request={request} agents={agents} />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
     </Panel>
   );
 }

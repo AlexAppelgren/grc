@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { QueryState } from '@/components/ui/States';
 import { formatEuro, presentRunState, runMinutes } from '@/features/agents/agents-presentation';
 import { useRecentPlatformRuns } from '@/features/agents/hooks';
 import type { AgentRun } from '@/features/agents/types';
@@ -53,19 +53,19 @@ export function PlatformRunsPanel({ agentKey }: { agentKey: string }) {
 
   return (
     <Panel title={t('console.agents.runs.title')} data-platform-runs="">
-      {runs.isPending ? (
-        <LoadingState rows={3} />
-      ) : runs.isError ? (
-        <ErrorState title={t('console.agents.runs.errorTitle')} onRetry={() => void runs.refetch()} />
-      ) : mine.length === 0 ? (
-        <EmptyState title={t('console.agents.runs.emptyTitle')} body={t('console.agents.runs.emptyBody')} />
-      ) : (
-        <Rows>
-          {mine.map((run) => (
-            <RunRow key={run.id} run={run} />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={runs} rows={3} errorTitle={t('console.agents.runs.errorTitle')}>
+        {() =>
+          mine.length === 0 ? (
+            <EmptyState title={t('console.agents.runs.emptyTitle')} body={t('console.agents.runs.emptyBody')} />
+          ) : (
+            <Rows>
+              {mine.map((run) => (
+                <RunRow key={run.id} run={run} />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
       <p className="mt-3 text-meta">
         <Link href="/console/sources" className="font-semibold underline">
           {t('console.agents.runs.sources')}

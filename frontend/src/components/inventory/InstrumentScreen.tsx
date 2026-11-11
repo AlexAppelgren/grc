@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States';
+import { ErrorState, LoadingState, NotFoundScreen, QueryState } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { lineageDirectionOf } from '@/features/library/api';
 import { useInstrument, useObligations, useReportInstrumentProblem } from '@/features/library/hooks';
@@ -261,29 +261,29 @@ function ObligationsPanel({ instrument }: { instrument: InstrumentDetail }) {
       <div className="mb-3">
         <ScopeControl value={scope} onChange={setScope} />
       </div>
-      {obligations.isPending ? (
-        <LoadingState rows={2} />
-      ) : obligations.isError ? (
-        <ErrorState title={t('inventory.instrument.obligationsErrorTitle')} onRetry={() => void obligations.refetch()} />
-      ) : items.length === 0 ? (
-        <p className="text-meta text-muted">
-          {t(scope === 'all' ? 'inventory.instrument.obligationsEmpty' : scope === 'watched' ? 'library.empty.watched.title' : 'inventory.instrument.obligationsEmptyInScope')}
-        </p>
-      ) : (
-        <>
-          <div className="grid gap-2">
-            {items.map((obligation) => (
-              <ObligationRow key={obligation.id} obligation={obligation} watched={scope === 'watched'} />
-            ))}
-          </div>
-          <Meta className="mt-3">
-            <span data-obligations-total="">{t('inventory.count', { count: obligations.data?.total ?? items.length })}</span>
-            <Link href={inventory} prefetch={false} className="underline">
-              {t('inventory.instrument.obligationsInInventory')}
-            </Link>
-          </Meta>
-        </>
-      )}
+      <QueryState query={obligations} rows={2} errorTitle={t('inventory.instrument.obligationsErrorTitle')}>
+        {(data) =>
+          items.length === 0 ? (
+            <p className="text-meta text-muted">
+              {t(scope === 'all' ? 'inventory.instrument.obligationsEmpty' : scope === 'watched' ? 'library.empty.watched.title' : 'inventory.instrument.obligationsEmptyInScope')}
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-2">
+                {items.map((obligation) => (
+                  <ObligationRow key={obligation.id} obligation={obligation} watched={scope === 'watched'} />
+                ))}
+              </div>
+              <Meta className="mt-3">
+                <span data-obligations-total="">{t('inventory.count', { count: data?.total ?? items.length })}</span>
+                <Link href={inventory} prefetch={false} className="underline">
+                  {t('inventory.instrument.obligationsInInventory')}
+                </Link>
+              </Meta>
+            </>
+          )
+        }
+      </QueryState>
     </Panel>
   );
 }

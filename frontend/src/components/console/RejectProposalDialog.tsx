@@ -2,10 +2,8 @@
 
 import { useState } from 'react';
 
-import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextArea } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
-import { ProblemAlert } from '@/components/ui/States';
+import { ConfirmDialog } from '@/components/ui/Dialogs';
 import { useRejectProposal } from '@/features/proposals/hooks';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -35,33 +33,30 @@ export function RejectProposalDialog({ proposalId, open, onClose }: { proposalId
   const canSubmit = reasonKey !== '' && note.trim() !== '';
 
   return (
-    <Modal open={open} onOpenChange={(next) => (next ? undefined : close())} title={t('console.queue.rejectDialog.title')}>
-      <Field id="reject-reason" label={t('console.queue.rejectDialog.reason')}>
-        <Select id="reject-reason" value={reasonKey} onChange={(e) => setReasonKey(e.target.value)}>
-          <option value="">{t('console.queue.rejectDialog.reasonPlaceholder')}</option>
-          {(reasons.data ?? []).map((reason) => (
-            <option key={reason.key} value={reason.key}>
-              {reason.label}
-            </option>
-          ))}
-        </Select>
-      </Field>
-      <Field id="reject-note" label={t('console.queue.rejectDialog.note')} hint={t('console.queue.rejectDialog.hint')}>
-        <TextArea id="reject-note" placeholder={t('console.queue.rejectDialog.notePlaceholder')} value={note} onChange={(e) => setNote(e.target.value)} />
-      </Field>
-      {reject.isError ? <ProblemAlert error={reject.error} /> : null}
-      <ButtonBar>
-        <Button variant="outline" onClick={close} disabled={reject.isPending}>
-          {t('common.cancel')}
-        </Button>
-        <Button
-          variant="danger"
-          disabled={!canSubmit || reject.isPending}
-          onClick={() => reject.mutate({ rejectionCode: reasonKey, note: note.trim() }, { onSuccess: () => close() })}
-        >
-          {t('console.queue.rejectDialog.submit')}
-        </Button>
-      </ButtonBar>
-    </Modal>
+    open ? (
+      <ConfirmDialog
+        title={t('console.queue.rejectDialog.title')}
+        action={t('common.reject')}
+        danger
+        busy={!canSubmit || reject.isPending}
+        error={reject.error}
+        onConfirm={() => reject.mutate({ rejectionCode: reasonKey, note: note.trim() }, { onSuccess: () => close() })}
+        onClose={close}
+      >
+        <Field id="reject-reason" label={t('console.queue.rejectDialog.reason')}>
+          <Select id="reject-reason" value={reasonKey} onChange={(e) => setReasonKey(e.target.value)}>
+            <option value="">{t('console.queue.rejectDialog.reasonPlaceholder')}</option>
+            {(reasons.data ?? []).map((reason) => (
+              <option key={reason.key} value={reason.key}>
+                {reason.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field id="reject-note" label={t('console.queue.rejectDialog.note')} hint={t('console.queue.rejectDialog.hint')}>
+          <TextArea id="reject-note" placeholder={t('console.queue.rejectDialog.notePlaceholder')} value={note} onChange={(e) => setNote(e.target.value)} />
+        </Field>
+      </ConfirmDialog>
+    ) : null
   );
 }

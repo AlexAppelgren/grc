@@ -59,7 +59,6 @@
   "console.agents.changeNoteRequired": "Say what changed in this version.",
   "console.agents.publishAction": "Publish version {version}",
   "console.agents.publishedStatus": "Published. {name} runs version {version} from its next run.",
-  "console.agents.retire": "Retire",
   "console.agents.retireBody": "Retire version {version}? No run starts on it again. The runs it made keep naming it, and it stays in this list. Retiring asks for your passkey.",
   "console.agents.retireAction": "Retire version {version}",
   "console.agents.retiredStatus": "Retired version {version}. No run starts on it again.",

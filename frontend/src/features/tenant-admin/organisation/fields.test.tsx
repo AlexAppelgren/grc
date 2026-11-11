@@ -2,9 +2,11 @@ import { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { FormDialog } from '@/components/ui/Dialogs';
+import { createT } from '@/shared/i18n';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 
-import { DialogForm } from './fields';
+import { orgFormCodes } from './fields';
 
 // The dialog every organisation form sits in (TEN-02): it submits without the
 // browser's own validation, closes on Cancel and on Escape alike, and shows a
@@ -21,15 +23,23 @@ function renderDialog(props: { error?: unknown; formLevel?: boolean; pending?: b
   const onClose = vi.fn();
   render(
     <LocaleProvider locale="en">
-      <DialogForm title="Edit entity" error={props.error ?? null} formLevel={props.formLevel ?? false} pending={props.pending ?? false} onSubmit={onSubmit} onClose={onClose}>
+      <FormDialog
+        title="Edit entity"
+        submitLabel="Save"
+        error={props.formLevel === true ? props.error : undefined}
+        codes={orgFormCodes(createT('en'))}
+        pending={props.pending ?? false}
+        onSubmit={onSubmit}
+        onClose={onClose}
+      >
         <input aria-label="Name" defaultValue="Example Bank AB" />
-      </DialogForm>
+      </FormDialog>
     </LocaleProvider>,
   );
   return { onSubmit, onClose };
 }
 
-describe('DialogForm', () => {
+describe('an organisation form in FormDialog', () => {
   it('saves through its own submit and shows no alert while nothing was refused', () => {
     const { onSubmit, onClose } = renderDialog();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));

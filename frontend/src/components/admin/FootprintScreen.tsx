@@ -385,7 +385,7 @@ function ScopeItemRow({ line, removing, onToggleRemove }: { line: ScopeItemLine;
       </div>
       {removing !== null ? (
         <Button variant="ghost" size="small" onClick={onToggleRemove}>
-          {removing ? t('footprint.items.keep') : t('footprint.items.remove')}{' '}
+          {removing ? t('footprint.items.keep') : t('common.remove')}{' '}
           <span className="sr-only">{item.name}</span>
         </Button>
       ) : null}
@@ -638,11 +638,11 @@ function PendingBanner({
               </Button>
             ) : (
               <Button variant="outline" onClick={onReject}>
-                {t('footprint.banner.reject')}
+                {t('common.reject')}
               </Button>
             )}
             {/* The requester approves only as the bank's only approver (D-125). */}
-            {approver ? <Button onClick={onApprove}>{t('footprint.banner.approve')}</Button> : null}
+            {approver ? <Button onClick={onApprove}>{t('common.approve')}</Button> : null}
           </ButtonBar>
         ) : null}
       </Notice>
@@ -739,7 +739,7 @@ function RejectDialog({ request, reject, onClose, onDone }: { request: Footprint
             {t('common.cancel')}
           </Button>
           <Button type="submit" variant="danger" disabled={reject.isPending}>
-            {t('footprint.reject.button')}
+            {t('common.reject')}
           </Button>
         </ButtonBar>
       </form>
@@ -774,7 +774,7 @@ function History({ requests, more, loadingMore, onMore }: { requests: readonly F
       )}
       {more ? (
         <Button variant="outline" size="small" className="mt-3" disabled={loadingMore} onClick={onMore}>
-          {t('footprint.history.showMore')}
+          {t('common.showMore')}
         </Button>
       ) : null}
     </Panel>

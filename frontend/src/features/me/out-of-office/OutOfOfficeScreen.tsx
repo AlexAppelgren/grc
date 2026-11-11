@@ -6,7 +6,7 @@ import { Button, ButtonBar } from '@/components/ui/Button';
 import { controlClass, Field } from '@/components/ui/Field';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel } from '@/components/ui/Panel';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';
@@ -240,18 +240,18 @@ export function OutOfOfficeScreen() {
   return (
     <>
       <PageHead title={t('me.outOfOffice.title')} lede={t('me.outOfOffice.lede')} />
-      {absence.isPending ? (
-        <LoadingState />
-      ) : absence.isError ? (
-        <ErrorState title={t('me.outOfOffice.errorTitle')} onRetry={() => void absence.refetch()} />
-      ) : absence.data.away ? (
-        <AwayPanel absence={absence.data} onEnded={() => setBack(true)} />
-      ) : (
-        <>
-          {back ? <StatusLine tone="positive">{t('me.outOfOffice.back')}</StatusLine> : null}
-          <SetForm selfId={me?.user.id} onAlreadyAway={() => void absence.refetch()} />
-        </>
-      )}
+      <QueryState query={absence} errorTitle={t('me.outOfOffice.errorTitle')}>
+        {(data) =>
+          data.away ? (
+            <AwayPanel absence={data} onEnded={() => setBack(true)} />
+          ) : (
+            <>
+              {back ? <StatusLine tone="positive">{t('me.outOfOffice.back')}</StatusLine> : null}
+              <SetForm selfId={me?.user.id} onAlreadyAway={() => void absence.refetch()} />
+            </>
+          )
+        }
+      </QueryState>
     </>
   );
 }

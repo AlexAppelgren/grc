@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
-import { Button, ButtonBar } from '@/components/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { Field, Select, TextArea } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { languageName } from '@/features/library/version-presentation';
 import { useCloseProblemReport, useRecordProblemReports } from '@/features/problem-reports/hooks';
@@ -40,37 +40,35 @@ function CloseReportModal({ report, onOpenChange }: { report: ProblemReport; onO
   const [note, setNote] = useState('');
   const close = useCloseProblemReport(report.id);
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     close.mutate({ status, resolutionNote: note.trim() }, { onSuccess: () => onOpenChange(false) });
   };
 
   return (
-    <Modal open onOpenChange={onOpenChange} title={t('inventory.reports.closeTitle')}>
-      <form onSubmit={submit} noValidate aria-busy={close.isPending} data-close-report={report.id}>
-        <Field id="close-report-status" label={t('inventory.reports.closeOutcome')}>
-          <Select id="close-report-status" value={status} onChange={(event) => setStatus(event.target.value as ProblemReportClosingStatus)}>
-            {CLOSING_STATUSES.map((option) => (
-              <option key={option} value={option}>
-                {t(OPTION_LABEL[option])}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field id="close-report-note" label={t('inventory.reports.closeNote')} hint={t('inventory.reports.closeNoteHint')}>
-          <TextArea id="close-report-note" value={note} onChange={(event) => setNote(event.target.value)} />
-        </Field>
-        {close.isError ? <ProblemAlert error={close.error} codes={{ already_closed: t('inventory.reports.alreadyClosed') }} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={note.trim() === '' || close.isPending || problemStatus(close.error) === 409}>
-            {t('inventory.reports.closeSend')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+    <FormDialog
+      title={t('inventory.reports.closeTitle')}
+      submitLabel={t('inventory.reports.closeSend')}
+      pending={close.isPending}
+      submitDisabled={note.trim() === '' || close.isPending || problemStatus(close.error) === 409}
+      error={close.error}
+      codes={{ already_closed: t('inventory.reports.alreadyClosed') }}
+      onSubmit={submit}
+      onClose={() => onOpenChange(false)}
+      formProps={{ 'data-close-report': report.id }}
+    >
+      <Field id="close-report-status" label={t('inventory.reports.closeOutcome')}>
+        <Select id="close-report-status" value={status} onChange={(event) => setStatus(event.target.value as ProblemReportClosingStatus)}>
+          {CLOSING_STATUSES.map((option) => (
+            <option key={option} value={option}>
+              {t(OPTION_LABEL[option])}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <Field id="close-report-note" label={t('inventory.reports.closeNote')} hint={t('inventory.reports.closeNoteHint')}>
+        <TextArea id="close-report-note" value={note} onChange={(event) => setNote(event.target.value)} />
+      </Field>
+    </FormDialog>
   );
 }
 

@@ -143,7 +143,7 @@ export function MyWorkScreen() {
         })}
         {query.hasNextPage ? (
           <Button variant="outline" size="small" className="mb-6" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
-            {t('work.showMore')}
+            {t('common.showMore')}
           </Button>
         ) : null}
         <div className="mb-6 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2 rounded-control bg-subtle px-3 py-2.5" data-decide-line="">

@@ -6,7 +6,7 @@ import { bankAgentKeys } from '@/components/admin/admin-agents';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { QueryState } from '@/components/ui/States';
 import { CADENCE_KEY, definitionName, presentJurisdictions, presentRunState } from '@/features/agents/agents-presentation';
 import { listPlatformWatch, MAX_PAGE } from '@/features/agents/api';
 import type { PlatformWatchItem } from '@/features/agents/types';
@@ -92,19 +92,19 @@ export function PlatformWatchPanel() {
   return (
     <Panel title={t('adminAgents.watch.title')} data-platform-watch="">
       <p className="-mt-1.5 mb-3 text-meta text-muted">{t('adminAgents.watch.lede')}</p>
-      {watch.isPending ? (
-        <LoadingState rows={2} />
-      ) : watch.isError ? (
-        <ErrorState title={t('adminAgents.watch.errorTitle')} onRetry={() => void watch.refetch()} />
-      ) : watch.data.items.length === 0 ? (
-        <EmptyState title={t('adminAgents.watch.emptyTitle')} body={t('adminAgents.watch.emptyBody')} />
-      ) : (
-        <Rows>
-          {watch.data.items.map((item) => (
-            <WatchRow key={item.key} item={item} />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={watch} rows={2} errorTitle={t('adminAgents.watch.errorTitle')}>
+        {(data) =>
+          data.items.length === 0 ? (
+            <EmptyState title={t('adminAgents.watch.emptyTitle')} body={t('adminAgents.watch.emptyBody')} />
+          ) : (
+            <Rows>
+              {data.items.map((item) => (
+                <WatchRow key={item.key} item={item} />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
     </Panel>
   );
 }

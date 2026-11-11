@@ -11,6 +11,7 @@ import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
+import { Pager } from '@/components/ui/Pager';
 import { AI_PURPOSES, AI_REVIEW_STATES, keepsAiLabel, presentAiGeneration, purposeLabel, reviewLabel } from '@/features/governance/ai-log-presentation';
 import { subjectTypeLabel } from '@/features/governance/audit-presentation';
 import { AI_LOG_PAGE, useAiGenerations } from '@/features/governance/hooks';
@@ -121,17 +122,7 @@ export function AiLogScreen() {
               <AiRow key={row.id} row={row} onRecord={on(setRecord)} />
             ))}
           </Panel>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-meta text-muted">
-            <span>{t('admin.aiLog.range', { from: offset + 1, to: Math.min(offset + log.data.items.length, log.data.total), total: log.data.total })}</span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - AI_LOG_PAGE))}>
-                {t('admin.aiLog.newer')}
-              </Button>
-              <Button variant="outline" size="small" disabled={offset + AI_LOG_PAGE >= log.data.total} onClick={() => setOffset(offset + AI_LOG_PAGE)}>
-                {t('admin.aiLog.older')}
-              </Button>
-            </div>
-          </div>
+          <Pager inTime offset={offset} limit={AI_LOG_PAGE} shown={log.data.items.length} total={log.data.total} onOffset={setOffset} />
         </>
       )}
     </>

@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert } from '@/components/ui/States';
+import { ProblemAlert, QueryState } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { cn } from '@/shared/utils/cn';
@@ -35,8 +35,7 @@ import type { Notification } from './types';
 // kind without a screen, lists its title without a link.
 const RECORD_PATH: Readonly<Record<string, string>> = {
   obligation: '/inventory/obligations/',
-  change: '/watch/',
-};
+  change: '/watch/' };
 
 export function notificationHref(notification: Pick<Notification, 'subjectType' | 'subjectId'>): string | null {
   const base = Object.hasOwn(RECORD_PATH, notification.subjectType) ? RECORD_PATH[notification.subjectType] : undefined;
@@ -110,28 +109,28 @@ export function NotificationsScreen() {
         }
       />
       {markAll.isError ? <ProblemAlert error={markAll.error} className="mb-3 text-meta text-negative" /> : null}
-      {inbox.isPending ? (
-        <LoadingState rows={3} />
-      ) : inbox.isError ? (
-        <ErrorState title={t('collab.notifications.errorTitle')} onRetry={() => void inbox.refetch()} />
-      ) : rows.length === 0 ? (
-        <EmptyState title={t('collab.notifications.emptyTitle')} body={t('collab.notifications.emptyBody')} />
-      ) : (
-        <>
-          <ul className="m-0 grid list-none gap-2 p-0" data-notifications-list="">
-            {rows.map((notification) => (
-              <NotificationRow key={notification.id} notification={notification} now={now} />
-            ))}
-          </ul>
-          {inbox.hasNextPage ? (
-            <div className="mt-4 flex justify-center">
-              <Button variant="outline" size="small" disabled={inbox.isFetchingNextPage} onClick={() => void inbox.fetchNextPage()}>
-                {t('collab.notifications.showMore')}
-              </Button>
-            </div>
-          ) : null}
-        </>
-      )}
+      <QueryState query={inbox} rows={3} errorTitle={t('collab.notifications.errorTitle')}>
+        {() =>
+          rows.length === 0 ? (
+            <EmptyState title={t('collab.notifications.emptyTitle')} body={t('collab.notifications.emptyBody')} />
+          ) : (
+            <>
+              <ul className="m-0 grid list-none gap-2 p-0" data-notifications-list="">
+                {rows.map((notification) => (
+                  <NotificationRow key={notification.id} notification={notification} now={now} />
+                ))}
+              </ul>
+              {inbox.hasNextPage ? (
+                <div className="mt-4 flex justify-center">
+                  <Button variant="outline" size="small" disabled={inbox.isFetchingNextPage} onClick={() => void inbox.fetchNextPage()}>
+                    {t('common.showMore')}
+                  </Button>
+                </div>
+              ) : null}
+            </>
+          )
+        }
+      </QueryState>
       <NotificationPreferences />
     </>
   );

@@ -73,7 +73,7 @@ function RolesForm({ member, update }: { member: Member; update: ReturnType<type
             ))}
         </CheckGroup>
         {update.isError ? <ProblemAlert error={update.error} codes={{ last_admin: t('admin.members.lastAdmin'), step_up_required: t('problem.stepUpCancelled') }} /> : null}
-        {update.isSuccess ? <StatusLine tone="positive">{t('admin.members.saved')}</StatusLine> : null}
+        {update.isSuccess ? <StatusLine tone="positive">{t('common.saved')}</StatusLine> : null}
         <ButtonBar>
           <Button type="submit" disabled={update.isPending}>
             {t('common.save')}

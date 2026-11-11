@@ -272,7 +272,7 @@ function SetFilters({ chips, onClear }: { chips: { filter: string; value: string
         <SetFilterChip key={chip.filter} {...chip} />
       ))}
       <button type="button" onClick={onClear} className="px-1 text-meta text-muted underline underline-offset-[3px] hover:text-fg">
-        {t('inventory.filters.clear')}
+        {t('common.clearFilters')}
       </button>
     </>
   );

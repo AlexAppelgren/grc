@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Select } from '@/components/ui/Field';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, StatusLine } from '@/components/ui/States';
+import { QueryState, StatusLine } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useReportObligationProblem } from '@/features/library/hooks';
 import { useLibraryUpdates, useMarkVisited } from '@/features/library-updates/hooks';
@@ -118,30 +118,30 @@ export function LibraryUpdatesScreen() {
         </Chip>
       </ChipRow>
 
-      {updates.isPending ? (
-        <LoadingState rows={3} />
-      ) : updates.isError ? (
-        <ErrorState title={t('library.updates.errorTitle')} onRetry={() => void updates.refetch()} />
-      ) : days.length === 0 ? (
-        <EmptyState
-          title={t('library.updates.empty.title', { date: formatDate(updates.data.since, ctx) })}
-          body={t('library.updates.empty.body')}
-          action={{ label: t('library.updates.empty.browseInventory'), href: '/inventory' }}
-        />
-      ) : (
-        <div className="grid gap-4" data-update-days="">
-          {days.map((day) => (
-            <div key={day.date}>
-              <h2 className="mb-2 text-meta text-muted">{formatLongDate(day.date, ctx)}</h2>
-              <div className="grid gap-2">
-                {day.items.map((row) => (
-                  <UpdateRow key={row.id} row={row} canReport={permissions.includes(REPORT_PERMISSION)} onReport={setReporting} />
-                ))}
-              </div>
+      <QueryState query={updates} rows={3} errorTitle={t('library.updates.errorTitle')}>
+        {(data) =>
+          days.length === 0 ? (
+            <EmptyState
+              title={t('library.updates.empty.title', { date: formatDate(data.since, ctx) })}
+              body={t('library.updates.empty.body')}
+              action={{ label: t('library.updates.empty.browseInventory'), href: '/inventory' }}
+            />
+          ) : (
+            <div className="grid gap-4" data-update-days="">
+              {days.map((day) => (
+                <div key={day.date}>
+                  <h2 className="mb-2 text-meta text-muted">{formatLongDate(day.date, ctx)}</h2>
+                  <div className="grid gap-2">
+                    {day.items.map((row) => (
+                      <UpdateRow key={row.id} row={row} canReport={permissions.includes(REPORT_PERMISSION)} onReport={setReporting} />
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )
+        }
+      </QueryState>
 
       <ReportProblemModal
         open={reporting !== null}

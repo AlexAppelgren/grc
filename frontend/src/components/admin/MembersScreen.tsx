@@ -68,7 +68,7 @@ function InvitationRow({ invitation }: { invitation: Invitation }) {
       {open ? (
         <ButtonBar>
           <Button variant="outline" size="small" disabled={revoke.isPending} onClick={() => revoke.mutate(invitation.id)}>
-            {t('admin.members.revoke')}
+            {t('common.revoke')}
           </Button>
           <Button size="small" disabled={resend.isPending} onClick={() => resend.mutate(invitation.id)}>
             {t('admin.members.resend')}

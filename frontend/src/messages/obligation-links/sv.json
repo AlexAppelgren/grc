@@ -4,7 +4,6 @@
   "obligationLinks.errorTitle": "Länkade interna underlag kunde inte hämtas",
   "obligationLinks.more": "Visar {shown} av {total}.",
   "obligationLinks.add": "Länka ett underlag",
-  "obligationLinks.remove": "Ta bort",
   "obligationLinks.pickTitle": "Länka ett internt underlag",
   "obligationLinks.createTitle": "Skapa och länka ett underlag",
   "obligationLinks.find": "Hitta ett underlag",
