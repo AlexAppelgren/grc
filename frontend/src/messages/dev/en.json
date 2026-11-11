@@ -23,9 +23,5 @@
   "dev.pills.agents": "Our agents and their runs",
   "dev.pills.agentAccess": "Agent access",
   "dev.pills.supportAccess": "Support access",
-  "dev.pills.ownRecords": "Our own records",
-  "dev.spike.title": "Green Core spike (D-04)",
-  "dev.spike.lede": "One Green Core React component under next start. The count proves hydration.",
-  "dev.spike.button": "Count clicks",
-  "dev.spike.count": "{count, plural, =0 {Not clicked yet} one {Clicked # time} other {Clicked # times}}"
+  "dev.pills.ownRecords": "Our own records"
 }

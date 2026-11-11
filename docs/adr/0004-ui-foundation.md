@@ -48,6 +48,10 @@ notes in `frontend/docs/D-04-spike.md`.
   only (date picker, dropdown, dialog), each added here with its check.
 - **Regression check:** the spike route and its test stay until a real Green
   component ships with its own journey.
+- **Removed 2026-11-11** (simplification review, B-16): no screen adopted a
+  Green Core component, so the route, its test and the `@sebgroup/green-core`
+  dependency went. A Green component added later brings the dependency back
+  with its own journey, which proves the same condition.
 
 The owner confirms the default after reading this section.
 

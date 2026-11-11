@@ -51,7 +51,8 @@ class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0,
 @fontsource-variable/hanken-grotesk 5.3.0,
 @fontsource-variable/noto-sans-mono 5.3.0. (Amended 2026-11-11: the Radix
 select, popover, tabs, checkbox and switch pins were removed, because no
-screen imports them.)
+screen imports them, and so was @sebgroup/green-core with the D-04 spike,
+its only importer; the Green MCP server still fetches it with `npx`.)
 
 **Infrastructure.** `pgvector/pgvector:pg16`, `redis:7-alpine`.
 

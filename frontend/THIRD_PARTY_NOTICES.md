@@ -11,7 +11,6 @@ The user interface is built on the SEB Green Design System. The following
 packages are licensed under the Apache License, Version 2.0:
 
 - `@sebgroup/green-tokens` — design tokens (colour, spacing, typography)
-- `@sebgroup/green-core` — web components
 
 Copyright Skandinaviska Enskilda Banken AB (publ). Licensed under the Apache
 License, Version 2.0 (the "License"); you may not use these files except in

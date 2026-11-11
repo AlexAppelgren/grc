@@ -23,9 +23,5 @@
   "dev.pills.agents": "Våra agenter och deras körningar",
   "dev.pills.agentAccess": "Agentåtkomst",
   "dev.pills.supportAccess": "Supportåtkomst",
-  "dev.pills.ownRecords": "Våra egna poster",
-  "dev.spike.title": "Green Core-spike (D-04)",
-  "dev.spike.lede": "En Green Core React-komponent under next start. Räknaren bevisar hydrering.",
-  "dev.spike.button": "Räkna klick",
-  "dev.spike.count": "{count, plural, =0 {Inte klickad ännu} one {Klickad # gång} other {Klickad # gånger}}"
+  "dev.pills.ownRecords": "Våra egna poster"
 }
