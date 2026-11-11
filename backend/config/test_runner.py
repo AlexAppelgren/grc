@@ -1,18 +1,12 @@
 """The suite's runner: Django's own, able to run one shard of the suite (CI, D-90).
 
-CI splits the backend suite across parallel jobs so a push is answered in minutes, not a
-quarter of an hour. With `TEST_SHARD=i/N` set, the runner discovers the whole suite as
-usual, deals every test module to exactly one of N shards and runs the modules dealt to
-shard i. Because the deal is made from the modules Django itself discovered, the N shards
-together are always the whole suite; `TEST_SHARD_REPORT` names a file where the shard
-writes what it found and what it kept, and `scripts/test_shards_check.py` fails the build
-unless the reports of all N shards add up to everything discovered, each module once.
-Unset, the runner is Django's, unchanged, which is how `prepush.sh` and a laptop run it.
+With `TEST_SHARD=i/N`, the runner discovers the whole suite, deals every test module to
+exactly one of N shards and runs shard i; `TEST_SHARD_REPORT` names a file where the shard
+writes what it found and kept, and `scripts/test_shards_check.py` fails the build unless the
+N reports cover everything discovered, each module once. Unset, it is Django's runner.
 
-Modules are dealt heaviest first to the lightest shard (longest processing time first),
-weighed by their measured seconds in `scripts/test_module_seconds.json`. A module not
-measured yet weighs the median, so a new test file lands somewhere sensible until the
-weights are measured again.
+Modules are dealt heaviest first to the lightest shard, weighed by
+`scripts/test_module_seconds.json`; an unmeasured module weighs the median.
 """
 
 from __future__ import annotations

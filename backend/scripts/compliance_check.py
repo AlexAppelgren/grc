@@ -56,17 +56,6 @@ Rules (each has a suppression id for the inline form `# compliance: <id> <reason
 Suppression: append `# compliance: <id> <reason>` to the offending line, or the line that
 opens the offending statement; the reason must be non-empty. A suppression with no reason
 is itself a finding.
-
-Proven to fail 2026-09-19 by adding `models.JSONField()` without a schema comment to
-apps/home/models.py (exit 1, one finding named), then restored. maintenance-hatch proven
-to fail 2026-09-19 by adding `SET LOCAL cw.maintenance = 'on'` to apps/library/logic.py
-(exit 1, one finding named), then restored. library-door proven to fail 2026-09-23 by adding
-`with tenancy.library_door("proposal"):` to apps/watch/curation.py (exit 1, one finding
-named), then restored. record-content proven to fail 2026-09-25 by adding
-`after={"body": "x"}` to the record() of apps/taxonomy/tenant_lists_logic.py's restore()
-(exit 1, one finding named), then restored. audit-door proven to fail 2026-09-28 by adding
-`AuditEvent.objects.create(action="x")` to apps/cases/logic.py (exit 1, one finding named),
-then restored.
 """
 
 from __future__ import annotations
@@ -98,7 +87,7 @@ HTTP_METHODS = {"get", "post", "put", "patch", "delete", "api_operation"}
 SUPPRESSION = re.compile(r"#\s*compliance:\s*(?P<id>[a-z-]+)(?P<reason>.*)$")
 # Case-insensitive, across white space and through quotes: PostgreSQL folds a setting name
 # and accepts the quoted spelling, so `SET LOCAL CW.MAINTENANCE`, `cw . maintenance` and
-# `"CW"."MAINTENANCE"` are all the same hatch (H12, then the H-B review).
+# `"CW"."MAINTENANCE"` are all the same hatch (H12).
 MAINTENANCE_HATCH = re.compile(r'"?cw"?\s*\.\s*"?maintenance"?|maintenance_setting', re.IGNORECASE)
 HATCH_HOME = "apps/shared/migration_helpers.py"
 # The library door (H16, ADR 0058): the setting, its constant and the context manager that

@@ -25,7 +25,7 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# ---- Environment helpers. Booleans accept 1/true/yes/on, case-insensitively. -----------
+# --- Environment helpers. Booleans accept 1/true/yes/on, case-insensitively. ---
 def env_str(name: str, default: str = "") -> str:
     return os.environ.get(name, default)
 
@@ -81,7 +81,7 @@ def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
-# ---- Environment detection (playbook 11.1) ---------------------------------------------
+# --- Environment detection (playbook 11.1) ---
 # Deny by default: deployed when the host names an environment at all, or when ENVIRONMENT
 # is anything but the three non-deployed names. DEBUG never disarms a guard.
 NON_DEPLOYED_ENVIRONMENTS = frozenset({"local", "test", "ci"})
@@ -101,7 +101,7 @@ SECRET_KEY = env_str("SECRET_KEY", DEFAULT_INSECURE_SECRET_KEY)
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "localhost,127.0.0.1")
 PRODUCT_NAME = env_str("PRODUCT_NAME", "Compliance Watch")
 
-# ---- Application. No django.contrib.auth, sessions or admin (playbook 4.3): nobody has a
+# --- Application. No django.contrib.auth, sessions or admin (playbook 4.3): nobody has a
 # password (tests_no_passwords.py pins the list). `ninja` is listed for its docs templates.
 INSTALLED_APPS = [
     "ninja",
@@ -156,7 +156,7 @@ TEMPLATES = [
 ]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ---- Database (playbook 14). cw_migrator owns the schema and runs migrations; cw_app runs
+# --- Database (playbook 14). cw_migrator owns the schema and runs migrations; cw_app runs
 # the application with no ownership and no BYPASSRLS. ATOMIC_REQUESTS so `SET LOCAL
 # app.tenant_id` lives exactly as long as the request's transaction.
 DATABASE_URL = env_str("DATABASE_URL", "postgres://cw_app:cw-app-dev-only@localhost:5432/compliance_watch")
@@ -169,7 +169,7 @@ DATABASES: dict[str, Any] = {
 }
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
 # JIT off (NFR-02): the RLS subqueries lift a search's estimated cost far above
-# `jit_above_cost`, and compiling cost 5.1 s of a 5.9 s search. Not a setting.
+# `jit_above_cost`, and compiling then dominates the query. Not a setting.
 JIT_OFF = {"options": "-c jit=off"}
 DATABASES["default"]["OPTIONS"] = {**DATABASES["default"].get("OPTIONS", {}), **JIT_OFF}
 
@@ -193,7 +193,7 @@ DB_ROLE_GUARD_EXEMPT_COMMANDS = frozenset(
     }
 )
 
-# ---- Cache and Celery (Redis). The health check pings both. -----------------------------
+# --- Cache and Celery (Redis). The health check pings both. ---
 REDIS_URL = env_str("REDIS_URL", "redis://localhost:6379/0")
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}}
 CELERY_BROKER_URL = REDIS_URL
@@ -205,18 +205,18 @@ CELERY_TIMEZONE = "UTC"
 CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 CELERY_BEAT_SCHEDULE: dict[str, Any] = {}
 
-# ---- No passwords (ID-03): empty, so a stray contrib import inherits nothing. -----------
+# --- No passwords (ID-03): empty, so a stray contrib import inherits nothing. ---
 AUTH_PASSWORD_VALIDATORS: list[dict[str, str]] = []
 PASSWORD_HASHERS: list[str] = []
 AUTHENTICATION_BACKENDS: list[str] = []
 
-# ---- Time and language. Storage is always UTC; tenants convert explicitly. --------------
+# --- Time and language. Storage is always UTC; tenants convert explicitly. ---
 LANGUAGE_CODE = "en"
 TIME_ZONE = "UTC"
 USE_TZ = True
 USE_I18N = False
 
-# ---- Transport security (playbook 11.2) -------------------------------------------------
+# --- Transport security (playbook 11.2) ---
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = not DEBUG and IS_DEPLOYED_ENVIRONMENT
 SECURE_HSTS_SECONDS = 0 if DEBUG else env_int("SECURE_HSTS_SECONDS", 60 * 60 * 24 * 365, min=0)
@@ -251,7 +251,7 @@ CORS_ALLOW_HEADERS = [
 # content-disposition: an evidence download is saved under the name the server chose.
 CORS_EXPOSE_HEADERS = ["content-disposition", "etag", "server-timing", "x-request-id"]
 
-# ---- Adapters (playbook 16). A mock outside the named test environment refuses to boot. --
+# --- Adapters (playbook 16). A mock outside the named test environment refuses to boot. ---
 LLM_PROVIDER = env_choice("LLM_PROVIDER", "mock", ("mock", "anthropic", "bedrock"))
 ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "")
 EMBEDDER_PROVIDER = env_choice("EMBEDDER_PROVIDER", "mock", ("mock", "none"))  # a model joins per D-09
@@ -268,7 +268,7 @@ MAIL_SMTP_USER = env_str("MAIL_SMTP_USER", "")
 MAIL_SMTP_PASSWORD = env_str("MAIL_SMTP_PASSWORD", "")
 MOCK_ADAPTER_SETTINGS = ("LLM_PROVIDER", "EMBEDDER_PROVIDER", "RERANKER_PROVIDER", "AGENT_RUNNER", "MAIL_PROVIDER", "REGISTERS_PROVIDER")
 
-# ---- Agents (AGT-03 to AGT-06) ----------------------------------------------------------
+# --- Agents (AGT-03 to AGT-06) ---
 AGENT_RESEARCH_TOPIC_MAX_CHARS = env_int("AGENT_RESEARCH_TOPIC_MAX_CHARS", 500, min=1, max=10_000)
 AGENT_MIN_CADENCE = env_choice("AGENT_MIN_CADENCE", "weekly", ("daily", "weekly", "monthly"))
 AGENTS_PER_TENANT_MAX = env_int("AGENTS_PER_TENANT_MAX", 3, min=0, max=100)
@@ -301,7 +301,7 @@ RESEARCH_URL_TOTAL_SECONDS = env_int("RESEARCH_URL_TOTAL_SECONDS", 15, min=1, ma
 RESEARCH_URL_RATE_PER_HOUR = env_int("RESEARCH_URL_RATE_PER_HOUR", 20, min=1, max=1000)  # S-10
 SCOPE_RESEARCH_TEXT_MAX_CHARS = env_int("SCOPE_RESEARCH_TEXT_MAX_CHARS", 2000, min=1, max=100_000)
 
-# ---- The Anthropic provider (D-07). The key is read from the environment only. ----------
+# --- The Anthropic provider (D-07). The key is read from the environment only. ---
 LLM_MODEL = env_str("LLM_MODEL", "claude-opus-5")
 LLM_MAX_TOKENS = env_int("LLM_MAX_TOKENS", 4096, min=1, max=200_000)
 LLM_TIMEOUT_S = env_float("LLM_TIMEOUT_S", 60.0, min=1, max=600)
@@ -314,7 +314,7 @@ LLM_MAX_ERROR_BODY_BYTES = env_int("LLM_MAX_ERROR_BODY_BYTES", 64 * 1024, min=10
 AI_GENERATION_OUTPUT_MAX_CHARS = env_int("AI_GENERATION_OUTPUT_MAX_CHARS", 20000, min=1, max=1_000_000)
 AI_GENERATION_CITATIONS_MAX = env_int("AI_GENERATION_CITATIONS_MAX", 20, min=1, max=1000)
 
-# ---- File storage (playbook 4.6): local for dev and tests, s3 when deployed. ------------
+# --- File storage (playbook 4.6): local for dev and tests, s3 when deployed. ---
 STORAGE_BACKEND = env_choice("STORAGE_BACKEND", "local", ("local", "s3"))
 MEDIA_ROOT = Path(env_str("STORAGE_LOCAL_ROOT", str(BASE_DIR / "var" / "media")))
 STORAGE_S3_ENDPOINT_URL = env_str("STORAGE_S3_ENDPOINT_URL", "")
@@ -323,13 +323,13 @@ STORAGE_S3_REGION = env_str("STORAGE_S3_REGION", "eu-west-1")
 STORAGE_S3_ACCESS_KEY_ID = env_str("STORAGE_S3_ACCESS_KEY_ID", "")
 STORAGE_S3_SECRET_ACCESS_KEY = env_str("STORAGE_S3_SECRET_ACCESS_KEY", "")
 
-# ---- WebAuthn (D-02). The RP ID is the exact app host. ----------------------------------
+# --- WebAuthn (D-02). The RP ID is the exact app host. ---
 WEBAUTHN_RP_ID = env_str("WEBAUTHN_RP_ID", "localhost")
 WEBAUTHN_RP_NAME = PRODUCT_NAME
 WEBAUTHN_ORIGINS = env_list("WEBAUTHN_ORIGINS", "http://localhost:3000")
 APP_BASE_URL = env_str("APP_BASE_URL", CORS_ALLOWED_ORIGINS[0] if CORS_ALLOWED_ORIGINS else "http://localhost:3000")
 
-# ---- Performance budgets and pagination (NFR-02, playbook 10) ---------------------------
+# --- Performance budgets and pagination (NFR-02, playbook 10) ---
 API_BUDGET_MS = env_int("API_BUDGET_MS", 250, min=1, max=60_000)
 SEARCH_BUDGET_MS = env_int("SEARCH_BUDGET_MS", 800, min=1, max=60_000)
 SEARCH_RERANKED_BUDGET_MS = env_int("SEARCH_RERANKED_BUDGET_MS", 1500, min=1, max=60_000)
@@ -341,7 +341,7 @@ ASK_FIRST_TOKEN_BUDGET_MS = env_int("ASK_FIRST_TOKEN_BUDGET_MS", 2000, min=1, ma
 PERF_SAMPLES = env_int("PERF_SAMPLES", 20, min=2, max=1000)
 PERF_REGRESSION_PCT = env_int("PERF_REGRESSION_PCT", 20, min=1, max=1000)
 
-# ---- Search and Ask (SRC-01 to SRC-03) --------------------------------------------------
+# --- Search and Ask (SRC-01 to SRC-03) ---
 SEARCH_QUERY_MAX_CHARS = env_int("SEARCH_QUERY_MAX_CHARS", 500, min=1, max=10_000)
 SEARCH_SIMILAR_MAX_CHARS = env_int("SEARCH_SIMILAR_MAX_CHARS", 8000, min=1, max=100_000)
 ASK_QUESTION_MAX_CHARS = env_int("ASK_QUESTION_MAX_CHARS", 2000, min=1, max=20_000)
@@ -368,8 +368,8 @@ VISIT_MIN_INTERVAL_SECONDS = env_int("VISIT_MIN_INTERVAL_SECONDS", 60, min=1, ma
 ASK_RETRIEVAL_DEPTH = env_int("ASK_RETRIEVAL_DEPTH", 6, min=1, max=AI_GENERATION_CITATIONS_MAX)
 ASK_MAX_TOKENS = env_int("ASK_MAX_TOKENS", 1024, min=1, max=LLM_MAX_TOKENS)
 
-# ---- The library (INV-03 to INV-06, PRO-01 to PRO-04, REG-07) ---------------------------
-# Aligning two versions costs up to the cube of their sentences: 211 ms at 200 (H12).
+# --- The library (INV-03 to INV-06, PRO-01 to PRO-04, REG-07) ---
+# Aligning two versions costs up to the cube of their sentences (H12).
 LIBRARY_DIFF_MAX_SENTENCES = env_int("LIBRARY_DIFF_MAX_SENTENCES", 50, min=1, max=200)
 LIBRARY_TEXT_MAX_CHARS = env_int("LIBRARY_TEXT_MAX_CHARS", 20000, min=1, max=1_000_000)
 LIBRARY_TERM_FILTER_MAX = env_int("LIBRARY_TERM_FILTER_MAX", 20, min=1, max=100)
@@ -382,7 +382,7 @@ RECURRENCE_MAX_OCCURRENCES = env_int("RECURRENCE_MAX_OCCURRENCES", 120, min=1, m
 LIBRARY_UPDATES_DEFAULT_DAYS = env_int("LIBRARY_UPDATES_DEFAULT_DAYS", 30, min=1, max=3650)
 LIBRARY_REPORT_TEXT_MAX_CHARS = env_int("LIBRARY_REPORT_TEXT_MAX_CHARS", 4000, min=1, max=100_000)
 
-# ---- The outbox cursor (AUD-01, CAS-01) -------------------------------------------------
+# --- The outbox cursor (AUD-01, CAS-01) ---
 OUTBOX_BATCH_SIZE = env_int("OUTBOX_BATCH_SIZE", 100, min=1, max=10_000)
 OUTBOX_POLL_INTERVAL_S = env_int("OUTBOX_POLL_INTERVAL_S", 10, min=1, max=3600)
 OUTBOX_MAX_ATTEMPTS = env_int("OUTBOX_MAX_ATTEMPTS", 5, min=1, max=100)
@@ -392,11 +392,11 @@ CELERY_BEAT_SCHEDULE["outbox-deliver"] = {
     "schedule": OUTBOX_POLL_INTERVAL_S,
 }
 
-# ---- Cases (CAS-01, CAS-04, CAS-05) -----------------------------------------------------
+# --- Cases (CAS-01, CAS-04, CAS-05) ---
 CASE_CREATION_BATCH = env_int("CASE_CREATION_BATCH", 100, min=1, max=10_000)
 CASE_ACTIONS_MAX = env_int("CASE_ACTIONS_MAX", 200, min=1, max=10_000)
 
-# ---- The watch (WAT-01, WAT-07, AGT-01) -------------------------------------------------
+# --- The watch (WAT-01, WAT-07, AGT-01) ---
 SOURCE_STALE_AFTER_CHECKS = env_int("SOURCE_STALE_AFTER_CHECKS", 1, min=1, max=100)
 SOURCE_STALE_GRACE_HOURS = env_int("SOURCE_STALE_GRACE_HOURS", 24, min=0, max=8760)
 STANDARDS_PUBLISHER_HOSTS = [
@@ -409,7 +409,7 @@ WATCH_RUN_MAX_PROPOSALS = env_int("WATCH_RUN_MAX_PROPOSALS", 50, min=1, max=10_0
 WATCH_RUN_MAX_CHANGES = env_int("WATCH_RUN_MAX_CHANGES", 50, min=1, max=10_000)
 WATCH_RUN_MAX_RECHECKS = env_int("WATCH_RUN_MAX_RECHECKS", 100, min=1, max=10_000)
 
-# ---- The library baseline and translations (D-118, D-129); 0 switches each off. ---------
+# --- The library baseline and translations (D-118, D-129); 0 switches each off. ---
 LIBRARY_BASELINE_FILING_MINUTES = env_int("LIBRARY_BASELINE_FILING_MINUTES", 0 if E2E_MODE else 60, min=0, max=10_080)
 if LIBRARY_BASELINE_FILING_MINUTES:
     CELERY_BEAT_SCHEDULE["library-baseline"] = {
@@ -430,7 +430,7 @@ if LIBRARY_TRANSLATION_MINUTES:
 PROPOSALS_APPROVE_ALL_KEEP_S = env_int("PROPOSALS_APPROVE_ALL_KEEP_S", 86_400, min=60, max=30 * 86_400)
 PROPOSALS_APPROVE_ALL_STALE_S = env_int("PROPOSALS_APPROVE_ALL_STALE_S", 300, min=30, max=86_400)
 
-# ---- Home, briefing, reminders and the workflow policy (HOM-01, HOM-02, COL-02) ---------
+# --- Home, briefing, reminders and the workflow policy (HOM-01, HOM-02, COL-02) ---
 HOME_COMING_UP_ITEMS = env_int("HOME_COMING_UP_ITEMS", 5, min=1, max=50)
 BRIEFING_SEND_WEEKDAY = env_int("BRIEFING_SEND_WEEKDAY", 0, min=0, max=6)  # Monday is 0
 BRIEFING_SEND_HOUR = env_int("BRIEFING_SEND_HOUR", 7, min=0, max=23)  # the bank's local hour
@@ -454,7 +454,7 @@ WORKFLOW_DIGEST_WEEKDAY = env_choice(
 )
 WORKFLOW_TRIAGE_TARGET_HOURS = env_int("WORKFLOW_TRIAGE_TARGET_HOURS", 48, min=1, max=720)
 
-# ---- Calendar subscriptions and participants (HOM-04, COL-04) ---------------------------
+# --- Calendar subscriptions and participants (HOM-04, COL-04) ---
 CALENDAR_FEEDS_PER_USER = env_int("CALENDAR_FEEDS_PER_USER", 5, min=1, max=100)
 CALENDAR_FEED_IDLE_DAYS = env_int("CALENDAR_FEED_IDLE_DAYS", 30, min=1, max=3650)
 CALENDAR_FEED_REVOKED_SHOWN = env_int("CALENDAR_FEED_REVOKED_SHOWN", 5, min=0, max=100)
@@ -462,13 +462,13 @@ CALENDAR_FEED_RATE_PER_MINUTE = env_int("CALENDAR_FEED_RATE_PER_MINUTE", 20, min
 CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS = env_int("CALENDAR_FEED_LAST_USED_THROTTLE_SECONDS", 300, min=0, max=86_400)
 MAX_PARTICIPANTS_PER_RECORD = env_int("MAX_PARTICIPANTS_PER_RECORD", 50, min=1, max=1000)
 
-# ---- The malware scanner (CAS-05, D-101). A failed or timed-out scan is never clean. ----
+# --- The malware scanner (CAS-05, D-101). A failed or timed-out scan is never clean. ---
 SCANNER_PROVIDER = env_choice("SCANNER_PROVIDER", "mock", ("mock", "clamd"))
 SCANNER_HOST = env_str("SCANNER_HOST", "localhost")
 SCANNER_PORT = env_int("SCANNER_PORT", 3310, min=1, max=65535)
 SCANNER_TIMEOUT_SECONDS = env_float("SCANNER_TIMEOUT_SECONDS", 60.0, min=1, max=3600)
 
-# ---- Public registers (TEN-07, TEN-08, FP-05). `live` when deployed, `mock` elsewhere. ---
+# --- Public registers (TEN-07, TEN-08, FP-05). `live` when deployed, `mock` elsewhere. ---
 REGISTERS_PROVIDER = env_choice("REGISTERS_PROVIDER", "live" if IS_DEPLOYED_ENVIRONMENT else "mock", ("live", "mock"))
 REGISTERS_GLEIF_URL = env_str("REGISTERS_GLEIF_URL", "https://api.gleif.org/api/v1")
 REGISTERS_FI_URL = env_str("REGISTERS_FI_URL", "https://www.fi.se/sv/vara-register/foretagsregistret")
@@ -487,7 +487,7 @@ CELERY_BEAT_SCHEDULE["registers-recheck"] = {
     "schedule": crontab(minute="17", hour=str(REGISTERS_RECHECK_HOUR)),
 }
 
-# ---- Evidence, tagging, exports, the register, My work and comments ---------------------
+# --- Evidence, tagging, exports, the register, My work and comments ---
 EVIDENCE_ALLOWED_TYPES = env_list(
     "EVIDENCE_ALLOWED_TYPES",
     "application/pdf,"
@@ -508,7 +508,7 @@ COMMENT_MAX_CHARS = env_int("COMMENT_MAX_CHARS", 4000, min=1, max=100_000)
 COMMENT_EDIT_MINUTES = env_int("COMMENT_EDIT_MINUTES", 15, min=0, max=1440)  # also My work's `canEdit`
 TENANT_LIST_MAX_ROWS = env_int("TENANT_LIST_MAX_ROWS", 500, min=1, max=100_000)  # H32
 
-# ---- The weekly digest (COL-02): My work's page is at most 100. -------------------------
+# --- The weekly digest (COL-02): My work's page is at most 100. ---
 DIGEST_MAX_ITEMS = env_int("DIGEST_MAX_ITEMS", 20, min=1, max=100)
 DIGEST_SEND_HOUR = env_int("DIGEST_SEND_HOUR", 7, min=0, max=23)
 CELERY_BEAT_SCHEDULE["collab-digests"] = {
@@ -516,12 +516,12 @@ CELERY_BEAT_SCHEDULE["collab-digests"] = {
     "schedule": crontab(minute="0"),
 }
 
-# ---- Health check (playbook 2.2) --------------------------------------------------------
+# --- Health check (playbook 2.2) ---
 HEALTH_WORKER_PING_TIMEOUT_S = env_float("HEALTH_WORKER_PING_TIMEOUT_S", 1.0, min=0.1, max=30)
 HEALTH_WORKER_PING_LIMIT = 1  # one reply, so a large fleet never makes /health/ slow
 HEALTH_CACHE_SECONDS = env_float("HEALTH_CACHE_SECONDS", 5, min=0, max=60)  # L-8
 
-# ---- Enrolment, invitations and sign-in (ID-01 to ID-03, playbook 4.2) ------------------
+# --- Enrolment, invitations and sign-in (ID-01 to ID-03, playbook 4.2) ---
 INVITATION_TTL_HOURS = env_int("INVITATION_TTL_HOURS", 72, min=1, max=720)
 ENROLMENT_CODE_DIGITS = env_int("ENROLMENT_CODE_DIGITS", 6, min=6, max=10)
 ENROLMENT_CODE_TTL_MINUTES = env_int("ENROLMENT_CODE_TTL_MINUTES", 10, min=1, max=60)
@@ -536,7 +536,7 @@ CHALLENGE_TTL_SECONDS = env_int("CHALLENGE_TTL_SECONDS", 120, min=10, max=600)  
 # The one code E2E journeys type, read only under E2E_MODE (refused deployed, rule 4).
 E2E_FIXED_CODE = "123456"
 
-# ---- Sessions, step-up and keys (ID-06 to ID-10, D-06) ----------------------------------
+# --- Sessions, step-up and keys (ID-06 to ID-10, D-06) ---
 ACCESS_TOKEN_TTL_MINUTES = env_int("ACCESS_TOKEN_TTL_MINUTES", 10, min=1, max=60)
 SESSION_IDLE_MINUTES_MAX = env_int("SESSION_IDLE_MINUTES_MAX", 8 * 60, min=1, max=1440)
 SESSION_ABSOLUTE_HOURS_MAX = env_int("SESSION_ABSOLUTE_HOURS_MAX", 24, min=1, max=168)
@@ -563,7 +563,7 @@ AGENT_ACCESS_RATE_PER_MINUTE = env_int("AGENT_ACCESS_RATE_PER_MINUTE", 60, min=1
 SUPPORT_ACCESS_MAX_HOURS = env_int("SUPPORT_ACCESS_MAX_HOURS", 4, min=1, max=72)
 SUPPORT_ACCESS_REQUEST_TTL_HOURS = env_int("SUPPORT_ACCESS_REQUEST_TTL_HOURS", 24, min=1, max=168)
 
-# ---- Scope items, what applies and the regulatory scope request (OWN-01, ACC-06, FP-02) --
+# --- Scope items, what applies and the regulatory scope request (OWN-01, ACC-06, FP-02) ---
 SCOPE_ITEM_DESCRIPTION_MAX_CHARS = env_int("SCOPE_ITEM_DESCRIPTION_MAX_CHARS", 2000, min=1, max=100_000)
 AGENT_ACCESS_DESCRIPTION_MAX_CHARS = env_int("AGENT_ACCESS_DESCRIPTION_MAX_CHARS", 2000, min=1, max=100_000)
 AGENT_ACCESS_NOTE_MATCH_WORDS = env_int("AGENT_ACCESS_NOTE_MATCH_WORDS", 2, min=1, max=20)
@@ -573,16 +573,16 @@ WHAT_APPLIES_SUMMARY_MAX_TOKENS = env_int("WHAT_APPLIES_SUMMARY_MAX_TOKENS", 400
 # A model call's list price in minor units per million tokens (Verification_Log).
 LLM_PRICE_INPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_INPUT_MINOR_PER_MTOK", 500, min=0)
 LLM_PRICE_OUTPUT_MINOR_PER_MTOK = env_int("LLM_PRICE_OUTPUT_MINOR_PER_MTOK", 2500, min=0)
-# D-125 (Alex 2026-11-09): a bank's only approver may approve their own scope request, with a
-# passkey, marked `sole_approver` and audited. False restores four eyes everywhere.
+# D-125: a bank's only approver may approve their own scope request, with a passkey, marked
+# `sole_approver` and audited. False restores four eyes everywhere.
 FOOTPRINT_SOLE_APPROVER_ALLOWED = env_bool("FOOTPRINT_SOLE_APPROVER_ALLOWED", True)
 FOOTPRINT_CHANGE_MAX_TERMS = env_int("FOOTPRINT_CHANGE_MAX_TERMS", 50, min=1, max=1000)
 FOOTPRINT_ENTITY_CHANGE_MAX = env_int("FOOTPRINT_ENTITY_CHANGE_MAX", 200, min=1, max=10_000)
 
-# ---- Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ------------
+# --- Rate limiting (playbook 11.2). Off in tests (test_settings override 6). ---
 RATE_LIMITING_ENABLED = env_bool("RATE_LIMITING_ENABLED", True)
 
-# ---- Logging (playbook 4.7): JSON with the request id; never tenant content. ------------
+# --- Logging (playbook 4.7): JSON with the request id; never tenant content. ---
 LOG_LEVEL = env_str("LOG_LEVEL", "INFO").upper()
 LOGGING = {
     "version": 1,
@@ -602,8 +602,8 @@ LOGGING = {
     },
 }
 
-# ---- Sentry (playbook 11.2), only when SENTRY_DSN is set. No PII, bodies or locals; both
-# scrubbers, because transactions bypass before_send. ------------------------------------
+# --- Sentry (playbook 11.2), only when SENTRY_DSN is set. No PII, bodies or locals; both
+# scrubbers, because transactions bypass before_send. ---
 SENTRY_DSN = env_str("SENTRY_DSN", "")
 SENTRY_TRACES_SAMPLE_RATE = env_float("SENTRY_TRACES_SAMPLE_RATE", 0.1, min=0, max=1)
 if SENTRY_DSN:
@@ -618,7 +618,7 @@ if SENTRY_DSN:
     # A gunicorn access line as a breadcrumb would ride on the next event, whoever's it is.
     ignore_logger("gunicorn.access")
     # The stdlib integration names spans after outbound URLs and propagation sends the public
-    # key to every host fetched; Sentry needs neither (review 2026-11-11 S-8).
+    # key to every host fetched; Sentry needs neither (S-8).
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=HOST_ENVIRONMENT_NAME or ENVIRONMENT,
@@ -633,10 +633,9 @@ if SENTRY_DSN:
         before_send_transaction=before_send_transaction,
     )
 
-# ---------------------------------------------------------------------------------------
-# ===== Production-safety block (playbook 11.1) ===========================================
-# apps/shared/tests_production_guard.py boots Django in subprocesses under `prod`,
-# `Production`, `demo`, `dev`, `local`, `test` and `ci` to prove every branch.
+# --- Production-safety block (playbook 11.1) ---
+# apps/shared/tests_production_guard.py boots Django under `prod`, `Production`, `demo`,
+# `dev`, `local`, `test` and `ci` to prove every branch.
 #
 #  1. Deployed is the default. Only `local`, `test` and `ci` without a host environment
 #     name are non-deployed; anything else, and any RAILWAY_ENVIRONMENT_NAME, is deployed.
@@ -652,14 +651,13 @@ if SENTRY_DSN:
 #  8. The WebAuthn RP ID is the exact app host (ADR 0002); `localhost` deployed enrols
 #     passkeys nobody can use.
 #  9. RATE_LIMITING_ENABLED=false switches every bucket off at once; laptops and tests only
-#     (security-review-c7, M2). Each bucket's own size already refuses to boot below 1.
+#     (M2). Each bucket's own size already refuses to boot below 1.
 # 10. Processors outside the EU (D-54, ADR 0047). On every deployed environment but `test`,
 #     the `anthropic` provider is refused, and Sentry only on a host ending
 #     `.ingest.de.sentry.io`. The lists are code, never variables. The `managed_agents`
 #     runner is refused everywhere: AGENT_RUNNER names no such value.
 # 11. TRUSTED_PROXY_HOPS=0 behind the edge keys every per-IP limit and security log row on
 #     the proxy's address. A deployed environment defaults to 1 and refuses 0 (L-18).
-# ---------------------------------------------------------------------------------------
 def _refuse(reason: str) -> None:
     raise ImproperlyConfigured(f"Refusing to boot: {reason}")
 
