@@ -989,6 +989,10 @@ if not 0 <= REGISTERS_RECHECK_HOUR <= 23:
     raise ImproperlyConfigured("REGISTERS_RECHECK_HOUR must be an hour from 0 to 23")
 if not 30 <= REGISTERS_JOB_SECONDS <= 3600:
     raise ImproperlyConfigured("REGISTERS_JOB_SECONDS must be between 30 and 3600")
+# Review 2026-11-11 S-11: how many register lookups one bank may start in an hour (429 `rate_limited`); one at a time besides.
+REGISTERS_LOOKUPS_PER_HOUR = env_int("REGISTERS_LOOKUPS_PER_HOUR", 10)
+if not 1 <= REGISTERS_LOOKUPS_PER_HOUR <= 100:
+    raise ImproperlyConfigured("REGISTERS_LOOKUPS_PER_HOUR must be between 1 and 100")
 CELERY_BEAT_SCHEDULE["registers-recheck"] = {
     "task": "apps.tenants.tasks.recheck_registers",
     "schedule": crontab(minute="17", hour=str(REGISTERS_RECHECK_HOUR)),

@@ -707,8 +707,10 @@ def start_register_lookup(request: HttpRequest, body: RegisterLookupBody) -> Any
     Errors: `invalid_query` (422) for a query that is neither a registration number nor an
     LEI; `validation_error` (422) for a body the schema refuses; `permission_denied` (403)
     without `vocab.manage`, naming it in `requiredPermission`; `unauthenticated` (401) without
-    a session; `not_found` (404) for a session that belongs to no bank. A lookup that finds
-    nothing still answers 202: the job then fails with `lookup_not_found`, `lookup_ambiguous`
+    a session; `not_found` (404) for a session that belongs to no bank; `lookup_in_progress`
+    (409) while another lookup of the bank is still queued or running, so wait for it to
+    finish; `rate_limited` (429) once the bank has started `REGISTERS_LOOKUPS_PER_HOUR`
+    lookups in the last hour. A lookup that finds nothing still answers 202: the job then fails with `lookup_not_found`, `lookup_ambiguous`
     or `register_unavailable`, which `GET` reports in `error`.
     """
     tenant = caller_tenant(request)

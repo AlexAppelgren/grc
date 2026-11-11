@@ -6560,8 +6560,9 @@ export interface paths {
          *     obligation version, a new instrument, a new obligation, a library list row and a
          *     taxonomy term (D-79). What it confirmed never reads as a person's check: the record
          *     names the confirming agent, a translation it approves stays labelled machine-made,
-         *     every list or term label it writes is stored machine-made, and its correction may
-         *     reword a summary but never move `originalLanguage`, which answers `validation_error`.
+         *     and every list or term label it writes is stored machine-made. An agent approves a
+         *     proposal only as it was filed, and only one a platform agent or a platform person filed:
+         *     a correction, and a proposal filed from an organisation, wait for a person.
          *
          *     An agent's approval is a model call, and every model call is logged: a key sends the
          *     call behind its approval in `decision` and the open run of its own key it was made in
@@ -6575,11 +6576,12 @@ export interface paths {
          *     `run_not_open` (422) when a key names no run in `agentRunId`, or a run it has closed;
          *     `not_found` (404) when that run is one another key opened, or when there is no such
          *     proposal; `four_eyes_violation` when the reviewer is the person, key or agent who made
-         *     the proposal; `person_review_required` when an agent approves a kind whose record
-         *     cannot name its confirming agent, a new provision or a provision's new text, which
-         *     waits for a person; `risk_flagged` (409) when an agent approves a proposal whose
-         *     `riskFlags` is not empty, or corrects it with text the injection screen flags, which
-         *     waits for a person who reads the flag; `invalid_transition` when the proposal was
+         *     the proposal, or when a key was created by the person who made the proposal or created
+         *     the proposing key; `person_review_required` (409) when an agent approves a kind whose
+         *     record cannot name its confirming agent (a new provision or a provision's new text), a
+         *     proposal filed from an organisation, or sends `payloadOverrides` or `fieldSources`,
+         *     each of which waits for a person; `risk_flagged` (409) when an agent approves a proposal
+         *     whose `riskFlags` is not empty, which waits for a person who reads the flag; `invalid_transition` when the proposal was
          *     already approved or rejected, which is also what a repeated or simultaneous second call
          *     answers, since nothing is ever applied twice, and for a batch, which is decided row by
          *     row through `POST /proposal-batches/{batchId}/decide`; `source_missing` when a correction
@@ -6968,7 +6970,10 @@ export interface paths {
          *     within `RESEARCH_URL_MAX_REDIRECTS` redirects; `feature_off` (422) when the bank has
          *     switched its AI features off; `budget_cap_reached` (422) when the bank has set no cap or
          *     this month's spend has reached it; `plan_limit_reached` (429) past the bank's
-         *     `RESEARCH_REQUESTS_PER_MONTH` requests this month.
+         *     `RESEARCH_REQUESTS_PER_MONTH` requests this month; `research_in_progress` (429) while
+         *     another request of the bank is still being made, so try again when it has finished;
+         *     `rate_limited` (429) when the bank has had `RESEARCH_URL_RATE_PER_HOUR` web addresses
+         *     fetched in the last hour, failed fetches included.
          */
         post: operations["createResearchRequest"];
         delete?: never;
@@ -8989,8 +8994,10 @@ export interface paths {
          *     Errors: `invalid_query` (422) for a query that is neither a registration number nor an
          *     LEI; `validation_error` (422) for a body the schema refuses; `permission_denied` (403)
          *     without `vocab.manage`, naming it in `requiredPermission`; `unauthenticated` (401) without
-         *     a session; `not_found` (404) for a session that belongs to no bank. A lookup that finds
-         *     nothing still answers 202: the job then fails with `lookup_not_found`, `lookup_ambiguous`
+         *     a session; `not_found` (404) for a session that belongs to no bank; `lookup_in_progress`
+         *     (409) while another lookup of the bank is still queued or running, so wait for it to
+         *     finish; `rate_limited` (429) once the bank has started `REGISTERS_LOOKUPS_PER_HOUR`
+         *     lookups in the last hour. A lookup that finds nothing still answers 202: the job then fails with `lookup_not_found`, `lookup_ambiguous`
          *     or `register_unavailable`, which `GET` reports in `error`.
          */
         post: operations["startRegisterLookup"];
@@ -16077,7 +16084,7 @@ export interface components {
             items: components["schemas"]["FootprintRequestRow"][];
             /**
              * Soleapprover
-             * @description True when the caller may approve their own request, because they are the organisation's only active member holding `footprint.approve` and the platform allows it (D-125); false otherwise, and then a request is approved by someone other than the person who asked for it.
+             * @description True when the caller may approve their own request, because they are the organisation's only member holding `footprint.approve`, whatever that member's account status, and the platform allows it (D-125); false otherwise, and then a request is approved by someone other than the person who asked for it. A request counts as the caller's to approve alone only when they were already the only such member when they made it.
              * @default false
              * @example false
              */
@@ -23285,7 +23292,7 @@ export interface components {
             decision?: components["schemas"]["AgentDecision"] | null;
             /**
              * Fieldsources
-             * @description The fresh source of every value `payloadOverrides` changes from what was proposed, keyed as the queue names the field (`summaries.sv`, `effectiveFrom`, `terms`), because the proposer's source vouches only for the value it was given for. Each is checked as a proposal's own are: at most 2000 characters, an https link or the stable key of a provision the library holds, and an https link only on a new record or a standard's obligation. A changed value without one answers 422 `source_missing`; a source for a field the correction leaves as proposed answers 422 `validation_error`. The proposal keeps these sources for the corrected fields from then on. Optional, and left out when nothing is corrected.
+             * @description The fresh source of every value `payloadOverrides` changes from what was proposed, keyed as the queue names the field (`summaries.sv`, `effectiveFrom`, `terms`), because the proposer's source vouches only for the value it was given for. Each is checked as a proposal's own are: at most 2000 characters, an https link or the stable key of a provision the library holds, and an https link only on a new record or a standard's obligation. A changed value without one answers 422 `source_missing`; a source for a field the correction leaves as proposed answers 422 `validation_error`. The proposal keeps these sources for the corrected fields from then on. Optional, and left out when nothing is corrected. A person's field only, as `payloadOverrides` is: an agent's key that sends it answers 409 `person_review_required`.
              * @example {
              *       "summaries.sv": "https://www.fi.se/sv/publicerat/nyheter/2026/analysbetalningar/"
              *     }
@@ -23301,7 +23308,7 @@ export interface components {
             note: string;
             /**
              * Payloadoverrides
-             * @description The reviewer's corrections, merged field by field over the proposal's own payload before it is applied; the fields left out keep what was proposed. Accepted only for the `new_obligation_version`, `new_instrument` and `new_obligation` kinds, since the vocabulary kinds carry a label a person wrote rather than a sourced fact; on any other kind the call answers 422 `validation_error`. A new record's corrections are checked exactly as the proposal was, so a regime that is not a term of the regime dimension answers 422 `not_a_regime`. For an obligation version the fields a reviewer may correct are the ones that kind's payload names: `summaries` (the whole set of texts per language, which replaces the proposed set), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` and `year`, which says how exactly the date is known) and `terms` (the scope facets as `dimension:key`, at most 20, which replace the obligation's scope). The merged payload must still carry a source for every field it changes, so a correction that introduces a field the proposal never sourced answers 422 `source_missing` and applies nothing, and a value changed from what was proposed needs its fresh source in `fieldSources`. Each summary is at most 50000 characters per language. What is applied is kept beside what was proposed, as the reviewer's own correction: a reader must not take the proposal's payload as the text the library now holds.
+             * @description The reviewer's corrections, merged field by field over the proposal's own payload before it is applied; the fields left out keep what was proposed. Accepted only for the `new_obligation_version`, `new_instrument` and `new_obligation` kinds, since the vocabulary kinds carry a label a person wrote rather than a sourced fact; on any other kind the call answers 422 `validation_error`. A new record's corrections are checked exactly as the proposal was, so a regime that is not a term of the regime dimension answers 422 `not_a_regime`. For an obligation version the fields a reviewer may correct are the ones that kind's payload names: `summaries` (the whole set of texts per language, which replaces the proposed set), `originalLanguage`, `isMachine`, `effectiveFrom`, `effectiveFromPrecision` (one of `day`, `month`, `quarter` and `year`, which says how exactly the date is known) and `terms` (the scope facets as `dimension:key`, at most 20, which replace the obligation's scope). The merged payload must still carry a source for every field it changes, so a correction that introduces a field the proposal never sourced answers 422 `source_missing` and applies nothing, and a value changed from what was proposed needs its fresh source in `fieldSources`. Each summary is at most 50000 characters per language. What is applied is kept beside what was proposed, as the reviewer's own correction: a reader must not take the proposal's payload as the text the library now holds. A person's field only: an agent's key that sends it answers 409 `person_review_required`, because an agent approves a proposal as it was filed.
              */
             payloadOverrides?: {
                 [key: string]: unknown;
@@ -23391,7 +23398,7 @@ export interface components {
             changeId?: string | null;
             /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
             correctedBy?: components["schemas"]["ProposalActorRef"] | null;
-            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
+            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. Only a proposal decided before 2026-11-11 can carry one: since then an agent approves a proposal as it was filed. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
             correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Createdat
@@ -23941,7 +23948,7 @@ export interface components {
             changeId?: string | null;
             /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
             correctedBy?: components["schemas"]["ProposalActorRef"] | null;
-            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
+            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. Only a proposal decided before 2026-11-11 can carry one: since then an agent approves a proposal as it was filed. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
             correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Createdat
@@ -24339,7 +24346,7 @@ export interface components {
             changeId?: string | null;
             /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
             correctedBy?: components["schemas"]["ProposalActorRef"] | null;
-            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
+            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. Only a proposal decided before 2026-11-11 can carry one: since then an agent approves a proposal as it was filed. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
             correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Createdat
@@ -24631,7 +24638,7 @@ export interface components {
             changeId?: string | null;
             /** @description The person who corrected the payload on the way to approving it, which is always the person who approved it. Null when nobody corrected it, and null when the approving agent did, which `correctedByAgent` then names. */
             correctedBy?: components["schemas"]["ProposalActorRef"] | null;
-            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
+            /** @description The independent agent that corrected the payload on the way to approving it, which is always the agent that approved it. Null when nobody corrected it and when a person did. Only a proposal decided before 2026-11-11 can carry one: since then an agent approves a proposal as it was filed. What was proposed stays in `payload` beside the correction, so the audit trail keeps both. */
             correctedByAgent?: components["schemas"]["ProposalAgentRef"] | null;
             /**
              * Createdat
