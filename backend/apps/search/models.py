@@ -1,21 +1,14 @@
 """Models of the search app: the derived index the hybrid query reads (SRC-01, SRC-02).
 
-`SearchChunk` is one row per legal unit per language, copied from the shared library:
-an obligation version, a provision version or a registered change. It is derived data,
-not a library record and not a tenant record, so it extends neither `LibraryModel` nor
-`TenantModel` (owner item 4, H7). Three things keep it honest, and each is proven:
+`SearchChunk` is one row per legal unit per language, copied from the shared library. It is
+derived data, neither `LibraryModel` nor `TenantModel` (H7):
 
-- **One door.** Only `apps/search/indexing.py` may write a chunk, inside `index_write()`.
-  The runtime refusal is below; the AST guard is `tests_index_fence.py`.
-- **Row-level security, enabled and forced, in the split shape of hardening H15**
-  (migration 0001): one `FOR ALL` policy whose USING and WITH CHECK are the session's own
-  zone, so a bank writes only its own zone and the indexer, running with no tenant active,
-  writes the shared one; plus `library_rows_visible`, a `FOR SELECT` policy that adds the
-  shared chunks to every bank's reads.
-- **`owner_tenant_id` is always NULL in R1.** Only shared records are indexed (D-10), so
-  nothing a bank writes reaches a chunk. The column exists so the rule is enforceable in
-  the database rather than only in Python, and so the shape is final before ADR 0010 is
-  superseded (owner items 4 and 10).
+- One door: only `indexing.py` writes, inside `index_write()` (runtime refusal below, AST
+  guard in `tests_index_fence.py`).
+- Forced row-level security in the split shape of H15 (migration 0001): writes stay in the
+  session's own zone, and `library_rows_visible` adds shared chunks to every bank's reads.
+- `owner_tenant_id` is always NULL: only shared records are indexed (D-10); the column makes
+  that enforceable in the database.
 """
 
 from __future__ import annotations
@@ -34,11 +27,9 @@ from pgvector.django import HnswIndex, VectorField
 from apps.search.indexing import SearchChunkQuerySet, assert_index_write
 from apps.search.schemas import EvalVia, SearchMatchKind
 
-# The content language's own PostgreSQL text search configuration, so a Swedish chunk is
-# stemmed as Swedish and a Finnish one as Finnish (INPUT_DELTAS §3). This departs from
-# `docs/inputs/schema.sql`, which checks `lang IN ('sv', 'en')` and branches on two
-# configurations; R1 has five content languages. The keys are the seeded `Language` rows',
-# and `SearchChunkLanguageTests` fails if this mapping and those rows ever disagree.
+# Each content language's own text search configuration (INPUT_DELTAS §3: five languages,
+# not schema.sql's two). Keys are the seeded `Language` rows'; `SearchChunkLanguageTests`
+# fails if they disagree.
 TEXT_SEARCH_CONFIGS: dict[str, str] = {
     "en": "english",
     "sv": "swedish",
@@ -47,8 +38,7 @@ TEXT_SEARCH_CONFIGS: dict[str, str] = {
     "fi": "finnish",
 }
 
-# The title carries more weight than the body, as schema.sql §6 has it: a reader searching
-# "costs and charges" wants the obligation named that before one that mentions it.
+# The title weighs more than the body (schema.sql §6).
 TITLE_WEIGHT = "A"
 BODY_WEIGHT = "B"
 
@@ -93,27 +83,23 @@ class SearchChunk(models.Model):
     title = models.TextField()
     body = models.TextField()
     hierarchy_path = models.TextField(blank=True, default="")
-    # Copied from the version the chunk was built from, so an "as of" search filters on
-    # the chunk itself and never joins back to the library (SRC-02, AC-SRC "mechanics").
+    # Copied from the version, so an "as of" search never joins back to the library (SRC-02).
     valid_from = models.DateField(null=True, blank=True)
     valid_to = models.DateField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)  # schema: SearchChunkMetadata
     tsv = models.GeneratedField(expression=_tsv_expression(), output_field=SearchVectorField(), db_persist=True)
-    # 1024 dimensions (D-09, EMBEDDING_DIMENSIONS): enough for a multilingual model and
-    # well under the 2000 an HNSW index accepts. Empty until the worker fills it from the
-    # outbox event; a chunk without one is still found by the keyword leg.
+    # 1024 dimensions (D-09): enough for a multilingual model, under HNSW's 2000. Empty until
+    # the worker fills it; the keyword leg still finds the chunk.
     embedding = VectorField(dimensions=1024, null=True, blank=True)
     embedding_model = models.CharField(max_length=120, blank=True, default="")
     embedding_version = models.CharField(max_length=40, blank=True, default="")
     embedded_at = models.DateTimeField(null=True, blank=True)
-    # The zone the indexed record belongs to: NULL is the shared library, which in R1 is
-    # every chunk there is. The policies in migration 0001 make this the database's rule.
+    # NULL is the shared library, every chunk in R1; migration 0001's policies enforce it.
     owner_tenant = models.ForeignKey(
         "shared.Tenant", db_column="owner_tenant_id", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
 
-    # Annotated because the manager is built from the queryset in indexing.py, which is
-    # where the fence lives; `all()` still hands back the guarded queryset.
+    # Annotated because the manager is built from the fenced queryset in indexing.py.
     objects: ClassVar[models.Manager["SearchChunk"]] = SearchChunkQuerySet.as_manager()
 
     class Meta:
@@ -137,8 +123,7 @@ class SearchChunk(models.Model):
         ]
 
     def __str__(self) -> str:
-        # The source it was built from, never its text: a chunk's body is a library record
-        # and a __str__ ends up in places (a repr, a traceback) that are not for content.
+        # The source, never its text: a __str__ reaches reprs and tracebacks.
         return f"{self.source_type}:{self.source_id}:{self.language_id}"
 
     def save(self, *args: Any, **kwargs: Any) -> None:  # compliance: allow-kwargs Django Model.save signature
@@ -153,14 +138,11 @@ class SearchChunk(models.Model):
 class EvalQuestion(models.Model):
     """One labelled question of the retrieval evaluation set (SRC-05, ADM-02).
 
-    A platform record, kept by platform staff in the console: it has no tenant column and is
-    not a library record, so it extends neither `TenantModel` nor `LibraryModel`. Migration
-    0002 enables and forces row-level security with one policy that refuses any session with
-    a tenant active, so no bank can read or write the set. `backend/eval/retrieval.jsonl` is
-    what the release gate reads; `seed_eval_questions` files its rows here, create-only, and
-    `dump_eval_questions` writes the active rows back. `key` is the line's `id` and never
-    changes; `expected` names library records by stable key, never by id, because the ids of
-    the corpus differ in every database the gate builds.
+    A platform record: no tenant column, not a library record. Migration 0002 forces
+    row-level security with a policy that refuses any session with a tenant active. The gate
+    reads `backend/eval/retrieval.jsonl`; `seed_eval_questions` and `dump_eval_questions` keep
+    the two in step. `key` is the line's `id` and never changes; `expected` names stable keys,
+    since ids differ in every database the gate builds.
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

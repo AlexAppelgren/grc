@@ -1,59 +1,27 @@
 """Ask (SRC-03, AC-SRC2): an answer grounded only in the retrieved library passages, every
 statement cited, pending changes flagged, "no answer" instead of a guess.
 
-`POST /ask` answers a stream of the events `schemas.py` declares: `start` with the
-answer's id, a `statement` per cited sentence, and either `answer` or `problem` to close
-it. api.py declares the route `SSE[AskEvent]`, so everything this module yields leaves as
-one `data:` frame of a `text/event-stream` `StreamingHttpResponse`, and the first event
-leaves before the model is asked anything (the 2 s first-token budget, NFR-02).
+`POST /ask` streams `start` (the answer's id, before the model is asked: the 2 s first-token
+budget, NFR-02), a `statement` per cited sentence, then `answer` or `problem`.
 
-**Every refusal comes before the first byte, in this order**, because a stream that has
-begun cannot change its status: the bank's AI switch (403 `feature_off`, and nothing is
-retrieved), the reader's own bucket (429 `rate_limited`), a session in no bank (404) and
-a language the library does not hold (422 `unknown_key`). The session, the permission
-and the question's cap were checked before this module was reached. Right after the
-bucket, one of the reader's `ASK_STREAMS_PER_USER` open streams is taken (429
-`rate_limited` when all are in use, hardening H47); it is given back when the stream
-closes, or at once when a later refusal means no stream opens.
-
-**Everything the answer rests on is read before the first byte too.** The stream is sent
-after the request's transaction has committed, with no bank activated, so the passages,
-the facts a citation shows and the pending changes are all read here, eagerly; what is
-left for the stream is the model and the one AI log row `apps/shared/ai.py` writes in a
-transaction of its own.
-
-**The prompt is the question and the library, exactly.** `Passages:`, one numbered line
-per passage (its whole text and where it sits), then `Question:` and the question folded
-onto one line, so nothing typed can pose as a numbered passage. The passages are what the
-reader's own search ranks first, inside the bank's regulatory scope and on the answer's
-"as of" (`hybrid.passages`). The question is the only text of the bank's own that reaches
-a model (D-07), and nothing else of the bank's zone is read here at all.
-
-**Nothing is said without a citation.** The model's words are cut into sentences as they
-arrive, and a sentence is sent only when it cites a passage the prompt gave: a number the
-prompt never gave is dropped, and a sentence left with none is not sent at all. Citations
-are numbered in the order the answer first uses them, so a reader never sees a gap. An
-answer left with no statement is "no answer", and a question no passage supports asks no
-model and writes no log row.
-
-**A pending change is flagged** on a statement whose cited obligation the library has
-confirmed a change will move: a confirmed link, on an active change whose type's
-lifecycle kind moves the law on its key date, dated after the answer's "as of". The
-earliest such change is the one named.
-
-**Every model call leaves one AI log row** (AUD-02, D-82) carrying the answer's own id
-and how the call ended, even when the reader leaves before the answer is finished
-(`aborted`) or the model fails part way (`failed`), with whatever it had written by then.
-A model that fails ends the stream with `model_unavailable`. The closing `answer` event
-carries the provider's own stop reason as that row stores it, so a reader whose answer the
-model cut off at `ASK_MAX_TOKENS` is told so (D-82). No audit row is written: an answer
-changes no record.
-
-**A reader's verdict is the one write** (`rate_answer`, AUD-02, SRC-05). It lands on the
-answer's own AI log row through the log module's writer, with its audit row in the same
-transaction. The audit row names the verdict, a kind, and nothing else: the question is
-not stored at all, the answer stays in the AI log, and the reader's note stays beside it.
-The same verdict and note twice write nothing the second time.
+- Every refusal comes before the first byte, since a stream cannot change its status: the
+  AI switch (403 `feature_off`), the reader's bucket and one of `ASK_STREAMS_PER_USER` open
+  streams (429, H47), a session in no bank (404), an unknown language (422 `unknown_key`).
+- Everything the answer rests on is read before the first byte too: the stream runs after
+  commit with no bank activated.
+- The prompt is `Passages:` (one numbered line each, from `hybrid.passages` in the bank's
+  scope) then `Question:` folded onto one line, so typed text cannot pose as a passage. The
+  question is the only bank text that reaches a model (D-07).
+- Nothing is said without a citation: a sentence is sent only if it cites a passage the
+  prompt gave; citations are renumbered in order of use. No statement is "no answer"; a
+  question with no passage asks no model.
+- A pending change is flagged when a cited obligation has a confirmed link to an active
+  change whose lifecycle kind moves the law after the "as of"; the earliest is named.
+- Every model call leaves one AI log row (AUD-02, D-82) with the answer's id and how it
+  ended (`aborted`, `failed`, or the provider's stop reason, also on the `answer` event).
+  No audit row: an answer changes no record.
+- A reader's verdict (`rate_answer`, SRC-05) is the one write: on the AI log row, with an
+  audit row naming the verdict only. A repeat writes nothing.
 """
 
 from __future__ import annotations
@@ -110,23 +78,17 @@ MODEL_UNAVAILABLE = "The answer could not be finished. Ask again in a moment."
 ANSWER_RATED = "answer.rated"
 ANSWER_SUBJECT = "ai_generation"
 
-# The lifecycle kinds whose key date moves the law: a rule decided with its application
-# still ahead, and one in force from a later day. A proposal, a supervisory statement and
-# a recurring date move no law on their date. The kind decides, never the key, so a change
-# type the library adds later under a key of its own is flagged by the kind it carries.
+# The lifecycle kinds whose key date moves the law. The kind decides, never the key, so a
+# type the library adds later is flagged by its kind.
 MOVES_THE_LAW = (ChangeLifecycleKind.ADOPTED.value, ChangeLifecycleKind.IN_FORCE.value)
 
-# Where a sentence ends: a full stop, a question or an exclamation mark with the citations
-# that follow it and then white space, or a line break. A lower-case letter or a digit
-# after a full stop is an abbreviation ("9 kap. 6 §", "i.e. the"), not a new sentence.
-# Model output is untrusted text, so every quantifier is possessive and a line break is
-# only tried after a character that is not space: however the text is shaped, a pass over
-# it stays linear.
+# Where a sentence ends: `.`, `?` or `!` with its citations and then space, or a line break;
+# a lower-case letter or digit after a full stop is an abbreviation. Model output is
+# untrusted, so every quantifier is possessive and the pass stays linear.
 SENTENCE_END = re.compile(r"[.!?](?:\s*+\[\d++\])*+\s++(?=\S)|(?<=\S)[ \t]*+\n\s*+(?=\S)")
 # A citation marker, read from a sentence whose white space is already single spaces.
 CITATION = re.compile(r" ?\[(\d+)\]")
-# A citation marker still arriving: an opening bracket and the digits so far, and nothing
-# after them yet.
+# A citation marker still arriving: an opening bracket and the digits so far.
 ARRIVING_CITATION = re.compile(r"\[\d*+")
 
 
@@ -217,9 +179,8 @@ def _answer(body: AskRequest, *, tenant_id: uuid.UUID | None, user_id: uuid.UUID
 def rate_answer(
     answer_id: uuid.UUID, body: AnswerFeedbackBody, *, tenant_id: uuid.UUID | None, user_id: uuid.UUID
 ) -> None:
-    """`POST /answers/{answerId}/feedback`. A reader's verdict on an answer they were
-    given themselves, which the evaluation set reads back (SRC-05). A colleague's answer,
-    another bank's, and a session in no bank find nothing: 404 (hardening H48)."""
+    """`POST /answers/{answerId}/feedback`: a reader's verdict on their own answer (SRC-05).
+    A colleague's, another bank's, or a session in no bank: 404 (H48)."""
     row = ai_log.answer_of(answer_id, tenant_id, asker_id=user_id) if tenant_id is not None else None
     if row is None:
         raise not_found()
@@ -240,9 +201,7 @@ def rate_answer(
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Before the first byte
-# ---------------------------------------------------------------------------------------
+# --- Before the first byte ---
 def _passages(question: str, *, tenant: Tenant, lang: str | None, as_of: datetime.date) -> list[Passage]:
     """The obligations the reader's own search ranks first for the question, with the
     facts a citation shows and the change each is about to undergo. Three queries,
@@ -291,9 +250,7 @@ def _prompt(question: str, passages: list[Passage]) -> str:
     return f"Passages:\n{context}\n\nQuestion: {' '.join(question.split())}"
 
 
-# ---------------------------------------------------------------------------------------
-# The stream
-# ---------------------------------------------------------------------------------------
+# --- The stream ---
 def _events(
     answer: Answer, passages: list[Passage], model: Generator[str | ai.Generation]
 ) -> Iterator[AskEvent]:
@@ -359,9 +316,8 @@ def _split(text: str) -> tuple[list[str], str]:
 
 
 def _grounded(sentence: str, count: int) -> tuple[str, list[int]] | None:
-    """A sentence's words and the passages it cites among the `count` the prompt gave, or
-    nothing when it cites none of them. A number longer than `count` is none of them, and
-    is never converted: the text is the model's, and so is the length of its numbers."""
+    """A sentence's words and the passages it cites among the `count` given, or nothing. A
+    number longer than `count` is never converted: its length is the model's."""
     spaced = " ".join(sentence.split())
     numbers = CITATION.findall(spaced)
     cited = list(dict.fromkeys(int(n) for n in numbers if len(n) <= len(str(count)) and 1 <= int(n) <= count))

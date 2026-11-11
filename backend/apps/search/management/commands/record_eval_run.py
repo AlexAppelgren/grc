@@ -1,13 +1,9 @@
 """`manage.py record_eval_run`: ask the console's active evaluation questions through a
 retriever, score them the release gate's way, and record the run (SRC-05, ADM-02).
 
-The retriever is the gate's own, `apps.search.eval:Retriever` unless `--retriever` names
-another `module:Class`. It builds the sample corpus in a database of its own and points its
-process's connection there for good, so it runs in a child process: the questions are read
-here first, the child scores them and exits (dropping its database), and the run is written
-here, to the database the questions came from. Nothing the retriever does can reach it.
-The child is a plain interpreter rather than a multiprocessing worker, because a test
-runner's parallel workers may not start one of those."""
+The retriever (`apps.search.eval:Retriever` unless `--retriever` names another) points its
+process at a throwaway database for good, so it runs in a child interpreter: the questions
+are read here, the child scores them, and the run is written here."""
 
 from __future__ import annotations
 
@@ -26,8 +22,7 @@ from apps.search import eval_sets
 from apps.shared.audit import Actor
 
 DEFAULT_RETRIEVER = "apps.search.eval:Retriever"
-# The child's whole job, with Django set up from the settings module this process passes on
-# in the environment. The answer goes to a file, so nothing the retriever prints can corrupt it.
+# The child's whole job; the answer goes to a file so nothing the retriever prints corrupts it.
 CHILD = (
     "import json, sys, django; django.setup(); from apps.search import eval_sets; "
     "rows = json.loads(open(sys.argv[2], encoding='utf-8').read()); "
