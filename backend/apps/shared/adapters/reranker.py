@@ -1,10 +1,9 @@
 """Reranker adapter (playbook 16, DECISIONS D-09, SRC-01). Hybrid search fuses the keyword
-and vector legs by reciprocal rank and reranks the top window; the window and the provider
-are settings, so swapping the model is a measured change (ADR 0009) and never a code change.
+and vector legs by reciprocal rank and reranks the top window; window and provider are
+settings, so swapping the model is a measured change (ADR 0009), never a code change.
 
-`mock` scores by how much of the question a candidate repeats: enough for chunk 7's
-scenarios to prove the reranker ran, never a real model. `none` is the contracted state
-until D-09 names one: the fused order stands, which is the sub-800 ms budget in playbook 10.
+`mock` scores by how much of the question a candidate repeats, enough to prove the reranker
+ran. `none` is the contracted state until D-09 names one: the fused order stands.
 """
 
 from __future__ import annotations

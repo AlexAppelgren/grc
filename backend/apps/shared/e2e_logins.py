@@ -81,12 +81,9 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
     # The second library editor. Four eyes holds in the console too (PRO-02, AC-PRO2): the
     # editor who files a proposal never decides it, so the queue journeys need a second one.
     SeedLogin(_id(13), "editor2@bleqq.test", "Kari Nygaard", None, (), platform_roles=("library_editor",)),
-    # c5-seed-watch's own entry: J-4's platform admin, who creates a platform agent key
-    # through the console (`c5-platform-agent-keys`) under `agent_definitions.manage` with a
-    # step-up. Not reserved: the key it creates is revocable, so nothing about a run leaves
-    # this login unable to be reused (unlike ADM-S2's re-issue, which retires a passkey for
-    # good — the guard's `reserved_for` check also assumes a tenant membership, which this
-    # platform-staff login has none of).
+    # J-4's platform admin, who creates a platform agent key through the console under
+    # `agent_definitions.manage` with a step-up. Not reserved: the key is revocable, so a run
+    # never leaves this login unusable (and `reserved_for` assumes a tenant membership).
     SeedLogin(
         _id(14),
         "agent-keys@bleqq.test",
@@ -95,14 +92,9 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
         (),
         platform_roles=("platform_admin",),
     ),
-    # c5-e2e-watch-journeys-a's own entry: the one deliberate exception to "one pinned
-    # language" above, so WAT-S2's "and again in sv" has a session whose own `locale` is
-    # Swedish to read the change page as. Not reserved: it only ever reads a page, so
-    # nothing about a run leaves it unable to be reused (unlike a login that spends itself
-    # on an irreversible UI action, playbook 8.3 rule 4). Its role is the same "reader" the
-    # shared English login stands for; the guard that keeps a *reserved* login's roles off
-    # the shared set (`test_logins_spent_by_a_journey_are_dedicated_to_it`) does not apply
-    # here for exactly that reason.
+    # The one exception to "one pinned language": WAT-S2 reads the change page in Swedish as
+    # a session whose `locale` is sv. Not reserved: it only reads, so a run never spends it;
+    # its role is the shared "reader".
     SeedLogin(
         _id(15),
         "reader-sv@example-bank.test",
@@ -112,12 +104,9 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
         title="Legal counsel",
         locale="sv",
     ),
-    # I18N-S3's own login: the journey switches this member's interface language to sv
-    # and back through the account menu. The language is saved on the person, so any
-    # other journey signed in as the same login while it runs (the suite is fully
-    # parallel) would render in Swedish mid-run. The teardown restores English, but only
-    # a login of its own keeps the others out of the window; it holds contributor, the
-    # role no shared login stands for.
+    # I18N-S3's own login: the journey switches this member's language to sv and back, which
+    # is saved on the person, so a login of its own keeps parallel journeys from rendering
+    # in Swedish mid-run. It holds contributor, which no shared login stands for.
     SeedLogin(
         _id(16),
         "language@example-bank.test",
@@ -128,19 +117,15 @@ SEED_LOGINS: tuple[SeedLogin, ...] = (
         reserved_for=("I18N-S3",),
     ),
     # --- tax-market-journeys (FP-S8) --------------------------------------------------------
-    # Tenant B's second person: FP-S8 turns on Denmark in tenant B, which its admin requests
-    # and someone else must approve with a passkey (four eyes). Approver holds
-    # footprint.approve and not footprint.request, so it never files the request it decides.
+    # Tenant B's second person: FP-S8's Denmark request needs another approver (four eyes);
+    # this one holds footprint.approve and not footprint.request.
     SeedLogin(_id(17), "approver@second-bank.test", "Freja Madsen", TENANT_B_SLUG, ("approver",), title="Approver, head of compliance"),
     # --- end tax-market-journeys -------------------------------------------------------------
     # --- r2-e2e-login-roster: every login the R2 journeys need, allocated once --------------
-    # One numbered block, so the parallel R2 seed packages never collide on `_id(n)`. Each
-    # login is reserved for the journeys that sign in as it or act on it, because each one
-    # changes something about the person that the next run must find as seeded (their
-    # teams, their absence, their work, their tokens). Department heads and team membership
-    # are data the chunk 8 seed writes; this roster only makes the people.
-    # Tenant A's head of Retail Banking (design/screens/admin-organisation.html): TEN-S8
-    # makes them head, J-9 reads their department view.
+    # One numbered block, so parallel seed packages never collide on `_id(n)`. Each login is
+    # reserved for the journeys that act on it, because each changes something the next run
+    # must find as seeded (teams, absence, work, tokens).
+    # Tenant A's head of Retail Banking: TEN-S8 makes them head, J-9 reads their department.
     SeedLogin(_id(18), "head@example-bank.test", "Karin Ek", TENANT_A_SLUG, ("owner",), title="Head of Retail Banking", reserved_for=("HOM-S13", "TEN-S8")),
     # J-9's contributor: added as a participant, then leaves.
     SeedLogin(_id(19), "participant@example-bank.test", "Viktor Hedlund", TENANT_A_SLUG, ("contributor",), title="Product specialist, savings", reserved_for=("HOM-S13",)),
@@ -201,9 +186,8 @@ REISSUE_LOGIN_EMAIL = "reissue@example-bank.test"
 LIBRARY_EDITOR_ROLE = "library_editor"
 
 # --- r2-e2e-login-roster ---------------------------------------------------------------------
-# The first and last `_id(n)` of the R2 journey roster above, and the tenant role (not a system
-# role) the no-record-read login holds: every permission everyone has except register.read and
-# cases.read.
+# The first and last `_id(n)` of the roster above, and the tenant role the no-record-read
+# login holds: every permission but register.read and cases.read.
 R2_ROSTER_IDS = range(18, 29)
 NO_RECORD_READ_ROLE = "library_only"
 # --- end r2-e2e-login-roster -----------------------------------------------------------------

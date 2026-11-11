@@ -1,16 +1,10 @@
 """Support access, requested by the platform and granted by the bank (TEN-06, D-49, ADR
 0042). A request grants nothing; a tenant admin approves it with a passkey, declines it or
-revokes it, and support then reads under it and never writes. Each tenant-side function loads
-the request in the caller's bank, so another bank's id answers 404.
+revokes it, and support then reads under it and never writes. Another bank's id answers 404.
 
-This module is the request, the decision and the grant a support session stands on: entering
-a bank under a grant (`enter`), the per-request check that the grant is still open
-(`live_grant`) and the `support_access.read` row each request writes (`record_read`). It is
-the one module that loads a grant (apps/shared/tests_support_session.py pins it), and the
-console's own list of the caller's grants (`my_grants`) reads through the same own-grants policy.
-
-A pending request and an open window lapse on read, with no job: `state_of()` is the one
-place that reads the clock against a row.
+The one module that loads a grant (apps/shared/tests_support_session.py pins it): `enter`,
+`live_grant`, `record_read` and `my_grants`. A pending request and an open window lapse on
+read, with no job: `state_of()` is the one place that reads the clock against a row.
 """
 
 from __future__ import annotations
@@ -67,8 +61,8 @@ def state_of(grant: SupportAccess, now: datetime.datetime) -> SupportAccessState
 
 def pending_requests(*, excluding_user_id: uuid.UUID | None) -> QuerySet[SupportAccess]:
     """The requests the activated bank still has to decide, as `state_of` reads a pending
-    one: read-level, requested and not yet expired, never one the caller asked for
-    (x-decide-now-counts, Today's "Decide now"). `/me` counts them inside its one read."""
+    one: read-level, requested and not yet expired, never one the caller asked for (Today's
+    "Decide now"). `/me` counts them inside its one read."""
     return SupportAccess.objects.filter(
         status=SupportAccessStatus.REQUESTED.value,
         access_level=SupportAccessLevel.READ.value,

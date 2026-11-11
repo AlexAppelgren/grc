@@ -1,18 +1,14 @@
 """What the taxonomy and proposals routes share: who is calling, the logic gates, `If-Match`,
 and turning a logic `ValidationError` into the one problem shape (playbook 4.2, 4.4).
 
-`answers_problems` is the api.py half of "logic raises ValidationError, api re-raises with
-the right status". Statuses come from the one table, `apps.shared.errors.STATUS_BY_CODE`;
-it adds what the shared handler in config/api.py cannot: the `extra` a refusal carries
-beside its code (the near match of a duplicate, the usage count of a value in use), so the
-screen offers the next step without a second call. It also marks the request's transaction
-for rollback, so a refusal raised after a partial write can never commit that write.
+`answers_problems` takes statuses from `apps.shared.errors.STATUS_BY_CODE` and adds the
+`extra` a refusal carries beside its code (a duplicate's near match, a value's usage count),
+and marks the transaction for rollback, so a refusal after a partial write never commits it.
 
-The logic gates exist because some routes serve more than one principal or more than one
-permission: a library list is proposed with `proposals.create` from a tenant or
-`library_vocab.manage` from the console, and read by a person's session or an agent's key
-with `library:read`. Each such route is listed in `UNGATED_BY_DESIGN` as `logic-gate`, and
-the gate here still answers the structured 403 with `requiredPermission`.
+The logic gates serve routes with more than one principal or permission (a library list is
+proposed with `proposals.create` or `library_vocab.manage`, read by a session or a
+`library:read` key). Each is listed in `UNGATED_BY_DESIGN` as `logic-gate`, and the gate here
+still answers the structured 403 with `requiredPermission`.
 """
 
 from __future__ import annotations
@@ -66,9 +62,7 @@ def answers_problems(view: F) -> F:
     return wrapper  # type: ignore[return-value]
 
 
-# ---------------------------------------------------------------------------------------
-# Who is calling
-# ---------------------------------------------------------------------------------------
+# --- Who is calling ---
 def principal(request: HttpRequest) -> Principal:
     value = getattr(request, "auth", None)
     if not isinstance(value, Principal):
@@ -145,9 +139,7 @@ def idempotency_key(request: HttpRequest) -> str | None:
     return value or None
 
 
-# ---------------------------------------------------------------------------------------
-# Logic gates (UNGATED_BY_DESIGN reason `logic-gate`)
-# ---------------------------------------------------------------------------------------
+# --- Logic gates (UNGATED_BY_DESIGN reason `logic-gate`) ---
 def deny(permission: str) -> ProblemError:
     return ProblemError(
         status=403, code="permission_denied", detail="You do not have access to this.", required_permission=permission

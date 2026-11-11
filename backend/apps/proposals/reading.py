@@ -1,31 +1,17 @@
 """Reading the review queue (PRO-01, PRO-03): the rows a reviewer scans, the page they
-decide on, and the list a bank sees of its own proposals.
+decide on, and the list a bank sees of its own proposals. Nothing here writes; library
+records are read through apps/library/reading.py and compared with apps/library/logic.py's
+sentence diff.
 
-Nothing here writes, and nothing here writes a library row: the records a proposal points
-at are read through apps/library/reading.py, where every library read lives, and the
-comparison between what the library says and what a proposal would make it say is chunk 3's
-one sentence diff (apps/library/logic.py), never a second implementation.
+- A proposal made inside a bank reaches the console without its proposer (PRO-03), only
+  `fromOrganisation`; `logic.row()` withholds it for every answer.
+- `isMine` is computed from the caller, never sent by the client; it marks exactly the rows
+  `notMine` drops (`logic.filed_by`), and the server refuses that approval anyway (AC-PRO2).
 
-Two rules decide what a reader is told about who proposed what:
-
-- A proposal made inside a bank reaches the console without its proposer (PRO-03). The row
-  says `fromOrganisation` instead, which is the whole truth the console gets: not the
-  person, not their id and not which bank they work for. `logic.row()` withholds it, so
-  every answer carrying a proposal withholds it, not only the queue.
-- `isMine` is computed here from the reviewer who called, a person or an agent's key, and
-  never sent by the client, because it is what a screen hides its own Approve control
-  behind; the server refuses that approval either way (four eyes, AC-PRO2). It marks
-  exactly the rows `notMine` drops (`logic.filed_by`).
-
-An approved proposal is read against what it replaced, not against today: the version before
-the one its approval wrote, and the scope the approval's own audit row found. Read against
-today instead, it would compare its own text with itself the day its version comes into
-force. A proposal that was not approved, open or rejected, is read against the version in
-force today and the scope the record carries now, and moves with them.
-
-A bank's own list is scoped by row-level security on `proposal_tenant` and never by a
-tenant filter in Python: the tenant the session activated is the only one whose link rows
-the database will return, so a bug here cannot widen it.
+An approved proposal is read against what it replaced (the version before the one it wrote,
+and the scope its audit row found), not against today. Any other is read against today.
+A bank's own list is scoped by row-level security on `proposal_tenant`, never by a filter
+in Python.
 """
 
 from __future__ import annotations
@@ -199,9 +185,8 @@ def detail(proposal: Proposal, order: list[str], *, reviewer: Reviewer) -> Propo
     if isinstance(payload, ProposalTranslationsPayload):
         return _translations_detail(proposal, payload, row, order)
     if not isinstance(payload, ProposalObligationVersionPayload) or proposal.target_id is None:
-        # No wording to compare: a list row is written by a person, and a new record replaces
-        # nothing. Its sources are still what a reviewer checks it against, and a new duty
-        # names the instrument it would sit under, as a summary names the one it describes.
+        # No wording to compare: a list row is a person's wording and a new record replaces
+        # nothing. Its sources are still checked, and a new duty names its instrument.
         return ProposalDetail(
             **dict(row),
             sources=_sources(proposal),

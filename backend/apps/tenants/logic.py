@@ -70,7 +70,7 @@ def onboarding(tenant: Tenant) -> dict[str, Any]:
         "profile": profile_done,
         "members": members_done,
         "footprint": FootprintTerm.objects.filter(tenant=tenant).exists(),
-        "vocabularies": False,  # chunk 2
+        "vocabularies": False,  # not tracked yet
         "passkey": passkey_done,
     }
     steps = [{"key": key, "done": done[key]} for key in ONBOARDING_STEPS]
@@ -197,9 +197,7 @@ def set_ai_enabled(*, tenant: Tenant, actor: Actor, enabled: bool, step_up_asser
     return tenant
 
 
-# ---------------------------------------------------------------------------------------
-# The workflow policy (COL-02): six columns on the tenant, changed under workflow.manage
-# ---------------------------------------------------------------------------------------
+# --- The workflow policy (COL-02): six columns on the tenant, changed under workflow.manage ---
 def _workflow_values(tenant: Tenant) -> dict[str, Any]:
     """The policy as the audit event records it: keys and numbers, never a label."""
     return {
@@ -308,9 +306,7 @@ def update_workflow(
     return Tenant.objects.select_related("default_language").get(pk=tenant.pk)
 
 
-# ---------------------------------------------------------------------------------------
-# Console: the last admin recovers through platform support (ID-05, ID-S13)
-# ---------------------------------------------------------------------------------------
+# --- Console: the last admin recovers through platform support (ID-05, ID-S13) ---
 @batched()
 def console_reissue_enrolment(
     *,
@@ -332,8 +328,8 @@ def console_reissue_enrolment(
     # Platform staff have no bypass (playbook 14): the support access row is the door,
     # written before the one action it covers.
     tenancy.activate(tenant.id)
-    # The person is found before anything is written, so a refused recovery leaves no
-    # support access row and no audit row behind it (security-review-c8 M6).
+    # Found before anything is written, so a refused recovery leaves no support access or
+    # audit row (security-review-c8 M6).
     membership = Membership.objects.filter(tenant=tenant, user_id=user_id, deactivated_at__isnull=True).select_related("user").first()  # ordering: unique (tenant, user), at most one row
     if membership is None:
         raise ValidationError("Not found.", code="not_found")
@@ -371,9 +367,7 @@ def console_reissue_enrolment(
     return access
 
 
-# ---------------------------------------------------------------------------------------
-# Console: create a bank and invite its first administrator (ADM-02, ADM-S6)
-# ---------------------------------------------------------------------------------------
+# --- Console: create a bank and invite its first administrator (ADM-02, ADM-S6) ---
 def _console_tenant_row(tenant: Tenant, first_admin: Invitation | None) -> dict[str, Any]:
     """What the console list shows: the tenant row itself and the invitation the platform
     sent its first administrator (D-123), never anything the bank wrote."""
@@ -421,10 +415,8 @@ def resend_first_administrator(*, actor: Actor, tenant_id: uuid.UUID) -> dict[st
     return console_tenant_out(tenant)
 
 
-# Letters slugify would drop because Unicode decomposition has no ASCII for them ("Sør"
-# became "sr"): ø, æ, the German sharp s, Faroese and Icelandic ð and þ, the Sami đ, ŋ and
-# ŧ, and œ and ł; å is listed beside them for the reader. Names are lower-cased first, so
-# this covers the capitals too.
+# Letters slugify would drop because Unicode decomposition has no ASCII for them (ø, æ, ß,
+# ð, þ, đ, ŋ, ŧ, œ, ł; å for the reader). Names are lower-cased first.
 _SPELLED_OUT = str.maketrans(
     {"ø": "o", "æ": "ae", "å": "a", "ß": "ss", "ð": "d", "þ": "th"}
     | {"đ": "d", "ŋ": "ng", "ŧ": "t", "œ": "oe", "ł": "l"}
@@ -475,11 +467,8 @@ def create_tenant(
     step_up_assertion_id: uuid.UUID | None,
 ) -> Tenant:
     """Write the bank and invite its first administrator, in the caller's transaction
-    (FIRST_RUN_SETUP steps 6 and 7). The timezone, default language and content languages
-    are the bank's own to set, on the Organisation profile screen that already self-services
-    them under security.manage (D-68): platform staff no longer guess at them, the tenant
-    reads the model's default timezone and no language until its administrator chooses one,
-    and the onboarding "profile" step stays open until they do."""
+    (FIRST_RUN_SETUP steps 6 and 7). Timezone and languages are the bank's own to set on its
+    Organisation profile (D-68), so the onboarding "profile" step stays open until they do."""
     cleaned_name = name.strip()
     if not cleaned_name:
         raise ValidationError("Give the organisation a name.", code="name_required")

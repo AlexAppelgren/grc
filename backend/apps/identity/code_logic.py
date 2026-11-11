@@ -1,6 +1,6 @@
 """The emailed one-time code (ID-02, ID-03, AC-ID1): six digits, single use, ten minutes,
-stored as a keyed, salted hash (`tokens.hash_code`, F30), five attempts, rate limited per address and per IP, compared in
-constant time. All numbers are settings.
+stored as a keyed, salted hash (`tokens.hash_code`, F30), five attempts, rate limited per
+address and per IP, compared in constant time. All numbers are settings.
 
 The code is an enrolment bootstrap, never a fallback: `request_code` answers every
 address the same way and does the same hashing work on every path, and it sends a
@@ -112,9 +112,7 @@ def _open_code(email: str, now: datetime) -> OtpCode | None:
 
 def _claim_attempt(row: OtpCode) -> bool:
     """Spend one attempt with a single conditional UPDATE, so concurrent guesses at the
-    same code serialise on the row and can never exceed `max_attempts` together (an
-    in-memory `attempts += 1` let N parallel requests each see attempt 0; security review
-    2026-09-19, finding F2)."""
+    same code serialise on the row and can never exceed `max_attempts` together (F2)."""
     claimed = OtpCode.objects.filter(pk=row.pk, consumed_at__isnull=True, attempts__lt=F("max_attempts")).update(
         attempts=F("attempts") + 1
     )

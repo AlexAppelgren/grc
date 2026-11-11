@@ -1,19 +1,12 @@
-"""The vocabulary registry (VOC-01, VOC-02): one entry per list the generic endpoints
-serve, naming the model, its label model, the kinds its rows may carry, the extra
-columns exposed as `extra{}`, how usage is counted and how a merge re-points. Adding a
-list is adding an entry; the routes, the screen component and the agents' vocabulary
-read need no change (AC-VOC1).
+"""The vocabulary registry (VOC-01, VOC-02): one entry per list the generic endpoints serve,
+naming the model, its label model, its kinds, its `extra{}` columns, how usage is counted and
+how a merge re-points. Adding a list is adding an entry (AC-VOC1).
 
-Every list something references names its `links`: each library and watch column that
-holds one of a library list's values, and each register, organisation and collaboration
-column that holds one of a tenant list's. The usage count and the merge's re-point both
-read them, so a list counts exactly the records a merge would move. An append-only
-ledger (a compliance assessment) is history, so it neither counts nor moves: it keeps the
-value it named, which stays resolvable because a merged-away value is retired, never
-deleted. This module reads only: the writes that re-point
-rows live in apps/taxonomy/repoint.py (tenant rows), apps/proposals/apply.py (library
-rows) and apps/watch/write.py (watch rows), so the library fence's AST heuristic sees no
-write beside a library model's name.
+Every list something references names its `links`, which both the usage count and the merge
+read, so a list counts exactly what a merge would move. An append-only ledger neither counts
+nor moves: it keeps the value it named, which a merge retires, never deletes. This module
+reads only: the re-point writes live in apps/taxonomy/repoint.py, apps/proposals/apply.py
+and apps/watch/write.py, so the library fence sees no write beside a library model's name.
 """
 
 from __future__ import annotations
@@ -112,7 +105,7 @@ TENANT_TIER = 3
 
 
 def _no_usage(queryset: QuerySet[Any]) -> QuerySet[Any]:
-    """Nothing references this list yet; later chunks replace the annotation."""
+    """Nothing references this list."""
     return queryset.annotate(usage_count=Value(0, output_field=IntegerField()))
 
 
@@ -143,9 +136,9 @@ def _uses(*links: Link) -> Callable[[QuerySet[Any]], QuerySet[Any]]:
 class VocabularyList:
     name: str
     tier: int
-    # A concrete Vocabulary subclass (tier 3 ones add `tenant`) and its concrete label model
-    # (with a `vocabulary` foreign key). Typed Any because the columns the generic code reads
-    # differ per tier and per list; the vocabulary-integrity guard proves the pairing.
+    # A concrete Vocabulary subclass and its label model (with a `vocabulary` foreign key);
+    # typed Any because the columns differ per tier and list. The vocabulary-integrity guard
+    # proves the pairing.
     model: type[Any]
     label_model: type[Any]
     kind_name: str | None = None  # the tier-one kind's INPUT_DELTAS name, if rows carry one
@@ -183,10 +176,8 @@ def _tenant(entry: VocabularyList, *links: Link) -> VocabularyList:
     return replace(entry, usage=_uses(*links), repoint=repoint.tenant_links(links), links=links)
 
 
-# Every register, organisation and collaboration row a team is named on (TEN-03, COL-04):
-# as the owner, as a member's team, or as a live participant. A person in both teams of a
-# merge stays in the one kept, and a team taking part in a record beside the team it is
-# merged into is stamped removed there, never deleted.
+# Every row a team is named on (TEN-03, COL-04). A person in both teams of a merge stays in
+# the one kept, and a duplicate participation is stamped removed, never deleted.
 TEAM_LINKS = (
     Link(TenantObligation, "owner_team"),
     Link(TenantObligationScope, "owner_team"),
@@ -236,10 +227,9 @@ REGISTRY: dict[str, VocabularyList] = {
         _library(VocabularyList("library_tag", LIBRARY_TIER, LibraryTag, LibraryTagLabel), Link(ObligationTag, "tag", ("obligation",))),
         _library(VocabularyList("flag", LIBRARY_TIER, Flag, FlagLabel), Link(ChangeTerm, "flag", ("change",))),
         VocabularyList("rejection_reason", LIBRARY_TIER, RejectionReason, RejectionReasonLabel),
-        # The seed files every jurisdiction with its kind, parent and legal language, and its
-        # key never changes (D-94): a proposal relabels, retires or restores one, and the
-        # mirrored term follows in the same approval. Counted by the records filed under it,
-        # so a retirement asks first; never merged, so nothing is re-pointed.
+        # The seed owns each jurisdiction's key, kind, parent and legal language (D-94); a
+        # proposal relabels, retires or restores one and the mirrored term follows. Counted
+        # by the records filed under it; never merged.
         VocabularyList(
             "jurisdiction", LIBRARY_TIER, Jurisdiction, JurisdictionLabel, "jurisdiction_kind", _values(JurisdictionKind), True,
             fixed_keys=True, usage=_uses(Link(Instrument, "jurisdiction"), Link(Authority, "jurisdiction")),
@@ -270,7 +260,7 @@ REGISTRY: dict[str, VocabularyList] = {
         VocabularyList("case_sub_status", TENANT_TIER, CaseSubStatus, CaseSubStatusLabel, "case_status", _values(CaseStatusCategory), True),
         VocabularyList("dismissal_reason", TENANT_TIER, DismissalReason, DismissalReasonLabel),
         VocabularyList("close_reason", TENANT_TIER, ClosureReason, ClosureReasonLabel, "close_reason", _values(CloseReason), True),
-        # Chunk 8's register lists (REG-03, VOC-04, VOC-06, TEN-03).
+        # The register's lists (REG-03, VOC-04, VOC-06, TEN-03).
         _tenant(VocabularyList("gap_status", TENANT_TIER, GapStatus, GapStatusLabel, "gap_category", _values(GapCategory), True), Link(Gap, "status")),
         _tenant(VocabularyList("gap_source", TENANT_TIER, GapSource, GapSourceLabel), Link(Gap, "source")),
         _tenant(VocabularyList("risk_acceptance_reason", TENANT_TIER, RiskAcceptanceReason, RiskAcceptanceReasonLabel), Link(Gap, "acceptance_reason")),

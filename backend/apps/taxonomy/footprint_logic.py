@@ -1,36 +1,20 @@
 """The footprint and its change requests (FP-01, FP-02, AC-FP1, J-6).
 
-A footprint change has a wide blast radius: every feed, inventory, roadmap, briefing and
-report is filtered by it (FP-03). So it is never a direct write. A requester creates a
-`FootprintChangeRequest` with a preview of what the change would hide and reveal; a second
-person approves it with a fresh passkey assertion; the approval switches the terms, writes
-one audit event and one `footprint_history` row per term, in one transaction.
+Every feed, inventory, roadmap, briefing and report is filtered by the footprint (FP-03), so
+it is never a direct write: a request carries a preview of what it would hide and reveal, a
+second person approves it with a fresh passkey, and the approval switches the terms with one
+audit event and one `footprint_history` row per term, in one transaction. This module
+writes, so it names no library model (the library fence); terms come from terms_logic.
 
-This module writes, so it names no library model class: the terms it adds and removes
-arrive as rows from apps/taxonomy/terms_logic.py, and the read half of the footprint lives
-there too. The library fence's AST guard refuses any module that both names a
-`LibraryModel` and calls a write method (apps/shared/tests_library_fence.py).
+The preview counts obligations and open cases by the one scope rule
+(apps/taxonomy/matching.py); `available` tells "not counted" from "none" (playbook 4.4).
 
-The preview counts per record kind: the obligations this bank can see and its open cases,
-each by the one scope rule (apps/taxonomy/matching.py). A count carries `available`, because
-"not counted" and "none" are different answers and a screen that cannot tell them apart
-would lie to the person deciding (playbook 4.4); both kinds are counted, so both say true.
-
-A request may also add and remove scope items (OWN-01, D-89, D-91): regulations the shared
-library does not cover, which the bank's own agent researches once a second person approved
-them. An item rides on the same request, so the same one-waiting rule, four-eyes check and
-passkey decide it, and only a person's session reaches it: no key and no agent path writes a
-scope item (`tests_scope_items.NoOtherWriter`). An item is not a term: it moves no count in
-the preview and FP-01's matching never reads it. Its approval writes a history row and one
-`scope_item.added` or `scope_item.removed` audit and outbox row carrying ids and keys only,
-which is what the research worker listens for; the name and description a person typed stay
-on the item row (R2_CROSS_CUTTING rule m).
-
-A request may also carry company lines (FP-05, PUBLIC_REGISTERS.md, D-121): a licence-bound
-term taken out of one legal entity's own scope or put back into it, usually as the public
-registers suggest. They ride on the same request, so the same second person and passkey
-decide them, and they never touch the bank's scope or move the preview: an approved line
-writes `entity_scope_exclusion`, which only the register's span reads (REG-S18).
+A request may also carry scope items (OWN-01, D-89, D-91), regulations the library does not
+cover, which the bank's own agent researches once approved. Only a person's session writes
+one (`tests_scope_items.NoOtherWriter`); an item is never matched, and its audit and outbox
+rows carry ids and keys only (R2_CROSS_CUTTING rule m). And it may carry company lines
+(FP-05, D-121): a licence-bound term taken out of, or put back into, one legal entity's own
+scope, which only the register's span reads (REG-S18).
 """
 
 from __future__ import annotations
@@ -95,8 +79,7 @@ SCOPE_ITEM_SUBJECT_TYPE = "scope_item"
 # The dimension a scope item's regime term comes from (the model's `regime_term`).
 REGIME_DIMENSION = "regime"
 SCOPE_ITEM_KEY_MAX_CHARS = 80
-# How a scope item's research stands (OWN-02). Until the bank's own agent opens research
-# on an item (d89-agent-research), an item in scope waits for it.
+# How a scope item's research stands (OWN-02): an item in scope waits for the bank's agent.
 WAITING_FOR_AGENT = "waiting_for_agent"
 ENTITY_SUBJECT_TYPE = "org_unit"
 # The dimensions a company's own scope narrows: the licence-bound ones, whose terms a register
@@ -107,17 +90,13 @@ ENTITY_SCOPE_DIMENSIONS = ("regime", "service_type", "licensed_activity")
 EntityLine = tuple[OrgUnit, Any]
 
 
-# ---------------------------------------------------------------------------------------
-# Reading
-# ---------------------------------------------------------------------------------------
+# --- Reading ---
 def view(tenant_id: uuid.UUID, order: list[str]) -> FootprintView:
     """The footprint screen's data (FP-01): every dimension, the terms this company carries
-    in it, whether it restricts the footprint at all, the pending request if one waits, and
-    every active country's market level (FP-04). A dimension with no terms is not an error
-    and not an omission: it means "no restriction", which the screen says in words
-    (playbook 4.5), except in an opt-in dimension, whose kind the reference carries: there it
-    means "none followed" (D-36). An opt-in dimension restricts whatever its flag says, so
-    the read says so too, as the matcher does."""
+    in it, whether it restricts, the pending request if one waits, and every active country's
+    market level (FP-04). A dimension with no terms means "no restriction" (playbook 4.5),
+    except an opt-in dimension, where it means "none followed" (D-36); an opt-in dimension
+    restricts whatever its flag says, as the matcher reads it."""
     selected = terms_logic.selected_terms_by_dimension(tenant_id, order)
     dimensions: list[FootprintDimension] = []
     for ref, restricts, term_count in terms_logic.dimensions_for_footprint(order):
@@ -157,9 +136,8 @@ def pending_row(tenant_id: uuid.UUID, order: list[str]) -> FootprintRequestRow |
 def requests_of(
     tenant_id: uuid.UUID, order: list[str], *, limit: int, offset: int
 ) -> tuple[list[FootprintRequestRow], int]:
-    """One page of the request history (FP-02, NFR-02), newest first, and how many requests
-    there are in all. The id settles two requests sent in the same instant, so two reads
-    always agree on the order."""
+    """One page of the request history (FP-02, NFR-02), newest first, and the total. The id
+    breaks ties, so two reads agree on the order."""
     found = FootprintChangeRequest.objects.filter(tenant_id=tenant_id)
     page = found.select_related("requested_by", "decided_by").order_by("-requested_at", "id")[offset : offset + limit]
     return request_rows(list(page), order), found.count()
@@ -212,9 +190,7 @@ def request_rows(requests: list[FootprintChangeRequest], order: list[str]) -> li
     ]
 
 
-# ---------------------------------------------------------------------------------------
-# Scope items (OWN-01, D-91)
-# ---------------------------------------------------------------------------------------
+# --- Scope items (OWN-01, D-91) ---
 def _scope_items() -> Any:
     return ScopeItem.objects.select_related("jurisdiction", "regime_term__dimension")
 
@@ -304,8 +280,8 @@ def _key_base(name: str) -> str:
 def scope_item_drafts(tenant_id: uuid.UUID, inputs: list[ScopeItemInput]) -> list[ScopeItem]:
     """The items a request would add, validated and keyed but not stored (OWN-01): the
     jurisdiction and the regime term by key, the address as a public https page, the
-    description within its cap. A key is derived from the name and never reused, a declined
-    or removed item's included (playbook 4.3), so a taken one gets `_2`, `_3` and so on."""
+    description within its cap. A key is never reused (playbook 4.3), so a taken one gets
+    `_2`, `_3` and so on."""
     drafts: list[ScopeItem] = []
     bases = {_key_base(entry.name) for entry in inputs}
     taken = set(
@@ -364,9 +340,7 @@ def scope_items_in_scope(tenant_id: uuid.UUID, keys: list[str]) -> list[ScopeIte
     return [found[key] for key in keys]
 
 
-# ---------------------------------------------------------------------------------------
-# Company lines (FP-05, D-121)
-# ---------------------------------------------------------------------------------------
+# --- Company lines (FP-05, D-121) ---
 def entity_lines(tenant_id: uuid.UUID, selectors: Sequence[FootprintEntityTermSelector], *, exclude: bool) -> list[EntityLine]:
     """The company lines a request would carry, validated in the order given: each names an
     active legal entity of this bank (422 `not_a_legal_entity`), a term of a licence-bound
@@ -489,9 +463,7 @@ def _switch_entities(
         )
 
 
-# ---------------------------------------------------------------------------------------
-# The preview (AC-FP1)
-# ---------------------------------------------------------------------------------------
+# --- The preview (AC-FP1) ---
 def _after(now: dict[str, set[str]], adds: list[Any], removes: list[Any]) -> dict[str, set[str]]:
     """The footprint the change would leave behind."""
     after = {dimension: set(keys) for dimension, keys in now.items()}
@@ -503,13 +475,11 @@ def _after(now: dict[str, set[str]], adds: list[Any], removes: list[Any]) -> dic
 
 
 def preview_of(tenant_id: uuid.UUID, adds: list[Any], removes: list[Any]) -> FootprintPreview:
-    """What the change would hide and reveal, per record kind (AC-FP1). Hidden means in
-    scope now and out of it afterwards; revealed is the other way. The count runs the pure
-    matching rule twice over the scope of every obligation this company can see (the
-    library's one scope rule, `reading.obligation_scopes`, under row-level security),
-    because the SQL function reads the stored footprint and this asks about one that does
-    not exist yet. An obligation with no scope matches both and is not listed. Cases are
-    counted the same way over the scope of each open case's change (`case_reading`)."""
+    """What the change would hide and reveal, per record kind (AC-FP1). The count runs the
+    pure matching rule twice over the scope of every obligation this company can see
+    (`reading.obligation_scopes`, under row-level security), because the SQL function reads
+    the stored footprint and this asks about one that does not exist yet. An obligation with
+    no scope matches both. Open cases are counted the same way (`case_reading`)."""
     now = matching.footprint_of(tenant_id)
     after = _after(now, adds, removes)
     restricting = matching.restricting_dimensions()
@@ -554,8 +524,7 @@ def _changes(request: FootprintChangeRequest) -> tuple[list[Any], list[Any]]:
 
 def _preview_now(request: FootprintChangeRequest, adds: list[Any], removes: list[Any]) -> FootprintPreview:
     """A waiting request is recounted every time it is read, so the approver decides against
-    today's library rather than against whatever it held when the request was made. A
-    decided request keeps the counts it was decided against."""
+    today's library. A decided request keeps the counts it was decided against."""
     if request.status == ApprovalStatus.PENDING.value:
         return preview_of(request.tenant_id, adds, removes)
     return FootprintPreview(**request.preview) if request.preview else FootprintPreview()
@@ -572,10 +541,9 @@ def dry_run(
     entity_excludes: Sequence[EntityLine] = (),
     entity_includes: Sequence[EntityLine] = (),
 ) -> FootprintDryRun:
-    """The requester's preview before sending (playbook 15: dry run, preview, commit). The
-    same validation as a real request, the same preview, and nothing written: no request
-    row, no scope item, no audit event, no approval started. A preview is a read that needs
-    a body. Scope items move no count: they are researched, never matched."""
+    """The requester's preview before sending (playbook 15: dry run, preview, commit): the
+    same validation and preview as a real request, and nothing written. Scope items move no
+    count."""
     _validate_change(adds, removes, item_adds, item_removes, entity_excludes, entity_includes)
     entity_terms = [term for _, term in (*entity_excludes, *entity_includes)]
     entity_labels = dict(zip((term.id for term in entity_terms), terms_logic.labelled_term_refs(entity_terms, order), strict=True))
@@ -615,9 +583,7 @@ def _validate_change(
         raise ValidationError("A term cannot be added and removed in the same change.", code="validation_error")
 
 
-# ---------------------------------------------------------------------------------------
-# Writing
-# ---------------------------------------------------------------------------------------
+# --- Writing ---
 def _term_state(term: Any, request: FootprintChangeRequest | None) -> dict[str, str]:
     """A term event's before or after: the term, and the request that caused it when one
     did, so the audit log ties each term to its request without matching step-up ids."""
@@ -637,8 +603,7 @@ def _switch_on(
     added_by: Any = None,
 ) -> int:
     """Add terms to the footprint: one `footprint_term` row, one history row and one audit
-    event per term (FP-02: "one audit event per term", so the log reads as decisions about
-    one term each rather than a blob nobody can diff)."""
+    event per term (FP-02), so the log reads as decisions about one term each."""
     count = 0
     for term in terms:
         row, created = FootprintTerm.objects.get_or_create(
@@ -715,9 +680,8 @@ def seed_terms(*, tenant: Tenant, actor: Actor, terms: list[Any]) -> int:
 
 
 def unseed_terms(*, tenant: Tenant, actor: Actor, terms: list[Any]) -> int:
-    """`seed_terms` undone, for an E2E journey that restores the seeded footprint it
-    changed (watch-standards, WAT-S10): the same writes a removal makes, history and audit
-    included."""
+    """`seed_terms` undone, for an E2E journey that restores the seeded footprint (WAT-S10):
+    the same writes a removal makes, history and audit included."""
     return _switch_off(tenant=tenant, actor=actor, terms=terms, request=None, step_up_assertion_id=None)
 
 
@@ -733,15 +697,13 @@ def create_request(
     entity_excludes: Sequence[EntityLine] = (),
     entity_includes: Sequence[EntityLine] = (),
 ) -> FootprintChangeRequest:
-    """One pending request at a time (409 `request_pending`): two people editing the same
-    footprint from two previews would each approve a change the other's preview never
-    counted. The partial unique constraint `footprint_change_request_one_pending` decides,
-    so two requests sent at the same moment cannot both wait; the savepoint keeps the
-    caller's transaction usable after the refusal. The scope items it adds are stored with
-    it as `requested`, so the approver decides on exactly what was asked (D-91). Company lines
-    are stored as they were asked for (FP-05). Whether the requester was then the bank's only
-    member able to approve is stored with it (`requester_sole_approver`, review 2026-11-11
-    S-5): the D-125 exception is decided on the bank as it stood when the request was made."""
+    """One pending request at a time (409 `request_pending`): two requests from two previews
+    would each approve a change the other never counted. The partial unique constraint
+    `footprint_change_request_one_pending` decides; the savepoint keeps the caller's
+    transaction usable. Scope items (D-91) and company lines (FP-05) are stored as asked.
+    Whether the requester was then the bank's only possible approver is stored too
+    (`requester_sole_approver`, review 2026-11-11 S-5), so D-125 is decided on the bank as it
+    stood when the request was made."""
     _validate_change(adds, removes, item_adds, item_removes, entity_excludes, entity_includes)
     try:
         with transaction.atomic():
@@ -851,9 +813,8 @@ def _switch_items(
 
 
 def _decidable(request: FootprintChangeRequest, expected_version: int | None) -> None:
-    """Lock the row, then check status and version under the lock (FP-S6). Two decisions on
-    one request queue on the lock, and the second reads what the first committed: 409
-    `invalid_transition`, never a stale "pending" that lets both land."""
+    """Lock the row, then check status and version under the lock (FP-S6): a second decision
+    reads what the first committed and is 409 `invalid_transition`."""
     request.refresh_from_db(from_queryset=FootprintChangeRequest.objects.select_for_update())
     if request.status != ApprovalStatus.PENDING.value:
         raise ValidationError(
@@ -866,11 +827,10 @@ def _decidable(request: FootprintChangeRequest, expected_version: int | None) ->
 @batched()
 def sole_approver(tenant: Tenant, user: Any) -> bool:
     """Whether `user` may approve their own scope request as the bank's only member able to
-    approve one (D-125): the setting allows it, they hold `footprint.approve` themselves, and
-    no other member of the bank does. Permissions, never role names. A member counts whatever
-    their account's status: a colleague whose enrolment was re-issued (`invited`) is still
-    the bank's second approver, so re-issuing it cannot make the requester the only one
-    (review 2026-11-11 S-5)."""
+    approve one (D-125): the setting allows it, they hold `footprint.approve`, and no other
+    member does, whatever that member's account status, so re-issuing a colleague's
+    enrolment cannot make the requester the only one (review 2026-11-11 S-5). Permissions,
+    never role names."""
     from apps.identity.models import Membership
 
     if not settings.FOOTPRINT_SOLE_APPROVER_ALLOWED:
@@ -896,12 +856,10 @@ def approve(
     expected_version: int | None = None,
 ) -> FootprintChangeRequest:
     """The second person's decision (FP-02, AC-FP1). Four eyes is checked here and by the
-    `footprint_change_request_four_eyes` check constraint, which is the database's word on
-    it; the API answers 409 `four_eyes_violation`. The one exception (D-125): the bank's
-    only member able to approve may approve their own request, marked `sole_approver`, when
-    they were the only one both when they asked and now (review 2026-11-11 S-5): removing
-    the other approver, changing their roles or re-issuing their enrolment after asking
-    does not open it."""
+    `footprint_change_request_four_eyes` constraint; the API answers 409
+    `four_eyes_violation`. The one exception (D-125): the bank's only possible approver may
+    approve their own request, marked `sole_approver`, when they were the only one both when
+    they asked and now (review 2026-11-11 S-5)."""
     _decidable(request, expected_version)
     if request.requested_by_id == decider.id:
         if not (request.requester_sole_approver and sole_approver(tenant, decider)):
@@ -913,10 +871,9 @@ def approve(
     adds, removes = _changes(request)
     item_adds, item_removes = _scope_item_changes_of([request])[0]
     entity_includes, entity_excludes = _entity_changes_of([request])[0]
-    # A term retired while the request waited is not the library's any more: nobody may
-    # switch it on, so the approver rejects the change and the requester asks again. The
-    # same holds for a scope item's jurisdiction or regime term, and for a company line
-    # whose company was deactivated meanwhile.
+    # A term retired while the request waited may not be switched on, so the approver
+    # rejects and the requester asks again; likewise a scope item's terms and a company line
+    # whose company was deactivated.
     if (
         any(not term.active or not term.dimension.active for term in adds)
         or any(not item.jurisdiction.active or not item.regime_term.active for item in item_adds)
@@ -1053,7 +1010,7 @@ def _decide(
     request.preview = preview.model_dump(by_alias=True)
     request.save(update_fields=["status", "decided_by", "decided_at", "decision_note", "version", "preview", "sole_approver"])
     # The note a person typed stays on the request row; the audit value carries no tenant
-    # text (CHUNK10_TASKS rule 13).
+    # text.
     after: dict[str, Any] = {"status": status.value, "version": request.version, "preview": request.preview}
     if request.sole_approver:
         after["soleApprover"] = True

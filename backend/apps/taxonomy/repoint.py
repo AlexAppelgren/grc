@@ -1,24 +1,15 @@
 """Re-pointing rows from one vocabulary value to another (VOC-02 merge). Each function
-answers, per table, the ids of the rows that move and of the twins dropped (`Moves`), and
-runs inside the caller's transaction, so a failure halfway leaves nothing changed. The
-merge's `vocabulary.merged` audit row carries those ids (H23), so which records held the
-merged-away value can be rebuilt from the log although the link rows move in place.
+answers, per table, the ids of the rows that move and of the twins dropped (`Moves`), inside
+the caller's transaction. The `vocabulary.merged` audit row carries those ids (H23).
+`dry_run=True` answers the same rows without writing, so the preview and the commit agree.
 
-`dry_run=True` answers the same rows without writing: the merge preview and the commit
-count the same way, so the number a person approved is the number that moved.
+A tenant list's rows are moved here. A library list's rows are handed to the door that may
+write each table (`move()`): apps/watch/write.py or apps/proposals/apply.py. The merged-away
+value stays, retired, so old references resolve.
 
-A tenant list's rows are tenant rows, moved here. A library list's rows sit behind the
-fences, so this module only works out which rows move and hands each table to the door
-that may write it (`move()`): a watch table to apps/watch/write.py, every other library
-table to the approved proposal's own writer in apps/proposals/apply.py. The merged-away
-value itself is never touched here: it stays, retired, so a version, an audit row or an
-old label that names it still resolves.
-
-Every tenant table is moved in a fixed number of statements however many rows it holds
-(H32): the rows are read once, locked, split from their twins in Python (so a nullable
-column of a unique key compares as the database's `NULLS NOT DISTINCT` does), and moved
-with one bulk update, which also steps a versioned row's `version` so an `If-Match` read
-before the merge cannot write the merged-away value back.
+Every tenant table moves in a fixed number of statements (H32): rows read once and locked,
+twins split in Python (comparing as `NULLS NOT DISTINCT`), one bulk update that also steps a
+versioned row's `version`, so a stale `If-Match` cannot write the old value back.
 """
 
 from __future__ import annotations
@@ -74,10 +65,9 @@ class Link:
     model: type[Any]
     field: str
     unique_with: tuple[str, ...] = ()
-    # Tenant links only. `removable`: the rows are removed by stamping `removed_at` and
-    # `removed_by`, so only live rows count and move, and a twin is stamped removed rather
-    # than deleted. `drop_twins` False: the rows are never deleted, so a twin refuses the
-    # merge until a person resolves it.
+    # Tenant links only. `removable`: rows are removed by stamping `removed_at`/`removed_by`,
+    # so only live rows count and move, and a twin is stamped removed. `drop_twins` False:
+    # a twin refuses the merge until a person resolves it.
     removable: bool = False
     drop_twins: bool = True
 

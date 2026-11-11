@@ -1,5 +1,5 @@
 """`manage.py e2e_reach_off`: no agent access entry of tenant A in the E2E dataset reaches
-the bank's register any more, for J-11's teardown (acc-e2e-seed). Refuses to run on a
+the bank's register any more, for J-11's teardown. Refuses to run on a
 deployed environment, like `seed_e2e`."""
 
 from __future__ import annotations

@@ -1,26 +1,19 @@
 """Tenancy and the two zones (playbook 14).
 
-- `clear_tenant()` and `platform_zone()` leave the tenant zone, for the rest of the
-  transaction or for a block, which is how a request with no tenant runs and how a tenant's
-  own session writes a row that belongs to no tenant (an audit row about a library record,
-  say): since H15 a mixed table accepts only the zone the session is in. The tenancy guard
+- `clear_tenant()` and `platform_zone()` leave the tenant zone, for the transaction or a
+  block, since a mixed table accepts only the session's own zone (H15). The tenancy guard
   pins who may call them.
-- `activate(tenant_id)` issues `SET LOCAL app.tenant_id` (through `set_config(..., true)`,
-  which is the parameterised spelling) inside the open transaction. Policies read
-  `current_setting('app.tenant_id', true)`, so an unset value matches no rows. It refuses
-  to run outside a transaction because `SET LOCAL` outside one is a silent no-op and the
-  request would then see nothing and write nothing, or worse under a bypassing role.
-- `@tenant_task` wraps a Celery task body: the tenant id is the explicit first argument
-  and the task activates it inside its own transaction.
-- `TenantModel`: abstract, `tenant` FK, sits under forced RLS (the migration helper in
-  apps/shared/migration_helpers.py writes the policy; the RLS guard checks it exists).
-- `LibraryModel`: abstract, no tenant. Writes are refused outside `library_write()`, and
-  the library-fence guard restricts `library_write()` to the modules that apply approved
-  proposals, the watch pipeline and reference seeds (PRO-01, playbook 5).
-- `library_door()` is the database's half of that fence (H16, ADR 0058): it names the door
-  a write comes through in a transaction-local setting, and a trigger on every library-zone
-  table (shared 0008) refuses a write from the app role whose door that table does not
-  accept. `library_write()` and the index door open it; nothing else may.
+- `activate(tenant_id)` issues `SET LOCAL app.tenant_id` (via `set_config(..., true)`) in the
+  open transaction; policies read `current_setting('app.tenant_id', true)`, so unset matches
+  nothing. It refuses to run outside a transaction, where `SET LOCAL` is a silent no-op.
+- `@tenant_task` takes the tenant id as a Celery task's first argument and activates it in
+  the task's own transaction.
+- `TenantModel`: abstract, `tenant` FK, under forced RLS.
+- `LibraryModel`: abstract, no tenant; written only inside `library_write()`, which the
+  library-fence guard restricts to the proposal applier, the watch pipeline and the seeds
+  (PRO-01).
+- `library_door()` is the database's half of that fence (H16, ADR 0058): a transaction-local
+  setting naming the door, which a trigger on every library-zone table checks.
 """
 
 from __future__ import annotations
@@ -37,26 +30,16 @@ from django.db import DEFAULT_DB_ALIAS, connections, models, transaction
 from apps.shared.migration_helpers import LIBRARY_DOOR_SETTING
 
 TENANT_SETTING = "app.tenant_id"
-# The identity-lookup flag (chunk 1). Five tables are read before any tenant is known: an
-# invitation by its token or address, a membership at passkey sign-in (to pick the
-# session's tenant), a session by its refresh cookie, an API key by its prefix, and a
-# calendar subscription by the prefix in its address, which is the one credential that
-# arrives with no session and no key at all (D-52, ADR 0045).
-# Their policies add `OR current_setting('app.identity_lookup', true) = 'on'`, and
-# `identity_lookup()` below switches the flag on for the shortest possible block, then
-# clears it. The RLS guard lists exactly which tables carry the clause
-# (apps/shared/tests_rls.py, IDENTITY_LOOKUP_TABLES) and an AST guard restricts callers
-# to apps/shared/authentication.py and the identity app's logic modules.
+# The identity-lookup flag: five tables are read before any tenant is known (an invitation, a
+# membership at sign-in, a session by refresh cookie, an API key by prefix, a calendar feed by
+# its token, D-52). Their policies add `OR current_setting('app.identity_lookup', true) =
+# 'on'`, switched on by `identity_lookup()` for the shortest block. apps/shared/tests_rls.py
+# lists the tables, and an AST guard restricts the callers to authentication and identity.
 IDENTITY_LOOKUP_SETTING = "app.identity_lookup"
-# The door a library-zone write comes through (H16, ADR 0058) is `LIBRARY_DOOR_SETTING`,
-# imported above from the migration helpers, whose trigger reads the same name: shared 0008
-# puts that trigger on every library-zone table, and it refuses a write from the app role
-# unless the setting names a door that table accepts: `proposal` and `seed` the inventory
-# and the library vocabularies, `reverification` the obligation and its verification rows
-# only, `watch` the seven watch tables only (D-64), `index` the search index only (D-65) and
-# `seed` alone the library app's reference rows (languages, jurisdictions). The compliance
-# lint's `library-door` rule keeps this name in this module, the index door, the migration
-# helpers, migrations and tests.
+# The door a library-zone write comes through (H16, ADR 0058); the trigger on every
+# library-zone table refuses an app-role write unless `LIBRARY_DOOR_SETTING` names a door that
+# table accepts (see the migration helpers). The compliance lint's `library-door` rule keeps
+# this name to the doors, the migration helpers, migrations and tests.
 LibraryDoor = Literal["proposal", "reverification", "seed", "watch", "index", "eval"]
 
 _active_tenant: ContextVar[uuid.UUID | None] = ContextVar("active_tenant", default=None)
@@ -100,10 +83,8 @@ def database_tenant_id(*, using: str = DEFAULT_DB_ALIAS) -> uuid.UUID | None:
 
 
 def clear_tenant(*, using: str = DEFAULT_DB_ALIAS) -> None:
-    """Leave the tenant zone for the rest of the transaction: the session is then in the
-    zone of the rows that belong to no tenant, which is where a request with no tenant runs
-    in production. `platform_zone()` below is the block form, and the tenancy guard pins who
-    may call either."""
+    """Leave the tenant zone for the rest of the transaction, as a request with no tenant
+    runs. `platform_zone()` is the block form; the tenancy guard pins who may call either."""
     connection = connections[using]
     if not connection.in_atomic_block:
         raise NotInTransaction("tenancy.clear_tenant() needs an open transaction: SET LOCAL is a no-op outside one.")
@@ -114,13 +95,9 @@ def clear_tenant(*, using: str = DEFAULT_DB_ALIAS) -> None:
 @contextmanager
 def platform_zone(*, using: str = DEFAULT_DB_ALIAS) -> Iterator[None]:
     """Write rows that belong to no tenant, inside the open transaction, then put the
-    session's tenant back.
-
-    Since the write rules were split (H15) a mixed table accepts only the rows of the zone
-    the session is in, so a platform row cannot be written while a tenant is activated. Most
-    platform work never activates one; the exceptions are the actions a bank's own session
-    takes whose subject belongs to the library or the console, and `record()` writes their
-    audit row here. A block that raises leaves the tenant as it found it.
+    session's tenant back. A mixed table accepts only the session's zone (H15), so a bank's
+    session writes a library or console subject's audit row here. A block that raises leaves
+    the tenant as it found it.
     """
     previous = database_tenant_id(using=using)
     clear_tenant(using=using)
@@ -137,11 +114,9 @@ def _set_tenant_setting(value: str, *, using: str) -> None:
 
 
 class IdentityLookup:
-    """What `identity_lookup()` hands its block: the zone the session enters as the flag goes
-    off. `then_activate` is how the auth layer, having found and checked the credential's row,
-    activates its tenant (or, with None, no tenant) in the same statement that switches the
-    lookup off, so a request pays one round trip for both. The zone is entered only when the
-    block ends without an error; a block that raises leaves the tenant as it was."""
+    """What `identity_lookup()` hands its block. `then_activate` activates the credential's
+    tenant (or none) in the same statement that switches the lookup off, one round trip for
+    both, and only when the block ends without an error."""
 
     def __init__(self) -> None:
         self.zone: uuid.UUID | None = None
@@ -199,19 +174,15 @@ def tenant_task(fn: F) -> F:
     return wrapper  # type: ignore[return-value]
 
 
-# ---------------------------------------------------------------------------------------
-# Library fence
-# ---------------------------------------------------------------------------------------
+# --- Library fence ---
 @contextmanager
 def library_write(reason: str, *, door: LibraryDoor = "seed") -> Iterator[None]:
     """The only context in which a LibraryModel may be saved or deleted. `reason` names the
-    proposal, the watch step or the seed; it is recorded by record() callers.
+    proposal, the watch step or the seed.
 
-    `door` is what the database is told (H16, ADR 0058): the proposal applier names
-    `proposal` or `reverification` and the watch door `watch`; a reference seed and a test
-    builder take the default, `seed`, which is also the one door to the library app's
-    reference rows (languages, jurisdictions). Which module may name which door, the
-    default included, is pinned by the library fence (apps/shared/tests_library_fence.py)."""
+    `door` is what the database is told (H16, ADR 0058): `proposal` or `reverification` for
+    the proposal applier, `watch` for the watch door, the default `seed` for reference seeds
+    and test builders. The library fence pins which module may name which door."""
     if not reason.strip():
         raise ValueError("library_write() needs a reason naming the proposal, step or seed")
     token = _library_write_reason.set(reason)
@@ -226,12 +197,9 @@ def library_write(reason: str, *, door: LibraryDoor = "seed") -> Iterator[None]:
 def library_door(door: LibraryDoor, *, using: str = DEFAULT_DB_ALIAS) -> Iterator[None]:
     """Tell the database which door the writes in this block come through (H16, ADR 0058).
 
-    The setting is transaction-local, so the block runs in a transaction: its own when none
-    is open, a savepoint inside one. A door set in autocommit would be gone by the next
-    statement and the write after it refused. On the way out the door it found is put back,
-    so doors nest (a proposal's approval opens the index door for its rebuild); a block that
-    raises rolls its savepoint back, and PostgreSQL undoes the setting with it. `using`
-    exists for the guard, which proves the trigger on the cw_app alias."""
+    The setting is transaction-local, so the block runs in its own transaction or a
+    savepoint. The door found is put back on the way out, so doors nest; a raising block
+    rolls back, and the setting with it. `using` lets the guard prove the trigger on cw_app."""
     with transaction.atomic(using=using):
         with connections[using].cursor() as cursor:
             cursor.execute("SELECT coalesce(current_setting(%s, true), '')", [LIBRARY_DOOR_SETTING])

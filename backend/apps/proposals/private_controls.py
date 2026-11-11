@@ -1,29 +1,15 @@
 """A control of the bank's own obligation (OWN-05, REG-05, INV-07; D-89, D-99, ADR 0059).
 
-D-99: a control is a REG-05 linked internal item of the `control` link kind, linked to the
-bank's own obligation it serves, and created by the same private approval as the bank's own
-records. So a `new_control` proposal writes no library row: it is filed by the bank's own
-agent through the runner (`proposals.tenant_agent`), owned by the run's bank like any
-record of its own (`logic.owner_of`), and decided in the bank's own queue under
-`private_records.approve`, by a person with a fresh passkey and never the proposer
-(`logic.approve`, the four-eyes check and `proposal_four_eyes`).
+A control is a REG-05 internal item of the `control` link kind, linked to the bank's own
+obligation and created by the private approval (D-99), so a `new_control` proposal writes no
+library row. It is filed by the bank's own agent (`proposals.tenant_agent`) and decided in
+the bank's own queue by a person with a fresh passkey, never the proposer.
 
-Approval (`apply_control`, which `apply.apply` hands a control outside the library's door), in
-the approval's transaction and the bank's zone:
-
-- the obligation is checked again, still the bank's own and in force, and the `control`
-  link kind still live on the bank's list;
-- the internal item of that kind and name is created, or the bank's live one is reused, so
-  one control can serve several duties;
-- it is linked to the bank's register entry on the obligation, which is created on this
-  first write if nobody has worked on the duty yet; a live link already there answers 409
-  `already_linked` and the proposal stays open;
-- each write has its audit row through `record()`, the register's own actions, naming the
-  approver's passkey assertion and ids and keys only (R2_CROSS_CUTTING (m)).
-
-`held` is the filing's duplicate check: a control of that name already linked to that
-obligation is one the bank holds, answered by the database so the agent never reads the
-bank's records back (D-57).
+`apply_control`, in the approval's transaction and the bank's zone, checks the obligation
+and the link kind again, creates or reuses the internal item, and links it to the
+obligation's register entry (409 `already_linked` if a live link exists), each write audited
+with ids and keys only (R2_CROSS_CUTTING (m)). `held` is the filing's duplicate check,
+answered by the database so the agent never reads the bank's records (D-57).
 """
 
 from __future__ import annotations

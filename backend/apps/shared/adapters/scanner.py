@@ -1,20 +1,16 @@
 """Malware scanner seam (CAS-05, playbook 16): the one place that decides whether a stored
-file may be shown. `ScanState` is the kind a piece of evidence carries from the moment it
-is stored; a scan answers `clean`, `infected` or `error`, never `pending`.
+file may be shown. Evidence carries a `ScanState` from the moment it is stored; a scan
+answers `clean`, `infected` or `error`, never `pending`.
 
-`mock` is deterministic and offline: the EICAR test string and a marker filename are
-`infected`, another marker is `error`, everything else is `clean`. `clamd` streams the
-bytes over INSTREAM (fetched from ClamAV's clamd(8) and clamd/scanner.c on 2026-09-25,
-docs/plans/Verification_Log.md): the command `zINSTREAM\\0`, then chunks of a 4-byte
-unsigned length in network byte order followed by that many bytes, then a zero-length
-chunk; the reply, NUL-terminated for a `z` command, is `stream: OK`,
-`stream: <signature> FOUND` (optionally `<signature>(<hash>:<size>) FOUND`), or an
-`... ERROR` line, `INSTREAM size limit exceeded. ERROR` among them.
+`mock` is deterministic and offline: the EICAR string and a marker filename are `infected`,
+another marker `error`, everything else `clean`. `clamd` streams the bytes over INSTREAM as
+recorded in docs/plans/Verification_Log.md: `zINSTREAM\\0`, chunks of a 4-byte big-endian
+length and bytes, a zero-length chunk; the reply is `stream: OK`, `stream: <signature>
+FOUND` (optionally `<signature>(<hash>:<size>) FOUND`) or an `... ERROR` line.
 
-Bytes and replies are untrusted. A timeout, a refused or dropped connection, and any reply
-that is not exactly one of the two good shapes is `error`: an unknown answer is never
-`clean`. Nothing here logs, or puts into an exception, a filename, a path or a byte of the
-file; a scan logs its provider, its state and the elapsed milliseconds.
+Bytes and replies are untrusted: a timeout, a dropped connection or any reply not exactly
+one of the two good shapes is `error`, never `clean`. Nothing here logs a filename, a path
+or a byte of the file; a scan logs its provider, its state and the elapsed time.
 """
 
 from __future__ import annotations
@@ -159,9 +155,8 @@ PROVIDERS: dict[str, type[ScannerAdapter]] = {"mock": MockScanner, "clamd": Clam
 
 
 def get_scanner() -> ScannerAdapter:
-    """The configured scanner. The mock passes any real file, so it is refused on every
-    deployed environment, the one named `test` included: a deployed environment without
-    clamd stores no unscanned file. The boot refusal is `c14-eu-data-location`'s
+    """The configured scanner. The mock passes any real file, so every deployed environment,
+    `test` included, refuses it: no deployed environment stores an unscanned file
     (docs/plans/briefs/HARDENING.md)."""
     provider = settings.SCANNER_PROVIDER
     if provider not in PROVIDERS:

@@ -1,24 +1,9 @@
 """The WebAuthn ceremonies (ID-02 to ID-06) on py_webauthn 3.0.0, whose surface is
-recorded in docs/plans/Verification_Log.md (fetched 2026-09-19, never recalled):
-
-- `generate_registration_options(rp_id, rp_name, user_name, user_id, user_display_name,
-  authenticator_selection, exclude_credentials, timeout)` and
-  `generate_authentication_options(rp_id, allow_credentials, user_verification, timeout)`
-  return dataclasses; `options_to_json_dict` turns them into the camelCase dict the
-  browser's `navigator.credentials` takes, bytes base64url-encoded.
-- `verify_registration_response(credential=<dict>, expected_challenge=<bytes>,
-  expected_rp_id, expected_origin=<list>, require_user_verification=True)` parses the
-  browser's JSON dict itself (`parse_registration_credential_json`) and returns
-  `VerifiedRegistration(credential_id, credential_public_key, sign_count, aaguid,
-  credential_device_type, credential_backed_up, user_verified, ...)`.
-- `verify_authentication_response(credential=<dict>, expected_challenge, expected_rp_id,
-  expected_origin, credential_public_key, credential_current_sign_count,
-  require_user_verification=True)` returns `VerifiedAuthentication(new_sign_count,
-  credential_device_type, credential_backed_up, ...)`, the device type read from the
-  assertion's backup-eligible (BE) flag; a backed-up (BS) flag without BE raises
-  `InvalidBackupFlags` (verified in the installed source, 2026-09-25).
-- `parse_client_data_json(bytes)` gives the challenge the browser signed, which is how a
-  stored challenge row is found for a discoverable sign-in (no user is known yet).
+recorded in docs/plans/Verification_Log.md, never recalled. Registration and authentication
+options go to the browser through `options_to_json_dict`; `verify_registration_response` and
+`verify_authentication_response` parse the browser's JSON themselves, and a BS flag without
+BE raises `InvalidBackupFlags`. `parse_client_data_json` gives the signed challenge, which
+finds the stored challenge row for a discoverable sign-in.
 
 User verification is required and credentials are discoverable (resident key required);
 the user handle is the user's id bytes."""
@@ -134,9 +119,8 @@ def _open_challenge(kind: ChallengeKind, challenge: bytes, *, user: User | None,
 
 def _consume_challenge(kind: ChallengeKind, challenge: bytes, *, user: User | None = None, session: UserSession | None = None) -> AuthChallenge:
     """Single use: the row is claimed with one conditional UPDATE, so two copies of the
-    same assertion in flight cannot both pass (a read-then-save let them; security review
-    2026-09-19, finding F3). Consumed before the signature is checked, so a failed attempt
-    spends the challenge too."""
+    same assertion in flight cannot both pass (F3). Consumed before the signature is
+    checked, so a failed attempt spends the challenge too."""
     now = timezone.now()
     row = _open_challenge(kind, challenge, user=user, session=session, now=now)
     if row is None or AuthChallenge.objects.filter(pk=row.pk, consumed_at__isnull=True).update(consumed_at=now) != 1:
@@ -184,9 +168,7 @@ def passkey_out(row: WebAuthnCredential) -> dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------------------------
-# Registration (enrolment or an added passkey)
-# ---------------------------------------------------------------------------------------
+# --- Registration (enrolment or an added passkey) ---
 def _enrolment_invitation(principal: Principal, user: User, session: UserSession) -> Invitation | None:
     """The invitation an enrolment session enrols through: the one open for the address in
     the session's tenant, never whichever tenant invited the address last (finding F8).
@@ -322,9 +304,7 @@ def verify_registration(principal: Principal, credential: dict[str, Any], nickna
     return RegistrationResult(credential=row, bundle=bundle)
 
 
-# ---------------------------------------------------------------------------------------
-# Sign-in (discoverable)
-# ---------------------------------------------------------------------------------------
+# --- Sign-in (discoverable) ---
 def authentication_options(request: HttpRequest | None) -> dict[str, Any]:
     # Unauthenticated and a write (a challenge row plus its audit row): bounded per IP
     # like every other ceremony step (finding F5).
@@ -355,11 +335,9 @@ SIGN_COUNT_REGRESSION_IGNORED_E2E = "sign_count_regression_ignored_e2e"
 
 
 def _e2e_sign_count_leniency() -> bool:
-    """Playwright's virtual authenticator restarts its counter per browser context, so a
-    seeded login's second sign-in in a run presents a count at or below the stored one,
-    which WebAuthn treats as a cloned authenticator. Under E2E_MODE only, that regression
-    is accepted and logged; the flag is refused when deployed at boot (rule 4), in
-    `tokens.new_code` and here again."""
+    """Playwright's virtual authenticator restarts its counter per browser context, which
+    WebAuthn reads as a cloned authenticator. Under E2E_MODE only that regression is accepted
+    and logged; the flag is refused when deployed, at boot, in `tokens.new_code` and here."""
     if not settings.E2E_MODE:
         return False
     if settings.IS_DEPLOYED_ENVIRONMENT:
@@ -375,11 +353,10 @@ class _Assertion:
 
 
 def _verify_assertion(row: WebAuthnCredential, credential: dict[str, Any], challenge: AuthChallenge) -> _Assertion:
-    """Outside E2E a non-increasing counter is refused by py_webauthn (verified in the
-    installed source: it raises when either count is above zero and the new one is not
-    greater). Backup eligibility is fixed when a passkey is created, so an assertion whose
-    BE flag differs from the stored one is refused, for every bank (WebAuthn Level 3
-    section 6.1.3, ADR 0048); backup state may change and is returned to be stored."""
+    """Outside E2E py_webauthn refuses a non-increasing counter. Backup eligibility is fixed
+    when a passkey is created, so an assertion whose BE flag differs from the stored one is
+    refused (WebAuthn Level 3 section 6.1.3, ADR 0048); backup state may change and is
+    returned to be stored."""
     lenient = _e2e_sign_count_leniency()
     try:
         verified = verify_authentication_response(
@@ -437,9 +414,7 @@ def verify_authentication(credential: dict[str, Any], request: HttpRequest | Non
     return bundle
 
 
-# ---------------------------------------------------------------------------------------
-# Step-up (ID-06)
-# ---------------------------------------------------------------------------------------
+# --- Step-up (ID-06) ---
 def step_up_options(principal: Principal) -> dict[str, Any]:
     user = User.objects.get(pk=principal.subject_id)
     session = _session_of(principal)
@@ -491,9 +466,7 @@ def step_up_valid_until(asserted_at: datetime) -> datetime:
     return asserted_at + timedelta(minutes=settings.STEP_UP_FRESHNESS_MINUTES)
 
 
-# ---------------------------------------------------------------------------------------
-# My passkeys (ID-04)
-# ---------------------------------------------------------------------------------------
+# --- My passkeys (ID-04) ---
 def list_passkeys(user_id: uuid.UUID) -> list[WebAuthnCredential]:
     return list(WebAuthnCredential.objects.filter(user_id=user_id, retired_at__isnull=True).order_by("created_at", "id"))
 
@@ -525,9 +498,8 @@ def rename_passkey(principal: Principal, passkey_id: uuid.UUID, nickname: str) -
 
 
 def remove_passkey(principal: Principal, passkey_id: uuid.UUID) -> None:
-    # Locked before they are counted: two removals at once would otherwise each count the
-    # other's passkey as the one left and leave the person with none, which only re-enrolment
-    # may do (ID-04, ID-05; the calendar feed reads that moment as a re-enrolment).
+    # Locked before they are counted, so two removals at once cannot leave the person with
+    # no passkey, which only re-enrolment may do (ID-04, ID-05).
     live = set(
         WebAuthnCredential.objects.select_for_update()
         .filter(user_id=principal.subject_id, retired_at__isnull=True)

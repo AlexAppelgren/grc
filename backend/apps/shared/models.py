@@ -1,13 +1,10 @@
 """The shared tables: `tenant`, `audit_event`, `outbox_event`, `outbox_cursor`
 (playbook 14, AUD-01).
 
-Every model declares `Meta.ordering` on a meaningful column because `.first()` on an
-unordered queryset with uuid keys is a coin flip on Postgres (playbook 4.5). JSON columns
-name their Pydantic schema inline; the compliance lint checks the comment is there.
-
-`audit_event` and `outbox_event` are mixed tables: a library row has `tenant_id` NULL and
-is visible to everyone, a tenant row only to its tenant. The migration writes that policy.
-`outbox_cursor` belongs to neither zone: it is the worker's own bookkeeping.
+Every model declares `Meta.ordering` on a meaningful column, since `.first()` on unordered
+uuid rows is a coin flip (playbook 4.5). JSON columns name their Pydantic schema inline.
+`audit_event` and `outbox_event` are mixed tables; `outbox_cursor` is the worker's own
+bookkeeping and in neither zone.
 """
 
 from __future__ import annotations
@@ -55,7 +52,7 @@ TRIAGE_TARGET_HOURS_MAX = 720
 
 
 # Each default is read from settings when a tenant row is created, so a platform default is
-# changed with an env variable and never a migration (COL-02, c10-workflow-policy).
+# changed with an env variable, never a migration (COL-02).
 def default_reminder_days_before() -> list[int]:
     return list(settings.WORKFLOW_REMINDER_DAYS_BEFORE)
 
@@ -81,9 +78,8 @@ def default_triage_target_hours() -> int:
 
 
 class Tenant(models.Model):
-    """One company (TEN-01). Explicit columns instead of a settings blob (chunk 1 brief):
-    the default language and the ordered content languages are foreign keys to language
-    rows, and `status` is a kind."""
+    """One company (TEN-01). Explicit columns, not a settings blob: the default language and
+    the ordered content languages are foreign keys to language rows, and `status` is a kind."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
@@ -96,16 +92,13 @@ class Tenant(models.Model):
     content_languages = models.ManyToManyField(
         "library.Language", through="shared.TenantContentLanguage", related_name="+", blank=True
     )
-    # The one switch over this bank's own AI features: Ask, the drafts a model writes for
-    # it, and from chunk 11 its own agents (D-07, owner item 14). bleqq's platform agents
-    # never read it. `apps/shared/ai.py` checks it before every model call made in this
-    # bank's zone. No route writes it yet: the switch's own route, behind a passkey
-    # step-up, is still to come.
+    # The one switch over this bank's own AI features (D-07): Ask, a model's drafts and its own
+    # agents; bleqq's platform agents never read it. `apps/shared/ai.py` checks it before
+    # every model call in this bank's zone.
     ai_enabled = models.BooleanField(default=True)
-    # The workflow policy (COL-02): reminder lead days before a due date and before a review,
-    # how long overdue work waits before it escalates and to which role (a `TenantRole` key of
-    # this tenant, compared as a key), the digest's weekday and the triage target. Written only
-    # by PATCH /tenant/workflow under workflow.manage.
+    # The workflow policy (COL-02): reminder lead days, escalation wait and role (a
+    # `TenantRole` key), the digest's weekday and the triage target. Written only by PATCH
+    # /tenant/workflow under workflow.manage.
     reminder_days_before = ArrayField(models.PositiveSmallIntegerField(), default=default_reminder_days_before)
     review_reminder_days_before = ArrayField(models.PositiveSmallIntegerField(), default=default_review_reminder_days_before)
     escalate_after_days = models.PositiveSmallIntegerField(default=default_escalate_after_days)
@@ -206,10 +199,9 @@ class AuditEvent(AppendOnlyModel):
 
 
 class OutboxEvent(models.Model):
-    """The transactional outbox (INT-01, Solution_Design). Written by record() beside its
-    audit event; delivered by the worker, which is the one writer of the delivery columns.
-    The database trigger lets `published_at`, `attempts` and `last_error` change and
-    refuses everything else, so the payload is as append-only as the audit row."""
+    """The transactional outbox (INT-01). Written by record() beside its audit event and
+    delivered by the worker; the trigger lets only `published_at`, `attempts` and
+    `last_error` change, so the payload is as append-only as the audit row."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(
@@ -230,10 +222,8 @@ class OutboxEvent(models.Model):
         ordering = ["created", "id"]
         indexes = [
             models.Index(fields=["published_at", "created"], name="outbox_event_pending"),
-            # The cursor scans one zone at a time, oldest first, and only ever wants rows
-            # that are still pending (apps/shared/outbox.py). Partial, so it holds the
-            # backlog and not the whole delivered history, and leading on tenant_id so one
-            # zone's scan reads its own rows and steps over everybody else's.
+            # The cursor scans one zone at a time for pending rows (apps/shared/outbox.py):
+            # partial, so it holds the backlog only, and leading on tenant_id.
             models.Index(
                 fields=["tenant", "created", "id"],
                 name="outbox_event_zone_pending",
@@ -246,20 +236,14 @@ class OutboxEvent(models.Model):
 
 
 class OutboxCursor(models.Model):
-    """The one ordered cursor over `outbox_event` (chunk 5 ruling 9). One row: the moment
-    the row at the front of the queue may be tried again, the lock two workers take turns
-    on, and where the last delivered event was (`apps/shared/outbox.py`). No tenant column
-    and no row-level security: it holds a position and a clock, never tenant content, and
-    the events it points at carry their own zone.
+    """The one ordered cursor over `outbox_event`: one row holding the retry clock, the lock
+    two workers take turns on and where the last batch got to (`apps/shared/outbox.py`). No
+    tenant column and no row-level security: it holds a position and a clock, never tenant
+    content.
 
-    `last_created` and `last_id` are a debugging aid and nothing else: they say where the
-    last batch got to, and no query reads them to decide what to deliver. What is pending
-    is `published_at IS NULL` with attempts left, because two writers commit in an order of
-    their own and a positional scan would step over a row that committed late. Moving them
-    or clearing them changes no delivery.
-
-    `retry_not_before` is one clock for every zone, not one per zone: a library row waiting
-    out its backoff holds back the tenants' rows behind it too."""
+    `last_created` and `last_id` are a debugging aid only; pending is `published_at IS NULL`
+    with attempts left, since a positional scan would skip a late commit.
+    `retry_not_before` is one clock for every zone."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50, unique=True)

@@ -1,9 +1,7 @@
 """Sentry event scrubbers (playbook 11.2). Both hooks exist because transactions bypass
-`before_send`; the last repo sampled 10% of traces and each carried the request it
-came from. Personal data beyond a person's id, and any tenant content, never leaves.
+`before_send`. Personal data beyond a person's id, and any tenant content, never leaves.
 
-Kept free of Django imports so settings.py can import it before apps load; it imports
-only sentry_sdk's type aliases.
+Kept free of Django imports so settings.py can import it before apps load.
 """
 
 from __future__ import annotations
@@ -47,9 +45,8 @@ SENSITIVE_KEYS = frozenset(
 )
 REDACTED = "[redacted]"
 _TOKEN_PATH = re.compile(r"(/auth/invitations/)[^/?#]+")
-# A query string attached to a path or URL, and anything shaped like an IPv4 or IPv6
-# address (a clock time with seconds matches too, which costs nothing). IPv4 goes first,
-# or the IPv6 pattern would take the first octet of `::ffff:198.51.100.9` and leave the rest.
+# A query string on a path or URL, and anything shaped like an IPv4 or IPv6 address. IPv4
+# first, or the IPv6 pattern would take part of `::ffff:198.51.100.9`.
 _QUERY = re.compile(r"(?<=\S)\?[^\s\"'<>]+")
 _IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
 _IPV6 = re.compile(r"(?<![\w:])(?:[0-9A-Fa-f]{0,4}:){2,7}[0-9A-Fa-f]{0,4}(?![\w:])")
@@ -68,15 +65,14 @@ def _scrub_mapping(mapping: dict[str, Any], sensitive: frozenset[str]) -> dict[s
 
 
 def scrub_url(url: str) -> str:
-    """A path can carry a credential. The invitation token used to, in
-    `/auth/invitations/{token}/open` (finding F6); since F29 it rides in the body and no
-    route takes it in a path, so this stays as defence in depth against a stale link."""
+    """A path can carry a credential (F6). No route takes a token in its path since F29;
+    this stays as defence in depth against a stale link."""
     return _TOKEN_PATH.sub(rf"\1{REDACTED}", url)
 
 
 def scrub_message(message: str) -> str:
-    """A log line recorded as a breadcrumb can hold a request line: gunicorn's access line
-    did, search text and client address included (security review 2026-09-19)."""
+    """A breadcrumb log line can hold a request line, search text and client address
+    included."""
     scrubbed = _QUERY.sub(f"?{REDACTED}", scrub_url(message))
     return _IPV6.sub(REDACTED, _IPV4.sub(REDACTED, scrubbed))
 
@@ -103,8 +99,7 @@ def scrub_event(event: dict[str, Any]) -> dict[str, Any]:
     exception = event.get("exception")
     if isinstance(exception, dict) and isinstance(exception.get("values"), list):
         for value in exception["values"]:
-            # A database error's message holds row values (`DETAIL: Failing row contains
-            # (...)`, security review 2026-09-19). Type, module and frames say where.
+            # A database error's message holds row values; type, module and frames say where.
             if isinstance(value, dict) and "value" in value:
                 value["value"] = REDACTED
     logentry = event.get("logentry")

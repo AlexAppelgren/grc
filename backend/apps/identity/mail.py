@@ -1,10 +1,7 @@
 """The three emails identity sends (ID-01, ID-02, ID-05). Each is composed here and
-delivered by the worker (`apps/identity/tasks.py`), enqueued when the request's
-transaction commits, so the request itself never waits on a mail relay and a code
-request costs the same whether or not a mail follows (finding F12). Plain text, English
-for now: the message catalogs are a frontend concern and a mail catalog is a later
-chunk. The invitation link is the only place a plain invitation token ever appears
-(ID-S1)."""
+delivered by the worker (`apps/identity/tasks.py`) after the request's transaction commits,
+so a code request costs the same whether or not a mail follows (F12). Plain text, English
+for now. The invitation link is the only place a plain invitation token appears (ID-S1)."""
 
 from __future__ import annotations
 
@@ -20,8 +17,7 @@ def _deliver(to: str, subject: str, body: str) -> None:
 
 def invitation_link(token: str) -> str:
     """The token rides in the fragment, which a browser never sends to any server, proxy
-    or `Referer` header, so no request line ever holds it (security review F29). The page
-    reads it and posts it in the body of `POST /auth/invitations/open`."""
+    or `Referer` header (F29). The page posts it in the body of `POST /auth/invitations/open`."""
     return f"{settings.APP_BASE_URL.rstrip('/')}/invite#{token}"
 
 

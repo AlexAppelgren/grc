@@ -1,40 +1,22 @@
 """`manage.py bootstrap_platform --admin-email <address> --role <key>`: the first platform
-admin (ID-01, chunk 1 brief), and afterwards the library editors the owner names
-(D-14, ADM-02, FIRST_RUN_SETUP step 13). Creates the user with the named platform role and
-a platform invitation (tenant null), and prints the invitation link once: the emailed link
-goes through the configured mailer as well, so on a deploy the mock is never involved.
+admin (ID-01), and afterwards the library editors the owner names (D-14, ADM-02,
+FIRST_RUN_SETUP step 13). Creates the user with the named platform role and a platform
+invitation, and prints the link once; the mail goes through the configured mailer too.
 
-Exactly one of `--role`, `--revoke-role` and `--reenrol` is given: no role is granted by
-default (review 2026-11-11 S-15). Only a platform role can be granted here: a tenant role key
-or an unknown one is refused, so the command can never hand a bank's role to platform staff.
-The grant and its `platform_role.assigned` audit row land in the same transaction as the
-invitation. Before anything is granted to, or revoked from, an account that already exists,
-the command prints that account (name, address, id, status, banks and platform roles) and
-asks for confirmation; `--yes` gives it non-interactively, and without a terminal and
-without `--yes` nothing is written.
+Exactly one of `--role`, `--revoke-role` and `--reenrol` (review 2026-11-11 S-15). Only a
+platform role can be granted, never a bank's. Grant, audit row and invitation commit
+together. Before changing an existing account the command prints it and asks; `--yes`
+confirms non-interactively, and without a terminal or `--yes` nothing is written.
 
-A bank's member may be platform staff too (D-122, ADR 0067): each of their sessions holds
-one zone's grants only, and they switch with a passkey. The bank sees the grant: the
-`platform_role.assigned` row is written in each bank they are an active member of as well
-as without a tenant. A member who already holds a live passkey needs no invitation and gets
-none; they switch to the console from the account menu. A second platform role on an
-account that already holds one is refused, unless --add-role asks for it.
+A bank's member may be platform staff too (D-122, ADR 0067): the `platform_role.assigned` row
+is written in each bank they are active in as well. A person with a live passkey gets no
+invitation, and a run granting nothing new to them is refused. A second platform role needs
+--add-role.
 
-Idempotent per address: an existing user keeps their roles and gets a fresh invitation
-unless they already hold a live passkey, in which case a run that grants nothing new is
-refused, since there is nothing to bootstrap. The output names every platform role the
-account then holds.
-
-`--revoke-role <key>` removes one platform role, with a `platform_role.revoked` audit row
-without a tenant and in each bank the person is an active member of; when it was their last
-platform role, their console sessions end.
-
-`--reenrol` is ID-05's recovery for an account no bank may re-enrol on its own: platform
-staff, and a member of more than one bank (review 2026-11-11 S-2). Every session revoked,
-every passkey retired (a lost device, or passkeys made under an RP ID the deployment no
-longer uses), every personal access token revoked, and a re-enrolment invitation sent. The
-account keeps its roles and memberships. Its passkeys open its banks too, so its sessions
-and tokens there are revoked as well, and each bank's audit log records the re-enrolment."""
+`--revoke-role <key>` removes one role, audited likewise; the last one ends their console
+sessions. `--reenrol` is ID-05's recovery for an account no bank may re-enrol alone (review
+2026-11-11 S-2): every session, passkey and personal token in every place revoked, and a
+re-enrolment invitation sent; roles and memberships stay."""
 
 from __future__ import annotations
 

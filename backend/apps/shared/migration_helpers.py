@@ -1,11 +1,8 @@
 """Reusable migration operations for row-level security, append-only ledgers and the
 application role's grants (playbook 14, INPUT_DELTAS §5). Every migration that creates a
-tenant table appends `rls_operations(table)` from apps.shared.migration_helpers; the RLS guard checks the result in
-`pg_class` and `pg_policies`.
-
-This module reads no setting: a migration declares everything its operations need
-inline (playbook 4.5). The role names are the ones infra/db/init.sql and
-docs/runbooks/RAILWAY_DEPLOY.md create.
+tenant table appends `rls_operations(table)`; the RLS guard checks the result in `pg_class`
+and `pg_policies`. This module reads no setting (playbook 4.5); the role names are those
+infra/db/init.sql and docs/runbooks/RAILWAY_DEPLOY.md create.
 """
 
 from __future__ import annotations
@@ -25,10 +22,9 @@ TENANT_EXPRESSION = f"NULLIF(current_setting('{TENANT_SETTING}', true), '')::uui
 IDENTITY_LOOKUP_SETTING = "app.identity_lookup"
 IDENTITY_LOOKUP_EXPRESSION = f"current_setting('{IDENTITY_LOOKUP_SETTING}', true) = 'on'"
 
-# Two zones in the database, not only in code (H15, NFR-01). `tenant_isolation` is the write
-# rule: FOR ALL, matching the session's own zone and nothing else. Anything a table shows
-# beyond that zone is a policy of its own and FOR SELECT, so permissive policies OR together
-# into a mixed read and leave the write rule alone.
+# Two zones in the database (H15, NFR-01). `tenant_isolation` is the write rule: FOR ALL,
+# the session's own zone only. Anything shown beyond it is a FOR SELECT policy of its own,
+# so permissive policies OR into a mixed read and leave the write rule alone.
 LIBRARY_READ_POLICY = "library_rows_visible"
 IDENTITY_LOOKUP_POLICY = "identity_lookup_visible"
 # Every policy name this module writes, which is what a replacement drops first.
@@ -57,16 +53,12 @@ def policy_operations(
 ) -> list[migrations.RunSQL]:
     """The policies of one tenant table: the write rule, then a read policy per widening.
 
-    A mixed table's own zone is `IS NOT DISTINCT FROM`, because there the column is nullable
-    and the library's rows are the zone of a session with no tenant; everywhere else the
-    column is NOT NULL and `=` says the same thing.
+    A mixed table's own zone is `IS NOT DISTINCT FROM` (nullable column, the library's rows
+    being the zone of no tenant); elsewhere `=`.
 
-    `library_fence=True` keeps the old shape, one FOR ALL policy whose write check is the read
-    rule, on the two library tables mixed on `owner_tenant_id` (instrument, obligation). What
-    stands between a bank session and a shared record there is the library fence (PRO-01):
-    `library_write()` and its AST guard in Python, and in the database the door trigger below,
-    which refuses the app role's write to either table unless an approved proposal, the
-    re-verification stamp or a reference seed opened a door (H16, shared 0008, ADR 0058).
+    `library_fence=True` keeps one FOR ALL policy on the two tables mixed on
+    `owner_tenant_id` (instrument, obligation); there the library fence (PRO-01) and the door
+    trigger stand between a bank session and a shared record (H16, shared 0008, ADR 0058).
     """
     if library_fence:
         mixed_read = f"{column} IS NULL OR {column} = {TENANT_EXPRESSION}"
@@ -83,17 +75,12 @@ def policy_operations(
 def split_policy_operations(
     table: str, *, mixed: bool = False, identity_lookup: bool = False, column: str = "tenant_id"
 ) -> list[migrations.RunSQL]:
-    """Replace whatever policies `table` carries with the split above (H15).
+    """Replace whatever policies `table` carries with the split above (H15): every policy is
+    dropped IF EXISTS and written again, so an old database and one migrated from zero end in
+    one state.
 
-    The database an earlier migration left has one FOR ALL policy whose write check was the
-    read rule: a bank session could insert, change or delete the platform's rows, and a
-    lookup block could write anything. A database migrated from zero already has the split,
-    because `rls_operations()` writes it now. So every policy is dropped IF EXISTS and
-    written again from the same helper, which leaves both cases in one state.
-
-    The drops do not come back on a reverse. Reversing then leaves a table with forced
-    row-level security and no policy, which shows and accepts nothing; handing the other
-    zone's rows back would be the one outcome worse than that.
+    The drops do not come back on a reverse: a table with forced row-level security and no
+    policy shows and accepts nothing, which is safer than handing back the other zone's rows.
     """
     drops = [
         migrations.RunSQL(sql=_drop_policy_sql(table, name), reverse_sql=migrations.RunSQL.noop)
@@ -112,18 +99,12 @@ def rls_operations(
 ) -> list[migrations.RunSQL]:
     """ENABLE and FORCE row-level security and create the policies on `table`.
 
-    `mixed=True` is for tables that hold library rows (tenant_id NULL, readable by every
-    tenant) beside tenant rows (readable by their tenant): audit_event, outbox_event,
-    ai_generation, problem_report, api_key (playbook 14). Reading both zones is
-    `library_rows_visible`; writing is the session's own zone either way. With
-    `column="owner_tenant_id"` it is the "shared or mine" rule of the library tables that
-    may hold a tenant-private record (instrument, obligation; INPUT_DELTAS §5, INV-07), where
-    `library_fence=True` leaves the write rule as the read rule for now.
+    `mixed=True` is for tables holding library rows (tenant_id NULL, read by every tenant)
+    beside tenant rows (playbook 14); writing is the session's own zone either way. With
+    `column="owner_tenant_id"` it is the "shared or mine" rule (INPUT_DELTAS §5, INV-07).
 
-    `identity_lookup=True` adds the policy needed on the five tables read before a tenant is
-    known (apps/shared/tenancy.py, `identity_lookup()`): invitation, membership,
-    user_session, api_key and calendar_feed, whose token arrives with no session and no key
-    at all (D-52). It reads, and never writes, whatever tenant the row belongs to. The RLS
+    `identity_lookup=True` adds the policy on the five tables read before a tenant is known
+    (apps/shared/tenancy.py `identity_lookup()`, D-52). It reads and never writes. The RLS
     guard pins that list.
     """
     return [
@@ -146,20 +127,12 @@ OUTBOX_GUARD_FUNCTION = "cw_outbox_guard"
 MAINTENANCE_SETTING = "cw.maintenance"
 
 # The escape hatch: `SET LOCAL cw.maintenance = 'on'` inside the fixing transaction states
-# the intent and is itself visible in the session's statement log. It is the schema owner's
-# alone. The application role may set the setting (nothing but a superuser could forbid
-# that), so the guards ask who is running instead: the setting counts only for the migrator,
-# and the ledger stays append-only for everyone else, which means one stray or injected
-# `SET LOCAL` in request code switches nothing off.
+# the intent, and counts only for the schema owner. The app role can set the setting, so the
+# guards ask who is running: one stray `SET LOCAL` in request code switches nothing off.
 #
-# An allowlist, and on `session_user`, not a role to refuse and not `current_user` (H-B
-# review): `current_user <> APP_ROLE` handed the hatch to every other role there will ever
-# be, and to anything that changes `current_user` on the way in. `session_user` is the role
-# that authenticated and no SET ROLE, SECURITY DEFINER function or cascading foreign key
-# changes it (only SET SESSION AUTHORIZATION does, and that is a superuser's alone, which
-# cw_app is not), so a request can only ever run under it as cw_app (Verification_Log:
-# PostgreSQL 16, session information functions). Written from the role constants the grants
-# below already use, so a renamed role cannot drift apart from a literal repeated here.
+# An allowlist on `session_user`, never `current_user` (H-B review): `session_user` is the
+# authenticated role, which no SET ROLE, SECURITY DEFINER function or cascade changes, so a
+# request always runs as cw_app. Written from the role constants the grants use.
 _MAINTENANCE_CHECK = (
     f"current_setting('{MAINTENANCE_SETTING}', true) = 'on' AND session_user = '{MIGRATOR_ROLE}'"
 )
@@ -236,16 +209,11 @@ def append_only_trigger_operations(table: str, *, function: str = APPEND_ONLY_FU
 LIBRARY_DOOR_FUNCTION = "cw_library_door_guard"
 LIBRARY_DOOR_SETTING = "cw.library_door"
 
-# The doors each library-zone table accepts (H16, ADR 0058), passed to the trigger as its
-# arguments. The inventory and the library vocabularies change through an approved proposal
-# or a reference seed; the re-verification stamp reaches the obligation and its verification
-# rows and nothing else (INV-06); the watch door reaches the seven watch tables only (D-64);
-# the index door reaches the search index only (D-65); the evaluation door reaches the
-# search evaluation set and its runs only, the platform staff's own test of search that no
-# proposal carries (search 0003). The library app's reference rows change through a
-# reference seed alone: `language`, which every bank reads and no proposal writes. The
-# jurisdiction rows and their labels take the inventory's doors since shared 0010, because a
-# jurisdiction is relabelled, retired and restored through a proposal (D-94).
+# The doors each library-zone table accepts (H16, ADR 0058), passed to the trigger: the
+# inventory and library vocabularies take a proposal or a seed; the re-verification stamp
+# reaches the obligation and its verifications (INV-06); the watch door the watch tables
+# (D-64); the index door the search index (D-65); the evaluation door the evaluation set and
+# runs. `language` takes the seed alone; jurisdictions take the inventory's doors (D-94).
 INVENTORY_DOORS = ("proposal", "seed")
 STAMPED_DOORS = ("proposal", "reverification", "seed")
 WATCH_DOORS = ("watch",)
@@ -253,18 +221,11 @@ INDEX_DOORS = ("index",)
 EVAL_DOORS = ("eval",)
 REFERENCE_DOORS = ("seed",)
 
-# One trigger per library-zone table, per statement and before it, so it fires once however
-# many rows the statement touches, and fires for a statement that touches none: a write
-# outside a door is refused as a write, not only when it finds a row. TRUNCATE is included
-# although cw_app holds no TRUNCATE grant, so the rule does not rest on the grant alone.
-#
-# The door is a setting the app role sets itself, through `library_door()` in
-# apps/shared/tenancy.py, so this refuses a write that never entered a door — an ORM call
-# that bypassed the Python fence, raw SQL, a cascade — and not a statement that sets the
-# setting first (ADR 0058 says what that leaves to the lint and the AST guards). The schema
-# owner passes by `session_user`, as `_MAINTENANCE_CHECK` recognises it, so a migration's
-# data step, the E2E seed and tenant exit are not refused; never `current_user`, which a
-# SECURITY DEFINER function or a cascade changes (shared 0005).
+# One trigger per library-zone table, per statement and before it, so it fires even for a
+# statement that touches no row; TRUNCATE included, not resting on the grant alone. The door
+# is a setting the app role sets through `library_door()`, so this refuses a write that
+# entered no door (an ORM bypass, raw SQL, a cascade); ADR 0058 says what the lint and AST
+# guards cover. The schema owner passes by `session_user`, never `current_user` (shared 0005).
 LIBRARY_DOOR_FUNCTION_SQL = f"""
 CREATE OR REPLACE FUNCTION {LIBRARY_DOOR_FUNCTION}() RETURNS trigger
 LANGUAGE plpgsql AS $$

@@ -1,25 +1,15 @@
 """The recurrence rule of a recurring duty (REG-07): the one wrapper around `python-dateutil`.
 
-A recurring duty stores its schedule as an RFC 5545 RRULE (`RecurringDuty.recurrence_rule`),
-and every bank's occurrences are expanded from it. The rule arrives in a proposal, from an
-agent as often as a person, so it is untrusted: `validated` refuses, with 422
-`invalid_recurrence`, what dateutil cannot parse, what the grammar below does not allow, a
-rule that never falls due, and a rule that would fall due more than
-`RECURRENCE_MAX_OCCURRENCES` times in ten years, so a bad rule cannot become a denial of
-service.
+The RRULE (`RecurringDuty.recurrence_rule`) arrives in a proposal, often from an agent, so it
+is untrusted: `validated` refuses with 422 `invalid_recurrence` what dateutil cannot parse,
+what the day-or-coarser grammar below does not allow, a rule that never falls due, and one
+falling due more than `RECURRENCE_MAX_OCCURRENCES` times in ten years. The start date is the
+server's, so DTSTART is refused; `INTERVAL` and `COUNT` are checked because dateutil loops
+for ever on `INTERVAL=0`.
 
-The grammar is RFC 5545's rule parts at a day or coarser: a duty falls due on a day. The
-start date is the server's, never the rule's, so DTSTART and any second line are refused.
-`INTERVAL` and `COUNT` are checked here because dateutil takes `INTERVAL=0` and loops for
-ever.
-
-dateutil walks a rule that matches no date to the year 9999 before it gives up. So the
-expansion runs the same rule in years as near 9999 as it can whose calendar is the span's
-own, every year the same length and every date on the same weekday, and moves each date
-back: the answer is the same, and a rule that never matches costs a few years of walking,
-not eight millennia. Whole 400-year cycles always qualify, since the Gregorian calendar
-repeats itself every 400 years; a shorter shift, as near 9999 as 28 years or less, usually
-does too.
+dateutil walks a rule that matches nothing to the year 9999, so the expansion runs the rule
+in years near 9999 with the same calendar and moves each date back: same answer, a few years
+of walking. Whole 400-year cycles always qualify.
 """
 
 from __future__ import annotations

@@ -1,13 +1,10 @@
 """Agent runner adapter (playbook 16, DECISIONS D-08, AGT-06). The app is the scheduler of
-record: the worker records a run, then starts it through this seam, and the runner is an
-executor that writes no row. What a runner may tell the app is a `RunnerEvent` and nothing
-else; `apps/agents/runner_events.apply_event` validates each one and applies it to its run
-through `record()`.
+record: the worker records a run, then starts it through this seam; the runner writes no
+row. A runner tells the app only `RunnerEvent`s, which
+`apps/agents/runner_events.apply_event` validates and applies through `record()`.
 
-`mock` starts a run that completes at once with no findings, so a test never depends on the
-clock (`apps/agents/testing.mock_run_events` is what such a run reports). `none` starts
-nothing. There is no `managed_agents`: D-54 and ADR 0047 refuse a runner outside the EU, and
-the settings refuse any value but these two."""
+`mock` starts a run that completes at once with no findings; `none` starts nothing. There is
+no `managed_agents`: D-54 and ADR 0047 refuse a runner outside the EU."""
 
 from __future__ import annotations
 
@@ -35,10 +32,9 @@ class RunHandle:
 @dataclass(frozen=True)
 class RunnerEvent:
     """The only thing a runner may tell the app about a run. It names the run and never a
-    zone: the zone is the run's own. `stats` holds the run's counters in the camelCase shape
-    `AgentRunStats` publishes; `cost` (EUR) and the token counts are totals so far, never
-    increments. `error` is stored on the run for the people who operate the agents and never
-    logged, because it can carry text off a fetched page."""
+    zone. `stats` holds the run's counters in `AgentRunStats`' shape; `cost` (EUR) and the
+    token counts are totals so far. `error` is stored, never logged: it can carry text off a
+    fetched page."""
 
     run_id: uuid.UUID
     status: RunStatus
@@ -81,10 +77,9 @@ NO_RUNNER = "No agent runner is configured (AGENT_RUNNER=none), so no agent run 
 
 
 class NoAgentRunner(AgentRunnerAdapter):
-    """`none` (ADR 0047): the value a deployed environment sets until the in-worker EU
-    runner exists, since D-54 refuses Managed Agents and rule 5 refuses `mock`. A start
-    raises, so the opener closes the recorded run as failed and nothing reads as running;
-    a stop succeeds, because nothing runs anywhere."""
+    """`none` (ADR 0047): what a deployed environment sets until the in-worker EU runner
+    exists (D-54 refuses Managed Agents, rule 5 refuses `mock`). A start raises, so the
+    opener closes the run as failed; a stop succeeds, since nothing runs."""
 
     name = "none"
 

@@ -1,8 +1,7 @@
 """`manage.py e2e_scope_findings <scope item key> [--part N]`: the mock runner reports what
-tenant A's own agent found for a scope item of the E2E dataset, for J-12 and PRO-S15
-(d89-e2e-journey): the bank's own instrument of part N, or its duties once a person approved
-it, filed through the one door a bank's run files through. Prints the proposals as JSON
-(id, kind, the record's stable key, title).
+tenant A's own agent found for a scope item of the E2E dataset, for J-12 and PRO-S15: the
+bank's own instrument of part N, or its duties once approved, filed through the one door a
+bank's run files through. Prints the proposals as JSON (id, kind, stable key, title).
 Refuses to run on a deployed environment, like `seed_e2e`."""
 
 from __future__ import annotations

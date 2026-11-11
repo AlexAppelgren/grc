@@ -1,16 +1,10 @@
 """The bank's own queue (INV-07, OWN-03, PRO-03; D-57, D-89, ADR 0050, ADR 0059).
 
-A proposal of a bank's own record carries `owner_tenant_id` (apps/proposals/logic.py sets
-it), and row-level security on `proposal` keeps it inside that bank: the console reads no
-owned row and another bank reads none of this one's. A person holding
-`private_records.approve` decides it here, never the proposer and never an agent, through the
-same `logic.approve` and `logic.reject`, the same apply code and the same
-`proposal_four_eyes` constraint as the shared queue. Those write the decision's audit and
-outbox rows in the bank's own zone, with the approver's passkey assertion and never the
-note's words.
-
-Every function loads its proposal under row-level security first (`by_id`), so another
-bank's proposal, a shared one and one that does not exist are the same 404.
+A proposal of a bank's own record carries `owner_tenant_id`, and row-level security keeps it
+inside that bank. A person holding `private_records.approve` decides it, never the proposer
+and never an agent, through the same `logic.approve`, `logic.reject` and four-eyes
+constraint as the shared queue, audited in the bank's own zone. Every function loads its
+proposal under row-level security first (`by_id`), so anything else is the same 404.
 """
 
 from __future__ import annotations

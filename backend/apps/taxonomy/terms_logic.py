@@ -1,21 +1,13 @@
 """Taxonomy terms and dimensions: reads only (VOC-07, FP-01).
 
 Every write to a term or a dimension is a proposal applied by apps/proposals/apply.py, so
-this module never calls a write method. That is also what keeps the library fence's AST
-guard quiet: it refuses any module outside the allowlist that names a `LibraryModel` and
-calls `save`, `create`, `update`, `delete` or their bulk and get-or-create forms
-(apps/shared/tests_library_fence.py).
+this module never calls a write method (the library fence).
 
-`term_by_ref()` is the one place a `dimension:key` pair becomes a row. An unknown pair is
-422 `unknown_key` naming the keys that would have worked, because an agent (AGT-02) and a
-person both need to be told what they may say, not merely that they were wrong.
-
-`refuse_mirrored()` is the one rule that keeps a mirrored dimension out of every write
-(FP-04, FP-S12, D-28, ADR 0026): no proposal adds or changes one of its terms, and no
-record is tagged with one, because the reference seed owns them and a record's market
-comes from its instrument or its authority. It reads the data, the `jurisdiction` link a
-mirrored term carries, and never a dimension key. The term list marks the same terms
-`mirrored`, so an agent or a picker leaves them out before it is ever refused.
+`term_by_ref()` is the one place a `dimension:key` pair becomes a row; an unknown pair is
+422 `unknown_key` naming the keys that would work, so an agent (AGT-02) and a person learn
+what they may say. `refuse_mirrored()` keeps a mirrored dimension out of every write (FP-04,
+FP-S12, D-28, ADR 0026), reading the term's `jurisdiction` link, never a dimension key; the
+term list marks the same terms `mirrored`.
 """
 
 from __future__ import annotations
@@ -42,12 +34,8 @@ MIRRORED_REFUSAL = (
 
 def mirrored_dimensions(dimension_ids: Iterable[Any]) -> set[Any]:
     """The ids among these of the dimensions that hold a term mirroring a jurisdiction row
-    (FP-04). One query however many dimensions are named.
-
-    Keyed on the dimension rather than on the term alone, so a term of a mirrored dimension
-    that carries no link of its own counts as firmly as a linked one. `refuse_mirrored`
-    refuses a write with it, and `term_rows` marks the terms it reads with it, so the list
-    an agent reads at run start and the rule it is held to are the same fact."""
+    (FP-04), in one query. Keyed on the dimension, so an unlinked term of a mirrored
+    dimension counts too; `refuse_mirrored` and `term_rows` read the same fact."""
     wanted = set(dimension_ids)
     if not wanted:
         return set()
@@ -60,8 +48,7 @@ def mirrored_dimensions(dimension_ids: Iterable[Any]) -> set[Any]:
 
 def refuse_mirrored(dimension_ids: Iterable[Any]) -> None:
     """422 `jurisdiction_term_mirrored` when any of these dimensions is mirrored (FP-04,
-    FP-S12). Called where a proposal is made and again where it is applied, since a proposal
-    filed before this rule existed still waits in the queue, and wherever a record is tagged."""
+    FP-S12). Called where a proposal is made and applied, and wherever a record is tagged."""
     if mirrored_dimensions(dimension_ids):
         raise ValidationError(MIRRORED_REFUSAL, code="jurisdiction_term_mirrored")
 
@@ -183,11 +170,9 @@ def terms_by_selectors(selectors: list[Any]) -> list[TaxonomyTerm]:
     return [term_by_ref(selector.dimension, selector.key) for selector in selectors]
 
 
-# ---------------------------------------------------------------------------------------
-# The footprint read (FP-01). It lives here rather than in footprint_logic.py because it
-# names the library term and dimension tables, and footprint_logic.py writes: a module may
-# do one or the other, never both, or the library fence cannot tell them apart.
-# ---------------------------------------------------------------------------------------
+# --- The footprint read (FP-01) ---
+# Here, not in footprint_logic.py, because it names library tables and that module writes
+# (the library fence).
 def dimensions_for_footprint(order: list[str]) -> list[tuple[TaxonomyDimensionRef, bool, int]]:
     """Every active dimension as `(ref, restricts_footprint, active term count)`, in the
     picker's order. The count is what `allSelected` is measured against."""

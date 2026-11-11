@@ -1,41 +1,21 @@
 """The one door to a model (AUD-02, playbook 16).
 
 `apps/shared/adapters/llm.py` moves prompts and knows nothing about logging. This module is
-the only code allowed to call it, and every call it makes leaves an `ai_generation` row:
-`generate` in the caller's own transaction once the model has answered, or in a block of its
-own when the model failed once asked, and `stream`, whose words reach somebody as they
-arrive, in a transaction of its own however the call ends.
-`apps/shared/tests_ai_wrapper.py` walks the production tree
-and fails on any other module that imports or calls the adapter, so "every model call is
-logged" is a fact a test keeps true rather than a habit a new caller can forget.
+the only code allowed to call it (apps/shared/tests_ai_wrapper.py), and every call leaves an
+`ai_generation` row: `generate` in the caller's transaction once answered or in a block of
+its own when the model failed, `stream` in a transaction of its own however it ends. The
+prompt is never stored or logged, only its hash, and the answer ships as `status = draft`
+until a person stands behind it. The "So what?" of a change is the agent's own words (D-66),
+not a call made here.
 
-One door, not one per feature: the rule the wrapper carries for everybody is that the
-prompt is never stored, never logged and never put in an audit summary — a hash of it is —
-and that what comes back ships labelled, `status = draft`, until a person stands behind it.
+**The bank's own switch** (`tenant.ai_enabled`, D-07): read here, before the model, when the
+transaction is in a bank's zone, as the database's setting rather than the Python mirror. A
+platform run is in no zone, so no bank can stop bleqq's own watch agents. A bank whose row
+cannot be read is treated as switched off.
 
-Since D-66, what the wrapper does **not** do is draft the "So what?" of a change. The agent
-that read the change writes those words and files them with the change, and the write
-records the log row from what the agent reported; a second call from a handler of ours over
-the same facts is a second moving part and a second cost. So this wrapper serves calls
-bleqq itself makes — chunk 7's Ask is the first — and the log says which rows are which
-through `modelMetadataReportedByAgent`.
-
-**The bank's own switch.** A bank can switch its own AI features off (`tenant.ai_enabled`,
-D-07, owner item 14): Ask, the drafts a model writes for it and, from chunk 11, its own
-agents. The switch is read here, before the model is reached, and only when the caller's
-transaction is in a bank's zone: a platform (library) run is in none, so bleqq's own watch
-agents, which are part of the base package, never consult it and no bank can stop them.
-The zone is the database's own setting, the one row-level security reads, and not the
-Python-side mirror of it, which outlives the transaction that set it on a thread that
-serves one request after another. A bank whose row cannot be read is treated as switched
-off, because the switch is what decides whether a bank's own words leave it for a model.
-
-**A bank's own record is never a model input** (INV-07, OWN-04, D-57). A call whose subject
-is a library record is made only when that record reads, in the call's own zone, as shared:
-owned by no bank and under an instrument no bank owns. Anything else — a bank's own
-instrument, obligation or provision, or an id the zone cannot read as shared, which is what
-another bank's record is — raises before any model is asked, and no row is written. The
-guard is here, in the one door, and not in each caller's good manners.
+**A bank's own record is never a model input** (INV-07, OWN-04, D-57): a call whose subject is
+a library record is made only when that record reads, in the call's zone, as shared; anything
+else raises before any model is asked, and no row is written.
 """
 
 from __future__ import annotations
@@ -149,21 +129,13 @@ def generate(
 ) -> Generation:
     """Ask the model, then write the row, in the caller's transaction.
 
-    The adapter raises `LlmError` when the model cannot answer. The call was sent and may
-    have cost tokens, so it is logged all the same (review 2026-11-11 S-9): a row with
-    `stop_reason = failed`, no output, the model it was addressed to and the input cost
-    estimated from the prompt's length (`CHARS_PER_TOKEN`), written in an atomic block of its
-    own, and then the error is raised again. Outside a transaction the row commits at once;
-    inside one it is a savepoint the caller keeps by catching the error inside its own
-    transaction, which every caller does, so a bank's monthly cap counts a failed what-applies
-    summary and a translator's failed call names its prompt. The model and the version on a
-    finished call's row are the provider's own, read off the response, which is what
-    `modelMetadataReportedByAgent = False` means to a reader.
+    A call that fails with `LlmError` may still have cost tokens, so it is logged all the same
+    (review 2026-11-11 S-9): `stop_reason = failed`, no output, the model addressed and the
+    input cost estimated (`CHARS_PER_TOKEN`), in a savepoint of its own, then the error is
+    raised again. A finished call's row carries the provider's own model and version.
 
-    A subject that is a bank's own library record is refused before anything else
-    (`refuse_private`). `deadline_s` shortens the adapter's own deadline for a caller
-    somebody is waiting on. The row carries the call's cost (`cost_minor`), and the run of
-    one of bleqq's agents that made it when `agent_run_id` names one.
+    A bank's own library record as subject is refused first (`refuse_private`). `deadline_s`
+    shortens the adapter's deadline; the row carries `cost_minor` and the agent run, if any.
     """
     refuse_private(subject_type, subject_id)
     ensure_enabled()
@@ -229,25 +201,17 @@ def stream(
 ) -> Generator[str | Generation]:
     """Ask the model and hand back its words as they arrive, then the logged `Generation`.
 
-    The switch is checked now, while the caller's request still holds its transaction and
-    its tenant, and not when the first word is wanted: a refusal must be a status the
-    caller can still send. What is returned is read later, as a streamed response is sent,
-    which is after the request's own transaction has committed, so the row is written in a
-    transaction of its own with the bank's zone activated for it.
+    The switch is checked now, while the request still holds its transaction and tenant, so a
+    refusal is a status the caller can send. The row is written later, after the request
+    committed, in a transaction of its own with the bank's zone activated.
 
-    `cite` turns the finished text into what it rests on, because which passages an answer
-    cites is only known once it is written; the row records those and nothing else. The
-    row carries `generation_id`, the id the caller already gave the answer, so a reader's
-    verdict on it finds its row, and the provider's own stop reason.
+    `cite` turns the finished text into what it rests on; the row records those, the caller's
+    `generation_id` and the provider's stop reason.
 
-    Once the model has been asked, the call leaves its row however it ends (AUD-02, D-82),
-    because the caller may already have shown its words to somebody. A model that fails
-    raises `LlmError` after the row is written with `stop_reason = failed`; a caller that
-    stops reading before the answer is finished, a reader closing the tab, closes what this
-    returns, and the row is written with `stop_reason = aborted`. Either row holds the words
-    written so far, what they cite and the model the call was addressed to, as a draft like
-    any other; usage is left at nothing, because the provider reports it only with the last
-    word. Closing this before it is first read asks no model and logs nothing.
+    Once asked, the call leaves its row however it ends (AUD-02, D-82): a failure writes
+    `stop_reason = failed` and raises `LlmError`; a reader who stops early writes `aborted`.
+    Either row holds the words so far as a draft, with no usage. Closing this before the first
+    read asks no model and logs nothing.
     """
     ensure_enabled()
     engine = get_llm()

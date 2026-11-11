@@ -1,22 +1,14 @@
-"""The tenant-creation hook of chunk 2: `ensure_tenant_vocabularies(tenant, actor=...)` seeds the
-system rows of every tier-3 list for one tenant (VOC-01, VOC-04, VOC-05, VOC-06),
-idempotently, matched on the immutable key. Everything a tenant can change is written
-once, when the hook creates the row: its labels, usage note, sort order, active flag,
-default and extra columns. `seed_reference` runs this for every tenant on every deploy, so
-re-applying those would silently undo a tenant's reorder, retire or default change. The
-`kind` is the exception: no route lets a tenant change it, the case state machine needs a
-system row per category, so the code's kind is put back on every run. Every row created
-and every kind put back leaves one audit row, and the caller says whose work it is.
+"""`ensure_tenant_vocabularies(tenant, actor=...)` seeds the system rows of every tier-3 list
+for one tenant (VOC-01, VOC-04, VOC-05, VOC-06), idempotently, matched on the immutable key.
 
-A key the tenant already used for a value of its own stops the seed rather than being
-adopted: the row would keep the tenant's meaning while the list lost its system value.
+What a tenant can change is written once, at creation, since `seed_reference` runs this on
+every deploy and must not undo a tenant's choices. The `kind` is put back on every run: no
+route changes it and the case state machine needs a system row per category. A key the
+tenant already used stops the seed rather than being adopted. Every row created and kind put
+back is audited.
 
-Call it, with the tenant activated, wherever a tenant comes into being: the E2E seed
-(apps/shared/e2e_seed.py), `seed_reference` for every existing tenant, the test factory
-(apps/shared/factories.py) and the console's tenant creation when it lands (TEN-02).
-The vocabulary-integrity guard demands a default and a system row per kind for every
-list; a tenant without these rows has empty pickers and a case state machine with no
-status to start in."""
+Call it with the tenant activated wherever a tenant comes into being: the E2E seed,
+`seed_reference`, the test factory and the console's tenant creation."""
 
 from __future__ import annotations
 
@@ -155,13 +147,11 @@ TENANT_SYSTEM_ROWS: dict[str, tuple[str, list[SystemRow]]] = {
 
 def ensure_tenant_vocabularies(tenant: Tenant, *, actor: Actor) -> int:
     """Create the system rows of every tenant list this tenant does not have yet, and put
-    back a system row's kind. `actor` is whoever is seeding: the deploy's `seed_reference`,
-    the E2E seed, the test factory or the console creating the tenant. Must run with the
-    tenant activated, inside a transaction. Returns the number of rows ensured.
+    back a system row's kind. `actor` is whoever is seeding. Must run with the tenant
+    activated, inside a transaction. Returns the number of rows ensured.
 
-    One read per list, and the missing rows, their labels and every audit row each go in
-    as one INSERT: a new bank gets some fifty rows here, and one by one they spent most
-    of the console's 250 ms creating it (NFR-02, TEN-02)."""
+    One read per list, and the missing rows, their labels and their audit rows each go in
+    as one INSERT, within the console's budget for creating a bank (NFR-02, TEN-02)."""
     count = 0
     with batched():
         for list_name in TENANT_LISTS:

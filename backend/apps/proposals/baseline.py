@@ -1,30 +1,19 @@
 """The library baseline, filed through the proposal door (ADR 0065, D-118; PRO-01, INV-01,
 INV-03).
 
-`apps/library/baseline/` holds the shared library's starting inventory as reviewed data: one
-entry per instrument and per duty, each already in the shape `POST /proposals` takes. This
-module files what the library does not hold as proposals of the platform agent
-`library-baseline`, under runs of that agent it opens with no key and hands to no runner:
-`manage.py file_library_baseline` is that agent's runner, and it closes each run through the
-runner-event path like any runner. It decides nothing. A second, independent principal
-approves each proposal in the console queue, and `proposal_four_eyes` refuses this agent as
-its own reviewer.
+`apps/library/baseline/` holds the shared library's starting inventory as reviewed data,
+each entry in the shape `POST /proposals` takes. This module files what the library does not
+hold as proposals of the platform agent `library-baseline`; `manage.py file_library_baseline`
+is that agent's runner. It decides nothing: a second, independent principal approves each
+proposal, and `proposal_four_eyes` refuses this agent as its own reviewer.
 
-What one call files:
+One call files a `new_instrument` per instrument not held, a `new_obligation` per duty whose
+instrument is held, and a `new_instrument_summary` per held instrument without one (INV-09,
+D-124). Never an entry open in the queue, and never one filed before unchanged: the retry
+key carries the entry's content hash.
 
-- a `new_instrument` for every instrument whose stable key the library does not hold;
-- a `new_obligation` for every duty whose instrument the library holds and whose key it does
-  not, so a duty is filed on the first call after its instrument is approved;
-- a `new_instrument_summary` for every instrument the library holds without a summary, from
-  the tranche's file of the same name under `summaries/` (INV-09, D-124), filed the same way;
-- never an entry open in the queue under the same stable key, whoever filed it;
-- never an entry this agent filed before unchanged: the retry key carries the entry's
-  content hash, so a rejected entry stays rejected until the baseline says something new
-  about it, and a corrected one is filed again.
-
-Each entry is filed in a transaction of its own, so an entry the door refuses (its code and
-sentence are reported) files nothing and stops nothing else. Filings go in runs of at most
-`WATCH_RUN_MAX_PROPOSALS`, the budget every run's proposals are held to.
+Each entry is filed in its own transaction, so a refused entry stops nothing else. Runs hold
+at most `WATCH_RUN_MAX_PROPOSALS`.
 """
 
 from __future__ import annotations

@@ -2,23 +2,17 @@
 seeds and the watch pipeline allowed to write a library row (the library fence,
 apps/shared/tests_library_fence.py). Every write happens inside `library_write()` naming
 the proposal, in the approval's transaction, with its own audit row through `record()`, so
-the library change, its audit row and the proposal's decision commit together or not at
-all.
-
-Chunk 2 applies the vocabulary and term kinds. Chunk 4 adds instruments, provisions and
-obligations, each with a version row rather than an overwrite (playbook 4.3).
+the library change, its audit row and the decision commit together or not at all. Records
+get a version row rather than an overwrite (playbook 4.3).
 
 `apply_reverification()` is the single exception to "a proposal is the only door"
-(INV-06): checking a record against its source changes no fact, so it needs no second
-pair of eyes to propose it, only a reviewer's fresh passkey. It stays a stamp. It writes
-a Verification row, which is append-only in the database (library 0004), and on
-`no_change` it moves `last_verified_at` and `verified_by` on the obligation and nothing
-else. The library fence names this function as the one writer the re-verification route
-may reach (apps/shared/tests_library_fence.py).
+(INV-06): checking a record against its source changes no fact, so it needs only a
+reviewer's fresh passkey. It writes an append-only Verification row and, on `no_change`,
+moves `last_verified_at` and `verified_by` and nothing else.
 
-A payload is re-checked here against the library as it is now, not as it was when the
-proposal was made: a key someone else created in the meantime is 409 `duplicate_key`, a
-retired row cannot be relabelled into life, and a system row is never retired.
+A payload is re-checked here against the library as it is now: a key taken meanwhile is 409
+`duplicate_key`, a retired row cannot be relabelled into life, and a system row is never
+retired.
 """
 
 from __future__ import annotations
@@ -110,19 +104,12 @@ def apply(
 ) -> None:
     """Write what the approved `proposal` asks for, as the reviewer corrected it.
 
-    A batch (PRO-04) is applied by its approved rows: `rows` are the rows of `proposal` being
-    approved now, every one checked before any is written, and then written together; a
-    batch's other rows are left as they are.
-    A single proposal takes none.
-
-    `corrected_payload` is what the reviewer approved and what the library gets; the
-    proposal's own `payload` stays as it arrived, so the queue keeps both. `step_up` is the
-    assertion the reviewer just made: it goes on every audit row this writes, so the log of
-    a library change says which passkey opened the door (ID-06, AC-ID3). It is null for an
-    agent's decision, since a key holds no passkey assertion (PRO-S13, D-62, ADR 0054).
-
-    `reviewer` is a `Reviewer` from the API's dual-principal gate, or a bare `User` from an
-    older caller (including this app's own tests); `as_reviewer` normalizes either.
+    A batch (PRO-04) is applied by its approved `rows`, every one checked before any is
+    written; a single proposal takes none. `corrected_payload` is what the library gets;
+    the proposal's own `payload` stays as it arrived. `step_up` goes on every audit row, so
+    the log says which passkey opened the door (ID-06, AC-ID3); it is null for an agent's
+    decision (PRO-S13, D-62, ADR 0054). `reviewer` is a `Reviewer` or a bare `User`;
+    `as_reviewer` normalizes either.
     """
     reviewer = as_reviewer(reviewer, actor)
     stored = proposal.corrected_payload or proposal.payload
@@ -192,9 +179,8 @@ def apply(
             assert isinstance(payload, ObligationScopePayload)
             _obligation_scope(payload, rows, proposal, actor, step_up)
         else:
-            # Reached by a kind that enters the queue before the apply that writes it
-            # exists: an approval of one is refused where the reviewer can see it, never
-            # applied in part and never silently ignored.
+            # A kind that enters the queue before its apply exists is refused where the
+            # reviewer sees it, never applied in part or silently ignored.
             raise ValidationError(f"{proposal.kind!r} cannot be applied yet.", code="unknown_key")
 
 
@@ -249,9 +235,7 @@ def apply_reverification(
     return verification
 
 
-# ---------------------------------------------------------------------------------------
-# New instruments and obligations (INV-01, INV-03, INV-05, PRO-02)
-# ---------------------------------------------------------------------------------------
+# --- New instruments and obligations (INV-01, INV-03, INV-05, PRO-02) ---
 @contextlib.contextmanager
 def _key_free_in_every_zone(subject: str) -> Iterator[None]:
     """A stable key is unique across the library, both zones (the database's unique index),
@@ -280,15 +264,10 @@ def _new_instrument(
 ) -> None:
     """Add the instrument the proposal asks for, with its official name per language.
 
-    The payload is checked again against the library as it is now, by the same function
-    creation ran (`logic.validated_instrument`): a key taken meanwhile is 409
-    `duplicate_key`, and a regime that is not a term of the regime dimension is 422
-    `not_a_regime` here too, for a proposal stored before the rule (D-39, INV-S12).
-
-    Provenance names both sides: who proposed it (`created_origin`, and the run it was
-    found in) and who confirmed it (`verified_origin`, and the confirming agent when an
-    agent did). An instrument is not indexed on its own; its obligations and provisions
-    are, when they arrive.
+    Checked again by `logic.validated_instrument` against the library as it is now: a key
+    taken meanwhile is 409 `duplicate_key`, a regime outside the regime dimension 422
+    `not_a_regime` (D-39, INV-S12). Provenance names who proposed it and who confirmed it.
+    An instrument is not indexed on its own; its obligations and provisions are.
 
     A bank's own instrument (INV-07, OWN-03) takes its owner from the proposal, never from
     the payload, and its audit row is written in that bank's zone.
@@ -368,14 +347,11 @@ def _new_instrument_summary(
 
 def _new_translations(payload: ProposalTranslationsPayload, proposal: Proposal, actor: Actor, step_up: uuid.UUID | None) -> None:
     """Add the record's translations the proposal asks for (INV-05, I18N-01, D-129): rows are
-    only added, each labelled machine-made and never the original, whoever approved them, so
-    the original stays the authoritative text and a reader is told the rest is a machine's.
+    only added, each labelled machine-made and never the original, whoever approved them.
 
-    The record's row is locked, then the payload is checked again by the function creation
-    ran, so a language another approval added meanwhile is 409 `duplicate_key` rather than a
-    second row or a skipped one, and an obligation's summaries still translate its version in
-    force. An obligation is re-indexed inside this transaction, so its new languages are
-    searchable once approved."""
+    The record's row is locked, then the payload is checked again, so a language added
+    meanwhile is 409 `duplicate_key`, and an obligation's summaries still translate its
+    version in force. An obligation is re-indexed inside this transaction."""
     shared = Instrument if payload.target == SubjectType.INSTRUMENT.value else Obligation
     shared.objects.select_for_update().filter(stable_key=payload.key).exists()
     texts = validated_translations(payload)
@@ -415,21 +391,18 @@ def _new_obligation(
     payload: ProposalObligationPayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
     """Add the obligation the proposal asks for, with its title, its scope and its first
-    version, which names the proposal that filed it (`applied_by_proposal`), so the
-    proposing side is read from there as for any later version.
+    version, which names the proposal that filed it (`applied_by_proposal`).
 
-    Checked again by the function creation ran (`logic.validated_obligation`): the
-    instrument may have been retired, or the key taken, while the proposal waited. The
-    search index moves inside this transaction, so an index that cannot be written takes
-    the obligation down with it and leaves the proposal open.
+    Checked again by `logic.validated_obligation`: the instrument may have been retired, or
+    the key taken, while the proposal waited. The index moves in this transaction, so a
+    failed re-index leaves the proposal open.
 
     The standards check runs here too (INV-08, D-35): a standard holds one conformance
     obligation with one standard term, and a law's obligation none. The instrument's row is
     locked first, so two approvals under one standard cannot both find it empty.
 
-    A bank's own obligation (INV-07, OWN-03, OWN-04) takes its owner from the proposal and
-    sits under an instrument of the same bank's own; it is never indexed, and its audit row
-    is written in that bank's zone.
+    A bank's own obligation (INV-07, OWN-03, OWN-04) takes its owner from the proposal, sits
+    under the same bank's own instrument, is never indexed, and is audited in that bank.
     """
     owner = proposal.owner_tenant_id
     instrument, terms = validated_obligation(payload, owner)
@@ -505,13 +478,9 @@ def _new_recurring_duty(
     """Add the recurring duty the proposal asks for to its obligation (REG-07), its only
     door into the library.
 
-    Checked again by the function creation ran (`logic.validated_recurring_duty`), against
-    the calendar and the library as they are now: the rule still falls due within the cap
-    from today, and the obligation is still in force. Provenance names both sides, the
-    proposing agent and the confirming one, or the person who approved it, so a duty an
-    agent confirmed never reads as a person's check (INV-05, D-79). The obligation is
-    re-indexed inside this transaction, so an index that cannot be written takes the duty
-    down with it and leaves the proposal open.
+    Checked again by `logic.validated_recurring_duty` against today's calendar and library.
+    Provenance names both sides, so a duty an agent confirmed never reads as a person's check
+    (INV-05, D-79). The obligation is re-indexed in this transaction.
     """
     assert proposal.target_id is not None
     obligation = active_obligation(proposal.target_id)
@@ -563,9 +532,7 @@ def _texts(texts: dict[str, str], original: str, is_machine: bool, reviewer: Rev
     ]
 
 
-# ---------------------------------------------------------------------------------------
-# Obligation versions (INV-04, INV-05, PRO-02)
-# ---------------------------------------------------------------------------------------
+# --- Obligation versions (INV-04, INV-05, PRO-02) ---
 def _scope(obligation: Obligation) -> list[str]:
     """The obligation's scope facets as the payload writes them, in the order a reader
     sees them, so the audit row shows the same spelling the proposal used."""
@@ -580,34 +547,23 @@ def _obligation_version(
 ) -> None:
     """Add the version the proposal asks for, and nothing else (INV-04, PRO-02).
 
-    Nothing is overwritten: the summary in force from a date is a new numbered row with
-    its own translations, and every earlier version stays exactly as it was written, which
-    is what "as of" and the diff read. The obligation is checked again here, at approval
-    time rather than at proposal time, because it may have been retired while the proposal
-    waited.
+    Nothing is overwritten: a new summary is a new numbered row, and every earlier version
+    stays as written. The obligation is checked again, since it may have been retired.
 
-    The scope is the one thing a version replaces rather than adds to: a term list belongs
-    to the obligation, not to a version, so when the payload carries one the links are
-    rewritten and the audit row holds the scope before and after. A payload without
-    `terms` leaves the scope alone, which is not the same as a payload with an empty list.
+    The scope is the one thing a version replaces: a term list belongs to the obligation, so
+    a payload carrying one rewrites the links and the audit row holds before and after. A
+    payload without `terms` leaves the scope alone; an empty list clears it.
 
-    The search index moves inside this transaction (`reindex`), so an index that cannot be
-    written takes the version down with it and leaves the proposal open.
+    The search index moves inside this transaction (`reindex`).
     """
-    # The target is on the proposal, and creation refused one without it (`logic.
-    # _validate_obligation_target`); it is read again here against the library as it is
-    # now, because the obligation may have been retired while the proposal waited.
+    # Read again against the library as it is now: the obligation may have been retired.
     assert proposal.target_id is not None
-    # The obligation's row is locked before its highest version is read: a second approval
-    # on the same obligation waits here until the first commits, then numbers its version
-    # after that one, rather than both claiming one number and the second dying on the
-    # unique key (PRO-02; apps/proposals/tests_decide.py, ObligationVersionRaces).
+    # Locked before its highest version is read, so two approvals number their versions in
+    # turn rather than colliding on the unique key (PRO-02; tests_decide.ObligationVersionRaces).
     Obligation.objects.select_for_update().filter(pk=proposal.target_id).exists()
     obligation = active_obligation(proposal.target_id)
-    # The scope is resolved and checked before anything is written: a mirrored jurisdiction
-    # term is refused here too, for a proposal that entered the queue before the rule did
-    # (FP-S12). An empty list clears the scope; `terms_of` is never handed one, because an
-    # empty filter matches every term.
+    # Resolved before anything is written; a mirrored jurisdiction term is refused here too
+    # (FP-S12). `terms_of` is never handed an empty list, which matches every term.
     terms = terms_of(payload.terms) if payload.terms else []
     refuse_mirrored(term.dimension_id for term in terms)
     # A payload without `terms` leaves the scope alone, so it asks nothing of the standard
@@ -630,18 +586,14 @@ def _obligation_version(
         approved_by=reviewer.user,
         approved_at=timezone.now(),
         # Machine-confirmed provenance (INV-05, INV-06, PRO-02, D-62): an agent's decision
-        # names itself here, beside `approved_by` staying null, and never reads as a
-        # person's verification. The proposing agent is not repeated on this row: it is
-        # read through `applied_by_proposal.proposed_by_agent`, so both agents are named
-        # without a second column (chunk4-T26).
+        # names itself and never reads as a person's verification; the proposing agent is
+        # read through `applied_by_proposal.proposed_by_agent`.
         verified_origin=(OriginType.AGENT.value if reviewer.agent_id is not None else OriginType.USER.value),
         verified_by_agent_id=reviewer.agent_id,
     )
     for language, text in payload.summaries.items():
-        # The language it was written in is the original; the others are translations, and
-        # they stay labelled machine-made until a person confirms them (INV-05, AUD-02). An
-        # agent's approval confirms nothing a person would, so under it a translation is
-        # machine-made whatever the payload claims.
+        # Translations stay machine-made until a person confirms them (INV-05, AUD-02); an
+        # agent's approval confirms nothing a person would.
         is_original = language == payload.original_language
         ObligationSummary.objects.create(
             version=version,
@@ -684,20 +636,14 @@ def _obligation_scope(
     payload: ObligationScopePayload, rows: Sequence[ProposalBatchRow], proposal: Proposal, actor: Actor, step_up: uuid.UUID | None
 ) -> None:
     """Re-tag each obligation of the approved `rows` (PRO-04, AGT-05): its scope terms become
-    the row's `after`, and nothing else about it changes. A scope belongs to the obligation,
-    not to a version, so no version is filed; the audit row holds the terms before and after,
-    and the index moves in the same transaction.
+    the row's `after`, and nothing else changes; no version is filed. The audit row holds the
+    terms before and after, and the index moves in the same transaction.
 
-    Checked again under the obligations' locks, against the library as it is now: a record
-    retired, or whose scope moved since the batch previewed it, is 409 `stale_write`, and
-    the whole decision fails with it rather than writing a scope nobody previewed. A term
-    added is live and mirrors no jurisdiction, and a standard's obligation keeps exactly one
-    standard term with a link as its source (D-35), as when the batch was filed. Only the
-    links that change are written: a term the obligation keeps stays linked as it was.
-
-    Set-based, whatever the number of rows: every check before any write, one DELETE and one
-    INSERT for the links, one index rebuild for all the obligations, and one audit row per
-    obligation, which the caller's `batched()` block writes together."""
+    Checked again under the obligations' locks: a record retired, or whose scope moved since
+    the preview, is 409 `stale_write` and the whole decision fails. Added terms are live and
+    mirror no jurisdiction; a standard's obligation keeps exactly one standard term (D-35).
+    Set-based: every check before any write, one DELETE and one INSERT for the links that
+    change, one index rebuild, one audit row per obligation."""
     ids = [row.subject_id for row in rows]
     list(Obligation.objects.select_for_update().filter(pk__in=ids).order_by("id").values_list("id", flat=True))
     in_force = active_shared_obligations(ids)
@@ -752,9 +698,7 @@ def _obligation_scope(
     reindex_obligations(ids)
 
 
-# ---------------------------------------------------------------------------------------
-# Provisions (INV-02, INV-08, PRO-02)
-# ---------------------------------------------------------------------------------------
+# --- Provisions (INV-02, INV-08, PRO-02) ---
 def _provision_texts(
     version: ProvisionVersion, payload: ProposalProvisionPayload | ProposalProvisionVersionPayload, reviewer: Reviewer
 ) -> None:
@@ -768,17 +712,13 @@ def _new_provision(
     """Add the provision the proposal asks for, with its first verbatim text, which names
     the proposal that filed it.
 
-    Checked again by the function creation ran (`logic.validated_provision`) and by the
-    standards check: a standard's text is licensed (422 `licensed_text`), and the trigger
-    `provision_not_under_standard` refuses the row on its own if this is ever bypassed. The
-    instrument is locked first, so a level merge re-pointing it waits for this insert, or
-    this insert reads the level the merge left (H25). The index moves in this transaction,
-    so a failed re-index writes nothing.
+    Checked again by `logic.validated_provision` and the standards check: a standard's text
+    is licensed (422 `licensed_text`), and the trigger `provision_not_under_standard` refuses
+    the row on its own. The instrument is locked first, so a concurrent level merge is seen
+    (H25). The index moves in this transaction.
     """
     instrument, parent, kind = validated_provision(payload)
-    # Locked and read again before the check: a level merge moving this instrument onto a
-    # standard holds the row, and `provision_not_under_standard` would otherwise read the
-    # level as it was before that merge committed (H25).
+    # Locked and read again so a level merge onto a standard is seen before the check (H25).
     instrument = Instrument.objects.select_for_update().get(pk=instrument.pk)
     standards.check(proposal.kind, instrument, None, proposal.field_sources, source_label=proposal.source_label)
     provision = Provision.objects.create(
@@ -866,13 +806,10 @@ def _provision_version(
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Vocabulary rows
-# ---------------------------------------------------------------------------------------
+# --- Vocabulary rows ---
 def _entry(name: str, kind: str, keys: list[str]) -> VocabularyList:
     """The library list a vocabulary proposal names, with the rules its change obeys checked
-    again for the list as it is now (`logic.refuse_vocabulary_change`): a proposal filed
-    before a rule existed may still wait in the queue."""
+    again for the list as it is now (`logic.refuse_vocabulary_change`)."""
     entry = REGISTRY[name]
     if not entry.is_library:  # pragma: no cover - logic.validated_payload refused it
         raise ValidationError(f"{name!r} is a tenant list; its admin writes it.", code="unknown_key")
@@ -881,9 +818,8 @@ def _entry(name: str, kind: str, keys: list[str]) -> VocabularyList:
 
 
 def _row(entry: VocabularyList, key: str) -> Any:
-    """The row `key` names, locked: an approval reads it and saves it whole, so a second
-    approval on the same row waits and then reads what the first wrote, rather than writing
-    back over its stamp and its version bump (H34)."""
+    """The row `key` names, locked, so a second approval on the same row reads what the
+    first wrote rather than writing over its stamp and version bump (H34)."""
     row = entry.model._default_manager.select_for_update().filter(key=key).order_by("sort_order", "key").first()
     if row is None:
         raise ValidationError(f"{key!r} is not a row of {entry.name!r}.", code="not_found")
@@ -907,16 +843,13 @@ def _restamp(
     row: Any, proposal: Proposal, reviewer: Reviewer, labels: QuerySet[Any], *, usage_note_written: bool
 ) -> None:
     """Stamp an existing list row or term with the approval that just wrote some of its
-    wording (INV-05, D-62). Only a relabel or a term update that writes labels, a usage
-    note or one of the row's own columns calls this: a sort order, a retire, a restore or a
-    merge writes no wording, and the row keeps the stamp it had.
+    wording (INV-05, D-62). Only a write of labels, a usage note or a row column calls this;
+    a sort order, retire, restore or merge keeps the stamp the row had.
 
-    A row is reworded in place, a piece at a time, so a person's approval stamps `user`
-    only once nothing the agents confirmed is left on it. While a label is still
-    machine-made, or the row keeps a usage note this approval did not rewrite (the row
-    cannot tell who wrote it), an agent-stamped row keeps naming the agents and the
-    proposal they confirmed, so their wording never reads as a person's check. `labels` is
-    the row's label queryset, read after this approval wrote its labels."""
+    A person's approval stamps `user` only once nothing the agents confirmed is left: while
+    a label is still machine-made, or a usage note this approval did not rewrite remains, an
+    agent-stamped row keeps naming the agents, so their wording never reads as a person's
+    check. `labels` is read after this approval wrote its labels."""
     if (
         reviewer.agent_id is None
         and row.verified_origin == OriginType.AGENT.value
@@ -1043,10 +976,8 @@ def _vocabulary_merge(payload: ProposalVocabularyMergePayload, proposal: Proposa
     source, target = merge_pair(entry, payload.key, payload.into, lock=True)
     if source.is_system:
         raise ValidationError(f"{payload.key} is a system value: it can be relabelled but not merged away.", code="system_row")
-    # Every current row holding the source moves to the target in this transaction; the
-    # source row itself stays, retired, so versions, audit rows and old labels resolve. A
-    # record the database refuses to move (a standard's level on an instrument holding
-    # provisions) undoes every move before it and leaves the proposal open.
+    # Every current row holding the source moves to the target; the source stays, retired,
+    # so old references resolve. A move the database refuses undoes every move before it.
     try:
         with transaction.atomic():
             moved = repoint.move(entry.links, source, target, library=_repoint_rows)
@@ -1089,12 +1020,10 @@ def _mirrored_term_follows(
     step_up: uuid.UUID | None,
 ) -> None:
     """The term that mirrors a jurisdiction takes what the approval just wrote on the row, in
-    the same transaction (FP-04, D-28, D-94): the labels, marked and stamped as a term
-    update's are, the sort order, and whether it is active. No proposal may change a mirrored
-    term itself (FP-S12), so this is the one way its wording moves after the seed filed it;
-    the seed puts back only its link, its parent and `active` (apps/taxonomy/seeds). A
-    jurisdiction with no mirrored term (International, D-38) changes alone. `reviewer` is
-    needed only when there are labels to write."""
+    the same transaction (FP-04, D-28, D-94): labels, sort order and `active`. No proposal
+    may change a mirrored term itself (FP-S12), so this is the one way its wording moves. A
+    jurisdiction with no mirrored term (D-38) changes alone. `reviewer` is needed only when
+    there are labels to write."""
     terms = TaxonomyTerm.objects.select_for_update(of=("self",)).select_related("dimension").filter(jurisdiction=row).order_by("id")
     for term in terms:
         if not labels and sort_order is None and term.active == row.active:
@@ -1131,9 +1060,7 @@ def _repoint_rows(moving: Any, twins: Any, field: str, target: Any) -> int:
     return int(moving.update(**{field: target}))
 
 
-# ---------------------------------------------------------------------------------------
-# Taxonomy terms
-# ---------------------------------------------------------------------------------------
+# --- Taxonomy terms ---
 def _dimension(key: str) -> TermDimension:
     dimension = TermDimension.objects.filter(key=key, active=True).order_by("sort_order", "key").first()
     if dimension is None:

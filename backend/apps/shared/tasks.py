@@ -1,11 +1,9 @@
 """Celery tasks of the shared app (playbook 12).
 
-`deliver_outbox` is the beat entry that runs the one ordered cursor over `outbox_event`
-(`apps/shared/outbox.py`). A plain `@shared_task`, not a `@tenant_task`: one cursor spans
-the library and every tenant, and each row's handlers run inside a `@tenant_task` in that
-module, in the row's own zone. The beat entry and its interval are in `config/settings.py`
-with the rest of the `CELERY_*` settings, where the worker, beat and the test runner read
-one source; `apps/shared/tests_celery_registration.py` walks both.
+`deliver_outbox` runs the one ordered cursor over `outbox_event` (`apps/shared/outbox.py`). A
+plain `@shared_task`: the cursor spans every zone, and each row's handlers run in a
+`@tenant_task` in the row's own zone. The beat entry lives in `config/settings.py`;
+`apps/shared/tests_celery_registration.py` walks both.
 """
 
 from __future__ import annotations

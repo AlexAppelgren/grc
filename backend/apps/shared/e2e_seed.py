@@ -1,22 +1,16 @@
 """The E2E seed (playbook 8.3): idempotent (natural keys), deterministic (no randomness),
 realistic, built from the prototype's sample data so journeys match the design.
 
-Chunk 1 seeds two tenants with their system roles, one login per system role in tenant
-A (each with one fixed passkey whose public key comes from apps/shared/e2e_passkeys.py),
-tenant B's admin, the platform editor and admin, and Anna, the one user still awaiting
-enrolment: invited with an open invitation and no passkey. Under E2E_MODE her invitation
-token is the fixed literal in apps/shared/e2e_logins.py; otherwise a random one that
-nobody sees (the seed still runs locally for a dev database). It also seeds one login per
-journey that spends a person in a way the UI cannot undo (`reserved_for` in the roster):
-the member ADM-S2 re-issues, so the shared approver survives a full run.
+Two tenants with their system roles, one login per system role in tenant A (each with one
+fixed passkey from apps/shared/e2e_passkeys.py), tenant B's admin, the platform editor and
+admin, and Anna, the one user still awaiting enrolment (her invitation token is the fixed
+literal in apps/shared/e2e_logins.py under E2E_MODE, else random). A journey that spends a
+person in a way the UI cannot undo gets a login of its own (`reserved_for`). Then each
+block below seeds what its journeys read, each marked `# --- <block>` / `# --- end <block>`.
 
-Chunk 4 seeds what the console queue and the bank's own screens decide: one waiting
-proposal per journey that spends one (`EXPECTED_PROPOSALS`), and the one open problem
-report a reader of tenant A left on a library record (`EXPECTED_PROBLEM_REPORT`).
-
-`EXPECTED_TENANTS` and `SEED_LOGINS` are what the seed-integrity guard
-(apps/shared/tests_seed_integrity.py) demands, so a seed change cannot quietly hollow
-out a journey. Fixed ids keep audit rows and URLs stable across reseeds."""
+`EXPECTED_*` and `SEED_LOGINS` are what the seed-integrity guard
+(apps/shared/tests_seed_integrity.py) demands, so a seed change cannot quietly hollow out a
+journey. Fixed ids keep audit rows and URLs stable across reseeds."""
 
 from __future__ import annotations
 
@@ -36,10 +30,8 @@ from django.utils import timezone
 
 from apps.agents.models import AgentAccess, AgentRun, RunStatus, TenantAgent
 from apps.agents.seeds import seed_agent_definitions
-# c11-e2e-seed
 from decimal import Decimal
 from apps.agents.models import AgentCadence, RunTrigger, TenantAgentBudget
-# acc-e2e-seed
 from apps.agents.seeds.e2e import publish_e2e_version
 from apps.proposals import batch as proposal_batch
 from apps.proposals.schemas import ObligationScopeChange, ObligationScopePayload
@@ -94,7 +86,6 @@ from apps.taxonomy.models import ApprovalStatus, FootprintChangeRequest, Footpri
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, switch_on_term
 from apps.taxonomy.tenant_hooks import ensure_tenant_vocabularies
 from apps.tenants.logic import set_content_languages
-# c8-seed-org-register
 from apps.register import logic as register_logic
 from apps.register.models import ComplianceAssessment, Gap, InternalLink, Interpretation, TenantObligation, TenantObligationScope
 from apps.taxonomy.models import ComplianceStatus, GapSource, GapStatus, LinkKind, RiskRating, Team
@@ -102,7 +93,6 @@ from apps.tenants.models import InternalItem, Licence, LicenceServiceTerm, OrgUn
 from apps.tenants import support_access
 from apps.tenants.models import SecurityPolicy
 from apps.tenants.schemas import ConsoleSupportAccessBody
-# c8-ui-links-history-participants
 from apps.collab.models import Participant
 
 
@@ -134,12 +124,10 @@ TENANT_B = SeedTenant(
 EXPECTED_TENANTS: tuple[SeedTenant, ...] = (TENANT_A, TENANT_B)
 SEED_ACTOR = Actor.system("seed_e2e")
 
-# Footprints as "dimension:key" (chunk 2, FP-01, J-6). Tenant A's is the prototype's
-# `footprint{regimes, accounts, entities, services, clients}` less pension accounts, the one
-# term FP-S4 needs left out (`EXPECTED_OUTSIDE_SCOPE`), and operating in Sweden, so the
-# Danish rules are what watching Denmark adds (tax-watched-inventory, FP-S13); tenant B's is
-# a smaller, different bank that names no jurisdiction, so J-8 can prove the footprint is
-# per tenant and every rule reaches it.
+# Footprints as "dimension:key" (FP-01, J-6). Tenant A's is the prototype's less pension
+# accounts, the one term FP-S4 needs left out (`EXPECTED_OUTSIDE_SCOPE`), operating in Sweden
+# so watching Denmark adds the Danish rules (FP-S13); tenant B's is a smaller bank that names
+# no jurisdiction, so J-8 proves the footprint is per tenant.
 EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
     TENANT_A_SLUG: (
         "regime:securities",
@@ -165,17 +153,17 @@ EXPECTED_FOOTPRINTS: dict[str, tuple[str, ...]] = {
         "service_type:insurance_distribution",
         "client_category:retail",
         "client_category:professional",
-        # tax-watched-feed (FP-04): the bank operates in Sweden, as FP-S10, FP-S13 and FP-S15
+        # FP-04: the bank operates in Sweden, as FP-S10, FP-S13 and FP-S15
         # have it, so a Danish record is outside this scope and "Markets we watch" has
         # something to add. Union rules reach Sweden, so none of them moves.
         "jurisdiction:se",
-        # acc-e2e-seed (J-11): trading, cards and card issuing, `EXPECTED_J11.footprint`. No
+        # J-11: trading, cards and card issuing, `EXPECTED_J11.footprint`. No
         # record but the J-11 fixture carries a product type or a licensed activity, so none moves.
         "product_type:shares",
         "product_type:derivatives",
         "product_type:cards",
         "licensed_activity:card_issuing",
-        # acc-summary-j11: the licence Trading trades under, so a Trading entry's scope narrows
+        # The licence Trading trades under, so a Trading entry's scope narrows
         # licensed activities too and names card issuing as outside it (ACC-07).
         "licensed_activity:investment_services",
     ),
@@ -217,15 +205,11 @@ class SeedLibrary:
     anchor_date: datetime.date
 
 
-# Chunk 3: the prototype's library (the fixture's 12 instruments plus the three EU
-# directives its lineage needs and FFFS 2026:11, the sample instrument T8 adds so
-# FFFS 2017:2's own provision tree has something that amends it), the obligation whose
-# second version is still ahead, and the one sample obligation whose only service is
-# advice, which J-6's switch-off hides (the prototype's 15 obligations plus that one).
-# tax-nordic-seed (FP-04): plus Kapitalmarkedsloven and verdipapirhandelloven with one
-# obligation each, the Danish one for Custody and the Norwegian one for Advice.
-# Plus the one standard below (E2E_STANDARD): ISO/IEC 27001:2022 and its conformance duty.
-# acc-e2e-seed: plus J-11's three EU instruments with one duty each (E2E_TRADING).
+# The prototype's library (its 12 instruments, the three EU directives its lineage needs and
+# FFFS 2026:11, which amends FFFS 2017:2), the obligation whose second version is ahead, and
+# the advice-only obligation J-6's switch-off hides; plus one Danish and one Norwegian
+# instrument (FP-04), the standard (E2E_STANDARD) and J-11's three EU instruments
+# (E2E_TRADING).
 EXPECTED_LIBRARY = SeedLibrary(
     instruments=18 + 1 + 3,
     obligations=18 + 1 + 3,
@@ -236,29 +220,26 @@ EXPECTED_LIBRARY = SeedLibrary(
 
 
 # --- lib-standard-e2e-seed (INV-S11, FP-S16) ------------------------------------------
-# ISO/IEC 27001:2022 with its one conformance duty, for E2E only: seed_demo never loads it
-# until Alex answers TODO_FOR_alex.md "Legal, before any standard is seeded". The duty links
-# to the standard's term, which stays inactive (apps/taxonomy/seeds), and no E2E tenant
-# follows it, so every tenant's inventory hides it until a journey adds it to a scope.
+# ISO/IEC 27001:2022 with its one conformance duty, for E2E only (TODO_FOR_alex.md "Legal,
+# before any standard is seeded"). No E2E tenant follows its term, so every inventory hides
+# it until a journey adds it to a scope.
 E2E_STANDARD = Path(__file__).resolve().parents[1] / "library" / "fixtures" / "e2e_standard.json"
 E2E_STANDARD_INSTRUMENT = "iso-iec-27001-2022"
 E2E_STANDARD_OBLIGATION = "iso-iec-27001-2022-conformance"
 # --- end lib-standard-e2e-seed -----------------------------------------------------------
 
 # --- std-journeys (FP-S16) ----------------------------------------------------------------
-# A scope request names active terms only, so FP-S16 cannot follow the standard while its
-# term is off. The reference seed now files it active on a new database (watch-standards),
-# and E2E switches it on where a database was seeded while it was held (D-85). No E2E tenant
-# follows it, so the duty stays hidden until a journey adds the term and takes it out again.
+# A scope request names active terms only, so E2E switches the standard's term on where a
+# database was seeded while it was held (D-85). No tenant follows it, so the duty stays
+# hidden until a journey adds the term and takes it out again.
 E2E_STANDARD_TERM = ("standard", "iso_iec_27001")
 # --- end std-journeys ---------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
 class SeedHome:
-    """Chunk 6's own dates (c6-e2e-seed, HOM-01, HOM-03, ruling 17): the natural keys
-    `home.journey.spec.ts` and the seed-integrity guard read back by, so a change to this
-    seed cannot quietly hollow out HOM-S1 to HOM-S6 without failing there."""
+    """The home journeys' own dates (HOM-01, HOM-03): the natural keys
+    `home.journey.spec.ts` and the seed-integrity guard read back by."""
 
     lead_change: str
     later_change: str
@@ -293,10 +274,9 @@ def refuse_when_deployed(command: str = "seed_e2e") -> None:
 
 
 def refuse_across_midnight(run_minutes: int, now: datetime.datetime | None = None) -> None:
-    """H114: the seed anchors to each tenant's local day when it runs and the journeys to the
-    local day when they assert, so a run that crosses a tenant's midnight fails every
-    date-anchored journey a day apart. The E2E webServer passes the run's expected length and
-    a run that would cross midnight is refused before anything is seeded."""
+    """H114: the seed anchors to each tenant's local day and the journeys assert against it,
+    so a run crossing a tenant's midnight would fail every date-anchored journey. A run of
+    `run_minutes` that would cross it is refused before anything is seeded."""
     now = now or timezone.now()
     end = now + datetime.timedelta(minutes=run_minutes)
     for spec in EXPECTED_TENANTS:
@@ -429,9 +409,9 @@ def seed_logins(tenants: list[Tenant]) -> int:
 
 
 def seed_footprints(tenants: list[Tenant]) -> int:
-    """Each tenant's footprint from EXPECTED_FOOTPRINTS (chunk 2, FP-01): idempotent on
-    (tenant, term); a term added by the seed leaves its history row and one audit event
-    per tenant on first creation, through the same logic a person's approval uses."""
+    """Each tenant's footprint from EXPECTED_FOOTPRINTS (FP-01): idempotent on (tenant,
+    term), written through the same logic a person's approval uses, history and audit
+    included."""
     count = 0
     for tenant in tenants:
         tenancy.activate(tenant.id)
@@ -464,46 +444,29 @@ def seed_pending_footprint_request(tenants: list[Tenant]) -> int:
     return 1
 
 
-# What waits in the console queue when a journey starts, and the journey each one is there
-# for. There is no UI path in R1 for a person to file a `new_obligation_version` proposal
-# (only an agent, or a library editor through the API, can), so a journey that approves,
-# corrects or rejects one has nothing to work on without this. Every one is filed through
-# apps.proposals.logic.create(), the same function POST /proposals calls, so it is checked
-# exactly as a real submission is; the seed never approves one, so it writes no library row.
+# What waits in the console queue when a journey starts, and the journey it is for. No UI
+# files a `new_obligation_version` proposal, so these are filed through
+# apps.proposals.logic.create(), as POST /proposals does; the seed never approves one.
 #
-# No obligation target is obl-research-payments: apps/library/seeds/library.py already files
-# that obligation's own version 2 straight from the fixture's "proposals" entry
-# (prop-research-payments-v2), so approving a fresh proposal against it here would file a
-# redundant version 3 instead of the version 2 the design card and PRO-S3 both expect. It is
-# the subject of the seeded problem report instead. Nor is any of them
-# obl-suitability-statement: frontend/tests/e2e/taxonomy.journey.spec.ts (J-6) already owns
-# it as ADVICE_ONLY_OBLIGATION, whose only service is Advice, to prove that switching Advice
-# off hides it; a correction here that replaces its scope terms (PRO-S4 rewrites the whole
-# array, never adds to it) would rewrite the fact that journey depends on. The four targets
-# below carry version 1 only, sit inside tenant A's footprint, are not advice-only and are
-# named by no other spec, so a decision on any of them is a clean version 2 nothing else is
-# watching, and the four journeys never race each other.
+# Each target carries version 1 only, sits in tenant A's footprint with or without Advice
+# (J-6 switches Advice off in parallel), is not advice-only and is named by no other spec,
+# so a decision is a clean version 2 and no two journeys race. Never obl-research-payments
+# (the fixture already files its version 2) or obl-suitability-statement (J-6's
+# ADVICE_ONLY_OBLIGATION).
 #
 # --- library-updates-frontend (PRO-S7) ---------------------------------------------------
-# PRO-S7 approves its proposal and then finds the change on the bank's "Library updates" by
-# the duty's own title. Its target was obl-isk-control-statements until SRC-S3
-# (search.journey.spec.ts) came to name that duty's title, and then the pension transfer
-# right until FP-S4 took that duty as the one record outside tenant A's scope
-# (`EXPECTED_OUTSIDE_SCOPE`), so it is now the safeguards on automated decisions: version 1
-# only, inside tenant A's footprint with or without Advice (J-6 switches Advice off while
-# other journeys run), and named by no other spec or seed.
+# PRO-S7 approves its proposal and finds the change on "Library updates" by the duty's title:
+# the safeguards on automated decisions, named by no other spec or seed.
 PRO_S7_OBLIGATION = "obl-gdpr-article-22"
 AUTOMATED_DECISIONS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000005")
 # --- end library-updates-frontend ---------------------------------------------------------
 
 
 # --- agent-j4-smoke (AGT-S10, J-4) -------------------------------------------------------
-# J-4's own duty: an agent minted in the console files a new version of it under a change it
-# registers, a library editor approves it, and the bank's officer reads it. Every attempt adds
-# a version, so no other spec or seed may name it, and the journey asserts the version its own
-# approval produced, never a number. Product governance under FFFS 2017:2 reaches tenant A
-# with or without Advice (J-6 switches Advice off while other journeys run). The fixture
-# loads it; this names it as J-4's.
+# J-4's own duty: an agent minted in the console files a new version under a change it
+# registers, a library editor approves it, the officer reads it. Every attempt adds a
+# version, so no other spec or seed may name it, and the journey asserts the version its own
+# approval produced, never a number.
 J4_OBLIGATION = "obl-product-governance"
 # --- end agent-j4-smoke -------------------------------------------------------------------
 
@@ -516,12 +479,10 @@ APPROPRIATENESS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000001")
 COSTS_CHARGES_RUN = uuid.UUID("00000000-0000-4000-9000-000000000002")
 CLIENT_ASSETS_RUN = uuid.UUID("00000000-0000-4000-9000-000000000003")
 # --- pro-s13-journey (PRO-S13) ---------------------------------------------------------------
-# The sweeper's proposal the confirming agent decides through the API, end to end. Its target
-# is version 1 only, reaches tenant A with or without Advice, and is named by no other spec,
-# seed constant or seeded proposal, so its version 2 is the confirming agent's and nobody
-# else's (tests_seed_integrity.py checks all three).
-# Not product governance, which J-4 owns (J4_OBLIGATION above): each journey that adds a
-# version needs a duty of its own.
+# The sweeper's proposal the confirming agent decides through the API. Its target is named by
+# no other spec, seed constant or proposal, so its version 2 is the confirming agent's alone
+# (tests_seed_integrity.py checks it); not J-4's duty, since each versioning journey needs
+# its own.
 PRO_S13_OBLIGATION = "obl-idd-demands-needs"
 PRO_S13_RUN = uuid.UUID("00000000-0000-4000-9000-000000000013")
 # --- end pro-s13-journey ---------------------------------------------------------------------
@@ -579,20 +540,16 @@ EXPECTED_PROBLEM_REPORT = SeedProblemReport(
 
 
 def _obligation_id(stable_key: str) -> uuid.UUID:
-    """A read-only lookup, by Django's own app registry rather than an `Obligation` import:
-    this module already calls `.update_or_create()` for its tenant and login rows, and the
-    library fence's static guard (apps/shared/tests_library_fence.py) fails closed on any
-    module that both names a concrete `LibraryModel` and contains a write-method call,
-    whether or not the two are related. Obligation is a `LibraryModel`; this keeps its name
-    out of this module's AST as anything but a string, so the guard reads this seed
-    correctly as the read it is."""
+    """A read-only lookup through Django's app registry, so `Obligation` is never named in
+    this module's AST: the library fence fails closed on a module that names a LibraryModel
+    and calls a write method, and this module writes tenant and login rows."""
     model = django_apps.get_model("library", "Obligation")
     return model.objects.get(stable_key=stable_key).id
 
 
 def _obligation(stable_key: str) -> Any:
-    """The obligation itself, read the same way `_obligation_id` reads its id: chunk 5's
-    fixtures need the row, not only its id, to link and re-check against (`c5-seed-watch`)."""
+    """The obligation itself, read the same way `_obligation_id` reads its id, for the watch
+    fixtures to link and re-check against."""
     return django_apps.get_model("library", "Obligation").objects.get(stable_key=stable_key)
 
 
@@ -602,17 +559,15 @@ def _agent(key: str) -> Any:
 
 
 def _regulatory_change_exists(stable_key: str) -> bool:
-    """Whether a chunk 5 reform is already in the library, read the same way:
-    `RegulatoryChange` is a `LibraryModel`, so this keeps its name out of this module's AST
-    as anything but a string, exactly as `_obligation_id` does for `Obligation`."""
+    """Whether a reform is already in the library, read the same way, for the same reason
+    (`RegulatoryChange` is a `LibraryModel`)."""
     return django_apps.get_model("watch", "RegulatoryChange").objects.filter(stable_key=stable_key).exists()
 
 
 def _waiting(kind: str, **target: Any) -> bool:  # compliance: allow-kwargs one ORM filter per proposal kind
-    """Is a proposal of this kind already waiting on this target? A seeded proposal is filed
-    again only when none is, so a journey that decided one on an earlier run finds a fresh
-    one rather than a decided row it cannot use, and a reseed of an untouched database
-    changes nothing."""
+    """Is a proposal of this kind already waiting on this target? Filed again only when none
+    is, so a journey that decided one finds a fresh one, and a reseed of an untouched
+    database changes nothing."""
     return Proposal.objects.filter(
         kind=kind,
         status=ProposalStatus.OPEN.value,
@@ -632,13 +587,9 @@ def _propose_obligation_version(
     terms: list[str] | None = None,
 ) -> None:
     """One agent's proposal for a new version of `obligation`, with a source per changed
-    field (PRO-01): the summary in each language, the date, and the scope when it changes
-    one. All four cite the authority's own page, as a real run would.
-
-    Filed as the create route files an agent's proposal (AGT-01): by the seeded sweeper's
-    key and its agent, under `agent_run`, an open run of that key, which this opens with
-    that fixed id when a reseed has not already. The watch-sweeper definition's own step
-    `POST /proposals` is the one this stands for."""
+    field (PRO-01), each citing the authority's own page as a real run would. Filed as the
+    create route files an agent's proposal (AGT-01): by the seeded sweeper's key under
+    `agent_run`, an open run of that key opened here with its fixed id."""
     target_id = _obligation_id(obligation)
     if _waiting(ProposalKind.NEW_OBLIGATION_VERSION.value, target_id=target_id):
         return
@@ -680,9 +631,8 @@ def _propose_obligation_version(
 
 def _propose_flag_relabel() -> None:
     """PRO-S5: the proposal a library editor made themselves, so that their own approval is
-    refused by four eyes. A vocabulary label is wording a person writes rather than a fact
-    from an authority, so it carries no field source, as the queue's other vocabulary
-    proposals do not."""
+    refused by four eyes. A vocabulary label is a person's wording, so it carries no field
+    source."""
     if _waiting(
         ProposalKind.VOCABULARY_RELABEL.value,
         payload__list="flag",
@@ -707,9 +657,8 @@ def _propose_flag_relabel() -> None:
 
 def seed_proposals() -> int:
     """One proposal waiting per journey that spends one (EXPECTED_PROPOSALS). Runs with no
-    tenant active, as a library editor's or an agent's own call would (PRO-03), so
-    `proposed_in_tenant` is false on every row and none of them reaches a bank's own list.
-    Returns how many wait, which is the same number on every run."""
+    tenant active (PRO-03), so none of them reaches a bank's own list. Returns how many
+    wait, the same number on every run."""
     tenancy.clear_tenant()
 
     _propose_obligation_version(
@@ -802,7 +751,7 @@ def seed_proposals() -> int:
         source_label="EUR-Lex, Regulation (EU) 2016/679, Article 22, consolidated text",
         source_url="https://eur-lex.europa.eu/",
     )
-    # pro-s13-journey (PRO-S13): see PRO_S13_OBLIGATION above.
+    # PRO-S13: see PRO_S13_OBLIGATION above.
     _propose_obligation_version(
         obligation=PRO_S13_OBLIGATION,
         agent_run=PRO_S13_RUN,
@@ -829,9 +778,8 @@ def seed_proposals() -> int:
 
 def seed_problem_report(tenants: list[Tenant]) -> int:
     """AUD-S5: one open problem report a reader of tenant A left on a library record, filed
-    with that tenant activated so the row carries it and no other bank can read it. Filed
-    again only when none of this reader's is open on the record, so a journey that closed it
-    finds a fresh one and a reseed of an untouched database changes nothing."""
+    with that tenant active. Filed again only when none of this reader's is open on the
+    record, so a journey that closed it finds a fresh one."""
     expected = EXPECTED_PROBLEM_REPORT
     tenant = next(row for row in tenants if row.slug == expected.tenant_slug)
     tenancy.activate(tenant.id)
@@ -862,27 +810,21 @@ def seed_problem_report(tenants: list[Tenant]) -> int:
 
 
 def _quarter_safe_offsets() -> tuple[int, int]:
-    """Two day-offsets from "today" that always land in two different quarters, whatever
-    the real calendar day this seed runs on (HOM-S4, HOM-S6). A quarter is 90 to 92 days
-    long, so moving forward by more than the longest quarter always crosses at least one
-    quarter boundary: the near date (`+20` days) is always "this side" of it and the far
-    date (`+120` days, 100 days later) is always on the other side, never the same
-    quarter — proved for four anchors a quarter apart in `tests_seed_integrity.py`."""
+    """Two day-offsets from "today" that always land in two different quarters (HOM-S4,
+    HOM-S6): a quarter is at most 92 days, so `+20` and `+120` always straddle a boundary
+    (proved for four anchors in `tests_seed_integrity.py`)."""
     return 20, 120
 
 
 def seed_watch_changes() -> SeedHome:
-    """The library-zone rows chunk 6's screens read (c6-e2e-seed, HOM-01, HOM-03, HOM-S1,
-    HOM-S2, HOM-S4, HOM-S6): two sources with their coverage (one healthy, one failed) and
-    four regulatory changes. Runs before `seed_tenants()`, while no tenant is active yet,
-    because `source` is written with no tenant activated (WAT-06) — the same reason
-    `seed_authorities()` and `load_library()` run there too.
+    """The library-zone rows the home screens read (HOM-01, HOM-03, HOM-S1, HOM-S2, HOM-S4,
+    HOM-S6): two sources with their coverage (one healthy, one failed) and four regulatory
+    changes. Runs before `seed_tenants()`, with no tenant active, because `source` is
+    written with none (WAT-06).
 
-    Anchored to the tenant-local date (`Europe/Stockholm`, `TENANT_A.timezone`) plus fixed
-    day offsets, never to a literal date or `date.today()`: `_quarter_safe_offsets()` keeps
-    the near and far dates in two different quarters whatever day this runs on, and every
-    date below is that anchor plus a fixed number of days, so a quarter boundary never
-    changes what a journey sees (CLAUDE.md §11, chunk 6 plan rule 10).
+    Every date is the tenant-local date (`Europe/Stockholm`) plus a fixed day offset, never
+    a literal or `date.today()`, so a quarter boundary never changes what a journey sees
+    (CLAUDE.md §11).
     """
     healthy = watch_e2e_seed.seed_source(name=EXPECTED_HOME.healthy_source)
     watch_e2e_seed.seed_source_check(healthy, status=CheckStatus.OK)
@@ -948,7 +890,7 @@ def timezone_now_this_week(tz: str) -> datetime.datetime:
 
 def timezone_now_last_week(tz: str) -> datetime.datetime:
     """The same moment, one ISO week earlier, for the change the seeded briefing snapshot
-    already carries (HOM-S3, ruling 17)."""
+    already carries (HOM-S3)."""
     return timezone_now_this_week(tz) - datetime.timedelta(days=7)
 
 
@@ -960,12 +902,10 @@ def _seed_case(
     footprint_match: bool,
     so_what_confirmed_by: User | None = None,
 ) -> ChangeCase:
-    """One bank's case for one seeded change, idempotent on `UNIQUE (tenant, change)`
-    exactly as a registered change's own fan-out would create it (`apps/cases/creation.py`),
-    with the one audit row AUD-01 asks of every write. `so_what_confirmed_by` given names
-    who confirmed the wording (the check constraint demands a person, never a bare flag);
-    left out, the case keeps the library's draft, unconfirmed, exactly as creation leaves
-    one (WAT-05)."""
+    """One bank's case for one seeded change, idempotent on `UNIQUE (tenant, change)` as the
+    fan-out would create it (`apps/cases/creation.py`), with its audit row (AUD-01).
+    `so_what_confirmed_by` names who confirmed the wording (the constraint demands a person);
+    left out, the case keeps the library's unconfirmed draft (WAT-05)."""
     tenancy.activate(tenant.id)
     existed = ChangeCase.objects.filter(tenant=tenant, change=change).exists()
     values = {
@@ -976,8 +916,8 @@ def _seed_case(
         "so_what_confirmed_by": so_what_confirmed_by,
         "so_what_confirmed_at": timezone_now_this_week(TENANT_A.timezone) if so_what_confirmed_by is not None else None,
     }
-    # A reseed never moves a case back to `new`: a later seed (c9-fe-case-participants) works
-    # one through the real, audited moves, which a silent reset would make it repeat.
+    # A reseed never moves a case back to `new`: a later seed works one through the real,
+    # audited moves, which a silent reset would make it repeat.
     case, _ = ChangeCase.objects.update_or_create(
         tenant=tenant, change=change, defaults=values, create_defaults={**values, "status": CaseStatusCategory.NEW.value}
     )
@@ -996,10 +936,9 @@ def _seed_case(
 
 
 def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
-    """This bank's own work on chunk 6's seeded changes (c6-e2e-seed, HOM-01, HOM-03),
-    plus last week's briefing, sent and snapshotted once so `c6-briefing-screen`'s journey
-    can open a past week without waiting for the beat (ruling 17). Runs after `seed_tenants()`
-    and `seed_footprints()`, because a case is a tenant row under row-level security."""
+    """This bank's own work on the home changes (HOM-01, HOM-03), plus last week's briefing,
+    sent and snapshotted once so a journey can open a past week without the beat. Runs after
+    `seed_tenants()` and `seed_footprints()`: a case is a tenant row."""
     tenant_a = next(t for t in tenants if t.slug == TENANT_A_SLUG)
     tenant_b = next(t for t in tenants if t.slug == TENANT_B_SLUG)
     by_key = {row.stable_key: row for row in django_apps.get_model("watch", "RegulatoryChange").objects.filter(
@@ -1013,16 +952,14 @@ def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
     _seed_case(tenant_a, by_key[home.lead_change], urgency="act_now", footprint_match=True, so_what_confirmed_by=officer)
     _seed_case(tenant_a, by_key[home.later_change], urgency="six_months_plus", footprint_match=True)
     # Outside the bank's regulatory scope (HOM-S4, FP-S4): the change carries the one term
-    # tenant A's scope leaves out (`seed_outside_scope_terms()`), so false is what the rule
-    # answers too, what the feed decides on every read, and what a recompute after any
-    # approved footprint change keeps (seed integrity checks every case against the rule).
+    # tenant A's scope leaves out (`seed_outside_scope_terms()`), so the rule, the feed and
+    # any recompute all answer false (seed integrity checks every case against the rule).
     _seed_case(tenant_a, by_key[home.outside_scope_change], urgency="within_3_months", footprint_match=False)
     _seed_case(tenant_a, by_key[home.last_week_change], urgency="monitor", footprint_match=True, so_what_confirmed_by=officer)
 
-    # Last week's briefing: sent for real, from the real production job, so the snapshot
-    # it writes is exactly what a bank was mailed (c6-briefing-screen, HOM-S3). Its mails
-    # are delivered inline rather than on commit, so the week reads as sent the moment the
-    # seed ends rather than whenever the E2E worker gets to it (H21).
+    # Last week's briefing, sent by the real production job, so the snapshot is exactly what
+    # a bank was mailed (HOM-S3); mails go inline so the week reads as sent when the seed
+    # ends (H21).
     with override_settings(CELERY_TASK_ALWAYS_EAGER=True):
         home_tasks.send_weekly_briefing(tenant_a.id)
 
@@ -1055,18 +992,13 @@ def seed_home_cases(tenants: list[Tenant], home: SeedHome) -> int:
 
 
 def seed_search_index() -> dict[str, int]:
-    """SRC-01, J-7 (c7-e2e-seed): the search index over the seeded library, rebuilt and
-    embedded with the mock embedder inside the same transaction as the seed, so a journey
-    never races the outbox worker for a vector that has not arrived yet. Runs last, once
-    every shared row the index can read exists, registered changes included, with no
-    tenant active (`index_write()` writes in the shared zone and the rebuild's audit row
-    belongs to it).
+    """SRC-01, J-7: the search index over the seeded library, rebuilt and embedded with the
+    mock embedder in the seed's transaction, so a journey never races the outbox worker for a
+    vector. Runs last, with no tenant active (`index_write()` writes in the shared zone).
 
-    The chunk count is read through `django_apps.get_model()`, never through a `SearchChunk`
-    import: the index fence's guard (`apps/search/tests_index_fence.py`) flags any module
-    outside `indexing.py` that so much as names `SearchChunk` beside an unrelated write call
-    of its own — `seed_tenants()`'s `update_or_create()` a few lines below among them — so
-    this reads the count without naming the model.
+    The chunk count is read through `django_apps.get_model()`, because the index fence
+    (`apps/search/tests_index_fence.py`) flags a module naming `SearchChunk` beside a write
+    call of its own.
     """
     from apps.search.indexing import embed_backlog, reindex_all
 
@@ -1081,9 +1013,8 @@ def _search_chunk_count() -> int:
 
 @dataclass(frozen=True)
 class SeedChunk5Watch:
-    """Chunk 5's own watch fixtures (c5-seed-watch), beyond chunk 6's four changes: the
-    natural keys `watch.journey.spec.ts`, `taxonomy.journey.spec.ts` and the seed-integrity
-    guard read back by."""
+    """The watch fixtures beyond the home changes: the natural keys `watch.journey.spec.ts`,
+    `taxonomy.journey.spec.ts` and the seed-integrity guard read back by."""
 
     timeline_change: str
     obligations_change: str
@@ -1102,13 +1033,10 @@ EXPECTED_CHUNK5_WATCH = SeedChunk5Watch(
     # Carries the two `change_obligation` links WAT-S6 reads (one confirmed, one a
     # suggestion) and the two documents WAT-01's coverage and AGT-07's screening need.
     obligations_change="chg-e2e-c5-obligations",
-    # A third reform so the feed and the console queue are not both single-row lists;
-    # "Markets we watch" stays empty until `f03-T41` derives a jurisdiction (D-29).
+    # A third reform, so the feed and the console queue are not both single-row lists.
     payments_change="chg-e2e-c5-payments",
-    # WAT-S4's own reform, every fact the sweeper's suggestion, which the journey confirms as
-    # a person in the console. No other journey reads or corrects it, so confirming it can
-    # never move a fact under another journey (the payments change is corrected by
-    # taxonomy.journey.spec.ts as the same editor, whose correction is then their own).
+    # WAT-S4's own reform, every fact the sweeper's suggestion, which the journey confirms in
+    # the console. No other journey reads or corrects it.
     curation_change="chg-e2e-c5-curation",
     healthy_source="EUR-Lex legal database (E2E)",
     failing_source="Open web sweep, payments (E2E)",
@@ -1120,8 +1048,8 @@ EXPECTED_CHUNK5_WATCH = SeedChunk5Watch(
 # journey, so a re-check row here never collides with a proposal or an assertion elsewhere.
 RECHECK_OBLIGATION = "obl-priips-kid"
 
-# The two obligations WAT-S6's links carry (`c3-seed-provisions`'s own fixture), neither used
-# by the proposals seed above or by taxonomy.journey.spec.ts's ADVICE_ONLY_OBLIGATION.
+# The two obligations WAT-S6's links carry, used by no other proposal or by J-6's
+# ADVICE_ONLY_OBLIGATION.
 CONFIRMED_LINK_OBLIGATION = "obl-dora-ict-register"
 SUGGESTED_LINK_OBLIGATION = "obl-client-assets"
 
@@ -1132,22 +1060,13 @@ CONFIRMING_AGENT = "library-confirmer"
 
 
 def seed_platform_agent_runs() -> tuple[AgentRun, AgentRun]:
-    """One closed and one open platform run of the watch sweeper (AGT-01, item 14): the
-    provenance every chunk 5 source check and change below points at. `Agent` is the library
-    row `seed_agent_definitions()` loads from `backend/agents/watch-sweeper/v1/`; `ApiKey`
-    and `AgentRun` are plain tables outside the library fence, so this module writes them
-    directly, exactly as `apps/agents/testing.py` does for the backend suite.
+    """One closed and one open platform run of the watch sweeper (AGT-01): the provenance of
+    every watch source check and change below. `ApiKey` and `AgentRun` sit outside the
+    library fence, so this module writes them, as `apps/agents/testing.py` does. Idempotent
+    on the key's name and each run's `idempotency_key`.
 
-    Idempotent on the key's own name (`_sweeper_key`) and each run's `idempotency_key`: a
-    reseed finds the same three rows rather than opening a second key or a second pair of
-    runs.
-
-    `api_key` and `agent_run` are mixed tables (playbook 14): their RLS policy accepts a
-    `tenant_id` NULL row only from a session with no tenant active, exactly as a library
-    row does, so the writes below run inside `tenancy.platform_zone()` regardless of which
-    tenant the caller last activated (proven to fail 2026-09-21: `ProgrammingError: new row
-    violates row-level security policy for table "api_key"`, from a session `seed_home_cases`
-    had left on tenant B).
+    Both are mixed tables (playbook 14) that accept a no-tenant row only from a session with
+    no tenant active, so the writes run inside `tenancy.platform_zone()`.
     """
     key, agent = _sweeper_key()
     with tenancy.platform_zone():
@@ -1177,12 +1096,9 @@ _WATCH_SCOPES: tuple[str, ...] = ("agent-runs:write", "sources:write", "changes:
 
 
 def _sweeper_key() -> tuple[ApiKey, Any]:
-    """The watch sweeper's platform key, found by its name or made once, and the agent it is
-    bound to: the key its seeded runs were opened with and its seeded proposals filed by.
-    Nothing in this seed
-    authenticates as the key, so its plain value is generated and immediately dropped
-    rather than kept anywhere. Written in `tenancy.platform_zone()`, as every platform row
-    of a mixed table must be (H15)."""
+    """The watch sweeper's platform key, found by its name or made once, and its agent: the
+    key its seeded runs and proposals name. Nothing authenticates as it, so its plain value
+    is dropped at once. Written in `tenancy.platform_zone()` (H15)."""
     seed_agent_definitions()
     agent = _agent("watch-sweeper")
     _plain, prefix, key_hash = tokens.new_api_key()
@@ -1217,11 +1133,9 @@ def _confirmer_key() -> ApiKey:
 
 
 def seed_chunk5_sources(closed_run: AgentRun) -> None:
-    """The registry's own variety (WAT-01), four sources across three of its four kinds
-    (`tenant_private` is WAT-06, R3, and fits no shared row): a healthy one, one that has
-    just started failing, one registered but not yet swept, and one registered inactive —
-    standing in for WAT-07's standards-body kind, which the vocabulary does not carry until
-    `f03-T43` seeds it (D-45). Both checks below are the sweeper's closed run's own work."""
+    """The registry's variety (WAT-01): four sources across three kinds, healthy, just
+    started failing, registered but not yet swept, and inactive. Both checks are the
+    sweeper's closed run's own work."""
     healthy = watch_e2e_seed.seed_source(
         name=EXPECTED_CHUNK5_WATCH.healthy_source, kind="legal_database", authority=None, url="https://eur-lex.europa.eu/",
     )
@@ -1243,12 +1157,10 @@ def seed_chunk5_sources(closed_run: AgentRun) -> None:
 
 
 def _register_and_fan_out(change: Any) -> None:
-    """Deliver `change.registered` exactly as a real registration would (CAS-01): the outbox
-    event `record()` writes in the library's zone, drained until every active bank has its
-    case. Called only for a change this run just created, so a reseed never re-fires the
-    fan-out for one that already has its cases. `change` arrives untyped, by the app
-    registry's own reads above, for the reason each of them gives: `RegulatoryChange` is a
-    `LibraryModel`, and this module already calls `.update_or_create()` for other rows."""
+    """Deliver `change.registered` as a real registration would (CAS-01): the outbox event
+    drained until every active bank has its case. Called only for a change this run created,
+    so a reseed never re-fires the fan-out. `change` is untyped because it comes from the
+    app registry's reads (`RegulatoryChange` is a `LibraryModel`)."""
     with transaction.atomic():
         tenancy.clear_tenant()
         record(
@@ -1265,12 +1177,10 @@ def _register_and_fan_out(change: Any) -> None:
 
 
 def seed_chunk5_changes(closed_run: AgentRun) -> SeedChunk5Watch:
-    """The three reforms beyond chunk 6's four (WAT-01 to WAT-05): each with a regime term,
-    a change type and a flag as suggestions, and their real cases fanned out through the
-    outbox cursor exactly as a registration would open them (CAS-01). Every fact is the
-    sweeper's suggestion, through its key; the confirmed ones are the library confirmer's,
-    through its own (D-74), so nothing here names a person and a journey's person may
-    confirm any suggestion left. It clears the tenant it is called with left active.
+    """Three more reforms (WAT-01 to WAT-05), each with a regime term, a change type and a flag
+    as suggestions, their cases fanned out through the outbox cursor (CAS-01). Every fact is
+    the sweeper's suggestion and every confirmation the library confirmer's (D-74), so
+    nothing names a person. Clears the tenant it leaves active.
     """
     sweeper, _agent_row = _sweeper_key()
     confirmer = _confirmer_key()
@@ -1303,11 +1213,9 @@ def seed_chunk5_changes(closed_run: AgentRun) -> SeedChunk5Watch:
     if is_new:
         _register_and_fan_out(timeline)
 
-    # WAT-S6's own change: two documents (one a merged duplicate, one carrying a screened
-    # hit) and two obligation links, one an independent agent confirmed for the shared
-    # library and one still a suggestion, so a bank's own decision has something to decide.
-    # Its type, flag and scope term are machine-confirmed too, so its feed row carries the
-    # machine-confirmed pill where the other two carry the suggestion marker.
+    # WAT-S6's own change: two documents (a merged duplicate, a screened hit) and two
+    # obligation links, one machine-confirmed and one a suggestion for a bank to decide. Its
+    # type, flag and scope term are machine-confirmed, so its feed row carries that pill.
     is_new = not _regulatory_change_exists(EXPECTED_CHUNK5_WATCH.obligations_change)
     obligations_change = watch_e2e_seed.seed_change(
         stable_key=EXPECTED_CHUNK5_WATCH.obligations_change,
@@ -1390,10 +1298,9 @@ def seed_chunk5_changes(closed_run: AgentRun) -> SeedChunk5Watch:
 
 
 def seed_chunk5_cases(tenants: list[Tenant]) -> int:
-    """This bank's own work on chunk 5's three changes (c5-seed-watch, WAT-05): one So
-    what confirmed in tenant A, left as the library's draft in tenant B, so both states
-    render on a screen that reads one bank's own case. Runs after the real creation path has
-    given every active tenant a case for each change (`seed_chunk5_changes`)."""
+    """This bank's own work on the three watch changes (WAT-05): the So what confirmed in
+    tenant A and left as the library's draft in tenant B, so both states render. Runs after
+    `seed_chunk5_changes` gave every tenant its cases."""
     tenant_a = next(t for t in tenants if t.slug == TENANT_A_SLUG)
     officer = User.objects.get(email="compliance_officer@example-bank.test")
     tenancy.activate(tenant_a.id)
@@ -1417,9 +1324,7 @@ def seed_chunk5_cases(tenants: list[Tenant]) -> int:
     return 1
 
 
-# ---------------------------------------------------------------------------------------
-# FP-S4 (FP-03, tax-fp-s4-journey): one record of each kind outside tenant A's scope
-# ---------------------------------------------------------------------------------------
+# --- FP-S4 (FP-03): one record of each kind outside tenant A's scope ---
 @dataclass(frozen=True)
 class SeedOutsideScope:
     """What FP-S4's journey finds outside tenant A's regulatory scope without changing it:
@@ -1577,13 +1482,10 @@ class SeedBulkTagging:
     already_tagged: tuple[str, ...]
 
 
-# VOC-S12 selects these six obligations of tenant A on the inventory and tags them with the
-# bank's own tag below, which two of them already carry, so the preview has both halves to
-# show. Library rows every scope reaches, none advice-only; a tag is the bank's marker and
-# never a library version, so the journeys that version these duties are unaffected. The
-# label is far from every label a vocabulary journey adds ("Custody" among them, VOC-S2), so
-# no near-duplicate check trips. The journey takes back what it added, so a reseed finds the
-# two taggings below and writes nothing.
+# VOC-S12 tags these six obligations of tenant A with the bank's own tag below, which two
+# already carry, so the preview shows both halves. A tag is never a library version, so the
+# versioning journeys are unaffected, and the label is far from every label a vocabulary
+# journey adds. The journey takes back what it added.
 EXPECTED_BULK_TAGGING = SeedBulkTagging(
     tenant_slug=TENANT_A_SLUG,
     tag_key="asset_safeguarding",
@@ -1626,14 +1528,11 @@ def seed_bulk_tagging(tenants: list[Tenant]) -> None:
 # --- end c10-fe-bulk-tagging -------------------------------------------------------------------
 
 
-# The journey cannot narrow the scope itself: FP-S5 (J-6) changes tenant A's scope, and
-# every home and watch journey reads it in parallel. So tenant A holds the prototype's scope
-# less pension accounts, which leaves exactly one library obligation outside it (the
-# pension transfer right, which only pension accounts carry and which no seeded proposal
-# or named seed record uses; the seed-integrity guard fails if one comes to) and the
-# outside-scope change, which carries the same term. `seed_footprints()` only adds terms,
-# so a database seeded while pension was still in the scope keeps it and must be
-# recreated; the E2E run recreates its database every time.
+# FP-S5 (J-6) changes tenant A's scope while home and watch journeys read it, so no journey
+# narrows it: tenant A holds the prototype's scope less pension accounts, leaving exactly one
+# obligation outside it (the pension transfer right, named by no seeded proposal or record)
+# and the outside-scope change. `seed_footprints()` only adds terms, so a database seeded
+# with pension still in scope must be recreated, as every E2E run does.
 EXPECTED_OUTSIDE_SCOPE = SeedOutsideScope(
     term="account_type:pension",
     obligation="obl-pension-transfer-right",
@@ -1642,22 +1541,17 @@ EXPECTED_OUTSIDE_SCOPE = SeedOutsideScope(
 
 
 def seed_outside_scope_terms() -> None:
-    """The outside-scope change carries the term tenant A's scope leaves out, so the rule
-    and the verdict its case caches agree (FP-03). Without a scope term a change matches
-    every bank: the feed, which decides from the terms on every read, showed it in scope
-    while the roadmap and the briefing, which read the cache, hid it, and the first
-    approved footprint change would have recomputed the cache to true. Left a suggestion,
-    as an agent leaves one: an unconfirmed term scopes a change all the same (WAT-03)."""
+    """The outside-scope change carries the term tenant A's scope leaves out, so the rule and
+    its case's cached verdict agree (FP-03): without a scope term a change matches every bank.
+    Left a suggestion, which scopes a change all the same (WAT-03)."""
     change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key=EXPECTED_OUTSIDE_SCOPE.change)
     watch_e2e_seed.seed_scope_term_link(change, term_ref=EXPECTED_OUTSIDE_SCOPE.term)
 
 
 # --- tax-watched-feed (FP-04, FP-S15) ----------------------------------------------------
-# A Danish authority's change about custody: outside tenant A's scope, which operates in
-# Sweden only, and listed under "Markets we watch" because tenant A watches Denmark. Its
-# urgency is the lowest and it was first seen last week, so it moves neither HOM-S1's lead
-# nor this week's lists, and its cases come from the real fan-out, so tenant A's verdict is
-# the rule's own.
+# A Danish custody change: outside tenant A's scope (Sweden only) and listed under "Markets we
+# watch" because tenant A watches Denmark. Lowest urgency, first seen last week, so it moves
+# neither HOM-S1's lead nor this week's lists; its cases come from the real fan-out.
 EXPECTED_WATCHED_CHANGE = "chg-e2e-dk-custody"
 
 
@@ -1690,13 +1584,11 @@ def seed_watched_market_change() -> None:
 # --- end tax-watched-feed ------------------------------------------------------------------
 
 # --- lib-machine-confirmed-journey (INV-S14) ---------------------------------------------
-# Two records whose newest wording the watch sweeper filed and the library confirmer, an
-# independent definition with a key and a run of its own, approved (INV-05, PRO-02, D-62,
-# D-80), through the same proposal logic the queue's routes call. A library editor then
-# re-verified the second one against its source, so INV-S14 reads one record still labelled
-# machine-confirmed and one whose stamp names that person (D-74). Both are named by no other
-# spec or seed and sit inside tenant A's scope with or without Advice, and each new version
-# carries no effective date, so it is the one in force whatever day a screen reads.
+# Two records whose newest wording the sweeper filed and the library confirmer approved
+# (INV-05, PRO-02, D-62, D-80); a library editor then re-verified the second (D-74), so
+# INV-S14 reads one machine-confirmed and one stamped by that person. Named by no other spec,
+# in tenant A's scope either way, and with no effective date, so the new version is in force
+# whatever day a screen reads.
 @dataclass(frozen=True)
 class SeedMachineConfirmed:
     journey: str
@@ -1827,19 +1719,13 @@ def seed_machine_confirmed() -> int:
     return 2
 # --- end lib-machine-confirmed-journey ---------------------------------------------------
 
-# ---------------------------------------------------------------------------------------
-# ask-journeys (SRC-S4, SRC-S5, SRC-S10): a pending change for Ask to flag, and a question
-# the library cannot answer
-# ---------------------------------------------------------------------------------------
+# --- Ask (SRC-S4, SRC-S5, SRC-S10): a pending change to flag and an unanswerable question ---
 @dataclass(frozen=True)
 class SeedAsk:
-    """What search.journey.spec.ts asks and reads back. Ask flags a cited obligation that a
-    change the library confirmed will move after the answer's "as of" (SRC-S4), so the lead
-    change of the home journeys gets a confirmed link to the research payment duty: it is
-    adopted (a kind that moves the law) and dated twenty days after the tenant-local today.
-    The answered question retrieves that duty; the unsupported one retrieves nothing in the
-    seeded library, so no model is asked and the answer is "no answer" (SRC-S5). The spec
-    carries the same two questions; the seed-integrity guard proves both."""
+    """What search.journey.spec.ts asks and reads back. The lead home change gets a confirmed
+    link to the research payment duty, adopted and dated twenty days after today, so Ask flags
+    the cited duty as moving after the answer's "as of" (SRC-S4). The unsupported question
+    retrieves nothing, so no model is asked (SRC-S5). The seed-integrity guard proves both."""
 
     pending_change: str
     pending_obligation: str
@@ -1856,11 +1742,9 @@ EXPECTED_ASK = SeedAsk(
 
 
 def seed_ask_pending_link() -> None:
-    """The lead change's confirmed link to the research payment duty, the sweeper's
-    suggestion confirmed this week by the library confirmer's own key, as every confirmation
-    in this seed is (D-74). A link is library-zone, so no tenant is active; it adds a row to
-    the roadmap's and the change page's obligations and changes nothing a home or watch
-    journey counts."""
+    """The lead change's confirmed link to the research payment duty, confirmed this week by
+    the library confirmer's key (D-74). Library-zone, with no tenant active; it changes
+    nothing a home or watch journey counts."""
     tenancy.clear_tenant()
     sweeper, _agent_row = _sweeper_key()
     change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key=EXPECTED_ASK.pending_change)
@@ -1877,19 +1761,16 @@ def seed_ask_pending_link() -> None:
 # --- c11-e2e-seed (AGT-03, AGT-04, AGT-05, PRO-04) ------------------------------------------
 @dataclass(frozen=True)
 class SeedChunk11:
-    """What the chunk 11 journeys find: the sweeper published at two versions with a
-    scheduled platform run on each (AGT-S4); tenant A's own source watch, weekly with a scope,
-    whose runs over the recent weeks put the month's spend just under its one cap (AGT-S5,
-    AGT-S6); tenant B with no agent and no cap of its own; and one open re-tag of twelve
-    obligations waiting in the console (PRO-S8), filed by the second library editor so the
-    first can decide it.
+    """What the agent journeys find: the sweeper published at two versions with a scheduled
+    platform run on each (AGT-S4); tenant A's own source watch, weekly with a scope, whose
+    recent runs put the month's spend just under its cap (AGT-S5, AGT-S6); tenant B with no
+    agent or cap; and one open re-tag of twelve obligations in the console (PRO-S8), filed by
+    the second library editor so the first can decide it.
 
-    Every run is dated from the seed's clock in tenant A's zone, at midnight (the fixed wall
-    time, never after "now"): a run this month is on today's date less whole weeks, but never
-    before the first of the month, and a run of the month before is whole weeks before the
-    first. So the month's spend is the sum of `month_costs` on any day, a month boundary
-    included (apps/agents/tests_seed.py). The re-tag adds a lifecycle stage, a dimension that
-    never narrows a footprint, so deciding it moves no bank's scope under another journey."""
+    Runs are dated at midnight in tenant A's zone, in whole weeks back but never across the
+    first of the month, so the month's spend is `month_costs` on any day
+    (apps/agents/tests_seed.py). The re-tag adds a lifecycle stage, which narrows no
+    footprint."""
 
     platform_agent: str
     platform_versions: tuple[int, ...]
@@ -1978,9 +1859,8 @@ def _c11_run(pk: uuid.UUID, started: datetime.datetime, now: datetime.datetime, 
 
 
 def seed_chunk11_agents(tenants: list[Tenant], now: datetime.datetime | None = None) -> None:
-    """The chunk 11 rows (EXPECTED_CHUNK11), anchored to `now` (the real clock unless a test
-    moves it). Idempotent: a reseed on the same clock changes nothing, and on another day it
-    moves the runs' dates and the next run and nothing else."""
+    """The agent rows (EXPECTED_CHUNK11), anchored to `now`. Idempotent: a reseed on another
+    day moves only the runs' dates and the next run."""
     now = now or datetime.datetime.now(datetime.UTC)
     spec = EXPECTED_CHUNK11
     seed_agent_definitions()
@@ -2069,8 +1949,8 @@ def seed_chunk11_agents(tenants: list[Tenant], now: datetime.datetime | None = N
 def seed_e2e() -> dict[str, int]:
     """Run the whole seed. Returns counts the command prints and the guard asserts."""
     refuse_when_deployed()
-    # The mock outbox is one cache entry that never expires, and an E2E run recreates the
-    # database but not the cache: empty it first, so no journey reads an earlier run's mail.
+    # The mock outbox is a cache entry the database recreation does not clear: empty it, so
+    # no journey reads an earlier run's mail.
     MockMailer.reset()
     with transaction.atomic():
         seed_languages()
@@ -2082,29 +1962,26 @@ def seed_e2e() -> dict[str, int]:
         # lib-standard-e2e-seed: the one standard, added to the counts the command prints.
         for name, count in load_library(E2E_STANDARD).items():
             library[name] += count
-        # acc-e2e-seed (J-11): the product types, then the trading and card duties that carry them.
+        # J-11: the product types, then the trading and card duties that carry them.
         seed_taxonomy_terms(list(EXPECTED_J11.terms))
         for name, count in load_library(E2E_TRADING).items():
             library[name] += count
         # std-journeys: the standard's term on, so FP-S16 can follow it (E2E_STANDARD_TERM).
         switch_on_term(*E2E_STANDARD_TERM)
-        # Chunk 6's sources and changes: library-zone rows, written here — before any
-        # tenant is activated — for the same reason `seed_authorities()` and
-        # `load_library()` run here rather than after `seed_tenants()` (WAT-06).
+        # Library-zone sources and changes, before any tenant is activated (WAT-06).
         home = seed_watch_changes()
         seed_outside_scope_terms()
-        # SRC-05: the release gate's own questions, so the console's evaluation page has the
-        # set it will have on a deployed platform. Platform rows, refused to any session with a
-        # tenant active, so they are written in the platform's zone even on a re-seed.
+        # SRC-05: the release gate's questions, as a deployed platform has them. Platform
+        # rows, so written in the platform's zone.
         with tenancy.platform_zone():
             eval_questions = eval_sets.seed_questions(actor=SEED_ACTOR)
         roles_logic.ensure_platform_roles()
         tenants = seed_tenants()
-        # r2-e2e-login-roster: the tenant role one login holds, before the logins.
+        # The tenant role one login holds, before the logins.
         seed_no_record_read_role(tenants)
         logins = seed_logins(tenants)
         footprint_terms = seed_footprints(tenants)
-        # d89-e2e-journey: before J-6's waiting request, since one request waits at a time.
+        # Before J-6's waiting request, since one request waits at a time.
         seed_own_scope_item(tenants)
         seed_pending_footprint_request(tenants)
         seed_watched_markets(tenants)
@@ -2113,49 +1990,45 @@ def seed_e2e() -> dict[str, int]:
         proposals = seed_proposals()
         problem_reports = seed_problem_report(tenants)
         home_cases = seed_home_cases(tenants, home)
-        # Chunk 5's own watch fixtures (c5-seed-watch): after the logins above, because a
-        # confirmed classification names a library editor who must already exist, and after
-        # the footprints above, because a case's footprint verdict is computed against the
-        # bank's footprint as it stands when the case is created.
+        # The watch fixtures: after the logins (a confirmation names a library editor) and
+        # the footprints (a case's verdict is computed against them).
         closed_run, _open_run = seed_platform_agent_runs()
         seed_chunk5_sources(closed_run)
         seed_chunk5_changes(closed_run)
         seed_ask_pending_link()
         chunk5_cases = seed_chunk5_cases(tenants)
-        # c9-e2e-seed: one case per journey that moves one, after the logins it names.
+        # One case per journey that moves one, after the logins it names.
         case_journeys = seed_case_journeys(tenants)
-        # c9-evidence: after the case journeys and chunk 5's cases it attaches to.
+        # After the case journeys and the watch cases it attaches to.
         case_evidence = seed_case_evidence(tenants)
-        # c10-e2e-seed-comments: after the cases and the logins its comments name.
+        # After the cases and the logins its comments name.
         comments = seed_comments(tenants)
-        # c9-e2e-signoff-j3: after the case journeys, whose CAS-S10 change it links.
+        # After the case journeys, whose CAS-S10 change it links.
         seed_signoff_spot_check_link()
         seed_watched_market_change()
         seed_standard_change()
-        # c8-seed-org-register: after the logins and chunk 5's links.
+        # After the logins and the watch links.
         seed_org_register(tenants)
-        # c11-e2e-seed: after the logins and the platform runs, before the search index.
+        # After the logins and the platform runs, before the search index.
         seed_chunk11_agents(tenants)
-        # c8-ui-links-history-participants: after the register entries it names.
+        # After the register entries it names.
         seed_participants(tenants)
-        # acc-e2e-seed: a reseed leaves no entry of tenant A reaching its register (ACC-08).
+        # A reseed leaves no entry of tenant A reaching its register (ACC-08).
         switch_reach_off()
-        # c9-fe-case-participants: after the teams and the home cases it names.
+        # After the teams and the home cases it names.
         seed_case_participants(tenants)
-        # c10-digest-beat-and-journeys: after the logins and the case journeys it names.
+        # After the logins and the case journeys it names.
         seed_collab_work(tenants)
-        # r2-j8-isolation: after the comments, the register entries and the teams it names.
+        # After the comments, the register entries and the teams it names.
         seed_j8_isolation(tenants)
-        # d89-e2e-journey: after chunk 11's agents and cap, which a research run is opened under.
+        # After the agents and cap a research run is opened under.
         seed_own_records(tenants)
 
         # PRO-S17: after the agent definitions, which the baseline's own agent is one of.
         baseline_proposals = seed_baseline_proposals()
         # INV-S14, after the logins: the re-verification names a seeded library editor.
         machine_confirmed = seed_machine_confirmed()
-        # SRC-01: last, once every shared row the index reads exists — chunk 5's changes
-        # included, whose registrations reach the index through the outbox without a vector
-        # (search-index-changes) — and in the shared zone, where its audit row belongs.
+        # SRC-01: last, once every shared row the index reads exists, in the shared zone.
         tenancy.clear_tenant()
         search_index = seed_search_index()
     return {
@@ -2182,15 +2055,11 @@ def anna_invitation() -> Invitation | None:
     return invitation_logic.find_open_for_email("anna@example-bank.test")
 
 
-# ---------------------------------------------------------------------------------------
-# watch-standards (WAT-S10, WAT-07, CAS-01): a new edition of a standard, seen only by the
-# banks that follow it
-# ---------------------------------------------------------------------------------------
+# --- A new edition of a standard, seen only by the banks that follow it (WAT-S10, WAT-07, CAS-01) ---
 @dataclass(frozen=True)
 class SeedStandardChange:
-    """The one change a standards body issued, and the term that decides who sees it.
-    Tenant A follows no standard as seeded (std-journeys' FP-S16 and INV-S11 start from
-    that), so WAT-S10's journey switches the term on for its own run through
+    """The one change a standards body issued, and the term that decides who sees it. Tenant
+    A follows no standard as seeded, so WAT-S10 switches the term on through
     `follow_the_standard()` and back off afterwards, on failure too."""
 
     stable_key: str
@@ -2209,15 +2078,14 @@ EXPECTED_STANDARD_CHANGE = SeedStandardChange(
 
 
 def seed_standard_change() -> None:
-    """The amendment as a sweep would file it: ISO/IEC as the authority, the AI and ICT
-    regime and the standard's term, a draft for comment and a publication on its timeline,
-    the end of the transition as its key date. Its cases come from the real fan-out, so
-    both banks hold one and neither is in scope as seeded. Runs last in `seed_e2e`.
+    """The amendment as a sweep would file it: ISO/IEC as the authority, the AI and ICT regime
+    and the standard's term, a draft and a publication on its timeline, the end of transition
+    as its key date. Cases come from the real fan-out; neither bank is in scope as seeded.
+    Runs last in `seed_e2e`.
 
-    The key date is 400 days after tenant A's today and the first sighting 30 days before
-    it, so while a journey has the term switched on the change sits last on tenant A's
-    roadmap and outside this and last week's briefing: HOM-S1's lead and Today's "Coming
-    up" list do not move. Urgency `monitor`, never `act_now`, for the same reason."""
+    The key date is 400 days out and first sighting 30 days back, urgency `monitor`, so while
+    a journey follows the standard it sits last on the roadmap and outside the briefings, and
+    HOM-S1 and "Coming up" do not move."""
     tenancy.clear_tenant()
     today = datetime.datetime.now(ZoneInfo(TENANT_A.timezone)).date()
     spec = EXPECTED_STANDARD_CHANGE
@@ -2247,11 +2115,10 @@ def seed_standard_change() -> None:
 
 
 def follow_the_standard(follow: bool) -> None:
-    """Tenant A starts or stops following ISO/IEC 27001, for WAT-S10's journey and its
-    restore (`manage.py e2e_follow_standard`). The same footprint writes the seed makes,
-    history and audit included, then the one recompute an approved change would trigger,
-    narrowed to the standard's change so no other case of the bank is touched. The E2E
-    stack runs no beat, so nothing else would deliver it. Refused when deployed."""
+    """Tenant A starts or stops following ISO/IEC 27001, for WAT-S10 and its restore (`manage.py
+    e2e_follow_standard`): the seed's footprint writes, then the one recompute an approved
+    change triggers, narrowed to the standard's change. The E2E stack runs no beat. Refused
+    when deployed."""
     refuse_when_deployed("e2e_follow_standard")
     tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
     change = django_apps.get_model("watch", "RegulatoryChange").objects.get(stable_key=EXPECTED_STANDARD_CHANGE.stable_key)
@@ -2264,9 +2131,8 @@ def follow_the_standard(follow: bool) -> None:
 
 
 # --- c9-e2e-seed (CAS-02, CAS-03, CAS-04, CAS-06, J-2, J-3) -------------------------------------
-# One seeded change and one case per journey that moves a case, so parallel Playwright workers
-# never share one. Every case is tenant A's alone except CAS-S14's (J-2), which is tenant B's
-# lead, so HOM-S1's tenant A lead is never touched. Evidence rows are c9-evidence's.
+# One change and one case per journey that moves a case, so parallel workers never share one.
+# All tenant A's except CAS-S14's (J-2), tenant B's lead, so HOM-S1's lead is never touched.
 OFFICER_A = "compliance_officer@example-bank.test"
 OWNER_A = "owner@example-bank.test"
 APPROVER_A = "approver@example-bank.test"
@@ -2359,9 +2225,8 @@ EXPECTED_CASE_JOURNEYS: tuple[SeedCaseJourney, ...] = (
         "CAS-S14", "chg-e2e-second-bank-lead", "Finanstilsynet shortens the deadline for suspicious transaction reports",
         CaseStatusCategory.NEW, "act_now", tenant_slug=TENANT_B_SLUG,
     ),
-    # c10-digest-beat-and-journeys: COL-S1's case, where the journey comments and mentions,
-    # and COL-S2's, whose two open actions the Swedish-speaking member owns: one due in three
-    # days (the reminder) and one five days overdue (the escalation).
+    # COL-S1's case, where the journey comments and mentions, and COL-S2's, whose two open
+    # actions the Swedish-speaking member owns: one due in three days, one five days overdue.
     SeedCaseJourney("COL-S1", "chg-e2e-case-comment", "FI amends the custody rules for client assets", CaseStatusCategory.ASSIGNED, "within_3_months", owner=OWNER_A),
     SeedCaseJourney(
         "COL-S2", "chg-e2e-case-reminders", "FI amends the rules on pension transfers", CaseStatusCategory.ASSESSING, "within_3_months",
@@ -2414,10 +2279,9 @@ def case_anchor(tz: str) -> datetime.datetime:
 
 
 def case_first_seen(spec: SeedCaseJourney, anchor: datetime.datetime) -> datetime.datetime:
-    """When the library first saw the journey's change. Tenant B's lead is sighted this week,
-    so it leads tenant B's Today; tenant A's are sighted six weeks or more ago, each a day
-    apart, with key dates already past, so none reaches tenant A's briefing, roadmap or
-    "Coming up" and HOM-S1 to HOM-S6 read what they always read."""
+    """When the library first saw the journey's change. Tenant B's lead is sighted this week;
+    tenant A's six weeks or more ago, a day apart, key dates past, so HOM-S1 to HOM-S6 read
+    what they always read."""
     if spec.tenant_slug == TENANT_B_SLUG:
         # The Tuesday of the anchor's ISO week, as `timezone_now_this_week()` has it.
         return anchor - datetime.timedelta(days=anchor.weekday() - 1)
@@ -2435,14 +2299,10 @@ def _case_path(status: CaseStatusCategory) -> list[CaseStatusCategory]:
 
 
 def seed_case_journeys(tenants: list[Tenant]) -> int:
-    """c9-e2e-seed: each journey's change in the library, then its bank's case walked to the
-    journey's starting category, every move a `case_transition` row and an audit row through
-    record(), in the same transaction as the rest of the seed.
-
-    Written once: a case that exists is left exactly as it is, because its transitions and
-    audit rows are append-only and cannot be rewound, so a second run changes nothing (proved
-    in apps/cases/tests_seed_cases.py). Its change is merged on its stable key, as every
-    seeded change is."""
+    """Each journey's change in the library, then its bank's case walked to the journey's
+    starting category, every move a `case_transition` and an audit row through record().
+    Written once: transitions are append-only, so an existing case is left as it is
+    (apps/cases/tests_seed_cases.py)."""
     by_slug = {tenant.slug: tenant for tenant in tenants}
     users = {user.email: user for user in User.objects.filter(email__in={login.email for login in SEED_LOGINS})}
     for spec in EXPECTED_CASE_JOURNEYS:
@@ -2728,9 +2588,8 @@ _SARA = "compliance_officer@example-bank.test"
 _JOHAN = "owner@example-bank.test"
 _MARIA = "approver@example-bank.test"
 
-# The rows the chunk 8 journeys name, so the guard and the journeys read one value.
-# J-9 (HOM-S13): the owner's overdue review, and the obligation whose change an independent
-# agent confirmed (chunk 5's WAT-S6 link, which counts for My work under D-97).
+# The rows the organisation and register journeys name. J-9 (HOM-S13): the owner's overdue
+# review, and the obligation with WAT-S6's machine-confirmed link (counts for My work, D-97).
 J9_OWNER = _JOHAN
 J9_OVERDUE_OBLIGATION = "obl-research-payments"
 J9_CHANGED_OBLIGATION = CONFIRMED_LINK_OBLIGATION
@@ -2761,12 +2620,10 @@ CERTIFICATE = SeedLicence(
 # --- acc-e2e-seed (ACC-01, ACC-02, ACC-04, ACC-07, ACC-08, J-11): the trading world ----------
 @dataclass(frozen=True)
 class SeedJ11:
-    """What J-11 reads in tenant A: a Trading department whose products derive the scope
-    an agent access entry is narrowed to (ACC-02), the card issuing department beside it,
-    both inside the bank's footprint; the bank's decisions on two trading duties (ACC-04);
-    a duty only a card issuer carries, which a Trading entry answers 404 for and names as
-    outside its scope by the card issuing term's label (ACC-07). The journey registers the
-    entry itself, so the seed holds none, and reach starts off (ACC-08)."""
+    """What J-11 reads in tenant A: a Trading department whose products derive an agent
+    access entry's scope (ACC-02) and the card issuing department beside it; the bank's
+    decisions on two trading duties (ACC-04); a card-issuer-only duty a Trading entry answers
+    404 for (ACC-07). The journey registers the entry; reach starts off (ACC-08)."""
 
     tenant_slug: str
     terms: tuple[dict[str, Any], ...]
@@ -2791,7 +2648,7 @@ EXPECTED_J11 = SeedJ11(
         {"dimension": "product_type", "key": "shares", "label_en": "Shares", "label_sv": "Aktier", "sort_order": 1, "usage_note": _J11_TERM_NOTE},
         {"dimension": "product_type", "key": "derivatives", "label_en": "Derivatives", "label_sv": "Derivat", "sort_order": 2, "usage_note": _J11_TERM_NOTE},
         {"dimension": "product_type", "key": "cards", "label_en": "Cards", "label_sv": "Kort", "sort_order": 3, "usage_note": _J11_TERM_NOTE},
-        # acc-summary-j11: the licence Trading's products are sold under.
+        # The licence Trading's products are sold under.
         {"dimension": "licensed_activity", "key": "investment_services", "label_en": "Investment services", "label_sv": "Investeringstjänster", "sort_order": 3, "usage_note": "E2E only: the licence J-11's Trading department sells under."},
     ),
     footprint=("product_type:shares", "product_type:derivatives", "product_type:cards", "licensed_activity:card_issuing", "licensed_activity:investment_services"),
@@ -2820,7 +2677,7 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             SeedOrgUnit(RETAIL_DEPARTMENT, "business_area", "Example Bank AB", head="head@example-bank.test"),
             SeedOrgUnit("Cards and payments", "business_unit", RETAIL_DEPARTMENT, head="owner-approver@example-bank.test"),
             SeedOrgUnit("Risk control", "function", "Example Group", head=_SARA),
-            # acc-e2e-seed (J-11): the department a trading agent access entry is narrowed to.
+            # J-11: the department a trading agent access entry is narrowed to.
             SeedOrgUnit(EXPECTED_J11.department, "business_area", "Example Bank AB"),
         ),
         licences=(
@@ -2847,7 +2704,7 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             SeedProduct("Guided investing", "Example Bank AB", "planned", _JOHAN, ("account_type:isk", "service_type:advice", "service_type:portfolio_management")),
             SeedProduct("Kapitalförsäkring", "Example Liv Försäkring AB", "live", _JOHAN, ("account_type:kf", "service_type:insurance_distribution", "service_type:advice")),
             SeedProduct("Pension insurance", "Example Liv Försäkring AB", "live", _SARA, ("account_type:pension", "service_type:insurance_distribution", "service_type:advice")),
-            # acc-e2e-seed (J-11): Trading's three products and card issuing's one.
+            # J-11: Trading's three products and card issuing's one.
             SeedProduct("Equity derivatives", EXPECTED_J11.department, "live", _SARA, ("product_type:derivatives", "service_type:execution_only", "licensed_activity:investment_services")),
             SeedProduct("Cash equities", EXPECTED_J11.department, "live", _SARA, ("product_type:shares", "service_type:execution_only", "licensed_activity:investment_services")),
             SeedProduct(
@@ -2865,7 +2722,7 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             ),
             SeedTeam("cards", {"en": "Cards", "sv": "Kort"}, "Cards and payments", ("owner-approver@example-bank.test", "admin@example-bank.test", "contributor@example-bank.test")),
             SeedTeam("legal", {"en": "Legal", "sv": "Juridik"}, "Risk control", ("reader@example-bank.test", _MARIA)),
-            # acc-e2e-seed (J-11): the team that answers for the trading agent and its duties.
+            # J-11: the team that answers for the trading agent and its duties.
             SeedTeam(EXPECTED_J11.team, {"en": "Trading", "sv": "Handel"}, EXPECTED_J11.department, ()),
         ),
         entries=(
@@ -2925,7 +2782,7 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
                 "A person reviews every appropriateness outcome before it takes effect, so no decision is solely automated.",
                 "partly_compliant", "medium", _SARA, _MARIA, "Digital trading onboarding", "Knowledge test service", "Review log", 6,
             ),
-            # acc-e2e-seed (J-11): the decisions a Trading entry reads when reach is on. Each
+            # J-11: the decisions a Trading entry reads when reach is on. Each
             # reason is one sentence, so the mock model quotes it whole (the J-11 summary).
             SeedEntry(
                 EXPECTED_J11.trading_obligations[0], "applies", "We route retail and professional client orders in shares and derivatives to other brokers for execution.",
@@ -2972,7 +2829,7 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
                 HISTORY_OBLIGATION, 2, 30,
                 "Every instrument outside the non-complex list in FFFS 2017:2 is complex for us, warrants and certificates included.", _SARA,
             ),
-            # acc-e2e-seed (J-11): how the bank reads each trading duty.
+            # J-11: how the bank reads each trading duty.
             SeedReading(
                 EXPECTED_J11.trading_obligations[0], 1, 90,
                 "Every order the smart order router passes to another broker is a routed order, including orders split across brokers.", _SARA,
@@ -3013,7 +2870,7 @@ EXPECTED_ORG_REGISTER: tuple[SeedOrgRegister, ...] = (
             # REG-S8 links these two itself, so they wait here unlinked.
             SeedInternalItem("policy", "Client asset policy", "POL-014", _SARA),
             SeedInternalItem("control", "Daily reconciliation", "CTL-203", _SARA),
-            # acc-e2e-seed (J-11): one internal item on each trading duty.
+            # J-11: one internal item on each trading duty.
             SeedInternalItem("policy", "Order execution and routing policy", "POL-021", _SARA, (EXPECTED_J11.trading_obligations[0],)),
             SeedInternalItem("control", "Pre-trade limit checks", "CTL-310", _SARA, (EXPECTED_J11.trading_obligations[1],)),
         ),
@@ -3259,9 +3116,8 @@ def _seed_register(tenant: Tenant, spec: SeedOrgRegister, people: dict[str, User
 
 
 def seed_org_register(tenants: list[Tenant]) -> None:
-    """Each bank's organisation and register, after the logins (every person named is a
-    member) and after chunk 5's links (J-9's changed obligation). Tenant rows only, each
-    with its audit row through record(); a reseed finds every row and writes nothing."""
+    """Each bank's organisation and register, after the logins and the watch links. Tenant
+    rows only, each audited through record(); a reseed writes nothing."""
     people = {user.email: user for user in User.objects.filter(email__in=[login.email for login in SEED_LOGINS])}
     for spec in EXPECTED_ORG_REGISTER:
         tenant = next(t for t in tenants if t.slug == spec.tenant_slug)
@@ -3273,23 +3129,10 @@ def seed_org_register(tenants: list[Tenant]) -> None:
 
 
 # --- c9-evidence (CAS-05, CAS-S7, CAS-S16) ------------------------------------------------------
-# Evidence on the cases the journeys read: every scan state on CAS-S7's implementing case, a
-# clean file on each case waiting for sign-off (a request needs one) and on the closed case,
-# and a clean file on each bank's case for chunk 5's shared change, so CAS-S16 finds evidence
-# of both banks on one change. CAS-S8's case keeps none: its journey is the refusal without
-# evidence. A clean file's bytes are written here, through storage, into the slot's media
-# root and never committed; an infected one's never exist, as the scan deletes them, and a
-# pending one is never queued, so it stays pending.
-
-
-# --- c9-evidence (CAS-05, CAS-S7, CAS-S16) ------------------------------------------------------
-# Evidence on the cases the journeys read: every scan state on CAS-S7's implementing case, a
-# clean file on each case waiting for sign-off (a request needs one) and on the closed case,
-# and a clean file on each bank's case for chunk 5's shared change, so CAS-S16 finds evidence
-# of both banks on one change. CAS-S8's case keeps none: its journey is the refusal without
-# evidence. A clean file's bytes are written here, through storage, into the slot's media
-# root and never committed; an infected one's never exist, as the scan deletes them, and a
-# pending one is never queued, so it stays pending.
+# Every scan state on CAS-S7's case, a clean file on each case awaiting sign-off and on the
+# closed case, and one on each bank's case for the shared watch change (CAS-S16). CAS-S8's
+# case keeps none. Clean bytes go through storage into the slot's media root; an infected
+# file's never exist and a pending one is never queued.
 
 
 @dataclass(frozen=True)
@@ -3316,9 +3159,8 @@ EXPECTED_EVIDENCE: tuple[SeedEvidence, ...] = (
     SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria.pdf"),
     SeedEvidence("chg-e2e-c5-timeline", "Research payment criteria (DK).pdf", tenant_slug=TENANT_B_SLUG),
 )
-# The day after the case's first sighting each piece was attached: after the actions were
-# done and before the sign-off request (`_DONE_DAY`, `_MOVE_DAY`). Chunk 5's shared change
-# is sighted this week, so its pieces are attached at the sighting instead.
+# The day after first sighting each piece was attached: after the actions were done, before
+# the sign-off request. The shared watch change is sighted this week, so at the sighting.
 _EVIDENCE_DAY = 11
 
 
@@ -3328,9 +3170,8 @@ def seed_evidence_pdf(name: str) -> bytes:
 
 
 def seed_case_evidence(tenants: list[Tenant]) -> int:
-    """c9-evidence: each piece of `EXPECTED_EVIDENCE`, once per case and name. A second run
-    writes no row and no audit row; it only writes a clean file's bytes back when the media
-    root lost them, under the key the row already names."""
+    """Each piece of `EXPECTED_EVIDENCE`, once per case and name. A second run writes no row;
+    it only rewrites a clean file's bytes the media root lost, under the same key."""
     import hashlib
 
     from apps.cases.models import Evidence, EvidenceKind
@@ -3418,15 +3259,14 @@ def seed_participants(tenants: list[Tenant]) -> None:
 
 
 # --- c10-e2e-seed-comments (COL-01, COL-02) -----------------------------------------------------
-# What the comments panel, the inbox, My work and J-8 read: tenant A's comments on a case and on
-# an obligation, one edited with the text it replaced, one deleted, the reader mentioned on both
-# records with one mention read and one not, and the login whose role reads no case mentioned on
-# the case and told nothing about it; tenant B's one comment on the obligation tenant A discusses,
-# so J-8 proves the two never meet. Every moment is the bank's own anchor less a fixed offset.
+# Tenant A's comments on a case and an obligation (one edited, one deleted), the reader
+# mentioned on both (one mention read), and a login that reads no case mentioned and told
+# nothing; tenant B's one comment on the same obligation, so J-8 proves the two never meet.
+# Every moment is the bank's anchor less a fixed offset.
 COMMENT_EDITED_AFTER = datetime.timedelta(minutes=10)
 COMMENT_DELETED_AFTER = datetime.timedelta(minutes=5)
 COMMENT_READ_AFTER = datetime.timedelta(hours=1)
-# A home case, not a case journey's, whose trail c9-e2e-seed counts row by row.
+# A home case, not a case journey's, whose trail is counted row by row.
 _COMMENTED_CASE = EXPECTED_HOME.later_change
 _COMMENTED_OBLIGATION = "obl-dora-ict-register"
 
@@ -3489,10 +3329,9 @@ def comment_moment(spec: SeedComment, anchor: datetime.datetime) -> datetime.dat
 
 
 def seed_comments(tenants: list[Tenant]) -> int:
-    """c10-e2e-seed-comments: each comment with its mentions, its revision and its audit rows
-    through record(), and the mention notifications through notify(), the one writer, whose
-    recipient check decides who is told. Written once: a comment that exists is left as it is,
-    so a second run changes nothing."""
+    """Each comment with its mentions, revision and audit rows through record(), and the
+    mention notifications through notify(), whose recipient check decides who is told.
+    Written once."""
     by_slug = {tenant.slug: tenant for tenant in tenants}
     users = {user.email: user for user in User.objects.filter(email__in={login.email for login in SEED_LOGINS})}
     for spec in EXPECTED_COMMENTS:
@@ -3554,13 +3393,9 @@ def _seed_comment_record(comment: Comment, title: str, action: str, after: dict[
 # --- acc-e2e-seed (ACC-08, J-11): reach off, for the seed and a journey's teardown ------------
 def switch_reach_off() -> int:
     """Every agent access entry of tenant A stops reaching the bank's register: the seed's
-    state, and what J-11's teardown restores on failure too (`manage.py e2e_reach_off`).
-    One version bump and one audit row per entry switched; an entry already off is left
-    alone, so a reseed writes nothing. Refused when deployed. Returns the entries switched.
-
-    The tenant-wide switch of D-72 (`governance.TenantReach`) reads off while it has no
-    row, which is how a fresh E2E database starts; the package that lands it beside this
-    one extends this function to switch that row off too."""
+    state, and what J-11's teardown restores (`manage.py e2e_reach_off`). One version bump
+    and audit row per entry switched; a reseed writes nothing. Refused when deployed. Returns
+    the entries switched. D-72's tenant-wide switch reads off while it has no row."""
     refuse_when_deployed("e2e_reach_off")
     tenant = Tenant.objects.get(slug=EXPECTED_J11.tenant_slug)
     switched = 0
@@ -3589,11 +3424,9 @@ def switch_reach_off() -> int:
 
 # --- c8-ui-departments-teams-removal (TEN-05, TEN-S5) ---------------------------------------
 def restore_leaver() -> None:
-    """TEN-S5's teardown (`manage.py e2e_restore_leaver`): the member the journey removes is
-    a member again and owns what the seed gave them, so a retry or the next journey finds
-    them as seeded. Each row put back leaves its audit row through record(). The journey's
-    own reassignment and removal events stay in the log; nothing is deleted. Refused when
-    deployed."""
+    """TEN-S5's teardown (`manage.py e2e_restore_leaver`): the removed member is a member
+    again and owns what the seed gave them, each row put back audited; the journey's own
+    events stay. Refused when deployed."""
     refuse_when_deployed("e2e_restore_leaver")
     tenant = Tenant.objects.get(slug=TENANT_A_SLUG)
     spec = next(s for s in EXPECTED_ORG_REGISTER if s.tenant_slug == TENANT_A_SLUG)
@@ -3623,10 +3456,8 @@ def restore_leaver() -> None:
 
 
 # --- c9-e2e-signoff-j3 (CAS-S10) -----------------------------------------------------------------
-# CAS-S10 proves a sign-off changes no library or register row by reading one obligation before
-# and after it: the one its change links to. The ISK control statements duty is read by SRC-S3
-# and changed by no journey or seed, so what the journey reads twice can only move if the
-# sign-off moved it.
+# CAS-S10 reads the obligation its change links to before and after the sign-off, to prove
+# the sign-off changes no library or register row; no journey or seed changes that duty.
 SIGNOFF_SPOT_CHECK_OBLIGATION = "obl-isk-control-statements"
 
 
@@ -3649,10 +3480,9 @@ def seed_signoff_spot_check_link() -> None:
 
 
 # --- c9-fe-case-participants (COL-04, CAS-03, COL-S9) -----------------------------------------
-# COL-S9: tenant A's case for the securities financing change, triaged to the compliance
-# officer and being assessed, through the product's own triage and assessment logic. The team
-# Legal takes part as the assessment's contributor team (D-20), and so do the owner Johan Berg,
-# whom the contributor removes, and the Reader, who leaves; the journey puts both back.
+# COL-S9: tenant A's securities financing case, being assessed, with Legal as contributor team
+# (D-20), Johan Berg (whom the contributor removes) and the Reader (who leaves) taking part;
+# the journey puts both back.
 CASE_PARTICIPATION_CHANGE = EXPECTED_HOME.later_change
 CASE_PARTICIPATION_OWNER = _SARA
 CASE_PARTICIPATION_TEAM = "legal"
@@ -3697,11 +3527,9 @@ def seed_case_participants(tenants: list[Tenant]) -> None:
 
 
 # --- c10-digest-beat-and-journeys (COL-02, COL-S2) ----------------------------------------------
-# What reminders, escalation and the digest have to work on beside COL-S2's case above: the
-# Swedish-speaking member has mentions switched off (reminders and the digest still reach
-# her), the compliance officer who holds the API-key journey is away with the shared officer
-# as delegate, and the Swedish member's digest of last week was sent, so this week's is new.
-# Every date is the bank's own today plus an offset.
+# Beside COL-S2's case: the Swedish-speaking member has mentions off, the API-key journey's
+# officer is away with the shared officer as delegate, and last week's digest was sent, so
+# this week's is new. Every date is the bank's today plus an offset.
 @dataclass(frozen=True)
 class SeedCollabWork:
     tenant_slug: str
@@ -3781,13 +3609,10 @@ def run_collab_jobs() -> None:
 
 
 # --- r2-j8-isolation (TEN-S7, J-8; NFR-01, TEN-02, TEN-03, COL-01, COL-02, COL-04, AGT-04, ACC-01, ID-08)
-# One row of each R2 record kind that tenant A holds and tenant B must never reach, by URL or in
-# a list, beside what the other blocks already give A alone (its departments, products and teams,
-# its register participant, its comments): a comment on A's case of the change both banks work
-# on, mentioning A's administrator; a support request A declined, found by its purpose; a tenant
-# agent, switched off; an agent access entry with one key; a session policy. Fixed ids where a
-# row can take one, so the journey addresses it by URL. Tenant B's own participant sits on the
-# obligation A's participant takes part in, so B's panel shows B's row and never A's.
+# One row of each R2 kind tenant A holds and tenant B must never reach, by URL or in a list:
+# a comment mentioning A's administrator, a declined support request, a switched-off tenant
+# agent, an agent access entry with one key, a session policy. Fixed ids where a row takes
+# one. B's own participant sits on the obligation A's takes part in.
 @dataclass(frozen=True)
 class SeedJ8Isolation:
     case_comment: SeedComment
@@ -3801,7 +3626,7 @@ class SeedJ8Isolation:
     entry_team: str
     key_id: uuid.UUID
     key_name: str
-    # The bank's own agent B must not reach is c11-e2e-seed's (one per bank and definition).
+    # The bank's own agent (one per bank and definition).
     tenant_agent_key: str
     idle_minutes: int
 
@@ -3883,17 +3708,13 @@ def seed_j8_isolation(tenants: list[Tenant]) -> None:
 
 
 # --- d89-e2e-journey (OWN-01 to OWN-04, J-12, PRO-S15, INV-S15) -----------------------------
-# Tenant A runs its own scope researcher, and one regulation of its own is in its scope with
-# its research open on the mock runner. That research filed the bank's own instrument and its
-# two duties, and the approver approved them, so INV-S15 finds a record "Private to us" and
-# PRO-S15 finds a research to report more findings into.
+# Tenant A's own scope researcher with one regulation of its own in scope and its research
+# open; the research filed the bank's own instrument and two duties, approved, so INV-S15
+# finds "Private to us" and PRO-S15 can report more findings.
 #
-# The mock runner files nothing by itself (apps/shared/adapters/agent_runner.py), and no
-# poller turns a runner's report into findings yet. So a journey plays the runner's report
-# with `manage.py e2e_scope_findings` (`report_scope_findings` below): what it reports is
-# built from the run's own input, `scope_research.run_input`, the D-98 fields a real runner
-# is given, and filed through `runner_events.apply_finding`, the one door a bank's run files
-# through. Each finding's event id is fixed, so a report made twice files nothing twice.
+# The mock runner files nothing, so a journey plays the runner's report with `manage.py
+# e2e_scope_findings` (`report_scope_findings`), built from `scope_research.run_input` (D-98)
+# and filed through `runner_events.apply_finding`. Fixed event ids make a repeat file nothing.
 @dataclass(frozen=True)
 class SeedOwnRecords:
     tenant_slug: str
@@ -4024,11 +3845,10 @@ def _running_research(item_key: str) -> Any:
 
 
 def report_scope_findings(item_key: str, part: int = 1) -> list[Proposal]:
-    """Play the mock runner's report for part `part` of tenant A's scope item `item_key`: file
-    what `_scope_findings` says through `runner_events.apply_finding`, and return the
-    proposals: the same ones on every call until a person decides them. Refused when
-    deployed; ValueError while the item has no running research, which the worker opens
-    after the approval."""
+    """Play the mock runner's report for part `part` of tenant A's scope item `item_key`
+    through `runner_events.apply_finding`, returning the same proposals on every call until a
+    person decides them. Refused when deployed; ValueError while the item has no running
+    research."""
     from apps.agents import runner_events
 
     refuse_when_deployed("e2e_scope_findings")
@@ -4128,12 +3948,9 @@ def seed_own_records(tenants: list[Tenant]) -> None:
 
 
 # --- console-new-records (PRO-S17; D-118, ADR 0065) -----------------------------------------
-# A few of the library baseline's proposals, waiting in the console queue for PRO-S17: two
-# instruments copied from the market abuse tranche with their three duties, filed through
-# the proposal door exactly as `manage.py file_library_baseline` files the real baseline.
-# The prototype's sample library holds neither instrument, so both are due at once; their
-# duties wait until the instruments are approved, so a reseed of an untouched database files
-# nothing, and only a reseed after a journey approved them would file the duties.
+# Two instruments copied from the market abuse tranche with their three duties, filed through
+# the proposal door as `manage.py file_library_baseline` files the baseline. The duties wait
+# until the instruments are approved, so a reseed of an untouched database files nothing.
 E2E_BASELINE = Path(__file__).resolve().parents[1] / "library" / "fixtures" / "e2e_baseline"
 
 
@@ -4154,9 +3971,8 @@ EXPECTED_BASELINE = SeedBaseline(
 
 
 def seed_baseline_proposals() -> int:
-    """File the fixture's due entries in the platform's zone; returns how many it filed. An
-    entry the door refuses stops the seed: the fixture is a copy of reviewed data, so a
-    refusal means the copy or the door changed, and a journey would read nothing."""
+    """File the fixture's due entries in the platform's zone; returns how many. A refusal
+    stops the seed: the fixture copies reviewed data, so the copy or the door changed."""
     from apps.proposals import baseline
 
     tenancy.clear_tenant()

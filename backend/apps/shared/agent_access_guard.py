@@ -1,32 +1,22 @@
 """The fence around an agent access credential (ACC-03, ACC-09, ADR 0055, ADR 0056).
 
 A service key bound to an agent access entry, and every personal access token, read and
-nothing else. `check` runs once per request, from the auth class that resolved the
-credential (apps/shared/authentication.py), before any route sees it:
+nothing else. `check` runs once per request, from the auth class, before any route:
 
-1. Rate. At most `AGENT_ACCESS_RATE_PER_MINUTE` requests a minute per credential, refused
-   with 429 `rate_limited`, and the first refusal of each window leaves a
-   `credential_rate_limited` row in the security log.
-2. Step-up. A route carrying `@requires_step_up` answers 403 `step_up_required`: nothing
-   behind the credential can present a passkey, so there is no path to an assertion.
-3. Writes. Every other method than a read answers 403 `read_only_credential`, except the
-   reads that take a body, in `READ_ONLY_ALLOWED`.
+1. Rate: at most `AGENT_ACCESS_RATE_PER_MINUTE` a minute per credential, else 429
+   `rate_limited`, the first refusal per window logged as `credential_rate_limited`.
+2. Step-up: a `@requires_step_up` route is 403 `step_up_required`; nothing behind the
+   credential can present a passkey.
+3. Writes: any method but a read is 403 `read_only_credential`, except `READ_ONLY_ALLOWED`.
 
-Once past its rate, the call is begun in the access log (ACC-08,
-apps/governance/access_log.py), so a refused write or step-up is logged with its 403 and the
-row is written after the response.
+Past its rate, the call is begun in the access log (ACC-08), so a refused call is logged with
+its 403. Every other key passes untouched.
 
-Every other key passes untouched: a bank's unbound key and bleqq's own agent keys keep
-the scopes and routes they had.
-
-The scope statement (ACC-07). A narrowed agent must never read silence as "nothing
-applies", so every answer to an agent access credential, an error included, states the
-scope it was answered in, through this one mechanism: once past its rate, `check` marks the
-request, and `ScopeStatementMiddleware` adds `Agent-Access-Scope` to the response, a JSON
-object in ASCII (`scope_statement`): the entry by id and name, the departments and products
-it serves, whether they narrow what it reads, and the "as of" date, today where the bank is.
-A personal token naming no entry states no entry and no narrowing. `POST
-/agent-access/what-applies` carries the same statement in its body as `scope`.
+The scope statement (ACC-07): a narrowed agent must never read silence as "nothing applies",
+so every answer to such a credential, an error included, carries `Agent-Access-Scope`
+(`ScopeStatementMiddleware`, `scope_statement`): the entry, its departments and products,
+whether they narrow, and the "as of" date. `POST /agent-access/what-applies` carries the
+same statement in its body.
 """
 
 from __future__ import annotations

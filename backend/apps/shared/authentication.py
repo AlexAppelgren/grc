@@ -1,25 +1,18 @@
 """The three principals (playbook 4.2) as Django Ninja auth classes.
 
-- `SessionAuth`: people, tenant members and platform staff, with our own short-lived
-  access token as a bearer (INPUT_DELTAS §2: `bearerAuth` means our session token).
-- `ApiKeyAuth`: agents and integrations, `X-API-Key`, narrow scopes. No scope allows a
-  library edit (AC-PRO1).
-- `EnrolmentAuth`: the one session a verified emailed code yields. It reaches the passkey
-  registration ceremony and `GET /me`, nothing else (ID-02, AC-ID2).
+- `SessionAuth`: people, with our own short-lived access token as a bearer (INPUT_DELTAS §2).
+- `ApiKeyAuth`: agents and integrations, `X-API-Key`, narrow scopes; none allows a library
+  edit (AC-PRO1).
+- `EnrolmentAuth`: the session a verified emailed code yields; it reaches passkey
+  registration and `GET /me`, nothing else (ID-02, AC-ID2).
 
-Each class turns a credential into a `Principal`, which is what `request.auth` holds
-for the permission decorators. The lookup functions (`resolve_session_token`,
-`resolve_api_key`, `resolve_enrolment_token`) delegate to the identity app's hashed
-lookups (chunk 1: `user_session`, `api_key`); tests stub them through
-apps/shared/testing.py when a scenario needs a principal without a ceremony.
+Each turns a credential into the `Principal` in `request.auth`, through the identity app's
+hashed lookups; tests stub them through apps/shared/testing.py. Nothing here logs a token or
+uses `random` (playbook 9).
 
-Tokens are compared by hash lookup in chunk 1 (stored hashed, playbook 4.2); nothing here
-logs a token, and nothing here uses `random` (playbook 9: security modules use `secrets`).
-
-An agent access credential (ACC-03, ADR 0056) is an `api_key` row, so it reaches a route
-only through `ApiKeyAuth`. `SessionAuth` never accepts one, but it still hands a live one
-to the agent access guard, so a session-only step-up or write route answers the same 403
-to a token as a route that takes keys does (apps/shared/agent_access_guard.py).
+An agent access credential (ACC-03, ADR 0056) reaches a route only through `ApiKeyAuth`;
+`SessionAuth` still hands one to the agent access guard, so a session-only route answers it
+the same 403.
 """
 
 from __future__ import annotations
@@ -51,25 +44,16 @@ class PrincipalKind(enum.StrEnum):
 class Principal:
     """What `request.auth` holds after authentication.
 
-    `permissions` are the flattened grants of the user's roles in `tenant_id` (people).
-    `scopes` are an API key's scopes (agents). An enrolment principal has neither.
-    `step_up_at` is the time of the freshest passkey assertion on this session, which
-    `@requires_step_up` compares against `STEP_UP_FRESHNESS_MINUTES` (ID-06).
-    `session_created_at` is when the session was opened (a refresh does not move it);
-    adding or removing a passkey accepts a session younger than the window (F9).
-    `agent_id` and `agent_label` name the agent the key is bound to (ID-10, AGT-01), so
-    `record()` writes the agent as the actor rather than the key's id.
-    `agent_access_id` and `agent_access_label` name the agent access entry a service key is
-    bound to; `acting_user_id` and `acting_user_label` name the person a personal access
-    token acts as (ACC-03). Either makes the principal an agent access credential, which
-    reads and nothing else and can never step up (`is_agent_access`).
-    `support_access_id` names the grant a support session stands on (TEN-06, ADR 0042):
-    platform support reading one bank, with the seven reads and nothing else.
-    `user` and `tenant` are the rows the credential's own lookup already joined (the person
-    with their locale, the bank with its default language), so a route that needs them
-    reads them here rather than again (`caller_user`, `caller_tenant`, `language_order`).
-    They live as long as the request and are None where a test stubs the principal; they
-    never take part in comparing two principals.
+    `permissions` are the flattened grants of the user's roles in `tenant_id`; `scopes` an API
+    key's scopes; an enrolment principal has neither. `step_up_at` is the freshest passkey
+    assertion, compared with `STEP_UP_FRESHNESS_MINUTES` (ID-06). `session_created_at` lets a
+    young session add or remove a passkey (F9). `agent_id`/`agent_label` name a key's agent
+    (ID-10, AGT-01), the actor `record()` writes. `agent_access_id`/`agent_access_label` (a
+    service key's entry) or `acting_user_id`/`acting_user_label` (a personal token's person)
+    make it an agent access credential, read-only and never stepped up (ACC-03).
+    `support_access_id` names a support session's grant (TEN-06, ADR 0042). `user` and
+    `tenant` are the rows the lookup already joined, None where a test stubs the principal;
+    they never take part in comparing two principals.
     """
 
     kind: PrincipalKind
@@ -107,7 +91,7 @@ Resolver = Callable[[str], Principal | None]
 
 
 def _resolve_session_token(token: str) -> Principal | None:
-    """Chunk 1: the HMAC-signed access token names a session row (apps/identity/session_logic.py)."""
+    """The HMAC-signed access token names a session row (apps/identity/session_logic.py)."""
     from apps.identity import session_logic
 
     return session_logic.resolve_access_token(token, want=PrincipalKind.USER)
@@ -144,7 +128,7 @@ def _bearer(request: HttpRequest) -> str | None:
 
 def presented_api_key(request: HttpRequest) -> str | None:
     """The API key or token the request carries: `X-API-Key`, or a bearer that starts with
-    the key prefix (chunk 1 brief)."""
+    the key prefix."""
     header_key = request.headers.get(API_KEY_HEADER, "").strip()
     if header_key:
         return header_key
@@ -152,10 +136,9 @@ def presented_api_key(request: HttpRequest) -> str | None:
     return bearer if bearer and bearer.startswith(API_KEY_PREFIX) else None
 
 
-# Where a request keeps the credential it resolved, with the key it resolved it from: an
-# attribute, never a header, so no caller can set it. The MCP server copies it onto the
-# request it makes to the route behind a tool (apps/integrations/mcp_tools.py), so one HTTP
-# request resolves its key once, revocation included, however many routes it runs.
+# Where a request keeps the credential it resolved: an attribute, never a header, so no
+# caller can set it. The MCP server copies it onto the route requests behind its tools, so one
+# HTTP request resolves its key once.
 RESOLVED_CREDENTIAL = "resolved_credential"
 
 
@@ -177,12 +160,10 @@ def credential_principal(request: HttpRequest, key: str) -> Principal | None:
 
 
 class SessionAuth(HttpBearer):
-    """People. Accepts only a user principal, so a stubbed resolver that returns the wrong
-    kind is refused rather than let through. It never accepts an API key or a personal
-    access token (ACC-03): a request that presents one and no session is handed to the
-    agent access guard and then answered as unauthenticated. On a route that also takes
-    `ApiKeyAuth`, that class resolves it instead, so a credential is resolved and counted
-    once per request."""
+    """People. Accepts only a user principal. It never accepts an API key or personal token
+    (ACC-03): one presented without a session goes to the agent access guard and is answered
+    as unauthenticated; on a route that also takes `ApiKeyAuth` that class resolves it, so a
+    credential is resolved once per request."""
 
     def __call__(self, request: HttpRequest) -> Principal | None:
         from apps.shared import agent_access_guard
@@ -206,19 +187,17 @@ class SessionAuth(HttpBearer):
 
 
 def _log_support_read(request: HttpRequest, principal: Principal) -> None:
-    """One `support_access.read` audit row in the bank for each request a support session
-    makes (TEN-06, ADR 0042), written here, once the grant is proven live, in the request's
-    transaction, and again after it by `SupportReadOnlyMiddleware` if a refusal rolled it
-    back: the route template and its path ids, never the query string or the body.
-    The read-only guard (apps/shared/middleware.py) has already refused a route off the
-    allow-list, so every row names a route on it."""
+    """One `support_access.read` audit row in the bank per request of a support session
+    (TEN-06, ADR 0042), once the grant is proven live, written again by
+    `SupportReadOnlyMiddleware` if a refusal rolled it back: route template and path ids,
+    never the query string or body."""
     from apps.shared.agent_access_guard import operation_of
     from apps.tenants import support_access
 
     operation = operation_of(request)
     match = getattr(request, "resolver_match", None)
-    # Kept on the request for the read-only guard, which writes it again after the request
-    # if a refusal rolled it back (ADR 0042; security-review-c8 M5).
+    # Kept for the read-only guard, which writes it again if a refusal rolled it back (ADR
+    # 0042; security-review-c8 M5).
     request.support_read = support_access.record_read(  # type: ignore[attr-defined]
         principal=principal,
         method=request.method or "",
@@ -228,8 +207,8 @@ def _log_support_read(request: HttpRequest, principal: Principal) -> None:
 
 
 class ApiKeyAuth(APIKeyHeader):
-    """Agents and integrations. `X-API-Key`, or `Authorization: Bearer cw_<prefix>_<secret>`
-    (chunk 1 brief); scopes checked by `@requires_scope`."""
+    """Agents and integrations. `X-API-Key`, or `Authorization: Bearer cw_<prefix>_<secret>`;
+    scopes checked by `@requires_scope`."""
 
     param_name = API_KEY_HEADER
     # The security scheme's description in openapi.json: the one place the fence around an

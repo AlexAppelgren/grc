@@ -1,23 +1,19 @@
 """The regulatory scope suggested from the public registers (FP-05, PUBLIC_REGISTERS.md 4.2
 and 4.3, D-121, ADR 0066).
 
-A read. It compares the register facts of the bank's legal entities (`RegisterEntry`, read
-from Finansinspektionen's register on onboarding and every night after) with the bank's
-regulatory scope and its companies' exclusions, and lists what a person may file as one
-ordinary request: terms for the bank's scope, markets, and each company's licence-bound
-exclusions. Nothing here writes, and nothing a register says reaches the scope until a second
-person approves the request with a passkey (FP-02, D-89).
+A read: it compares the register facts of the bank's legal entities with its regulatory
+scope and its companies' exclusions, and lists what a person may file as one ordinary
+request. Nothing reaches the scope until a second person approves it with a passkey (FP-02,
+D-89).
 
-The rules, in short (the brief has the reasons):
 - A dimension the scope leaves open is closed only when the companies hold part of its
-  licence-bound terms, and then with every term no licence answers (AML, tax, execution-only),
-  so the change hides only licence-bound rules no company is licensed for.
-- A dimension the scope restricts gains the held terms it lacks, and loses the licence-bound
-  terms no company holds unless that would empty it, which would widen it instead.
-- Markets: each company's country and each branch's country the library covers; never a
-  removal, since a bank may serve a country without a branch.
-- A company whose main business the mapping knows is suggested out of the licence-bound terms
-  its facts do not give it; a company without facts, or whose business is unknown, never is.
+  licence-bound terms, with every term no licence answers, so it hides only licence-bound
+  rules no company is licensed for.
+- A restricted dimension gains the held terms it lacks and loses the licence-bound terms no
+  company holds, unless that would empty (and so widen) it.
+- Markets: company and branch countries the library covers; never a removal.
+- A company whose main business is known is suggested out of the licence-bound terms its
+  facts do not give it; one without facts, or with an unknown business, never is.
 """
 
 from __future__ import annotations

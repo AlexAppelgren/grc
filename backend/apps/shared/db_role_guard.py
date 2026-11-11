@@ -1,17 +1,13 @@
 """Boot guard for the database role (playbook 11.1 and 14, PRD AC-NFR2).
 
-PostgreSQL lets three kinds of role skip row-level security policies: superusers, roles
-with BYPASSRLS, and the owner of a table unless the table has FORCE ROW LEVEL SECURITY
-(Verification_Log: PostgreSQL row security policies). The migrations force RLS on every
-tenant table, but an app that connects as the owner or a superuser would still be one
-`ALTER TABLE` away from reading every tenant. So the app refuses to start on any role
-that is not the plain cw_app kind: not a superuser, owning no table in the public
-schema, itself or through a role it is a member of (`GRANT cw_migrator TO cw_app` is one
-`SET ROLE` from the owner), no BYPASSRLS, no CREATEROLE (review 2026-11-11 L-7).
+Superusers, BYPASSRLS roles and a table's owner (without FORCE) skip row-level security, and
+an owner is one `ALTER TABLE` from reading every tenant. So the app refuses to start on any
+role that is not the plain cw_app kind: not a superuser, owning no table in the public
+schema itself or through a role it is a member of, no BYPASSRLS, no CREATEROLE (review
+2026-11-11 L-7).
 
-`check_role(connection)` is the pure check and raises `RoleGuardError`.
-`check_at_boot()` is what SharedConfig.ready() calls; it consults the settings that say
-when the check is skipped (the test runner, and the commands that run as the migrator).
+`check_role(connection)` is the pure check and raises `RoleGuardError`. `check_at_boot()` is
+what SharedConfig.ready() calls, skipped only for the test runner and the migrator's commands.
 """
 
 from __future__ import annotations

@@ -118,9 +118,7 @@ def member_detail(tenant_id: uuid.UUID, user_id: uuid.UUID, order: list[str]) ->
     return member_out(membership, order, passkey_count=passkeys, active_sessions=sessions, teams=teams, platform_staff=platform_staff)
 
 
-# ---------------------------------------------------------------------------------------
-# Last admin (ID-S19)
-# ---------------------------------------------------------------------------------------
+# --- Last admin (ID-S19) ---
 def admins_besides(tenant_id: uuid.UUID, user_id: uuid.UUID) -> int:
     count = 0
     memberships = (
@@ -137,10 +135,9 @@ def admins_besides(tenant_id: uuid.UUID, user_id: uuid.UUID) -> int:
 def assert_not_last_admin(tenant_id: uuid.UUID, membership: Membership, *, keeps_members_manage: bool) -> None:
     """Refuse a change that would leave the bank without a member holding `members.manage`.
     The bank's row is locked before the others are counted, so two administrators demoting
-    or removing each other at once are counted one after the other and the second is
-    refused (review 2026-11-11 L-6); the caller's transaction holds the lock to its end. One
-    row is the lock, never the memberships themselves, which `/remove` already locks one by
-    one and which two removals would otherwise take in opposite orders."""
+    or removing each other at once are counted in turn and the second is refused (review
+    2026-11-11 L-6). One row is the lock, never the memberships, which two removals would
+    take in opposite orders."""
     holds = perms.MEMBERS_MANAGE in roles_logic.permissions_of(membership.roles.all())
     if not holds or keeps_members_manage:
         return
@@ -149,9 +146,7 @@ def assert_not_last_admin(tenant_id: uuid.UUID, membership: Membership, *, keeps
         raise ValidationError("A tenant always keeps one administrator.", code="last_admin")
 
 
-# ---------------------------------------------------------------------------------------
-# Invitations
-# ---------------------------------------------------------------------------------------
+# --- Invitations ---
 def invitation_out(invitation: Invitation, order: list[str]) -> dict[str, Any]:
     return {
         "id": invitation.id,
@@ -192,9 +187,7 @@ def tenant_invitation(tenant_id: uuid.UUID, invitation_id: uuid.UUID) -> Invitat
     return row
 
 
-# ---------------------------------------------------------------------------------------
-# Changing and removing members
-# ---------------------------------------------------------------------------------------
+# --- Changing and removing members ---
 def update_member(
     *,
     tenant: Tenant,
