@@ -94,3 +94,26 @@ would save no lines.
    reduction per decision.
 3. **Third batch.** B-5 and B-7 to B-10, one per commit, each with the suites of the
    apps it touches.
+
+## 7. Outcome
+
+Every item was carried out on `main` except where the list below says otherwise. The API
+went from 293 operations and 513 schemas to 279 and 459; the migrations from 102 files and
+13,665 lines to 24 files and 6,215 lines; backend comment and docstring lines from about
+14,560 to 10,314, with an AST comparison proving no executable code changed.
+
+- B-1: done, except `GET /vocab/{list}/{key}`, the only read that says which labels a machine
+  wrote (I18N-01, INV-05), and `GET /agent-runs`, which AGT-04 needs as a bank's own run
+  history; it is now bank-only behind `agents.manage`.
+- B-2: `NamedRef` and `VocabRef` replace 19 schemas, and unreferenced schemas leave the
+  generated contract. Schemas that only look alike (note bodies, `enabled` bodies, key inputs)
+  stay apart.
+- B-6: the page envelope was not unified: it would rename 51 schemas the frontend imports for
+  no net reduction.
+- B-11: D-130 keeps all eleven operations.
+- B-13: `taxonomy 0015` stays a plain migration after the squash, because the deployed
+  database has not applied it. `apps/shared/migration_guard.py` stops `migrate` on a database
+  that applied only part of a squash.
+- B-14: the two console POSTs that look like twins of tenant routes stay apart, because they
+  differ in body, permission and logic.
+- B-15: `BedrockLlm` stays as the EU path of D-54; `file_retag` stays because AGT-05 is built.
