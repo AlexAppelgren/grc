@@ -1,10 +1,9 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { TeamsSection } from '@/components/admin/TeamsSection';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { renderWith } from '@/shared/testing/render';
 
 // Teams (TEN-03, TEN-S8): each team with its department and member count, a
 // retired one dimmed; Add and Edit write the bank's `team` list with the
@@ -23,7 +22,6 @@ const row = { key: 'retail_compliance', kind: null, label: 'Retail compliance', 
 
 function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === '/api/v1/tenant/teams') return { status: 200, data: { items: [team, old], total: 2 } };
     if (sent.path === '/api/v1/tenant/org-units') return { status: 200, data: { items: [retail, cards, closed, entity], total: 4 } };
     if (sent.method === 'get' && sent.path === TEAM_LIST) return { status: 200, data: { items: [row], total: 1 } };
@@ -33,14 +31,7 @@ function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sen
 }
 
 async function renderSection(permissions: string[]): Promise<void> {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <TeamsSection />
-      </PermissionsProvider>
-    </Query>,
-  );
+  renderWith(<TeamsSection />, { permissions });
   await screen.findByText('Retail compliance');
 }
 

@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { API_KEY_SCOPES, ApiKeysScreen } from '@/features/tenant-admin/api-keys/ApiKeysScreen';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { renderWith } from '@/shared/testing/render';
 
 // A bank's API keys (ID-10): the create form offers the scopes a bank's key
 // may hold and nothing else. The watch writes are the platform's own agents'
@@ -42,18 +42,11 @@ function renderScreen(items: unknown[] = [], answer: (sent: Sent) => Answer | un
   const sent = installAdapter((sent) => {
     const scripted = answer(sent);
     if (scripted !== undefined) return scripted;
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
-    if (sent.path === '/api/v1/me') return { status: 200, data: admin };
     if (sent.method === 'get' && sent.path === KEYS) return { status: 200, data: { items, total: items.length } };
     if (sent.method === 'delete') return { status: 204 };
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
-  });
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <ApiKeysScreen />
-    </Query>,
-  );
+  }, { me: admin });
+  renderWith(<ApiKeysScreen />);
   return sent;
 }
 

@@ -80,7 +80,6 @@ const editor = {
 
 function server(rows: Answer, extra: (sent: Sent) => Answer | undefined = () => undefined): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: editor };
     if (sent.path === '/api/v1/vocab/change_type') return { status: 200, data: { items: CHANGE_TYPES, total: 2 } };
     if (sent.path === '/api/v1/vocab/flag') return { status: 200, data: { items: FLAGS, total: 2 } };

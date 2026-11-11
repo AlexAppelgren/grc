@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AgentDefinitionScreen } from '@/components/console/AgentDefinitionScreen';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH, setStepUpHandler } from '@/shared/utils/api-client';
+import { setStepUpHandler } from '@/shared/utils/api-client';
 
 // One agent definition in the console (AGT-03, ADM-02): its append-only
 // versions with publish and retire behind a passkey, and for one of bleqq's
@@ -88,7 +88,6 @@ const RUNS = [
 
 function server(extra: (sent: Sent) => Answer | undefined = () => undefined, detail: Answer = { status: 200, data: definition }): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: admin };
     const answer = extra(sent);
     if (answer !== undefined) return answer;

@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { OrganisationScreen } from '@/components/admin/OrganisationScreen';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH, setStepUpHandler } from '@/shared/utils/api-client';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { setStepUpHandler } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 // The Organisation profile form (TEN-01, ADM-S17) saves what it says: an
 // omitted field is left alone by the server, and an empty list of content
@@ -34,7 +35,6 @@ const EMPTY_LISTS = ['/api/v1/tenant/org-units', '/api/v1/tenant/products', '/ap
 /** The server: the tenant as given, the three reference languages, and a PATCH that answers the tenant back. */
 function server(tenant: typeof seeded | typeof fresh): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === LANGUAGES_PATH) return { status: 200, data: [svenska, english, suomi] };
     if (EMPTY_LISTS.includes(sent.path)) return { status: 200, data: { items: [], total: 0 } };
     if (sent.path === TENANT_PATH && sent.method === 'get') return { status: 200, data: tenant };
@@ -44,12 +44,7 @@ function server(tenant: typeof seeded | typeof fresh): Sent[] {
 }
 
 async function renderScreen(): Promise<void> {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <OrganisationScreen />
-    </Query>,
-  );
+  renderWith(<OrganisationScreen />);
   await screen.findByLabelText('Timezone');
 }
 
@@ -133,7 +128,6 @@ type Answer = { status: number; data: unknown };
 function aiServer(tenant: typeof seeded, answer?: (count: number) => Answer): Sent[] {
   let puts = 0;
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === LANGUAGES_PATH) return { status: 200, data: [svenska, english, suomi] };
     if (EMPTY_LISTS.includes(sent.path)) return { status: 200, data: { items: [], total: 0 } };
     if (sent.path === TENANT_PATH && sent.method === 'get') return { status: 200, data: tenant };

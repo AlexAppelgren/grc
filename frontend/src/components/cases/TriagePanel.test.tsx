@@ -1,12 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { CaseWorkflow } from '@/features/cases/types';
 import type { ChangeDetail } from '@/features/watch/api';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { TriagePanel } from './TriagePanel';
 
@@ -83,16 +82,7 @@ const writes = (sent: Sent[]) => sent.filter((request) => request.method !== 'ge
 const panelRequests = (sent: Sent[]) => sent.filter((request) => request.path.startsWith('/api/v1/vocab') || request.path.startsWith('/api/v1/reference') || request.method !== 'get');
 
 function renderPanel(workflow: CaseWorkflow, permissions: string[]): void {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <TriagePanel change={CHANGE} workflow={workflow} />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Query>,
-  );
+  renderWith(<TriagePanel change={CHANGE} workflow={workflow} />, { permissions });
 }
 
 beforeEach(() => {

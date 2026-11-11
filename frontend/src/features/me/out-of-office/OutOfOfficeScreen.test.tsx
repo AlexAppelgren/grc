@@ -7,7 +7,6 @@ import type { Me } from '@/features/identity/types';
 import { referenceKeys } from '@/features/shared/reference';
 import { findDestination } from '@/shared/navigation/registry';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
 import { defaultFormatContext, formatLongDate, tenantToday } from '@/shared/utils/format';
 
 import type { OutOfOffice } from './api';
@@ -59,7 +58,6 @@ function server(script: Script = {}): Sent[] {
   let stored = script.start ?? NOT_AWAY;
   let refusal = script.put;
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: me() };
     if (sent.path === PEOPLE_PATH) return script.people ?? { status: 200, data: [ERIK, ERIKA, SELF] };
     if (sent.path === OOO_PATH && sent.method === 'get') return script.get ?? { status: 200, data: stored };
@@ -310,7 +308,6 @@ describe('out of office', () => {
   it('still keeps delegate_cannot_approve under the delegate when they left the people list meanwhile', async () => {
     let people = [ERIK, ERIKA, SELF];
     installAdapter((sent) => {
-      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (sent.path === ME_PATH) return { status: 200, data: me() };
       if (sent.path === PEOPLE_PATH) return { status: 200, data: people };
       if (sent.path === OOO_PATH && sent.method === 'get') return { status: 200, data: NOT_AWAY };

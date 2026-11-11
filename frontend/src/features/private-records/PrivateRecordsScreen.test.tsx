@@ -59,11 +59,10 @@ function serve(items: PrivateProposalRow[], extra: (sent: Sent) => Answer | unde
   return installAdapter((sent) => {
     const answer = extra(sent);
     if (answer !== undefined) return answer;
-    if (sent.path === '/api/v1/me') return { status: 200, data: officer };
     if (sent.path === QUEUE) return { status: 200, data: { items, total: items.length } };
     if (sent.path === '/api/v1/vocab/rejection_reason') return { status: 200, data: [{ key: 'duplicate', kind: null, label: 'Duplicate', extra: {} }] };
     return { status: 404, data: { code: 'not_found', detail: 'Not in this test.' } };
-  });
+  }, { me: officer });
 }
 
 function renderIn(node: ReactNode, permissions: string[] = ['private_records.approve']) {
@@ -114,10 +113,9 @@ describe('the queue', () => {
 
   it('pages by the route\'s own total', async () => {
     const sent = installAdapter((s) => {
-      if (s.path === '/api/v1/me') return { status: 200, data: officer };
       const offset = Number((s.params as { offset?: string } | null)?.offset ?? 0);
       return { status: 200, data: { items: [row({ id: `p-${offset}` })], total: 25 } };
-    });
+    }, { me: officer });
     renderIn(<PrivateRecordsScreen />);
     fireEvent.click(await screen.findByRole('button', { name: 'Next' }));
     await waitFor(() => expect(document.querySelector('[data-private-proposal-id="p-20"]')).not.toBeNull());
@@ -126,10 +124,9 @@ describe('the queue', () => {
 
   it('pages back to the first page, with Previous closed there and Next closed on the last', async () => {
     installAdapter((s) => {
-      if (s.path === '/api/v1/me') return { status: 200, data: officer };
       const offset = Number((s.params as { offset?: string } | null)?.offset ?? 0);
       return { status: 200, data: { items: [row({ id: `p-${offset}` })], total: 25 } };
-    });
+    }, { me: officer });
     renderIn(<PrivateRecordsScreen />);
     expect(await screen.findByRole('button', { name: 'Previous' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));

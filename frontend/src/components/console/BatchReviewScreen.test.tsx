@@ -1,11 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { setStepUpHandler, tokenStore } from '@/shared/utils/api-client';
 
 import type { ProposalBatch, ProposalBatchRow } from '@/features/proposals/types';
+import { renderWith } from '@/shared/testing/render';
 import { BatchReviewScreen } from './BatchReviewScreen';
 
 // /console/queue/batches/[batchId] (design/screens/console-queue-batch.html; PRO-04):
@@ -101,7 +101,6 @@ type Answer = { status: number; data?: unknown };
 function serve(current: ProposalBatch, decide: (body: unknown, count: number) => Answer = () => ({ status: 200, data: current })): Sent[] {
   let decisions = 0;
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: editor };
     if (sent.path === BATCH) return { status: 200, data: current };
     if (sent.path === '/api/v1/vocab/rejection_reason') return { status: 200, data: reasons };
     if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: { items: terms, total: terms.length } };
@@ -110,20 +109,13 @@ function serve(current: ProposalBatch, decide: (body: unknown, count: number) =>
       return decide(sent.body, decisions);
     }
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
-  });
+  }, { me: editor });
 }
 
 const decisionsSent = (sent: Sent[]) => sent.filter((s) => s.path === DECIDE).map((s) => s.body);
 
 function renderScreen(): void {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <LocaleProvider locale="en">
-        <BatchReviewScreen batchId="b-1" />
-      </LocaleProvider>
-    </Query>,
-  );
+  renderWith(<BatchReviewScreen batchId="b-1" />);
 }
 
 function card(id: string): HTMLElement {

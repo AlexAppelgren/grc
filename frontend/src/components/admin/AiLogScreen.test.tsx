@@ -1,10 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AiLogScreen } from '@/components/admin/AiLogScreen';
 import type { AiGeneration } from '@/features/governance/types';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { renderWith } from '@/shared/testing/render';
 
 // The AI log (AUD-02): each model call with its purpose, model, review state,
 // sources and a reader's verdict; a row opens to what the model wrote with
@@ -75,17 +75,10 @@ const soWhat = row({
 
 function renderScreen(logAnswer: (sent: Sent) => Answer): Sent[] {
   const sent = installAdapter((s) => {
-    if (s.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
-    if (s.path === '/api/v1/me') return { status: 200, data: approver };
     if (s.path === '/api/v1/ai-generations') return logAnswer(s);
     return { status: 404, data: { code: 'not_found', detail: 'Not for this test.' } };
-  });
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <AiLogScreen />
-    </Query>,
-  );
+  }, { me: approver });
+  renderWith(<AiLogScreen />);
   return sent;
 }
 

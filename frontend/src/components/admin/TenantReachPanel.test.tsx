@@ -1,11 +1,9 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { TenantReachPanel } from '@/components/admin/TenantReachPanel';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { renderWith } from '@/shared/testing/render';
 
 // Tenant reach on Security (ACC-08): asked by one holder of security.manage
 // with a passkey, decided by another; the requester is offered no decision and
@@ -30,26 +28,15 @@ const off = { enabled: false, changedAt: null, changedBy: null, pending: null };
 
 function server(reach: unknown, viewer = 'u-erik', extra: (sent: Sent) => Answer | undefined = () => undefined): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
-    if (sent.path === '/api/v1/me') return { status: 200, data: me(viewer) };
     const answer = extra(sent);
     if (answer !== undefined) return answer;
     if (sent.path === REACH && sent.method === 'get') return { status: 200, data: reach };
     return { status: 500 };
-  });
+  }, { me: me(viewer) });
 }
 
 function open(permissions: readonly string[] = SECURITY) {
-  const { wrapper: Query } = queryWrapper();
-  return render(
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <LocaleProvider locale="en">
-          <TenantReachPanel />
-        </LocaleProvider>
-      </PermissionsProvider>
-    </Query>,
-  );
+  return renderWith(<TenantReachPanel />, { permissions });
 }
 
 const writes = (sent: Sent[]) => sent.filter((s) => s.method === 'post' && s.path.startsWith(REACH)).map((s) => s.path);

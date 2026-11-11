@@ -8,6 +8,7 @@ import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 import { tenantToday } from '@/shared/utils/format';
+import { session } from '@/shared/testing/fixtures';
 
 import { ActionsPanel } from './ActionsPanel';
 
@@ -18,7 +19,7 @@ import { ActionsPanel } from './ActionsPanel';
 // in place, from the server's answer.
 
 const ZONE = 'Europe/Stockholm';
-const SESSION = { user: { locale: 'en' }, tenant: { timezone: ZONE }, enrolmentPending: false, permissions: [] };
+const SESSION = session([], ZONE);
 const WORKER = ['cases.read', 'cases.work', 'cases.contribute'];
 const CONTRIBUTOR = ['cases.read', 'cases.contribute'];
 const READER = ['cases.read'];

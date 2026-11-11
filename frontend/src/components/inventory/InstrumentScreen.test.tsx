@@ -112,7 +112,6 @@ function renderIn(node: ReactNode, permissions: string[] = ['library.read', 'pro
 /** The server: /me, the card, its obligations (`total` beyond the page when given) and the report. */
 function serve(answer: InstrumentDetail | number, obligations: Obligation[] = [researchObligation], total = obligations.length) {
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path === '/api/v1/obligations') return { status: 200, data: { items: obligations, total } };
     if (sent.path.endsWith('/provisions')) return { status: 200, data: [] };
     // The record's "Reported problems" (AUD-03): the bank has filed none on it.
@@ -120,7 +119,7 @@ function serve(answer: InstrumentDetail | number, obligations: Obligation[] = [r
     if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     if (typeof answer === 'number') return { status: answer, data: { detail: 'no', code: answer === 404 ? 'not_found' : 'server_error' } };
     return { status: 200, data: answer };
-  });
+  }, { me: ME });
 }
 
 describe('InstrumentScreen', () => {

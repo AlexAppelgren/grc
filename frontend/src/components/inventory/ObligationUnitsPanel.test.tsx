@@ -1,13 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { RegisterEntityStatus, RegisterUnit } from '@/features/register/types';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { withPanels } from '@/features/register/testing';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { ObligationUnitsPanel } from './ObligationUnitsPanel';
 
@@ -72,27 +70,16 @@ function meWith(permissions: string[]) {
 
 function serve(permissions: string[], rows: RegisterEntityStatus[], units: (sent: Sent) => Answer, write: (sent: Sent) => Answer = () => ({ status: 200, data: {} })): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: meWith(permissions) };
     if (sent.path === '/api/v1/obligations/ob-std/register') return { status: 200, data: withPanels({ entities: rows }) };
     if (sent.method === 'get' && sent.path === '/api/v1/obligations/ob-std/units') return units(sent);
     return write(sent);
-  });
+  }, { me: meWith(permissions) });
 }
 
 const page = (items: RegisterUnit[]): Answer => ({ status: 200, data: { items, total: items.length } });
 
 function renderPanel(permissions: string[]) {
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <ObligationUnitsPanel obligationId="ob-std" />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  return renderWith(<ObligationUnitsPanel obligationId="ob-std" />, { permissions });
 }
 
 function row(id: string): HTMLElement {

@@ -1,11 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TokensScreen } from '@/features/me/personal-tokens/TokensScreen';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 // My access tokens (ACC-03, me-tokens.html): minted with scopes the member's
 // own permissions back, an optional entry and a required expiry, shown once,
@@ -33,7 +32,6 @@ const token = (id: string, extra: Record<string, unknown> = {}) => ({
 
 function server(items: unknown[], extra: (sent: Sent) => Answer | undefined = () => undefined): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     const answer = extra(sent);
     if (answer !== undefined) return answer;
     if (sent.method === 'get' && sent.path === TOKENS) return { status: 200, data: { items, total: items.length } };
@@ -45,16 +43,7 @@ function server(items: unknown[], extra: (sent: Sent) => Answer | undefined = ()
 }
 
 function open(permissions: readonly string[]) {
-  const { wrapper: Query } = queryWrapper();
-  return render(
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <LocaleProvider locale="en">
-          <TokensScreen />
-        </LocaleProvider>
-      </PermissionsProvider>
-    </Query>,
-  );
+  return renderWith(<TokensScreen />, { permissions });
 }
 
 const writes = (sent: Sent[]) => sent.filter((s) => s.method !== 'get' && s.path !== REFRESH_PATH).map((s) => ({ method: s.method, path: s.path, body: s.body }));
@@ -282,14 +271,7 @@ describe('my access tokens', () => {
 
   it('treats a screen outside any permissions context as holding no permission', async () => {
     server([]);
-    const { wrapper: Query } = queryWrapper();
-    render(
-      <Query>
-        <LocaleProvider locale="en">
-          <TokensScreen />
-        </LocaleProvider>
-      </Query>,
-    );
+    renderWith(<TokensScreen />);
     const empty = await found('[data-empty-state]');
     expect(screen.queryByRole('button', { name: 'Create a token' })).toBeNull();
     expect(empty).toHaveTextContent('Creating tokens needs tokens create');

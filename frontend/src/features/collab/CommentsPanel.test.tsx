@@ -10,6 +10,7 @@ import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { CommentsPanel } from './CommentsPanel';
 import type { Comment } from './types';
@@ -51,11 +52,10 @@ function serve(comments: Comment[], script: Script = () => undefined): Sent[] {
   return installAdapter((sent) => {
     const scripted = script(sent);
     if (scripted !== undefined) return scripted;
-    if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path === '/api/v1/reference/people') return { status: 200, data: [SARA, JOHAN] };
     if (sent.path === '/api/v1/comments' && sent.method === 'get') return { status: 200, data: { items: comments, total: comments.length } };
     return { status: 500 };
-  });
+  }, { me: ME });
 }
 
 function renderIn(node: ReactNode, permissions: string[] = ['comments.write']) {
@@ -203,10 +203,9 @@ describe('CommentsPanel', () => {
 
   it('keeps the text and says so when the post does not reach the server', async () => {
     installAdapter((s) => {
-      if (s.path === '/api/v1/me') return { status: 200, data: ME };
       if (s.method === 'get') return { status: 200, data: { items: [], total: 0 } };
       throw new AxiosError('Network Error', 'ERR_NETWORK');
-    });
+    }, { me: ME });
     renderIn(<CommentsPanel subject={SUBJECT} />);
 
     const box = await screen.findByRole('combobox', { name: 'Add a comment' });
@@ -309,15 +308,7 @@ describe('CommentsPanel edges', () => {
 
   it('reads without a composer where no permissions are known yet', async () => {
     serve([comment('c-1')]);
-    const { wrapper } = queryWrapper();
-    const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-    render(
-      <Wrapper>
-        <LocaleProvider locale="en">
-          <CommentsPanel subject={SUBJECT} />
-        </LocaleProvider>
-      </Wrapper>,
-    );
+    renderWith(<CommentsPanel subject={SUBJECT} />);
 
     expect(await screen.findByText('You can read comments here but not add them.')).toBeInTheDocument();
     expect(screen.queryByRole('combobox')).toBeNull();

@@ -1,10 +1,9 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { EntitiesSection } from '@/components/admin/EntitiesSection';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { renderWith } from '@/shared/testing/render';
 
 // Legal entities with their licences and certificates (TEN-02, TEN-S2,
 // TEN-S10): the tree under the group, a certificate recorded with its owner,
@@ -50,7 +49,6 @@ const people = [{ id: 'u-sara', name: 'Sara Lindqvist' }];
 
 function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.method === 'get' && sent.path === UNITS) return { status: 200, data: { items: [{ ...bank, licences: [banking, withdrawn] }, { ...group, licences: [] }, { ...retail, licences: [] }], total: 3 } };
     if (sent.path === '/api/v1/taxonomy/dimensions') return { status: 200, data: dimensions };
     if (sent.path === '/api/v1/taxonomy/terms') return { status: 200, data: terms };
@@ -61,14 +59,7 @@ function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sen
 }
 
 async function renderSection(permissions: string[]): Promise<void> {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <EntitiesSection />
-      </PermissionsProvider>
-    </Query>,
-  );
+  renderWith(<EntitiesSection />, { permissions });
   await screen.findByText('FI 12-3456');
 }
 
@@ -217,7 +208,6 @@ describe('filling in from the public registers (TEN-07, TEN-S13)', () => {
   function registers(outcome: unknown, units: unknown[] = [{ ...bank, licences: [banking] }]): Sent[] {
     let reads = 0;
     return installAdapter((sent) => {
-      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (sent.method === 'get' && sent.path === UNITS) return { status: 200, data: { items: units, total: units.length } };
       if (sent.path === '/api/v1/authorities') return { status: 200, data: [{ id: 'a1', key: 'fi', name: 'Finansinspektionen', shortName: 'FI', url: '', jurisdiction: { key: 'se', label: 'Sweden' } }] };
       if (sent.method === 'post' && sent.path === LOOKUPS) return { status: 202, data: job('queued') };
@@ -268,14 +258,7 @@ describe('filling in from the public registers (TEN-07, TEN-S13)', () => {
 
   it('says why a lookup failed, by its code, and offers the number again', async () => {
     registers(job('failed', { error: 'lookup_ambiguous', completedAt: '2026-10-05T08:00:04Z' }), []);
-    const { wrapper: Query } = queryWrapper();
-    render(
-      <Query>
-        <PermissionsProvider permissions={['vocab.manage']}>
-          <EntitiesSection />
-        </PermissionsProvider>
-      </Query>,
-    );
+    renderWith(<EntitiesSection />, { permissions: ['vocab.manage'] });
     const empty = await screen.findByText('No legal entities yet');
     expect(within(empty.closest('[data-empty-state]') as HTMLElement).getByRole('button', { name: 'Add a legal entity' })).toBeInTheDocument();
     const dialog = await lookUp();

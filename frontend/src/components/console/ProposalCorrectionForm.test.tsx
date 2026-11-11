@@ -1,11 +1,11 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
 import type { ProposalRow } from '@/features/proposals/types';
+import { renderWith } from '@/shared/testing/render';
 import { ProposalCorrectionForm } from './ProposalCorrectionForm';
 
 // "Correct before approving": a value the reviewer changes names the source
@@ -67,18 +67,10 @@ function row(): ProposalRow {
 
 function renderForm(): Sent[] {
   const sent = installAdapter((request) => {
-    if (request.path === '/api/v1/me') return { status: 200, data: editor };
     if (request.path === '/api/v1/proposals/p-1/approve') return { status: 200, data: { ...row(), status: 'approved' } };
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
-  });
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <LocaleProvider locale="en">
-        <ProposalCorrectionForm proposal={row()} />
-      </LocaleProvider>
-    </Query>,
-  );
+  }, { me: editor });
+  renderWith(<ProposalCorrectionForm proposal={row()} />);
   return sent;
 }
 

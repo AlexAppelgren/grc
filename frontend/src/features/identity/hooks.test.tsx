@@ -75,7 +75,7 @@ describe('identity hooks', () => {
   });
 
   it('useSession: a visitor without a cookie is anonymous after one refresh and no GET /me', async () => {
-    const sent = installAdapter(() => ({ status: 401 }));
+    const sent = installAdapter(() => ({ status: 401 }), { refresh: false });
     const { wrapper } = queryWrapper();
     const { result } = renderHook(() => useSession(), { wrapper });
     expect(result.current.status).toBe('loading');
@@ -99,7 +99,7 @@ describe('identity hooks', () => {
 
   it('useSession: a cold load takes the person from the refresh, and asks GET /me only after', async () => {
     const sent = installAdapter((s) =>
-      s.path === REFRESH_PATH ? { status: 200, data: { accessToken: 'tok', expiresIn: 600, me } } : { status: 200, data: { ...me, passkeyCount: 2 } },
+      s.path === REFRESH_PATH ? { status: 200, data: { accessToken: 'tok', expiresIn: 600, me } } : { status: 200, data: { ...me, passkeyCount: 2 } }, { refresh: false }
     );
     const { wrapper, queryClient } = queryWrapper();
     const { result } = renderHook(() => useSession(), { wrapper });

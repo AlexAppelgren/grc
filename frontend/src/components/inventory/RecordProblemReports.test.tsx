@@ -1,12 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { ProblemReport } from '@/features/library/problem-reports/types';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { RecordProblemReports } from './RecordProblemReports';
 
@@ -56,24 +54,13 @@ function meWith(id: string, permissions: string[]) {
 /** The server: /me, the record's reports, and the close. */
 function serve(meId: string, permissions: string[], list: () => Answer, close: (sent: Sent) => Answer = () => ({ status: 200, data: {} })) {
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: meWith(meId, permissions) };
     if (sent.method === 'get') return list();
     return close(sent);
-  });
+  }, { me: meWith(meId, permissions) });
 }
 
 function renderSection(permissions: string[]) {
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <RecordProblemReports subjectType="obligation" subjectId="ob-1" />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  return renderWith(<RecordProblemReports subjectType="obligation" subjectId="ob-1" />, { permissions });
 }
 
 const page = (items: ProblemReport[], total = items.length): Answer => ({ status: 200, data: { items, total } });

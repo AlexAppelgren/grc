@@ -8,7 +8,6 @@ import type { Locale } from '@/shared/i18n';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
 
 import { GapsScreen } from './GapsScreen';
 
@@ -118,8 +117,6 @@ const obligation = {
 function serve(options: { who?: { id: string; name: string }; gaps?: RegisterGap[]; write?: (sent: Sent) => Answer; gapsAnswer?: Answer } = {}): Sent[] {
   const who = options.who ?? SARA;
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
-    if (sent.path === '/api/v1/me') return { status: 200, data: me(who) };
     if (sent.method !== 'get') return options.write?.(sent) ?? { status: 200, data: gap() };
     if (sent.path === '/api/v1/gaps' || sent.path === '/api/v1/obligations/ob-1/gaps') {
       if (options.gapsAnswer !== undefined) return options.gapsAnswer;
@@ -130,7 +127,7 @@ function serve(options: { who?: { id: string; name: string }; gaps?: RegisterGap
     const list = /^\/api\/v1\/vocab\/(\w+)$/.exec(sent.path)?.[1];
     if (list !== undefined && VOCAB[list] !== undefined) return { status: 200, data: { items: VOCAB[list], total: VOCAB[list].length } };
     return { status: 404, data: { code: 'not_found', detail: 'Not in this test.' } };
-  });
+  }, { me: me(who) });
 }
 
 function renderIn(node: ReactNode, permissions: string[], locale: Locale = 'en') {
@@ -216,12 +213,10 @@ describe('the gaps list', () => {
 
   it('pages through more than twenty gaps', async () => {
     installAdapter((sent) => {
-      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
-      if (sent.path === '/api/v1/me') return { status: 200, data: me(SARA) };
       if (sent.path === '/api/v1/gaps') return { status: 200, data: { items: [gap()], total: 45 } };
       if (sent.path === '/api/v1/obligations/ob-1') return { status: 200, data: obligation };
       return { status: 200, data: { items: [], total: 0, entities: [] } };
-    });
+    }, { me: me(SARA) });
     renderIn(<GapsScreen />, EDITOR);
     fireEvent.click(await screen.findByRole('button', { name: 'Next' }));
     expect(nav.replace).toHaveBeenCalledWith('/gaps?page=1');

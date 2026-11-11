@@ -1,12 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AdminGate } from '@/components/admin/AdminGate';
 import { roleOptions, WorkflowPolicyScreen } from '@/features/tenant-admin/workflow-policy/WorkflowPolicyScreen';
 import { childDestinations } from '@/shared/navigation/registry';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { renderWith } from '@/shared/testing/render';
 
 // /admin/workflow (COL-02, TEN-01): each field shows its unit and the platform
 // default, the whole policy saves through PATCH /tenant/workflow, a 422 lands
@@ -39,7 +38,6 @@ const tenant = {
 
 function server(patch: (sent: Sent) => Answer = (sent) => ({ status: 200, data: { ...tenant, workflow: { ...tenant.workflow, ...(sent.body as object), escalateToRole: officer } } })): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ROLES_PATH) return { status: 200, data: [role(admin), role(officer), role(headOfRisk)] };
     if (sent.path === TENANT_PATH && sent.method === 'get') return { status: 200, data: tenant };
     if (sent.path === WORKFLOW_PATH && sent.method === 'patch') return patch(sent);
@@ -50,15 +48,11 @@ function server(patch: (sent: Sent) => Answer = (sent) => ({ status: 200, data: 
 const patches = (sent: Sent[]) => sent.filter((s) => s.method === 'patch' && s.path === WORKFLOW_PATH).map((s) => s.body);
 
 async function renderScreen(permissions: readonly string[] = ['workflow.manage']): Promise<void> {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <AdminGate id="admin-workflow">
-          <WorkflowPolicyScreen />
-        </AdminGate>
-      </PermissionsProvider>
-    </Query>,
+  renderWith(
+    <AdminGate id="admin-workflow">
+      <WorkflowPolicyScreen />
+    </AdminGate>,
+    { permissions },
   );
   if (permissions.includes('workflow.manage')) await screen.findByLabelText('Escalate after');
 }
@@ -142,19 +136,14 @@ describe('the workflow policy page', () => {
 
   it('says the settings could not be loaded, with a way to try again', async () => {
     installAdapter((sent) => {
-      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (sent.path === ROLES_PATH) return { status: 200, data: [role(admin), role(officer)] };
       return { status: 500, data: { code: 'internal_error', detail: 'Something went wrong on our side. Try again.' } };
     });
-    const { wrapper: Query } = queryWrapper();
-    render(
-      <Query>
-        <PermissionsProvider permissions={['workflow.manage']}>
-          <AdminGate id="admin-workflow">
-            <WorkflowPolicyScreen />
-          </AdminGate>
-        </PermissionsProvider>
-      </Query>,
+    renderWith(
+      <AdminGate id="admin-workflow">
+        <WorkflowPolicyScreen />
+      </AdminGate>,
+      { permissions: ['workflow.manage'] },
     );
     expect(await screen.findByText('Could not load the workflow settings')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Try again/ }));
@@ -209,7 +198,6 @@ describe('the workflow policy page', () => {
 
   it('names a platform default weekday it has no word for by its key', async () => {
     installAdapter((sent) => {
-      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (sent.path === ROLES_PATH) return { status: 200, data: [role(admin), role(officer)] };
       if (sent.path === TENANT_PATH) return { status: 200, data: { ...tenant, workflowDefaults: { ...defaults, digestWeekday: 'someday' } } };
       return { status: 404, data: { code: 'not_found', detail: 'Not for this test.' } };

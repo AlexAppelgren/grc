@@ -1,11 +1,11 @@
 import type { AxiosAdapter } from 'axios';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { VocabularyScreen } from '@/components/admin/VocabularyScreen';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH, api, pathOf } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 // A library list on the tenant surface lists what this bank itself proposed
 // on it and is still waiting on (VOC-07, PRO-01), read from GET
@@ -35,7 +35,6 @@ const waiting = { id: 'p-1', kind: 'vocabulary_create', status: 'open', title: '
 /** The server: one library list with one value, and the bank's own proposals as `pending` answers. */
 function server(pending: Answer): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === LISTS_PATH) return { status: 200, data: { items: [flags], total: 1 } };
     if (sent.path === VALUES_PATH) return { status: 200, data: { items: [derivatives], total: 1 } };
     if (sent.path === PENDING_PATH) return pending;
@@ -44,14 +43,7 @@ function server(pending: Answer): Sent[] {
 }
 
 async function renderScreen(surface: 'tenant' | 'console' = 'tenant'): Promise<void> {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <PermissionsProvider permissions={['vocab.manage', 'proposals.create', 'library_vocab.manage']}>
-        <VocabularyScreen list="flag" surface={surface} />
-      </PermissionsProvider>
-    </Query>,
-  );
+  renderWith(<VocabularyScreen list="flag" surface={surface} />, { permissions: ['vocab.manage', 'proposals.create', 'library_vocab.manage'] });
   await screen.findAllByText('Derivatives');
 }
 
@@ -136,7 +128,6 @@ describe('the suggestions waiting on a tenant list', () => {
 
   function tenantServer(suggestions: Answer, write: Answer = { status: 201, data: {} }): Sent[] {
     return installAdapter((sent) => {
-      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (sent.path === LISTS_PATH) return { status: 200, data: { items: [tags], total: 1 } };
       if (sent.path === TAGS_PATH && sent.method === 'get') return { status: 200, data: { items: [derivatives], total: 1 } };
       if (sent.path === SUGGESTIONS_PATH) return suggestions;
@@ -146,14 +137,7 @@ describe('the suggestions waiting on a tenant list', () => {
   }
 
   async function renderTags(permissions: string[] = ['vocab.manage'], settle = true): Promise<void> {
-    const { wrapper: Query } = queryWrapper();
-    render(
-      <Query>
-        <PermissionsProvider permissions={permissions}>
-          <VocabularyScreen list="tenant_tag" />
-        </PermissionsProvider>
-      </Query>,
-    );
+    renderWith(<VocabularyScreen list="tenant_tag" />, { permissions });
     if (settle) await screen.findAllByText('Derivatives');
   }
 
@@ -236,7 +220,6 @@ describe('the suggestions waiting on a tenant list', () => {
     let listsAnswered = false;
     const before: boolean[] = [];
     installAdapter((sent) => {
-      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (sent.path === SUGGESTIONS_PATH) before.push(!listsAnswered);
       if (sent.path === '/api/v1/vocab') listsAnswered = true;
       return { status: 404, data: { code: 'not_found', detail: '' } };
@@ -279,7 +262,6 @@ describe('the jurisdictions on the console', () => {
 
   function jurisdictionServer(write: Answer): Sent[] {
     return installAdapter((sent) => {
-      if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (sent.path === LISTS_PATH) return { status: 200, data: { items: [summary], total: 1 } };
       if (sent.path === JURISDICTIONS_PATH && sent.method === 'get') return { status: 200, data: { items: [denmark, iceland], total: 2 } };
       if (sent.path === LANGUAGES_PATH) return { status: 200, data: languages };
@@ -289,14 +271,7 @@ describe('the jurisdictions on the console', () => {
   }
 
   async function renderJurisdictions(): Promise<void> {
-    const { wrapper: Query } = queryWrapper();
-    render(
-      <Query>
-        <PermissionsProvider permissions={['library_vocab.manage']}>
-          <VocabularyScreen list="jurisdiction" surface="console" />
-        </PermissionsProvider>
-      </Query>,
-    );
+    renderWith(<VocabularyScreen list="jurisdiction" surface="console" />, { permissions: ['library_vocab.manage'] });
     await screen.findAllByText('Denmark');
   }
 

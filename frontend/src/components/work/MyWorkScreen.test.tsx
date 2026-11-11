@@ -107,11 +107,10 @@ function shell(children: ReactNode, session: Me = me): ReactNode {
 
 function serve(work: (sent: Sent) => { status: number; data?: unknown }, session: Me = me): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: session };
     if (sent.path === '/api/v1/me/work') return work(sent);
     if (sent.path === '/api/v1/me/comments') return { status: 200, data: { items: [], total: 0, permissionLimitedKinds: [] } };
     return { status: 404, data: { code: 'not_found', detail: 'Not for this test.' } };
-  });
+  }, { me: session });
 }
 
 beforeEach(() => {
