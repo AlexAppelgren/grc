@@ -142,11 +142,9 @@ class ServerTimingMiddleware:
 
 
 class ContentSecurityPolicyMiddleware:
-    """The strict CSP, plus the two headers the API must carry on every response even
-    where Django's SecurityMiddleware is not in the stack: `Referrer-Policy: no-referrer`
-    (the invitation token is a URL segment on the web app; nothing the API answers may
-    carry a referrer anywhere) and `X-Content-Type-Options: nosniff` (security review
-    2026-09-19, F28)."""
+    """The strict CSP, plus two headers every API response carries even without Django's
+    SecurityMiddleware: `Referrer-Policy: no-referrer` (an invitation token may sit in a web
+    URL) and `X-Content-Type-Options: nosniff` (F28)."""
 
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
@@ -168,18 +166,13 @@ class ContentSecurityPolicyMiddleware:
 
 
 class SupportReadOnlyMiddleware:
-    """The read-only guard of a support session (TEN-06, D-49, ADR 0042). A request whose
-    token is a support session's reaches only the `(method, route template)` pairs written
-    out in `SUPPORT_READ_ROUTES` (apps/shared/routes.py), and its own refresh and sign-out
-    (`SUPPORT_SESSION_ROUTES`); everything else, a new GET as much
-    as any write, the evidence and export downloads, search and Ask, answers 403
-    `support_read_only` before its view, its auth class or its body parser runs. It matches
-    the template Django resolved, never the raw path, so a path id cannot smuggle a request
-    onto the list; a path that resolves to no API route is refused as well, and one that
-    resolves to nothing at all reaches no view and is Django's 404. Whether the
-    grant is still open is the auth layer's, per request (apps/identity/session_logic.py).
-    After the response it makes sure the request's `support_access.read` row outlived the
-    request's transaction."""
+    """The read-only guard of a support session (TEN-06, D-49, ADR 0042). Such a request
+    reaches only the `(method, route template)` pairs in `SUPPORT_READ_ROUTES`
+    (apps/shared/routes.py) and its own refresh and sign-out (`SUPPORT_SESSION_ROUTES`);
+    everything else is 403 `support_read_only` before its view, auth class or body parser
+    runs. It matches the resolved template, never the raw path, so a path id cannot smuggle a
+    request onto the list. The grant's freshness is the auth layer's. After the response it
+    makes sure the `support_access.read` row outlived the request's transaction."""
 
     def __init__(self, get_response: Callable[[HttpRequest], HttpResponse]) -> None:
         self.get_response = get_response
@@ -188,8 +181,8 @@ class SupportReadOnlyMiddleware:
         response = self.get_response(request)
         pending = getattr(request, "support_read", None)
         if pending is not None:
-            # After the view's transaction: a refusal that rolled the read row back leaves
-            # the request logged all the same (ADR 0042; security-review-c8 M5).
+            # After the view's transaction, so a refused request is still logged (ADR 0042;
+            # security-review-c8 M5).
             from apps.tenants import support_access
 
             support_access.keep_read(pending)

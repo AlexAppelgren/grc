@@ -97,9 +97,8 @@ def enrolment_principal(*, subject_id: uuid.UUID | None = None) -> Principal:
 
 def _resolving(principal: Principal, expected: str) -> Any:
     """What a stubbed resolver does: hand back the principal and, like the real one, put the
-    connection in the principal's zone so row-level security scopes the request (playbook
-    14). A platform principal has no tenant, and clearing one a factory activated earlier in
-    the test is what makes the request look like the production one, which never had it."""
+    connection in the principal's zone (playbook 14); a platform principal clears any tenant a
+    factory activated, as production never had one."""
 
     def resolve(token: str) -> Principal | None:
         if token != expected:
@@ -126,10 +125,9 @@ def stub_enrolment(principal: Principal) -> Any:
     return mock.patch.object(authentication, "resolve_enrolment_token", _resolving(principal, SESSION_TOKEN_FOR_TESTS))
 
 
-# ---------------------------------------------------------------------------------------
-# Real sessions for scenario tests: the ceremonies are proven in their own scenarios;
-# every other scenario signs in through the session logic and carries a real access token.
-# ---------------------------------------------------------------------------------------
+# --- Real sessions for scenario tests ---
+# The ceremonies are proven in their own scenarios; every other scenario signs in through the
+# session logic and carries a real access token.
 def sign_in(user: Any, *, tenant: Any = None, step_up: bool = False, kind: str = "full") -> dict[str, Any]:
     """Headers for a real session of `user` in `tenant` (activated). `step_up=True` adds a
     fresh assertion on the session, backed by the user's first live passkey (created if
@@ -197,12 +195,10 @@ class ScenarioTestCase(TestCase):
         return {"HTTP_X_API_KEY": API_KEY_FOR_TESTS}
 
 
-# --- Races between two real sessions ----------------------------------------------------
-# Each racing session runs on its own cw_app connection in its own thread and transaction,
-# the way two requests reach production. The first acts and holds its transaction open
-# until PostgreSQL reports the second one waiting on it, then commits: the interleaving in
-# which a check on an unlocked row lets both through (apps/taxonomy/tests_footprint.py,
-# apps/proposals/tests_decide.py).
+# --- Races between two real sessions ---
+# Each racing session has its own cw_app connection, thread and transaction. The first acts
+# and holds its transaction until PostgreSQL reports the second waiting on it, then commits:
+# the interleaving where a check on an unlocked row lets both through.
 RACE_WAIT_SECONDS = 10
 LANDED = "landed"
 

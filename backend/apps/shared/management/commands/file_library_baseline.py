@@ -1,12 +1,10 @@
 """`manage.py file_library_baseline`: file the library baseline's due entries as proposals of
-the platform agent `library-baseline`, after registering the sources the baseline names
-(ADR 0065, D-118; apps/proposals/baseline.py). The beat runs the same thing every
-`LIBRARY_BASELINE_FILING_MINUTES`, so this is for a first run by hand or a dry run.
+the platform agent `library-baseline`, after registering the sources it names (ADR 0065,
+D-118; apps/proposals/baseline.py). The beat runs the same every
+`LIBRARY_BASELINE_FILING_MINUTES`; this is for a first run by hand or `--dry-run`.
 
-Run it on the API service after `seed_reference`, approve the instruments in the console
-queue, run it again for their duties, and approve those. Every run is idempotent: it files
-only what the library neither holds nor has open, and never an unchanged entry that was
-decided before. `--dry-run` says what a real run would file and files nothing."""
+Run it after `seed_reference`, approve the instruments, run it again for their duties. Every
+run is idempotent and never refiles an unchanged entry that was decided."""
 
 from __future__ import annotations
 

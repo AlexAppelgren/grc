@@ -1,9 +1,7 @@
 """`manage.py seed_reference`: every idempotent reference seed, in dependency order, run on
 every deploy by docker-entrypoint.sh (playbook 2.2, 12). Reference rows match on their
-immutable key, so a rename survives a deploy.
-
-Each entry names what silently breaks without it. The last repo shipped four reference
-seeds that ran nowhere, and every failure was quiet."""
+immutable key, so a rename survives a deploy. Each entry names what silently breaks without
+it."""
 
 from __future__ import annotations
 

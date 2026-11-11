@@ -1,11 +1,8 @@
 """File storage seam (playbook 4.6, DECISIONS D-11). Binary artefacts never live in the
-database. `get_storage()` returns the backend for the environment: local for dev and
-tests, a private S3-compatible bucket when deployed. Keys are deterministic (tenant id
-plus row id), a failed write raises inside the transaction that creates the row, and
-nothing is public: downloads stream through permission-checked endpoints.
-
-The production-safety block refuses STORAGE_BACKEND=local when deployed; `get_storage()`
-refuses it again here so a settings override in a shell cannot slip past."""
+database. Local for dev and tests, a private S3-compatible bucket when deployed. Keys are
+deterministic (tenant id plus row id), a failed write raises inside the creating
+transaction, and nothing is public: downloads stream through permission-checked endpoints.
+`get_storage()` refuses the local backend when deployed, as the settings do."""
 
 from __future__ import annotations
 

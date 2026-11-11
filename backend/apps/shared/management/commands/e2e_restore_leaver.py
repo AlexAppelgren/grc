@@ -1,6 +1,6 @@
 """`manage.py e2e_restore_leaver`: tenant A's seeded leaver is a member again and owns what
-the seed gave them, for TEN-S5's journey teardown (c8-ui-departments-teams-removal). Refuses
-to run on a deployed environment, like `seed_e2e`."""
+the seed gave them, for TEN-S5's journey teardown. Refuses to run on a deployed
+environment, like `seed_e2e`."""
 
 from __future__ import annotations
 

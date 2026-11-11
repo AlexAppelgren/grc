@@ -1,34 +1,23 @@
-"""Public registers seam (TEN-07, TEN-08, FP-05; PUBLIC_REGISTERS.md 5.3): who a bank's
-companies are, from GLEIF, and what a Swedish company is licensed for and where it has
-branches, from Finansinspektionen's company register.
+"""Public registers seam (TEN-07, TEN-08, FP-05; PUBLIC_REGISTERS.md 5.3): a bank's
+companies from GLEIF, and a Swedish company's licences and branches from Finansinspektionen.
 
-`live` reads only the two configured hosts, over https, through one function (`_open`):
-a timeout per socket operation, no redirects, a byte cap and a fixed user agent. Both
-registers are read as untrusted content and answered as facts, never as HTML or JSON: a
-GLEIF record or an FI file or page that is not the shape verified on 2026-10-05
-(Verification_Log.md) raises `RegisterUnavailable` rather than guessing, and so does any
-network failure, any status but 200 and any body over the cap. A registration number is
-checked against `REGISTRATION_NUMBER` before it reaches a URL.
+`live` reads only the configured hosts, over https, through `_open`: a timeout per socket
+operation, no redirects, a byte cap and a fixed user agent. Both registers are untrusted: a
+record or file not in the shape recorded in Verification_Log.md, a network failure, a status
+but 200 or a body over the cap raises `RegisterUnavailable` rather than guessing. A
+registration number is checked against `REGISTRATION_NUMBER` before it reaches a URL.
 
-- GLEIF (JSON:API): `lei-records/{lei}`; `lei-records?filter[entity.registeredAs]=<number>`
-  (the number as typed: GLEIF stores `502032-9081` with its hyphen); and
-  `lei-records/{lei}/direct-children`, paged. Only children whose `entity.category` is
-  `GENERAL` are companies: funds and branches are left out.
-- FI: the register's search exported as text (`index?query=<number>&format=csv`): UTF-8
-  with a BOM, `;`-separated, under exactly `FI_HEADER`, one row per company found by a free
-  text search, so the row whose `Org.nummer` has the query's digits is the company. Each
-  licence cell is `YYYY-MM-DD - <licence>`. A company's branches are on its page
-  (`details?id=…`, found through the HTML search): the links under the heading "Filialer",
-  each branch's name its heading after "Företagsregistret" and its country the last line of
-  its address.
+- GLEIF (JSON:API): `lei-records/{lei}`, `lei-records?filter[entity.registeredAs]=<number>`
+  (as typed, hyphen kept) and `lei-records/{lei}/direct-children`, paged; only `GENERAL`
+  children are companies.
+- FI: the search exported as `;`-separated UTF-8 with a BOM under exactly `FI_HEADER`; the
+  row whose `Org.nummer` has the query's digits is the company; each licence cell is
+  `YYYY-MM-DD - <licence>`. Branches are on the company page under "Filialer".
 
-`mock` is deterministic and offline: the E2E seed's Example Group (`MOCK_COMPANIES`).
-`MOCK_AMBIGUOUS` finds two companies and `MOCK_UNAVAILABLE` raises `RegisterUnavailable`, so
-seeds and tests reach every branch; `MockRegisters.override()` changes what the next read of
-one company's licences answers, and `reset()` puts it back.
+`mock` is the E2E seed's Example Group, offline; `MOCK_AMBIGUOUS` and `MOCK_UNAVAILABLE`
+reach the other branches, and `MockRegisters.override()`/`reset()` change one answer.
 
-Nothing here logs a query, a number or a name: a read logs its provider and the elapsed
-milliseconds."""
+Nothing here logs a query, a number or a name: a read logs its provider and elapsed time."""
 
 from __future__ import annotations
 
@@ -155,8 +144,7 @@ class RegistersAdapter(ABC):
 
 def _in_time(deadline: float | None) -> None:
     """Refuse to read another page once the job's deadline has passed (REGISTERS_JOB_SECONDS,
-    review 2026-11-11 S-11): a group or a company's branches are walked a page at a time, and
-    the deadline is checked before each one, not only between companies."""
+    review 2026-11-11 S-11), checked before each page, not only between companies."""
     if deadline is not None and time.monotonic() > deadline:
         raise RegisterUnavailable("the registers took longer than REGISTERS_JOB_SECONDS")
 
@@ -183,9 +171,7 @@ def _clean(value: Any, cap: int) -> str:
     return " ".join(kept.split())[:cap]
 
 
-# ---------------------------------------------------------------------------------------
-# The network: one function, the only one that leaves the machine.
-# ---------------------------------------------------------------------------------------
+# --- The network: one function, the only one that leaves the machine ---
 class _RefuseRedirects(urllib.request.HTTPRedirectHandler):
     """Neither register redirects what it is asked for; a redirect could only lead somewhere
     else, so it is a failed read like any other status (as apps/shared/adapters/llm.py)."""
@@ -236,9 +222,7 @@ def _open(url: str) -> bytes:
     return body
 
 
-# ---------------------------------------------------------------------------------------
-# GLEIF
-# ---------------------------------------------------------------------------------------
+# --- GLEIF ---
 def _json(body: bytes) -> Any:
     try:
         return json.loads(body)
@@ -284,9 +268,7 @@ def _category(record: Any) -> Any:
         raise RegisterUnavailable("GLEIF sent a record of another shape") from None
 
 
-# ---------------------------------------------------------------------------------------
-# Finansinspektionen
-# ---------------------------------------------------------------------------------------
+# --- Finansinspektionen ---
 def _fi_rows(body: bytes) -> list[list[str]]:
     """The data rows of FI's export, each at least the five fixed columns, or
     RegisterUnavailable when the file is not the one FI publishes."""
@@ -460,10 +442,10 @@ class LiveRegisters(RegistersAdapter):
         if row is None:
             return None
         licences = tuple(licence for licence in (_licence(cell) for cell in row[5:]) if licence is not None)
-        # FI's company pages turn away a scripted read (2026-11-09) while its export answers, so
-        # an unreadable page costs the branches, never the licences. The EBA's register then
-        # answers a credit institution's EEA branches by its LEI (D-126); when that fails too,
-        # the branches are unknown, never reported as none.
+        # FI's company pages may refuse a scripted read while its export answers, so an
+        # unreadable page costs the branches, never the licences. The EBA's register then
+        # answers a credit institution's branches by LEI (D-126); failing that, the branches
+        # are unknown, never reported as none.
         try:
             branches, branches_read = self._branches(registration_number, wanted, deadline), True
         except RegisterUnavailable:
@@ -537,9 +519,7 @@ class LiveRegisters(RegistersAdapter):
         return f"{settings.REGISTERS_FI_URL}/details?{urllib.parse.urlencode({'id': link})}"
 
 
-# ---------------------------------------------------------------------------------------
-# The mock: the E2E seed's Example Group, offline.
-# ---------------------------------------------------------------------------------------
+# --- The mock: the E2E seed's Example Group, offline ---
 MOCK_ROOT = "549300EXAMPLEBANK001"
 # A number two companies carry, so a lookup by it is ambiguous; and one whose read fails.
 MOCK_AMBIGUOUS = "556000-9999"

@@ -1,49 +1,25 @@
-"""The one ordered cursor over `outbox_event` (chunk 5 ruling 9; AUD-01, CAS-01, NFR-01,
-NFR-04).
+"""The one ordered cursor over `outbox_event` (AUD-01, CAS-01, NFR-01, NFR-04).
 
-`record()` writes an outbox row in the transaction of the write it records, and this
-module is the only thing that delivers one. It writes no event of its own: it marks the
-delivery columns the `cw_outbox_guard` trigger allows (`published_at`, `attempts`,
-`last_error`) and moves one cursor row. Every consumer — chunk 5's case creation, chunk
-7's indexing, chunk 10's collaboration, chunk 13's integrations — registers a handler
-here, and there is no second relay.
+`record()` writes an outbox row with the write it records; this module is the only thing
+that delivers one. It writes only the delivery columns `cw_outbox_guard` allows and moves one
+cursor row. Every consumer registers a handler here; there is no second relay.
 
-**Reading every zone.** The app role cannot bypass row-level security and `outbox_event`
-is a mixed table, so with no tenant activated one read would see the library's rows only
-and every tenant's rows would sit undelivered forever (fail closed, but forever). A batch
-therefore reads once per zone — the library, then each tenant — and merges the results by
-`(created, id)`. That is one query per zone, never one per row, and the handlers are
-dispatched from the merged list (fan out, never chain).
+**Every zone.** The app role cannot bypass row-level security, so a batch reads once per zone
+(the library, then each tenant) and merges by `(created, id)`: one query per zone, never per
+row.
 
-**Order, and exactly once.** Pending is `published_at IS NULL` with attempts left, not
-"after the cursor's position": two writers commit in an order of their own, so a row whose
-transaction commits after a row with a later `created` would be stepped over by a
-positional scan and never delivered. `outbox_event_zone_pending` is the index that scan
-reads. The cursor row carries the retry clock and — through `SELECT ... FOR UPDATE SKIP
-LOCKED` — the lock that keeps a second worker from delivering a row twice. Its
-`last_created` and `last_id` are a debugging aid: they say where the last batch got to,
-and nothing reads them to decide what to deliver.
+**Order, exactly once.** Pending is `published_at IS NULL` with attempts left, not "after the
+cursor", since a late commit would be stepped over (`outbox_event_zone_pending`). The cursor's
+`SELECT ... FOR UPDATE SKIP LOCKED` keeps a second worker from delivering a row twice.
 
-**Failure.** Each row's handlers run inside a savepoint of their own — `@tenant_task`'s
-for a tenant row, `_deliver()`'s for a library row — because a handler's failure is
-usually the database's, and that aborts the transaction the whole batch runs in. Rolling
-back to the savepoint hands the batch a usable transaction and takes the handler's
-half-finished writes with it. A handler that raises leaves its row unpublished, counts the
-attempt and stops the batch there, so nothing behind it overtakes it; the row is tried
-again after `OUTBOX_RETRY_BACKOFF_S`, doubled per attempt. After `OUTBOX_MAX_ATTEMPTS` the
-row is left failed — unpublished, with its attempt count and the exception's type name —
-and the cursor moves on. The type name and never the message: an exception message carries
-the values of the row that failed (playbook 4.7), and the audit event this row points at
-already holds what happened.
+**Failure.** Each row's handlers run in a savepoint of their own, so a database failure leaves
+the batch a usable transaction and takes the half-done writes with it. A raising handler
+leaves its row unpublished, counts the attempt and stops the batch, retried after
+`OUTBOX_RETRY_BACKOFF_S` doubled per attempt; after `OUTBOX_MAX_ATTEMPTS` the row is left
+failed with the exception's type name, never its message (playbook 4.7).
 
-**One retry clock, not one per zone.** `retry_not_before` belongs to the cursor, so a
-library row waiting out its backoff holds back the tenants' rows behind it as well. That
-is what one ordered cursor and one lock cost; a clock per zone would need a cursor row per
-zone, and it is a follow-up rather than something this module guesses at.
-
-**The library-row path** is what chunk 7's indexing depends on. Alex's answer on the search
-fence (item 4) has library rows indexed from events dispatched with no tenant active,
-which is exactly what a row with no `tenant_id` gets here.
+**One retry clock**, on the cursor: a library row's backoff holds back the tenants' rows too.
+Library rows are dispatched with no tenant active, which search indexing relies on.
 """
 
 from __future__ import annotations
@@ -80,12 +56,8 @@ class BatchResult:
 
 
 def register_handler(kind: str, fn: Handler) -> None:
-    """Call `fn` with every row of this kind, in order, inside the row's own zone.
-
-    The same function twice is one registration. A consumer registers itself from its app's
-    `ready()`, and a test that empties this registry to isolate its own handlers puts that
-    registration back afterwards; counting it twice would run a row's handler twice, which
-    is exactly what the cursor exists to prevent.
+    """Call `fn` with every row of this kind, in order, inside the row's own zone. The same
+    function twice is one registration, so a handler never runs twice for a row.
     """
     registered = _HANDLERS.setdefault(kind, [])
     if fn not in registered:
@@ -158,13 +130,10 @@ def _pending(limit: int) -> list[OutboxEvent]:
 
 
 def _deliver(event: OutboxEvent) -> None:
-    """Run every handler registered for this row's kind, inside the row's own zone and
-    inside a savepoint of its own: `@tenant_task`'s for a tenant row, the one opened here
-    for a library row. A handler talks to the database, so its failure is usually the
-    database's, and that aborts the transaction this whole batch runs in. The savepoint is
-    what gives the batch a usable transaction back, so the attempt can be counted, the rows
-    already delivered can be marked and the cursor can move; it also takes whatever the
-    handler had half written with it."""
+    """Run every handler registered for this row's kind, inside the row's zone and a
+    savepoint of its own (`@tenant_task`'s for a tenant row, one opened here for a library
+    row), so a database failure leaves the batch a usable transaction to count the attempt,
+    mark what was delivered and move the cursor, and undoes the handler's half-done writes."""
     if event.tenant_id is None:
         with transaction.atomic():
             _enter_zone(None)  # a library row's handlers run with no tenant activated
@@ -186,10 +155,9 @@ def _run_handlers(event: OutboxEvent) -> None:
 
 
 def _mark_published(events: list[OutboxEvent], moment: datetime) -> None:
-    """Mark everything this batch delivered, one statement per zone rather than one per
-    row: the session can only write the zone it is in, so the rows are grouped by theirs.
-    Still inside the batch's transaction, so a row is published exactly when its handlers
-    ran and the cursor moved."""
+    """Mark everything this batch delivered, one statement per zone (the session writes only
+    its own zone), inside the batch's transaction, so a row is published exactly when its
+    handlers ran."""
     by_zone: dict[uuid.UUID | None, list[uuid.UUID]] = defaultdict(list)
     for event in events:
         by_zone[event.tenant_id].append(event.id)
@@ -224,10 +192,8 @@ def _backoff(attempts: int) -> timedelta:
 def _enter_zone(tenant_id: uuid.UUID | None) -> None:
     """Put the batch's transaction in one zone: a tenant's, or the library's (no tenant).
 
-    The database setting only, not `tenancy.activate()`: the Python-side mirror of the
-    active tenant belongs to the `@tenant_task` around the handlers, which sets it and
-    puts it back. `SET LOCAL` outside a transaction is a silent no-op, so this refuses to
-    run outside one for the same reason `tenancy.activate()` does.
+    The database setting only: the Python mirror belongs to the `@tenant_task` around the
+    handlers. Refuses to run outside a transaction, where `SET LOCAL` is a silent no-op.
     """
     if not connection.in_atomic_block:
         raise tenancy.NotInTransaction(

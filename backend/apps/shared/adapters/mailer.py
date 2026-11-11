@@ -1,9 +1,7 @@
-"""Mailer adapter (playbook 16). `mock` records every message in the cache so a test,
-and an E2E journey reading `GET /api/v1/e2e/mail-outbox` from the API process while a
-real worker sent the mail, can assert exactly what was (not) sent: that is how AC-ID1
-("a code request for an enrolled user sends nothing") is proven. Locmem in tests, Redis
-in E2E (security review 2026-09-19, finding F12). `smtp` uses Django's SMTP backend with
-the MAIL_* settings.
+"""Mailer adapter (playbook 16). `mock` records every message in the cache (locmem in tests,
+Redis in E2E, read through `GET /api/v1/e2e/mail-outbox`), which is how AC-ID1 ("a code
+request for an enrolled user sends nothing") is proven (F12). `smtp` uses Django's SMTP
+backend with the MAIL_* settings.
 
 Nothing here logs a recipient address or a body (playbook 4.7)."""
 

@@ -1,7 +1,6 @@
 """`manage.py e2e_collab_jobs`: tenant A of the E2E dataset gets its reminders, escalations
-and weekly digests now, as the worker's beat hands them on at the bank's send hours, for
-COL-S2's journey (c10-digest-beat-and-journeys). Refuses to run on a deployed environment,
-like `seed_e2e`."""
+and weekly digests now, as the beat hands them on at the bank's send hours, for COL-S2's
+journey. Refuses to run on a deployed environment, like `seed_e2e`."""
 
 from __future__ import annotations
 

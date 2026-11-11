@@ -1,15 +1,10 @@
-"""Embedder adapter (playbook 16, DECISIONS D-09): 1024 dimensions, mock in tests. The
-real model is chosen against the evaluation set from candidates covering all five
-languages (ADR 0009); until then the provider list holds only the mock.
+"""Embedder adapter (playbook 16, DECISIONS D-09): 1024 dimensions, mock in tests. The real
+model is chosen against the evaluation set (ADR 0009); until then only the mock exists.
 
-The mock has to behave the way a real multilingual model behaves, not the way a hash
-does. Chunk 7 builds hybrid search, its scenarios and the evaluation gate against it, and
-a hash of the whole text scores every concept question at zero, so nothing about the
-vector leg could be tested before the first key arrives. A text's vector is therefore the
-sum of two kinds of feature: its hashed stems, which make two texts that share wording a
-little alike, and the concepts CONCEPT_TERMS finds in it, which make a Danish question
-and the Swedish summary that answers it much alike. Text the table does not know has no
-concept and keeps a vector of stem hashes, which is what the mock was before.
+The mock behaves like a multilingual model rather than a hash, so hybrid search and its
+evaluation gate can be tested: a text's vector sums its hashed stems (shared wording is a
+little alike) and the concepts CONCEPT_TERMS finds in it (a Danish question and the Swedish
+summary answering it are much alike). Unknown text keeps a vector of stem hashes.
 """
 
 from __future__ import annotations
@@ -31,14 +26,10 @@ STEM_WEIGHT = 0.08
 STEM_LENGTH = 7
 WORDS = re.compile(r"\w+", re.UNICODE)
 
-# The concept table is test data, sized to the evaluation corpus (backend/eval/) and the
-# prototype library it is drawn from, the way a fixture is sized to the tests that read
-# it. It is not a lexicon of the five languages and is never a substitute for the model
-# D-09 chooses; a real embedder needs none of it. A term matches a word it is contained
-# in from four characters up ("varn" matches "varningar", "rådgiv" matches the tail of
-# "investeringsrådgivning"), so terms are written as the shortest safe stem; a term of
-# three characters or fewer must be the whole word. Several words in a term must appear
-# next to each other. A concept counts once however many of its terms a text uses.
+# Test data sized to the evaluation corpus (backend/eval/), not a lexicon; a real embedder
+# needs none of it. A term matches a word containing it from four characters up, so terms
+# are the shortest safe stem; one of three characters or fewer must be the whole word.
+# A multi-word term matches adjacent words; a concept counts once per text.
 CONCEPT_TERMS: dict[str, tuple[str, ...]] = {
     "appropriateness": ("appropriat", "passande", "hensigtsmæssig", "hensiktsmessig", "asianmukaisuus"),
     "complex_instrument": ("complex", "komplicer", "kompleks", "monimutkais"),

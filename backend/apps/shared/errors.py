@@ -1,12 +1,9 @@
 """One error shape everywhere (playbook 4.4): RFC 9457 problem details.
 
-`ProblemError` is raised from api.py (re-raising a logic ValidationError with the right
-status) or by the permission decorators. config/api.py turns it into a response. The
-`code` values are the contract's vocabulary: four_eyes_violation, open_actions,
-evidence_missing, invalid_transition, stale_write, unknown_key, step_up_required,
-feed_limit_reached, permission_denied, unauthenticated, not_found, validation_error,
-bad_request (a request Django cannot read: too large, too many fields, a broken multipart
-body) and internal_error (anything unexpected; no trace or message leaves the server).
+`ProblemError` is raised from api.py or by the permission decorators; config/api.py turns it
+into a response. The `code` is the contract's vocabulary (`STATUS_BY_CODE` below), with
+`bad_request` for a request Django cannot read and `internal_error` for anything unexpected:
+no trace or message leaves the server.
 """
 
 from __future__ import annotations
@@ -18,10 +15,9 @@ from django.http import JsonResponse
 
 PROBLEM_CONTENT_TYPE = "application/problem+json"
 
-# logic.py raises Django's ValidationError with a `code`; config/api.py and
-# `answers_problems` (apps/taxonomy/http.py) turn it into a problem response with the status
-# this table names (playbook 4.4). Anything not listed is a 422 (a field or rule the caller
-# can fix). One table so a code never means two statuses in two apps or two handlers.
+# logic.py raises ValidationError with a `code`; config/api.py and `answers_problems` answer
+# with the status named here (playbook 4.4), else 422. One table, so a code never means two
+# statuses.
 STATUS_BY_CODE: dict[str, int] = {
     "not_found": 404,
     "unauthenticated": 401,

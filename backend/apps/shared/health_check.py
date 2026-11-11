@@ -1,11 +1,9 @@
 """`/health/` (playbook 2.2, 5): checks the database, the cache, the worker and the
 pgvector extension. 200 `{"status": "ok"}` when every component is ok, 503
-`{"status": "degraded"}` otherwise. The route is open, so the body says nothing more: the
-failing components, exception classes and the extension's version go to the log only
-(review 2026-11-11 L-8). A result is reused for HEALTH_CACHE_SECONDS, so a caller hammering
-the route cannot turn each request into a worker ping and three queries. The worker ping
-is bounded (`limit=1`) so one reply ends it, and its timeout is a setting. Never
-authenticated, never CORS-scoped, never cached by an HTTP cache."""
+`{"status": "degraded"}` otherwise. The route is open, so the details go to the log only
+(review 2026-11-11 L-8). A result is reused for HEALTH_CACHE_SECONDS, so hammering the route
+cannot multiply worker pings and queries; the ping is bounded. Never authenticated,
+never CORS-scoped, never cached by an HTTP cache."""
 
 from __future__ import annotations
 

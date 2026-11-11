@@ -1,19 +1,13 @@
 """`record()`: the only way to write `audit_event` and `outbox_event` (AUD-01, AC-AUD1,
-playbook 4.3). Both rows land in the same transaction as the change, with a user, agent
-or system actor and before and after values. The outbox row is what the worker delivers
-(webhooks, re-index, notifications) so a side effect can never exist without its audit
-row, and vice versa.
+playbook 4.3). Both rows land in the same transaction as the change, with an actor and
+before and after values; the worker delivers the outbox row, so no side effect exists
+without its audit row.
 
-`AppendOnlyModel` refuses update and delete in Python; the migration's trigger makes the
-docstring true in the database, with the escape hatch in apps/shared/migration_helpers.py
-so a conscious fix states its intent.
+`AppendOnlyModel` refuses update and delete in Python; the migration's trigger does so in
+the database, with the escape hatch in apps/shared/migration_helpers.py.
 
-`batched()` is the same door for a write of many subjects at once, such as a pasted
-Statement of Applicability: every `record()` inside the block is held and, when the block
-ends, its rows go in together, in the same transaction, under the same triggers, built by
-the same code as one call's rows.
-
-The audit rows and their outbox rows go in as one statement, and a savepoint is taken only
+`batched()` holds every `record()` of a block and writes the rows together, as one call's
+rows would be. The audit and outbox rows go in as one statement; a savepoint is taken only
 around a write that crosses the zones (ADR 0063).
 """
 
@@ -120,14 +114,10 @@ _batch: ContextVar[list[_Pending] | None] = ContextVar("audit_batch", default=No
 
 @contextmanager
 def batched() -> Iterator[None]:
-    """Hold every `record()` of the block and write them all when it ends: one statement for
-    the lot (two when some cross the zones), in the caller's transaction, in the order
-    recorded. The zone is read when the block ends, so a block that moves between zones
-    writes each tenant's rows in that tenant's zone only if it ends there: keep a block
-    inside one bank, as the row-level security refuses anything else.
-    A block that raises writes nothing, and its transaction rolls back with the change. A
-    `record()` inside the block returns None, since its row does not exist yet. A block
-    inside another joins it."""
+    """Hold every `record()` of the block and write them all when it ends: one statement (two
+    when some cross the zones), in the caller's transaction, in order. The zone is read when
+    the block ends, so keep a block inside one bank. A block that raises writes nothing. A
+    `record()` inside returns None; a block inside another joins it."""
     if _batch.get() is not None:
         yield
         return
@@ -157,16 +147,13 @@ def record(
 ) -> Any:
     """Write the audit event and its outbox event in the caller's transaction.
 
-    `tenant_id` is None for a library change (read by everyone under the mixed policy) and
-    the tenant's id for tenant work. Both rows are written in the zone `tenant_id` names,
-    because a mixed table accepts only the zone the session is in (H15): the two rows of a
-    library change made from a bank's own session go in with the tenant cleared, and this is
-    the one door that may cross the zones. Which calls may pass `tenant_id=None`, and under
-    which subject, is the guard's question, not the policy's (hardening H3).
+    `tenant_id` is None for a library change and the tenant's id for tenant work. Both rows
+    are written in the zone `tenant_id` names, because a mixed table accepts only the
+    session's zone (H15): this is the one door that may cross the zones. Which calls may pass
+    `tenant_id=None` is the guard's question (H3).
 
-    `topic` defaults to `action`; the worker routes outbox rows by it. `payload` is what the
-    worker needs to act; it never carries tenant content the audit `after` does not already
-    hold.
+    `topic` defaults to `action`; the worker routes by it. `payload` never carries tenant
+    content the audit `after` does not already hold.
     """
     if not connection.in_atomic_block:
         raise NotInTransaction(
@@ -202,18 +189,14 @@ def record(
 def _write(pending: list[_Pending]) -> list[Any]:
     """The audit and outbox rows of `pending`, one statement per run of rows in one zone.
 
-    A run in the session's own zone is one statement and nothing else: if it fails, the
-    database aborts the caller's transaction and the change it records goes with it, so no
-    savepoint is wanted, and none is taken so that a caller who swallowed the error could
-    not commit the change without its rows (ADR 0063). A run that crosses the zones, a row
-    of no tenant written from a bank's session, goes in inside `platform_zone()` and a
-    savepoint: the zone block comes before the atomic one, so a failed insert rolls back to
-    its savepoint before the tenant goes back on and the caller sees the error the insert
-    raised. The zone is the GUC, not the context variable, since that is what a policy
-    sees, and it is read only when a row of no tenant is written.
+    A run in the session's own zone takes no savepoint, so if it fails the caller's
+    transaction aborts with the change, and no caller can commit the change without its rows
+    (ADR 0063). A run that crosses the zones goes in inside `platform_zone()` and then a
+    savepoint, so a failed insert rolls back before the tenant goes back on. The zone is the
+    GUC, which is what a policy sees.
 
-    The ids are sorted so that rows stamped in the same microsecond still read back in the
-    order recorded, as the tables order by (created, id)."""
+    The ids are sorted so rows stamped in the same microsecond read back in order, as the
+    tables order by (created, id)."""
     from apps.shared.models import AuditEvent, OutboxEvent
 
     if pending and not connection.in_atomic_block:
@@ -243,10 +226,9 @@ def _write(pending: list[_Pending]) -> list[Any]:
 
 def _insert_both(events: Sequence[models.Model], outbox: Sequence[models.Model]) -> None:
     """The audit rows and their outbox rows as one statement: the audit INSERT as a
-    data-modifying WITH, the outbox INSERT as its main statement. Each INSERT is the one
-    `bulk_create` would send, built by Django's own compiler from the same objects, so every
-    column, default and timestamp is what it was; the foreign key from outbox to audit is
-    checked when the statement ends, when both sets of rows exist."""
+    data-modifying WITH, the outbox INSERT as its main statement, each built by Django's
+    compiler as `bulk_create` would. The outbox-to-audit foreign key is checked at the end of
+    the statement."""
     statements = []
     for model_rows in (events, outbox):
         query = InsertQuery(type(model_rows[0]))

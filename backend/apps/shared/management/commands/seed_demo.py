@@ -1,7 +1,6 @@
 """`manage.py seed_demo`: the prototype's data for a local demo database (playbook 8.3).
 Refuses to run on a deployed environment. Idempotent by stable key: run it twice and the
-second run changes nothing. Chunk 3 loads the library; the demo tenant's own rows follow
-as their chunks land."""
+second run changes nothing."""
 
 from __future__ import annotations
 
