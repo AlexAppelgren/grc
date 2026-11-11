@@ -60,7 +60,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `EVIDENCE_MAX_BYTES` | api | `26214400` | `26214400` | `26214400` | The largest evidence file in bytes, 25 MB (CAS-05); a larger one is refused with 422 before it is stored |
 | `EVIDENCE_SCAN_RETRIES` | worker | `2` | `2` | `2` | How many more times a failed malware scan is tried before the file stays `error` and cannot be downloaded (CAS-05) |
 | `CASE_EVIDENCE_MAX` | api | `200` | `200` | `200` | Live evidence one case may hold, so one case cannot push its case file past the response budget (CAS-05) |
-| `LLM_PROVIDER` | api, worker | `mock` | `mock` | `anthropic` | `mock`, `anthropic`, `bedrock` (D-07, ADR 0007) |
+| `LLM_PROVIDER` | api, worker | `mock` | `mock` | `anthropic` | `mock`, `anthropic`, `bedrock` (D-07, ADR 0007). `anthropic` is refused on every deployed environment but `test` (D-54, ADR 0047, rule 10) |
 | `ANTHROPIC_API_KEY` | api, worker | unset | unset | Railway secret | Only read when `LLM_PROVIDER=anthropic` |
 | `LLM_MODEL` | api, worker | `claude-opus-5` | `claude-opus-5` | `claude-opus-5` | The Messages API model id (E3) |
 | `LLM_MAX_TOKENS` | api, worker | `4096` | `4096` | `4096` | A ceiling: a caller asking for more gets this |
@@ -95,7 +95,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `FOOTPRINT_CHANGE_MAX_TERMS` | api | `50` | `50` | `50` | The most terms, and the most scope items, one regulatory scope request may add or remove, each list on its own; a longer list is refused with 422 (FP-02, OWN-01, H24). At least 1 or the app refuses to boot |
 | `ASK_RETRIEVAL_DEPTH` | api | `6` | `6` | `6` | How many passages of the reader's own ranking Ask gives the model, best first: the whole of what an answer may rest on, each one a numbered citation. From 1 to `AI_GENERATION_CITATIONS_MAX`, or the app refuses to boot (SRC-03) |
 | `ASK_MAX_TOKENS` | api | `1024` | `1024` | `1024` | The most one Ask answer may write, beneath the `LLM_MAX_TOKENS` ceiling: an answer is a few cited sentences. At least 1, or the app refuses to boot (SRC-03) |
-| `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock` or `managed_agents` (D-08, ADR 0008) |
+| `AGENT_RUNNER` | worker | `mock` | `mock` | `mock` until chunk 11 | `mock`, `managed_agents` or `none` (D-08, ADR 0008). `managed_agents` is refused on every deployed environment but `test` (D-54, rule 10); `none` starts no run, every run closes as failed, until the in-worker EU runner exists |
 | `AGENT_RESEARCH_TOPIC_MAX_CHARS` | api | `500` | `500` | `500` | The longest topic a research request or a console re-tag request may carry, in characters (AGT-05, c11-agents-contract); a longer one answers 422 `validation_error` |
 | `AGENT_MIN_CADENCE` | api | `weekly` | `weekly` | `weekly` | The most frequent cadence a bank may give one of its own agents: `daily`, `weekly` or `monthly`, and `manual` is always allowed; a more frequent one answers 422 `above_plan_limit`. Any other value and the app refuses to boot (AGT-04, c11-tenant-agents-budget-scope) |
 | `AGENTS_PER_TENANT_MAX` | api | `3` | `3` | `3` | How many agents of its own a bank may add; one more answers 422 `above_plan_limit` (AGT-04, c11-tenant-agents-budget-scope) |
@@ -117,7 +117,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | Variable | Services | Local | CI | Railway test | Notes |
 |---|---|---|---|---|---|
 | `E2E_MODE` | api (E2E only) | set by Playwright's `webServer` | set by the E2E job | never | Makes the enrolment code deterministic and enables `seed_e2e`. Refused on two independent legs when deployed |
-| `SENTRY_DSN` | all | unset | unset | optional, EU region DSN | `send_default_pii=False`, bodies never sent, scrubbers on events and transactions |
+| `SENTRY_DSN` | all | unset | unset | optional, EU region DSN | `send_default_pii=False`, bodies never sent, scrubbers on events and transactions, no outbound-request spans and no trace headers to other hosts. A host not ending `.ingest.de.sentry.io` is refused on every deployed environment but `test` (D-54, rule 10) |
 | `API_BUDGET_MS` | api | `250` | `250` | `250` | A WARNING with the request ID above it |
 | `SEARCH_BUDGET_MS` | api | `800` | `800` | `800` | Hybrid search's budget without the reranker, in `Server-Timing` (NFR-02). The search tests hold the route to it, and a performance pass names it as the budget of the search rows it adds to `backend/perf/routes.py` |
 | `SEARCH_RERANKED_BUDGET_MS` | api | `1500` | `1500` | `1500` | The same with the reranker on (NFR-02) |

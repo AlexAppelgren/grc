@@ -100,10 +100,10 @@ class ProductionGuard(TestCase):
             "ENVIRONMENT": environment,
             "DEBUG": "false",
             "SECRET_KEY": "a-real-looking-key-for-the-subprocess",
-            "LLM_PROVIDER": "anthropic",
+            "LLM_PROVIDER": "bedrock",
             "EMBEDDER_PROVIDER": "none",
             "RERANKER_PROVIDER": "none",
-            "AGENT_RUNNER": "managed_agents",
+            "AGENT_RUNNER": "none",
             "MAIL_PROVIDER": "smtp",
             "STORAGE_BACKEND": "s3",
             "STORAGE_S3_BUCKET": "bucket",
@@ -184,8 +184,8 @@ class ProductionGuard(TestCase):
             Case("ci boots with no key and DEBUG off", self._local("ci", DEBUG="false"), True),
             Case(
                 "host name refuses the default key",
-                self._local("ci", DEBUG="false", RAILWAY_ENVIRONMENT_NAME="ci", LLM_PROVIDER="anthropic",
-                            EMBEDDER_PROVIDER="none", RERANKER_PROVIDER="none", AGENT_RUNNER="managed_agents",
+                self._local("ci", DEBUG="false", RAILWAY_ENVIRONMENT_NAME="ci", LLM_PROVIDER="bedrock",
+                            EMBEDDER_PROVIDER="none", RERANKER_PROVIDER="none", AGENT_RUNNER="none",
                             MAIL_PROVIDER="smtp",
                             STORAGE_BACKEND="s3", STORAGE_S3_BUCKET="b"),
                 False,
@@ -347,6 +347,52 @@ class ProductionGuard(TestCase):
             Case(
                 "rate limiting switched off still boots on a laptop",
                 self._local("local", RATE_LIMITING_ENABLED="false"),
+                True,
+            ),
+            # Rule 10 (review 2026-11-11 S-7, D-54): no processor outside the EU when
+            # deployed, except on the environment named test, which holds no bank's data.
+            Case(
+                "prod refuses the anthropic provider",
+                self._good_deployed("prod", LLM_PROVIDER="anthropic"),
+                False,
+                "Rule 10",
+                "rule 10",
+            ),
+            Case(
+                "demo refuses the managed agents runner",
+                self._good_deployed("demo", AGENT_RUNNER="managed_agents"),
+                False,
+                "Rule 10",
+                "rule 10",
+            ),
+            Case(
+                "prod refuses a Sentry host outside the EU",
+                self._good_deployed("prod", SENTRY_DSN="https://key@o1.ingest.us.sentry.io/2"),
+                False,
+                "SENTRY_DSN",
+                "rule 10",
+            ),
+            Case(
+                "prod refuses a Sentry host that only contains the EU name",
+                self._good_deployed("prod", SENTRY_DSN="https://key@o1.ingest.de.sentry.io.example.com/2"),
+                False,
+                "SENTRY_DSN",
+                "rule 10",
+            ),
+            Case(
+                "prod boots with Sentry on the EU host",
+                self._good_deployed("prod", SENTRY_DSN="https://key@o1.ingest.de.sentry.io/2"),
+                True,
+            ),
+            Case(
+                "deployed test keeps anthropic, managed agents and any Sentry host",
+                self._good_deployed(
+                    "test",
+                    RAILWAY_ENVIRONMENT_NAME="test",
+                    LLM_PROVIDER="anthropic",
+                    AGENT_RUNNER="managed_agents",
+                    SENTRY_DSN="https://key@o1.ingest.us.sentry.io/2",
+                ),
                 True,
             ),
             Case(

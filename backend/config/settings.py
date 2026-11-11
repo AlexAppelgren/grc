@@ -19,6 +19,7 @@ import logging
 import os
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
@@ -297,7 +298,7 @@ ANTHROPIC_API_KEY = env_str("ANTHROPIC_API_KEY", "")
 EMBEDDER_PROVIDER = env_str("EMBEDDER_PROVIDER", "mock")  # mock | none | <chosen per D-09>
 EMBEDDER_API_KEY = env_str("EMBEDDER_API_KEY", "")
 EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024)  # DECISIONS D-09
-AGENT_RUNNER = env_str("AGENT_RUNNER", "mock")  # mock | managed_agents
+AGENT_RUNNER = env_str("AGENT_RUNNER", "mock")  # mock | managed_agents | none
 
 # --- c11-agents-contract (AGT-05) ------------------------------------------------------
 # The longest topic a research or re-tag request may carry, in characters: the text is a
@@ -1275,6 +1276,7 @@ if SENTRY_DSN:
     from sentry_sdk.integrations.celery import CeleryIntegration
     from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.integrations.logging import ignore_logger
+    from sentry_sdk.integrations.stdlib import StdlibIntegration
 
     from apps.shared.sentry_scrub import before_send, before_send_transaction  # noqa: E402
 
@@ -1282,10 +1284,16 @@ if SENTRY_DSN:
     # breadcrumb it would ride on the next event, whoever's request that is (security
     # review 2026-09-19). The line is in the container log already; Sentry never needs it.
     ignore_logger("gunicorn.access")
+    # The stdlib integration names a span and a breadcrumb after every outbound URL (the
+    # address a bank asked `check_url` to read, a register lookup's company number), and
+    # trace propagation sends `sentry-trace` and `baggage`, with the public key, to every
+    # host fetched. Both are off: Sentry needs neither (review 2026-11-11 S-8).
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         environment=HOST_ENVIRONMENT_NAME or ENVIRONMENT,
         integrations=[DjangoIntegration(), CeleryIntegration()],
+        disabled_integrations=[StdlibIntegration],
+        trace_propagation_targets=[],
         send_default_pii=False,
         max_request_body_size="never",
         include_local_variables=False,
@@ -1326,6 +1334,10 @@ if SENTRY_DSN:
 #     model budget (NFR-02). Each bucket's own size already refuses to boot below 1, so the
 #     switch is the one way left to turn them off, and it stays for laptops and tests only
 #     (security-review-c7, M2).
+# 10. Processors outside the EU (D-54, ADR 0047). On every deployed environment but `test`,
+#     the `anthropic` provider and the `managed_agents` runner are refused (both offer US or
+#     global processing only), and Sentry only on a host ending `.ingest.de.sentry.io`. The
+#     lists are code, never variables, so a transfer never follows from a changed variable.
 # ---------------------------------------------------------------------------------------
 def _refuse(reason: str) -> None:
     raise ImproperlyConfigured(f"Refusing to boot: {reason}")
@@ -1362,6 +1374,14 @@ if IS_DEPLOYED_ENVIRONMENT and (
     )
 if IS_DEPLOYED_ENVIRONMENT and not RATE_LIMITING_ENABLED:
     _refuse(f"RATE_LIMITING_ENABLED=false on deployed environment {ENVIRONMENT!r}. Rule 9.")
+if IS_DEPLOYED_ENVIRONMENT and ENVIRONMENT != MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT:
+    if LLM_PROVIDER == "anthropic" or AGENT_RUNNER == "managed_agents":
+        _refuse(
+            f"LLM_PROVIDER={LLM_PROVIDER!r} / AGENT_RUNNER={AGENT_RUNNER!r} on deployed environment "
+            f"{ENVIRONMENT!r}: anthropic and managed_agents process outside the EU. Rule 10 (D-54)."
+        )
+    if SENTRY_DSN and not (urlsplit(SENTRY_DSN).hostname or "").endswith(".ingest.de.sentry.io"):
+        _refuse(f"SENTRY_DSN is not on ingest.de.sentry.io on deployed environment {ENVIRONMENT!r}. Rule 10 (D-54).")
 if STORAGE_BACKEND not in {"local", "s3"}:
     _refuse(f"STORAGE_BACKEND={STORAGE_BACKEND!r} is not one of local, s3.")
 
