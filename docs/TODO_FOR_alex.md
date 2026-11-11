@@ -2,6 +2,18 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## The squashed migrations (2026-11-11, review B-13)
+
+- [ ] **Deploy the commit before the squash to the test environment first.** Each app now
+      builds its schema from one or two squashed migrations; on a database that applied every
+      migration they replace, `migrate` only records them and changes nothing. `origin/main`
+      (f4d3e87) has every replaced migration, so a test environment deployed from it is
+      ready; `taxonomy 0015` is not on it and stays a migration of its own after the squash,
+      so it runs there as usual. A database that applied only part of what a squash replaces
+      is refused by `migrate` (`shared.E001`, naming what it lacks): deploy the earlier commit,
+      then this one. Local and worktree databases older than that: rebuild them
+      (`migrate_from_zero`, or drop and migrate).
+
 ## The library's machine translations (2026-11-09, D-129, INV-05, I18N-01)
 
 Built on the defaults in D-129; nothing waits on you to use it.
