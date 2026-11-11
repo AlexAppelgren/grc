@@ -56,7 +56,7 @@
   "auth.enrol.expired": "Din registreringssession har gått ut. Ange din kod igen för att fortsätta.",
   "auth.enrol.backToCode": "Tillbaka till koden",
   "auth.about.title": "Om tjänsten",
-  "auth.about.body": "{product} håller en banks regulatoriska skyldigheter i ett inventarie och registrerar varje förändring, från dagen den publiceras till dagen den godkänns. Åtkomst sker genom inbjudan.",
+  "auth.about.body": "{product} håller en banks regulatoriska skyldigheter i en förteckning och registrerar varje förändring, från dagen den publiceras till dagen den attesteras. Åtkomst sker genom inbjudan.",
   "auth.about.company": "Företag",
   "auth.about.companyName": "bleqq",
   "auth.about.privacy": "Integritet",

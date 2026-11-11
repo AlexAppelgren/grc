@@ -1,12 +1,16 @@
 """Mailer adapter (playbook 16). `mock` records every message in the cache (locmem in tests,
 Redis in E2E, read through `GET /api/v1/e2e/mail-outbox`), which is how AC-ID1 ("a code
 request for an enrolled user sends nothing") is proven (F12). `smtp` uses Django's SMTP
-backend with the MAIL_* settings.
+backend with the MAIL_* settings. `resend` posts to Resend's HTTP API and either delivers or
+raises: a failed send fails the worker task visibly, it is never dropped.
 
 Nothing here logs a recipient address or a body (playbook 4.7)."""
 
 from __future__ import annotations
 
+import json
+import urllib.error
+import urllib.request
 from abc import ABC, ABCMeta, abstractmethod
 from dataclasses import dataclass
 
@@ -76,7 +80,50 @@ class SmtpMailer(MailerAdapter):
         ).send()
 
 
-PROVIDERS: dict[str, type[MailerAdapter]] = {"mock": MockMailer, "smtp": SmtpMailer}
+class MailDeliveryError(Exception):
+    """A send the provider did not accept. The message names the HTTP status and the
+    provider's error name only: Resend echoes the recipient and domain inside its error
+    text, so that text is never carried (playbook 4.7)."""
+
+
+class ResendMailer(MailerAdapter):
+    """POST https://api.resend.com/emails with a bearer key (RESEND_API_KEY) and a plain
+    text body. 2xx is delivered; anything else raises `MailDeliveryError`. Docs:
+    https://resend.com/docs/api-reference/emails/send-email"""
+
+    name = "resend"
+    API_URL = "https://api.resend.com/emails"
+
+    def send(self, mail: OutgoingMail) -> None:
+        if not settings.RESEND_API_KEY:
+            raise MailDeliveryError("MAIL_PROVIDER=resend but RESEND_API_KEY is empty")
+        payload = {"from": settings.MAIL_FROM, "to": [mail.to], "subject": mail.subject, "text": mail.body}
+        request = urllib.request.Request(  # noqa: S310 - fixed https URL
+            self.API_URL,
+            data=json.dumps(payload).encode(),
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                "Content-Type": "application/json",
+                # Names the sender instead of urllib's default agent.
+                "User-Agent": "grc-mailer/1",
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=settings.MAIL_TIMEOUT_SECONDS):  # noqa: S310
+                return
+        except urllib.error.HTTPError as exc:
+            name = ""
+            try:
+                name = str(json.loads(exc.read()).get("name") or "")
+            except (ValueError, AttributeError):
+                pass
+            raise MailDeliveryError(f"Resend refused the message: status={exc.code} error={name}") from None
+        except (urllib.error.URLError, TimeoutError, OSError):
+            raise MailDeliveryError("Resend was unreachable or timed out") from None
+
+
+PROVIDERS: dict[str, type[MailerAdapter]] = {"mock": MockMailer, "smtp": SmtpMailer, "resend": ResendMailer}
 
 
 def get_mailer() -> MailerAdapter:

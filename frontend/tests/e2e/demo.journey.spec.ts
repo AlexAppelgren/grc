@@ -227,6 +227,8 @@ test.describe('public page demo', () => {
     const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
     await expect(app.locator('main')).toBeVisible();
     expect(await page.evaluate(() => window.scrollY), 'the page scrolled to the demo on its own').toBe(0);
+    // The demo sits below the first screen; a visitor scrolls to it.
+    await page.locator(`iframe[name="${DEMO_FRAME_NAME}"]`).scrollIntoViewIfNeeded();
     await app.getByRole('link', { name: 'Watch', exact: true }).first().click();
     await expect(app.getByRole('tab', { selected: true })).toBeVisible();
     await app.getByRole('link', { name: 'Inventory', exact: true }).first().click();

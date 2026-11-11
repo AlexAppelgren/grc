@@ -1,11 +1,13 @@
-import type { APIRequestContext, APIResponse } from '@playwright/test';
+import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
 
 import { DEMO_FRAME_NAME } from '@/features/demo/frame';
 
 import { expect, test } from './support/api-guard';
 import { allowFreshContext, BACKEND_URL, LOGINS, REFRESH_COOKIE, signInAs, signOut } from './support/passkeys';
 
-const PLATE = 'Agents watch the regulators. You make the decisions.';
+// The public page opens on the bleqq entry, the one h1 (design/public/, the Lexicon direction).
+const HEADWORD = { level: 1, name: 'bleqq', exact: true } as const;
+const GREEN = 'rgb(10, 58, 42)';
 // The web app's content policy (next.config.ts, review 2026-11-11 S-12): everything from
 // its own origin, the API's calls to the API, and no frame, plugin or form elsewhere.
 const CONTENT_SECURITY_POLICY = [
@@ -27,13 +29,25 @@ const CONTENT_SECURITY_POLICY = [
 // itself calls no API; the fresh-context allowance covers the session check at
 // / and on /sign-in.
 
+// What the browser can give the ink behind the logo, so a journey expects the
+// mode this browser can run without reading a pixel of the canvas.
+async function inkCapability(page: Page): Promise<'fluid' | 'pattern' | 'css'> {
+  return page.evaluate(() => {
+    const gl2 = document.createElement('canvas').getContext('webgl2');
+    if (gl2 !== null) return gl2.getExtension('EXT_color_buffer_float') || gl2.getExtension('EXT_color_buffer_half_float') ? 'fluid' : 'pattern';
+    return document.createElement('canvas').getContext('webgl') === null ? 'css' : 'pattern';
+  });
+}
+
 test.describe('public page', () => {
-  test('an anonymous visitor at / lands on the public page', async ({ page, apiGuard }) => {
+  test('an anonymous visitor at / lands on the public page, under the ink logo', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     await page.goto('/');
     await expect(page).toHaveURL(/\/welcome$/);
-    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
-    await expect(page.getByRole('img', { name: 'bleqq, pronounced bläck' }).first()).toBeVisible();
+    await expect(page).toHaveTitle('bleqq | Agentic Compliance');
+    await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
+    await expect(page.locator('[data-ink]')).toBeVisible();
+    await expect(page.getByText("One inventory of your bank's obligations.")).toBeVisible();
   });
 
   test('the sign-in page has a way back to the public page', async ({ page, apiGuard }) => {
@@ -41,7 +55,7 @@ test.describe('public page', () => {
     await page.goto('/sign-in');
     await page.getByRole('link', { name: '← Back' }).click();
     await expect(page).toHaveURL(/\/welcome$/);
-    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+    await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
   });
 
   test('signing out lands on the public page and kills the session on the server', async ({ page, apiGuard }) => {
@@ -76,23 +90,27 @@ test.describe('public page', () => {
     await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
   });
 
-  test('on a 320 px phone the top bar keeps both actions on one row and stays on screen', async ({ page, apiGuard }) => {
+  test('on a 320 px phone each pair of actions shares one row with the main action on the right, and the bar stays on screen', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     await page.setViewportSize({ width: 320, height: 700 });
     await page.goto('/welcome');
     const bar = page.getByRole('banner');
-    const requestAccess = bar.getByRole('link', { name: 'Request access' });
-    const signIn = bar.getByRole('link', { name: 'Sign in' });
-    await expect(signIn).toBeVisible();
-    await expect(requestAccess).toBeVisible();
-    const secondary = await requestAccess.boundingBox();
-    const primary = await signIn.boundingBox();
-    expect(secondary).not.toBeNull();
-    expect(primary).not.toBeNull();
-    expect(Math.abs((secondary?.y ?? 0) - (primary?.y ?? 0))).toBeLessThan(2);
-    expect(secondary?.x ?? 0).toBeLessThan(primary?.x ?? 0);
+    const entry = page.locator('section#bleqq');
+    for (const [secondary, main] of [
+      [bar.getByRole('link', { name: 'Request access' }), bar.getByRole('link', { name: 'Sign in' })],
+      [entry.getByRole('link', { name: 'Request access' }), entry.getByRole('link', { name: 'Try out our demo' })],
+    ] as const) {
+      await expect(secondary).toBeVisible();
+      await expect(main).toBeVisible();
+      const left = await secondary.boundingBox();
+      const right = await main.boundingBox();
+      expect(left).not.toBeNull();
+      expect(right).not.toBeNull();
+      expect(Math.abs((left?.y ?? 0) + (left?.height ?? 0) / 2 - ((right?.y ?? 0) + (right?.height ?? 0) / 2))).toBeLessThan(2);
+      expect(left?.x ?? 0).toBeLessThan(right?.x ?? 0);
+    }
     await page.getByRole('contentinfo').scrollIntoViewIfNeeded();
-    await expect(signIn).toBeInViewport();
+    await expect(bar.getByRole('link', { name: 'Sign in' })).toBeInViewport();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   });
 
@@ -107,13 +125,72 @@ test.describe('public page', () => {
     expect(sectionTop).toBeGreaterThanOrEqual(barHeight);
   });
 
-  test('the footer switches the page to the dark theme', async ({ page, apiGuard }) => {
+  test('a cross-reference leads to its entry, whose headword is clear of the bar', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
     await page.goto('/welcome');
-    const footer = page.getByRole('contentinfo');
-    await footer.getByRole('button', { name: 'Dark theme' }).click();
-    await expect(page.locator('html')).toHaveClass(/(^|\s)dark(\s|$)/);
-    await expect(footer.getByRole('button', { name: 'Light theme' })).toBeVisible();
+    await page.locator('section#bleqq').getByRole('link', { name: 'watch', exact: true }).click();
+    await expect(page).toHaveURL(/#watch$/);
+    const headword = page.getByRole('heading', { level: 2, name: 'watch', exact: true });
+    await expect(headword).toBeInViewport();
+    const barHeight = (await page.getByRole('banner').boundingBox())?.height ?? 0;
+    expect((await headword.boundingBox())?.y ?? 0).toBeGreaterThanOrEqual(barHeight);
+  });
+
+  test('the page has one appearance in either theme, and its demo shows the dark pictures', async ({ browser, baseURL }) => {
+    for (const colorScheme of ['light', 'dark'] as const) {
+      const context = await browser.newContext({ baseURL, colorScheme, viewport: { width: 390, height: 844 } });
+      const page = await context.newPage();
+      await page.goto('/welcome');
+      await expect(page.locator('[data-public-page]')).toHaveCSS('background-color', GREEN);
+      await expect(page.getByRole('contentinfo').getByRole('button')).toHaveCount(0);
+      const demo = page.locator('section#demo');
+      await expect(demo.locator('img[src$="today-phone-dark.jpg"]')).toBeVisible();
+      await expect(demo.locator('img[src$="today-phone-light.jpg"]')).toBeHidden();
+      await context.close();
+    }
+  });
+
+  test('the strike is drawn and the correction written when a struck entry comes into view', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await page.goto('/welcome');
+    const spreadsheet = page.locator('section#spreadsheet');
+    await expect(spreadsheet).toHaveAttribute('data-reveal', 'waiting');
+    await spreadsheet.getByRole('heading', { level: 2 }).scrollIntoViewIfNeeded();
+    await expect(spreadsheet).toHaveAttribute('data-reveal', 'seen');
+    // Drawn once: scrolling away and back leaves it drawn.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(spreadsheet).toHaveAttribute('data-reveal', 'seen');
+  });
+
+  test('under reduced motion the redline is already drawn and the ink is one still frame', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/welcome');
+    const expected = (await inkCapability(page)) === 'css' ? 'css' : 'still';
+    await expect(page.locator('[data-ink]')).toHaveAttribute('data-ink', expected);
+    await expect(page.locator('section#spreadsheet h2 del svg')).toHaveCSS('clip-path', 'none');
+    await expect(page.locator('section#spreadsheet li ins').first()).toHaveCSS('opacity', '1');
+  });
+
+  test('the ink runs the fluid simulation where the browser can, and falls back where it cannot', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await page.goto('/welcome');
+    await expect(page.locator('[data-ink]')).toHaveAttribute('data-ink', await inkCapability(page));
+  });
+
+  test('without WebGL the logo keeps its CSS background', async ({ page, apiGuard }) => {
+    allowFreshContext(apiGuard);
+    await page.addInitScript(() => {
+      const original = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function getContext(this: HTMLCanvasElement, id: string, options?: unknown) {
+        return id.startsWith('webgl') ? null : original.call(this, id as '2d', options as CanvasRenderingContext2DSettings);
+      } as typeof original;
+    });
+    await page.goto('/welcome');
+    const ink = page.locator('[data-ink]');
+    await expect(ink).toHaveAttribute('data-ink', 'css');
+    await expect(ink.locator('canvas')).toBeHidden();
+    await expect(ink).not.toHaveCSS('background-image', 'none');
   });
 
   test('no other site can frame the app, while its own public page frames the demo', async ({ page, apiGuard }) => {
@@ -167,7 +244,7 @@ test.describe('site trust', () => {
     const response = await page.goto('/inventory/not-a-screen/deeper');
     expect(response?.status()).toBe(404);
     await expect(page).toHaveURL(/\/welcome$/);
-    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+    await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
   });
 
   test('security.txt names a contact, an expiry still ahead and its own address (RFC 9116)', async ({ request }) => {
@@ -236,8 +313,8 @@ test.describe('the public site and the app on hosts of their own', () => {
     const home = await crawl(request, `${PUBLIC}/`);
     expect(home.status()).toBe(200);
     const html = await home.text();
-    // The headline renders one sentence a line, each in its own element.
-    for (const sentence of PLATE.split(/(?<=\.) /)) expect(html).toContain(sentence);
+    // The whole page is in the HTML: the headword, an entry's sense and the closing line.
+    for (const text of ['>bleqq</h1>', 'To check each regulator and law gazette on a schedule, in the language it publishes in.', 'Access is by invitation.']) expect(html).toContain(text);
     expect(html).toMatch(/<meta name="robots" content="index, follow"/);
     expect(home.headers()['x-robots-tag']).toBeUndefined();
 
@@ -286,14 +363,23 @@ test.describe('the public site and the app on hosts of their own', () => {
     // Without JavaScript the public host still shows the whole public page at /.
     await page.goto(`${PUBLIC}/`);
     await expect(page).toHaveURL(`${PUBLIC}/`);
-    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+    await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
     await context.close();
   });
 
   test('a visitor goes from the public host to sign in on the app host, and back', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
+    // Nothing either host's pages ask for may be refused. The app's router once fetched the public page's address
+    // ahead of a click on Back, and again to send a visitor without a session on; on the app host that address
+    // moves to the public host, another origin, so the browser refused the answer each time. An abort is only a
+    // request the next page load cut short.
+    const refused: string[] = [];
+    page.on('requestfailed', (request) => {
+      const reason = request.failure()?.errorText ?? '';
+      if (reason !== 'net::ERR_ABORTED') refused.push(`${request.url()} ${reason}`);
+    });
     await page.goto(`${PUBLIC}/`);
-    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+    await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
     await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(`${APP}/sign-in`);
     await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible();
@@ -304,12 +390,18 @@ test.describe('the public site and the app on hosts of their own', () => {
     await page.goto('/sign-in');
     await page.getByRole('link', { name: '← Back' }).click();
     await expect(page).toHaveURL(`${PUBLIC}/`);
-    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+    await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
 
     // Without a session the app host's front door goes on to the public host, as it goes to /welcome today.
     await page.goto('/');
     await expect(page).toHaveURL(`${PUBLIC}/`);
-    await expect(page.getByRole('heading', { level: 1, name: PLATE })).toBeVisible();
+    await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
+
+    // The sign-in page at rest asks for nothing that is refused either: its back link is not fetched ahead.
+    await page.goto('/sign-in');
+    await expect(page.getByRole('link', { name: '← Back' })).toHaveAttribute('href', '/welcome');
+    await page.waitForLoadState('networkidle');
+    expect(refused).toEqual([]);
   });
 
   test('a passkey signs in on the app host', async ({ page, apiGuard }) => {
@@ -322,11 +414,15 @@ test.describe('the public site and the app on hosts of their own', () => {
 
   test('the demo runs the app in its frame on the public host', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
-    const frameLoad = page.waitForResponse((response) => response.frame().name() === DEMO_FRAME_NAME && new URL(response.url()).pathname === '/');
+    // The frame's own document is the one answer at / in a child frame. Its name is not known yet when that
+    // answer arrives, because a frame takes its name when its first document commits.
+    const frameLoad = page.waitForResponse((response) => response.frame() !== page.mainFrame() && new URL(response.url()).pathname === '/');
     const pageLoad = await page.goto(`${PUBLIC}/`);
     // The page and the frame get different answers at one address, so neither may sit in a shared cache.
     expect(pageLoad?.headers()['cache-control']).toBe('private, no-cache');
     expect((await frameLoad).headers()['cache-control']).toBe('private, no-cache');
+    // The demo sits below the first screen; a visitor scrolls to it.
+    await page.locator(`iframe[name="${DEMO_FRAME_NAME}"]`).scrollIntoViewIfNeeded();
     const app = page.frameLocator(`iframe[name="${DEMO_FRAME_NAME}"]`);
     await app.getByRole('link', { name: 'Watch', exact: true }).first().click();
     await expect(app.getByRole('tab', { selected: true })).toBeVisible();

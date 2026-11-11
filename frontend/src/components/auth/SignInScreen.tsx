@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
-import { BackLink } from '@/components/admin/AdminGate';
 import { AuthPanel } from '@/components/auth/AuthFrame';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { ProblemAlert, StatusLine } from '@/components/ui/States';
@@ -68,10 +67,15 @@ export function SignInScreen() {
     failureText = t('auth.signIn.refused');
   }
 
-  // The way back to the public page, where every Sign in starts.
+  // The way back to the public page, where every Sign in starts. A plain link,
+  // as the one under the panel is (AuthFrame): with the app on its own host the
+  // public page is on another, so the router must not fetch it ahead of the click.
+  const back = `← ${t('common.back')}`;
   return (
     <>
-      <BackLink href={PUBLIC_HOME} label={t('common.back')} />
+      <a href={PUBLIC_HOME} className="mb-3 inline-block font-semibold underline">
+        {back}
+      </a>
       <AuthPanel aria-labelledby="sign-in-title" aria-busy={signIn.isPending}>
         <h1 id="sign-in-title" className="mb-2">
           {t('auth.signIn.title')}

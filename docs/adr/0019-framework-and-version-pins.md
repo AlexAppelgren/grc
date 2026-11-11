@@ -53,6 +53,10 @@ class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0,
 select, popover, tabs, checkbox and switch pins were removed, because no
 screen imports them, and so was @sebgroup/green-core with the D-04 spike,
 its only importer; the Green MCP server still fetches it with `npx`.)
+Added 2026-11-11 for the public page only (D-130), loaded by the `(public)`
+layout and never behind sign-in: @fontsource/reenie-beanie 5.3.0, the pen
+corrections' hand, SIL OFL 1.1 (checked in `google/fonts`, `ofl/reeniebeanie`,
+and by `scripts/check_licences.py`).
 
 **Infrastructure.** `pgvector/pgvector:pg16`, `redis:7-alpine`.
 

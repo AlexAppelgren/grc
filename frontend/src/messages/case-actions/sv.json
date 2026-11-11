@@ -16,7 +16,7 @@
   "caseActions.titleRequired": "Ge åtgärden en titel.",
   "caseActions.dueRequired": "Välj ett förfallodatum.",
   "caseActions.openCount": "{open} av {total} öppna",
-  "caseActions.locked": "Åtgärderna är låsta medan ärendet väntar på godkännande. Skickas det tillbaka låses de upp.",
-  "caseActions.lockedRefusal": "Ärendet väntar nu på godkännande, så dess åtgärder kan inte längre ändras.",
+  "caseActions.locked": "Åtgärderna är låsta medan ärendet väntar på attest. Skickas det tillbaka låses de upp.",
+  "caseActions.lockedRefusal": "Ärendet väntar nu på attest, så dess åtgärder kan inte längre ändras.",
   "caseActions.reload": "Läs in igen för att se det"
 }

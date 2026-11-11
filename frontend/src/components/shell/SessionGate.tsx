@@ -8,13 +8,13 @@ import { ErrorState } from '@/components/ui/States';
 import { signOutKey, switchContextKey, userLocaleOf, useSession } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PUBLIC_HOME } from '@/shared/navigation/registry';
+import { leaveForPublicPage } from '@/shared/navigation/leave';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 
 // Every tenant screen sits behind this gate: a visitor with no session goes to
 // the public page, whether they never signed in, signed out, or their session
 // ended by itself (idle, revoked, past its limit; the next request finds out),
-// and signs in from there. An enrolment session goes to /enrol (it can reach
+// and signs in from there. They leave with a page load (shared/navigation/leave.ts). An enrolment session goes to /enrol (it can reach
 // nothing else, AC-ID2), and a signed-in person gets the permission list for
 // the client gate and the catalog in their own language. While a sign-out is pending
 // the screens are taken down first, so none of them asks the server for
@@ -30,7 +30,7 @@ export function SessionGate({ children }: { children: ReactNode }) {
   const switched = useMutationState({ filters: { mutationKey: switchContextKey, status: 'success' } }).length > 0;
 
   useEffect(() => {
-    if (session.status === 'anonymous') router.replace(PUBLIC_HOME);
+    if (session.status === 'anonymous') leaveForPublicPage();
     if (session.status === 'enrolment') router.replace('/enrol');
   }, [session.status, router]);
 

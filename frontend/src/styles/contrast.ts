@@ -127,6 +127,17 @@ export const PAIRS: readonly Pair[] = [
   { name: 'more sheet: row label', fg: '--gds-sys-color-content-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'more sheet: organisation and role line', fg: '--gds-sys-color-content-neutral-02', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'more sheet: language error line', fg: '--gds-sys-color-content-negative-01', bg: '--gds-sys-color-l2-neutral-02' },
+  // The public page (design/public/, one appearance in both themes, brand.css).
+  { name: 'public page: text on the green', fg: '--bleqq-public-paper', bg: '--gds-sys-color-l2-brand-01' },
+  { name: 'public page: short labels on the green', fg: '--bleqq-public-dim', bg: '--gds-sys-color-l2-brand-01' },
+  { name: 'public page: part of speech and sense numbers on the green', fg: '--bleqq-public-brass', bg: '--gds-sys-color-l2-brand-01' },
+  { name: 'public page: struck words on the green', fg: '--bleqq-public-struck', bg: '--gds-sys-color-l2-brand-01' },
+  { name: 'public page: text on the closing field', fg: '--bleqq-public-paper', bg: '--bleqq-public-deep' },
+  { name: 'public page: short labels on the closing field', fg: '--bleqq-public-dim', bg: '--bleqq-public-deep' },
+  { name: 'public page: green on paper (the sheet, the main action)', fg: '--gds-sys-color-l2-brand-01', bg: '--bleqq-public-paper' },
+  { name: 'public page: removed words on the sheet', fg: '--bleqq-public-del', bg: '--bleqq-public-paper' },
+  { name: 'public page: added words on the sheet', fg: '--gds-sys-color-l2-brand-01', bg: '--bleqq-public-ins' },
+  { name: 'public page: an action under the pointer', fg: '--bleqq-public-deep', bg: '--bleqq-public-brass' },
 ];
 
 export const NON_TEXT: readonly Pair[] = [
@@ -139,4 +150,5 @@ export const NON_TEXT: readonly Pair[] = [
   { name: 'tab bar: current-tab fill on the bar', fg: '--gds-sys-color-l3-neutral-03', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'more sheet: current-row outline on the sheet', fg: '--gds-sys-color-border-neutral-01', bg: '--gds-sys-color-l2-neutral-02' },
   { name: 'tab bar: focus ring on the bar', fg: '--gds-sys-color-content-notice-01', bg: '--gds-sys-color-l2-neutral-02' },
+  { name: 'public page: the hand strike on the green', fg: '--bleqq-public-pen', bg: '--gds-sys-color-l2-brand-01' },
 ];

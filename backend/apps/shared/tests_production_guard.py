@@ -246,6 +246,18 @@ class ProductionGuard(TestCase):
                 "rule 5",
             ),
             Case(
+                "prod refuses resend with no API key",
+                self._good_deployed("prod", MAIL_PROVIDER="resend", RESEND_API_KEY=""),
+                False,
+                "RESEND_API_KEY",
+                "resend key",
+            ),
+            Case(
+                "prod boots with resend and a key",
+                self._good_deployed("prod", MAIL_PROVIDER="resend", RESEND_API_KEY="re_key"),
+                True,
+            ),
+            Case(
                 "prod refuses mock llm and runner",
                 self._good_deployed("prod", LLM_PROVIDER="mock", AGENT_RUNNER="mock"),
                 False,

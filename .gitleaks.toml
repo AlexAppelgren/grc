@@ -346,3 +346,7 @@ description = "A made-up plain key in the API keys screen's unit test (frontend)
 condition = "AND"
 regexes = ['''cw_a1b2c3d4_secretpart''']
 paths = ['''^frontend/src/features/tenant-admin/api-keys/ApiKeysScreen\.test\.tsx$''']
+
+[[allowlists]]
+description = "A library obligation's stable key in a test fixture (backend/apps/library/tests_scenarios.py, scenario INV-S18: key=\"obl-inv-s18-god-skik\", the Danish Bekendtgørelse om god skik). A record identifier made of the scenario ID and the act's name, never a credential; the generic-api-key rule reads it as a key because it follows `key=`. Exact literal only."
+regexes = ['''^obl-inv-s18-god-skik$''']

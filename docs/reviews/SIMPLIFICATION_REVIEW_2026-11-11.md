@@ -110,7 +110,7 @@ went from 293 operations and 513 schemas to 279 and 459; the migrations from 102
   stay apart.
 - B-6: the page envelope was not unified: it would rename 51 schemas the frontend imports for
   no net reduction.
-- B-11: D-130 keeps all eleven operations.
+- B-11: D-131 keeps all eleven operations.
 - B-13: `taxonomy 0015` stays a plain migration after the squash, because the deployed
   database has not applied it. `apps/shared/migration_guard.py` stops `migrate` on a database
   that applied only part of a squash.

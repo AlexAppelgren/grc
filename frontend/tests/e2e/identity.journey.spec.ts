@@ -288,7 +288,7 @@ test.describe('identity journeys', () => {
       // The other device's next request answers 401 and it lands on the public page.
       await otherPage.goto('/me/sessions');
       await expect(otherPage).toHaveURL(/\/welcome$/);
-      await expect(otherPage.getByRole('heading', { level: 1, name: 'Agents watch the regulators. You make the decisions.' })).toBeVisible();
+      await expect(otherPage.getByRole('heading', { level: 1, name: 'bleqq', exact: true })).toBeVisible();
     } finally {
       await other.close();
     }

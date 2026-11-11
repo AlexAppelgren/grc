@@ -11,7 +11,7 @@
   "footprint.pending.add": "Läggs till vid godkännande",
   "footprint.pending.remove": "Tas bort vid godkännande",
   "footprint.preview.narrows": "{group} börjar filtrera: poster som bara har andra alternativ i gruppen döljs för alla medlemmar.",
-  "footprint.preview.hidesForAll": "Det som döljs försvinner för alla medlemmar ur flödet, inventariet, färdplanen och briefingen.",
+  "footprint.preview.hidesForAll": "Det som döljs försvinner för alla medlemmar ur flödet, förteckningen, färdplanen och briefingen.",
   "footprint.status.approved": "Godkänd",
   "footprint.status.rejected": "Avvisad",
   "footprint.status.withdrawn": "Återkallad",
@@ -106,7 +106,7 @@
   "footprint.items.startsOnApproval": "Vår agent börjar undersöka det när någon annan har godkänt.",
   "footprint.items.approveBody": "Vår agent börjar undersöka det, och det den hittar väntar i våra egna poster.",
   "footprint.items.approved": "Godkänt. Vår agent kommer att undersöka {name}.",
-  "footprint.items.removeBody": "Vår agent slutar undersöka det. Det vi redan har godkänt finns kvar i vårt inventarium.",
+  "footprint.items.removeBody": "Vår agent slutar undersöka det. Det vi redan har godkänt finns kvar i vår förteckning.",
   "footprint.research.waitingForAgent": "Väntar på er agent",
   "footprint.research.researching": "Vår agent undersöker",
   "footprint.research.researched": "Undersökt"

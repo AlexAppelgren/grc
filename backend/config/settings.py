@@ -260,12 +260,14 @@ EMBEDDING_DIMENSIONS = env_int("EMBEDDING_DIMENSIONS", 1024, min=1, max=16000)  
 AGENT_RUNNER = env_choice("AGENT_RUNNER", "mock", ("mock", "none"))
 RERANKER_PROVIDER = env_choice("RERANKER_PROVIDER", "mock", ("mock", "none"))  # none keeps the fused order
 RERANKER_TOP_K = env_int("RERANKER_TOP_K", 50, min=1, max=1000)
-MAIL_PROVIDER = env_choice("MAIL_PROVIDER", "mock", ("mock", "smtp"))
+MAIL_PROVIDER = env_choice("MAIL_PROVIDER", "mock", ("mock", "smtp", "resend"))
 MAIL_FROM = env_str("MAIL_FROM", "no-reply@localhost")
 MAIL_SMTP_HOST = env_str("MAIL_SMTP_HOST", "")
 MAIL_SMTP_PORT = env_int("MAIL_SMTP_PORT", 587, min=1, max=65535)
 MAIL_SMTP_USER = env_str("MAIL_SMTP_USER", "")
 MAIL_SMTP_PASSWORD = env_str("MAIL_SMTP_PASSWORD", "")
+RESEND_API_KEY = env_str("RESEND_API_KEY", "")  # read only when MAIL_PROVIDER=resend
+MAIL_TIMEOUT_SECONDS = env_float("MAIL_TIMEOUT_SECONDS", 8, min=1, max=60)  # a slow code mail is a failed sign-in
 MOCK_ADAPTER_SETTINGS = ("LLM_PROVIDER", "EMBEDDER_PROVIDER", "RERANKER_PROVIDER", "AGENT_RUNNER", "MAIL_PROVIDER", "REGISTERS_PROVIDER")
 
 # --- Agents (AGT-03 to AGT-06) ---
@@ -682,6 +684,8 @@ if IS_DEPLOYED_ENVIRONMENT and ENVIRONMENT != MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT
             f"{ENVIRONMENT!r}. Only ENVIRONMENT={MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT!r} "
             "may run a mock. Rule 5."
         )
+if IS_DEPLOYED_ENVIRONMENT and MAIL_PROVIDER == "resend" and not RESEND_API_KEY:
+    _refuse(f"MAIL_PROVIDER=resend with no RESEND_API_KEY on deployed environment {ENVIRONMENT!r}.")
 if IS_DEPLOYED_ENVIRONMENT and STORAGE_BACKEND == "local":
     _refuse(f"STORAGE_BACKEND=local on deployed environment {ENVIRONMENT!r}. Rule 6.")
 if IS_DEPLOYED_ENVIRONMENT and (

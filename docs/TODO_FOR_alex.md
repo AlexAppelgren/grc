@@ -13,6 +13,26 @@ Ordered by what blocks testing first. Nothing here is blocked on code.
       is refused by `migrate` (`shared.E001`, naming what it lacks): deploy the earlier commit,
       then this one. Local and worktree databases older than that: rebuild them
       (`migrate_from_zero`, or drop and migrate).
+## The public page is a dictionary now: three defaults (2026-11-11, D-130)
+
+The Lexicon direction is built at `/welcome` from `design/public/index.html`, with the Swedish
+you approved (förteckning, attestera). Nothing waits on you; each line below is a default you can
+overrule.
+
+- [ ] **PUBLIC-ONE-APPEARANCE.** The page is one green page in either theme. The light and dark
+      switch left its footer, and the demo's pictures are the dark ones. On a desktop the live demo
+      still follows the visitor's own theme, because the demo itself was to stay as it is, so a
+      visitor on a light system sees the app light inside the green page. Default: as built. Say
+      so and the demo's frame opens dark.
+- [ ] **PUBLIC-HANDWRITING-FONT.** The pen corrections are set in Reenie Beanie, pinned at
+      `@fontsource/reenie-beanie` 5.3.0 and loaded by the `(public)` layout only, so no signed-in
+      screen downloads it. Its licence is SIL OFL 1.1, checked in `google/fonts`
+      (`ofl/reeniebeanie`) and passed by `scripts/check_licences.py`; ADR 0019 records the pin.
+      Default: as built. Decline and the corrections fall back to the system's script face.
+- [ ] **PUBLIC-CONTENT-LEFT-OUT.** The reference has no entry for the shared library and your
+      zone, the vendor review checklist or the common questions. They stay, with their copy, as the
+      entries library and zone (between evidence and sign off) and assurance and question (after
+      source). Default: as built. Say which to drop and it goes in one change.
 
 ## The library's machine translations (2026-11-09, D-129, INV-05, I18N-01)
 
@@ -1592,11 +1612,12 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] **Set `NEXT_PUBLIC_SUPPORT_CONTACT`** on the web service, an email
       address. Until then "Write to us" is hidden and the invitation section
       says only that a bank's administrator sends the invitation.
-- [ ] **Confirm two claims before the page is public.** § 5 names authorities
-      per jurisdiction (Finanstilsynet, Lovdata, Finanssivalvonta, Finlex,
+- [ ] **Confirm two claims before the page is public.** The source entry (§ 5 until
+      2026-11-11) names authorities per jurisdiction (Finanstilsynet, Lovdata, Finanssivalvonta, Finlex,
       EIOPA, the ECB and others) that neither the PRD nor the configured
       sources name yet; the PRD commits only to Swedish, Danish, Norwegian,
-      Finnish and EU sources. § 6's "Leaving" and "The pack" describe tenant
+      Finnish and EU sources. The assurance entry's "Leaving" and "The assurance pack" (§ 6 until
+      2026-11-11) describe tenant
       exit and the assurance pack, which are R3 (chunks 12 and 14, pending).
       The copy is as you approved it; say which to soften and the catalog
       changes in one file.
@@ -1615,9 +1636,9 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       before then. That is how it was built in chunk 1 ("whatever the server
       answered"). Say if you would rather the app stay put and say the
       sign-out did not go through.
-- [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
-      follows the app's existing terms (skyldighet, förslag, godkännande), but
-      a native read of the headline and the questions is worth five minutes.
+- [x] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. Answered
+      2026-11-11 with the Lexicon direction (D-130): the Swedish is written for a Swedish
+      reader, and förteckning and attestera replace inventarie and godkännande in every catalog.
 
 ## r2-spec-d89: the bank's own regulations (PRD 0.7, 2026-09-25)
 
@@ -2494,6 +2515,45 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       `https://talosintelligence.com/reputation_center/web_categorization`, Fortinet
       `https://www.fortiguard.com/webfilter`, Forcepoint `https://support.forcepoint.com/s/site-lookup`
       (checked 2026-09-28, `Verification_Log.md`).
+- [ ] **Broadcom (Symantec) rates the app host Suspicious (2026-11-11).** Its Site Review answers
+      "Suspicious" for `https://app.bleqq.com/sign-in`, "rated by our WebPulse system": the host
+      is not in Broadcom's database, so it was scored in real time on reputation. Seen from
+      outside the same day, the site's own steps are live (www redirects to the apex, the hosts
+      are split, the headers, `security.txt` and the 404 are served), so the filter step above
+      waits on nothing. A review takes one URL and a subdomain can be rated apart from its
+      domain, so submit three: `https://bleqq.com/`, `https://app.bleqq.com/sign-in` and
+      `https://api.bleqq.com/` (the app calls it on every page load; with it blocked a person
+      sees "Loading your session…" and then "Try again"). At `https://sitereview.symantec.com/`
+      look the URL up, press Other under the result, suggest Business/Economy, and say in the
+      comment what the service is, that access is by invitation and that `bleqq.com` is the
+      public page. Broadcom gives 24 to 48 hours for an accepted change. SEB IT allowing
+      `*.bleqq.com` (`r2f-host-split`, step 7) does not wait for it.
+- [ ] **Two Cloudflare switches that change the sign-in page (2026-11-11).** Broadcom's rater
+      votes on what a page loads, and names "obfuscated scripts" on a new, low-traffic site as a
+      reason for a higher risk level. Cloudflare adds two scripts to our pages that the repo does
+      not contain. (1) **Email Address Obfuscation**, on by default: on sign-in and enrolment it
+      rewrites the privacy and security addresses to `/cdn-cgi/l/email-protection#…` and adds
+      `email-decode.min.js`. Turn it off: Security › Settings › Email Address Obfuscation › Off.
+      (2) **Web Analytics**, automatic setup: every page, the signed-in screens included, loads
+      `static.cloudflareinsights.com/beacon.min.js` and posts to `/cdn-cgi/rum`. That is
+      third-party analytics inside the application, which a bank's vendor review will ask about.
+      Turn it off: Web Analytics › Manage site › Disable. Then ask an agent to check from outside
+      that both scripts are gone.
+- [ ] **Where a visitor without a session lands on the app host.** Today `https://app.bleqq.com/`
+      shows "Loading your session…" and then moves to the public page on `bleqq.com`. Since
+      2026-11-11 that move is a page load the server answers (before, the router's own request
+      for it was refused by the browser first, on the sign-in page too). Default taken: the
+      destination is unchanged. Say if such a visitor should land on `/sign-in` on the app host
+      instead, which is what a person with a bookmark wants and leaves no move between hosts.
+- [ ] **The app host's front page is three words without JavaScript.** `https://app.bleqq.com/`
+      and every signed-in address answer "Compliance Watch, Loading your session…" first: the
+      server cannot see a session (the token is in the browser's memory, the refresh cookie
+      belongs to the API host), so the page waits for `POST /api/v1/auth/refresh`. Sign-in and
+      enrolment were given a readable first byte in `r2f-host-split`; this page was not. Default
+      taken: left as it is, because Broadcom's label names reputation and not content. If a
+      reviewer or another filter still flags the app host after the review, say so and an agent
+      gives that waiting state a `noscript` line saying what the service is, with links to
+      sign-in and the public page.
 
 Defaults taken: the sitemap lists `/welcome` only, since `/` is the signed-in home that sends a
 visitor on to `/welcome`; robots.txt allows `/` so a crawler that starts there follows on, and `/`
@@ -2540,7 +2600,7 @@ the rules and why. Do the steps in this order; each check tells you the step wor
       re-enrolment for platform staff, and an agent builds it.
 - [ ] **6. Check from outside** (or ask an agent to):
       `curl -sI https://bleqq.com/` → 200 and no `x-robots-tag`;
-      `curl -s https://bleqq.com/ | grep -c "You make the decisions"` → at least 1 (the whole page
+      `curl -s https://bleqq.com/ | grep -c "Access is by invitation"` → at least 1 (the whole page
       without JavaScript); `curl -sI https://bleqq.com/sign-in` → 301 to
       `https://app.bleqq.com/sign-in`; `curl -sI https://bleqq.com/welcome` → 301 to
       `https://bleqq.com/`; `curl -sI https://app.bleqq.com/sign-in` → 200 with

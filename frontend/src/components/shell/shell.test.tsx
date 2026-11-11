@@ -23,7 +23,7 @@ import { PermissionsProvider } from '@/shared/navigation/require-permission';
 // jsdom applies no CSS, so the rail and the bar both render at every width:
 // every query is scoped to [data-slot="sidebar"] or [data-slot="tab-bar"].
 
-const nav = vi.hoisted(() => ({ pathname: '/', replace: vi.fn() }));
+const nav = vi.hoisted(() => ({ pathname: '/', replace: vi.fn(), leave: vi.fn() }));
 const session = vi.hoisted(() => ({ me: null as Me | null, mutate: vi.fn(), isPending: false, then: () => {} }));
 const language = vi.hoisted(() => ({
   rows: undefined as { key: string; kind: null; label: string }[] | undefined,
@@ -37,6 +37,8 @@ vi.mock('next/navigation', () => ({
   usePathname: () => nav.pathname,
   useRouter: () => ({ replace: nav.replace, push: vi.fn() }),
 }));
+
+vi.mock('@/shared/navigation/leave', () => ({ leaveForPublicPage: nav.leave }));
 
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: ComponentProps<'a'> & { href: string }) => (
@@ -95,6 +97,7 @@ beforeEach(() => {
   resize = null;
   nav.pathname = '/';
   nav.replace.mockReset();
+  nav.leave.mockReset();
   session.me = me();
   session.mutate.mockReset();
   session.isPending = false;
@@ -281,10 +284,12 @@ describe('the signed-in person', () => {
 
     fireEvent.click(within(menu).getByRole('menuitem', { name: 'Sign out' }));
     expect(session.mutate).toHaveBeenCalledOnce();
-    // The redirect is the mutation's own, so it survives the gate unmounting the shell (SessionGate.test.tsx).
-    expect(nav.replace).not.toHaveBeenCalled();
+    // The move is the mutation's own, so it survives the gate unmounting the shell (SessionGate.test.tsx),
+    // and a page load, never the router's (shared/navigation/leave.ts).
+    expect(nav.leave).not.toHaveBeenCalled();
     session.then();
-    expect(nav.replace).toHaveBeenCalledWith('/welcome');
+    expect(nav.leave).toHaveBeenCalledOnce();
+    expect(nav.replace).not.toHaveBeenCalled();
 
     // Rotated to portrait with the menu open: the rail is hidden under it, so
     // the menu closes and focus goes to the page, never to the hidden trigger.
@@ -446,7 +451,7 @@ describe('at compact width: the tab bar', () => {
     render(<LocaleProvider locale="sv">{shell(EVERYONE_AND_ADMIN)}</LocaleProvider>);
     const bar = tabBar();
     expect(bar).toHaveAttribute('lang', 'sv');
-    expect([...bar.querySelectorAll('a, button')].map((cell) => cell.textContent)).toEqual(['Idag', 'Bevakning', 'Inventarie', 'Fråga', 'Mer']);
+    expect([...bar.querySelectorAll('a, button')].map((cell) => cell.textContent)).toEqual(['Idag', 'Bevakning', 'Förteckning', 'Fråga', 'Mer']);
   });
 
   it('marks the current tab alone, nested routes included', () => {
@@ -545,10 +550,12 @@ describe('at compact width: the tab bar', () => {
 
     fireEvent.click(within(sheet()).getByRole('button', { name: 'Sign out' }));
     expect(session.mutate).toHaveBeenCalledOnce();
-    // The redirect is the mutation's own, so it survives the gate unmounting the shell (SessionGate.test.tsx).
-    expect(nav.replace).not.toHaveBeenCalled();
+    // The move is the mutation's own, so it survives the gate unmounting the shell (SessionGate.test.tsx),
+    // and a page load, never the router's (shared/navigation/leave.ts).
+    expect(nav.leave).not.toHaveBeenCalled();
     session.then();
-    expect(nav.replace).toHaveBeenCalledWith('/welcome');
+    expect(nav.leave).toHaveBeenCalledOnce();
+    expect(nav.replace).not.toHaveBeenCalled();
   });
 
   it('closes when a destination is chosen, even the current page', () => {

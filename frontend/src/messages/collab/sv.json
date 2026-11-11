@@ -2,7 +2,7 @@
   "collab.notification.kind.mention": "Omnämnande",
   "collab.notification.kind.assigned": "Tilldelad dig",
   "collab.notification.kind.participantAdded": "Tillagd i",
-  "collab.notification.kind.signoffRequested": "Signering begärd",
+  "collab.notification.kind.signoffRequested": "Attest begärd",
   "collab.notification.kind.approvalRequested": "Godkännande begärt",
   "collab.notification.kind.dueSoon": "Förfaller snart",
   "collab.notification.kind.reviewDue": "Dags för granskning",

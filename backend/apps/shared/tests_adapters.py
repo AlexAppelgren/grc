@@ -113,6 +113,70 @@ class MailerAdapter(SimpleTestCase):
         self.assertEqual(get_connection.call_args.kwargs["host"], "localhost")
         self.assertTrue(get_connection.call_args.kwargs["use_tls"])
 
+    @override_settings(MAIL_PROVIDER="resend", RESEND_API_KEY="re_key", MAIL_FROM="no-reply@example.test")
+    def test_resend_posts_the_message_with_the_key(self) -> None:
+        import json
+        from unittest import mock
+
+        with mock.patch("apps.shared.adapters.mailer.urllib.request.urlopen") as urlopen:
+            mailer.get_mailer().send(mailer.OutgoingMail(to="a@example.invalid", subject="s", body="b"))
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "https://api.resend.com/emails")
+        self.assertEqual(request.get_header("Authorization"), "Bearer re_key")
+        self.assertEqual(
+            json.loads(request.data),
+            {"from": "no-reply@example.test", "to": ["a@example.invalid"], "subject": "s", "text": "b"},
+        )
+
+    @override_settings(MAIL_PROVIDER="resend", RESEND_API_KEY="re_key")
+    def test_resend_rejection_raises_without_echoing_the_provider_text(self) -> None:
+        import io
+        import urllib.error
+        from unittest import mock
+
+        body = io.BytesIO(b'{"name": "validation_error", "message": "a@example.invalid domain not verified"}')
+        error = urllib.error.HTTPError("https://api.resend.com/emails", 403, "Forbidden", {}, body)  # type: ignore[arg-type]
+        with mock.patch("apps.shared.adapters.mailer.urllib.request.urlopen", side_effect=error):
+            with self.assertRaises(mailer.MailDeliveryError) as ctx:
+                mailer.get_mailer().send(mailer.OutgoingMail(to="a@example.invalid", subject="s", body="b"))
+        self.assertIn("403", str(ctx.exception))
+        self.assertIn("validation_error", str(ctx.exception))
+        self.assertNotIn("example.invalid", str(ctx.exception))
+
+    @override_settings(MAIL_PROVIDER="resend", RESEND_API_KEY="re_key")
+    def test_resend_rejection_with_an_unreadable_body_still_raises(self) -> None:
+        import io
+        import urllib.error
+        from unittest import mock
+
+        error = urllib.error.HTTPError("https://api.resend.com/emails", 502, "Bad Gateway", {}, io.BytesIO(b"<html>"))  # type: ignore[arg-type]
+        with mock.patch("apps.shared.adapters.mailer.urllib.request.urlopen", side_effect=error):
+            with self.assertRaises(mailer.MailDeliveryError) as ctx:
+                mailer.get_mailer().send(mailer.OutgoingMail(to="a@example.invalid", subject="s", body="b"))
+        self.assertIn("502", str(ctx.exception))
+
+    @override_settings(MAIL_PROVIDER="resend", RESEND_API_KEY="re_key")
+    def test_resend_unreachable_raises_without_echoing_the_cause(self) -> None:
+        import urllib.error
+        from unittest import mock
+
+        with mock.patch(
+            "apps.shared.adapters.mailer.urllib.request.urlopen",
+            side_effect=urllib.error.URLError("a@example.invalid refused"),
+        ):
+            with self.assertRaises(mailer.MailDeliveryError) as ctx:
+                mailer.get_mailer().send(mailer.OutgoingMail(to="a@example.invalid", subject="s", body="b"))
+        self.assertNotIn("example.invalid", str(ctx.exception))
+
+    @override_settings(MAIL_PROVIDER="resend", RESEND_API_KEY="")
+    def test_resend_without_a_key_raises_and_sends_nothing(self) -> None:
+        from unittest import mock
+
+        with mock.patch("apps.shared.adapters.mailer.urllib.request.urlopen") as urlopen:
+            with self.assertRaises(mailer.MailDeliveryError):
+                mailer.get_mailer().send(mailer.OutgoingMail(to="a@example.invalid", subject="s", body="b"))
+        urlopen.assert_not_called()
+
     @override_settings(MAIL_PROVIDER="ses")
     def test_unknown_provider_is_refused(self) -> None:
         with self.assertRaises(ValueError):

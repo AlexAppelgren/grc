@@ -26,4 +26,6 @@ wordmark), both under the SIL Open Font License. Self-host them. SEB's own
 typeface is never used. Public pages only, and never behind sign-in: Libre
 Caslon Display for plate headlines and Libre Caslon Text for section headings,
 ledes and questions, both SIL OFL (approved with the public page by Alex,
-2026-09-24; `design/public/README.md`).
+2026-09-24; `design/public/README.md`). Since the Lexicon direction of
+2026-11-11 (D-130), Reenie Beanie, also SIL OFL, writes the public page's pen
+corrections.
