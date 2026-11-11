@@ -78,6 +78,9 @@ them.
   so a page load reaches the server, which moves it to the app's own host when there is one
   (`src/proxy.ts`).
 - **The ink** (`InkHead.tsx`). An SVG mask cuts `[blɛkː]` out of a green rectangle over a canvas.
+  Its view is cropped to the ink of the two brackets (61.6 to 938.8 of the line's 1000 units in
+  Noto Sans Mono at 700), and the logo takes the page's gutter, so the brackets start and end
+  where the bar, the deck, the entries and the demo do, at every width (Alex, 2026-11-11).
   A small fluid simulation on WebGL2 half-float targets carries the ink, so the pointer drags it
   in every direction and the ink settles back in a few seconds. The reference's script is the
   specification, and the component ports it with no new dependency. When the simulation cannot

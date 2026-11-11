@@ -49,11 +49,11 @@ a{color:inherit}
 .top .btn{height:2.5rem;padding:0 1.1rem;font-size:.95rem}
 
 /* the headword: letters cut out of the page, with ink moving behind them */
-.head{position:relative;margin:clamp(1.5rem,3.5vw,3rem) calc(var(--gutter) * .55) 0;aspect-ratio:1000/262;touch-action:pan-y}
-.head canvas{position:absolute;inset:1px;width:calc(100% - 2px);height:calc(100% - 2px);display:block;background:
+.head{position:relative;margin:clamp(1.5rem,3.5vw,3rem) var(--gutter) 0;aspect-ratio:877.2/262;touch-action:pan-y}
+.head canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:
   radial-gradient(60% 90% at 22% 60%,#0a3a2a 0,#0a3a2a 30%,transparent 62%),
   radial-gradient(50% 80% at 78% 30%,#14503a 0,transparent 60%),#f6f3ec}
-.head svg{position:absolute;inset:-1px;width:calc(100% + 2px);height:calc(100% + 2px);display:block}
+.head svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
 
 .entry{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(1.5rem,5vw,5rem);padding:clamp(3.5rem,8vw,7.5rem) var(--gutter) 0;align-items:start}
 .entry:last-of-type{padding-bottom:clamp(3.5rem,8vw,7.5rem)}
@@ -168,12 +168,12 @@ a{color:inherit}
 <main id="main">
 <div class="head" id="head" aria-hidden="true">
   <canvas id="ink"></canvas>
-  <svg viewBox="0 0 1000 262" preserveAspectRatio="none">
-    <defs><mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="262">
-      <rect width="1000" height="262" fill="#fff"/>
+  <svg viewBox="61.6 0 877.2 262" preserveAspectRatio="none">
+    <defs><mask id="cut" maskUnits="userSpaceOnUse" x="57.6" y="-4" width="885.2" height="270">
+      <rect x="57.6" y="-4" width="885.2" height="270" fill="#fff"/>
       <text x="500" y="207" text-anchor="middle" font-family="'Noto Sans Mono',monospace" font-weight="700" font-size="236" textLength="984" lengthAdjust="spacingAndGlyphs" fill="#000">[blɛkː]</text>
     </mask></defs>
-    <rect width="1000" height="262" fill="#0a3a2a" mask="url(#cut)"/>
+    <rect x="57.6" y="-4" width="885.2" height="270" fill="#0a3a2a" mask="url(#cut)"/>
   </svg>
 </div>
 

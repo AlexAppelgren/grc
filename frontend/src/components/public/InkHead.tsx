@@ -382,25 +382,30 @@ export function InkHead({ phonetic }: { phonetic: string }) {
     return stop;
   }, []);
 
+  // The view is cropped to the ink of the two brackets, 61.6 to 938.8 of the line's 1000
+  // units in Noto Sans Mono at 700 (measured in the browser, 2026-11-11), and the logo
+  // takes the page's own gutter, so the brackets start and end where the bar, the
+  // entries and the demo do (Alex, 2026-11-11).
   return (
     <div
       ref={headRef}
       aria-hidden="true"
       data-ink="css"
-      className="ink-still relative mx-[calc(var(--gutter)*0.55)] mt-[clamp(1.5rem,3.5vw,3rem)] aspect-[1000/262] touch-pan-y"
+      className="ink-still relative mx-(--gutter) mt-[clamp(1.5rem,3.5vw,3rem)] aspect-[877.2/262] touch-pan-y"
     >
-      <canvas ref={canvasRef} className="absolute inset-px block h-[calc(100%-2px)] w-[calc(100%-2px)]" />
-      <svg viewBox="0 0 1000 262" preserveAspectRatio="none" className="absolute -inset-px block h-[calc(100%+2px)] w-[calc(100%+2px)]">
+      <canvas ref={canvasRef} className="absolute inset-0 block size-full" />
+      {/* The green reaches a few units past the view on every side, so no edge of the canvas shows as a seam. */}
+      <svg viewBox="61.6 0 877.2 262" preserveAspectRatio="none" className="absolute inset-0 block size-full overflow-visible">
         <defs>
           {/* A mask's white keeps the page and its black cuts the letters out: luminance, not colours on screen. */}
-          <mask id="ink-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="262">
-            <rect width="1000" height="262" fill="#fff" />
+          <mask id="ink-cut" maskUnits="userSpaceOnUse" x="57.6" y="-4" width="885.2" height="270">
+            <rect x="57.6" y="-4" width="885.2" height="270" fill="#fff" />
             <text x="500" y="207" textAnchor="middle" fontSize="236" textLength="984" lengthAdjust="spacingAndGlyphs" fill="#000" className="font-mono font-bold">
               {phonetic}
             </text>
           </mask>
         </defs>
-        <rect width="1000" height="262" mask="url(#ink-cut)" className="fill-brand" />
+        <rect x="57.6" y="-4" width="885.2" height="270" mask="url(#ink-cut)" className="fill-brand" />
       </svg>
     </div>
   );
