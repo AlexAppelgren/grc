@@ -1062,7 +1062,11 @@ class IdentityScenarioTests(ScenarioTestCase):
         obligation = build.obligation(build.instrument(key="id-s31-instrument", regime="regime:securities"), key="obl-id-s31")
         self.activate(self.tenant)
 
-        proposer_key = factories.api_key(self.tenant, scopes=("proposals:write",))
+        # bleqq's own filing agent: a bank's proposal is approved by a person, never by an
+        # agent (review 2026-11-11 S-3), so the agent reviewer below decides platform filings.
+        tenancy.clear_tenant()
+        proposer_key = agents_testing.agent_key(scopes=("proposals:write",))
+        filed_under = str(agents_testing.platform_run(key=proposer_key).id)
         agent_headers = {"HTTP_X_API_KEY": proposer_key.plain_key}
         # An agent approves an obligation version and a vocabulary row, both records that
         # name the agent that confirmed them (D-79), and rejects a second list proposal.
@@ -1075,19 +1079,20 @@ class IdentityScenarioTests(ScenarioTestCase):
                 "targetId": str(obligation.id),
                 "payload": {"summaries": {"en": "The duty as the source now reads it."}, "originalLanguage": "en", "isMachine": True},
                 "fieldSources": {"summaries.en": "https://www.fi.se/"},
+                "agentRunId": filed_under,
             },
             **agent_headers,
         )
         self.assertEqual(made.status_code, 201, made.content)
         second = self._post(
             "/proposals",
-            {"kind": "vocabulary_create", "title": "Add the flag Sanctioned", "payload": {"list": "flag", "key": "sanctioned", "labels": {"en": "Sanctioned"}}},
+            {"kind": "vocabulary_create", "title": "Add the flag Sanctioned", "payload": {"list": "flag", "key": "sanctioned", "labels": {"en": "Sanctioned"}}, "agentRunId": filed_under},
             **agent_headers,
         )
         self.assertEqual(second.status_code, 201, second.content)
         listed_value = self._post(
             "/proposals",
-            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}},
+            {"kind": "vocabulary_create", "title": "Add the flag Client money", "payload": {"list": "flag", "key": "client_money", "labels": {"en": "Client money"}}, "agentRunId": filed_under},
             **agent_headers,
         )
         self.assertEqual(listed_value.status_code, 201, listed_value.content)
@@ -1097,6 +1102,7 @@ class IdentityScenarioTests(ScenarioTestCase):
         # it tried to decide are untouched: the scope is platform-only at the gate too.
         # It is refused whatever it sends: a bank's key opens no run (item 14), so the run it
         # names is one it never opened, and the gate answers before the run is looked at.
+        self.activate(self.tenant)
         rogue = {"HTTP_X_API_KEY": factories.api_key(self.tenant, scopes=(perms.SCOPE_PROPOSALS_REVIEW,)).plain_key}
         claimed = {"decision": agents_testing.DECISION, "agentRunId": str(uuid.uuid4())}
         for refused in (
