@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
 import { PasteUnitsDialog } from '@/components/inventory/PasteUnitsDialog';
 import { SoaView } from '@/components/inventory/SoaView';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ErrorState, LoadingState, ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { TabPanel, Tabs } from '@/components/ui/Tabs';
+import { ConfirmDialog, FormDialog } from '@/components/ui/Dialogs';
+import { Pager } from '@/components/ui/Pager';
 import { useFormatContext } from '@/features/identity/hooks';
 import { isStaleWrite, PANEL_WHOLE_LIST, useCreateUnit, useRegisterEntry, useReloadRegister, useRemoveUnit, useUnits, useUpdateUnit } from '@/features/register/hooks';
 import { presentApplicability, presentCompliance } from '@/features/register/register-presentation';
@@ -132,35 +133,26 @@ function EntityUnits({ obligationId, entity }: { obligationId: string; entity: E
         <TabPanel id="units-list">
           {actions}
           {created !== null ? <StatusLine tone="positive">{t('obligationUnits.created', { count: created })}</StatusLine> : null}
-          {units.isPending ? (
-            <LoadingState />
-          ) : units.isError ? (
-            <ErrorState title={t('obligationUnits.loadError')} onRetry={() => void units.refetch()} />
-          ) : units.data.total === 0 ? (
-            <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-units-empty="">
-              <h3 className="text-fg">{t('obligationUnits.emptyTitle', { entity: entity.name })}</h3>
-              <p className="mx-auto mt-2 max-w-[60ch]">{t('obligationUnits.emptyBody')}</p>
-            </div>
-          ) : (
-            <>
-              <p className="mb-2 text-meta text-muted">{t('obligationUnits.count', { count: units.data.total })}</p>
-              <Rows>
-                {units.data.items.map((unit) => (
-                  <UnitRow key={unit.id} unit={unit} canEdit={canEdit} onRename={() => setRenaming(unit)} onRemove={() => setRemoving(unit)} />
-                ))}
-              </Rows>
-              {units.data.total > PAGE_SIZE ? (
-                <ButtonBar>
-                  <Button variant="outline" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>
-                    {t('obligationUnits.previous')}
-                  </Button>
-                  <Button variant="outline" size="small" disabled={offset + PAGE_SIZE >= units.data.total} onClick={() => setOffset(offset + PAGE_SIZE)}>
-                    {t('obligationUnits.next')}
-                  </Button>
-                </ButtonBar>
-              ) : null}
-            </>
-          )}
+          <QueryState query={units} errorTitle={t('obligationUnits.loadError')}>
+            {(data) =>
+              data.total === 0 ? (
+                <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-units-empty="">
+                  <h3 className="text-fg">{t('obligationUnits.emptyTitle', { entity: entity.name })}</h3>
+                  <p className="mx-auto mt-2 max-w-[60ch]">{t('obligationUnits.emptyBody')}</p>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-2 text-meta text-muted">{t('obligationUnits.count', { count: data.total })}</p>
+                  <Rows>
+                    {data.items.map((unit) => (
+                      <UnitRow key={unit.id} unit={unit} canEdit={canEdit} onRename={() => setRenaming(unit)} onRemove={() => setRemoving(unit)} />
+                    ))}
+                  </Rows>
+                  {data.total > PAGE_SIZE ? <Pager offset={offset} limit={PAGE_SIZE} shown={data.items.length} total={data.total} onOffset={setOffset} /> : null}
+                </>
+              )
+            }
+          </QueryState>
         </TabPanel>
       )}
 
@@ -214,10 +206,10 @@ function UnitRow({ unit, canEdit, onRename, onRemove }: { unit: RegisterUnit; ca
       ) : canEdit ? (
         <ButtonBar className="mt-2">
           <Button variant="ghost" size="small" onClick={onRemove}>
-            {t('obligationUnits.remove')}
+            {t('common.remove')}
           </Button>
           <Button variant="outline" size="small" onClick={onRename}>
-            {t('obligationUnits.rename')}
+            {t('common.rename')}
           </Button>
         </ButtonBar>
       ) : null}
@@ -260,8 +252,7 @@ function UnitFormDialog({ obligationId, entity, open, unit, onClose }: { obligat
     onClose();
   };
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     const body = { reference: shownReference.trim(), title: shownTitle.trim() };
     const done = { onSuccess: close };
     if (unit === null) create.mutate({ orgUnitId: entity.id, ...body }, done);
@@ -276,12 +267,15 @@ function UnitFormDialog({ obligationId, entity, open, unit, onClose }: { obligat
   };
 
   return (
-    <Modal
-      open={open}
-      onOpenChange={(next) => (next ? undefined : close())}
-      title={unit === null ? t('obligationUnits.addTitle', { entity: entity.name }) : t('obligationUnits.renameTitle', { reference: unit.reference })}
-    >
-      <form onSubmit={submit} noValidate aria-busy={write.isPending}>
+    open ? (
+      <FormDialog
+        title={unit === null ? t('obligationUnits.addTitle', { entity: entity.name }) : t('obligationUnits.renameTitle', { reference: unit.reference })}
+        submitLabel={unit === null ? t('obligationUnits.addSubmit') : t('common.save')}
+        pending={write.isPending}
+        submitDisabled={shownReference.trim() === '' || shownTitle.trim() === '' || write.isPending}
+        onSubmit={submit}
+        onClose={close}
+      >
         <Field id="unit-reference" label={t('obligationUnits.reference')}>
           <TextInput id="unit-reference" className="font-mono" value={shownReference} onChange={(event) => setReference(event.target.value)} />
         </Field>
@@ -300,16 +294,8 @@ function UnitFormDialog({ obligationId, entity, open, unit, onClose }: { obligat
             <ProblemAlert error={write.error} codes={codes} />
           )
         ) : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={close}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={shownReference.trim() === '' || shownTitle.trim() === '' || write.isPending}>
-            {unit === null ? t('obligationUnits.addSubmit') : t('common.save')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+      </FormDialog>
+    ) : null
   );
 }
 
@@ -322,37 +308,30 @@ function RemoveUnitDialog({ unit, onClose }: { unit: RegisterUnit | null; onClos
     onClose();
   };
   return (
-    <Modal
-      open={unit !== null}
-      onOpenChange={(next) => (next ? undefined : close())}
-      title={t('obligationUnits.removeTitle', { reference: unit?.reference ?? '' })}
-      description={t('obligationUnits.removeBody', { title: unit?.title ?? '' })}
-    >
-      {remove.isError ? (
-        isStaleWrite(remove.error) ? (
-          <StaleWrite
-            onReload={() => {
-              void reload();
-              close();
+    unit !== null ? (
+      <ConfirmDialog
+        title={t('obligationUnits.removeTitle', { reference: unit?.reference ?? '' })}
+        body={t('obligationUnits.removeBody', { title: unit?.title ?? '' })}
+        action={t('common.remove')}
+        busy={remove.isPending}
+        onConfirm={() => {
+              if (unit !== null) remove.mutate({ unitId: unit.id, version: unit.version }, { onSuccess: close });
             }}
-          />
-        ) : (
-          <ProblemAlert error={remove.error} codes={{ unit_has_history: t('obligationUnits.problemHistory') }} />
-        )
-      ) : null}
-      <ButtonBar>
-        <Button variant="outline" onClick={close}>
-          {t('common.cancel')}
-        </Button>
-        <Button
-          disabled={remove.isPending}
-          onClick={() => {
-            if (unit !== null) remove.mutate({ unitId: unit.id, version: unit.version }, { onSuccess: close });
-          }}
-        >
-          {t('obligationUnits.remove')}
-        </Button>
-      </ButtonBar>
-    </Modal>
+        onClose={close}
+      >
+        {remove.isError ? (
+          isStaleWrite(remove.error) ? (
+            <StaleWrite
+              onReload={() => {
+                void reload();
+                close();
+              }}
+            />
+          ) : (
+            <ProblemAlert error={remove.error} codes={{ unit_has_history: t('obligationUnits.problemHistory') }} />
+          )
+        ) : null}
+      </ConfirmDialog>
+    ) : null
   );
 }

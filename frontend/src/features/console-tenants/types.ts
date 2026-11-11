@@ -30,6 +30,3 @@ export interface ConsoleTenantPage {
 
 // Partial: `limit` and `offset` have server defaults, which the generator renders as required fields.
 export type PageQuery = Partial<Schemas['PageQuery']>;
-
-/** A language row, as every vocabulary read returns it. */
-export type LanguageRef = Schemas['RoleRef'];

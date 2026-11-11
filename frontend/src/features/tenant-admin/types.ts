@@ -20,7 +20,6 @@ export interface Page<T> {
 // Partial: `limit` and `offset` have server defaults, which the generator renders as required fields.
 export type PageQuery = Partial<Schemas['PageQuery']>;
 
-export type OnboardingStep = Schemas['OnboardingStep'];
 export type Tenant = Schemas['TenantOut'];
 export type TenantUpdate = Schemas['TenantPatch'];
 

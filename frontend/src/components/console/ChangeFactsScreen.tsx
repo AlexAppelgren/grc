@@ -9,7 +9,8 @@ import { Notice } from '@/components/ui/Notice';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { QueryState } from '@/components/ui/States';
+import { Pager } from '@/components/ui/Pager';
 import { CONSOLE_CHANGES_PAGE, authorityAndPublished, firstSeen, presentConsoleChange, useConsoleChanges, type ConsoleChangeRow } from '@/features/console-watch/change-facts';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
@@ -66,32 +67,22 @@ export function ChangeFactsScreen() {
           {t('console.changeFacts.filter.onlyUnconfirmed')}
         </Button>
       </div>
-      {changes.isPending ? (
-        <LoadingState rows={3} />
-      ) : changes.isError ? (
-        <ErrorState title={t('console.changeFacts.errorTitle')} onRetry={() => void changes.refetch()} />
-      ) : changes.data.items.length === 0 ? (
-        <EmptyState title={t('console.changeFacts.emptyTitle')} body={t('console.changeFacts.emptyBody')} action={{ label: t('console.changeFacts.emptyAction'), href: '/console/sources' }} />
-      ) : (
-        <>
-          <Rows data-change-facts-list="">
-            {changes.data.items.map((row) => (
-              <QueueRow key={row.id} row={row} />
-            ))}
-          </Rows>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-meta text-muted">
-            <span>{t('console.changeFacts.range', { from: offset + 1, to: offset + changes.data.items.length, total: changes.data.total })}</span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - CONSOLE_CHANGES_PAGE))}>
-                {t('console.changeFacts.newer')}
-              </Button>
-              <Button variant="outline" size="small" disabled={offset + CONSOLE_CHANGES_PAGE >= changes.data.total} onClick={() => setOffset(offset + CONSOLE_CHANGES_PAGE)}>
-                {t('console.changeFacts.older')}
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+      <QueryState query={changes} rows={3} errorTitle={t('console.changeFacts.errorTitle')}>
+        {(data) =>
+          data.items.length === 0 ? (
+            <EmptyState title={t('console.changeFacts.emptyTitle')} body={t('console.changeFacts.emptyBody')} action={{ label: t('console.changeFacts.emptyAction'), href: '/console/sources' }} />
+          ) : (
+            <>
+              <Rows data-change-facts-list="">
+                {data.items.map((row) => (
+                  <QueueRow key={row.id} row={row} />
+                ))}
+              </Rows>
+              <Pager inTime offset={offset} limit={CONSOLE_CHANGES_PAGE} shown={data.items.length} total={data.total} onOffset={setOffset} />
+            </>
+          )
+        }
+      </QueryState>
     </>
   );
 }

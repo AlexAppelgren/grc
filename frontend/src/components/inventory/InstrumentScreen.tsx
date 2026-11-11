@@ -18,14 +18,15 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Meta, Panel } from '@/components/ui/Panel';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, NotFoundScreen } from '@/components/ui/States';
+import { ErrorState, LoadingState, NotFoundScreen, QueryState } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
+import { lineageDirectionOf } from '@/features/library/api';
 import { useInstrument, useObligations, useReportInstrumentProblem } from '@/features/library/hooks';
 import { DIRECTIVE_LEVEL, obligationsTitleOf, presentInstrument } from '@/features/library/instrument-presentation';
 import { markPrivateToUs, presentBindingLevel } from '@/features/library/obligation-presentation';
 import type { InstrumentDetail, InstrumentLineageRef, InstrumentLinkRef, ScopeFilter } from '@/features/library/types';
 import { inForceLabel, languageName } from '@/features/library/version-presentation';
-import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
+import { useRefreshProblemReports } from '@/features/library/problem-reports/hooks';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';
 import { usePermissions } from '@/shared/navigation/require-permission';
 import { externalHref } from '@/shared/utils/external-href';
@@ -46,7 +47,7 @@ const REPORT_PERMISSION = 'problems.report';
 interface LineageGroupOf {
   id: string;
   relation: InstrumentLineageRef['relation'];
-  direction: InstrumentLineageRef['direction'];
+  direction: 'outgoing' | 'incoming';
   links: InstrumentLineageRef[];
 }
 
@@ -58,8 +59,9 @@ interface LineageGroupOf {
 function lineageGroups(lineage: readonly InstrumentLineageRef[]): LineageGroupOf[] {
   const groups = new Map<string, LineageGroupOf>();
   for (const link of lineage) {
-    const id = `${link.relation.key}:${link.direction}`;
-    const group = groups.get(id) ?? { id, relation: link.relation, direction: link.direction, links: [] };
+    const direction = lineageDirectionOf(link);
+    const id = `${link.relation.key}:${direction}`;
+    const group = groups.get(id) ?? { id, relation: link.relation, direction, links: [] };
     group.links.push(link);
     groups.set(id, group);
   }
@@ -75,7 +77,7 @@ function LineageGroup({ group }: { group: LineageGroupOf }) {
       <h3 className="mb-1.5 font-semibold">{title}</h3>
       <ul className="m-0 grid list-none gap-1.5 p-0 text-meta">
         {group.links.map((link) => (
-          <li key={`${link.relation.key}:${link.direction}:${link.instrument.key}`} data-lineage-instrument={link.instrument.key}>
+          <li key={`${group.id}:${link.instrument.key}`} data-lineage-instrument={link.instrument.key}>
             <span className="font-medium">{link.instrument.shortName}</span>
             {link.note === '' ? null : <Meta className="mt-0.5">{link.note}</Meta>}
           </li>
@@ -259,29 +261,29 @@ function ObligationsPanel({ instrument }: { instrument: InstrumentDetail }) {
       <div className="mb-3">
         <ScopeControl value={scope} onChange={setScope} />
       </div>
-      {obligations.isPending ? (
-        <LoadingState rows={2} />
-      ) : obligations.isError ? (
-        <ErrorState title={t('inventory.instrument.obligationsErrorTitle')} onRetry={() => void obligations.refetch()} />
-      ) : items.length === 0 ? (
-        <p className="text-meta text-muted">
-          {t(scope === 'all' ? 'inventory.instrument.obligationsEmpty' : scope === 'watched' ? 'library.empty.watched.title' : 'inventory.instrument.obligationsEmptyInScope')}
-        </p>
-      ) : (
-        <>
-          <div className="grid gap-2">
-            {items.map((obligation) => (
-              <ObligationRow key={obligation.id} obligation={obligation} watched={scope === 'watched'} />
-            ))}
-          </div>
-          <Meta className="mt-3">
-            <span data-obligations-total="">{t('inventory.count', { count: obligations.data?.total ?? items.length })}</span>
-            <Link href={inventory} prefetch={false} className="underline">
-              {t('inventory.instrument.obligationsInInventory')}
-            </Link>
-          </Meta>
-        </>
-      )}
+      <QueryState query={obligations} rows={2} errorTitle={t('inventory.instrument.obligationsErrorTitle')}>
+        {(data) =>
+          items.length === 0 ? (
+            <p className="text-meta text-muted">
+              {t(scope === 'all' ? 'inventory.instrument.obligationsEmpty' : scope === 'watched' ? 'library.empty.watched.title' : 'inventory.instrument.obligationsEmptyInScope')}
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-2">
+                {items.map((obligation) => (
+                  <ObligationRow key={obligation.id} obligation={obligation} watched={scope === 'watched'} />
+                ))}
+              </div>
+              <Meta className="mt-3">
+                <span data-obligations-total="">{t('inventory.count', { count: data?.total ?? items.length })}</span>
+                <Link href={inventory} prefetch={false} className="underline">
+                  {t('inventory.instrument.obligationsInInventory')}
+                </Link>
+              </Meta>
+            </>
+          )
+        }
+      </QueryState>
     </Panel>
   );
 }

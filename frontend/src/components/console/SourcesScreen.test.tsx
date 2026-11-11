@@ -41,7 +41,6 @@ const editor = {
 
 function server(sources: Answer, coverage: Answer = { status: 200, data: COVERAGE }): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: editor };
     if (sent.path === COVERAGE_PATH) return coverage;
     if (sent.path === SOURCES_PATH && sent.method === 'get') return sources;

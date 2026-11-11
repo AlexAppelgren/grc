@@ -56,7 +56,6 @@ const platformAdmin = {
 
 function server(keys: Answer, extra: (sent: Sent) => Answer | undefined = () => undefined): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: platformAdmin };
     const answer = extra(sent);
     if (answer !== undefined) return answer;

@@ -1,7 +1,7 @@
 import type { AxiosResponse } from 'axios';
 
 import type { components } from '@/types/api.generated';
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
 
 import type {
   Page,
@@ -29,8 +29,6 @@ type Schemas = components['schemas'];
 // proposal it created (VOC-07), which `writeOf` turns into `proposed`.
 
 const VOCAB = '/api/v1/vocab';
-
-const id = (value: string) => encodeURIComponent(value);
 
 /** Lists come as `{items,total}`; a bare array is tolerated while the contract settles. */
 export function itemsOf<T>(data: T[] | Page<T> | null | undefined): T[] {
@@ -72,28 +70,28 @@ export async function listVocabularies(): Promise<VocabularyListSummary[]> {
 
 export async function listValues(list: string, query: VocabularyQuery = {}): Promise<VocabularyRow[]> {
   const params = query.includeRetired === true ? { includeRetired: true } : {};
-  return itemsOf((await api.get<VocabularyRow[] | Page<VocabularyRow>>(`${VOCAB}/${id(list)}`, { params })).data);
+  return itemsOf((await api.get<VocabularyRow[] | Page<VocabularyRow>>(`${VOCAB}/${segment(list)}`, { params })).data);
 }
 
 export async function createValue(list: string, body: VocabularyCreate): Promise<VocabularyWrite<VocabularyRow>> {
-  return writeOf(await api.post<VocabularyRow>(`${VOCAB}/${id(list)}`, body));
+  return writeOf(await api.post<VocabularyRow>(`${VOCAB}/${segment(list)}`, body));
 }
 
 export async function updateValue(list: string, key: string, body: VocabularyUpdate, version?: number): Promise<VocabularyWrite<VocabularyRow>> {
-  return writeOf(await api.patch<VocabularyRow>(`${VOCAB}/${id(list)}/${id(key)}`, body, version === undefined ? {} : { version }));
+  return writeOf(await api.patch<VocabularyRow>(`${VOCAB}/${segment(list)}/${segment(key)}`, body, version === undefined ? {} : { version }));
 }
 
 export async function reorderValues(list: string, keys: string[]): Promise<void> {
-  await api.post(`${VOCAB}/${id(list)}/reorder`, { keys });
+  await api.post(`${VOCAB}/${segment(list)}/reorder`, { keys });
 }
 
 export async function retireValue(list: string, key: string, confirm: boolean): Promise<VocabularyWrite<VocabularyRetireResult>> {
-  return writeOf(await api.post<Schemas['VocabularyRetired']>(`${VOCAB}/${id(list)}/${id(key)}/retire`, { confirm }));
+  return writeOf(await api.post<Schemas['VocabularyRetired']>(`${VOCAB}/${segment(list)}/${segment(key)}/retire`, { confirm }));
 }
 
 /** The inverse of retire: the value is offered by pickers and filters again. */
 export async function restoreValue(list: string, key: string): Promise<VocabularyWrite<Schemas['VocabularyRestored']>> {
-  return writeOf(await api.post<Schemas['VocabularyRestored']>(`${VOCAB}/${id(list)}/${id(key)}/restore`, {}));
+  return writeOf(await api.post<Schemas['VocabularyRestored']>(`${VOCAB}/${segment(list)}/${segment(key)}/restore`, {}));
 }
 
 /** `repointed` is what moves: the same number on the dry run and on the commit. */
@@ -102,11 +100,11 @@ export function mergedOf(raw: Schemas['VocabularyMerged']): VocabularyMergePrevi
 }
 
 export async function previewMerge(list: string, key: string, into: string): Promise<VocabularyMergePreview> {
-  return mergedOf((await api.post<Schemas['VocabularyMerged']>(`${VOCAB}/${id(list)}/${id(key)}/merge`, { into }, { params: { dryRun: true } })).data);
+  return mergedOf((await api.post<Schemas['VocabularyMerged']>(`${VOCAB}/${segment(list)}/${segment(key)}/merge`, { into }, { params: { dryRun: true } })).data);
 }
 
 export async function mergeValue(list: string, key: string, into: string): Promise<VocabularyWrite<VocabularyMergePreview>> {
-  const write = writeOf(await api.post<Schemas['VocabularyMerged']>(`${VOCAB}/${id(list)}/${id(key)}/merge`, { into }));
+  const write = writeOf(await api.post<Schemas['VocabularyMerged']>(`${VOCAB}/${segment(list)}/${segment(key)}/merge`, { into }));
   return write.outcome === 'applied' ? { outcome: 'applied', result: mergedOf(write.result) } : write;
 }
 
@@ -116,18 +114,18 @@ export function suggestionOf(raw: Schemas['VocabularySuggestionRow']): Vocabular
 
 /** A tenant list answers 201 with the waiting suggestion; a library list 202 with a proposal. */
 export async function suggestValue(list: string, body: VocabularySuggest): Promise<VocabularySuggestResult> {
-  const response = await api.post<Schemas['VocabularySuggestionRow']>(`${VOCAB}/${id(list)}/suggest`, body);
+  const response = await api.post<Schemas['VocabularySuggestionRow']>(`${VOCAB}/${segment(list)}/suggest`, body);
   if (response.status === 202) return { outcome: 'proposed', proposal: proposalOf(response.data) };
   return { outcome: 'suggested', suggestion: suggestionOf(response.data) };
 }
 
 /** The suggestions still waiting on one of the bank's own lists, oldest first (the admin's inbox). */
 export async function listSuggestions(list: string): Promise<{ items: VocabularySuggestion[]; total: number }> {
-  const page = (await api.get<Schemas['VocabularySuggestionPage']>(`${VOCAB}/${id(list)}/suggestions`)).data;
+  const page = (await api.get<Schemas['VocabularySuggestionPage']>(`${VOCAB}/${segment(list)}/suggestions`)).data;
   return { items: page.items.map(suggestionOf), total: page.total };
 }
 
 /** Saying yes is `createValue` with the suggestion's key, which answers every suggestion for it. */
 export async function declineSuggestion(list: string, suggestionId: string): Promise<VocabularySuggestion> {
-  return suggestionOf((await api.post<Schemas['VocabularySuggestionRow']>(`${VOCAB}/${id(list)}/suggestions/${id(suggestionId)}/decline`, {})).data);
+  return suggestionOf((await api.post<Schemas['VocabularySuggestionRow']>(`${VOCAB}/${segment(list)}/suggestions/${segment(suggestionId)}/decline`, {})).data);
 }

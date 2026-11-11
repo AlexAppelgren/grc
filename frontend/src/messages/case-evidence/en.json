@@ -12,7 +12,6 @@
   "caseEvidence.hint.infected": "The file was deleted. Its name and fingerprint stay on the case.",
   "caseEvidence.hint.error": "Nobody can open it. Remove it and attach the file again.",
   "caseEvidence.download": "Download",
-  "caseEvidence.remove": "Remove",
   "caseEvidence.removeTitle": "Remove \"{name}\"?",
   "caseEvidence.removeBody": "It leaves the list and no longer counts toward sign-off. The case file keeps its name, its fingerprint and the date it was removed.",
   "caseEvidence.readOnly": "Evidence can't be added or removed while the case waits for sign-off. Sending it back opens it again.",

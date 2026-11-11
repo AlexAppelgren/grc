@@ -2,6 +2,8 @@
 
 import { Fragment } from 'react';
 
+import { diffOpOf } from '@/features/library/api';
+import type { DiffSegment } from '@/features/library/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 
 // "Show what changed" (design/screens/tenant-obligation.html; INV-04, AC-INV1):
@@ -12,10 +14,6 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 // Screen readers do not announce ins and del, so each says in words where it
 // starts and ends.
 
-export interface DiffSegment {
-  op: 'equal' | 'insert' | 'delete';
-  text: string;
-}
 
 const MARKS = {
   insert: { Tag: 'ins', className: 'bg-positive-soft no-underline', start: 'diff.addedStart', end: 'diff.addedEnd' },
@@ -27,7 +25,8 @@ export function DiffText({ segments }: { segments: readonly DiffSegment[] }) {
   return (
     <>
       {segments.map((segment, i) => {
-        const mark = segment.op === 'equal' ? null : MARKS[segment.op];
+        const op = diffOpOf(segment.op);
+        const mark = op === 'equal' ? null : MARKS[op];
         return (
           <Fragment key={i}>
             {i > 0 ? ' ' : null}

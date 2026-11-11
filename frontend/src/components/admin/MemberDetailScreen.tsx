@@ -18,11 +18,12 @@ import { presentMember } from '@/features/tenant-admin/members-presentation';
 import { kindCount, kindsStillOwned, movedWork, participationCount, useOpenWork, useRemoveMember, type Owners } from '@/features/tenant-admin/members/removal';
 import { useOrgUnits } from '@/features/tenant-admin/organisation/hooks';
 import { OwnerSelect, TeamChecks } from '@/features/tenant-admin/teams/TeamPicker';
-import { useSetMemberTeams, useTeams } from '@/features/tenant-admin/teams/hooks';
+import { useSetMemberTeams } from '@/features/tenant-admin/teams/hooks';
 import type { Member } from '@/features/tenant-admin/types';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { formatDateTime } from '@/shared/utils/format';
 import { problemStatus } from '@/shared/utils/problem';
+import { useTeams } from '@/features/shared/reference';
 
 // One member (design/screens/admin-members.html, detail): roles and title,
 // teams, sessions, re-issue enrolment, deactivate. Role changes, re-issue and
@@ -73,7 +74,7 @@ function RolesForm({ member, update }: { member: Member; update: ReturnType<type
             ))}
         </CheckGroup>
         {update.isError ? <ProblemAlert error={update.error} codes={{ last_admin: t('admin.members.lastAdmin'), step_up_required: t('problem.stepUpCancelled') }} /> : null}
-        {update.isSuccess ? <StatusLine tone="positive">{t('admin.members.saved')}</StatusLine> : null}
+        {update.isSuccess ? <StatusLine tone="positive">{t('common.saved')}</StatusLine> : null}
         <ButtonBar>
           <Button type="submit" disabled={update.isPending}>
             {t('common.save')}

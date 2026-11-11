@@ -16,8 +16,6 @@ export type RegisterPatch = Schemas['RegisterPatch'];
 export type RegisterEntityPatch = Schemas['RegisterEntityPatch'];
 export type RegisterApplicability = Schemas['RegisterApplicability'];
 export type RegisterApplicabilityBody = Schemas['RegisterApplicabilityBody'];
-export type RegisterApplicabilityMany = Schemas['RegisterApplicabilityMany'];
-export type RegisterApplicabilityManyBody = Schemas['RegisterApplicabilityManyBody'];
 export type RegisterGap = Schemas['RegisterGap'];
 export type RegisterGapPage = Schemas['RegisterGapPage'];
 export type RegisterGapBody = Schemas['RegisterGapBody'];
@@ -38,9 +36,6 @@ export type RegisterUnitPatch = Schemas['RegisterUnitPatch'];
 export type RegisterUnitPaste = Schemas['RegisterUnitPaste'];
 export type RegisterUnitPasteBody = Schemas['RegisterUnitPasteBody'];
 export type RegisterStatementOfApplicability = Schemas['RegisterStatementOfApplicability'];
-export type RegisterDutyPage = Schemas['RegisterDutyPage'];
-export type RegisterDutyCompleteBody = Schemas['RegisterDutyCompleteBody'];
-export type RegisterDutyCompletion = Schemas['RegisterDutyCompletion'];
 
 /** One page of a register list: `limit` 20 by default and 100 at most, `offset` from 0. */
 export interface RegisterPageQuery {

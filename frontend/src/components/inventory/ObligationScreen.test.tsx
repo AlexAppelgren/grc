@@ -123,6 +123,11 @@ const research: ObligationDetail = {
     createdModel: 'agent pipeline 0.3',
     ...nobody,
   },
+  applicability: 'under_assessment',
+  complianceStatus: null,
+  firstLineOwner: null,
+  ownerTeam: null,
+  provisions: [],
 };
 
 const ME = {
@@ -153,6 +158,8 @@ const versionDiff: VersionDiff = {
   toEffective: { date: '2026-10-01', precision: 'day' },
   language: 'en',
   isMachine: true,
+  fromConfirmation: null,
+  toConfirmation: null,
   segments: [
     { op: 'equal', text: 'Research from third parties may be received only if…' },
     { op: 'insert', text: 'The institution sets criteria for an annual assessment.' },
@@ -162,7 +169,6 @@ const versionDiff: VersionDiff = {
 /** The server: /me for the format context and the permissions, then the card, the register read, the diff and the report. */
 function serve(answer: ObligationDetail | number, register: number = 200) {
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     // The bank has answered nothing on this duty; the panels are markers here.
     if (sent.path === '/api/v1/obligations/ob-1/register') {
       const nothingYet = { problemReports: { items: [], total: 0 }, changes: { items: [], total: 0, openCount: 0 } };
@@ -180,7 +186,7 @@ function serve(answer: ObligationDetail | number, register: number = 200) {
     const asOf = (sent.params as { asOf?: string } | null)?.asOf;
     if (asOf === '2026-10-01') return { status: 200, data: { ...answer, version: answer.versions[1] } };
     return { status: 200, data: answer };
-  });
+  }, { me: ME });
 }
 
 describe('the language chips', () => {

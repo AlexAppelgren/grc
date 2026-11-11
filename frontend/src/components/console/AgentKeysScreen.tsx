@@ -1,20 +1,20 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CheckGroup, CheckRow, Field, Select, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
+import { SecretOnce } from '@/components/ui/SecretOnce';
+import { FormDialog } from '@/components/ui/Dialogs';
 import {
   AGENT_KEY_SCOPES,
   isLive,
   presentAgentKey,
-  useAgentDefinitions,
   useAgentKeys,
   useCreateAgentKey,
   useRevokeAgentKey,
@@ -22,9 +22,9 @@ import {
   type AgentKeyCreated,
 } from '@/features/console-watch/agent-keys';
 import { useFormatContext } from '@/features/identity/hooks';
-import { humaniseKey } from '@/features/tenant-admin/members-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { formatDate, formatDateTime } from '@/shared/utils/format';
+import { formatDate, formatDateTime, humaniseKey } from '@/shared/utils/format';
+import { useAgentDefinitions } from '@/features/agents/hooks';
 
 // Agent keys (design/screens/console-agent-keys.html, ID-10, AGT-01): the keys
 // bleqq's own agents run on, each bound to the agent everything it writes is
@@ -38,31 +38,12 @@ import { formatDate, formatDateTime } from '@/shared/utils/format';
 
 function NewKeyPanel({ created, onDone }: { created: AgentKeyCreated; onDone: () => void }) {
   const t = useT();
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(created.plainKey);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  };
   return (
     <Panel title={t('console.agentKeys.secretTitle')} role="status" data-new-key="">
-      <pre className="m-0 mb-3 rounded-control border border-line bg-subtle p-3 font-mono break-all whitespace-pre-wrap" data-plain-key="">
-        {created.plainKey}
-      </pre>
-      <p className="text-muted">{t('console.agentKeys.secretBody')}</p>
-      <p className="text-meta text-muted">{t('console.agentKeys.secretOnce')}</p>
-      {copied ? <StatusLine tone="positive">{t('console.agentKeys.copied')}</StatusLine> : null}
-      <ButtonBar>
-        <Button variant="outline" size="small" onClick={onDone}>
-          {t('common.done')}
-        </Button>
-        <Button size="small" onClick={() => void copy()}>
-          {t('console.agentKeys.copy')}
-        </Button>
-      </ButtonBar>
+      <SecretOnce secret={created.plainKey} copyLabel={t('console.agentKeys.copy')} onDone={onDone}>
+        <p className="text-muted">{t('console.agentKeys.secretBody')}</p>
+        <p className="text-meta text-muted">{t('console.agentKeys.secretOnce')}</p>
+      </SecretOnce>
     </Panel>
   );
 }
@@ -79,8 +60,7 @@ function CreateKeyModal({ open, onClose, onCreated }: { open: boolean; onClose: 
   const [scopes, setScopes] = useState<string[]>([]);
   const [problem, setProblem] = useState<FormProblem | null>(null);
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     if (name.trim() === '') return setProblem('name');
     if (agentId === '') return setProblem('agent');
     if (scopes.length === 0) return setProblem('scopes');
@@ -101,8 +81,18 @@ function CreateKeyModal({ open, onClose, onCreated }: { open: boolean; onClose: 
   };
 
   return (
-    <Modal open={open} onOpenChange={(next) => (next ? undefined : onClose())} title={t('console.agentKeys.createTitle')} description={t('console.agentKeys.stepUpNote')}>
-      <form onSubmit={submit} noValidate aria-busy={create.isPending} data-agent-key-form="">
+    open ? (
+      <FormDialog
+        title={t('console.agentKeys.createTitle')}
+        description={t('console.agentKeys.stepUpNote')}
+        submitLabel={t('console.agentKeys.createAction')}
+        pending={create.isPending}
+        error={create.error}
+        codes={{ step_up_required: t('problem.stepUpCancelled') }}
+        onSubmit={submit}
+        onClose={onClose}
+        formProps={{ 'data-agent-key-form': '' }}
+      >
         <Field id="agent-key-name" label={t('console.agentKeys.name')} hint={t('console.agentKeys.nameHint')} error={problem === 'name' ? t('console.agentKeys.nameRequired') : undefined}>
           <TextInput id="agent-key-name" value={name} placeholder={t('console.agentKeys.namePlaceholder')} onChange={(e) => setName(e.target.value)} />
         </Field>
@@ -133,17 +123,8 @@ function CreateKeyModal({ open, onClose, onCreated }: { open: boolean; onClose: 
           ))}
         </CheckGroup>
         {definitions.isError ? <ProblemAlert error={definitions.error} /> : null}
-        {create.isError ? <ProblemAlert error={create.error} codes={{ step_up_required: t('problem.stepUpCancelled') }} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose} disabled={create.isPending}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={create.isPending}>
-            {t('console.agentKeys.createAction')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+      </FormDialog>
+    ) : null
   );
 }
 
@@ -180,7 +161,7 @@ function KeyRow({ agentKey, now }: { agentKey: AgentKey; now: Date }) {
             </>
           ) : (
             <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
-              {t('console.agentKeys.revoke')}
+              {t('common.revoke')}
             </Button>
           )}
         </ButtonBar>
@@ -200,19 +181,19 @@ export function AgentKeysScreen() {
     <>
       <PageHead title={t('console.agentKeys.title')} lede={t('console.agentKeys.lede')} actions={<Button onClick={() => setCreating(true)}>{t('console.agentKeys.create')}</Button>} />
       {created !== null ? <NewKeyPanel created={created} onDone={() => setCreated(null)} /> : null}
-      {keys.isPending ? (
-        <LoadingState rows={3} />
-      ) : keys.isError ? (
-        <ErrorState title={t('console.agentKeys.errorTitle')} onRetry={() => void keys.refetch()} />
-      ) : keys.data.items.length === 0 ? (
-        <EmptyState title={t('console.agentKeys.emptyTitle')} body={t('console.agentKeys.emptyBody')} />
-      ) : (
-        <Rows data-agent-keys-list="">
-          {keys.data.items.map((agentKey) => (
-            <KeyRow key={agentKey.id} agentKey={agentKey} now={now} />
-          ))}
-        </Rows>
-      )}
+      <QueryState query={keys} rows={3} errorTitle={t('console.agentKeys.errorTitle')}>
+        {(data) =>
+          data.items.length === 0 ? (
+            <EmptyState title={t('console.agentKeys.emptyTitle')} body={t('console.agentKeys.emptyBody')} />
+          ) : (
+            <Rows data-agent-keys-list="">
+              {data.items.map((agentKey) => (
+                <KeyRow key={agentKey.id} agentKey={agentKey} now={now} />
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
       <CreateKeyModal open={creating} onClose={() => setCreating(false)} onCreated={setCreated} />
     </>
   );

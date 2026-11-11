@@ -1,11 +1,9 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { ObligationLinksPanel } from './ObligationLinksPanel';
 
@@ -42,17 +40,7 @@ function serve(links: unknown[], write: (sent: Sent) => Answer = () => ({ status
 }
 
 function renderPanel(permissions: string[]) {
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <ObligationLinksPanel obligationId="ob-1" />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  return renderWith(<ObligationLinksPanel obligationId="ob-1" />, { permissions });
 }
 
 describe('ObligationLinksPanel', () => {

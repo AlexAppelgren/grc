@@ -92,7 +92,7 @@ export function MoreSheet({ surface, children }: { surface: Surface; children: R
       >
         <div className="flex items-center justify-between gap-2 py-1 pr-2 pl-4">
           <SheetTitle>{t('nav.more')}</SheetTitle>
-          <SheetClose aria-label={t('shell.close')} className="inline-flex size-11 items-center justify-center rounded-control text-fg hover:hover-fill">
+          <SheetClose aria-label={t('common.close')} className="inline-flex size-11 items-center justify-center rounded-control text-fg hover:hover-fill">
             <NavIcon id="close" size="tab" />
           </SheetClose>
         </div>

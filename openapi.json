@@ -47144,7 +47144,7 @@
     },
     "/api/v1/console/agent-runs": {
       "get": {
-        "description": "Returns the runs of bleqq's own agents, oldest first, one page at a time, with the\nversion each ran, what it cost and how it ended, for the console's agent pages. A\nplatform run reads no bank's row, so no bank's name or figure is in it.\n\nA person's session in the platform console holding `agent_definitions.manage`. It reads\nand writes nothing to the audit log. An empty list is a 200 with `total` 0.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or\n`offset` beyond the accepted depth.",
+        "description": "Returns the runs of bleqq's own agents, newest first, one page at a time, with the\nversion each ran, what it cost and how it ended, for the console's agent pages. A\nplatform run reads no bank's row, so no bank's name or figure is in it.\n\nA person's session in the platform console holding `agent_definitions.manage`. It reads\nand writes nothing to the audit log. An empty list is a 200 with `total` 0.\n\nErrors: `unauthenticated` (401); `permission_denied` (403) without\n`agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or\n`offset` beyond the accepted depth.",
         "operationId": "listPlatformRuns",
         "parameters": [
           {

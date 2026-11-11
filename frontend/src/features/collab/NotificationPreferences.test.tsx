@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { Me } from '@/features/identity/types';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { api, pathOf, REFRESH_PATH } from '@/shared/utils/api-client';
+import { api, pathOf } from '@/shared/utils/api-client';
 
 import { NotificationPreferences } from './NotificationPreferences';
 import type { NotificationPrefs } from './types';
@@ -40,7 +40,6 @@ function me(notificationPrefs: NotificationPrefs | null): Me {
 function server(start: NotificationPrefs | null, patch?: Answer): Sent[] {
   let stored = start;
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH && sent.method === 'get') return { status: 200, data: me(stored) };
     if (sent.path === ME_PATH && sent.method === 'patch') {
       if (patch !== undefined) return patch;

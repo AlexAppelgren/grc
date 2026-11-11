@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
+import { Pager } from '@/components/ui/Pager';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
 import { RestrictedScreen, forbiddenFrom } from '@/shared/navigation/require-permission';
@@ -69,19 +69,7 @@ export function PrivateRecordsScreen() {
             <QueueRow key={row.id} row={row} />
           ))}
         </div>
-        {total > PAGE ? (
-          <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
-            <span className="text-meta text-muted">{t('privateRecords.range', { from: offset + 1, to: offset + items.length, total })}</span>
-            <ButtonBar className="mt-0">
-              <Button variant="outline" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE))}>
-                {t('privateRecords.previous')}
-              </Button>
-              <Button variant="outline" size="small" disabled={offset + PAGE >= total} onClick={() => setOffset(offset + PAGE)}>
-                {t('privateRecords.next')}
-              </Button>
-            </ButtonBar>
-          </div>
-        ) : null}
+        {total > PAGE ? <Pager offset={offset} limit={PAGE} shown={items.length} total={total} onOffset={setOffset} /> : null}
       </>
     );
   }

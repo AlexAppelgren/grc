@@ -15,10 +15,8 @@ import type {
   CloseBody,
   EvidenceForm,
   NoteBody,
-  PersonRef,
   ReasonBody,
-  TriageBody,
-} from './types';
+  TriageBody } from './types';
 
 // Thin typed wrappers returning `.data` (playbook 6.1), one per case workflow
 // operation (CAS-02 to CAS-08). A case is addressed by its change: a bank has
@@ -205,11 +203,3 @@ export async function getCaseFile(changeId: string): Promise<string> {
 // ---------------------------------------------------------------------------
 // c9-fe-triage-assessment: who may own a case
 // ---------------------------------------------------------------------------
-
-/**
- * The bank's active members whose roles hold `permission`, by name: an owner
- * picker offers only people the triage would accept (`cases.work`).
- */
-export async function listPeople(permission: string): Promise<PersonRef[]> {
-  return (await api.get<PersonRef[]>('/api/v1/reference/people', { params: { permission } })).data;
-}

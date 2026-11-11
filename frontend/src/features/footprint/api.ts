@@ -1,6 +1,6 @@
-import type { ProposalRef } from '@/features/vocabularies/types';
 import type { components } from '@/types/api.generated';
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
+import { listTermRows } from '@/features/shared/reference';
 
 import type {
   EntityTermLine,
@@ -19,7 +19,6 @@ import type {
   ScopeItem,
   TaxonomyDimension,
   TaxonomyTerm,
-  TermSuggest,
 } from './types';
 
 // Thin typed wrappers returning `.data` (playbook 6.1). Paths are the
@@ -34,8 +33,6 @@ const FOOTPRINT = '/api/v1/tenant/footprint';
 const REQUESTS = `${FOOTPRINT}/requests`;
 const WATCHING = `${FOOTPRINT}/watching`;
 const TAXONOMY = '/api/v1/taxonomy';
-
-const id = (value: string) => encodeURIComponent(value);
 
 type Schemas = components['schemas'];
 
@@ -157,15 +154,15 @@ export async function createFootprintRequest(body: FootprintRequestCreate): Prom
 }
 
 export async function approveFootprintRequest(requestId: string, version?: number): Promise<FootprintChangeRequest> {
-  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${id(requestId)}/approve`, {}, version === undefined ? {} : { version })).data);
+  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${segment(requestId)}/approve`, {}, version === undefined ? {} : { version })).data);
 }
 
 export async function rejectFootprintRequest(requestId: string, body: FootprintRejectBody, version?: number): Promise<FootprintChangeRequest> {
-  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${id(requestId)}/reject`, body, version === undefined ? {} : { version })).data);
+  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${segment(requestId)}/reject`, body, version === undefined ? {} : { version })).data);
 }
 
 export async function withdrawFootprintRequest(requestId: string, version?: number): Promise<FootprintChangeRequest> {
-  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${id(requestId)}/withdraw`, {}, version === undefined ? {} : { version })).data);
+  return requestOf((await api.post<Schemas['FootprintRequestRow']>(`${REQUESTS}/${segment(requestId)}/withdraw`, {}, version === undefined ? {} : { version })).data);
 }
 
 /** What the public registers suggest (FP-05): a read, nothing changes until a request is approved. */
@@ -187,25 +184,12 @@ export async function listJurisdictions(): Promise<JurisdictionRef[]> {
   return rows.map((row) => ({ key: row.key, kind: row.kind ?? null, label: row.label, parentKey: row.parentKey ?? null }));
 }
 
-/** The terms as the route answers them, ids included: one read that every screen maps its own way. */
-export async function listTermRows(dimension?: string): Promise<Schemas['TaxonomyTermRow'][]> {
-  const params = dimension === undefined ? {} : { dimension };
-  return (await api.get<Schemas['TaxonomyTermPage']>(`${TAXONOMY}/terms`, { params })).data.items;
-}
-
 export async function listTerms(dimension?: string): Promise<TaxonomyTerm[]> {
-  return (await listTermRows(dimension)).map(taxonomyTermOf);
+  return (await listTermRows(dimension ?? null)).map(taxonomyTermOf);
 }
 
 /** Dimensions are vocabulary rows; `restrictsFootprint` rides in their list-specific facts. */
 export async function listDimensions(): Promise<TaxonomyDimension[]> {
   const rows = (await api.get<Schemas['TaxonomyDimensionPage']>(`${TAXONOMY}/dimensions`)).data.items;
   return rows.map((row) => ({ key: row.key, kind: row.kind ?? null, label: row.label, restrictsFootprint: row.extra?.restrictsFootprint === true }));
-}
-
-/** A term nobody can add directly: the write becomes a proposal (VOC-07). */
-export async function suggestTerm(body: TermSuggest): Promise<ProposalRef> {
-  const data = (await api.post<{ proposal?: ProposalRef } | ProposalRef>(`${TAXONOMY}/terms`, body)).data;
-  const nested = 'proposal' in data && data.proposal !== undefined ? data.proposal : (data as ProposalRef);
-  return { id: nested.id ?? '', kind: nested.kind ?? '', status: nested.status ?? '', title: nested.title ?? '' };
 }

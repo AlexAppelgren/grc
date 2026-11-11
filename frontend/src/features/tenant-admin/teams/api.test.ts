@@ -43,10 +43,8 @@ describe('teams api', () => {
 
   it('reads the teams in one page and adds one to the team list', async () => {
     const calls = server({ items: [team], total: 1 });
-    expect(await teams.listTeams()).toEqual([team]);
     await teams.createTeam({ labels: teams.teamLabels(' Cards ', ''), orgUnitId: 'unit-1' });
     expect(calls.map(({ method, path, body }) => [method, path, body])).toEqual([
-      ['get', '/api/v1/tenant/teams', null],
       ['post', '/api/v1/vocab/team', { labels: { en: 'Cards' }, extra: { orgUnitId: 'unit-1' } }],
     ]);
   });

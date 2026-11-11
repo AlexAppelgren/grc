@@ -16,8 +16,6 @@ export type Case = Schemas['CasesCase'];
 /** The case as the change page reads it, with its workflow block (`GET /changes/{changeId}`). */
 export type CaseWorkflow = Schemas['WatchCaseWorkflow'];
 
-/** A value of one of the bank's own lists: key, kind and label. */
-export type CaseVocabularyRef = Schemas['CasesVocabularyRef'];
 export type PersonRef = Schemas['PersonRef'];
 export type CaseAssessment = Schemas['CasesAssessment'];
 export type CaseAction = Schemas['CasesAction'];

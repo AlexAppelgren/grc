@@ -8,10 +8,11 @@ import { CheckRow, Field, Select, TextArea, TextInput } from '@/components/ui/Fi
 import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
 import { FOOTPRINT_REQUEST } from '@/features/footprint/footprint-presentation';
 import { useFormatContext } from '@/features/identity/hooks';
-import { DialogForm, PersonSelect, TermPicker, TermSelect } from '@/features/tenant-admin/organisation/fields';
+import { orgFormCodes, PersonSelect, TermPicker, TermSelect } from '@/features/tenant-admin/organisation/fields';
 import {
   useApplyRegisterLookup,
   useAuthorities,
@@ -113,45 +114,45 @@ export function EntitiesSection() {
             ) : null}
           </StatusLine>
         ) : null}
-        {units.isPending ? (
-          <LoadingState />
-        ) : units.isError ? (
-          <ErrorState title={t('admin.org.entities.errorTitle')} onRetry={() => void units.refetch()} />
-        ) : rows.length === 0 ? (
-          <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-empty-state="">
-            <h3 className="text-fg">{t('admin.org.entities.emptyTitle')}</h3>
-            <p className="mx-auto mt-2 max-w-[60ch]">{t('admin.org.entities.emptyBody')}</p>
-            {actions('justify-center')}
-          </div>
-        ) : (
-          <Rows>
-            {rows.map(({ unit, depth }) => (
-              <Row key={unit.id} className={unit.active ? undefined : 'opacity-60'} style={{ marginInlineStart: `${depth * 20}px` }} data-org-unit={unit.name}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3>{unit.name}</h3>
-                    <Meta>
-                      <span>{unitKindLabel(unit.kind, t)}</span>
-                      {unit.orgNumber !== '' ? <span className="font-mono">{unit.orgNumber}</span> : null}
-                      {unit.kind === 'legal_entity' ? <span className={unit.lei === '' ? undefined : 'font-mono'}>{unit.lei === '' ? t('admin.org.entities.noLei') : t('admin.org.entities.lei', { lei: unit.lei })}</span> : null}
-                      {unit.countryCode !== '' ? <span>{countryName(unit.countryCode, ctx)}</span> : null}
-                      {unit.active ? null : <span>{t('admin.org.entities.inactive')}</span>}
-                    </Meta>
-                    <div className="mt-1.5">
-                      <PillRow pills={presentEntity(unit)} />
+        <QueryState query={units} errorTitle={t('admin.org.entities.errorTitle')}>
+          {() =>
+            rows.length === 0 ? (
+              <div className="rounded-card border border-dashed border-line-control p-6 text-center text-muted" data-empty-state="">
+                <h3 className="text-fg">{t('admin.org.entities.emptyTitle')}</h3>
+                <p className="mx-auto mt-2 max-w-[60ch]">{t('admin.org.entities.emptyBody')}</p>
+                {actions('justify-center')}
+              </div>
+            ) : (
+              <Rows>
+                {rows.map(({ unit, depth }) => (
+                  <Row key={unit.id} className={unit.active ? undefined : 'opacity-60'} style={{ marginInlineStart: `${depth * 20}px` }} data-org-unit={unit.name}>
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3>{unit.name}</h3>
+                        <Meta>
+                          <span>{unitKindLabel(unit.kind, t)}</span>
+                          {unit.orgNumber !== '' ? <span className="font-mono">{unit.orgNumber}</span> : null}
+                          {unit.kind === 'legal_entity' ? <span className={unit.lei === '' ? undefined : 'font-mono'}>{unit.lei === '' ? t('admin.org.entities.noLei') : t('admin.org.entities.lei', { lei: unit.lei })}</span> : null}
+                          {unit.countryCode !== '' ? <span>{countryName(unit.countryCode, ctx)}</span> : null}
+                          {unit.active ? null : <span>{t('admin.org.entities.inactive')}</span>}
+                        </Meta>
+                        <div className="mt-1.5">
+                          <PillRow pills={presentEntity(unit)} />
+                        </div>
+                        <RegisterFacts unit={unit} />
+                      </div>
+                      {canEdit ? (
+                        <Button variant="ghost" size="small" onClick={() => setEditing(unit)} aria-label={t('admin.org.editNamed', { name: unit.name })}>
+                          {t('admin.org.edit')}
+                        </Button>
+                      ) : null}
                     </div>
-                    <RegisterFacts unit={unit} />
-                  </div>
-                  {canEdit ? (
-                    <Button variant="ghost" size="small" onClick={() => setEditing(unit)} aria-label={t('admin.org.editNamed', { name: unit.name })}>
-                      {t('admin.org.edit')}
-                    </Button>
-                  ) : null}
-                </div>
-              </Row>
-            ))}
-          </Rows>
-        )}
+                  </Row>
+                ))}
+              </Rows>
+            )
+          }
+        </QueryState>
         {rows.length > 0 ? actions() : null}
       </Panel>
       <LicencesPanel entities={legalEntities(units.data ?? [])} canEdit={canEdit} />
@@ -263,8 +264,7 @@ function RegisterLookupDialog({ onClose, onApplied }: { onClose: () => void; onA
   const found = lookup?.status === 'succeeded' && lookup.entities.length > 0 ? lookup : null;
   const authorityName = (key: string) => authorities.data?.find((authority) => authority.key === key)?.name ?? key;
 
-  const lookUp = (event: FormEvent) => {
-    event.preventDefault();
+  const lookUp = () => {
     start.mutate(query.trim(), {
       onSuccess: (created) => {
         setFlipped(new Set());
@@ -317,29 +317,26 @@ function RegisterLookupDialog({ onClose, onApplied }: { onClose: () => void; onA
   }
 
   return (
-    <Modal open onOpenChange={(open) => !open && onClose()} title={t('admin.org.registers.title')}>
-      <form onSubmit={lookUp} noValidate aria-busy={running || start.isPending}>
-        <Field id={LOOKUP_QUERY} label={t('admin.org.registers.query')} hint={t('admin.org.registers.queryHint')}>
-          <TextInput id={LOOKUP_QUERY} className="font-mono" placeholder={t('admin.org.registers.queryPlaceholder')} value={query} aria-describedby={`${LOOKUP_QUERY}-hint`} onChange={(e) => setQuery(e.target.value)} />
-        </Field>
-        {running ? <StatusLine>{t('admin.org.registers.reading')}</StatusLine> : null}
-        {lookup?.status === 'failed' && lookup.error !== null ? (
-          <p role="alert" className="mt-2.5 text-meta text-negative" data-lookup-error={lookup.error}>
-            {lookupError(lookup.error, t)}
-          </p>
-        ) : null}
-        {start.isError ? <ProblemAlert error={start.error} /> : null}
-        {job.isError ? <ProblemAlert error={job.error} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={query.trim() === '' || running || start.isPending}>
-            {t('admin.org.registers.lookUp')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+    <FormDialog
+      title={t('admin.org.registers.title')}
+      submitLabel={t('admin.org.registers.lookUp')}
+      pending={running || start.isPending}
+      submitDisabled={query.trim() === '' || running || start.isPending}
+      error={job.error}
+      onSubmit={lookUp}
+      onClose={onClose}
+    >
+      <Field id={LOOKUP_QUERY} label={t('admin.org.registers.query')} hint={t('admin.org.registers.queryHint')}>
+        <TextInput id={LOOKUP_QUERY} className="font-mono" placeholder={t('admin.org.registers.queryPlaceholder')} value={query} aria-describedby={`${LOOKUP_QUERY}-hint`} onChange={(e) => setQuery(e.target.value)} />
+      </Field>
+      {running ? <StatusLine>{t('admin.org.registers.reading')}</StatusLine> : null}
+      {lookup?.status === 'failed' && lookup.error !== null ? (
+        <p role="alert" className="mt-2.5 text-meta text-negative" data-lookup-error={lookup.error}>
+          {lookupError(lookup.error, t)}
+        </p>
+      ) : null}
+      {start.isError ? <ProblemAlert error={start.error} /> : null}
+    </FormDialog>
   );
 }
 
@@ -385,7 +382,7 @@ function EntityForm({ unit, units, onClose }: { unit: OrgUnit | null; units: rea
   };
 
   return (
-    <DialogForm title={unit === null ? t('admin.org.entities.addTitle') : t('admin.org.editNamed', { name: unit.name })} error={write.error} formLevel={errors.formLevel} pending={write.isPending} onSubmit={submit} onClose={onClose}>
+    <FormDialog title={unit === null ? t('admin.org.entities.addTitle') : t('admin.org.editNamed', { name: unit.name })} submitLabel={t('common.save')} pending={write.isPending} error={errors.formLevel ? write.error : undefined} codes={orgFormCodes(t)} onSubmit={submit} onClose={onClose}>
       {unit === null ? (
         <Field id="unit-kind" label={t('admin.org.form.kind')} error={errors.fields.kind}>
           <Select id="unit-kind" value={kind} onChange={(e) => setKind(e.target.value === 'group' ? 'group' : 'legal_entity')}>
@@ -436,7 +433,7 @@ function EntityForm({ unit, units, onClose }: { unit: OrgUnit | null; units: rea
           </Select>
         </Field>
       ) : null}
-    </DialogForm>
+    </FormDialog>
   );
 }
 
@@ -613,14 +610,7 @@ function LicenceForm({ entity, licence, onClose }: { entity: OrgUnit; licence: L
   );
 
   return (
-    <DialogForm
-      title={licence === null ? t('admin.org.licences.addTitle', { name: entity.name }) : t('admin.org.editNamed', { name: licence.licenceType.label })}
-      error={write.error}
-      formLevel={errors.formLevel}
-      pending={write.isPending}
-      onSubmit={submit}
-      onClose={onClose}
-    >
+    <FormDialog title={licence === null ? t('admin.org.licences.addTitle', { name: entity.name }) : t('admin.org.editNamed', { name: licence.licenceType.label })} submitLabel={t('common.save')} pending={write.isPending} error={errors.formLevel ? write.error : undefined} codes={orgFormCodes(t)} onSubmit={submit} onClose={onClose}>
       <div className="grid gap-x-4 md:grid-cols-2">
         <Field id="licence-kind" label={t('admin.org.form.kind')}>
           <Select id="licence-kind" value={certificate ? 'certificate' : 'licence'} disabled={licence !== null} onChange={(e) => setCertificate(e.target.value === 'certificate')}>
@@ -657,6 +647,6 @@ function LicenceForm({ entity, licence, onClose }: { entity: OrgUnit; licence: L
         </>
       )}
       {day('withdrawnOn', t('admin.org.licences.withdrawnLabel'), t('admin.org.licences.withdrawnHint'))}
-    </DialogForm>
+    </FormDialog>
   );
 }

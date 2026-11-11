@@ -18,7 +18,6 @@ import {
   languageTexts,
   newObligationPayloadOf,
   obligationPayloadOf,
-  precisionOf,
   presentProposal,
   proposerLine,
   refusalReason,
@@ -287,13 +286,6 @@ describe("a new record's payload", () => {
       ['da', 'none'],
       ['sv', 'none'],
     ]);
-  });
-
-  it('reads a date precision it knows, and a day otherwise', () => {
-    expect(precisionOf('month')).toBe('month');
-    expect(precisionOf('year')).toBe('year');
-    expect(precisionOf(undefined)).toBe('day');
-    expect(precisionOf('decade')).toBe('day');
   });
 
   it('labels a key from the rows of its list, and leaves the key while the list is loading or lacks it', () => {

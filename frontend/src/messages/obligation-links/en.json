@@ -4,7 +4,6 @@
   "obligationLinks.errorTitle": "Linked internal items could not be loaded",
   "obligationLinks.more": "Showing {shown} of {total}.",
   "obligationLinks.add": "Link an item",
-  "obligationLinks.remove": "Remove",
   "obligationLinks.pickTitle": "Link an internal item",
   "obligationLinks.createTitle": "Create and link an item",
   "obligationLinks.find": "Find an item",

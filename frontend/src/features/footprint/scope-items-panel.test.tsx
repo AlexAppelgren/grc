@@ -1,12 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { FootprintScreen } from '@/components/admin/FootprintScreen';
 import type { Me } from '@/features/identity/types';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 // The scope-item panel of /admin/footprint (design/screens/admin-footprint.html, states
 // 21 to 27; OWN-01, FP-02, D-89): regulations we research ourselves, each with its research
@@ -101,16 +100,7 @@ function serve(me: Me, items: unknown[], pending: unknown = null, write: (sent: 
 }
 
 function open(me: Me): void {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <PermissionsProvider permissions={me.permissions}>
-        <LocaleProvider locale="en">
-          <FootprintScreen />
-        </LocaleProvider>
-      </PermissionsProvider>
-    </Query>,
-  );
+  renderWith(<FootprintScreen />, { permissions: me.permissions });
 }
 
 const panel = () => document.querySelector<HTMLElement>('[data-scope-items]')!;

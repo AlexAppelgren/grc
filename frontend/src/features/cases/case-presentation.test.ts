@@ -6,11 +6,9 @@ import { createT } from '@/shared/i18n';
 
 import {
   closeKindOf,
-  closeReasonLabel,
   daysLeftText,
   isDownloadable,
   presentCaseStatus,
-  presentCaseUrgency,
   presentOverdue,
   presentScanState,
 } from './case-presentation';
@@ -34,19 +32,6 @@ describe('the status pill', () => {
   it('a sub-status changes the words to the bank’s own label and never the tone', () => {
     const pill = presentCaseStatus({ category: 'assessing', subStatus: { key: 'waiting_for_legal', label: 'Waiting for legal' } }, t);
     expect([pill.key, pill.label, pill.tone]).toEqual(['status:assessing', 'Waiting for legal', slotTone.workflowStatus]);
-  });
-});
-
-describe('the urgency pill', () => {
-  it('takes its tone from the level’s own fixed row', () => {
-    expect(presentCaseUrgency({ key: 'act_now', kind: null, label: 'Act now' })).toMatchObject({ label: 'Act now', tone: 'negative' });
-    expect(presentCaseUrgency({ key: 'within_3_months', kind: null, label: 'Within 3 months' })?.tone).toBe('warning');
-    expect(presentCaseUrgency({ key: 'no_action', kind: null, label: 'No action' })?.tone).toBe('positive');
-  });
-
-  it('shows nothing for no urgency, and for a key outside the fixed levels rather than a guessed tone', () => {
-    expect(presentCaseUrgency(null)).toBeNull();
-    expect(presentCaseUrgency({ key: 'someday', kind: null, label: 'Someday' })).toBeNull();
   });
 });
 
@@ -120,12 +105,4 @@ describe('the close reason', () => {
     expect(closeKindOf({ ...closed(null), closeReason: null })).toBeNull();
   });
 
-  it('labels a close or a dismissal in the bank’s own words, and an open case not at all', () => {
-    expect(closeReasonLabel(closed('no_action'))).toBe('Reason no_action');
-    expect(closeReasonLabel({ category: 'closed', closeReason: null, dismissedReason: null })).toBeNull();
-    const dismissed = { category: 'dismissed' as const, closeReason: null, dismissedReason: { key: 'out_of_scope', kind: null, label: 'Out of scope' } };
-    expect(closeReasonLabel(dismissed)).toBe('Out of scope');
-    expect(closeReasonLabel({ ...dismissed, dismissedReason: null })).toBeNull();
-    expect(closeReasonLabel({ ...dismissed, category: 'assessing' })).toBeNull();
-  });
 });

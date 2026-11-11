@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { installAdapter, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { listTermRows } from '@/features/shared/reference';
 
 import * as proposals from './api';
 
@@ -103,7 +104,7 @@ describe('proposals api', () => {
 
   it('reads every taxonomy term, across dimensions', async () => {
     const sent = installAdapter(() => ({ status: 200, data: { items: [{ id: 't-1', key: 'custody', label: 'Custody', dimension: 'service_type' }], total: 1 } }));
-    const terms = await proposals.listTaxonomyTerms();
+    const terms = await listTermRows();
     expect([sent[0]?.path, terms.map((term) => term.key)]).toEqual(['/api/v1/taxonomy/terms', ['custody']]);
   });
 });

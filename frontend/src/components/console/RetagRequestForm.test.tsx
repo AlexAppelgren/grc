@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { RetagRequestForm } from './RetagRequestForm';
 
@@ -34,14 +34,7 @@ function serve(status: (count: number) => Record<string, unknown>): Sent[] {
 }
 
 function renderForm(onClose = vi.fn()): void {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <LocaleProvider locale="en">
-        <RetagRequestForm onClose={onClose} />
-      </LocaleProvider>
-    </Query>,
-  );
+  renderWith(<RetagRequestForm onClose={onClose} />);
 }
 
 async function typeTerm(text: string): Promise<void> {

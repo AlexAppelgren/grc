@@ -20,6 +20,5 @@
   "obligationApplicability.confirm": "Sätt tillämplighet",
   "obligationApplicability.saved": "Sparat: {value}.",
   "obligationApplicability.stale": "Någon ändrade svaret medan du bestämde. Ladda om för att se deras svar och bestäm sedan igen.",
-  "obligationApplicability.reload": "Ladda om",
   "obligationApplicability.errorTitle": "Gäller den oss? kunde inte laddas"
 }

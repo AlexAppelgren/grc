@@ -1,10 +1,9 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { DepartmentsSection } from '@/components/admin/DepartmentsSection';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { renderWith } from '@/shared/testing/render';
 
 // Departments (TEN-02, TEN-S8): the business areas, units and functions with
 // their head, the unit they sit in and their teams; legal entities are not
@@ -26,7 +25,6 @@ const people = [
 
 function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.method === 'get' && sent.path === UNITS) return { status: 200, data: { items: [bank, retail, risk], total: 3 } };
     if (sent.path === '/api/v1/tenant/teams') return { status: 200, data: { items: [team, cards], total: 2 } };
     if (sent.path === '/api/v1/reference/people') return { status: 200, data: people };
@@ -36,14 +34,7 @@ function server(write?: (sent: Sent) => { status: number; data?: unknown }): Sen
 }
 
 async function renderSection(permissions: string[]): Promise<void> {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <DepartmentsSection />
-      </PermissionsProvider>
-    </Query>,
-  );
+  renderWith(<DepartmentsSection />, { permissions });
   await screen.findByText('Retail Banking');
 }
 

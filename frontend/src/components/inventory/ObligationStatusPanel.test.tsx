@@ -1,13 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { RegisterEntityStatus, RegisterEntry } from '@/features/register/types';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { withPanels } from '@/features/register/testing';
-import { installAdapter, queryWrapper, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { changesOf, ObligationStatusPanel } from './ObligationStatusPanel';
 
@@ -83,7 +81,6 @@ const TWO = entry({
 
 function serve(read: RegisterEntry | number, write: (sent: Sent) => { status: number; data?: unknown } = () => ({ status: 200, data: {} })): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path === '/api/v1/reference/people') return { status: 200, data: [ANNA, SARA] };
     if (sent.path === '/api/v1/vocab/compliance_status') return { status: 200, data: { items: [COMPLIANT, PARTLY, NOT_ASSESSED], total: 3 } };
     if (sent.path === '/api/v1/vocab/risk_rating') return { status: 200, data: { items: [HIGH], total: 1 } };
@@ -91,21 +88,11 @@ function serve(read: RegisterEntry | number, write: (sent: Sent) => { status: nu
     if (sent.method === 'patch') return write(sent);
     if (typeof read === 'number') return { status: read, data: { detail: 'no', code: 'server_error' } };
     return { status: 200, data: withPanels(read) };
-  });
+  }, { me: ME });
 }
 
 function renderPanel(permissions: string[] = ['register.read', 'register.edit']) {
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <ObligationStatusPanel obligationId="ob-1" />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  return renderWith(<ObligationStatusPanel obligationId="ob-1" />, { permissions });
 }
 
 const patches = (sent: Sent[]) => sent.filter((call) => call.method === 'patch').map((call) => ({ path: call.path, body: call.body }));

@@ -1,13 +1,13 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { ChangeDetail } from '@/features/watch/api';
 import { createT } from '@/shared/i18n';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 import { defaultFormatContext } from '@/shared/utils/format';
+import { renderWith } from '@/shared/testing/render';
+import { session } from '@/shared/testing/fixtures';
 
 import { SoWhatPanel, soWhatOf, soWhatProvenance } from './SoWhatPanel';
 
@@ -44,20 +44,11 @@ const confirmed = {
   case: { ...base.case!, soWhatConfirmed: true, soWhatConfirmedAt: '2026-09-17T09:12:00Z' },
 } as ChangeDetail;
 
-const SESSION = { user: { locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, enrolmentPending: false, permissions: ['cases.work'] };
+const SESSION = session(['cases.work']);
 const SAVED = { caseId: 'case-1', changeId: 'c-1', text: 'Ours.', confirmed: true, confirmedAt: '2026-09-17T09:12:00Z', confirmedByName: 'Sara Lind', isAiDraft: false };
 
 function renderPanel(change: ChangeDetail, permissions: string[] = []): void {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <SoWhatPanel change={change} />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Query>,
-  );
+  renderWith(<SoWhatPanel change={change} />, { permissions });
 }
 
 /** The session read answers a signed-in reader, every write answers `answer`; what is returned is the writes alone. */

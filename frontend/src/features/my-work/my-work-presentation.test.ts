@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createT } from '@/shared/i18n';
 import type { FormatContext } from '@/shared/utils/format';
+import type { components } from '@/types/api.generated';
 
 import {
   SECTIONS,
@@ -9,12 +10,13 @@ import {
   myCommentHref,
   permissionLimitedLines,
   presentWorkItem,
-  tenantToday,
   workHref,
   workReasons,
   workWhen,
 } from './my-work-presentation';
-import type { WorkDate, WorkItem, WorkReason } from './types';
+import type { WorkDate, WorkItem } from './types';
+
+type WorkReason = components['schemas']['HomeWorkReason'];
 
 // Every section, reason and date kind has its words in both languages, and a
 // day count is taken against the bank's own today, never the browser's.
@@ -99,14 +101,6 @@ describe('workWhen', () => {
     ]);
     expect(new Set(svLabels).size).toBe(kinds.length);
     for (const label of svLabels) expect(label).toContain('1 okt. 2026');
-  });
-});
-
-describe('tenantToday', () => {
-  it('is the date in the bank time zone, not UTC', () => {
-    // 23:30 UTC on 18 September is already 19 September in Stockholm.
-    expect(tenantToday(new Date('2026-09-18T23:30:00Z'), 'Europe/Stockholm')).toBe('2026-09-19');
-    expect(tenantToday(new Date('2026-09-18T23:30:00Z'), 'UTC')).toBe('2026-09-18');
   });
 });
 

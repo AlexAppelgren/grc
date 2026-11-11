@@ -61,7 +61,7 @@ function server(mine: Answer, extra: (sent: Sent) => Answer | undefined = () => 
     if (answer !== undefined) return answer;
     if (sent.path === MINE_PATH && sent.method === 'get') return mine;
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
-  });
+  }, { refresh: false });
 }
 
 function renderIn(node: ReactNode) {

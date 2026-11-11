@@ -102,7 +102,7 @@ export function NotificationPreferences() {
       ) : update.isError ? (
         <ProblemAlert error={update.error} codes={{ [NETWORK_PROBLEM_CODE]: t('collab.prefs.saveFailed') }} />
       ) : update.isSuccess ? (
-        <StatusLine tone="positive">{t('collab.prefs.saved')}</StatusLine>
+        <StatusLine tone="positive">{t('common.saved')}</StatusLine>
       ) : null}
     </Panel>
   );

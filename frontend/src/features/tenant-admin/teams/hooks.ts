@@ -1,24 +1,21 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 
 import { adminKeys } from '@/features/tenant-admin/hooks';
 import * as teams from '@/features/tenant-admin/teams/api';
-import type { Team, TeamDraft } from '@/features/tenant-admin/teams/api';
+import type { TeamDraft } from '@/features/tenant-admin/teams/api';
 import type { Member } from '@/features/tenant-admin/types';
 import { vocabularyKeys } from '@/features/vocabularies/hooks';
+import { referenceKeys } from '@/features/shared/reference';
 
 // Query keys and invalidation for the teams (playbook 6.1). A team added,
 // renamed or moved here is a row of the `team` list, so the list's own query and every
 // picker reading it refetch too; a member's teams refetch the member list.
 
 export const teamKeys = {
-  all: ['tenant', 'teams'] as const,
+  all: referenceKeys.teams,
 };
-
-export function useTeams(): UseQueryResult<Team[]> {
-  return useQuery({ queryKey: teamKeys.all, queryFn: teams.listTeams });
-}
 
 function useInvalidateTeams(): () => Promise<void> {
   const queryClient = useQueryClient();

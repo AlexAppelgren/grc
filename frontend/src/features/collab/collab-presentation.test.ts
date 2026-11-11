@@ -10,7 +10,6 @@ import { formatDateTime, type FormatContext } from '@/shared/utils/format';
 
 import {
   NOTIFICATION_KIND_LABEL,
-  NOTIFICATION_SWITCHES,
   formatCollabTime,
   notificationKindLabel,
   notificationTone,
@@ -165,13 +164,5 @@ describe('the composer and My work', () => {
     expect(permissionLimitedLines(['constructor'], t)).toEqual(['Some records are not shown here, because your role cannot open them']);
     expect(permissionLimitedLines(['reg_unit'], t)).toEqual(['Some records are not shown here, because your role cannot open them']);
     expect(permissionLimitedLines([], t)).toEqual([]);
-  });
-});
-
-describe('the notification switches', () => {
-  it('offers the five switches a person may turn off, in the card\'s order, each with a label and a hint', () => {
-    expect(NOTIFICATION_SWITCHES.map((s) => s.key)).toEqual(['mentions', 'assignments', 'reminders', 'weeklyDigest', 'weeklyBriefing']);
-    expect(NOTIFICATION_SWITCHES.map((s) => [t(s.label), t(s.hint)])[0]).toEqual(['Mentions', 'When someone mentions you in a comment.']);
-    for (const s of NOTIFICATION_SWITCHES) expect(sv(s.label)).not.toBe(t(s.label));
   });
 });

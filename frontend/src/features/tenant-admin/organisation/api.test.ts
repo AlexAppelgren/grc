@@ -82,9 +82,4 @@ describe('organisation api', () => {
     ]);
   });
 
-  it('reads the people picker', async () => {
-    const calls = server([{ id: 'u1', name: 'Karin Holm' }]);
-    expect(await org.listPeople()).toEqual([{ id: 'u1', name: 'Karin Holm' }]);
-    expect(calls[0]?.path).toBe('/api/v1/reference/people');
-  });
 });

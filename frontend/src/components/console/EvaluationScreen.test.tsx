@@ -6,7 +6,6 @@ import ConsoleEvaluationPage from '@/app/(console)/console/evaluation/page';
 import { EvaluationScreen } from '@/components/console/EvaluationScreen';
 import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH } from '@/shared/utils/api-client';
 
 // The console's evaluation page (SRC-05, ADM-02): the set filterable by
 // language, the add form that says a new question is not yet in the release
@@ -72,7 +71,6 @@ interface Script {
 
 function server(script: Script = {}): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: editor };
     if (sent.path === LANGUAGES_PATH) return { status: 200, data: LANGUAGES };
     if (sent.path === QUESTIONS_PATH && sent.method === 'get') return script.questions ?? { status: 200, data: { items: [EN, SV, RETIRED], total: 3 } };
@@ -129,7 +127,6 @@ describe('console evaluation', () => {
   it('reads every page of the set, so a filter never hides a question the server holds', async () => {
     const all = Array.from({ length: 101 }, (_, n) => question(`r-en-${n + 100}`, n === 100 ? 'sv' : 'en'));
     const sent = installAdapter((s) => {
-      if (s.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (s.path === ME_PATH) return { status: 200, data: editor };
       if (s.path === LANGUAGES_PATH) return { status: 200, data: LANGUAGES };
       if (s.path === QUESTIONS_PATH) {

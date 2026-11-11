@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AgentDefinitionScreen } from '@/components/console/AgentDefinitionScreen';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
-import { REFRESH_PATH, setStepUpHandler } from '@/shared/utils/api-client';
+import { setStepUpHandler } from '@/shared/utils/api-client';
 
 // One agent definition in the console (AGT-03, ADM-02): its append-only
 // versions with publish and retire behind a passkey, and for one of bleqq's
@@ -78,16 +78,16 @@ const run = (id: string, extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
+// Newest first, as GET /console/agent-runs answers (review 2026-11-11, defect 2.5).
 const RUNS = [
-  run('r-old', { startedAt: '2026-09-23T04:00:00Z', finishedAt: '2026-09-23T04:02:00Z', status: 'failed', error: 'The Danish authority’s feed did not answer.', cost: '0.30', agentVersion: 2 }),
-  run('r-other-agent', { agent: 'library-confirmer' }),
-  run('r-bank', { tenantAgentId: 'ta1' }),
   run('r-new'),
+  run('r-bank', { tenantAgentId: 'ta1' }),
+  run('r-other-agent', { agent: 'library-confirmer' }),
+  run('r-old', { startedAt: '2026-09-23T04:00:00Z', finishedAt: '2026-09-23T04:02:00Z', status: 'failed', error: 'The Danish authority’s feed did not answer.', cost: '0.30', agentVersion: 2 }),
 ];
 
 function server(extra: (sent: Sent) => Answer | undefined = () => undefined, detail: Answer = { status: 200, data: definition }): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: admin };
     const answer = extra(sent);
     if (answer !== undefined) return answer;

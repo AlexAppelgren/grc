@@ -212,7 +212,7 @@ function AnswerFeedback({ answerId, t }: { answerId: string; t: Translate }) {
           </Field>
           <ButtonBar>
             <Button variant="outline" size="small" onClick={() => setExplaining(false)}>
-              {t('search.ask.feedback.cancel')}
+              {t('common.cancel')}
             </Button>
             <Button size="small" disabled={note.trim() === '' || rate.isPending} onClick={() => rate.mutate({ feedback: 'wrong', note: note.trim() })}>
               {t('search.ask.feedback.send')}

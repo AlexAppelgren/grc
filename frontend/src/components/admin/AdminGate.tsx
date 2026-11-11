@@ -7,7 +7,7 @@ import { useT } from '@/shared/i18n/LocaleProvider';
 import { findDestination } from '@/shared/navigation/registry';
 import { RequirePermission } from '@/shared/navigation/require-permission';
 
-// Every admin screen sits behind the client gate of its registry entry
+// Every gated screen sits behind the client gate of its registry entry
 // (playbook 6.2); the server's structured 403 is the enforcer.
 export function AdminGate({ id, children }: { id: string; children: ReactNode }) {
   const destination = findDestination(id);

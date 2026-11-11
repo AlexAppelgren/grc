@@ -10,6 +10,7 @@ import { defaultFormatContext } from '@/shared/utils/format';
 
 import type { SourceCoverage } from '@/features/watch/api';
 import { coverageMeta, presentSourceCoverage } from '@/features/watch/coverage-presentation';
+import { renderWith } from '@/shared/testing/render';
 import { SourceCoverageTab } from './SourceCoverageTab';
 
 // The Coverage tab (design/screens/tenant-watch.html, WAT-01): what the
@@ -133,14 +134,7 @@ describe('the Coverage tab', () => {
 
   it('the log is not read while the tab is closed', async () => {
     const sent = installAdapter(() => ({ status: 200, data: [] }));
-    const { wrapper: Query } = queryWrapper();
-    render(
-      <Query>
-        <LocaleProvider locale="en">
-          <SourceCoverageTab active={false} />
-        </LocaleProvider>
-      </Query>,
-    );
+    renderWith(<SourceCoverageTab active={false} />);
     await waitFor(() => expect(sent).toHaveLength(0));
     expect(screen.getByRole('status')).toBeInTheDocument();
   });

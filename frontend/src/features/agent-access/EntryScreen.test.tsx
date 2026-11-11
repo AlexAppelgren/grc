@@ -1,12 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { accessEntry } from '@/features/agent-access/AccessScreen.test';
 import { EntryScreen } from '@/features/agent-access/EntryScreen';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 // One entry (ACC-01, ACC-02, ACC-03, ACC-08, J-11): what it reads, its own
 // half of tenant reach, credentials issued once and revoked, revoking the
@@ -45,7 +44,6 @@ interface World {
 function server(world: Partial<World> = {}, extra: (sent: Sent) => Answer | undefined = () => undefined): Sent[] {
   const w: World = { entry: accessEntry(), orgReach: true, calls: [call('c1')], total: 1, ...world };
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     const answer = extra(sent);
     if (answer !== undefined) return answer;
     if (sent.method !== 'get') return { status: 500 };
@@ -57,16 +55,7 @@ function server(world: Partial<World> = {}, extra: (sent: Sent) => Answer | unde
 }
 
 function open(permissions: readonly string[] = ADMIN) {
-  const { wrapper: Query } = queryWrapper();
-  return render(
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <LocaleProvider locale="en">
-          <EntryScreen entryId="e1" />
-        </LocaleProvider>
-      </PermissionsProvider>
-    </Query>,
-  );
+  return renderWith(<EntryScreen entryId="e1" />, { permissions });
 }
 
 /** The element once it renders; waitFor retries until the query finds it. */

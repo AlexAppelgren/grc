@@ -79,7 +79,6 @@ interface Script {
 function server(script: Script): Sent[] {
   const total = script.total ?? script.pages.flat().length;
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === ME_PATH) return { status: 200, data: me(script.unread ?? script.pages.flat().filter((n) => n.readAt === null).length) };
     if (sent.path === INBOX_PATH && sent.method === 'get') {
       if (script.inbox !== undefined) return script.inbox;
@@ -275,7 +274,6 @@ describe('the notification inbox', () => {
   it('shows the error state with Try again, which reads the inbox again', async () => {
     let fail = true;
     const sent = installAdapter((s) => {
-      if (s.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
       if (s.path === ME_PATH) return { status: 200, data: me(1) };
       if (s.path === INBOX_PATH) return fail ? { status: 500, data: { code: 'server_error', detail: 'Broken.' } } : { status: 200, data: { items: [note('u1')], total: 1 } };
       return { status: 404 };

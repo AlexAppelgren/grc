@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { useScopeTerms } from '@/features/watch/hooks';
 import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { referenceKeys } from '@/features/shared/reference';
 
 import {
   footprintKeys,
@@ -15,7 +16,6 @@ import {
   useFootprintRequests,
   useFootprintSuggestions,
   useRejectFootprintRequest,
-  useSuggestTerm,
   useJurisdictions,
   useTerms,
   useUnwatchMarket,
@@ -56,7 +56,7 @@ describe('footprint hooks', () => {
       ['/api/v1/taxonomy/dimensions', null],
       ['/api/v1/reference/jurisdictions', null],
     ]);
-    expect(footprintKeys.terms()).toEqual(['taxonomy', 'terms', 'all']);
+    expect(referenceKeys.terms(null, false)).toEqual(['taxonomy', 'terms', 'all', false]);
   });
 
   it('reads a dimension\'s terms once for the footprint and the watch feed, each in its own shape', async () => {
@@ -136,14 +136,12 @@ describe('footprint hooks', () => {
     await renderHook(() => useApproveFootprintRequest(), { wrapper }).result.current.mutateAsync({ requestId: 'r1', version: 1 });
     await renderHook(() => useRejectFootprintRequest(), { wrapper }).result.current.mutateAsync({ requestId: 'r1', body: { note: 'no' } });
     await renderHook(() => useWithdrawFootprintRequest(), { wrapper }).result.current.mutateAsync({ requestId: 'r1' });
-    expect(await renderHook(() => useSuggestTerm(), { wrapper }).result.current.mutateAsync({ dimension: 'channel', labels: { en: 'Robo' } })).toEqual({ id: 'r1', kind: '', status: 'pending', title: '' });
     await waitFor(() => expect(sent.filter((s) => s.method === 'get' && s.path === '/api/v1/tenant/footprint').length).toBeGreaterThanOrEqual(2));
     expect(sent.filter((s) => s.method !== 'get').map((s) => [s.method, s.path])).toEqual([
       ['post', '/api/v1/tenant/footprint/requests'],
       ['post', '/api/v1/tenant/footprint/requests/r1/approve'],
       ['post', '/api/v1/tenant/footprint/requests/r1/reject'],
       ['post', '/api/v1/tenant/footprint/requests/r1/withdraw'],
-      ['post', '/api/v1/taxonomy/terms'],
     ]);
   });
 });

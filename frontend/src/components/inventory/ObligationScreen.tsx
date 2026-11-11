@@ -33,7 +33,7 @@ import { machineConfirmedLabel, presentObligation, STANDARD_LEVEL_KIND } from '@
 import type { LocalizedText, ObligationDetail, VersionDiff } from '@/features/library/types';
 import type { PartialDate } from '@/features/shared/presentation-types';
 import { languageName } from '@/features/library/version-presentation';
-import { useRefreshProblemReports } from '@/features/problem-reports/hooks';
+import { useRefreshProblemReports } from '@/features/library/problem-reports/hooks';
 import { useRegisterEntry } from '@/features/register/hooks';
 import type { Locale, Translate } from '@/shared/i18n';
 import { useLocale, useT } from '@/shared/i18n/LocaleProvider';

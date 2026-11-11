@@ -1,11 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { SupportAccessScreen } from '@/components/admin/SupportAccessScreen';
 import type { SupportAccessGrant } from '@/features/support-access/types';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { REFRESH_PATH, setStepUpHandler } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 // The bank's support access panel (TEN-06, D-49): pending, live and past
 // grants in their own sections; Approve goes through the passkey step-up,
@@ -46,7 +46,6 @@ const stale: Answer = { status: 422, data: { code: 'invalid_transition', detail:
 
 function server(grants: SupportAccessGrant[], decide: (sent: Sent) => Answer = () => ({ status: 500 })): Sent[] {
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     if (sent.path === LIST && sent.method === 'get') return { status: 200, data: { items: grants, total: grants.length } };
     if (sent.path.startsWith(`${LIST}/`) && sent.method === 'post') return decide(sent);
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
@@ -54,14 +53,7 @@ function server(grants: SupportAccessGrant[], decide: (sent: Sent) => Answer = (
 }
 
 function renderScreen(permissions: string[] = ['security.manage', 'audit.read']): void {
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <PermissionsProvider permissions={permissions}>
-        <SupportAccessScreen />
-      </PermissionsProvider>
-    </Query>,
-  );
+  renderWith(<SupportAccessScreen />, { permissions });
 }
 
 const section = (name: string) => document.querySelector(`[data-support-section="${name}"]`) as HTMLElement;

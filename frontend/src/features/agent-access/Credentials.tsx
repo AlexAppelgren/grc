@@ -1,20 +1,20 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { CheckGroup, CheckRow, Field, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ProblemAlert, StatusLine } from '@/components/ui/States';
+import { SecretOnce } from '@/components/ui/SecretOnce';
+import { ConfirmDialog, FormDialog } from '@/components/ui/Dialogs';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useCreateKey, useRevokeKey } from '@/features/agent-access/hooks';
-import { isExpired, isLive, presentCredential, refusals, scopeLabel } from '@/features/agent-access/presentation';
+import { isExpired, isLive, presentCredential, refusals } from '@/features/agent-access/presentation';
 import type { AccessEntry, AccessKey, AccessKeyCreated } from '@/features/agent-access/types';
 import type { MessageKey } from '@/shared/i18n';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { formatDate, formatDateTime } from '@/shared/utils/format';
+import { formatDate, formatDateTime, humaniseKey } from '@/shared/utils/format';
 
 // An entry's credentials (design/screens/admin-agent-access.html, states 6
 // and 9 to 12; ACC-01, ACC-03). A key holds the four read scopes only and
@@ -34,30 +34,11 @@ const SCOPE_HINT: Record<(typeof ENTRY_KEY_SCOPES)[number], MessageKey> = {
 
 function NewKey({ created, onDone }: { created: AccessKeyCreated; onDone: () => void }) {
   const t = useT();
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(created.plainKey);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  };
   return (
     <Panel title={t('agentAccess.newKey.title')} role="status" data-new-key="">
-      <pre className="m-0 mb-3 rounded-control border border-line bg-subtle p-3 font-mono break-all whitespace-pre-wrap" data-plain-key="">
-        {created.plainKey}
-      </pre>
-      <p className="text-muted">{t('agentAccess.newKey.body')}</p>
-      {copied ? <StatusLine tone="positive">{t('agentAccess.newKey.copied')}</StatusLine> : null}
-      <ButtonBar>
-        <Button variant="outline" size="small" onClick={onDone}>
-          {t('common.done')}
-        </Button>
-        <Button size="small" onClick={() => void copy()}>
-          {t('agentAccess.newKey.copy')}
-        </Button>
-      </ButtonBar>
+      <SecretOnce secret={created.plainKey} copyLabel={t('agentAccess.newKey.copy')} onDone={onDone}>
+        <p className="text-muted">{t('agentAccess.newKey.body')}</p>
+      </SecretOnce>
     </Panel>
   );
 }
@@ -70,8 +51,7 @@ function IssueDialog({ entry, onClose, onIssued }: { entry: AccessEntry; onClose
   const [expires, setExpires] = useState('');
   const [problem, setProblem] = useState<'name' | 'scopes' | null>(null);
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     const trimmed = name.trim();
     const missing = trimmed === '' ? 'name' : scopes.length === 0 ? 'scopes' : null;
     setProblem(missing);
@@ -81,38 +61,36 @@ function IssueDialog({ entry, onClose, onIssued }: { entry: AccessEntry; onClose
   };
 
   return (
-    <Modal open onOpenChange={(next) => (next ? undefined : onClose())} title={t('agentAccess.issue.title', { name: entry.name })}>
-      <form onSubmit={submit} noValidate aria-busy={create.isPending} data-issue-form="">
-        <Field id="issue-name" label={t('agentAccess.issue.name')} hint={t('agentAccess.issue.nameHint')} error={problem === 'name' ? t('agentAccess.issue.nameRequired') : undefined}>
-          <TextInput id="issue-name" maxLength={200} value={name} onChange={(e) => setName(e.target.value)} aria-invalid={problem === 'name' ? true : undefined} />
-        </Field>
-        <CheckGroup legend={t('agentAccess.issue.scopes')} error={problem === 'scopes' ? t('agentAccess.issue.scopesRequired') : undefined}>
-          {ENTRY_KEY_SCOPES.map((scope) => (
-            <CheckRow
-              key={scope}
-              id={`issue-scope-${scope}`}
-              label={scopeLabel(scope)}
-              hint={t(SCOPE_HINT[scope])}
-              checked={scopes.includes(scope)}
-              onChange={(on) => setScopes((current) => (on ? [...current, scope] : current.filter((s) => s !== scope)))}
-            />
-          ))}
-        </CheckGroup>
-        <Field id="issue-expires" label={t('agentAccess.issue.expires')} hint={t('agentAccess.issue.expiresHint')}>
-          <TextInput id="issue-expires" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
-        </Field>
-        {create.isError ? <ProblemAlert error={create.error} codes={refusals(t)} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose} disabled={create.isPending}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={create.isPending}>
-            {t('agentAccess.issue.submit')}
-          </Button>
-        </ButtonBar>
-        <p className="mt-2 text-meta text-muted">{t('agentAccess.issue.stepUpHint')}</p>
-      </form>
-    </Modal>
+    <FormDialog
+      title={t('agentAccess.issue.title', { name: entry.name })}
+      submitLabel={t('agentAccess.issue.submit')}
+      pending={create.isPending}
+      error={create.error}
+      codes={refusals(t)}
+      onSubmit={submit}
+      onClose={onClose}
+      formProps={{ 'data-issue-form': '' }}
+    >
+      <Field id="issue-name" label={t('agentAccess.issue.name')} hint={t('agentAccess.issue.nameHint')} error={problem === 'name' ? t('agentAccess.issue.nameRequired') : undefined}>
+        <TextInput id="issue-name" maxLength={200} value={name} onChange={(e) => setName(e.target.value)} aria-invalid={problem === 'name' ? true : undefined} />
+      </Field>
+      <CheckGroup legend={t('agentAccess.issue.scopes')} error={problem === 'scopes' ? t('agentAccess.issue.scopesRequired') : undefined}>
+        {ENTRY_KEY_SCOPES.map((scope) => (
+          <CheckRow
+            key={scope}
+            id={`issue-scope-${scope}`}
+            label={humaniseKey(scope)}
+            hint={t(SCOPE_HINT[scope])}
+            checked={scopes.includes(scope)}
+            onChange={(on) => setScopes((current) => (on ? [...current, scope] : current.filter((s) => s !== scope)))}
+          />
+        ))}
+      </CheckGroup>
+      <Field id="issue-expires" label={t('agentAccess.issue.expires')} hint={t('agentAccess.issue.expiresHint')}>
+        <TextInput id="issue-expires" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
+      </Field>
+      <p className="mt-2 text-meta text-muted">{t('agentAccess.issue.stepUpHint')}</p>
+    </FormDialog>
   );
 }
 
@@ -143,23 +121,25 @@ function KeyRow({ entryId, apiKey, canRevoke }: { entryId: string; apiKey: Acces
       {canRevoke && isLive(apiKey, now) ? (
         <ButtonBar>
           <Button variant="danger" size="small" onClick={() => setConfirming(true)}>
-            {t('agentAccess.keys.revoke')}
+            {t('common.revoke')}
           </Button>
         </ButtonBar>
       ) : null}
       {confirming ? (
-        <Modal open onOpenChange={(next) => (next ? undefined : setConfirming(false))} title={t('agentAccess.keys.revokeTitle', { name: apiKey.name })} description={t('agentAccess.keys.revokeBody')}>
-          {revoke.isError ? <ProblemAlert error={revoke.error} codes={refusals(t)} /> : null}
-          <ButtonBar>
-            <Button variant="outline" onClick={() => setConfirming(false)} disabled={revoke.isPending}>
-              {t('agentAccess.keys.keep')}
-            </Button>
-            <Button variant="danger" disabled={revoke.isPending} onClick={() => revoke.mutate(apiKey.id, { onSuccess: () => setConfirming(false) })}>
-              {t('agentAccess.keys.revokeConfirm')}
-            </Button>
-          </ButtonBar>
-          <p className="mt-2 text-meta text-muted">{t('agentAccess.keys.stepUpHint')}</p>
-        </Modal>
+        <ConfirmDialog
+          title={t('agentAccess.keys.revokeTitle', { name: apiKey.name })}
+          body={t('agentAccess.keys.revokeBody')}
+          action={t('agentAccess.keys.revokeConfirm')}
+          cancelLabel={t('common.keep')}
+          danger
+          busy={revoke.isPending}
+          error={revoke.error}
+          codes={refusals(t)}
+          onConfirm={() => revoke.mutate(apiKey.id, { onSuccess: () => setConfirming(false) })}
+          onClose={() => setConfirming(false)}
+        >
+          <p className="text-meta text-muted">{t('agentAccess.keys.stepUpHint')}</p>
+        </ConfirmDialog>
       ) : null}
     </Row>
   );

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Panel } from '@/components/ui/Panel';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { useCaseFile } from '@/features/cases/hooks';
 import type { CasePanelProps } from '@/features/cases/types';
 import type { components } from '@/types/api.generated';
@@ -157,18 +157,16 @@ function CaseFileModal({ changeId, caseId, canExport, onOpenChange }: { changeId
   const create = useMutation({ mutationFn: createExport });
   return (
     <Modal open onOpenChange={onOpenChange} title={t('caseFile.heading')}>
-      {file.isPending ? (
-        <LoadingState rows={2} />
-      ) : file.isError ? (
-        <ErrorState title={t('caseFile.errorTitle')} onRetry={() => void file.refetch()} />
-      ) : (
-        <CaseFileText text={file.data} />
-      )}
+      <QueryState query={file} rows={2} errorTitle={t('caseFile.errorTitle')}>
+        {(data) => (
+          <CaseFileText text={data} />
+        )}
+      </QueryState>
       {create.data === undefined ? null : <ExportJobState key={create.data.id} created={create.data} />}
       {create.isError ? <ProblemAlert error={create.error} codes={{ [STEP_UP_REQUIRED_CODE]: t('caseFile.stepUpCancelled') }} /> : null}
       <ButtonBar>
         <Button variant="outline" onClick={() => onOpenChange(false)}>
-          {t('caseFile.close')}
+          {t('common.close')}
         </Button>
         {canExport ? (
           <Button

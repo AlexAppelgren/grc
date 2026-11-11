@@ -15,8 +15,6 @@ export type ChangePage = Schemas['WatchChangePage'];
 export type ChangeDetail = Schemas['WatchChangeDetail'];
 export type ObligationChangePage = Schemas['WatchObligationChangePage'];
 export type SourceCoverage = Schemas['WatchSourceCoverage'];
-/** `{ref: {key, kind, label}, confidence, suggested}` — the fact is under `ref`. */
-export type ChangeFact = Schemas['WatchFact'];
 export type LibraryRef = Schemas['LibraryRef'];
 /** A platform agent named by its definition key: who suggested or confirmed a curated fact (D-74). */
 export type AgentRef = Schemas['AgentRef'];

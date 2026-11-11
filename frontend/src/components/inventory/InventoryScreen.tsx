@@ -244,7 +244,7 @@ function BulkTagDialog({ rows, onClose, onDone }: { rows: readonly Obligation[];
     if (shown === undefined) return;
     commit.mutate({ tagKey: shown.tag.key, obligationIds: [...shown.gained.ids, ...shown.alreadyTagged.ids] }, { onSuccess: onDone });
   };
-  const tagPill = shown === undefined ? null : presentVocabularyValue(TENANT_TAG, { key: shown.tag.key, kind: shown.tag.kind, label: shown.tag.label, extra: {} });
+  const tagPill = shown === undefined ? null : presentVocabularyValue(TENANT_TAG, { key: shown.tag.key, kind: shown.tag.kind ?? null, label: shown.tag.label, extra: {} });
 
   return (
     <Modal open onOpenChange={(open) => (open ? undefined : onClose())} title={title}>
@@ -261,7 +261,7 @@ function BulkTagDialog({ rows, onClose, onDone }: { rows: readonly Obligation[];
               {[
                 ['gained', shown.gained.count, t('inventory.bulk.wouldGain')] as const,
                 ['already', shown.alreadyTagged.count, t('inventory.bulk.alreadyCarry')] as const,
-                ['skipped', shown.skipped, t('inventory.bulk.skipped')] as const,
+                ['skipped', shown.skipped.count, t('inventory.bulk.skipped')] as const,
               ].map(([key, count, label]) => (
                 <div key={key} className="rounded-card border border-line p-3" data-bulk-count={key}>
                   <dd className="m-0 text-title font-semibold">{count}</dd>
@@ -269,7 +269,7 @@ function BulkTagDialog({ rows, onClose, onDone }: { rows: readonly Obligation[];
                 </div>
               ))}
             </dl>
-            {shown.gained.count === 0 && shown.skipped === 0 ? (
+            {shown.gained.count === 0 && shown.skipped.count === 0 ? (
               <p className="text-meta text-muted">{t('inventory.bulk.allCarry', { count: shown.alreadyTagged.count, tag: shown.tag.label })}</p>
             ) : null}
             <ul className="m-0 grid list-none gap-2 p-0" data-bulk-preview="">
@@ -293,7 +293,7 @@ function BulkTagDialog({ rows, onClose, onDone }: { rows: readonly Obligation[];
                 </li>
               ))}
             </ul>
-            {shown.skipped > 0 ? <p className="mt-2.5 text-meta text-muted">{t('inventory.bulk.skippedNote', { count: shown.skipped })}</p> : null}
+            {shown.skipped.count > 0 ? <p className="mt-2.5 text-meta text-muted">{t('inventory.bulk.skippedNote', { count: shown.skipped.count })}</p> : null}
             {shown.gained.count > 0 ? <p className="mt-2.5 text-meta text-muted">{t('inventory.bulk.auditNote')}</p> : null}
           </>
         )}
@@ -323,7 +323,7 @@ function BulkTagDialog({ rows, onClose, onDone }: { rows: readonly Obligation[];
               </Button>
             </>
           ) : shown.gained.count === 0 ? (
-            <Button onClick={onClose}>{t('inventory.bulk.close')}</Button>
+            <Button onClick={onClose}>{t('common.close')}</Button>
           ) : (
             <>
               <Button variant="ghost" onClick={back} disabled={commit.isPending}>

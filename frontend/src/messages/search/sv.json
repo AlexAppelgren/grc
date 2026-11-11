@@ -31,7 +31,6 @@
   "search.ask.feedback.reasonLabel": "Vad är fel?",
   "search.ask.feedback.reasonPlaceholder": "t.ex. Svaret missar undantaget för mindre icke-monetära förmåner",
   "search.ask.feedback.reasonHint": "Läses av biblioteksredaktörerna. Förbättrar utvärderingsuppsättningen.",
-  "search.ask.feedback.cancel": "Avbryt",
   "search.ask.feedback.send": "Skicka",
   "search.ask.feedback.thanks": "Tack. Din återkoppling är loggad med svaret.",
   "search.ask.aiLabelDrafting": "Svaret utkastas av AI enbart från regelverkets poster"

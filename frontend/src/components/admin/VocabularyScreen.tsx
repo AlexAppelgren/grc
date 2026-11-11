@@ -12,7 +12,7 @@ import { Modal } from '@/components/ui/Modal';
 import { PageHead } from '@/components/ui/PageHead';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ErrorState, LoadingState, NotFoundScreen, ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { SwatchPair } from '@/components/ui/Swatch';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useTenantProposals } from '@/features/proposals/hooks';
@@ -124,8 +124,7 @@ function RenameForm({ list, row, isLibrary, onClose }: { list: string; row: Voca
         onSuccess: (write) => {
           if (write.outcome === 'proposed') setProposed(write.proposal.title);
           else onClose();
-        },
-      },
+        } },
     );
   };
 
@@ -192,8 +191,7 @@ function LabelsForm({ list, row, onClose }: { list: string; row: VocabularyRow; 
         onSuccess: (write) => {
           if (write.outcome === 'proposed') setProposed(write.proposal.title);
           else onClose();
-        },
-      },
+        } },
     );
   };
 
@@ -213,23 +211,21 @@ function LabelsForm({ list, row, onClose }: { list: string; row: VocabularyRow; 
   return (
     <form onSubmit={submit} noValidate aria-busy={update.isPending} aria-label={t('admin.vocabularies.labelsTitle', { label: row.label })} data-labels-form={row.key} className="grid gap-1.5">
       <small className="text-meta text-muted">{t('admin.vocabularies.fixedKeyKept', { key: row.key })}</small>
-      {languages.isPending ? (
-        <LoadingState rows={1} />
-      ) : languages.isError ? (
-        <ErrorState title={t('admin.vocabularies.errorTitleOne')} onRetry={() => void languages.refetch()} />
-      ) : (
-        <div className="grid gap-x-3 sm:grid-cols-2">
-          {languages.data.map((language) => (
-            <Field key={language.key} id={`labels-${row.key}-${language.key}`} label={language.label}>
-              <TextInput
-                id={`labels-${row.key}-${language.key}`}
-                value={labels[language.key] ?? ''}
-                onChange={(e) => setLabels({ ...labels, [language.key]: e.target.value })}
-              />
-            </Field>
-          ))}
-        </div>
-      )}
+      <QueryState query={languages} rows={1} errorTitle={t('admin.vocabularies.errorTitleOne')}>
+        {(data) => (
+          <div className="grid gap-x-3 sm:grid-cols-2">
+            {data.map((language) => (
+              <Field key={language.key} id={`labels-${row.key}-${language.key}`} label={language.label}>
+                <TextInput
+                  id={`labels-${row.key}-${language.key}`}
+                  value={labels[language.key] ?? ''}
+                  onChange={(e) => setLabels({ ...labels, [language.key]: e.target.value })}
+                />
+              </Field>
+            ))}
+          </div>
+        )}
+      </QueryState>
       {blank ? <p role="alert" className="text-meta text-negative">{t('admin.vocabularies.labelRequired')}</p> : null}
       <small className="text-meta text-muted">{t('admin.vocabularies.scopeTermFollows', { label: row.label })}</small>
       {update.isError ? <ProblemAlert error={update.error} /> : null}
@@ -261,8 +257,7 @@ function ValueRow({
   onMerge,
   onMove,
   onDragStart,
-  onDrop,
-}: {
+  onDrop }: {
   list: string;
   row: VocabularyRow;
   index: number;
@@ -359,7 +354,7 @@ function ValueRow({
               <>
                 {row.isSystem && !fixedKeys ? null : (
                   <Button variant="danger" size="small" onClick={() => onRetire(row)}>
-                    {t('admin.vocabularies.retire')}
+                    {t('common.retire')}
                   </Button>
                 )}
                 {row.isSystem || fixedKeys ? null : (
@@ -368,7 +363,7 @@ function ValueRow({
                   </Button>
                 )}
                 <Button variant="outline" size="small" onClick={() => onEdit(row.key)}>
-                  {fixedKeys ? t('admin.vocabularies.editLabels') : t('admin.vocabularies.rename')}
+                  {fixedKeys ? t('admin.vocabularies.editLabels') : t('common.rename')}
                 </Button>
               </>
             )}
@@ -419,12 +414,11 @@ function RetireDialog({ list, row, isLibrary, fixedKeys, onClose }: { list: stri
                     onSuccess: (write) => {
                       if (write.outcome === 'proposed') setProposed(write.proposal.title);
                       else onClose();
-                    },
-                  },
+                    } },
                 )
               }
             >
-              {isLibrary ? t('admin.vocabularies.sendForReview') : t('admin.vocabularies.retire')}
+              {isLibrary ? t('admin.vocabularies.sendForReview') : t('common.retire')}
             </Button>
           </ButtonBar>
         </>
@@ -503,8 +497,7 @@ function MergeDialog({ list, row, targets, onClose }: { list: string; row: Vocab
                   onSuccess: (write) => {
                     if (write.outcome === 'proposed') setProposed(write.proposal.title);
                     else onClose();
-                  },
-                },
+                  } },
               )
             }
           >
@@ -541,8 +534,7 @@ function AddDialog({ list, isLibrary, onClose }: { list: string; isLibrary: bool
         onSuccess: (write) => {
           if (write.outcome === 'proposed') setProposed(write.proposal.title);
           else onClose();
-        },
-      },
+        } },
     );
   };
 
@@ -685,25 +677,25 @@ function PendingProposals({ list }: { list: string }) {
 
   return (
     <Panel title={t('admin.vocabulary.pendingTitle')} className="mt-4" data-pending-proposals={list}>
-      {pending.isPending ? (
-        <LoadingState rows={1} />
-      ) : pending.isError ? (
-        <ErrorState title={t('admin.vocabulary.pendingError')} onRetry={() => void pending.refetch()} />
-      ) : items.length === 0 ? (
-        <p className="text-muted">{t('admin.vocabulary.pendingEmpty')}</p>
-      ) : (
-        <Rows>
-          {items.map((row) => (
-            <Row key={row.id} data-pending-proposal={row.id}>
-              <span className="font-semibold">{row.title}</span>
-              <Meta className="mt-1.5">
-                <PillRow pills={presentPendingProposal(t)} />
-                <span>{t('admin.vocabulary.pendingSent', { date: formatDate(row.createdAt, ctx) })}</span>
-              </Meta>
-            </Row>
-          ))}
-        </Rows>
-      )}
+      <QueryState query={pending} rows={1} errorTitle={t('admin.vocabulary.pendingError')}>
+        {() =>
+          items.length === 0 ? (
+            <p className="text-muted">{t('admin.vocabulary.pendingEmpty')}</p>
+          ) : (
+            <Rows>
+              {items.map((row) => (
+                <Row key={row.id} data-pending-proposal={row.id}>
+                  <span className="font-semibold">{row.title}</span>
+                  <Meta className="mt-1.5">
+                    <PillRow pills={presentPendingProposal(t)} />
+                    <span>{t('admin.vocabulary.pendingSent', { date: formatDate(row.createdAt, ctx) })}</span>
+                  </Meta>
+                </Row>
+              ))}
+            </Rows>
+          )
+        }
+      </QueryState>
     </Panel>
   );
 }

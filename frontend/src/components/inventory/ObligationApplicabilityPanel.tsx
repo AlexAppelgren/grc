@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextArea } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ConfirmDialog, FormDialog } from '@/components/ui/Dialogs';
 import { useFormatContext } from '@/features/identity/hooks';
 import { isStaleWrite, useRegisterEntry, useReloadRegister, useSetApplicability, useSpannedEntities } from '@/features/register/hooks';
 import { presentApplicability } from '@/features/register/register-presentation';
@@ -168,8 +168,7 @@ function DecideDialog({ obligationId, answer, onClose }: { obligationId: string;
   const entity = answer.name ?? t('obligationApplicability.whole');
   const label = presentApplicability(value, t).label;
 
-  const next = (event: FormEvent) => {
-    event.preventDefault();
+  const next = () => {
     setConfirming(true);
   };
   const store = () =>
@@ -191,7 +190,7 @@ function DecideDialog({ obligationId, answer, onClose }: { obligationId: string;
               onClose(null);
             }}
           >
-            {t('obligationApplicability.reload')}
+            {t('common.reload')}
           </Button>
         </ButtonBar>
       </div>
@@ -202,53 +201,40 @@ function DecideDialog({ obligationId, answer, onClose }: { obligationId: string;
 
   if (confirming) {
     return (
-      <Modal
-        open
-        onOpenChange={(stay) => (stay ? undefined : onClose(null))}
+      <ConfirmDialog
         title={answer.orgUnitId === null ? t('obligationApplicability.confirmTitleWhole', { value: label }) : t('obligationApplicability.confirmTitle', { value: label, entity })}
-        description={t('obligationApplicability.confirmBody', { before: presentApplicability(answer.applicability, t).label })}
+        body={t('obligationApplicability.confirmBody', { before: presentApplicability(answer.applicability, t).label })}
+        action={t('obligationApplicability.confirm')}
+        busy={set.isPending}
+        onConfirm={store}
+        onClose={() => onClose(null)}
       >
         {problem}
-        <ButtonBar>
-          <Button variant="outline" onClick={() => onClose(null)}>
-            {t('common.cancel')}
-          </Button>
-          <Button onClick={store} disabled={set.isPending}>
-            {t('obligationApplicability.confirm')}
-          </Button>
-        </ButtonBar>
-      </Modal>
+      </ConfirmDialog>
     );
   }
 
   return (
-    <Modal
-      open
-      onOpenChange={(stay) => (stay ? undefined : onClose(null))}
+    <FormDialog
       title={answer.orgUnitId === null ? t('obligationApplicability.heading') : t('obligationApplicability.formTitle', { entity })}
+      submitLabel={t('obligationApplicability.continue')}
+      pending={false}
+      submitDisabled={reason.trim() === ''}
+      onSubmit={next}
+      onClose={() => onClose(null)}
     >
-      <form onSubmit={next} noValidate>
-        <Field id="applicability-value" label={t('obligationApplicability.decision')}>
-          <Select id="applicability-value" value={value} onChange={(event) => setValue(event.target.value as Applicability)}>
-            {ANSWERS.map((option) => (
-              <option key={option} value={option}>
-                {presentApplicability(option, t).label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field id="applicability-reason" label={t('obligationApplicability.reason')} hint={t('obligationApplicability.reasonHint')}>
-          <TextArea id="applicability-reason" value={reason} maxLength={REASON_MAX} onChange={(event) => setReason(event.target.value)} />
-        </Field>
-        <ButtonBar>
-          <Button variant="outline" onClick={() => onClose(null)}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={reason.trim() === ''}>
-            {t('obligationApplicability.continue')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+      <Field id="applicability-value" label={t('obligationApplicability.decision')}>
+        <Select id="applicability-value" value={value} onChange={(event) => setValue(event.target.value as Applicability)}>
+          {ANSWERS.map((option) => (
+            <option key={option} value={option}>
+              {presentApplicability(option, t).label}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <Field id="applicability-reason" label={t('obligationApplicability.reason')} hint={t('obligationApplicability.reasonHint')}>
+        <TextArea id="applicability-reason" value={reason} maxLength={REASON_MAX} onChange={(event) => setReason(event.target.value)} />
+      </Field>
+    </FormDialog>
   );
 }

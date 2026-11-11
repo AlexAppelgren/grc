@@ -20,6 +20,5 @@
   "obligationApplicability.confirm": "Set applicability",
   "obligationApplicability.saved": "Saved: {value}.",
   "obligationApplicability.stale": "Someone changed this answer while you were deciding. Reload to see theirs, then decide again.",
-  "obligationApplicability.reload": "Reload",
   "obligationApplicability.errorTitle": "Does it apply to us could not be loaded"
 }

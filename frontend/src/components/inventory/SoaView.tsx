@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 
-import { Button, ButtonBar } from '@/components/ui/Button';
 import { Meta } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
 import { ErrorState, LoadingState } from '@/components/ui/States';
+import { Pager } from '@/components/ui/Pager';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useStatementOfApplicability } from '@/features/register/hooks';
 import { presentApplicability, presentCompliance } from '@/features/register/register-presentation';
@@ -113,16 +113,7 @@ export function SoaView({ obligationId, entity }: { obligationId: string; entity
               </tbody>
             </table>
           </div>
-          {total > PAGE_SIZE ? (
-            <ButtonBar>
-              <Button variant="outline" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>
-                {t('obligationUnits.previous')}
-              </Button>
-              <Button variant="outline" size="small" disabled={offset + PAGE_SIZE >= total} onClick={() => setOffset(offset + PAGE_SIZE)}>
-                {t('obligationUnits.next')}
-              </Button>
-            </ButtonBar>
-          ) : null}
+          {total > PAGE_SIZE ? <Pager offset={offset} limit={PAGE_SIZE} shown={units.length} total={total} onOffset={setOffset} /> : null}
         </>
       )}
     </div>

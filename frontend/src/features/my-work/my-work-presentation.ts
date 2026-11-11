@@ -54,11 +54,6 @@ export function permissionLimitedLines(kinds: readonly WorkItemKind[], t: Transl
   return kinds.map((kind) => t(LIMITED_LABEL[kind]));
 }
 
-/** The bank's own today, a plain date in its time zone: every day count is against it. */
-export function tenantToday(now: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone }).format(now);
-}
-
 function daysBetween(from: string, to: string): number {
   return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
 }

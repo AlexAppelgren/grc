@@ -18,7 +18,7 @@ import type {
   TenantRole,
   TenantUpdate,
 } from '@/features/tenant-admin/types';
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
 
 // Thin typed wrappers returning `.data` (playbook 6.1). Paths are the tenant
 // admin routes under /api/v1 (CHUNK1_BRIEF.md). Step-up is the api client's
@@ -26,8 +26,6 @@ import { api } from '@/shared/utils/api-client';
 
 const TENANT = '/api/v1/tenant';
 const REFERENCE = '/api/v1/reference';
-
-const id = (value: string) => encodeURIComponent(value);
 
 export async function getTenant(): Promise<Tenant> {
   return (await api.get<Tenant>(TENANT)).data;
@@ -50,19 +48,19 @@ export async function inviteMember(body: InviteBody): Promise<Invitation> {
 }
 
 export async function updateMember(userId: string, body: MemberUpdate): Promise<Member> {
-  return (await api.patch<Member>(`${TENANT}/members/${id(userId)}`, body)).data;
+  return (await api.patch<Member>(`${TENANT}/members/${segment(userId)}`, body)).data;
 }
 
 export async function reissueEnrolment(userId: string): Promise<void> {
-  await api.post(`${TENANT}/members/${id(userId)}/reissue-enrolment`, {});
+  await api.post(`${TENANT}/members/${segment(userId)}/reissue-enrolment`, {});
 }
 
 export async function listMemberSessions(userId: string): Promise<MemberSession[]> {
-  return (await api.get<MemberSession[]>(`${TENANT}/members/${id(userId)}/sessions`)).data;
+  return (await api.get<MemberSession[]>(`${TENANT}/members/${segment(userId)}/sessions`)).data;
 }
 
 export async function revokeMemberSessions(userId: string): Promise<void> {
-  await api.delete(`${TENANT}/members/${id(userId)}/sessions`);
+  await api.delete(`${TENANT}/members/${segment(userId)}/sessions`);
 }
 
 export async function listInvitations(query: PageQuery): Promise<Page<Invitation>> {
@@ -70,11 +68,11 @@ export async function listInvitations(query: PageQuery): Promise<Page<Invitation
 }
 
 export async function resendInvitation(invitationId: string): Promise<Invitation> {
-  return (await api.post<Invitation>(`${TENANT}/invitations/${id(invitationId)}/resend`, {})).data;
+  return (await api.post<Invitation>(`${TENANT}/invitations/${segment(invitationId)}/resend`, {})).data;
 }
 
 export async function revokeInvitation(invitationId: string): Promise<void> {
-  await api.delete(`${TENANT}/invitations/${id(invitationId)}`);
+  await api.delete(`${TENANT}/invitations/${segment(invitationId)}`);
 }
 
 export async function listRoles(): Promise<TenantRole[]> {
@@ -86,11 +84,11 @@ export async function createRole(body: RoleCreate): Promise<TenantRole> {
 }
 
 export async function updateRole(key: string, body: RoleUpdate): Promise<TenantRole> {
-  return (await api.patch<TenantRole>(`${TENANT}/roles/${id(key)}`, body)).data;
+  return (await api.patch<TenantRole>(`${TENANT}/roles/${segment(key)}`, body)).data;
 }
 
 export async function retireRole(key: string): Promise<TenantRole> {
-  return (await api.post<TenantRole>(`${TENANT}/roles/${id(key)}/retire`, {})).data;
+  return (await api.post<TenantRole>(`${TENANT}/roles/${segment(key)}/retire`, {})).data;
 }
 
 export async function listPermissions(): Promise<PermissionRef[]> {
@@ -110,7 +108,7 @@ export async function createApiKey(body: ApiKeyCreate): Promise<ApiKeyCreated> {
 }
 
 export async function revokeApiKey(keyId: string): Promise<void> {
-  await api.delete(`${TENANT}/api-keys/${id(keyId)}`);
+  await api.delete(`${TENANT}/api-keys/${segment(keyId)}`);
 }
 
 export async function listSecurityLog(query: PageQuery): Promise<Page<LoginEvent>> {

@@ -5,14 +5,16 @@ import { useState } from 'react';
 import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextInput } from '@/components/ui/Field';
 import { Meta, Panel, Row, Rows } from '@/components/ui/Panel';
-import { ErrorState, LoadingState } from '@/components/ui/States';
-import { DialogForm } from '@/features/tenant-admin/organisation/fields';
+import { QueryState } from '@/components/ui/States';
+import { FormDialog } from '@/components/ui/Dialogs';
+import { orgFormCodes } from '@/features/tenant-admin/organisation/fields';
 import { useCanEditOrganisation, useOrgUnits } from '@/features/tenant-admin/organisation/hooks';
 import { fieldErrorsOf, teamDepartments } from '@/features/tenant-admin/organisation/organisation-presentation';
 import { teamLabels, type Team } from '@/features/tenant-admin/teams/api';
-import { useCreateTeam, useTeams, useUpdateTeam } from '@/features/tenant-admin/teams/hooks';
+import { useCreateTeam, useUpdateTeam } from '@/features/tenant-admin/teams/hooks';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { useTeams } from '@/features/shared/reference';
 
 // Teams (design/screens/admin-organisation.html, TEN-02, TEN-03, TEN-S8): each
 // team with its department and how many active members it has. A team is a row
@@ -33,36 +35,34 @@ export function TeamsSection() {
   return (
     <Panel title={t('admin.org.teams.title')} data-org-section="teams">
       <p className="mb-3 text-muted">{t('admin.org.teams.lede')}</p>
-      {teams.isPending ? (
-        <LoadingState />
-      ) : teams.isError ? (
-        <ErrorState title={t('admin.org.teams.errorTitle')} onRetry={() => void teams.refetch()} />
-      ) : (
-        <Rows>
-          {teams.data.map((team) => {
-            const department = departmentOf(team.orgUnitId);
-            return (
-              <Row key={team.key} className={team.active ? undefined : 'opacity-60'} data-team={team.key}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h3>{team.label}</h3>
-                    <Meta>
-                      {department !== undefined ? <span>{department}</span> : null}
-                      <span>{t('admin.org.teams.memberCount', { count: team.memberCount })}</span>
-                      {team.active ? null : <span>{t('admin.org.teams.retired')}</span>}
-                    </Meta>
+      <QueryState query={teams} errorTitle={t('admin.org.teams.errorTitle')}>
+        {(data) => (
+          <Rows>
+            {data.map((team) => {
+              const department = departmentOf(team.orgUnitId);
+              return (
+                <Row key={team.key} className={team.active ? undefined : 'opacity-60'} data-team={team.key}>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3>{team.label}</h3>
+                      <Meta>
+                        {department !== undefined ? <span>{department}</span> : null}
+                        <span>{t('admin.org.teams.memberCount', { count: team.memberCount })}</span>
+                        {team.active ? null : <span>{t('admin.org.teams.retired')}</span>}
+                      </Meta>
+                    </div>
+                    {canEdit ? (
+                      <Button variant="ghost" size="small" onClick={() => setEditing(team)} aria-label={t('admin.org.editNamed', { name: team.label })}>
+                        {t('admin.org.edit')}
+                      </Button>
+                    ) : null}
                   </div>
-                  {canEdit ? (
-                    <Button variant="ghost" size="small" onClick={() => setEditing(team)} aria-label={t('admin.org.editNamed', { name: team.label })}>
-                      {t('admin.org.edit')}
-                    </Button>
-                  ) : null}
-                </div>
-              </Row>
-            );
-          })}
-        </Rows>
-      )}
+                </Row>
+              );
+            })}
+          </Rows>
+        )}
+      </QueryState>
       {canEdit ? (
         <ButtonBar>
           <Button size="small" onClick={() => setEditing('new')}>
@@ -104,7 +104,7 @@ function TeamForm({ team, onClose }: { team: Team | null; onClose: () => void })
   };
 
   return (
-    <DialogForm title={team === null ? t('admin.org.teams.addTitle') : t('admin.org.editNamed', { name: team.label })} error={write.error} formLevel={errors.formLevel} pending={write.isPending} onSubmit={submit} onClose={onClose}>
+    <FormDialog title={team === null ? t('admin.org.teams.addTitle') : t('admin.org.editNamed', { name: team.label })} submitLabel={t('common.save')} pending={write.isPending} error={errors.formLevel ? write.error : undefined} codes={orgFormCodes(t)} onSubmit={submit} onClose={onClose}>
       <Field id="team-name" label={t('admin.org.teams.name')} error={blank ? t('admin.org.teams.nameRequired') : undefined}>
         <TextInput id="team-name" value={name} onChange={(e) => setNameEn(e.target.value)} aria-invalid={blank} />
       </Field>
@@ -121,6 +121,6 @@ function TeamForm({ team, onClose }: { team: Team | null; onClose: () => void })
           ))}
         </Select>
       </Field>
-    </DialogForm>
+    </FormDialog>
   );
 }

@@ -50,7 +50,6 @@ interface World {
 function server(world: Partial<World> = {}, extra: (sent: Sent) => Answer | undefined = () => undefined): Sent[] {
   const w: World = { entries: [accessEntry()], reach: { enabled: true, changedAt: '2026-09-25T07:40:00Z', changedBy: null, pending: null }, ...world };
   return installAdapter((sent) => {
-    if (sent.path === REFRESH_PATH) return { status: 200, data: { accessToken: 'tok' } };
     const answer = extra(sent);
     if (answer !== undefined) return answer;
     if (sent.method !== 'get') return { status: 500 };

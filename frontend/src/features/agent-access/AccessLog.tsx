@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 
-import { Button, ButtonBar } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Panel } from '@/components/ui/Panel';
-import { ErrorState, LoadingState } from '@/components/ui/States';
+import { QueryState } from '@/components/ui/States';
+import { Pager } from '@/components/ui/Pager';
 import { CALLS_PAGE } from '@/features/agent-access/api';
 import { useAccessCalls } from '@/features/agent-access/hooks';
 import { scopeTermCount, toolName } from '@/features/agent-access/presentation';
@@ -73,41 +73,33 @@ export function AccessLog({ entryId }: { entryId: string }) {
   return (
     <Panel title={t('agentAccess.log.title')} data-access-log="">
       <p className="mb-3 text-muted">{t('agentAccess.log.lede')}</p>
-      {calls.isPending ? (
-        <LoadingState />
-      ) : calls.isError ? (
-        <ErrorState title={t('agentAccess.log.errorTitle')} onRetry={() => void calls.refetch()} />
-      ) : calls.data.total === 0 ? (
-        <EmptyState title={t('agentAccess.log.emptyTitle')} body={t('agentAccess.log.emptyBody')} />
-      ) : (
-        <>
-          <table className="w-full text-meta max-md:block">
-            <thead className="text-left text-muted max-md:hidden">
-              <tr>
-                {COLUMNS.map((column) => (
-                  <th key={column} scope="col" className="py-1.5 pr-3 font-medium">
-                    {t(column)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="max-md:grid max-md:gap-3">
-              {calls.data.items.map((call) => (
-                <CallRow key={call.id} call={call} />
-              ))}
-            </tbody>
-          </table>
-          <ButtonBar className="items-center">
-            <span className="mr-auto text-meta text-muted">{t('agentAccess.log.range', { from: offset + 1, to: offset + calls.data.items.length, total: calls.data.total })}</span>
-            <Button variant="outline" size="small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - CALLS_PAGE))}>
-              {t('agentAccess.log.newer')}
-            </Button>
-            <Button variant="outline" size="small" disabled={offset + CALLS_PAGE >= calls.data.total} onClick={() => setOffset(offset + CALLS_PAGE)}>
-              {t('agentAccess.log.older')}
-            </Button>
-          </ButtonBar>
-        </>
-      )}
+      <QueryState query={calls} errorTitle={t('agentAccess.log.errorTitle')}>
+        {(data) =>
+          data.total === 0 ? (
+            <EmptyState title={t('agentAccess.log.emptyTitle')} body={t('agentAccess.log.emptyBody')} />
+          ) : (
+            <>
+              <table className="w-full text-meta max-md:block">
+                <thead className="text-left text-muted max-md:hidden">
+                  <tr>
+                    {COLUMNS.map((column) => (
+                      <th key={column} scope="col" className="py-1.5 pr-3 font-medium">
+                        {t(column)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="max-md:grid max-md:gap-3">
+                  {data.items.map((call) => (
+                    <CallRow key={call.id} call={call} />
+                  ))}
+                </tbody>
+              </table>
+              <Pager inTime offset={offset} limit={CALLS_PAGE} shown={data.items.length} total={data.total} onOffset={setOffset} />
+            </>
+          )
+        }
+      </QueryState>
     </Panel>
   );
 }

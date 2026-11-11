@@ -1,13 +1,11 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import type { AxiosAdapter } from 'axios';
-import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { withPanels } from '@/features/register/testing';
-import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { api, tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { HISTORY_PAGE, ObligationHistoryPanel } from './ObligationHistoryPanel';
 
@@ -63,17 +61,7 @@ function serve(interpretation: unknown, total: number, write: (sent: Sent) => An
 }
 
 function renderPanel(permissions: string[]) {
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <ObligationHistoryPanel obligationId="ob-1" />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  return renderWith(<ObligationHistoryPanel obligationId="ob-1" />, { permissions });
 }
 
 describe('ObligationHistoryPanel', () => {

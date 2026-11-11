@@ -10,10 +10,8 @@ import {
   useAddObligationParticipant,
   useCaseParticipants,
   useObligationParticipants,
-  usePeople,
   useRemoveCaseParticipant,
   useRemoveObligationParticipant,
-  useTeams,
 } from './hooks';
 
 // The list is keyed by the obligation; every write refetches it, a refused
@@ -23,18 +21,6 @@ describe('participant hooks', () => {
   beforeEach(() => {
     resetApiForTests();
     tokenStore.set('tok');
-  });
-
-  it('reads the picker lists only while enabled', async () => {
-    const sent = installAdapter((s) => ({ status: 200, data: s.path.endsWith('people') ? [] : { items: [], total: 0 } }));
-    const { wrapper } = queryWrapper();
-    const people = renderHook(() => usePeople('register.read', false), { wrapper });
-    const teams = renderHook(() => useTeams(false), { wrapper });
-    expect([people.result.current.fetchStatus, teams.result.current.fetchStatus]).toEqual(['idle', 'idle']);
-    renderHook(() => usePeople('register.read', true), { wrapper });
-    renderHook(() => useTeams(true), { wrapper });
-    await waitFor(() => expect(sent.map((s) => s.path).sort()).toEqual(['/api/v1/reference/people', '/api/v1/tenant/teams']));
-    expect(participantKeys.obligation('ob1')).toEqual(['participants', 'obligation', 'ob1']);
   });
 
   it('refetches the list after an add, a refused add and a removal', async () => {

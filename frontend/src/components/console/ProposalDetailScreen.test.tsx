@@ -1,11 +1,11 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
+import { installAdapter, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 
 import type { ProposalDetail } from '@/features/proposals/types';
+import { renderWith } from '@/shared/testing/render';
 import { ProposalDetailScreen } from './ProposalDetailScreen';
 
 // /console/queue/[proposalId]: the decision panel names who decided. An agent
@@ -86,9 +86,8 @@ const READS: Readonly<Record<string, unknown>> = {
   '/api/v1/reference/jurisdictions': [{ key: 'eu', kind: 'supranational', label: 'European Union', parentKey: null }],
 };
 
-function renderWith(row: ProposalDetail): void {
+function showProposal(row: ProposalDetail): void {
   installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: editor };
     if (sent.path === `/api/v1/proposals/${row.id}`) return { status: 200, data: row };
     if (sent.path in READS) return { status: 200, data: READS[sent.path] };
     if (sent.path === '/api/v1/taxonomy/terms') {
@@ -97,15 +96,8 @@ function renderWith(row: ProposalDetail): void {
       return { status: 200, data: { items, total: items.length } };
     }
     return { status: 403, data: { code: 'forbidden', detail: 'Not for this test.' } };
-  });
-  const { wrapper: Query } = queryWrapper();
-  render(
-    <Query>
-      <LocaleProvider locale="en">
-        <ProposalDetailScreen proposalId={row.id} />
-      </LocaleProvider>
-    </Query>,
-  );
+  }, { me: editor });
+  renderWith(<ProposalDetailScreen proposalId={row.id} />);
 }
 
 async function decision(marker: 'applied' | 'rejected'): Promise<HTMLElement> {
@@ -122,7 +114,7 @@ describe('the decision panel', () => {
   });
 
   it('reads an agent\'s approval as machine-confirmed, naming the agent, and labels its note as the agent\'s', async () => {
-    renderWith(detail({ status: 'approved', appliedAt: DECIDED_AT, reviewedAt: DECIDED_AT, reviewedByAgent: AGENT, reviewNote: 'Matches the adopted text.' }));
+    showProposal(detail({ status: 'approved', appliedAt: DECIDED_AT, reviewedAt: DECIDED_AT, reviewedByAgent: AGENT, reviewNote: 'Matches the adopted text.' }));
     const panel = await decision('applied');
     expect(panel).toHaveTextContent(/^Applied .+ by the agent library-confirmer, machine-confirmed\./);
     expect(panel).toHaveTextContent("The agent's note: Matches the adopted text.");
@@ -130,20 +122,20 @@ describe('the decision panel', () => {
   });
 
   it('names the agent that corrected the payload as an agent, on a line of its own', async () => {
-    renderWith(detail({ status: 'approved', appliedAt: DECIDED_AT, reviewedAt: DECIDED_AT, reviewedByAgent: AGENT, correctedByAgent: AGENT }));
+    showProposal(detail({ status: 'approved', appliedAt: DECIDED_AT, reviewedAt: DECIDED_AT, reviewedByAgent: AGENT, correctedByAgent: AGENT }));
     const panel = await decision('applied');
     expect(panel.querySelector('[data-proposal-corrected-by-agent]')).toHaveTextContent('The agent library-confirmer corrected the proposal before applying it.');
   });
 
   it('names the agent that rejected it, and labels its note as the agent\'s', async () => {
-    renderWith(detail({ status: 'rejected', reviewedAt: DECIDED_AT, reviewedByAgent: AGENT, rejectionCode: 'bad_source', reviewNote: 'The source is the consultation draft.' }));
+    showProposal(detail({ status: 'rejected', reviewedAt: DECIDED_AT, reviewedByAgent: AGENT, rejectionCode: 'bad_source', reviewNote: 'The source is the consultation draft.' }));
     const panel = await decision('rejected');
     expect(panel).toHaveTextContent(/^Rejected .+ by the agent library-confirmer\./);
     expect(panel).toHaveTextContent("The agent's note: The source is the consultation draft.");
   });
 
   it('names a person who decided it, with their note to the proposer, and no agent line', async () => {
-    renderWith(detail({ status: 'approved', appliedAt: DECIDED_AT, reviewedAt: DECIDED_AT, reviewedBy: PERSON, correctedBy: PERSON, reviewNote: 'Checked against the board decision.' }));
+    showProposal(detail({ status: 'approved', appliedAt: DECIDED_AT, reviewedAt: DECIDED_AT, reviewedBy: PERSON, correctedBy: PERSON, reviewNote: 'Checked against the board decision.' }));
     const panel = await decision('applied');
     expect(panel).toHaveTextContent(/^Applied .+ by Kari Nygaard\./);
     expect(panel).toHaveTextContent('Note to the proposer: Checked against the board decision.');
@@ -152,7 +144,7 @@ describe('the decision panel', () => {
   });
 
   it('never shows an empty name when a decided proposal names nobody', async () => {
-    renderWith(detail({ status: 'approved', appliedAt: DECIDED_AT, reviewedAt: DECIDED_AT }));
+    showProposal(detail({ status: 'approved', appliedAt: DECIDED_AT, reviewedAt: DECIDED_AT }));
     const panel = await decision('applied');
     expect(panel).toHaveTextContent(/^Applied [^.]+\.$/);
     expect(panel).not.toHaveTextContent(/ by \./);
@@ -160,20 +152,20 @@ describe('the decision panel', () => {
   });
 
   it('shows the four-eyes notice, and no Approve, when the server says the reader filed it', async () => {
-    renderWith(detail({ isMine: true }));
+    showProposal(detail({ isMine: true }));
     expect(await screen.findByText('Someone else has to approve it.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Approve and apply' })).toBeNull();
   });
 
   it('warns a person when the screen flagged a text, and still lets them decide', async () => {
-    renderWith(detail({ riskFlags: ['embedded_instructions'] }));
+    showProposal(detail({ riskFlags: ['embedded_instructions'] }));
     expect(await screen.findByText(/reads like an instruction to an AI/)).toBeInTheDocument();
     expect(screen.getByText('Flagged')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Approve and apply' })).toBeInTheDocument();
   });
 
   it('shows a new instrument\'s facts by their labels, the original title first, and plain Approve and Reject', async () => {
-    renderWith(
+    showProposal(
       detail({
         kind: 'new_instrument',
         title: 'Add MAR managers\' transactions ITS',
@@ -225,7 +217,7 @@ describe('the decision panel', () => {
   });
 
   it('shows a new obligation under its instrument\'s short name and key, with its texts, duty type and scope by label', async () => {
-    renderWith(
+    showProposal(
       detail({
         kind: 'new_obligation',
         title: 'Add the duty: Hold a qualifying borrow agreement',
@@ -257,7 +249,7 @@ describe('the decision panel', () => {
   });
 
   it('names an obligation\'s instrument by its key alone, and says so, when the library does not hold it', async () => {
-    renderWith(
+    showProposal(
       detail({
         kind: 'new_obligation',
         targetType: '',
@@ -274,7 +266,7 @@ describe('the decision panel', () => {
   });
 
   it("shows a record's machine translations beside the original each was made from", async () => {
-    renderWith(
+    showProposal(
       detail({
         kind: 'new_translations',
         targetType: '',
@@ -297,7 +289,7 @@ describe('the decision panel', () => {
   });
 
   it('shows no warning for a proposal the screen found nothing in', async () => {
-    renderWith(detail({ riskFlags: [] }));
+    showProposal(detail({ riskFlags: [] }));
     await screen.findByText('Add version 2 of the research payment obligation');
     expect(screen.queryByText(/reads like an instruction to an AI/)).toBeNull();
   });

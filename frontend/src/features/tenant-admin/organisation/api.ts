@@ -7,15 +7,13 @@ import type {
   OrgUnitBody,
   OrgUnitPatch,
   OrgUnitRow,
-  PersonRef,
   Product,
   ProductBody,
   ProductPatch,
   RegisterApply,
-  RegisterLookup,
-} from '@/features/tenant-admin/organisation/types';
+  RegisterLookup } from '@/features/tenant-admin/organisation/types';
 import type { Page } from '@/features/tenant-admin/types';
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
 
 // Thin typed wrappers returning `.data` (playbook 6.1) for the organisation
 // routes (TEN-02). A change sends the version it was read at as If-Match, so
@@ -26,8 +24,6 @@ const TENANT = '/api/v1/tenant';
 // licences, and its products are short lists.
 const ALL = { limit: 100 };
 
-const id = (value: string) => encodeURIComponent(value);
-
 export async function listOrgUnits(): Promise<OrgUnitRow[]> {
   return (await api.get<Page<OrgUnitRow>>(`${TENANT}/org-units`, { params: ALL })).data.items;
 }
@@ -37,15 +33,15 @@ export async function createOrgUnit(body: OrgUnitBody): Promise<OrgUnit> {
 }
 
 export async function updateOrgUnit(unitId: string, body: OrgUnitPatch, version: number): Promise<OrgUnit> {
-  return (await api.patch<OrgUnit>(`${TENANT}/org-units/${id(unitId)}`, body, { version })).data;
+  return (await api.patch<OrgUnit>(`${TENANT}/org-units/${segment(unitId)}`, body, { version })).data;
 }
 
 export async function createLicence(unitId: string, body: LicenceBody): Promise<Licence> {
-  return (await api.post<Licence>(`${TENANT}/org-units/${id(unitId)}/licences`, body)).data;
+  return (await api.post<Licence>(`${TENANT}/org-units/${segment(unitId)}/licences`, body)).data;
 }
 
 export async function updateLicence(licenceId: string, body: LicencePatch, version: number): Promise<Licence> {
-  return (await api.patch<Licence>(`${TENANT}/licences/${id(licenceId)}`, body, { version })).data;
+  return (await api.patch<Licence>(`${TENANT}/licences/${segment(licenceId)}`, body, { version })).data;
 }
 
 export async function listProducts(): Promise<Product[]> {
@@ -57,12 +53,7 @@ export async function createProduct(body: ProductBody): Promise<Product> {
 }
 
 export async function updateProduct(productId: string, body: ProductPatch, version: number): Promise<Product> {
-  return (await api.patch<Product>(`${TENANT}/products/${id(productId)}`, body, { version })).data;
-}
-
-/** The bank's active members as ids and names: every owner and head picker reads it. */
-export async function listPeople(): Promise<PersonRef[]> {
-  return (await api.get<PersonRef[]>('/api/v1/reference/people')).data;
+  return (await api.patch<Product>(`${TENANT}/products/${segment(productId)}`, body, { version })).data;
 }
 
 /** Starts a lookup in the public registers (202): only the number or LEI leaves the bank. */
@@ -71,12 +62,12 @@ export async function startRegisterLookup(query: string): Promise<RegisterLookup
 }
 
 export async function getRegisterLookup(lookupId: string): Promise<RegisterLookup> {
-  return (await api.get<RegisterLookup>(`${TENANT}/register-lookups/${id(lookupId)}`)).data;
+  return (await api.get<RegisterLookup>(`${TENANT}/register-lookups/${segment(lookupId)}`)).data;
 }
 
 /** Adds the chosen companies, by LEI, and links the ones the bank already has. */
 export async function applyRegisterLookup(lookupId: string, leis: readonly string[]): Promise<RegisterApply> {
-  return (await api.post<RegisterApply>(`${TENANT}/register-lookups/${id(lookupId)}/apply`, { leis })).data;
+  return (await api.post<RegisterApply>(`${TENANT}/register-lookups/${segment(lookupId)}/apply`, { leis })).data;
 }
 
 /** The library's authorities, for the name of the register each company was looked up in. */

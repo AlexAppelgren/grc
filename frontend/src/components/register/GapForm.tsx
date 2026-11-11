@@ -1,17 +1,16 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 
-import { Button, ButtonBar } from '@/components/ui/Button';
 import { Field, Select, TextArea, TextInput } from '@/components/ui/Field';
-import { Modal } from '@/components/ui/Modal';
-import { ProblemAlert } from '@/components/ui/States';
-import { gapProblemCopy } from '@/features/gaps/gap-view';
+import { FormDialog } from '@/components/ui/Dialogs';
+import { gapProblemCopy } from '@/features/register/gaps/gap-view';
 import { useFormatContext, useSession } from '@/features/identity/hooks';
 import { useCreateGap, useUpdateGap } from '@/features/register/hooks';
 import type { RegisterGap } from '@/features/register/types';
 import { useVocabularyValues } from '@/features/vocabularies/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
+import { tenantToday } from '@/shared/utils/format';
 
 // "Record a gap" and its Edit (design/screens/tenant-gaps.html, state 13;
 // REG-03). The obligation is fixed; the lists are the bank's own rows and the
@@ -36,11 +35,6 @@ function ownerBody(owner: Owner): { ownerId?: string; ownerTeam?: string } {
   return {};
 }
 
-/** Today in the bank's zone, as the plain date a date input speaks. */
-function localToday(timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-}
-
 const nullIfBlank = (value: string) => (value.trim() === '' ? null : value.trim());
 
 export function GapForm({
@@ -60,7 +54,7 @@ export function GapForm({
   const t = useT();
   const { me } = useSession();
   const meId = me?.user.id ?? null;
-  const today = localToday(useFormatContext().timeZone);
+  const today = tenantToday(useFormatContext().timeZone);
   const severities = useVocabularyValues('risk_rating');
   const sources = useVocabularyValues('gap_source', false, gap === null);
   const teams = useVocabularyValues('team');
@@ -85,8 +79,7 @@ export function GapForm({
   // A date already set may stay as it is; a new or changed one starts today or later.
   const targetError = tried && target !== '' && target !== gap?.targetDate && target < today ? t('gaps.form.targetPast') : undefined;
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     setTried(true);
     if (title.trim() === '' || (target !== '' && target !== gap?.targetDate && target < today)) return;
     const common = {
@@ -109,63 +102,63 @@ export function GapForm({
 
   const personOwner = gap?.owner ?? null;
   return (
-    <Modal open onOpenChange={(open) => (open ? undefined : onClose())} title={t(gap === null ? 'gaps.form.createTitle' : 'gaps.form.editTitle')} description={obligationTitle}>
-      <form onSubmit={submit} noValidate aria-busy={write.isPending} data-gap-form="">
-        <Field id="gap-title" label={t('gaps.form.title')} error={titleError}>
-          <TextInput id="gap-title" value={title} maxLength={300} aria-invalid={titleError !== undefined} aria-describedby={titleError === undefined ? undefined : 'gap-title-error'} onChange={(e) => setTitle(e.target.value)} />
+    <FormDialog
+      title={t(gap === null ? 'gaps.form.createTitle' : 'gaps.form.editTitle')}
+      description={obligationTitle}
+      submitLabel={t(gap === null ? 'gaps.form.create' : 'common.save')}
+      pending={write.isPending}
+      submitDisabled={write.isPending || chosenSeverity === '' || (gap === null && chosenSource === '')}
+      error={write.error}
+      codes={gapProblemCopy(t)}
+      onSubmit={submit}
+      onClose={onClose}
+      formProps={{ 'data-gap-form': '' }}
+    >
+      <Field id="gap-title" label={t('gaps.form.title')} error={titleError}>
+        <TextInput id="gap-title" value={title} maxLength={300} aria-invalid={titleError !== undefined} aria-describedby={titleError === undefined ? undefined : 'gap-title-error'} onChange={(e) => setTitle(e.target.value)} />
+      </Field>
+      <Field id="gap-description" label={t('gaps.form.description')}>
+        <TextArea id="gap-description" value={description} placeholder={t('gaps.form.descriptionPlaceholder')} onChange={(e) => setDescription(e.target.value)} />
+      </Field>
+      <div className="grid gap-x-3 md:grid-cols-2">
+        <Field id="gap-severity" label={t('gaps.form.severity')}>
+          <Select id="gap-severity" value={chosenSeverity} onChange={(e) => setSeverity(e.target.value)}>
+            {severityRows.map((row) => (
+              <option key={row.key} value={row.key}>
+                {row.label}
+              </option>
+            ))}
+          </Select>
         </Field>
-        <Field id="gap-description" label={t('gaps.form.description')}>
-          <TextArea id="gap-description" value={description} placeholder={t('gaps.form.descriptionPlaceholder')} onChange={(e) => setDescription(e.target.value)} />
-        </Field>
-        <div className="grid gap-x-3 md:grid-cols-2">
-          <Field id="gap-severity" label={t('gaps.form.severity')}>
-            <Select id="gap-severity" value={chosenSeverity} onChange={(e) => setSeverity(e.target.value)}>
-              {severityRows.map((row) => (
+        {gap === null ? (
+          <Field id="gap-source" label={t('gaps.form.source')}>
+            <Select id="gap-source" value={chosenSource} onChange={(e) => setSource(e.target.value)}>
+              {sourceRows.map((row) => (
                 <option key={row.key} value={row.key}>
                   {row.label}
                 </option>
               ))}
             </Select>
           </Field>
-          {gap === null ? (
-            <Field id="gap-source" label={t('gaps.form.source')}>
-              <Select id="gap-source" value={chosenSource} onChange={(e) => setSource(e.target.value)}>
-                {sourceRows.map((row) => (
-                  <option key={row.key} value={row.key}>
-                    {row.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          ) : null}
-          <Field id="gap-owner" label={t('gaps.form.owner')} hint={t('gaps.form.ownerHint')}>
-            <Select id="gap-owner" value={owner} aria-describedby="gap-owner-hint" onChange={(e) => setOwner(e.target.value as Owner)}>
-              {meId === null ? null : <option value={`person:${meId}`}>{t('gaps.form.ownerMe')}</option>}
-              {personOwner !== null && personOwner.id !== meId ? <option value={`person:${personOwner.id}`}>{personOwner.name}</option> : null}
-              {(teams.data ?? []).map((row) => (
-                <option key={row.key} value={`team:${row.key}`}>
-                  {t('gaps.form.ownerTeam', { team: row.label })}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field id="gap-target" label={t('gaps.form.target')} error={targetError}>
-            <TextInput id="gap-target" type="date" value={target} min={today} aria-invalid={targetError !== undefined} aria-describedby={targetError === undefined ? undefined : 'gap-target-error'} onChange={(e) => setTarget(e.target.value)} />
-          </Field>
-        </div>
-        <Field id="gap-plan" label={t('gaps.form.plan')}>
-          <TextArea id="gap-plan" value={plan} placeholder={t('gaps.form.planPlaceholder')} onChange={(e) => setPlan(e.target.value)} />
+        ) : null}
+        <Field id="gap-owner" label={t('gaps.form.owner')} hint={t('gaps.form.ownerHint')}>
+          <Select id="gap-owner" value={owner} aria-describedby="gap-owner-hint" onChange={(e) => setOwner(e.target.value as Owner)}>
+            {meId === null ? null : <option value={`person:${meId}`}>{t('gaps.form.ownerMe')}</option>}
+            {personOwner !== null && personOwner.id !== meId ? <option value={`person:${personOwner.id}`}>{personOwner.name}</option> : null}
+            {(teams.data ?? []).map((row) => (
+              <option key={row.key} value={`team:${row.key}`}>
+                {t('gaps.form.ownerTeam', { team: row.label })}
+              </option>
+            ))}
+          </Select>
         </Field>
-        {write.isError ? <ProblemAlert error={write.error} codes={gapProblemCopy(t)} /> : null}
-        <ButtonBar>
-          <Button variant="outline" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-          <Button type="submit" disabled={write.isPending || chosenSeverity === '' || (gap === null && chosenSource === '')}>
-            {t(gap === null ? 'gaps.form.create' : 'gaps.form.save')}
-          </Button>
-        </ButtonBar>
-      </form>
-    </Modal>
+        <Field id="gap-target" label={t('gaps.form.target')} error={targetError}>
+          <TextInput id="gap-target" type="date" value={target} min={today} aria-invalid={targetError !== undefined} aria-describedby={targetError === undefined ? undefined : 'gap-target-error'} onChange={(e) => setTarget(e.target.value)} />
+        </Field>
+      </div>
+      <Field id="gap-plan" label={t('gaps.form.plan')}>
+        <TextArea id="gap-plan" value={plan} placeholder={t('gaps.form.planPlaceholder')} onChange={(e) => setPlan(e.target.value)} />
+      </Field>
+    </FormDialog>
   );
 }

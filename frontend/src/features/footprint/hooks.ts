@@ -2,8 +2,8 @@
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type UseInfiniteQueryResult, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 
-import type { ProposalRef } from '@/features/vocabularies/types';
 import type { components } from '@/types/api.generated';
+import { termRowsQuery } from '@/features/shared/reference';
 
 import * as footprint from './api';
 import type {
@@ -17,7 +17,6 @@ import type {
   Market,
   TaxonomyDimension,
   TaxonomyTerm,
-  TermSuggest,
 } from './types';
 
 // Query keys and invalidation for the footprint screen (playbook 6.1). The
@@ -30,7 +29,6 @@ export const footprintKeys = {
   footprint: ['tenant', 'footprint'] as const,
   requests: ['tenant', 'footprint', 'requests'] as const,
   suggestions: ['tenant', 'footprint', 'suggestions'] as const,
-  terms: (dimension?: string) => ['taxonomy', 'terms', dimension ?? 'all'] as const,
   dimensions: ['taxonomy', 'dimensions'] as const,
   jurisdictions: ['reference', 'jurisdictions'] as const,
 };
@@ -52,15 +50,6 @@ export function useFootprintRequests(): UseInfiniteQueryResult<{ pages: footprin
       return read < last.total ? read : undefined;
     },
   });
-}
-
-/**
- * A dimension's terms, read once under one key whoever reads them: the
- * footprint maps them to keys, the watch feed and the console keep their ids.
- * Terms change rarely, so they stay fresh for five minutes.
- */
-export function termRowsQuery(dimension?: string) {
-  return { queryKey: footprintKeys.terms(dimension), queryFn: () => footprint.listTermRows(dimension), staleTime: 5 * 60_000 };
 }
 
 const toTaxonomyTerms = (rows: components['schemas']['TaxonomyTermRow'][]): TaxonomyTerm[] => rows.map(footprint.taxonomyTermOf);
@@ -123,8 +112,4 @@ export function useWatchMarket(): UseMutationResult<Market, unknown, string> {
 export function useUnwatchMarket(): UseMutationResult<Market, unknown, string> {
   const queryClient = useQueryClient();
   return useMutation({ mutationFn: (key) => footprint.unwatchMarket(key), onSettled: () => queryClient.invalidateQueries({ queryKey: footprintKeys.footprint, exact: true }) });
-}
-
-export function useSuggestTerm(): UseMutationResult<ProposalRef, unknown, TermSuggest> {
-  return useMutation({ mutationFn: (body) => footprint.suggestTerm(body) });
 }

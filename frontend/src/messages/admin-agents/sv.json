@@ -65,8 +65,6 @@
   "adminAgents.stop.confirm": "Stoppa körningen nu",
   "adminAgents.stop.done": "Stoppad. Körningen visas som stoppad under Senaste körningar.",
   "adminAgents.change": "Ändra när och vad",
-  "adminAgents.save": "Spara",
-  "adminAgents.saved": "Sparat.",
   "adminAgents.schedule.day": "Veckodag",
   "adminAgents.schedule.monthlyDay": "Körs månadens första",
   "adminAgents.schedule.hour": "Timme",

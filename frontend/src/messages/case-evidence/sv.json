@@ -12,7 +12,6 @@
   "caseEvidence.hint.infected": "Filen raderades. Dess namn och fingeravtryck finns kvar på ärendet.",
   "caseEvidence.hint.error": "Ingen kan öppna den. Ta bort den och bifoga filen igen.",
   "caseEvidence.download": "Ladda ned",
-  "caseEvidence.remove": "Ta bort",
   "caseEvidence.removeTitle": "Ta bort ”{name}”?",
   "caseEvidence.removeBody": "Det försvinner från listan och räknas inte längre för godkännandet. Ärendeakten behåller namnet, fingeravtrycket och datumet då det togs bort.",
   "caseEvidence.readOnly": "Underlag kan inte läggas till eller tas bort medan ärendet väntar på godkännande. Skickas det tillbaka öppnas de igen.",

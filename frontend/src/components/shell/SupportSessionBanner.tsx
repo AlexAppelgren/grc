@@ -1,11 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-
 import { Button } from '@/components/ui/Button';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { CONSOLE_HOME } from '@/shared/navigation/registry';
 import { formatDateTime } from '@/shared/utils/format';
 
 // A support session (TEN-06, D-49; design/screens/admin-support-access.html
@@ -26,21 +23,5 @@ export function SupportSessionBanner({ tenantName, endsAt, onLeave }: { tenantNa
         {t('supportAccess.banner.leave')}
       </Button>
     </div>
-  );
-}
-
-/** The page a support session meets on 401 support_access_ended: the grant was revoked or its window closed. */
-export function SupportAccessEnded({ tenantName }: { tenantName: string }) {
-  const t = useT();
-  return (
-    <section role="alert" data-support-ended="" className="mx-auto max-w-[60ch] py-12 text-center">
-      <h1>{t('supportAccess.ended.title')}</h1>
-      <p className="mt-3 text-muted">{t('supportAccess.ended.body', { tenant: tenantName })}</p>
-      <p className="mt-3 text-muted">
-        <Link href={CONSOLE_HOME} className="underline">
-          {t('supportAccess.ended.back')}
-        </Link>
-      </p>
-    </section>
   );
 }

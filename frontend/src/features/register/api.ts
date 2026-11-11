@@ -1,14 +1,9 @@
-import { api } from '@/shared/utils/api-client';
+import { api, segment } from '@/shared/utils/api-client';
 
 import type {
   RegisterApplicability,
   RegisterApplicabilityBody,
-  RegisterApplicabilityMany,
-  RegisterApplicabilityManyBody,
   RegisterAssessmentPage,
-  RegisterDutyCompleteBody,
-  RegisterDutyCompletion,
-  RegisterDutyPage,
   RegisterEntityPatch,
   RegisterEntityStatus,
   RegisterEntry,
@@ -26,7 +21,6 @@ import type {
   RegisterInterpretationBody,
   RegisterPageQuery,
   RegisterPatch,
-  RegisterPerson,
   RegisterRiskAcceptanceBody,
   RegisterSpannedEntity,
   RegisterStatementOfApplicability,
@@ -35,8 +29,7 @@ import type {
   RegisterUnitPage,
   RegisterUnitPaste,
   RegisterUnitPasteBody,
-  RegisterUnitPatch,
-} from './types';
+  RegisterUnitPatch } from './types';
 
 // Every register call the screens make, one thin typed wrapper per operation
 // returning `.data` (playbook 6.1; backend/apps/register/api.py). A write to a
@@ -47,8 +40,7 @@ import type {
 
 const V1 = '/api/v1';
 
-const id = (value: string) => encodeURIComponent(value);
-const obligation = (obligationId: string) => `${V1}/obligations/${id(obligationId)}`;
+const obligation = (obligationId: string) => `${V1}/obligations/${segment(obligationId)}`;
 
 // The register entry and its legal entities (REG-02).
 
@@ -62,17 +54,13 @@ export async function updateRegister(obligationId: string, body: RegisterPatch, 
 }
 
 export async function updateRegisterEntity(obligationId: string, orgUnitId: string, body: RegisterEntityPatch, version: number): Promise<RegisterEntityStatus> {
-  return (await api.patch<RegisterEntityStatus>(`${obligation(obligationId)}/register/entities/${id(orgUnitId)}`, body, { version })).data;
+  return (await api.patch<RegisterEntityStatus>(`${obligation(obligationId)}/register/entities/${segment(orgUnitId)}`, body, { version })).data;
 }
 
 // Applicability (REG-01): one person, a confirmation, no step-up (D-75).
 
 export async function setApplicability(obligationId: string, body: RegisterApplicabilityBody, version: number): Promise<RegisterApplicability> {
   return (await api.put<RegisterApplicability>(`${obligation(obligationId)}/applicability`, body, { version })).data;
-}
-
-export async function setApplicabilityMany(body: RegisterApplicabilityManyBody): Promise<RegisterApplicabilityMany> {
-  return (await api.post<RegisterApplicabilityMany>(`${V1}/applicability`, body)).data;
 }
 
 // Gaps and risk acceptance (REG-03).
@@ -90,19 +78,19 @@ export async function listGaps(filters: RegisterGapQuery = {}, page: RegisterPag
 }
 
 export async function updateGap(gapId: string, body: RegisterGapPatch, version: number): Promise<RegisterGap> {
-  return (await api.patch<RegisterGap>(`${V1}/gaps/${id(gapId)}`, body, { version })).data;
+  return (await api.patch<RegisterGap>(`${V1}/gaps/${segment(gapId)}`, body, { version })).data;
 }
 
 export async function requestRiskAcceptance(gapId: string, body: RegisterRiskAcceptanceBody): Promise<RegisterGap> {
-  return (await api.post<RegisterGap>(`${V1}/gaps/${id(gapId)}/accept-risk`, body)).data;
+  return (await api.post<RegisterGap>(`${V1}/gaps/${segment(gapId)}/accept-risk`, body)).data;
 }
 
 export async function approveRiskAcceptance(gapId: string): Promise<RegisterGap> {
-  return (await api.post<RegisterGap>(`${V1}/gaps/${id(gapId)}/accept-risk/approve`, {})).data;
+  return (await api.post<RegisterGap>(`${V1}/gaps/${segment(gapId)}/accept-risk/approve`, {})).data;
 }
 
 export async function reopenGap(gapId: string): Promise<RegisterGap> {
-  return (await api.post<RegisterGap>(`${V1}/gaps/${id(gapId)}/reopen`, {})).data;
+  return (await api.post<RegisterGap>(`${V1}/gaps/${segment(gapId)}/reopen`, {})).data;
 }
 
 // Assessment history and how we read the rule (REG-04).
@@ -126,7 +114,7 @@ export async function addInternalLink(obligationId: string, body: RegisterIntern
 }
 
 export async function removeInternalLink(linkId: string): Promise<void> {
-  await api.delete(`${V1}/internal-links/${id(linkId)}`);
+  await api.delete(`${V1}/internal-links/${segment(linkId)}`);
 }
 
 /** The bank's active items whose name or reference holds `q`, for the link dialog to pick. */
@@ -145,11 +133,11 @@ export async function createUnit(obligationId: string, body: RegisterUnitBody): 
 }
 
 export async function updateUnit(unitId: string, body: RegisterUnitPatch, version: number): Promise<RegisterUnit> {
-  return (await api.patch<RegisterUnit>(`${V1}/units/${id(unitId)}`, body, { version })).data;
+  return (await api.patch<RegisterUnit>(`${V1}/units/${segment(unitId)}`, body, { version })).data;
 }
 
 export async function removeUnit(unitId: string, version: number): Promise<void> {
-  await api.delete(`${V1}/units/${id(unitId)}`, { version });
+  await api.delete(`${V1}/units/${segment(unitId)}`, { version });
 }
 
 export async function pasteUnits(obligationId: string, body: RegisterUnitPasteBody): Promise<RegisterUnitPaste> {
@@ -162,14 +150,6 @@ export async function getStatementOfApplicability(obligationId: string, entity: 
 
 // Recurring duties (REG-07).
 
-export async function listDuties(obligationId: string, page: RegisterPageQuery = {}): Promise<RegisterDutyPage> {
-  return (await api.get<RegisterDutyPage>(`${obligation(obligationId)}/duties`, { params: page })).data;
-}
-
-export async function completeDutyOccurrence(occurrenceId: string, body: RegisterDutyCompleteBody): Promise<RegisterDutyCompletion> {
-  return (await api.post<RegisterDutyCompletion>(`${V1}/duty-occurrences/${id(occurrenceId)}/complete`, body)).data;
-}
-
 // c8-ui-applicability-status: the legal entities an obligation spans (REG-01, D-42), and the
 // bank's active members for the owner and contact pickers.
 
@@ -177,6 +157,3 @@ export async function listSpannedEntities(obligationId: string): Promise<Registe
   return (await api.get<RegisterSpannedEntity[]>(`${obligation(obligationId)}/register/entities`)).data;
 }
 
-export async function listPeople(): Promise<RegisterPerson[]> {
-  return (await api.get<RegisterPerson[]>(`${V1}/reference/people`)).data;
-}

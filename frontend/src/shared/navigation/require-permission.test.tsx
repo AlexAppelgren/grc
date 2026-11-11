@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
+import { humaniseKey } from '@/shared/utils/format';
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { describe, expect, it, vi } from 'vitest';
 
-import { forbiddenFrom, humanisePermission, PermissionsProvider, RequirePermission, RestrictedScreen } from './require-permission';
+import { forbiddenFrom, PermissionsProvider, RequirePermission, RestrictedScreen } from './require-permission';
 
 function axios403(data: unknown): AxiosError {
   const config = { headers: {} } as InternalAxiosRequestConfig;
@@ -33,8 +34,8 @@ describe('forbiddenFrom', () => {
   });
 
   it('humanises a grant name', () => {
-    expect(humanisePermission('cases.signoff')).toBe('cases signoff');
-    expect(humanisePermission('library_vocab.manage')).toBe('library vocab manage');
+    expect(humaniseKey('cases.signoff')).toBe('cases signoff');
+    expect(humaniseKey('library_vocab.manage')).toBe('library vocab manage');
   });
 });
 

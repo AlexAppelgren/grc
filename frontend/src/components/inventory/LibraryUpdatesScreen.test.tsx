@@ -1,12 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { LibraryUpdateRow, LibraryUpdatesPage } from '@/features/library-updates/types';
-import { LocaleProvider } from '@/shared/i18n/LocaleProvider';
-import { PermissionsProvider } from '@/shared/navigation/require-permission';
-import { installAdapter, queryWrapper, resetApiForTests } from '@/shared/testing/api-adapter';
+import type { LibraryUpdateRow, LibraryUpdatesPage } from '@/features/library/updates/types';
+import { installAdapter, resetApiForTests } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
+import { renderWith } from '@/shared/testing/render';
 
 import { LibraryUpdatesScreen } from './LibraryUpdatesScreen';
 
@@ -75,25 +73,14 @@ function page(items: LibraryUpdateRow[]): LibraryUpdatesPage {
 /** The server: /me for the format context, the feed (outside rows only when asked for), and the report. */
 function serve() {
   return installAdapter((sent) => {
-    if (sent.path === '/api/v1/me') return { status: 200, data: ME };
     if (sent.path.endsWith('/problem-reports')) return { status: 201, data: { id: 'rep-1', status: 'open', createdAt: '2026-09-21T09:00:00Z' } };
     const asked = (sent.params ?? {}) as { outsideFootprint?: string };
     return { status: 200, data: page(asked.outsideFootprint === 'true' ? [newVersion, outside, flagRenamed] : [newVersion, flagRenamed]) };
-  });
+  }, { me: ME });
 }
 
 function renderIn(permissions: string[] = ['library.read', 'problems.report']) {
-  const { wrapper } = queryWrapper();
-  const Wrapper = wrapper as (props: { children: ReactNode }) => ReactNode;
-  return render(
-    <Wrapper>
-      <LocaleProvider locale="en">
-        <PermissionsProvider permissions={permissions}>
-          <LibraryUpdatesScreen />
-        </PermissionsProvider>
-      </LocaleProvider>
-    </Wrapper>,
-  );
+  return renderWith(<LibraryUpdatesScreen />, { permissions });
 }
 
 function rowOf(id: string): HTMLElement {

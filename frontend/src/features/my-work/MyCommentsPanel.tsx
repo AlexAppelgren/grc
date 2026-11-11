@@ -75,7 +75,7 @@ export function MyCommentsPanel() {
       <div role="alert" className="flex flex-wrap items-center gap-2">
         <span className="text-muted">{t('collab.comments.loadFailed')}</span>
         <Button variant="outline" size="small" onClick={() => void query.refetch()}>
-          {t('collab.comments.tryAgain')}
+          {t('common.tryAgain')}
         </Button>
       </div>
     );
@@ -98,7 +98,7 @@ export function MyCommentsPanel() {
         ))}
         {query.hasNextPage ? (
           <Button variant="outline" size="small" className="mt-3" disabled={query.isFetchingNextPage} onClick={() => void query.fetchNextPage()}>
-            {t('collab.comments.showMore')}
+            {t('common.showMore')}
           </Button>
         ) : null}
       </>

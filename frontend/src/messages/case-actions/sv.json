@@ -5,7 +5,6 @@
   "caseActions.empty.body": "Lägg till det som måste göras, med en ansvarig och ett förfallodatum. Den första åtgärden startar genomförandet.",
   "caseActions.due": "Förfaller {date}",
   "caseActions.doneBy": "Klar {date} av {name}",
-  "caseActions.remove": "Ta bort",
   "caseActions.removeTitle": "Ta bort ”{title}”?",
   "caseActions.removeBody": "Den försvinner från listan och räknas inte längre som öppen. Ärendeakten visar fortfarande att den planerades och togs bort.",
   "caseActions.newTitle": "Ny åtgärd",

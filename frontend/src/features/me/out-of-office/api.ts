@@ -20,6 +20,3 @@ export async function putOutOfOffice(body: OutOfOfficeBody): Promise<OutOfOffice
   return (await api.put<OutOfOffice>(OUT_OF_OFFICE, body)).data;
 }
 
-export async function listPeople(): Promise<Person[]> {
-  return (await api.get<Person[]>('/api/v1/reference/people')).data;
-}

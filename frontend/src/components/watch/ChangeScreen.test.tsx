@@ -9,6 +9,7 @@ import { PermissionsProvider } from '@/shared/navigation/require-permission';
 import { installAdapter, queryWrapper, resetApiForTests, type Answer, type Sent } from '@/shared/testing/api-adapter';
 import { tokenStore } from '@/shared/utils/api-client';
 import { defaultFormatContext } from '@/shared/utils/format';
+import { session } from '@/shared/testing/fixtures';
 
 import { ChangeDocuments, fetchedLine, presentDocument } from './ChangeDocuments';
 import { ChangeObligations, decisionsOf, presentObligationLink, type ObligationLink } from './ChangeObligations';
@@ -146,7 +147,7 @@ function shell(children: ReactNode): ReactNode {
 }
 
 /** The session read answers a signed-in reader; only the change read is scripted per test. */
-const SESSION = { user: { locale: 'en' }, tenant: { timezone: 'Europe/Stockholm' }, enrolmentPending: false, permissions: ['watch.read'] };
+const SESSION = session(['watch.read']);
 
 function serve(answer: Answer): Sent[] {
   return installAdapter((sent) => (sent.path.startsWith('/api/v1/changes/') ? answer : { status: 200, data: SESSION }));

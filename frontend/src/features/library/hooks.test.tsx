@@ -39,6 +39,8 @@ const detail = {
   retention: '',
   sanctionExposure: '',
   tags: [],
+  tenantTags: [],
+  privateToUs: false,
   scope: [],
   inFootprint: true,
   outsideReason: [],

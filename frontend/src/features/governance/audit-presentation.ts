@@ -1,6 +1,6 @@
 import type { PresentedPill } from '@/features/shared/presentation-types';
-import { humaniseKey } from '@/features/tenant-admin/members-presentation';
 import type { Translate } from '@/shared/i18n';
+import { humaniseKey } from '@/shared/utils/format';
 
 import type { AuditEvent, AuditSnapshot } from './types';
 

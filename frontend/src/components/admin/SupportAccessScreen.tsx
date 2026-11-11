@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHead } from '@/components/ui/PageHead';
 import { Panel, Row, Rows } from '@/components/ui/Panel';
 import { PillRow } from '@/components/ui/PillRow';
-import { ErrorState, LoadingState, ProblemAlert, StatusLine } from '@/components/ui/States';
+import { ProblemAlert, QueryState, StatusLine } from '@/components/ui/States';
 import { useFormatContext } from '@/features/identity/hooks';
 import { useDecideSupportAccess, useSupportAccess, type SupportDecision } from '@/features/support-access/hooks';
 import { groupSupportGrants, presentSupportGrant } from '@/features/support-access/support-access-presentation';
@@ -80,8 +80,7 @@ function Actions({
   busy,
   attempt,
   error,
-  onDecide,
-}: {
+  onDecide }: {
   grant: SupportAccessGrant;
   canDecide: boolean;
   busy: SupportDecision | null;
@@ -104,12 +103,12 @@ function Actions({
               {t('supportAccess.decline')}
             </Button>
             <Button size="small" disabled={busy !== null} onClick={() => onDecide('approve')}>
-              {busy === 'approve' ? t('supportAccess.approving') : t('supportAccess.approve')}
+              {busy === 'approve' ? t('supportAccess.approving') : t('common.approve')}
             </Button>
           </>
         ) : (
           <Button variant="danger" size="small" disabled={busy !== null} onClick={() => onDecide('revoke')}>
-            {t('supportAccess.revoke')}
+            {t('common.revoke')}
           </Button>
         )}
       </ButtonBar>
@@ -142,8 +141,7 @@ export function SupportAccessScreen() {
         if (decision === 'approve') setStatus(t('supportAccess.approved', { name, time: formatDateTime(decided.endsAt ?? decided.requestedAt, ctx) }));
         else if (decision === 'decline') setStatus(t('supportAccess.declined'));
         else setStatus(t('supportAccess.revoked', { name, time: formatDateTime(decided.decidedAt ?? decided.requestedAt, ctx) }));
-      },
-    });
+      } });
   };
 
   const actionsFor = (grant: SupportAccessGrant) => (
@@ -159,56 +157,56 @@ export function SupportAccessScreen() {
       <PageHead title={t('supportAccess.title')} lede={t('supportAccess.lede')} />
       {status !== null ? <StatusLine tone="positive">{status}</StatusLine> : null}
       {hasProblemCode(error, INVALID_TRANSITION) ? <ProblemAlert error={error} codes={{ [INVALID_TRANSITION]: t('supportAccess.stale') }} /> : null}
-      {grants.isPending ? (
-        <LoadingState />
-      ) : grants.isError ? (
-        <ErrorState title={t('supportAccess.errorTitle')} onRetry={() => void grants.refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState title={t('supportAccess.emptyTitle')} body={t('supportAccess.emptyBody')} />
-      ) : (
-        <div className="mt-4">
-          {pending.length > 0 ? (
-            <Panel title={t('supportAccess.pending.title')} data-support-section="pending">
-              <Rows>
-                {pending.map((grant) => (
-                  <GrantRow key={grant.id} grant={grant} actions={actionsFor(grant)} />
-                ))}
-              </Rows>
-            </Panel>
-          ) : null}
-          {active.length > 0 ? (
-            <Panel title={t('supportAccess.active.title')} data-support-section="active">
-              <Rows>
-                {active.map((grant) => (
-                  <GrantRow key={grant.id} grant={grant} actions={actionsFor(grant)} />
-                ))}
-              </Rows>
-            </Panel>
-          ) : null}
-          {history.length > 0 ? (
-            <Panel title={t('supportAccess.history.title')} data-support-section="history">
-              <p className="mb-2.5 text-meta text-muted">
-                {t('supportAccess.history.caption')}{' '}
-                <Link href="/admin/audit-log" className="underline">
-                  {t('supportAccess.history.auditLog')}
-                </Link>
-              </p>
-              <Rows>
-                {history.map((grant) => (
-                  <GrantRow key={grant.id} grant={grant} />
-                ))}
-              </Rows>
-              {grants.hasNextPage ? (
-                <ButtonBar>
-                  <Button variant="outline" size="small" disabled={grants.isFetchingNextPage} onClick={() => void grants.fetchNextPage()}>
-                    {t('supportAccess.showMore')}
-                  </Button>
-                </ButtonBar>
+      <QueryState query={grants} errorTitle={t('supportAccess.errorTitle')}>
+        {() =>
+          items.length === 0 ? (
+            <EmptyState title={t('supportAccess.emptyTitle')} body={t('supportAccess.emptyBody')} />
+          ) : (
+            <div className="mt-4">
+              {pending.length > 0 ? (
+                <Panel title={t('supportAccess.pending.title')} data-support-section="pending">
+                  <Rows>
+                    {pending.map((grant) => (
+                      <GrantRow key={grant.id} grant={grant} actions={actionsFor(grant)} />
+                    ))}
+                  </Rows>
+                </Panel>
               ) : null}
-            </Panel>
-          ) : null}
-        </div>
-      )}
+              {active.length > 0 ? (
+                <Panel title={t('supportAccess.active.title')} data-support-section="active">
+                  <Rows>
+                    {active.map((grant) => (
+                      <GrantRow key={grant.id} grant={grant} actions={actionsFor(grant)} />
+                    ))}
+                  </Rows>
+                </Panel>
+              ) : null}
+              {history.length > 0 ? (
+                <Panel title={t('supportAccess.history.title')} data-support-section="history">
+                  <p className="mb-2.5 text-meta text-muted">
+                    {t('supportAccess.history.caption')}{' '}
+                    <Link href="/admin/audit-log" className="underline">
+                      {t('supportAccess.history.auditLog')}
+                    </Link>
+                  </p>
+                  <Rows>
+                    {history.map((grant) => (
+                      <GrantRow key={grant.id} grant={grant} />
+                    ))}
+                  </Rows>
+                  {grants.hasNextPage ? (
+                    <ButtonBar>
+                      <Button variant="outline" size="small" disabled={grants.isFetchingNextPage} onClick={() => void grants.fetchNextPage()}>
+                        {t('common.showMore')}
+                      </Button>
+                    </ButtonBar>
+                  ) : null}
+                </Panel>
+              ) : null}
+            </div>
+          )
+        }
+      </QueryState>
     </>
   );
 }
