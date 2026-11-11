@@ -195,12 +195,14 @@ def run_budget_limit() -> Decimal:
     return Decimal(settings.AGENT_RUN_BUDGET_LIMIT).quantize(budget.ZERO)
 
 
-def fits_the_cap(tenant: Tenant, limit: Decimal) -> bool:
+def fits_the_cap(tenant: Tenant, limit: Decimal, *, lock: bool = True) -> bool:
     """Whether a run may start under the cap: what the month's runs have spent or may still
     spend (`budget.held`), plus this run's limit. The bank's spend is serialized for the rest
     of the transaction, so a beat, a run now and a research request cannot both take the
-    last of it."""
-    lock_tenant(tenant, budget.SPEND_LOCK)
+    last of it. `lock=False` reads the same figures without the lock: a first look before slow
+    work, so a request that would be refused does none of it, and never the decision."""
+    if lock:
+        lock_tenant(tenant, budget.SPEND_LOCK)
     cap = budget.cap_of(tenant)
     return cap is not None and budget.held(tenant) + limit <= cap
 

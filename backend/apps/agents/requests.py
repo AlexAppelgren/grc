@@ -9,9 +9,20 @@ an agent of its own at all (409 `no_tenant_agent`, since no bank commands one of
 the agent named (404 another bank's, 403 one it may not steer), the fields its kind takes,
 the source, the plan's monthly number (429 `plan_limit_reached`), the AI switch (422
 `feature_off`), the agent switched off or paused (409, as run now), the cap (422
-`budget_cap_reached`: the run's budget must fit under it, read under the same lock as run
-now and the scheduler, `tasks.fits_the_cap`), and only then the address, so a request
-that would be refused fetches nothing.
+`budget_cap_reached`: the run's budget must fit under it, `tasks.fits_the_cap`), and only
+then the address, so a request that would be refused fetches nothing.
+
+**One request per bank at a time, and the fetch holds no shared lock (review 2026-11-11
+S-10).** A request takes the bank's research lock with `pg_try_advisory_xact_lock`, so a
+second one while the first is still being made answers 429 `research_in_progress` at once
+instead of holding another API thread. An address is counted against
+`RESEARCH_URL_RATE_PER_HOUR` before it is fetched, in the cache, so a fetch that fails and
+rolls the request back still counts. The cap is looked at before the fetch without the
+bank's spend lock, and decided after it under that lock, in the same transaction that
+opens the run, as run now and the scheduler decide it: the fetch never holds the spend lock
+the bank's running agents and its run now wait on, and two requests still cannot both take
+the last of the cap, because the decision and the run's reservation are made together under
+the lock (CHUNK11_REVIEW F1, F2, F5).
 
 **What a bank writes stays in the bank (D-98).** The topic is the bank's own text: length
 capped by the schema, screened as untrusted (`risk_flags`), stored on the bank's request
@@ -50,14 +61,15 @@ from urllib.parse import urljoin, urlsplit
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import connection, transaction
 from django.utils import timezone
 
 from apps.agents import budget, tasks
 from apps.agents.models import AgentRun, ResearchRequest, ResearchRequestKind, ResearchRequestStatus, RunStatus, TenantAgent
 from apps.agents.schemas import ResearchRequestInput, ResearchRequestOut, ResearchRequestPage, RetagRequestInput
 from apps.agents.screen import screen_all
-from apps.agents.tenant_agents import lock_tenant, own_agent, refuse_stopped
+from apps.agents.tenant_agents import own_agent, refuse_stopped
+from apps.identity import rate_limit
 from apps.identity.models import User
 from apps.proposals import batch
 from apps.proposals.logic import Proposer
@@ -72,6 +84,7 @@ from apps.taxonomy.schemas import PersonRef
 from apps.watch.keys import source_for_write
 
 SUBJECT_TYPE = "research_request"
+HOUR = 60 * 60
 # The one of bleqq's agents that answers a re-tag: it proposes to the library, never edits it.
 RETAG_AGENT = "watch-sweeper"
 # The field each kind a bank asks for takes; every other field must be left out.
@@ -193,7 +206,7 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
         _checked_source(body.source_id)
     user, actor = _person(who)
     with transaction.atomic():
-        lock_tenant(tenant, "research_requests")
+        _hold_research(tenant)
         start, end = budget.month(tenant)
         made = ResearchRequest.objects.filter(tenant=tenant, created_at__gte=start, created_at__lt=end).count()
         if made >= settings.RESEARCH_REQUESTS_PER_MONTH:
@@ -207,11 +220,12 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
         except ProblemError as off:
             raise ValidationError(off.detail, code="feature_off") from None
         refuse_stopped(tenant_agent)
-        if not tasks.fits_the_cap(tenant, tasks.run_budget_limit()):
-            raise ValidationError(
-                "This run could cost more than is left of this month's cap, or no cap is set.", code="budget_cap_reached"
-            )
-        fetched_text = _fetch(body.url) if body.url is not None else ""
+        _refuse_over_cap(tenant, lock=False)
+        fetched_text = ""
+        if body.url is not None:
+            rate_limit.enforce("research-url", str(tenant.id), settings.RESEARCH_URL_RATE_PER_HOUR, HOUR)
+            fetched_text = _fetch(body.url)
+        _refuse_over_cap(tenant, lock=True)
         request = ResearchRequest.objects.create(
             tenant=tenant,
             tenant_agent=tenant_agent,
@@ -225,6 +239,27 @@ def create_request(*, who: Principal, tenant: Tenant, body: ResearchRequestInput
         )
         _opened(request, user, actor, tenant_id=tenant.id, subject_title=tenant_agent.agent.key)
     return get_request(tenant=tenant, request_id=request.id)
+
+
+def _hold_research(tenant: Tenant) -> None:
+    """Take the bank's research lock for the rest of the transaction, or answer 429
+    `research_in_progress` when another request of the bank holds it (S-10)."""
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_try_advisory_xact_lock(hashtext(%s))", [f"research_requests:{tenant.id}"])
+        held = bool(cursor.fetchone()[0])
+    if not held:
+        raise ProblemError(
+            status=429,
+            code="research_in_progress",
+            detail="Your organisation's previous request is still being made. Try again when it has finished.",
+        )
+
+
+def _refuse_over_cap(tenant: Tenant, *, lock: bool) -> None:
+    if not tasks.fits_the_cap(tenant, tasks.run_budget_limit(), lock=lock):
+        raise ValidationError(
+            "This run could cost more than is left of this month's cap, or no cap is set.", code="budget_cap_reached"
+        )
 
 
 @batched()
@@ -412,9 +447,11 @@ def _fetch(url: str) -> str:
             continue
         if not 200 <= answer.status < 300:
             raise ValidationError("That address did not answer with a page.", code="url_unreachable")
+        # A charset Python does not know is a LookupError; one whose codec refuses the
+        # `replace` handler, such as `idna`, is a ValueError (review 2026-11-11 L-15).
         try:
             text = answer.body.decode(answer.charset, errors="replace")
-        except LookupError:
+        except (LookupError, ValueError):
             text = answer.body.decode("utf-8", errors="replace")
         # PostgreSQL text holds no NUL; the rest is kept as it came.
         return text.replace("\x00", "")

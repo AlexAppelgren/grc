@@ -26,14 +26,15 @@ from typing import Any
 from unittest import mock
 
 from django.core.exceptions import ValidationError
-from django.db import connection
+from django.core.cache import cache
+from django.db import connection, connections
 from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 
 from apps.agents import requests, runner_events, tasks, tenant_agents
 from apps.agents.models import AgentRun, RunStatus, RunTrigger, TenantAgent, TenantAgentBudget
 from apps.agents.tests_control import ControlCase, Interrupting, with_interrupts
-from apps.agents.tests_requests import JSON, PAGE, PUBLIC, TOPIC, RequestCase, RetagCase
+from apps.agents.tests_requests import JSON, PAGE, PUBLIC, TOPIC, RequestCase, RetagCase, fetched
 from apps.agents.tests_tasks import WEDNESDAY, BankBeatCase, Recorded, frozen, with_runner
 from apps.shared import factories, tenancy
 from apps.shared.adapters.agent_runner import RunnerEvent
@@ -153,6 +154,84 @@ class ARequestStopsWhereRunNowStops(RequestCase):
         self.refused(self.ask({"kind": "check_url", "url": PAGE}), 409, "agent_disabled")
         self.get.assert_not_called()
         self.resolve.assert_not_called()
+
+
+class ARequestHoldsNoThreadOrLockItNeedNot(RequestCase):
+    """Review 2026-11-11 S-10 and L-15: a bank makes one request at a time, its fetched
+    addresses are counted per hour whether or not the fetch succeeds, the fetch holds none of
+    the locks the bank's running agents wait on, and a page in a charset whose codec refuses
+    the replace handler is still read."""
+
+    # A second session, as another request would be: the `app` alias is its own connection.
+    databases = {"default", "app"}
+
+    def _other_session(self, sql: str, name: str) -> bool:
+        with connections["app"].cursor() as cursor:
+            cursor.execute(sql, [name])
+            row = cursor.fetchone()
+        return bool(row[0]) if row else False
+
+    def _free_elsewhere(self, name: str) -> bool:
+        """Whether another session could take the lock now. A session lock, released at once:
+        the test wraps the `app` connection in a transaction too, so a transaction lock taken
+        there would be held to the end of the test."""
+        free = self._other_session("SELECT pg_try_advisory_lock(hashtext(%s))", name)
+        if free:
+            self._other_session("SELECT pg_advisory_unlock(hashtext(%s))", name)
+        return free
+
+    def test_a_second_request_while_one_is_being_made_is_429(self) -> None:
+        """Review 2026-11-11 S-10: the research lock is tried, never waited for."""
+        name = f"research_requests:{self.bank.id}"
+        self.assertTrue(self._other_session("SELECT pg_try_advisory_lock(hashtext(%s))", name))
+        try:
+            self.refused(self.ask({"kind": "check_url", "url": PAGE}), 429, "research_in_progress")
+        finally:
+            self._other_session("SELECT pg_advisory_unlock(hashtext(%s))", name)
+        self.get.assert_not_called()
+        self.assertEqual(self.requests_of(self.bank), [])
+        self.assertEqual(self.ask({"kind": "check_url", "url": PAGE}).status_code, 202)
+
+    @override_settings(RATE_LIMITING_ENABLED=True, RESEARCH_URL_RATE_PER_HOUR=1)
+    def test_a_failed_fetch_still_counts_against_the_hourly_limit(self) -> None:
+        """Review 2026-11-11 S-10: the count lives in the cache, which a rollback leaves."""
+        cache.clear()
+        self.get.return_value = fetched(status=500)
+        self.refused(self.ask({"kind": "check_url", "url": PAGE}), 422, "url_unreachable")
+        self.get.return_value = fetched()
+        self.refused(self.ask({"kind": "check_url", "url": PAGE}), 429, "rate_limited")
+        self.assertEqual(self.get.call_count, 1)
+        # A request with no address fetches nothing and is not counted.
+        self.assertEqual(self.ask({"kind": "run_now"}).status_code, 202)
+
+    def test_the_fetch_holds_no_spend_lock_and_the_cap_is_decided_after_it_under_the_lock(self) -> None:
+        """Review 2026-11-11 S-10: another session takes the bank's spend lock while the page is
+        read, and the cap's decision, under that lock, comes after the fetch."""
+        free_during_fetch: list[bool] = []
+        order: list[str] = []
+        real_fits = tasks.fits_the_cap
+
+        def get(**kwargs: Any) -> requests.Fetched:
+            order.append("fetch")
+            free_during_fetch.append(self._free_elsewhere(f"agent_spend:{self.bank.id}"))
+            return fetched()
+
+        def fits(tenant: Tenant, limit: Decimal, *, lock: bool = True) -> bool:
+            order.append(f"cap:{'locked' if lock else 'look'}")
+            return real_fits(tenant, limit, lock=lock)
+
+        self.get.side_effect = get
+        with mock.patch.object(tasks, "fits_the_cap", side_effect=fits):
+            self.assertEqual(self.ask({"kind": "check_url", "url": PAGE}).status_code, 202)
+        self.assertEqual(free_during_fetch, [True])
+        self.assertEqual(order, ["cap:look", "fetch", "cap:locked"])
+
+    def test_a_page_in_a_charset_whose_codec_refuses_replace_is_read_as_utf8(self) -> None:
+        """Review 2026-11-11 L-15: `charset=idna` was a 500."""
+        self.get.return_value = requests.Fetched(status=200, location="", body=b"<p>New rules.</p>", charset="idna")
+        self.assertEqual(self.ask({"kind": "check_url", "url": PAGE}).status_code, 202)
+        [request] = self.requests_of(self.bank)
+        self.assertEqual(request.fetched_text, "<p>New rules.</p>")
 
 
 # The network's door itself: RequestCase replaces `requests._get` in every test.

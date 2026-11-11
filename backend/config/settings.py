@@ -364,6 +364,10 @@ RESEARCH_URL_MAX_REDIRECTS = env_int("RESEARCH_URL_MAX_REDIRECTS", 3)
 RESEARCH_URL_TOTAL_SECONDS = env_int("RESEARCH_URL_TOTAL_SECONDS", 15)
 if min(RESEARCH_REQUESTS_PER_MONTH, RESEARCH_URL_TIMEOUT_SECONDS, RESEARCH_URL_MAX_BYTES, RESEARCH_URL_TOTAL_SECONDS) < 1 or RESEARCH_URL_MAX_REDIRECTS < 0:
     raise ImproperlyConfigured("The RESEARCH_* settings must be positive, and RESEARCH_URL_MAX_REDIRECTS at least 0")
+# Review 2026-11-11 S-10: how many web addresses one bank's check_url requests may fetch in an hour, failed fetches included (429 `rate_limited`).
+RESEARCH_URL_RATE_PER_HOUR = env_int("RESEARCH_URL_RATE_PER_HOUR", 20)
+if not 1 <= RESEARCH_URL_RATE_PER_HOUR <= 1000:
+    raise ImproperlyConfigured("RESEARCH_URL_RATE_PER_HOUR must be between 1 and 1000")
 # d89-agent-research (OWN-02, D-98, ADR 0061): the longest each of a scope item's text fields
 # (its name, official reference and source address) may be when it reaches the bank's own
 # agent; each is cut to it before it leaves the worker.
