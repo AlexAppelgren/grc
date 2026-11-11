@@ -1,16 +1,10 @@
 """What one run of a bank's own agent looks at (AGT-04, FP-04, D-32), built at run start and
-stored on the run, so a later market or scope change never alters a run already started.
+stored on the run, so a later change never alters a started run.
 
-By default the scope follows the bank's markets: the jurisdictions it operates in first,
-then the ones it watches, then the jurisdictions whose rules reach them (the EU for Sweden
-and for Norway, D-28). When the agent's own row names jurisdictions, those replace the
-markets. The vocabularies are read again here (AGT-02): a key retired since a person chose
-it is dropped from the run's copy and noted on it, while the agent's row keeps it, so the
-admin still sees what they chose.
-
-Keys only: no market name, no tenant name, no free text ever reaches the runner (D-32). The
-footprint is read here and never written. A platform run never comes here: bleqq's agents
-read their own `platform_scope`, which no bank's market may reach.
+By default the bank's markets: operating, then watched, then the jurisdictions whose rules
+reach them (D-28); jurisdictions named on the agent replace them. Keys retired since are
+dropped from the run's copy and noted (AGT-02). Keys only reach the runner (D-32). The
+footprint is read, never written. A platform run never comes here.
 """
 
 from __future__ import annotations

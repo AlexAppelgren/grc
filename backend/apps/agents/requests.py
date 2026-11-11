@@ -1,48 +1,26 @@
 """Research requests (AGT-05, D-98, ADR 0053): a bank asks its own agents to run now, check a
-registered source or a web address, or research a topic; re-tagging library records is
+registered source or a web address, or research a topic; a re-tag of library records is
 asked in the console and answered by one batch proposal, never a direct edit.
 
-Every request opens a run with the trigger `request` and the request on it
-(`tasks.open_request_run`, through the one opener), so the request is a job and its status
-is its run's. A bank's request is checked in this order, each refusal writing nothing:
-an agent of its own at all (409 `no_tenant_agent`, since no bank commands one of bleqq's),
-the agent named (404 another bank's, 403 one it may not steer), the fields its kind takes,
-the source, the plan's monthly number (429 `plan_limit_reached`), the AI switch (422
-`feature_off`), the agent switched off or paused (409, as run now), the cap (422
-`budget_cap_reached`: the run's budget must fit under it, `tasks.fits_the_cap`), and only
-then the address, so a request that would be refused fetches nothing.
+Every request opens a run (trigger `request`) through the one opener, so its status is its
+run's. A bank's request is checked in this order, each refusal writing nothing: an agent of
+its own (409 `no_tenant_agent`), the agent named (404 / 403), the kind's fields, the source,
+the plan's monthly number (429 `plan_limit_reached`), the AI switch (422 `feature_off`),
+the agent stopped (409), the cap (422 `budget_cap_reached`), and only then the address.
 
-**One request per bank at a time, and the fetch holds no shared lock (review 2026-11-11
-S-10).** A request takes the bank's research lock with `pg_try_advisory_xact_lock`, so a
-second one while the first is still being made answers 429 `research_in_progress` at once
-instead of holding another API thread. An address is counted against
-`RESEARCH_URL_RATE_PER_HOUR` before it is fetched, in the cache, so a fetch that fails and
-rolls the request back still counts. The cap is looked at before the fetch without the
-bank's spend lock, and decided after it under that lock, in the same transaction that
-opens the run, as run now and the scheduler decide it: the fetch never holds the spend lock
-the bank's running agents and its run now wait on, and two requests still cannot both take
-the last of the cap, because the decision and the run's reservation are made together under
-the lock (CHUNK11_REVIEW F1, F2, F5).
+- One request per bank at a time, and the fetch holds no shared lock (S-10): the research
+  lock is `pg_try_advisory_xact_lock` (429 `research_in_progress`); an address is counted
+  against `RESEARCH_URL_RATE_PER_HOUR` in the cache before the fetch; the cap is glanced at
+  before the fetch and decided after it under the spend lock, with the run's reservation.
+- What a bank writes stays in the bank (D-98): the topic is capped, screened, stored on the
+  request only, never logged or audited, and reaches only the bank's own agent's run.
+- A web address is untrusted (AGT-07): `check_url` takes https on 443 to an all-public host,
+  never a standards publisher (D-45), follows only redirects it would accept, connects to
+  the checked address, and stores the answer as screened text. One deadline
+  (`RESEARCH_URL_TOTAL_SECONDS`) covers the whole fetch, and a watchdog shuts the socket.
 
-**What a bank writes stays in the bank (D-98).** The topic is the bank's own text: length
-capped by the schema, screened as untrusted (`risk_flags`), stored on the bank's request
-and nowhere else, never logged and never in an audit, outbox or run row. A bank's request
-can only open a run of the bank's own agent, so the text never reaches a platform run; the
-runner that works it reaches a model only through the logged wrapper, which the bank's
-switch stops.
-
-**A web address is untrusted input (AGT-07).** `check_url` takes https on port 443 to a
-host every address of which is public, never a standards publisher (D-45), and follows no
-redirect it would not have accepted as the first address. The connection goes to the
-address that was checked, so the name cannot move between the check and the connect. What
-comes back is screened and stored as text: never executed, never rendered as HTML. The
-whole fetch, every read and every redirect, has one deadline
-(`RESEARCH_URL_TOTAL_SECONDS`), and a watchdog shuts the socket when it passes, so a page
-that answers a byte at a time, headers or body, cannot hold the request.
-
-The console's re-tag opens a run of bleqq's `RETAG_AGENT` in no tenant's zone and reads no
-bank's row; what that run finds is filed by `file_retag` through `batch.create_batch()`,
-the one writer of a batch (PRO-04).
+The console's re-tag runs bleqq's `RETAG_AGENT` in no tenant's zone; `file_retag` files its
+findings through `batch.create_batch()` (PRO-04).
 """
 
 from __future__ import annotations
@@ -104,9 +82,7 @@ _STATUS_OF_RUN = {
 }
 
 
-# ---------------------------------------------------------------------------------------
-# Reading
-# ---------------------------------------------------------------------------------------
+# --- Reading ---
 def _run(request: ResearchRequest) -> AgentRun | None:
     runs = list(request.runs.all())
     return max(runs, key=lambda run: (run.started_at, str(run.id))) if runs else None
@@ -161,9 +137,7 @@ def get_retag(*, request_id: uuid.UUID) -> ResearchRequestOut:
     return _out(row)
 
 
-# ---------------------------------------------------------------------------------------
-# A bank asks its own agent
-# ---------------------------------------------------------------------------------------
+# --- A bank asks its own agent ---
 def _checked_fields(body: ResearchRequestInput) -> None:
     wanted = _FIELD[body.kind]
     for field in ("source_id", "url", "topic"):
@@ -287,9 +261,7 @@ def _opened(request: ResearchRequest, user: User, actor: Actor, *, tenant_id: uu
     )
 
 
-# ---------------------------------------------------------------------------------------
-# check_url: the one place a bank's address is fetched
-# ---------------------------------------------------------------------------------------
+# --- check_url: the one place a bank's address is fetched ---
 @dataclass(frozen=True)
 class Fetched:
     """One https answer: its status, where a redirect points, the first bytes of its body
@@ -405,9 +377,8 @@ def _cut(connection: Any) -> None:
 
 
 def _get(*, host: str, address: str, target: str, deadline: float) -> Fetched:
-    """One GET, following nothing, within the fetch's deadline (the network's door,
-    replaced in tests). A watchdog shuts the socket at the deadline, so a server that sends
-    its headers a byte at a time is cut off as one that sends its body so."""
+    """One GET, following nothing, within the fetch's deadline (the network's door, replaced
+    in tests). A watchdog shuts the socket at the deadline, so slow headers are cut off too."""
     connection = _CheckedConnection(host, address)
     connection.timeout = _left(deadline)
     watchdog = threading.Timer(deadline - time.monotonic(), _cut, args=(connection,))
@@ -447,8 +418,7 @@ def _fetch(url: str) -> str:
             continue
         if not 200 <= answer.status < 300:
             raise ValidationError("That address did not answer with a page.", code="url_unreachable")
-        # A charset Python does not know is a LookupError; one whose codec refuses the
-        # `replace` handler, such as `idna`, is a ValueError (review 2026-11-11 L-15).
+        # An unknown charset is a LookupError; a codec refusing `replace` (`idna`) a ValueError (L-15).
         try:
             text = answer.body.decode(answer.charset, errors="replace")
         except (LookupError, ValueError):
@@ -458,9 +428,7 @@ def _fetch(url: str) -> str:
     raise ValidationError("That address redirects too many times.", code="url_unreachable")
 
 
-# ---------------------------------------------------------------------------------------
-# The console's re-tag
-# ---------------------------------------------------------------------------------------
+# --- The console's re-tag ---
 def create_retag(*, who: Principal, body: RetagRequestInput) -> ResearchRequestOut:
     """`POST /console/research-requests`: record the re-tag and open bleqq's run for it, in
     no tenant's zone."""
@@ -474,10 +442,9 @@ def create_retag(*, who: Principal, body: RetagRequestInput) -> ResearchRequestO
 
 
 def file_retag(*, run_id: uuid.UUID, payload: ObligationScopePayload, source_label: str, source_url: str) -> Proposal:
-    """What a re-tag's run found, filed once as one batch through `batch.create_batch()`: the
-    run's agent proposes, naming its run, and the request names the batch. The door the
-    runner that works a re-tag files through (AGT-06); nothing in the library changes
-    until an independent person approves the batch."""
+    """What a re-tag's run found, filed once as one batch through `batch.create_batch()`,
+    naming its run (AGT-06). Nothing in the library changes until an independent person
+    approves the batch."""
     with transaction.atomic():
         run = (
             AgentRun.objects.select_related("agent", "research_request")

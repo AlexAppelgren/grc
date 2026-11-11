@@ -1,22 +1,17 @@
-"""Agent and run records (AGT-01, AGT-03, schema v0.3 `agent` and `agent_run`).
+"""Agent and run records (AGT-01, AGT-03 to AGT-06; INPUT_DELTAS §5).
 
-`Agent` is a library row: the platform's versioned definitions in
-`backend/agents/<agent>/v<n>/` are loaded into it by the reference seed, and nothing else
-writes it. `AgentRun` is the provenance anchor of everything an agent writes, and a mixed
-table: a platform run for the shared library has `tenant_id` NULL and is visible to every
-tenant, a tenant's own run only to that tenant, and each is written only from its own
-zone (playbook 14, INPUT_DELTAS §5, agents migration 0001).
+`Agent` is a library row loaded from `backend/agents/<agent>/v<n>/` by the reference seed.
+`AgentRun` is the provenance anchor of everything an agent writes, a mixed table: a platform
+run has no tenant and every tenant reads it; a tenant's run only that tenant; each is
+written only from its own zone (playbook 14).
 
-Chunk 11 (AGT-03 to AGT-06, agents 0004 and 0005) adds schema v0.3's platform and tenant
-agent data. Every definition is bleqq's; `scope` says whether it is one of bleqq's own agents
-or one a bank may add for itself, and the database refuses a bank's `tenant_agent` on any
-other (ruling 1, ADR 0053). A published `agent_version` is never rewritten: a run points at
-the version it opened with. A bank's agents, its research requests and its one monthly cap
-are tenant rows; a request with no tenant is the console's `retag`.
+Every definition is bleqq's; `scope` says whether a bank may add it as its own, and the
+database refuses a `tenant_agent` on any other (ADR 0053). A published `agent_version` is
+never rewritten. A bank's agents, research requests and monthly cap are tenant rows; a
+request with no tenant is the console's `retag`.
 
-Agent access (ACC-01, ACC-02, agents 0006) is not an agent we run: `AgentAccess` registers
-an agent a bank runs on its own infrastructure, which reads through a credential and
-nothing else, narrowed by the departments and products its join rows name.
+`AgentAccess` (ACC-01, ACC-02, agents 0006) registers an agent a bank runs itself, which
+reads through a credential and nothing else.
 """
 
 from __future__ import annotations
@@ -35,14 +30,10 @@ from apps.shared.kinds import choices
 
 
 class AgentKind(enum.StrEnum):
-    """Tier-one kind (apps/shared/kinds.py): what an agent definition does.
-
-    `watch` is ours: schema v0.3 stops at research, backfill and reverify, and the first
-    shipped definition sweeps registered sources (INPUT_DELTAS §5).
-
-    `review` is ours too: a definition that proposes nothing and decides what another
-    definition proposed, as the independent second principal on the library's queue
-    (D-62, D-80). The first is `backend/agents/library-confirmer/v1/`.
+    """Tier-one kind (apps/shared/kinds.py): what an agent definition does. `watch` sweeps
+    registered sources (INPUT_DELTAS §5). `review` proposes nothing and decides what another
+    definition proposed, the independent second principal on the library's queue (D-62,
+    D-80).
     """
 
     RESEARCH = "research"
@@ -117,8 +108,8 @@ class ResearchRequestKind(enum.StrEnum):
     CHECK_URL = "check_url"
     RESEARCH_TOPIC = "research_topic"
     RETAG = "retag"
-    # d89-agent-research (OWN-02, ADR 0059): an approved scope item, opened by the worker for
-    # the bank's own scope-researcher, never asked for through a route.
+    # An approved scope item, opened by the worker for the bank's own scope-researcher, never
+    # through a route (OWN-02, ADR 0059).
     SCOPE_ITEM = "scope_item"
 
 
@@ -214,10 +205,9 @@ class AgentVersion(LibraryModel):
 
 
 class TenantAgent(TenantModel):
-    """A bank's own agent (AGT-04): a tenant-scoped, tenant-configurable definition with the
-    bank's own switch, cadence and scope. A trigger of agents 0005 refuses one on any other
-    definition, and refuses a delete: an agent a bank stops is paused, never deleted. The
-    one monthly cap is the bank's, on `TenantAgentBudget` (ruling 3)."""
+    """A bank's own agent (AGT-04): a tenant-configurable definition with the bank's own
+    switch, cadence and scope. A trigger of agents 0005 refuses one on any other definition,
+    and refuses a delete: a stopped agent is paused. The cap is on `TenantAgentBudget`."""
 
     agent = models.ForeignKey(Agent, on_delete=models.PROTECT, related_name="tenant_agents")
     enabled = models.BooleanField(default=False)
@@ -259,11 +249,9 @@ class TenantAgent(TenantModel):
 
 
 class ResearchRequest(models.Model):
-    """A request for agent work (AGT-05). A mixed table with agent_run's split policy: a bank
-    asks one of its own agents (`tenant` and `tenant_agent` set), and the platform console
-    asks for a `retag` of library records (neither set), whose answer is a batch proposal,
-    never a direct edit. `batch_proposal_id` names that batch; its foreign key arrives with
-    the batch table (c11-proposal-batches-model)."""
+    """A request for agent work (AGT-05), a mixed table with agent_run's split policy: a bank
+    asks one of its own agents, and the console asks for a `retag` (no tenant), answered by
+    a batch proposal, never a direct edit (`batch_proposal_id`)."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -279,14 +267,13 @@ class ResearchRequest(models.Model):
         max_length=16, choices=choices(ResearchRequestStatus), default=ResearchRequestStatus.QUEUED.value
     )
     result_summary = models.TextField(blank=True)
-    # c11-research-requests: what a `check_url` fetched, kept as text and never rendered or
-    # followed, and the content screen's flags on it or on the topic (AGT-07).
+    # What a `check_url` fetched, kept as text, never rendered or followed, and the screen's
+    # flags on it or the topic (AGT-07).
     fetched_text = models.TextField(blank=True)
     risk_flags = ArrayField(models.CharField(max_length=40), default=list, blank=True)
     batch_proposal_id = models.UUIDField(null=True, blank=True)
-    # d89-agent-research (OWN-02): the bank's own scope item a `scope_item` request researches.
-    # A composite `(tenant_id, scope_item_id)` key too (agents 0009), so it is always the
-    # request's own bank's item.
+    # The bank's own scope item a `scope_item` request researches (OWN-02); a composite
+    # `(tenant_id, scope_item_id)` key (agents 0009) keeps it the request's bank's.
     scope_item = models.ForeignKey("taxonomy.ScopeItem", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -322,8 +309,8 @@ class ResearchRequest(models.Model):
 
 
 class TenantAgentBudget(TenantModel):
-    """The bank's one monthly cap on its own agents (AGT-04, ruling 3): one row per tenant.
-    Spend is summed from the month's `agent_run.cost` and the AI log's `what_applies` costs (ACC-09)."""
+    """The bank's one monthly cap on its own agents (AGT-04), one row per tenant. Spend sums
+    the month's `agent_run.cost` and the AI log's `what_applies` costs (ACC-09)."""
 
     monthly_cap = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default="EUR")
@@ -345,14 +332,11 @@ class TenantAgentBudget(TenantModel):
 class AgentRun(models.Model):
     """One execution (AGT-01): what an agent wrote points at the run that wrote it.
 
-    `tenant` NULL is a platform run for the shared library. A run opened through the API
-    lives in its key's zone: a platform key opens library runs, a tenant's key that
-    tenant's runs, and the write policy refuses any other pairing. A run the worker opens
-    has no key (a CHECK demands a key for `trigger = api` alone) and lives in its tenant
-    agent's zone, or the library's when it has none. `idempotency_key` is the retry key of
-    the call that opened the run, unique per API key, so a retried `POST /agent-runs`
-    returns the run it already opened instead of a second one. `agent_version` is written
-    once, when the run opens, and a trigger refuses changing it; counts stay in `stats`.
+    `tenant` NULL is a platform run. An API-opened run lives in its key's zone (the write
+    policy refuses any other pairing); a worker-opened run has no key (a CHECK) and lives in
+    its tenant agent's zone, or the library's. `idempotency_key` is unique per API key, so a
+    retried `POST /agent-runs` returns the same run. A trigger refuses changing
+    `agent_version`.
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -421,20 +405,15 @@ class AgentRun(models.Model):
         super().save(*args, **kwargs)
 
 
-# ---------------------------------------------------------------------------------------
-# Agent access (acc-foundation, agents 0006; ACC-01, ACC-02, D-70, ADR 0055)
-# ---------------------------------------------------------------------------------------
+# --- Agent access (agents 0006; ACC-01, ACC-02, D-70, ADR 0055) ---
 class AgentAccess(TenantModel):
     """An agent a bank runs on its own infrastructure, registered so it can read (ACC-01).
 
-    Not one of the agents we run: it holds no prompt, schedule or definition, and every
-    credential under it reads and nothing else. Its scope is the terms of the departments
-    and products it names intersected with the tenant footprint, computed per request and
-    never stored (ACC-02, D-70); naming none narrows nothing. `tenant_reach` is the entry's
-    half of D-72. Revoking sets `revoked_at` and clears `active`, which a CHECK keeps in
-    step, and stops every credential under it; an entry is revoked, never deleted. Every
-    reference is a composite `(tenant_id, …)` key (agents 0006), so an entry can name
-    neither another bank's team, unit or product nor a person outside its own bank."""
+    No prompt, schedule or definition; every credential under it reads only. Its scope is its
+    departments' and products' terms intersected with the footprint, computed per request
+    (ACC-02, D-70). `tenant_reach` is the entry's half of D-72. Revoking sets `revoked_at` and
+    clears `active` (a CHECK keeps them in step) and stops every credential; never deleted.
+    Every reference is a composite `(tenant_id, …)` key (agents 0006)."""
 
     name = models.CharField(max_length=200)
     purpose = models.TextField()

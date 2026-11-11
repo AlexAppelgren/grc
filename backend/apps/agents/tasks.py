@@ -1,41 +1,20 @@
 """The app is the scheduler of record (AGT-03, AGT-04, AGT-06, D-61, ADR 0053).
 
-Every run the app starts opens through one opener: `open_platform_run` for one of bleqq's
-agents and `open_tenant_run` for one a bank added for itself, both ending in
-`opener.open_run`, which writes the run row (the version it pins, what started it, the
-scope it looks at and the most it may spend) and its audit row before the runner is asked
-anything. A runner that cannot start a run leaves it recorded as failed, never as a row
-that vanished or one still running. This module reads the definitions and decides; the
-opener writes, and names no library model (apps/shared/tests_library_fence.py).
+Every run opens through `opener.open_run` (`open_platform_run` or `open_tenant_run`), which
+records the run and its audit row before the runner is asked, and closes it as failed when
+the runner cannot start it. This module reads and decides; the opener writes.
 
-Two beats, because the two kinds of agent live in two zones:
+- bleqq's beat (`run_platform_agents`) is no `@tenant_task`: it reads no tenant row, setting
+  or `scope.py`. Its scope is the agent's `platform_scope`, else every covered jurisdiction.
+  An agent is due once per UTC calendar period of its cadence, and a beat starts at most
+  `AGENT_RUNS_PER_BEAT`, longest-waiting first.
+- A bank's beat (`schedule_tenant_agents`) hands each bank to `run_due_tenant_agents`, which
+  starts its agents that are on, not paused and due, moving `next_run_at` first.
 
-- **bleqq's beat** (`run_platform_agents`) is not a `@tenant_task`. A platform run has no
-  tenant, activates none and reads no tenant row or setting: not a bank's AI switch, not
-  its cap, not a pause, and never `scope.py`, which reads a bank's markets. Its scope is
-  the agent's own `platform_scope`, or every jurisdiction the library covers. An agent is
-  due once per calendar period of its cadence (the UTC day, week from Monday, or month),
-  and one beat starts at most `AGENT_RUNS_PER_BEAT`, the longest-waiting first, so one
-  beat never starts the whole library at once.
-- **A bank's beat** (`schedule_tenant_agents`) hands each active bank to
-  `run_due_tenant_agents`, a `@tenant_task`, which starts the bank's own agents that are
-  on, not paused and due, and moves each one's `next_run_at` on first, so a slot is taken
-  once whatever happens to the run.
-
-Before a bank's run opens, two of the bank's own settings are read, and nothing of
-bleqq's reads them (D-61):
-
-- **AI off.** The one reader of the switch, `apps.shared.ai.ensure_enabled`, is asked. A
-  scheduled run is skipped with one audit row and no run row; run now answers 422
-  `feature_off`.
-- **The cap.** The month's spend plus the run's `budget_limit` (`AGENT_RUN_BUDGET_LIMIT`)
-  must fit under the bank's monthly cap. A scheduled run that would not fit is not started:
-  the agent is paused with the reason `budget_cap`, which audits, and the people holding
-  `agents.manage` are notified, because nobody is watching a schedule. Run now answers 422
-  `budget_cap_reached` to the person who asked, and pauses nothing.
-
-A bank's run is given keys only (R2_CROSS_CUTTING rule n): the definition key, its version
-number and the run id reach the runner, and the scope stored on the run is keys only.
+Before a bank's run (never bleqq's, D-61): AI off (`apps.shared.ai.ensure_enabled`) skips a
+scheduled run with one audit row, or answers 422 `feature_off`; the cap (month's spend plus
+`AGENT_RUN_BUDGET_LIMIT`) pauses the agent with `budget_cap` and notifies `agents.manage`,
+or answers 422 `budget_cap_reached` to a person. A bank's run gets keys only (rule n).
 """
 
 from __future__ import annotations
@@ -77,9 +56,7 @@ from apps.shared.models import Tenant, TenantStatus
 SCHEDULER = Actor.system("agent scheduler")
 
 
-# ---------------------------------------------------------------------------------------
-# What a run pins; `opener.open_run` records it
-# ---------------------------------------------------------------------------------------
+# --- What a run pins; `opener.open_run` records it ---
 def _pinned(agent: Agent) -> opener.Pinned:
     """The version a run of `agent` pins: its newest one still published (AGT-06). Every
     version retired raises 409 `no_published_version`."""
@@ -108,9 +85,7 @@ def _skipped(*, agent: Agent, reason: str, tenant_id: uuid.UUID | None, after: d
     )
 
 
-# ---------------------------------------------------------------------------------------
-# bleqq's agents: no tenant, no tenant setting, no scope.py
-# ---------------------------------------------------------------------------------------
+# --- bleqq's agents: no tenant, no tenant setting, no scope.py ---
 def _covered(agent: Agent) -> list[str]:
     """The jurisdiction keys a platform run sweeps: the agent's own, or every one the
     library covers. Library rows only; no bank's market reaches it."""
@@ -132,8 +107,7 @@ def open_platform_run(agent: Agent) -> AgentRun:
 
 def open_baseline_run(agent_key: str, *, actor: Actor) -> AgentRun:
     """Open a run of one of bleqq's agents whose runner is the calling command, in no
-    tenant's zone: the library baseline's filing (D-118, ADR 0065). Recorded like every run
-    and handed to no runner, since the command is the one doing the work."""
+    tenant's zone: the library baseline's filing (D-118, ADR 0065); handed to no runner."""
     agent = Agent.objects.get(key=agent_key, scope=AgentScopeKind.PLATFORM.value)
     return opener.open_run(pinned=_pinned(agent), trigger=RunTrigger.MANUAL, actor=actor, hand_over=False)
 
@@ -188,19 +162,15 @@ def run_platform_agents() -> None:
                 _skipped(agent=agent, reason=refused.code, tenant_id=None, after={})
 
 
-# ---------------------------------------------------------------------------------------
-# A bank's own agents
-# ---------------------------------------------------------------------------------------
+# --- A bank's own agents ---
 def run_budget_limit() -> Decimal:
     return Decimal(settings.AGENT_RUN_BUDGET_LIMIT).quantize(budget.ZERO)
 
 
 def fits_the_cap(tenant: Tenant, limit: Decimal, *, lock: bool = True) -> bool:
-    """Whether a run may start under the cap: what the month's runs have spent or may still
-    spend (`budget.held`), plus this run's limit. The bank's spend is serialized for the rest
-    of the transaction, so a beat, a run now and a research request cannot both take the
-    last of it. `lock=False` reads the same figures without the lock: a first look before slow
-    work, so a request that would be refused does none of it, and never the decision."""
+    """Whether a run may start under the cap: `budget.held` plus this run's limit. The bank's
+    spend is serialized for the rest of the transaction; `lock=False` is a first look before
+    slow work, never the decision."""
     if lock:
         lock_tenant(tenant, budget.SPEND_LOCK)
     cap = budget.cap_of(tenant)
@@ -229,12 +199,10 @@ def _notify_cap(tenant_agent: TenantAgent) -> None:
 
 
 def open_tenant_run(tenant_agent: TenantAgent, *, trigger: RunTrigger, requested_by: User | None = None) -> AgentRun | None:
-    """Open a run of one of the bank's own agents, in the bank's zone, or say why not.
-
-    A scheduled run that the AI switch or the cap stops returns None, having written its
-    audit row (and, for the cap, the pause and the notification). Any other trigger has a
-    person waiting on the answer: AI off is 422 `feature_off` and the cap 422
-    `budget_cap_reached`, and nothing is written.
+    """Open a run of one of the bank's own agents, in the bank's zone, or say why not. A
+    scheduled run stopped by the AI switch or cap returns None after auditing (and for the cap
+    pausing and notifying); any other trigger gets 422 `feature_off` or `budget_cap_reached`
+    and nothing is written.
     """
     scheduled = trigger is RunTrigger.SCHEDULE
     agent = tenant_agent.agent
@@ -274,11 +242,9 @@ def open_tenant_run(tenant_agent: TenantAgent, *, trigger: RunTrigger, requested
 
 
 def open_request_run(research_request: ResearchRequest, *, requested_by: User, agent_key: str = "") -> AgentRun:
-    """The run a research request asks for (AGT-05), with the request on it. A bank's request
-    runs its own agent in the bank's zone under the run budget; the console's re-tag runs
-    bleqq's agent `agent_key` in no tenant's zone, over the jurisdictions it covers and no
-    bank's markets. What stops a bank's request (its AI switch, its cap, its plan) is
-    `requests.py`'s to check first."""
+    """The run a research request asks for (AGT-05): a bank's own agent in its zone under the
+    run budget, or the console's re-tag as bleqq's `agent_key` in no tenant's zone. Refusals
+    are `requests.py`'s."""
     tenant_agent = research_request.tenant_agent
     if tenant_agent is not None:
         agent, limit, scope = tenant_agent.agent, run_budget_limit(), None

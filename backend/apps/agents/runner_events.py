@@ -1,31 +1,19 @@
 """Runner events (AGT-06): the one door through which what a runner reports reaches a run.
 
-The app is the scheduler of record and a runner is an executor: it writes no row, and what
-it may say is a `RunnerEvent` (apps/shared/adapters/agent_runner.py). `apply_event` applies
-one inside one transaction through `record()`. An event is validated at this boundary and
-never trusted because it came from our own executor, since what it reports came from a
-model and a network. The zone is the run's and never the event's: the worker applying it
-stands in the run's zone, a platform run's with no tenant or a bank's own under
-`@tenant_task`, and anything else is refused, so one bank's worker cannot move a platform run
-that every bank reads, nor another bank's.
+The app is the scheduler of record; a runner writes no row and may only say a `RunnerEvent`.
+`apply_event` validates it at this boundary (its content came from a model and a network)
+and applies it in one transaction through `record()`. The zone is the run's, never the
+event's: anything else is refused, so one bank's worker cannot move a platform run or
+another bank's.
 
-The cap's second point is here (AGT-04): an event that leaves a bank's own run open with the
-month's spend past the bank's monthly cap stops the run through the runner and pauses the
-agent with the reason `budget_cap`, notifying the people who hold `agents.manage`, as the
-scheduler does before a run starts. It reads the spend under the same lock as the
-scheduler, so two runs' events cannot each miss the other's cost. A platform run has no cap
-of a bank's to meet. An event for a bank that has switched its AI features off since the run
-started stops the run with the reason `feature_off`, and pauses nothing: the switch is the
-whole bank's, and switching back on lets the agent's next run start.
+The cap's second point (AGT-04): an event leaving a bank's run open past the monthly cap
+stops the run and pauses the agent (`budget_cap`), notifying `agents.manage` holders, under
+the scheduler's spend lock. AI switched off since the start stops the run (`feature_off`)
+and pauses nothing.
 
-What a bank's own agent finds for an approved scope item arrives as findings (OWN-02, ADR
-0059): `apply_finding` checks the run is that research, running, in the zone applying it,
-and hands each to `proposals.tenant_agent`, which files it as the bank's own proposal or
-refuses it. It is the only way a tenant run files anything; no API key reaches it.
-
-A finished run is a finished account and takes no more events. `cost` and the token counts
-are totals so far, so they never go down. The error text is stored on the run for the
-people who operate the agents, and never logged or written to an audit or outbox row.
+Findings for an approved scope item (OWN-02, ADR 0059) go through `apply_finding` to
+`proposals.tenant_agent`, the only way a tenant run files anything. A finished run takes no
+more events; cost and token counts only grow; the error text is never logged or audited.
 """
 
 from __future__ import annotations
@@ -66,8 +54,7 @@ ERROR_MAX = next(
 
 def _open_run(run_id: uuid.UUID) -> AgentRun:
     """The running run `run_id` of the caller's zone, locked for the caller's transaction."""
-    # Read, then lock: a platform run every bank reads is found from a bank's zone and
-    # refused by name, while row-level security hides a bank's run from every other zone.
+    # Read, then lock: a platform run is found from a bank's zone and refused by name.
     zones = list(AgentRun.objects.filter(pk=run_id).values_list("tenant_id", flat=True))
     if not zones:
         raise ValidationError("No run has that id.", code="not_found")
@@ -89,11 +76,9 @@ def _open_run(run_id: uuid.UUID) -> AgentRun:
 
 
 def apply_finding(run_id: uuid.UUID, finding: tenant_agent.Finding) -> Proposal:
-    """Apply one finding a bank's own agent reported (OWN-02, ADR 0059), in the caller's zone,
-    and return the proposal it filed. Only a running scope-item research run of the bank's
-    own agent files anything this way: a platform run, and every other run of a bank's, is
-    refused with `not_own_record` and nothing is stored. What the finding may say is
-    `proposals.tenant_agent`'s to check."""
+    """Apply one finding of a bank's own agent (OWN-02, ADR 0059) and return the proposal it
+    filed. Only a running scope-item research run of the bank's own agent qualifies; anything
+    else is `not_own_record` and stores nothing."""
     with transaction.atomic():
         run = _open_run(run_id)
         request = run.research_request

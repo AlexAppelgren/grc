@@ -1,15 +1,10 @@
-"""The E2E seed's second published version of a platform agent (c11-e2e-seed, AGT-03).
+"""The E2E seed's second published version of a platform agent (AGT-03), for AGT-S4's
+version history; here because only a reference seed's directory may write `agent_version`.
 
-AGT-S4's journey needs a definition with a version history, and earlier runs naming an
-earlier version. `seed_e2e` asks for it here because `agent_version` is a library row that
-only a reference seed's directory may write (apps/shared/tests_library_fence.py). The
-version repeats the one before it (model, prompt file, tools) with its own change note, as
-publishing does in the console. It leaves the agent's current version where it was: the
-build ships no definition file for the seeded version, and a key is minted only for a
-definition whose current version's file declares it a draft or which is active (H43,
-D-93), so moving the sweeper onto it would refuse the J-4 and ID-S20 journeys their keys.
-Refused on a deployed environment: a deploy never publishes a version
-(`apps/agents/seeds/__init__.py`).
+It repeats the previous version with its own change note and leaves the current version
+where it was: no definition file ships for it, and a key is minted only for an active or
+draft current version (H43, D-93), so moving the sweeper would cost J-4 and ID-S20 their
+keys. Refused on a deployed environment.
 """
 
 from __future__ import annotations

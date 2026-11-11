@@ -1,25 +1,18 @@
 """What applies (ACC-06, ACC-07, D-71, AGENT_ACCESS.md section 6).
 
-`POST /agent-access/what-applies` takes a description of what an agent of the bank is
-building, buying or reviewing and answers, in one response:
+`POST /agent-access/what-applies` takes a description of what a bank's agent is building,
+buying or reviewing and answers:
 
-- the full list, deterministic: every shared obligation in the bank's footprint and in the
-  entry's scope, each with the bank's register decision on it when the credential holds
-  `tenant:read` and tenant reach passes (apps/register/agent_read.py decides both, so this
-  list reads no decision that read would refuse). It is ranked in memory by how many of the
-  description's words each obligation's library text holds (its titles and its search
-  chunks in force today, the library index), then by stable key, and paged like every list;
-  nothing but paging ever shortens it. The bank's own private records are left out (D-57: a
-  bank's own agent is a model) and counted, so their absence is said rather than silent;
-- the scope it was answered in (`agent_access_guard.scope_statement`, the same statement
-  every answer to such a credential carries in its header);
-- what the description touches outside that scope, by label (out_of_scope.py);
-- the summary above it, labelled AI-drafted, or why there is none (what_applies_summary.py);
-  it never shortens the list.
+- the full list: every shared obligation in the footprint and the entry's scope, with the
+  bank's register decision when `apps/register/agent_read.py` allows it, ranked by how many
+  description words its library text holds, then stable key, and paged; nothing else ever
+  shortens it. The bank's private records are left out (D-57) and counted;
+- the scope it was answered in (`agent_access_guard.scope_statement`);
+- what the description touches outside that scope, by label (`out_of_scope.py`);
+- the AI-drafted summary or why there is none (`what_applies_summary.py`).
 
-The description is compared and dropped: it is never stored, never in an audit row, and
-the access log keeps its name alone. It is capped at `AGENT_ACCESS_DESCRIPTION_MAX_CHARS`.
-Nothing here writes but the summary's AI log row.
+The description is compared and dropped, capped at `AGENT_ACCESS_DESCRIPTION_MAX_CHARS`,
+never stored or audited. Nothing writes but the summary's AI log row.
 """
 
 from __future__ import annotations

@@ -1,15 +1,9 @@
 """The one opener every run the app starts goes through (AGT-06, ADR 0053).
 
-It writes the run row (the version it pins, what started it, the scope it looks at and the
-most it may spend) and its audit row before the runner is asked anything, and closes the
-run as failed when the runner cannot start it, so no run vanishes or reads as running.
-
-This module writes and names no library model: the definition and version a run pins
-reach it as `Pinned`, keys and ids that `tasks.py` read, because the library fence refuses a
-module that both names a library record and calls a write
-(apps/shared/tests_library_fence.py). What it writes is a run (`agent_run`), in no tenant's
-zone for one of bleqq's agents and in the bank's for one of its own, and a bank agent's
-next run.
+It writes the run row (pinned version, trigger, scope, budget) and its audit row before the
+runner is asked anything, and closes the run as failed when the runner cannot start it, so
+no run vanishes or reads as running. It names no library model: `tasks.py` hands it a
+`Pinned` of keys and ids (library fence).
 """
 
 from __future__ import annotations
@@ -69,10 +63,9 @@ def open_run(
     research_request: ResearchRequest | None = None,
     hand_over: bool = True,
 ) -> AgentRun:
-    """Record the run, then hand it to the runner. The row and its audit row are written
-    before the runner is called, in the caller's transaction. `hand_over=False` records a
-    run whose runner is the caller itself, the library baseline's command (D-118), which
-    reports its close through the runner-event path like any runner."""
+    """Record the run, then hand it to the runner, in the caller's transaction.
+    `hand_over=False` records a run the caller runs itself, the library baseline's command
+    (D-118)."""
     run = AgentRun.objects.create(
         agent_id=pinned.agent_id,
         agent_version_id=pinned.version_id,
