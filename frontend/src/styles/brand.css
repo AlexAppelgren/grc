@@ -90,3 +90,30 @@
   --bleqq-on-brand-line: rgba(255, 255, 255, 0.25);
   --bleqq-on-brand-hover: rgba(246, 243, 236, 0.12);
 }
+
+/*
+ * The public page (design/public/, the Lexicon direction, Alex 2026-11-11) has
+ * one appearance, a green page in either theme, so these sit under :root alone
+ * and .dark never changes them. The page itself is the brand green
+ * (--gds-sys-color-l2-brand-01). Paper is the light sand and brass the dark
+ * brass above; the others are the reference's own values on that pair:
+ *   deep      a darker step of the green: the closing field, the button hover text
+ *   dim       short labels only (the phonetic, languages, the footer), 6.2:1 on green
+ *   struck    the struck words, 4.6:1 on green
+ *   pen       the hand strike, a mark and never text, 3.6:1 on green
+ *   del, ins  the typeset redline on the paper sheet
+ *   ink-pool  the second pool of ink in the still background without WebGL
+ * Pinned by contrast.test.ts.
+ */
+:root {
+  --bleqq-public-paper: #f6f3ec;
+  --bleqq-public-deep: #062a1e;
+  --bleqq-public-dim: #a8b9ad;
+  --bleqq-public-brass: #d9cba9;
+  --bleqq-public-struck: #89a092;
+  --bleqq-public-pen: #e9573c;
+  --bleqq-public-del: #c5301c;
+  --bleqq-public-ins: #cfe6d6;
+  --bleqq-public-ins-line: #0b6a47;
+  --bleqq-public-ink-pool: #14503a;
+}

@@ -2,6 +2,27 @@
 
 Ordered by what blocks testing first. Nothing here is blocked on code.
 
+## The public page is a dictionary now: three defaults (2026-11-11, D-130)
+
+The Lexicon direction is built at `/welcome` from `design/public/index.html`, with the Swedish
+you approved (förteckning, attestera). Nothing waits on you; each line below is a default you can
+overrule.
+
+- [ ] **PUBLIC-ONE-APPEARANCE.** The page is one green page in either theme. The light and dark
+      switch left its footer, and the demo's pictures are the dark ones. On a desktop the live demo
+      still follows the visitor's own theme, because the demo itself was to stay as it is, so a
+      visitor on a light system sees the app light inside the green page. Default: as built. Say
+      so and the demo's frame opens dark.
+- [ ] **PUBLIC-HANDWRITING-FONT.** The pen corrections are set in Reenie Beanie, pinned at
+      `@fontsource/reenie-beanie` 5.3.0 and loaded by the `(public)` layout only, so no signed-in
+      screen downloads it. Its licence is SIL OFL 1.1, checked in `google/fonts`
+      (`ofl/reeniebeanie`) and passed by `scripts/check_licences.py`; ADR 0019 records the pin.
+      Default: as built. Decline and the corrections fall back to the system's script face.
+- [ ] **PUBLIC-CONTENT-LEFT-OUT.** The reference has no entry for the shared library and your
+      zone, the vendor review checklist or the common questions. They stay, with their copy, as the
+      entries library and zone (between evidence and sign off) and assurance and question (after
+      source). Default: as built. Say which to drop and it goes in one change.
+
 ## The library's machine translations (2026-11-09, D-129, INV-05, I18N-01)
 
 Built on the defaults in D-129; nothing waits on you to use it.
@@ -1580,11 +1601,12 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
 - [ ] **Set `NEXT_PUBLIC_SUPPORT_CONTACT`** on the web service, an email
       address. Until then "Write to us" is hidden and the invitation section
       says only that a bank's administrator sends the invitation.
-- [ ] **Confirm two claims before the page is public.** § 5 names authorities
-      per jurisdiction (Finanstilsynet, Lovdata, Finanssivalvonta, Finlex,
+- [ ] **Confirm two claims before the page is public.** The source entry (§ 5 until
+      2026-11-11) names authorities per jurisdiction (Finanstilsynet, Lovdata, Finanssivalvonta, Finlex,
       EIOPA, the ECB and others) that neither the PRD nor the configured
       sources name yet; the PRD commits only to Swedish, Danish, Norwegian,
-      Finnish and EU sources. § 6's "Leaving" and "The pack" describe tenant
+      Finnish and EU sources. The assurance entry's "Leaving" and "The assurance pack" (§ 6 until
+      2026-11-11) describe tenant
       exit and the assurance pack, which are R3 (chunks 12 and 14, pending).
       The copy is as you approved it; say which to soften and the catalog
       changes in one file.
@@ -1603,9 +1625,9 @@ again (proved by replaying the old refresh cookie in `public.journey.spec.ts`).
       before then. That is how it was built in chunk 1 ("whatever the server
       answered"). Say if you would rather the app stay put and say the
       sign-out did not go through.
-- [ ] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. It
-      follows the app's existing terms (skyldighet, förslag, godkännande), but
-      a native read of the headline and the questions is worth five minutes.
+- [x] **Read the Swedish copy** in `frontend/src/messages/public/sv.json`. Answered
+      2026-11-11 with the Lexicon direction (D-130): the Swedish is written for a Swedish
+      reader, and förteckning and attestera replace inventarie and godkännande in every catalog.
 
 ## r2-spec-d89: the bank's own regulations (PRD 0.7, 2026-09-25)
 
@@ -2528,7 +2550,7 @@ the rules and why. Do the steps in this order; each check tells you the step wor
       re-enrolment for platform staff, and an agent builds it.
 - [ ] **6. Check from outside** (or ask an agent to):
       `curl -sI https://bleqq.com/` → 200 and no `x-robots-tag`;
-      `curl -s https://bleqq.com/ | grep -c "You make the decisions"` → at least 1 (the whole page
+      `curl -s https://bleqq.com/ | grep -c "Access is by invitation"` → at least 1 (the whole page
       without JavaScript); `curl -sI https://bleqq.com/sign-in` → 301 to
       `https://app.bleqq.com/sign-in`; `curl -sI https://bleqq.com/welcome` → 301 to
       `https://bleqq.com/`; `curl -sI https://app.bleqq.com/sign-in` → 200 with

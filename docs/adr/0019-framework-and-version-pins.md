@@ -52,6 +52,10 @@ class-variance-authority 0.7.1, clsx 2.1.1, tailwind-merge 3.7.0,
 @testing-library/react 16.3.3, @testing-library/jest-dom 7.0.1, jsdom 30.1.0,
 @fontsource-variable/hanken-grotesk 5.3.0,
 @fontsource-variable/noto-sans-mono 5.3.0.
+Added 2026-11-11 for the public page only (D-130), loaded by the `(public)`
+layout and never behind sign-in: @fontsource/reenie-beanie 5.3.0, the pen
+corrections' hand, SIL OFL 1.1 (checked in `google/fonts`, `ofl/reeniebeanie`,
+and by `scripts/check_licences.py`).
 
 **Infrastructure.** `pgvector/pgvector:pg16`, `redis:7-alpine`.
 

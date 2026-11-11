@@ -446,7 +446,7 @@ describe('at compact width: the tab bar', () => {
     render(<LocaleProvider locale="sv">{shell(EVERYONE_AND_ADMIN)}</LocaleProvider>);
     const bar = tabBar();
     expect(bar).toHaveAttribute('lang', 'sv');
-    expect([...bar.querySelectorAll('a, button')].map((cell) => cell.textContent)).toEqual(['Idag', 'Bevakning', 'Inventarie', 'Fråga', 'Mer']);
+    expect([...bar.querySelectorAll('a, button')].map((cell) => cell.textContent)).toEqual(['Idag', 'Bevakning', 'Förteckning', 'Fråga', 'Mer']);
   });
 
   it('marks the current tab alone, nested routes included', () => {

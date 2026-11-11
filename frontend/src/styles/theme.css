@@ -51,6 +51,16 @@
   --color-on-brand-muted: var(--bleqq-on-brand-muted);
   --color-on-brand-line: var(--bleqq-on-brand-line);
   --color-on-brand-hover: var(--bleqq-on-brand-hover);
+  /* The public page's own set (brand.css): one appearance, the same in both themes. */
+  --color-public-paper: var(--bleqq-public-paper);
+  --color-public-deep: var(--bleqq-public-deep);
+  --color-public-dim: var(--bleqq-public-dim);
+  --color-public-brass: var(--bleqq-public-brass);
+  --color-public-struck: var(--bleqq-public-struck);
+  --color-public-pen: var(--bleqq-public-pen);
+  --color-public-del: var(--bleqq-public-del);
+  --color-public-ins: var(--bleqq-public-ins);
+  --color-public-ins-line: var(--bleqq-public-ins-line);
 
   /* hairline: cards and dividers (quieter in dark, see --hairline below);
      line-control: outline button, toggle, empty state; line-strong: the
@@ -107,6 +117,29 @@
   --text-hero--font-weight: 400;
   --text-hero--letter-spacing: -0.012em;
 
+  /* The public page's dictionary entries (design/public/, the Lexicon
+     direction, Alex 2026-11-11), never used behind sign-in. headword is an
+     entry's word and the closing line; lede the one-sentence deck; sense the
+     numbered senses; sheet the example provision on paper. The two pen roles set the
+     handwritten corrections relative to the text they correct, because Reenie
+     Beanie writes about half the height of the serif at the same size. */
+  --text-headword: clamp(3rem, 7.6vw, 7.25rem);
+  --text-headword--line-height: 0.92;
+  --text-headword--font-weight: 400;
+  --text-headword--letter-spacing: -0.02em;
+  --text-lede: clamp(1.5rem, 2.7vw, 2.4rem);
+  --text-lede--line-height: 1.28;
+  --text-lede--font-weight: 400;
+  --text-lede--letter-spacing: -0.008em;
+  --text-sense: 1.125rem;
+  --text-sense--line-height: 1.62;
+  --text-sheet: clamp(1.15rem, 1.6vw, 1.4rem);
+  --text-sheet--line-height: 1.45;
+  --text-pen: 1.8em;
+  --text-pen--line-height: 0.85;
+  --text-pen-head: max(0.52em, 2rem);
+  --text-pen-head--line-height: 1;
+
   --text-display: 1.5rem;
   --text-display--line-height: 2rem;
   --text-display--font-weight: 600;
@@ -129,6 +162,32 @@
      layout, so no signed-in screen downloads them. */
   --font-serif: 'Libre Caslon Text', Georgia, 'Times New Roman', serif;
   --font-serif-display: 'Libre Caslon Display', 'Libre Caslon Text', Georgia, 'Times New Roman', serif;
+  /* The public page's pen corrections, loaded by the (public) layout too. */
+  --font-hand: 'Reenie Beanie', 'Segoe Script', cursive;
+
+  /* The public page's redline, drawn once when its entry comes into view:
+     the strike, then the correction in the headword, then each correction in
+     a sense (PublicPage.tsx). `both` holds the first frame through the delay. */
+  --animate-strike: draw 0.5s cubic-bezier(0.6, 0, 0.3, 1) 0.15s both;
+  --animate-write: draw 0.8s cubic-bezier(0.5, 0, 0.4, 1) 0.7s both;
+  --animate-ink: ink 0.5s ease-out 1.1s both;
+
+  @keyframes draw {
+    from {
+      clip-path: inset(-50% 100% -50% 0);
+    }
+    to {
+      clip-path: inset(-50% -6% -50% 0);
+    }
+  }
+  @keyframes ink {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 
   /* Radius by use (foundations.md "Radius"), each a Green step: controls
      (button, input, toggle, nav row, banner) 6px, cards and list rows 8px,
@@ -160,6 +219,23 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+/* The public page (design/public/). The grain is the paper's fibre, a noise
+   tile blended over the green behind the text; ink-still is the ink logo's
+   background when the browser has no WebGL; and the page's green reaches the
+   canvas, so an overscroll shows green and not the app's page colour. */
+@utility grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@utility ink-still {
+  background:
+    radial-gradient(60% 90% at 22% 60%, var(--gds-sys-color-l2-brand-01) 0, var(--gds-sys-color-l2-brand-01) 30%, transparent 62%),
+    radial-gradient(50% 80% at 78% 30%, var(--bleqq-public-ink-pool) 0, transparent 60%),
+    var(--bleqq-public-paper);
+}
+html:has([data-public-page]) {
+  background: var(--gds-sys-color-l2-brand-01);
 }
 
 /* Hover on any surface (foundations.md "hover"): Green's state-neutral-05

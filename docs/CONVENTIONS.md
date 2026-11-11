@@ -297,7 +297,10 @@ rule fails any legacy or one-off size, including in template literals and
 Three weights, two families (Hanken Grotesk, Noto Sans Mono), `text-primary`
 only on things you can press. `body` and `meta` stay separate names. Public
 pages add Libre Caslon (`font-serif-display` for `text-hero`, `font-serif` for
-section headings and ledes), loaded only by the `(public)` layout.
+section headings and ledes) and Reenie Beanie (`font-hand`, the pen
+corrections), loaded only by the `(public)` layout, and the public page's own
+roles `text-headword`, `text-lede`, `text-sense`, `text-sheet`, `text-pen` and
+`text-pen-head` (theme.css), which no signed-in screen uses.
 
 ### 3.5 Screen copy
 
