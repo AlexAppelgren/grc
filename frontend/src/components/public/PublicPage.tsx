@@ -110,33 +110,26 @@ function Entry({
   id,
   headword,
   label,
-  level = 2,
-  sticky = true,
   revised = false,
-  className,
   children,
   wide,
 }: {
   id: string;
   headword: ReactNode;
-  label: ReactNode;
-  level?: 1 | 2;
-  sticky?: boolean;
+  label: string;
   revised?: boolean;
-  className?: string;
   children: ReactNode;
   wide?: ReactNode;
 }) {
-  const Heading = level === 1 ? 'h1' : 'h2';
   const titleId = `${id}-title`;
-  const classes = cn(ANCHOR, 'group/entry px-(--gutter) pt-[clamp(3.5rem,8vw,7.5rem)]', className);
+  const classes = cn(ANCHOR, 'group/entry px-(--gutter) pt-[clamp(3.5rem,8vw,7.5rem)]');
   const body = (
     <>
       <div className="grid items-start gap-6 min-[860px]:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] min-[860px]:gap-[clamp(1.5rem,5vw,5rem)]">
-        <div className={cn(sticky && 'min-[860px]:sticky min-[860px]:top-22')}>
-          <Heading id={titleId} className={cn('font-serif-display', level === 1 ? 'text-hero' : 'text-headword')}>
+        <div className="min-[860px]:sticky min-[860px]:top-22">
+          <h2 id={titleId} className="font-serif-display text-headword">
             {headword}
-          </Heading>
+          </h2>
           <p className="mt-[1.1rem] font-sans text-title font-medium text-public-brass">{label}</p>
         </div>
         <div className="min-w-0">{children}</div>
@@ -271,31 +264,32 @@ export function PublicPage() {
       <main id="top" className={ANCHOR}>
         <InkHead phonetic={t('public.phonetic')} />
 
-        <Entry
+        {/* The page's own entry (Alex, 2026-11-11): the ink logo above shows its name, so the h1 is for
+            screen readers and search engines; the deck and its actions take the wide column on the
+            left, and where the name comes from sits on the right, level with the deck. */}
+        <section
           id="bleqq"
-          level={1}
-          sticky={false}
-          className="pt-[clamp(2rem,4vw,3.5rem)]"
-          headword={t('public.entry.bleqq.headword')}
-          label={
-            <>
-              <span className="mr-2.5 font-mono font-normal text-public-dim">{t('public.phonetic')}</span>
-              {t('public.entry.bleqq.origin')}
-            </>
-          }
+          aria-labelledby="bleqq-title"
+          className="grid items-baseline gap-6 px-(--gutter) pt-[clamp(2rem,4vw,3.5rem)] min-[860px]:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] min-[860px]:gap-[clamp(1.5rem,5vw,5rem)]"
         >
-          <p className="max-w-[24em] font-serif-display text-lede">{t('public.entry.bleqq.deck')}</p>
-          <div className={cn(ACTS, 'mt-8')}>
-            <a href="#demo" className={cn(BUTTON, SOLID)}>
-              <PlayIcon />
-              {t('public.demo.open')}
-            </a>
-            <a href="#request" className={BUTTON}>
-              {t('public.action.requestAccess')}
-            </a>
+          <h1 id="bleqq-title" className="sr-only">
+            {t('public.entry.bleqq.headword')}
+          </h1>
+          <p className="font-sans text-title font-medium text-public-brass min-[860px]:order-2 min-[860px]:text-right">{t('public.entry.bleqq.origin')}</p>
+          <div className="min-w-0">
+            <p className="max-w-[24em] font-serif-display text-lede">{t('public.entry.bleqq.deck')}</p>
+            <div className={cn(ACTS, 'mt-8')}>
+              <a href="#demo" className={cn(BUTTON, SOLID)}>
+                <PlayIcon />
+                {t('public.demo.open')}
+              </a>
+              <a href="#request" className={BUTTON}>
+                {t('public.action.requestAccess')}
+              </a>
+            </div>
+            <CrossRefs also refs={['watch', 'inventory', 'ask', 'evidence']} />
           </div>
-          <CrossRefs also refs={['watch', 'inventory', 'ask', 'evidence']} />
-        </Entry>
+        </section>
 
         <Entry
           id="demo"

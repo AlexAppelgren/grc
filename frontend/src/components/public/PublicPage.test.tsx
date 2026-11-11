@@ -62,12 +62,16 @@ afterEach(() => {
 });
 
 describe('PublicPage', () => {
-  it('opens on the bleqq entry: one h1, its pronunciation, the deck and the two actions', async () => {
+  it('opens on the deck and its two actions, with the h1 for screen readers and the origin of the name beside the deck', async () => {
     const { container } = await renderPage();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     const entry = container.querySelector('section#bleqq') as HTMLElement;
+    // The ink logo above shows the name, so the h1 is not drawn a second time.
     expect(within(entry).getByRole('heading', { level: 1 })).toHaveTextContent('bleqq');
-    expect(within(entry).getByText('noun, from the Swedish word bläck, ink')).toBeInTheDocument();
+    expect(within(entry).getByRole('heading', { level: 1 })).toHaveClass('sr-only');
+    expect(within(entry).queryByText('[blɛkː]')).toBeNull();
+    // On a wide screen the origin sits on the right of the deck.
+    expect(within(entry).getByText('noun, from the Swedish word bläck, ink')).toHaveClass('min-[860px]:order-2', 'min-[860px]:text-right');
     expect(within(entry).getByText("One inventory of your bank's obligations.")).toBeInTheDocument();
     expect(within(entry).getByRole('link', { name: 'Try out our demo' })).toHaveAttribute('href', '#demo');
     expect(within(entry).getByRole('link', { name: 'Request access' })).toHaveAttribute('href', '#request');

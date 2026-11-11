@@ -20,7 +20,7 @@ that the product itself keeps.
 
 | Entry | Headword, en and sv | What it carries |
 |---|---|---|
-| `bleqq` | bleqq | The page's one h1, the pronunciation and its origin, the deck, Try out our demo and Request access, cross-references |
+| `bleqq` | bleqq, for screen readers only | The deck, Try out our demo and Request access, and cross-references on the left; where the name comes from on the right, level with the deck |
 | `demo` | demo | Two senses, then the demo across both columns |
 | `spreadsheet` | spreadsheet, kalkylark, struck: see inventory | Two senses, each with a struck claim and a pen correction |
 | `inbox` | inbox, inkorg, struck: see watch | One sense with a struck claim and a pen correction |
@@ -48,7 +48,7 @@ the inventory and attestera for a sign-off; every other catalog uses the same tw
 | One appearance | One green page in either theme, so the light and dark switch is gone (PUBLIC-ONE-APPEARANCE). The colours are the public set in `brand.css`, under `:root` alone so that `.dark` never changes them: the brand green `#0a3a2a`, the sand `#f6f3ec` as paper, the dark brass `#d9cba9`, a deeper green for the closing field, and the reference's red, struck grey and sheet colours. Each text pair is pinned in `contrast.ts`. The page wraps itself in `dark`, so the demo's tokens and pictures are dark on it |
 | The text colour | Everything a visitor reads runs in the paper colour, and grey is left to short labels: the pronunciation, a source's languages, the top line and the footer (Alex, 2026-09-25). Nothing on the page is italic |
 | Paper | A noise tile at 22 % with the overlay blend lies over the whole page, as the paper's grain |
-| One layout | Every entry is `Entry` in `PublicPage.tsx`: the headword and its part of speech on the left, sticky from 860 px, the senses on the right, and an optional row across both columns |
+| One layout | Every entry is `Entry` in `PublicPage.tsx`: the headword and its part of speech on the left, sticky from 860 px, the senses on the right, and an optional row across both columns. The page's own entry under the logo is the one exception (Alex, 2026-11-11): the logo already shows the name, so its h1 is for screen readers and search engines, the pronunciation is not repeated, and the deck takes the wide column on the left with the name's origin on the right |
 | Two actions on a phone | They share one row, with the main action on the right. Below 390 px they take a smaller size, so they still fit at 320 |
 
 ## Type
@@ -56,7 +56,6 @@ the inventory and attestera for a sign-off; every other catalog uses the same tw
 | Role | Face | Size |
 |---|---|---|
 | `text-headword`: a headword, the closing line | Libre Caslon Display 400 | `clamp(3rem, 7.6vw, 7.25rem)` / 0.92 |
-| `text-hero`: the bleqq headword | Libre Caslon Display 400 | The public hero role |
 | `text-lede`: the deck | Libre Caslon Display 400 | `clamp(1.5rem, 2.7vw, 2.4rem)` / 1.28 |
 | `text-sense`: senses, the page's running text | Libre Caslon Text 400 | 18 px / 1.62 |
 | `text-sheet`: the example provision | Libre Caslon Text 400 | `clamp(1.15rem, 1.6vw, 1.4rem)` / 1.45 |

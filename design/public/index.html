@@ -69,8 +69,10 @@ a{color:inherit}
 .see a{color:var(--cream);text-underline-offset:.25em;text-decoration-thickness:1px}
 .lead{font:400 clamp(1.5rem,2.7vw,2.4rem)/1.28 var(--display);letter-spacing:-.008em;max-width:24em}
 .acts{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:2rem}
-.first{padding-top:clamp(2rem,4vw,3.5rem)}
-.first .hw{font-size:clamp(2.25rem,4.4vw,4rem);position:static}
+.first{padding-top:clamp(2rem,4vw,3.5rem);align-items:baseline;grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+.first .origin{margin:0;font:500 1.0625rem/1.5 var(--sans);color:var(--brass);text-align:right;order:2}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media (max-width:860px){.first .origin{text-align:left;order:0}}
 
 /* redline: entries that the product replaces are struck by hand and corrected in pen */
 .struck{position:relative;display:inline-block;text-decoration:none;color:#89a092;white-space:nowrap}
@@ -176,7 +178,8 @@ a{color:inherit}
 </div>
 
 <section class="entry first" aria-labelledby="h">
-  <h1 class="hw" id="h">bleqq<small><span class="ph">[blɛkː]</span>noun, from the Swedish word bläck, ink</small></h1>
+  <h1 class="sr" id="h">bleqq</h1>
+  <p class="origin">noun, from the Swedish word bläck, ink</p>
   <div>
     <p class="lead" style="margin:0">One inventory of your bank's obligations.</p>
     <div class="acts">
