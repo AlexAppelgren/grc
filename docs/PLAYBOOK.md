@@ -68,9 +68,11 @@ These are the reasons it worked. Everything after this section is how.
   Measured, not felt. The API stamps its own server time on every response.
 - **Write it down where the next person will trip on it.** A rule lives as a
   code comment beside the thing it governs, a docstring on the guard test that
-  enforces it, or a dated review document. Comments explain *why*, name the
-  incident, and carry the measurement. The repo's comments read like a
-  logbook, and that is what made it navigable.
+  enforces it, or a dated review document. A comment says *why* in a line or
+  two and names the decision or finding ID that holds the story; the incident,
+  the dates and the measurement live in that ADR, review document or commit
+  body, not beside the code (owner, 2026-11-11). A comment that states an
+  invariant stays, in one line.
 - **Invariants over features.** Two zones under row-level security,
   proposals as the only door into the library, versions never overwritten,
   an audit row with every write, four eyes, no passwords, AI output labelled

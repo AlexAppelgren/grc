@@ -562,7 +562,7 @@ deliberately not done. No model identifiers or tool names.
 
 | Kind | Home |
 |---|---|
-| Why a line of code is the way it is | A comment beside it, naming the incident and the number |
+| Why a line of code is the way it is | A short comment beside it naming the ID; the incident and the number go in the ADR, review or commit |
 | A rule that spans files | `docs/CONVENTIONS.md`, with the bug that taught it |
 | A decision between options | `docs/adr/` |
 | A requirement's state | The app's `app.md` status cell |
