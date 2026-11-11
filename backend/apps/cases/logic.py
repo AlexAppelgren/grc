@@ -1,22 +1,12 @@
-"""What every case workflow module shares (CAS-02 to CAS-08): finding the caller's case,
-who takes part in it, `If-Match`, the facts the guards read, and the one way a case changes
-category.
+"""What every case workflow module shares (CAS-02 to CAS-08): finding the caller's case, who
+takes part, `If-Match`, the facts the guards read, and `transition()`, the one way a case
+changes category. Each route's own logic is in its own module.
 
-Nothing else lives here. Each route's own logic is in its own module — `triage.py`,
-`assessment.py`, `actions.py`, `evidence.py`, `signoff.py`, `case_file.py` — and every
-one of them loads its case through `load_case()` and moves it through `transition()`.
-
-A case is addressed by its change (CHUNK9 ruling 1): a bank has exactly one case per
-change, so the change id names it. An action or a piece of evidence is addressed by its
-own id and loads its case the same way. Every loader filters by the caller's tenant as
-well as leaving it to row-level security, and a change nobody has a case for, a case of
-another bank and a removed child all answer the same 404, so no id can be probed
-(playbook 4.4).
-
-The state machine decides; this module only feeds it. `case_facts()` reads what the
-guards need in one query for any number of cases, from live actions that are not done
-and live evidence the scanner passed, and `transition()` asks `state.check_transition()`
-before it writes. No transition table is restated here or anywhere else (CHUNK9 rule 11).
+A case is addressed by its change (one per bank per change); an action or evidence by its
+id. Every loader filters by tenant on top of row-level security, and a missing case,
+another bank's and a removed child are the same 404 (playbook 4.4). `case_facts()` reads the
+guards' inputs in one query; `transition()` asks `state.check_transition()` before writing.
+No transition table is restated outside `state.py`.
 """
 
 from __future__ import annotations
@@ -44,9 +34,7 @@ SUBJECT_TYPE = "change_case"
 MOVED = "case.moved"
 
 
-# ---------------------------------------------------------------------------------------
-# Loaders
-# ---------------------------------------------------------------------------------------
+# --- Loaders ---
 def load_case(tenant: Tenant, change_id: uuid.UUID, *, for_update: bool = False) -> ChangeCase:
     """This bank's case for that change, or 404. `for_update` locks the row until the
     request's transaction ends, so two writes to one case queue and the second reads what
@@ -85,14 +73,10 @@ def load_evidence(tenant: Tenant, evidence_id: uuid.UUID) -> Evidence:
     return evidence
 
 
-# ---------------------------------------------------------------------------------------
-# Who takes part (COL-04, D-18, D-20)
-# ---------------------------------------------------------------------------------------
+# --- Who takes part (COL-04, D-18, D-20) ---
 def participations(case: ChangeCase) -> list[Participant]:
-    """Everyone who takes or took part in the case, people and teams, in the order they
-    were added, ended participations included, with the people and the teams' labels
-    beside them: two queries however many there are. Adding and removing them is
-    `apps/collab/participants.py`'s."""
+    """Everyone who takes or took part, people and teams, in the order added, with names and
+    team labels: two queries. Adding and removing is `apps/collab/participants.py`'s."""
     return list(
         Participant.objects.select_related("user", "team", "added_by", "removed_by")
         .prefetch_related("team__labels")
@@ -106,9 +90,7 @@ def contributor_teams(rows: Sequence[Participant]) -> list[Team]:
     return [row.team for row in rows if row.team is not None and row.removed_at is None]
 
 
-# ---------------------------------------------------------------------------------------
-# If-Match
-# ---------------------------------------------------------------------------------------
+# --- If-Match ---
 class StaleWrite(ValidationError):
     """`If-Match` missing or older than the case: 409 `stale_write`, carrying the current
     version so the screen can reload and say what changed (CAS-08, INPUT_DELTAS §4)."""
@@ -125,9 +107,7 @@ def check_version(case: ChangeCase, expected: int | None) -> None:
         raise StaleWrite(case.version)
 
 
-# ---------------------------------------------------------------------------------------
-# What the guards read
-# ---------------------------------------------------------------------------------------
+# --- What the guards read ---
 def _count(queryset: Any) -> Coalesce:
     return Coalesce(
         Subquery(queryset.order_by().values("case_id").annotate(n=Count("pk")).values("n"), output_field=IntegerField()),
@@ -142,14 +122,10 @@ def _close_reason_kind(case: ChangeCase) -> CloseReason | None:
 
 
 def case_facts_for(cases: Sequence[ChangeCase], *, actor: uuid.UUID | None) -> dict[uuid.UUID, state.CaseFacts]:
-    """The guards' facts for each case, keyed by case id, from one query however many
-    cases there are (NFR-02). `actor` is the person reading or moving: the sign-off guard
-    compares them with whoever asked.
-
-    What a move supplies — the owner a triage names, the reason a dismissal or a close
-    gives — is read off the case as the caller has set it in memory, before
-    `transition()` saves it; a read has set nothing, and `allowed_transitions()` does not
-    test those guards.
+    """The guards' facts for each case, by case id, in one query (NFR-02). `actor` is the
+    person reading or moving, compared by the sign-off guard. What a move supplies (owner,
+    reason) is read off the case as the caller set it in memory; `allowed_transitions()`
+    does not test those guards.
     """
     if not cases:
         return {}
@@ -186,9 +162,7 @@ def case_facts(case: ChangeCase, *, actor: uuid.UUID | None) -> state.CaseFacts:
     return case_facts_for([case], actor=actor)[case.id]
 
 
-# ---------------------------------------------------------------------------------------
-# The one way a case changes category
-# ---------------------------------------------------------------------------------------
+# --- The one way a case changes category ---
 def transition(
     case: ChangeCase,
     to_status: CaseStatusCategory,
@@ -202,14 +176,11 @@ def transition(
 ) -> CaseTransition:
     """Move `case` to `to_status` if the state machine allows it, or raise its refusal.
 
-    The caller sets what its move changes on the case first (the owner, a reason, the
-    sign-off names); this saves those fields with the new category and a raised
-    `version`, and writes the `case_transition` row and the `record()` row, all in one
-    transaction (CAS-08). A refusal writes nothing. The note is tenant content, so it is
-    kept on the ledger row and never in the audit values (R2_CROSS_CUTTING (m)); `audit`
-    adds the ids and keys the move names (an owner, a reason's key) to the audit row's after.
-    A move made with a passkey step-up names the assertion on its audit row (AC-ID3), and one made by a delegate
-    names the absent people it was made for (TEN-04).
+    The caller sets what its move changes first; this saves it with the new category and a
+    raised `version`, and writes the `case_transition` and `record()` rows in one transaction
+    (CAS-08). A refusal writes nothing. The note stays on the ledger row, never in audit
+    values (R2_CROSS_CUTTING (m)); `audit` adds the move's ids and keys. A step-up move names
+    its assertion (AC-ID3); a delegate's names the absent people (TEN-04).
     """
     from_status = CaseStatusCategory(case.status)
     state.check_transition(from_status, to_status, case_facts(case, actor=None if user is None else user.id))

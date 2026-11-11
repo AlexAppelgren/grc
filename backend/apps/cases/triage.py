@@ -1,24 +1,14 @@
-"""Triage, dismissal, restore, starting the assessment and the one-person close
-(CAS-02, CAS-03, VOC-06; D-92).
+"""Triage, dismissal, restore, starting the assessment and the one-person close (CAS-02,
+CAS-03, VOC-06; D-92).
 
-Every function loads the caller's case under a row lock, so another bank's case answers 404,
-checks `If-Match`, sets what its move supplies and moves the case through
-`logic.transition()`, which asks the state machine, writes the ledger row and the audit row,
-and raises the version. The answer is the whole case as `case_response()` builds it, with the
-moves the state machine allows the reader next.
+Each function loads the case under a row lock (another bank's is 404), checks `If-Match`,
+sets what its move supplies and calls `logic.transition()`. A key is resolved against its
+list (library urgencies, the bank's own reasons and sub-statuses), else 422 `unknown_key`.
+A triage owner must be an active member who works cases, told through `notify()` (D-34).
 
-A key a person sends is resolved against the list it names and refused with 422
-`unknown_key` and the list's valid keys: urgencies from the library's list, dismissal and
-close reasons and sub-statuses from the bank's own lists, never another bank's. The owner a
-triage names must be an active member of the bank who works cases, and is told through
-`notify()`, whose one recipient check (D-34) decides who hears; nothing here adds a rule.
-
-The one-person close is Alex's answer to q-case-close, "One person, audited" (D-92, ADR
-0060): a reason of the `no_action` or `not_applicable` kind closes an assigned or assessing
-case on one person's word; a `signed_off` reason is refused by the state machine and goes
-through sign-off and a second person. The note stays on the case and its ledger row and
-never reaches an audit value. Restore undoes a dismissal or a one-person close and never a
-signed-off one, which the state machine decides.
+The one-person close (D-92, ADR 0060): a `no_action` or `not_applicable` reason closes an
+assigned or assessing case; a `signed_off` reason goes through sign-off. The note stays on the
+case and ledger row. Restore undoes a dismissal or one-person close, never a sign-off.
 """
 
 from __future__ import annotations
@@ -46,15 +36,11 @@ C = CaseStatusCategory
 # The categories a case closes from on one person's word (D-92).
 ONE_PERSON_CLOSE_FROM = frozenset({C.ASSIGNED.value, C.ASSESSING.value})
 
-# ---------------------------------------------------------------------------------------
-# What a move is given
-# ---------------------------------------------------------------------------------------
+# --- What a move is given ---
 def _row(list_name: str, key: str, *, tenant: Tenant, kind: CaseStatusCategory | None = None) -> Any:
     """The active row `key` names in `list_name`, or 422 `unknown_key` with the valid keys.
-
-    A bank's own list is read for this bank only, beside row-level security. `kind` narrows
-    a sub-status list to the category the case is moving into, so a sub-status of another
-    category is a key this move may not store.
+    A bank list is read for this bank only; `kind` narrows a sub-status list to the target
+    category.
     """
     entry = REGISTRY[list_name]
     rows = entry.model._default_manager.filter(active=True)
@@ -92,9 +78,7 @@ def _owner(tenant: Tenant, owner_id: uuid.UUID) -> Any:
     return membership.user
 
 
-# ---------------------------------------------------------------------------------------
-# The moves
-# ---------------------------------------------------------------------------------------
+# --- The moves ---
 def triage_change(
     *, tenant: Tenant, actor: Actor, user: Any, order: list[str], change_id: uuid.UUID, expected_version: int | None, body: CasesTriageBody
 ) -> CasesCase:
@@ -159,12 +143,9 @@ def restore_change(
 def close_without_action(
     *, tenant: Tenant, actor: Actor, user: Any, order: list[str], change_id: uuid.UUID, expected_version: int | None, body: CasesCloseBody
 ) -> CasesCase:
-    """`assigned` or `assessing` to `closed` on one person's word, audited (D-92). The
-    note is kept on the case and its ledger row, never in the audit values.
-
-    Only from the two categories a one-person close leaves: the machine also draws
-    `signoff` to `closed`, and that edge is sign-off's, whose guard reads the requester and
-    not the reason, so this route must never reach it."""
+    """`assigned` or `assessing` to `closed` on one person's word, audited (D-92); the note
+    stays on the case and ledger row. Never from `signoff`: that edge is sign-off's, whose
+    guard reads the requester rather than the reason."""
     case = logic.load_case(tenant, change_id, for_update=True)
     logic.check_version(case, expected_version)
     if case.status not in ONE_PERSON_CLOSE_FROM:

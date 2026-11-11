@@ -1,20 +1,15 @@
 """Actions with an owner and a due date, locked while the case waits for sign-off (CAS-04,
 CAS-08).
 
-An action is added only while a case is worked: in `assessing`, where the first one moves
-the case to `implementing` through `logic.transition()` and so needs the assessment's why
-saved (R2_CROSS_CUTTING (j)), or in `implementing`. From the sign-off category on, every
-write is refused with `actions_locked`: what a second person signs off is what was done.
-The lock reads the category, never a sub-status.
+An action is added only in `assessing` (the first one moves the case to `implementing`
+through `logic.transition()`, so the assessment's why must be saved, R2_CROSS_CUTTING (j))
+or in `implementing`. From the sign-off category on every write is `actions_locked`: what a
+second person signs off is what was done. The lock reads the category, never a sub-status.
 
-Each action is its own versioned record: an edit, a completion, a reopening and a removal
-name the action's `version` in `If-Match`, and adding one names the case's. Every write
-locks the case row first, so two writes to one case's actions queue behind each other and
-behind its move to sign-off. A removal sets `removed_at` and `removed_by` and keeps the row
-for the case file (rule l). An owner is an active member of the bank; the case's owner when
-none is named.
-
-An audit row carries ids, dates and done, never the title a person typed (rule m).
+Each action is versioned (`If-Match`; adding names the case's version), and every write
+locks the case row first. Removal stamps `removed_at` and `removed_by` (rule l). The owner
+is an active member, the case's owner by default. Audit rows carry ids, dates and done,
+never the typed title (rule m).
 """
 
 from __future__ import annotations
@@ -114,9 +109,7 @@ def delete_action(*, tenant: Tenant, actor: Actor, user: Any, action_id: uuid.UU
     _record(REMOVED, row, actor, before=before, summary=f"{actor.label} removed an action from a case.")
 
 
-# ---------------------------------------------------------------------------------------
-# What the writes share
-# ---------------------------------------------------------------------------------------
+# --- What the writes share ---
 def _check_open_to_work(case: ChangeCase) -> None:
     """Actions change only while the case is worked; from sign-off on they are locked."""
     category = C(case.status)

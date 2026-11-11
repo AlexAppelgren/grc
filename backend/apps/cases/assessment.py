@@ -1,15 +1,11 @@
 """The impact assessment (CAS-03, CAS-08; D-92).
 
-Starting it is a move, `assigned` to `assessing`, that opens the assessment at version 1.
-Saving it replaces the bank's whole answer under the case's `If-Match` and moves the case
-nowhere: adding the first action does that (R2_CROSS_CUTTING (j)). The one exception is
-`applies = no`, which closes the case on one person's word with the bank's reason of the
-`not_applicable` kind (D-92), restorable to triage; only a holder of `cases.work` may, so
-the route, gated by `cases.contribute`, says whether the caller holds it.
-
-Both writes go through `logic.load_case()` and `logic.check_version()`, and every move
-through `logic.transition()`. The texts are tenant content: the audit row carries keys,
-dates and the version, never the why or what must change (R2_CROSS_CUTTING (m)).
+Starting it moves `assigned` to `assessing` and opens it at version 1. Saving replaces the
+whole answer under the case's `If-Match` and moves nothing (the first action does,
+R2_CROSS_CUTTING (j)), except `applies = no`, which closes the case on one `cases.work`
+holder's word with a `not_applicable` reason (D-92), restorable to triage. Moves go through
+`logic.transition()`. Audit rows carry keys, dates and the version, never the texts
+(R2_CROSS_CUTTING (m)).
 """
 
 from __future__ import annotations
@@ -37,8 +33,7 @@ SAVED = "case.assessment_saved"
 # Spelled out, not imported, so the audit guard reads a tenant subject (tests_hardening).
 SUBJECT_TYPE = "change_case"
 
-# Where the assessment is open for saving: being assessed, or being implemented while
-# the bank refines its answer. Before the start there is none; from sign-off on it is
+# Where the assessment can be saved: being assessed or implemented. From sign-off on it is
 # the record a second person signs.
 SAVABLE = frozenset({CaseStatusCategory.ASSESSING, CaseStatusCategory.IMPLEMENTING})
 
@@ -46,11 +41,8 @@ SAVABLE = frozenset({CaseStatusCategory.ASSESSING, CaseStatusCategory.IMPLEMENTI
 def start_assessment(
     *, tenant: Tenant, actor: Actor, user: Any, order: list[str], change_id: uuid.UUID, expected_version: int | None
 ) -> CasesCase:
-    """`assigned` to `assessing`, opening an empty assessment at version 1.
-
-    A case restored and triaged again opens the assessment it already has: nothing is
-    overwritten. The sub-status is cleared, because it sat inside the category the case
-    leaves.
+    """`assigned` to `assessing`, opening an empty assessment at version 1. A restored and
+    re-triaged case keeps the assessment it has. The sub-status is cleared.
     """
     case = logic.load_case(tenant, change_id, for_update=True)
     logic.check_version(case, expected_version)
