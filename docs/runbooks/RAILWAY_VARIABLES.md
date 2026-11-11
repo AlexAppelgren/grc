@@ -11,7 +11,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 
 | Variable | Services | Local | CI | Railway test | Notes |
 |---|---|---|---|---|---|
-| `ENVIRONMENT` | api, worker, beat | `local` | `ci` | `test` | `local`, `test` and `ci` are the only names that are not "deployed". Anything else (including `prod`, `Production`, `demo`, `dev`, or unset) fails closed with every guard on. `test` is the one deployed name where mock adapters are allowed and the UI shows a banner |
+| `ENVIRONMENT` | api, worker, beat | `local` | `ci` | `test` | `local`, `test` and `ci` are the only names that are not "deployed". Anything else (including `prod`, `Production`, `demo` and `dev`) fails closed with every guard on. Unset, the settings read `local` (a laptop), but the API image sets `ENVIRONMENT=production` in its runtime stage, so an image started without the variable is deployed with every guard on `test` is the one deployed name where mock adapters are allowed and the UI shows a banner |
 | `RAILWAY_ENVIRONMENT_NAME` | all | unset | unset | set by Railway | Presence alone means deployed, whatever `ENVIRONMENT` says |
 | `DEBUG` | api | `true` | `false` | `false` | Refused when deployed |
 | `SECRET_KEY` | api, worker, beat | `django-insecure-dev-only` | a generated value | Railway secret | A missing or default value is refused outside DEBUG |
@@ -21,7 +21,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | Variable | Services | Local | CI | Railway test | Notes |
 |---|---|---|---|---|---|
 | `DATABASE_URL` | api, worker, beat | `postgres://cw_app:cw-app-dev-only@localhost:5432/compliance_watch` | the `cw_app` string against the service container | the `cw_app` connection string | The app refuses to boot if this role is a superuser, owns the tables or has `BYPASSRLS` (ADR 0022) |
-| `MIGRATOR_DATABASE_URL` | api (entrypoint), CI | `postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/compliance_watch` | the `cw_migrator` string | the `cw_migrator` connection string | Used only by `migrate`, `migrate_from_zero` and the test runner's database creation |
+| `MIGRATOR_DATABASE_URL` | api (entrypoint), CI | `postgres://cw_migrator:cw-migrator-dev-only@localhost:5432/compliance_watch` | the `cw_migrator` string | the `cw_migrator` connection string | Used only by `migrate`, `migrate_from_zero` and the test runner's database creation. The entrypoint unsets it right after `migrate`, so the seeds and gunicorn never hold it |
 | `REDIS_URL` | api, worker, beat | `redis://localhost:6379/0` | the service container | Railway Redis URL | Celery broker and cache |
 
 ## Hosts and identity
@@ -33,6 +33,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `PRODUCT_NAME` | api, web | `Compliance Watch` | same | `bleqq compliance` | The display name; a rebrand is a variable |
 | `WEBAUTHN_RP_ID` | api | `localhost` | `localhost` | the exact test host (`DNS_DOMAINS.md`) | A passkey belongs to one RP ID (D-02, ADR 0002). Required when deployed |
 | `WEBAUTHN_ORIGINS` | api | `http://localhost:3000` | `http://localhost:3000` | `https://<test host>` | Comma-separated allowed origins for the ceremonies |
+| `TRUSTED_PROXY_HOPS` | api, worker, beat | `0` | `0` | unset (`1`) | Proxies of ours that append to `X-Forwarded-For`; the per-IP limits and the security log read the client from it. Unset, it is `1` when deployed (Railway's edge) and `0` elsewhere, where the header is ignored. `0` is refused on every deployed environment, `test` included (rule 11) |
 
 ## Storage, mail, models, agents
 

@@ -36,8 +36,13 @@ RUN poetry install --only main --no-root \
 
 FROM python:3.12-alpine AS runtime
 
+# ENVIRONMENT=production unless the host says otherwise: the settings default is `local`
+# for laptops, and an image started anywhere without the variable must keep every boot
+# guard on, not boot with the public default SECRET_KEY (review 2026-11-11 S-14). Railway
+# sets ENVIRONMENT=test or the deployed name, which overrides this.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    ENVIRONMENT=production \
     PATH="/app/.venv/bin:$PATH"
 
 # Alpine security updates for the base, then the system pip goes: the runtime installs

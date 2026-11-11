@@ -1116,10 +1116,12 @@ ENROLMENT_CODE_RATE_PER_IP_PER_HOUR = env_int("ENROLMENT_CODE_RATE_PER_IP_PER_HO
 # Every other auth ceremony endpoint (verify code, passkey sign-in, refresh) per IP.
 AUTH_RATE_PER_IP_PER_MINUTE = env_int("AUTH_RATE_PER_IP_PER_MINUTE", 30)
 # How many proxies of ours append to X-Forwarded-For before a request reaches the app.
-# 0 (the default) means the socket address is the client: the header is then ignored,
-# because a caller can write anything into it and would otherwise pick its own address
-# for the per-IP limits and the security log. Set to 1 behind one edge proxy (Railway).
-TRUSTED_PROXY_HOPS = env_int("TRUSTED_PROXY_HOPS", 0)
+# 0 (the default off a deployment) means the socket address is the client: the header is
+# then ignored, because a caller can write anything into it and would otherwise pick its
+# own address for the per-IP limits and the security log. A deployed environment sits
+# behind one edge proxy (Railway), so it defaults to 1 and refuses 0, under which every
+# caller would share the proxy's one per-IP bucket (rule 11, review 2026-11-11 L-18).
+TRUSTED_PROXY_HOPS = env_int("TRUSTED_PROXY_HOPS", 1 if IS_DEPLOYED_ENVIRONMENT else 0)
 # A WebAuthn challenge lives this long (registration, sign-in and step-up ceremonies).
 CHALLENGE_TTL_SECONDS = env_int("CHALLENGE_TTL_SECONDS", 120)
 # The one deterministic code E2E journeys type (playbook 8.3). Read only when E2E_MODE is
@@ -1344,6 +1346,9 @@ if SENTRY_DSN:
 #     the `anthropic` provider and the `managed_agents` runner are refused (both offer US or
 #     global processing only), and Sentry only on a host ending `.ingest.de.sentry.io`. The
 #     lists are code, never variables, so a transfer never follows from a changed variable.
+# 11. TRUSTED_PROXY_HOPS=0 behind the edge proxy keys every per-IP limit and every security
+#     log row on the proxy's address: one caller's failed sign-ins lock everyone out, and
+#     the log names nobody. A deployed environment defaults to 1 and refuses 0.
 # ---------------------------------------------------------------------------------------
 def _refuse(reason: str) -> None:
     raise ImproperlyConfigured(f"Refusing to boot: {reason}")
@@ -1388,6 +1393,8 @@ if IS_DEPLOYED_ENVIRONMENT and ENVIRONMENT != MOCKS_ALLOWED_DEPLOYED_ENVIRONMENT
         )
     if SENTRY_DSN and not (urlsplit(SENTRY_DSN).hostname or "").endswith(".ingest.de.sentry.io"):
         _refuse(f"SENTRY_DSN is not on ingest.de.sentry.io on deployed environment {ENVIRONMENT!r}. Rule 10 (D-54).")
+if IS_DEPLOYED_ENVIRONMENT and TRUSTED_PROXY_HOPS < 1:
+    _refuse(f"TRUSTED_PROXY_HOPS={TRUSTED_PROXY_HOPS} on deployed environment {ENVIRONMENT!r}. Rule 11: set 1 behind Railway's edge.")
 if STORAGE_BACKEND not in {"local", "s3"}:
     _refuse(f"STORAGE_BACKEND={STORAGE_BACKEND!r} is not one of local, s3.")
 
