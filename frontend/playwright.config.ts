@@ -137,6 +137,8 @@ export default defineConfig({
         // refresh cookie is SameSite=Strict, and 127.0.0.1 would be another site.
         NEXT_PUBLIC_API_URL: API_URL,
         NEXT_TELEMETRY_DISABLED: '1',
+        // The /dev pages (pill gallery, Green spike) answer only with this set (src/app/dev/layout.tsx).
+        E2E_DEV_PAGES: '1',
       },
     },
     // Started after the entry above has built the app, since web servers start in order.

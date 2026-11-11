@@ -195,6 +195,7 @@ GitHub encrypted secrets. Dev-only secrets are literal strings ending in
 | `APP_HOST` | web | empty | empty (the host-split journey's own server sets `localhost:3001`) | `app.bleqq.com` | The one host that serves the app. There every page sends `X-Robots-Tag: noindex` and `/welcome` moves to the first `PUBLIC_SITE_HOST`. Read at run time. Does nothing unless `PUBLIC_SITE_HOST` is set too; any other host (the service's own `*.up.railway.app` address, the health check) behaves as before |
 | `NEXT_PUBLIC_SUPPORT_CONTACT` | web | empty | empty | the address that answers access requests | An email address. The public page's "Write to us" opens a mail to it; empty hides the link. Baked at build time |
 | `NEXT_PUBLIC_BULK_TAGGING_MAX_RECORDS` | web | `200` | `200` | the api's `BULK_TAGGING_MAX_RECORDS` | How many obligations the inventory lets one bulk tagging name before it refuses without calling (VOC-08). Keep it equal to the api's cap, which still refuses above its own number. Baked at build time |
+| `E2E_DEV_PAGES` | web (E2E only) | unset; `1` to see `/dev/pills` | set to `1` by Playwright's `webServer` | never | `1` serves the developer pages under `/dev` (the pill gallery, the Green spike); anything else answers 404 there. Read per request |
 | `NEXT_PUBLIC_RESEARCH_POLL_MS` | web | `5000` | `5000` | `5000` | How often, in milliseconds, `/admin/agents` re-reads a research request still queued or running from its status endpoint (AGT-05). Lower it and a finished request shows sooner at the cost of more reads. Baked at build time |
 
 ## Rules
