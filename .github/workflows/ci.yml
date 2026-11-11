@@ -645,10 +645,18 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           poetry-version: ${{ env.POETRY_VERSION }}
 
+      # The install runs in the background and ends within a minute or two. A wait with no
+      # end held nine jobs for half an hour with nothing to read (2026-11-11), so this one
+      # gives up after five minutes and prints what the install wrote and what it is doing.
       - name: Chromium is installed
         run: |
-          until [ -f "$RUNNER_TEMP/chromium.exit" ]; do sleep 1; done
+          for _ in $(seq 1 300); do [ -f "$RUNNER_TEMP/chromium.exit" ] && break; sleep 1; done
           cat "$RUNNER_TEMP/chromium.log"
+          if [ ! -f "$RUNNER_TEMP/chromium.exit" ]; then
+            echo "::error::the Chromium install did not finish in five minutes"
+            ps -eo pid,etime,args | grep -E "apt|dpkg|playwright|needrestart|debconf" | grep -v grep || true
+            exit 1
+          fi
           exit "$(cat "$RUNNER_TEMP/chromium.exit")"
 
       - name: The web app is built
@@ -772,10 +780,18 @@ jobs:
       - name: Build design tokens
         run: npm run build:tokens
 
+      # The install runs in the background and ends within a minute or two. A wait with no
+      # end held nine jobs for half an hour with nothing to read (2026-11-11), so this one
+      # gives up after five minutes and prints what the install wrote and what it is doing.
       - name: Chromium is installed
         run: |
-          until [ -f "$RUNNER_TEMP/chromium.exit" ]; do sleep 1; done
+          for _ in $(seq 1 300); do [ -f "$RUNNER_TEMP/chromium.exit" ] && break; sleep 1; done
           cat "$RUNNER_TEMP/chromium.log"
+          if [ ! -f "$RUNNER_TEMP/chromium.exit" ]; then
+            echo "::error::the Chromium install did not finish in five minutes"
+            ps -eo pid,etime,args | grep -E "apt|dpkg|playwright|needrestart|debconf" | grep -v grep || true
+            exit 1
+          fi
           exit "$(cat "$RUNNER_TEMP/chromium.exit")"
 
       # NEXT_PUBLIC_API_URL is deliberately unset: the config points the build at
@@ -876,10 +892,18 @@ jobs:
       - name: Build design tokens
         run: npm run build:tokens
 
+      # The install runs in the background and ends within a minute or two. A wait with no
+      # end held nine jobs for half an hour with nothing to read (2026-11-11), so this one
+      # gives up after five minutes and prints what the install wrote and what it is doing.
       - name: Chromium is installed
         run: |
-          until [ -f "$RUNNER_TEMP/chromium.exit" ]; do sleep 1; done
+          for _ in $(seq 1 300); do [ -f "$RUNNER_TEMP/chromium.exit" ] && break; sleep 1; done
           cat "$RUNNER_TEMP/chromium.log"
+          if [ ! -f "$RUNNER_TEMP/chromium.exit" ]; then
+            echo "::error::the Chromium install did not finish in five minutes"
+            ps -eo pid,etime,args | grep -E "apt|dpkg|playwright|needrestart|debconf" | grep -v grep || true
+            exit 1
+          fi
           exit "$(cat "$RUNNER_TEMP/chromium.exit")"
 
       # NEXT_PUBLIC_API_URL is deliberately unset: the config points the build at
