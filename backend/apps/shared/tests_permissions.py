@@ -20,6 +20,7 @@ from apps.identity.models import TenantRole
 from apps.shared import factories, permissions as p, tenancy
 from apps.shared.errors import ProblemError
 from apps.shared.testing import agent_principal, enrolment_principal, user_principal
+from apps.shared.testing import gate_of
 
 PRD_TENANT_PERMISSIONS = {
     "library.read", "watch.read", "roadmap.read", "search.use", "comments.write", "problems.report",
@@ -109,7 +110,7 @@ class Decorators(SimpleTestCase):
 
     def test_requires_permission_marks_the_view_and_enforces(self) -> None:
         gated = p.requires_permission(p.CASES_TRIAGE)(_view)
-        self.assertEqual(p.gate_of(gated), p.Gate("permission", p.CASES_TRIAGE))
+        self.assertEqual(gate_of(gated), p.Gate("permission", p.CASES_TRIAGE))
         self.assertEqual(gated(self._request(user_principal(permissions={p.CASES_TRIAGE}))), "ok")
         with self.assertRaises(ProblemError) as caught:
             gated(self._request(user_principal(permissions={p.CASES_READ})))
@@ -129,7 +130,7 @@ class Decorators(SimpleTestCase):
 
     def test_requires_scope_marks_the_view_and_enforces(self) -> None:
         gated = p.requires_scope(p.SCOPE_CHANGES_WRITE)(_view)
-        self.assertEqual(p.gate_of(gated), p.Gate("scope", p.SCOPE_CHANGES_WRITE))
+        self.assertEqual(gate_of(gated), p.Gate("scope", p.SCOPE_CHANGES_WRITE))
         self.assertEqual(gated(self._request(agent_principal(scopes={p.SCOPE_CHANGES_WRITE}))), "ok")
         with self.assertRaises(ProblemError) as caught:
             gated(self._request(agent_principal(scopes={p.SCOPE_LIBRARY_READ})))
@@ -143,7 +144,7 @@ class Decorators(SimpleTestCase):
     def test_requires_step_up_needs_a_fresh_assertion(self) -> None:
         gated = p.requires_step_up(_view)
         self.assertTrue(p.step_up_of(gated))
-        self.assertIsNone(p.gate_of(gated))
+        self.assertIsNone(gate_of(gated))
         fresh = user_principal(step_up_at=timezone.now() - timedelta(minutes=1))
         stale = user_principal(step_up_at=timezone.now() - timedelta(minutes=6))
         self.assertEqual(gated(self._request(fresh)), "ok")
@@ -155,7 +156,7 @@ class Decorators(SimpleTestCase):
 
     def test_decorators_compose_and_keep_their_marks(self) -> None:
         view = p.requires_permission(p.CASES_SIGNOFF)(p.requires_step_up(_view))
-        self.assertEqual(p.gate_of(view).value, p.CASES_SIGNOFF)  # type: ignore[union-attr]
+        self.assertEqual(gate_of(view).value, p.CASES_SIGNOFF)  # type: ignore[union-attr]
         self.assertTrue(p.step_up_of(view))
         self.assertEqual(view.__name__, "_view")
 

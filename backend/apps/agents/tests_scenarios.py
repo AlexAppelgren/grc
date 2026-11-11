@@ -45,12 +45,13 @@ from apps.search.models import SearchChunk
 from apps.shared import factories, permissions as perms, tenancy
 from apps.shared.errors import ProblemError
 from apps.shared.models import AuditEvent, Tenant
-from apps.shared.tenancy import is_tenant_task, library_write
+from apps.shared.tenancy import library_write
 from apps.shared.testing import SESSION_TOKEN_FOR_TESTS, sign_in, stub_session, user_principal
 from apps.taxonomy.models import FootprintTerm, Flag, ScopeItem, TaxonomyTerm, WatchedMarket
 from apps.taxonomy.registry import REGISTRY
 from apps.watch import registration, sources, testing as watch_build
 from apps.watch.models import ChangeDocument, RegulatoryChange, SourceCheck
+from apps.shared.testing import is_tenant_task
 
 # One reform as a sweep files it, for the scenarios that drive the agent API. A function
 # rather than a constant because every change carries a regime (D-39, AC-AGT1), and a term's
@@ -807,7 +808,7 @@ class AgentsScenarioTests(TestCase):
         from apps.agents import runner_events
         from apps.agents.tests_tasks import WEDNESDAY
         from apps.shared import tests_production_guard as boot_guard
-        from apps.shared.adapters.agent_runner import MockAgentRunner, RunHandle
+        from apps.shared.adapters.agent_runner import RunHandle
 
         # Given AGENT_RUNNER=mock
         self.assertEqual(settings.AGENT_RUNNER, "mock")
@@ -838,7 +839,7 @@ class AgentsScenarioTests(TestCase):
         # When the mock runner emits events
         tenancy.activate(world.bank.id)
         handle = RunHandle(run_id=run.id, external_id=run.external_session_id, status=RunStatus.RUNNING, started_at=None)
-        events = MockAgentRunner().poll(handle)
+        events = agent_build.mock_run_events(handle)
         for event in events:
             runner_events.apply_event(event)
 

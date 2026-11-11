@@ -26,38 +26,17 @@ from django.test.utils import CaptureQueriesContext
 
 from apps.cases import creation, matching, testing as case_build
 from apps.cases.models import ChangeCase
-from apps.shared import outbox, tenancy
+from apps.shared import tenancy
 from apps.shared.audit import Actor, record
 from apps.shared.models import AuditEvent, OutboxEvent
 from apps.taxonomy.models import CaseStatusCategory
 from apps.watch import testing as watch_build
 from apps.watch.models import RegulatoryChange
+from apps.shared.testing import drain
+from apps.cases.testing import registered
 
 SECURITIES = "regime:securities"
 AML = "regime:aml"
-
-
-def drain() -> None:
-    """Deliver until the backlog is empty, from the library's zone."""
-    with transaction.atomic():
-        tenancy.clear_tenant()
-    while outbox.deliver_batch().delivered:
-        pass
-
-
-def registered(change: RegulatoryChange) -> None:
-    with transaction.atomic():
-        tenancy.clear_tenant()
-        record(
-            action=creation.CHANGE_REGISTERED,
-            actor=Actor.system("watch"),
-            subject_type="regulatory_change",
-            subject_id=change.id,
-            subject_title=change.title,
-            summary=f"Registered {change.title}.",
-            tenant_id=None,
-        )
-    drain()
 
 
 def facts_updated(change: RegulatoryChange) -> None:

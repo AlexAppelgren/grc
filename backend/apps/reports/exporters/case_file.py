@@ -21,7 +21,7 @@ from apps.cases.models import ChangeCase
 from apps.identity.roles_logic import language_order
 from apps.reports.models import ExportJob
 from apps.shared import permissions as perms
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 
 
@@ -32,7 +32,7 @@ def check(*, tenant: Tenant, permissions: frozenset[str], subject_id: uuid.UUID 
             status=403, code="permission_denied", detail="You do not have access to this.", required_permission=perms.CASES_READ
         )
     if subject_id is None or not ChangeCase.objects.filter(tenant=tenant, pk=subject_id).exists():
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
 
 
 def build(job: ExportJob) -> bytes:

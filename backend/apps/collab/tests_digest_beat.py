@@ -30,8 +30,8 @@ from apps.library.reading import today_for
 from apps.shared import factories, tenancy
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.models import Tenant, Weekday
-from apps.shared.tenancy import is_tenant_task
 from apps.watch import testing as watch_build
+from apps.shared.testing import is_tenant_task
 
 STOCKHOLM, HELSINKI = "Europe/Stockholm", "Europe/Helsinki"
 

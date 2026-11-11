@@ -42,14 +42,11 @@ from django.utils import timezone
 from apps.library.models import DatePrecision, SubjectType
 from apps.proposals.models import OriginType
 from apps.shared.tenancy import LibraryModel
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 def _precision() -> models.CharField:
-    return models.CharField(max_length=8, choices=_choices(DatePrecision), default=DatePrecision.DAY.value)
+    return models.CharField(max_length=8, choices=choices(DatePrecision), default=DatePrecision.DAY.value)
 
 
 def _agent() -> models.ForeignKey:
@@ -153,7 +150,7 @@ class Source(LibraryModel):
     kind = models.ForeignKey("taxonomy.SourceKind", on_delete=models.PROTECT, related_name="+")
     authority = models.ForeignKey("library.Authority", null=True, blank=True, on_delete=models.PROTECT, related_name="sources")
     check_frequency = models.CharField(
-        max_length=16, choices=_choices(CheckFrequency), default=CheckFrequency.WEEKLY.value
+        max_length=16, choices=choices(CheckFrequency), default=CheckFrequency.WEEKLY.value
     )
     active = models.BooleanField(default=True)
     owner_tenant = models.ForeignKey("shared.Tenant", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -173,11 +170,11 @@ class SourceCheck(LibraryModel):
     source = models.ForeignKey(Source, on_delete=models.PROTECT, related_name="checks")
     agent_run = models.ForeignKey("agents.AgentRun", null=True, blank=True, on_delete=models.PROTECT, related_name="source_checks")
     checked_at = models.DateTimeField(default=timezone.now)
-    status = models.CharField(max_length=16, choices=_choices(CheckStatus))
+    status = models.CharField(max_length=16, choices=choices(CheckStatus))
     items_found = models.PositiveIntegerField(default=0)
     error = models.TextField(blank=True)
-    kind = models.CharField(max_length=16, choices=_choices(SourceCheckKind), default=SourceCheckKind.SWEEP.value)
-    subject_type = models.CharField(max_length=16, choices=_choices(SubjectType), blank=True)
+    kind = models.CharField(max_length=16, choices=choices(SourceCheckKind), default=SourceCheckKind.SWEEP.value)
+    subject_type = models.CharField(max_length=16, choices=choices(SubjectType), blank=True)
     subject_id = models.UUIDField(null=True, blank=True)
 
     class Meta:
@@ -240,9 +237,9 @@ class RegulatoryChange(LibraryModel):
     recurrence_rule = models.CharField(max_length=500, blank=True)
     source_label = models.CharField(max_length=500)
     source_url = models.URLField(max_length=2000)
-    status = models.CharField(max_length=16, choices=_choices(ChangeStatus), default=ChangeStatus.ACTIVE.value)
+    status = models.CharField(max_length=16, choices=choices(ChangeStatus), default=ChangeStatus.ACTIVE.value)
     superseded_by = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="supersedes")
-    origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    origin = models.CharField(max_length=16, choices=choices(OriginType))
     agent_run = models.ForeignKey("agents.AgentRun", null=True, blank=True, on_delete=models.PROTECT, related_name="changes")
     model = models.CharField(max_length=200, blank=True)
     first_seen_at = models.DateTimeField(default=timezone.now)
@@ -377,7 +374,7 @@ class ChangeObligation(LibraryModel):
 
     change = models.ForeignKey(RegulatoryChange, on_delete=models.CASCADE, related_name="obligation_links")
     obligation = models.ForeignKey("library.Obligation", on_delete=models.PROTECT, related_name="change_links")
-    origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    origin = models.CharField(max_length=16, choices=choices(OriginType))
     confidence = models.DecimalField(max_digits=4, decimal_places=3, null=True, blank=True)
     suggested_by = _person()
     suggested_by_agent = _agent()

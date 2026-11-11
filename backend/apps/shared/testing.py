@@ -6,22 +6,27 @@ Excluded from coverage (pyproject) because it is test scaffolding."""
 
 from __future__ import annotations
 
+import base64
 import importlib
+import json
 import os
 import uuid
 from datetime import datetime
 from time import monotonic, sleep
+from collections.abc import Callable, Iterable
 from typing import Any
 from unittest import mock
 
-from django.db import connection
+from django.db import DEFAULT_DB_ALIAS, connection, connections, transaction
+from django.utils import timezone
 from django.db.models import Model
 from django.test import Client, TestCase
 from sentry_sdk.integrations import logging as sentry_logging
 
-from apps.shared import authentication, tenancy
+from apps.shared import authentication, outbox, permissions, tenancy
 from apps.shared.authentication import Principal, PrincipalKind
-from apps.shared.models import AuditEvent
+from apps.shared.models import AuditEvent, OutboxEvent
+from apps.taxonomy import matching
 
 MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
@@ -221,3 +226,118 @@ def hold_until_waiting_on_me(other_pid: list[int]) -> None:
                     return
         sleep(0.01)
     raise AssertionError("the second session never waited on the first")
+
+
+# ---- Readers only tests need: they look inside the mechanics they prove. ---------------
+def b64url_decode(text: str) -> bytes:
+    padding = "=" * (-len(text) % 4)
+    return base64.urlsafe_b64decode(text + padding)
+
+
+def handlers_for(kind: str) -> tuple[outbox.Handler, ...]:
+    """Who acts on this kind, in registration order: a consumer's own test proves it is the
+    only handler for its kind."""
+    return tuple(outbox._HANDLERS.get(kind, ()))
+
+
+def gate_of(view: Callable[..., Any]) -> permissions.Gate | None:
+    return getattr(view, "__cw_gate__", None)
+
+
+def is_tenant_task(fn: Callable[..., Any]) -> bool:
+    return bool(getattr(fn, "__cw_tenant_task__", False))
+
+
+def library_write_reason() -> str | None:
+    return tenancy._library_write_reason.get()
+
+
+def identity_lookup_active(*, using: str = DEFAULT_DB_ALIAS) -> bool:
+    with connections[using].cursor() as cursor:
+        cursor.execute("SELECT current_setting(%s, true)", [tenancy.IDENTITY_LOOKUP_SETTING])
+        row = cursor.fetchone()
+    return bool(row and row[0] == "on")
+
+
+def in_footprint_sql(tenant_id: uuid.UUID, term_ids: Iterable[uuid.UUID]) -> bool:
+    """The database's answer, from the SQL function the migration created, to pin the Python
+    mirror against."""
+    with connection.cursor() as cursor:
+        cursor.execute(f"SELECT {matching.SQL_FUNCTION}(%s, %s::uuid[])", [str(tenant_id), [str(term_id) for term_id in term_ids]])
+        row = cursor.fetchone()
+    return bool(row and row[0])
+
+
+def opt_in_dimensions() -> frozenset[str]:
+    """The active opt-in dimensions alone: the standards a bank follows."""
+    return matching.restricting_dimensions().opt_in
+
+
+def admits_sql(tenant_id: uuid.UUID, entry_id: uuid.UUID, term_ids: Iterable[uuid.UUID]) -> bool:
+    """The database's verdict on one record, from `taxonomy_entry_admits` (taxonomy 0011)."""
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT taxonomy_entry_admits(%s, %s, %s::uuid[])",
+            [str(tenant_id), str(entry_id), [str(term_id) for term_id in term_ids]],
+        )
+        row = cursor.fetchone()
+    return bool(row and row[0])
+
+
+# ---- Helpers many test modules repeated word for word. ---------------------------------
+def drain() -> None:
+    """Deliver the outbox until its backlog is empty, from the library's zone: the reference
+    seed writes more rows than one `OUTBOX_BATCH_SIZE` pass delivers."""
+    with transaction.atomic():
+        tenancy.clear_tenant()
+    while outbox.deliver_batch().delivered:
+        pass
+
+
+def flush_outbox() -> None:
+    """Mark what the fixtures recorded as delivered, so each test delivers its own rows."""
+    with transaction.atomic():
+        OutboxEvent.objects.filter(published_at__isnull=True).update(published_at=timezone.now())
+
+
+def seed_reference() -> None:
+    """Languages, jurisdictions, library vocabularies, taxonomy terms and authorities."""
+    from apps.library.seeds import seed_jurisdictions, seed_languages
+    from apps.library.seeds.library import seed_authorities
+    from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms
+
+    seed_languages()
+    seed_jurisdictions()
+    seed_library_vocabularies()
+    seed_taxonomy_terms()
+    seed_authorities()
+
+
+def call_route(client: Client, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
+    """`method` on `url` with `body` as JSON, or with no body when it is None."""
+    if body is None:
+        return getattr(client, method)(url, **headers)
+    return getattr(client, method)(url, data=body, content_type="application/json", **headers)
+
+
+def events_of(response: Any) -> list[dict[str, Any]]:
+    """The events a `text/event-stream` response carried, in order: one `data:` frame each."""
+    body = b"".join(response.streaming_content).decode()
+    return [json.loads(line.removeprefix("data: ")) for line in body.splitlines() if line.startswith("data: ")]
+
+
+def assert_refused(
+    case: Any, routes: Iterable[tuple[Any, ...]], headers: dict[str, Any], status: int, code: str | None = None, naming: bool = False
+) -> None:
+    """Each route of a gate table, `(name, method, url, body, ...)`, answers `status` (and
+    `code`, when given) to `headers`; with `naming`, the problem names the route's fifth
+    field as its `requiredPermission`. One subtest per route."""
+    for route in routes:
+        name, method, url, body = route[:4]
+        with case.subTest(operation=name):
+            response = call_route(case.client, method, url, body, headers)
+            case.assertEqual(response.status_code, status, response.content)
+            if code is not None:
+                case.assertEqual(response.json()["code"], code)
+            if naming:
+                case.assertEqual(response.json()["requiredPermission"], route[4])

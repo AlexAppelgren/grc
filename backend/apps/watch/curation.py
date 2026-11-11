@@ -470,7 +470,7 @@ def set_obligation_links(
     suggester = _suggester(who)
     with watch_write("the obligations a change affects"), transaction.atomic():
         change = keys.change_for_update(change_id)
-        wanted = _one_link_per_obligation(body)
+        wanted = one_link_per_obligation(body)
         # Read for its refusal, before anything is written: an obligation the library does
         # not hold, or has retired, never reaches a link (AC-PRO1).
         keys.obligations_for(list(wanted))
@@ -504,12 +504,13 @@ def set_obligation_links(
     return keys.links_out(change, order)
 
 
-def _one_link_per_obligation(
+def one_link_per_obligation(
     body: list[WatchObligationLinkInput],
 ) -> dict[uuid.UUID, WatchObligationLinkInput]:
-    """The links the caller sent, keyed by obligation. The same obligation twice in one body
-    is refused rather than quietly resolved: the two entries carry two confidences and
-    keeping either would lose the other."""
+    """The links the caller sent, keyed by obligation, for this module's
+    `PUT /changes/{changeId}/obligations` and for registration alike. The same obligation
+    twice in one body is refused rather than quietly resolved: the two entries carry two
+    confidences and keeping either would lose the other."""
     links: dict[uuid.UUID, WatchObligationLinkInput] = {}
     for link in body:
         if link.obligation_id in links:

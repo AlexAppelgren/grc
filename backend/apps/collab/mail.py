@@ -31,11 +31,11 @@ from collections.abc import Sequence
 from typing import Literal, get_args
 
 from django.conf import settings
-from django.db import transaction
 
 from apps.collab.mail_strings import CATALOGS, FALLBACK_LANGUAGE
 from apps.identity.models import Membership
 from apps.shared.adapters.mailer import OutgoingMail
+from apps.shared.tasks import queue_after_commit
 
 logger = logging.getLogger(__name__)
 
@@ -186,8 +186,4 @@ def send(
         subject_type,
         str(subject_id) if subject_id else None,
     )
-    if settings.CELERY_TASK_ALWAYS_EAGER:
-        # Tests: inline, now. `on_commit` never fires inside a TestCase transaction.
-        tasks.deliver_mail.apply(args=args)
-        return
-    transaction.on_commit(lambda: tasks.deliver_mail.delay(*args))
+    queue_after_commit(tasks.deliver_mail, args)

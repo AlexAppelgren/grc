@@ -9,18 +9,13 @@ chunk. The invitation link is the only place a plain invitation token ever appea
 from __future__ import annotations
 
 from django.conf import settings
-from django.db import transaction
 
 from apps.identity import tasks
+from apps.shared.tasks import queue_after_commit
 
 
 def _deliver(to: str, subject: str, body: str) -> None:
-    if settings.CELERY_TASK_ALWAYS_EAGER:
-        # Tests: inline, now. `on_commit` never fires inside a TestCase transaction, and
-        # the assertion is about the message, not the queue.
-        tasks.deliver_mail.apply(args=(to, subject, body))
-        return
-    transaction.on_commit(lambda: tasks.deliver_mail.delay(to, subject, body))
+    queue_after_commit(tasks.deliver_mail, (to, subject, body))
 
 
 def invitation_link(token: str) -> str:

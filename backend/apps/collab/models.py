@@ -38,10 +38,7 @@ from django.utils import timezone
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.fields import CIEmailField
 from apps.shared.tenancy import TenantModel
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class NotificationKind(enum.StrEnum):
@@ -156,7 +153,7 @@ class Notification(TenantModel):
     """
 
     user = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
-    kind = models.CharField(max_length=32, choices=_choices(NotificationKind))
+    kind = models.CharField(max_length=32, choices=choices(NotificationKind))
     subject_type = models.CharField(max_length=64)
     subject_id = models.UUIDField()
     title = models.TextField()
@@ -198,7 +195,7 @@ class EmailMessage(TenantModel):
     subject = models.TextField()
     subject_type = models.CharField(max_length=64, null=True, blank=True)
     subject_id = models.UUIDField(null=True, blank=True)
-    status = models.CharField(max_length=16, choices=_choices(EmailStatus), default=EmailStatus.QUEUED.value)
+    status = models.CharField(max_length=16, choices=choices(EmailStatus), default=EmailStatus.QUEUED.value)
     provider_message_id = models.CharField(max_length=255, blank=True)
     queued_at = models.DateTimeField(auto_now_add=True)
     sent_at = models.DateTimeField(null=True, blank=True)

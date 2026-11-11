@@ -57,7 +57,7 @@ from apps.register.logic import ensure_register_entry
 from apps.register.models import TenantObligation
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import Tenant
 from apps.shared.vocabulary import label_for
@@ -92,10 +92,6 @@ class _Subject:
 
     def rows(self) -> QuerySet[Participant]:
         return Participant.objects.filter(tenant_obligation_id=self.entry_id, case_id=self.case_id)
-
-
-def _not_found() -> ProblemError:
-    return ProblemError(status=404, code="not_found", detail="Not found.")
 
 
 # ---------------------------------------------------------------------------------------
@@ -218,7 +214,7 @@ def _remove(
         else None
     )
     if subject is None or row is None:
-        raise _not_found()
+        raise not_found()
     leaving = row.user_id == caller_id
     if not leaving and not can_edit:
         raise ProblemError(
@@ -250,7 +246,7 @@ def _title(obligation_id: uuid.UUID) -> str:
     obligation this bank cannot see is `not_found`, exactly as one that never existed."""
     heading = obligation_headings([obligation_id], []).get(obligation_id)
     if heading is None:
-        raise _not_found()
+        raise not_found()
     return f"{heading.instrument_short_name}, {heading.reference_label}"
 
 

@@ -23,7 +23,7 @@ from django.db.models import Prefetch
 
 from apps.identity.models import Membership, User
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 from apps.taxonomy.models import EntityScopeExclusion
 from apps.taxonomy.schemas import PersonRef, TermRef
@@ -57,16 +57,12 @@ STALE = "Someone changed this first. Reload and try again."
 # ---------------------------------------------------------------------------------------
 # What the organisation and product writes share.
 # ---------------------------------------------------------------------------------------
-def _not_found() -> ProblemError:
-    return ProblemError(status=404, code="not_found", detail="Not found.")
-
-
 def locked(model: type[Any], tenant: Tenant, pk: uuid.UUID, expected_version: int | None) -> Any:
     """The row, locked for the write, in the caller's bank, or 404; 409 `stale_write` when
     `If-Match` named another version (playbook 4.3)."""
     row = model._default_manager.select_for_update().filter(tenant=tenant, pk=pk).order_by("pk").first()  # ordering: pk lookup, at most one row
     if row is None:
-        raise _not_found()
+        raise not_found()
     if expected_version is not None and expected_version != row.version:
         raise ValidationError(STALE, code="stale_write")
     return row
@@ -109,7 +105,7 @@ def org_unit_of(tenant: Tenant, org_unit_id: uuid.UUID) -> OrgUnit:
     """The unit, in the caller's bank and under its row-level security, or 404."""
     unit = OrgUnit.objects.filter(tenant=tenant, pk=org_unit_id).first()  # ordering: pk lookup, at most one row
     if unit is None:
-        raise _not_found()
+        raise not_found()
     return unit
 
 
@@ -316,14 +312,6 @@ def update_org_unit(
 LICENCE_DATES = ("granted_on", "withdrawn_on", "issued_on", "valid_until", "next_audit_on")
 LICENCE_STRINGS = ("reference", "issuer", "number")
 LICENCE_TEXTS = {"scope_note": "scopeNote", "scope_statement": "scopeStatement"}
-
-
-def licence_of(tenant: Tenant, licence_id: uuid.UUID) -> Licence:
-    """The licence, in the caller's bank and under its row-level security, or 404."""
-    licence = Licence.objects.filter(tenant=tenant, pk=licence_id).first()  # ordering: pk lookup, at most one row
-    if licence is None:
-        raise _not_found()
-    return licence
 
 
 def _licence_snapshot(licence: Licence, services: list[Term]) -> dict[str, Any]:

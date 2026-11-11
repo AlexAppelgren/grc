@@ -40,7 +40,7 @@ from apps.cases.models import ChangeCase, Evidence, EvidenceKind
 from apps.cases.schemas import CasesEvidence, CasesEvidenceCreated, CasesEvidenceForm, CasesEvidencePage
 from apps.shared.adapters.scanner import ScanState, get_scanner
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import Tenant
 from apps.shared.schemas import PageQuery
@@ -254,7 +254,7 @@ def download_evidence(*, tenant: Tenant, actor: Actor, user: Any, evidence_id: u
     """The bytes of a clean file, with one audit row per download."""
     evidence = logic.load_evidence(tenant, evidence_id)
     if evidence.kind != EvidenceKind.FILE.value:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     if evidence.scan_state == ScanState.PENDING.value:
         raise ProblemError(status=409, code="scan_pending", detail="This file is still being checked for malware. Try again shortly.")
     if evidence.scan_state != ScanState.CLEAN.value:
@@ -290,7 +290,7 @@ def remove_evidence(*, tenant: Tenant, actor: Actor, user: Any, evidence_id: uui
         .first()  # ordering: pk lookup, at most one row
     )
     if evidence is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     evidence.case = case
     _refuse_when_closed(case)
     evidence.removed_at = timezone.now()

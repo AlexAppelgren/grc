@@ -31,7 +31,7 @@ from apps.agents.seeds import console, definition as reader
 from apps.identity.models import User
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.taxonomy.schemas import PersonRef
 
 SUBJECT_TYPE = "agent_version"
@@ -55,7 +55,7 @@ def _agent(agent_key: str, *, lock: bool = False) -> Agent:
     queryset = Agent.objects.select_for_update() if lock else Agent.objects.all()
     agent = queryset.filter(key=agent_key).first()  # ordering: key is unique, at most one row
     if agent is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return agent
 
 
@@ -75,7 +75,7 @@ def get_definition(*, agent_key: str) -> AgentDefinitionDetail:
     """`GET /agent-definitions/{agentKey}`: the definition and its versions, newest first."""
     agent = _definitions().filter(key=agent_key).first()  # ordering: key is unique, at most one row
     if agent is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     versions = agent.versions.select_related("published_by").order_by("-version_number")
     return AgentDefinitionDetail.model_validate(
         {**AgentDefinitionOut.model_validate(agent).model_dump(), "versions": [version_row(row) for row in versions]}
@@ -166,7 +166,7 @@ def retire_version(*, who: Principal, agent_key: str, version_no: int) -> AgentV
         agent = _agent(agent_key, lock=True)
         version = agent.versions.select_related("published_by").filter(version_number=version_no).first()  # ordering: unique per agent
         if version is None:
-            raise ProblemError(status=404, code="not_found", detail="Not found.")
+            raise not_found()
         if version.retired_at is not None:
             return version_row(version)
         if agent.active and not agent.versions.filter(retired_at__isnull=True).exclude(pk=version.pk).exists():

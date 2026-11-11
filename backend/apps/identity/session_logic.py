@@ -58,7 +58,7 @@ from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal, PrincipalKind
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.tenants.models import SecurityPolicy, SupportAccess
 
 # What a support session holds (D-49, ADR 0042): the seven reads and nothing else. No search
@@ -460,7 +460,7 @@ def own_grants(principal: Principal) -> Iterator[None]:
     caller's own user id, cleared when the block ends, even on an error. A bank's session,
     or a support session, never opens it."""
     if principal.kind is not PrincipalKind.USER or principal.tenant_id is not None or not principal.is_platform_staff:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     with connection.cursor() as cursor:
         cursor.execute("SELECT set_config(%s, %s, true)", [PLATFORM_USER_SETTING, str(principal.subject_id)])
     try:

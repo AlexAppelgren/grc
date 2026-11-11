@@ -31,7 +31,7 @@ from apps.identity.models import User
 from apps.shared.adapters.agent_runner import RunHandle, get_agent_runner
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 
 # The pause reason a person's pause carries: a key, beside the cap's `budget_cap`.
@@ -111,7 +111,7 @@ def interrupt(*, who: Principal, tenant: Tenant, run_id: uuid.UUID) -> AgentRunL
             AgentRun.objects.select_related("agent").filter(pk=run_id).first()
         )  # ordering: pk lookup
         if found is None:
-            raise ProblemError(status=404, code="not_found", detail="Not found.")
+            raise not_found()
         refuse_platform_run(found)
         refuse_platform_agent(found.agent)
         run = (

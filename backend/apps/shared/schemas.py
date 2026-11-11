@@ -197,20 +197,6 @@ class MailOutboxMessage(CamelSchema):
     )
 
 
-class VocabularyEntry(CamelSchema):
-    """What every vocabulary read returns (playbook 15): key and kind, never a phrase the
-    client must string-match, plus the label in the caller's language."""
-
-    key: str
-    kind: str | None
-    label: str
-    usage_note: str
-    sort_order: int
-    active: bool
-    is_system: bool
-    is_default: bool
-
-
 class AuditSnapshot(RootModel[dict[str, Any]]):
     """The `before` and `after` columns of audit_event: the audited record's fields at
     the time, keyed by field name. Free-form by nature (the audit log stores every

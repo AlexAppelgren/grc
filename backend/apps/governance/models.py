@@ -46,10 +46,7 @@ from django.db import models
 from apps.shared.audit import AppendOnlyModel
 from apps.shared.tenancy import TenantModel
 from apps.taxonomy.models import ApprovalStatus
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class AiPurpose(enum.StrEnum):
@@ -122,7 +119,7 @@ class AiGeneration(models.Model):
     )
     # Who asked, for `purpose = answer`. Null for everything a run produced by itself.
     asker = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    purpose = models.CharField(max_length=32, choices=_choices(AiPurpose))
+    purpose = models.CharField(max_length=32, choices=choices(AiPurpose))
     # The record the call was about, never its text: the input reference AUD-02 asks for.
     subject_type = models.CharField(max_length=32, blank=True)
     subject_id = models.UUIDField(null=True, blank=True)
@@ -138,7 +135,7 @@ class AiGeneration(models.Model):
     prompt_hash = models.CharField(max_length=128, blank=True)
     output = models.TextField(blank=True)
     citations = models.JSONField(default=list, blank=True)  # schema: AiCitation
-    status = models.CharField(max_length=16, choices=_choices(AiStatus), default=AiStatus.DRAFT.value)
+    status = models.CharField(max_length=16, choices=choices(AiStatus), default=AiStatus.DRAFT.value)
     reviewed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     reviewed_at = models.DateTimeField(null=True, blank=True)
     input_tokens = models.PositiveIntegerField(default=0)
@@ -201,7 +198,7 @@ class TenantReachRequest(TenantModel):
 
     requested_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
     requested_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=16, choices=_choices(ApprovalStatus), default=ApprovalStatus.PENDING.value)
+    status = models.CharField(max_length=16, choices=choices(ApprovalStatus), default=ApprovalStatus.PENDING.value)
     decided_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     decided_at = models.DateTimeField(null=True, blank=True)
     version = models.PositiveIntegerField(default=1)

@@ -37,7 +37,7 @@ from apps.cases.models import Action, CaseTransition, ChangeCase, Evidence, Evid
 from apps.collab.models import Participant
 from apps.identity.models import User
 from apps.shared.audit import Actor
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import AuditEvent, Tenant
 from apps.shared.vocabulary import label_for
@@ -229,7 +229,7 @@ def case_file(*, tenant: Tenant, actor: Actor, user: Any, order: list[str], chan
     read once, with everything the file joins beside it."""
     case = _cases(tenant).filter(change_id=change_id).first()  # ordering: unique (tenant, change)
     if case is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return _write(tenant, case, order)
 
 

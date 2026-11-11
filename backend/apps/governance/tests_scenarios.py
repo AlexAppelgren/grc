@@ -50,7 +50,7 @@ from apps.shared import tests_audit_on_write as audit_guards
 from apps.shared import tests_rls as rls_guards
 from apps.shared.adapters.mailer import MockMailer
 from apps.shared.models import AuditEvent, Tenant, TenantContentLanguage
-from apps.shared.permissions import UNGATED_BY_DESIGN, gate_of
+from apps.shared.permissions import UNGATED_BY_DESIGN
 from apps.shared.routes import iter_operations
 from apps.shared.testing import ScenarioTestCase, sign_in
 from apps.taxonomy.models import ComplianceStatus, Flag
@@ -59,6 +59,7 @@ from apps.taxonomy.tenant_hooks import TENANT_SYSTEM_ROWS
 from apps.tenants import logic as tenants_logic
 from apps.watch import testing as watch_build
 from config.api import api
+from apps.shared.testing import gate_of
 
 V1 = "/api/v1"
 # The mixed tables (app.md, AC "Mixed tables"), each with its library read rule as

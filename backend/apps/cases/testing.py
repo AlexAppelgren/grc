@@ -116,3 +116,24 @@ def case_on_a_new_change(tenant: Tenant) -> ChangeCase:
     (`apps/shared/factories.py:case_change`)."""
     watch_build.seed_watch_reference()
     return case(tenant, watch_build.change())
+
+
+def registered(change: RegulatoryChange) -> None:
+    """Record `change` as registered from the library's zone, then deliver the outbox, so each
+    bank's case exists the way the cursor makes it."""
+    from apps.cases import creation
+    from apps.shared.audit import Actor, record
+    from apps.shared.testing import drain
+
+    with transaction.atomic():
+        tenancy.clear_tenant()
+        record(
+            action=creation.CHANGE_REGISTERED,
+            actor=Actor.system("watch"),
+            subject_type="regulatory_change",
+            subject_id=change.id,
+            subject_title=change.title,
+            summary=f"Registered {change.title}.",
+            tenant_id=None,
+        )
+    drain()

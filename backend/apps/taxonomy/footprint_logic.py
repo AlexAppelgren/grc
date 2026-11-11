@@ -70,7 +70,8 @@ from apps.taxonomy.models import (
     validate_public_https_url,
     validate_scope_item_description,
 )
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import Labels
+from apps.shared.vocabulary import label_of
 from apps.tenants.models import OrgUnit, OrgUnitKind
 from apps.taxonomy.schemas import (
     FootprintDimension,
@@ -82,11 +83,11 @@ from apps.taxonomy.schemas import (
     FootprintPreviewCount,
     FootprintRequestRow,
     FootprintView,
-    PersonRef,
     ScopeItemInput,
     ScopeItemRow,
     TermRef,
 )
+from apps.shared.people import person_ref
 
 SUBJECT_TYPE = "footprint"
 REQUEST_SUBJECT_TYPE = "footprint_change_request"
@@ -164,11 +165,6 @@ def requests_of(
     return request_rows(list(page), order), found.count()
 
 
-def _person(user: Any) -> PersonRef | None:
-    # A person's name and id may be logged and shown; nothing else about them (playbook 4.7).
-    return None if user is None else PersonRef(id=user.id, name=user.name)
-
-
 def request_row(request: FootprintChangeRequest, order: list[str]) -> FootprintRequestRow:
     return request_rows([request], order)[0]
 
@@ -196,7 +192,7 @@ def request_rows(requests: list[FootprintChangeRequest], order: list[str]) -> li
         FootprintRequestRow(
             id=request.id,
             status=request.status,
-            requested_by=_person(request.requested_by),
+            requested_by=person_ref(request.requested_by),
             requested_at=request.requested_at,
             adds=[labelled[term.id] for term in adds],
             removes=[labelled[term.id] for term in removes],
@@ -205,7 +201,7 @@ def request_rows(requests: list[FootprintChangeRequest], order: list[str]) -> li
             entity_exclusions=lines(excluded),
             entity_inclusions=lines(included),
             preview=_preview_now(request, adds, removes),
-            decided_by=_person(request.decided_by),
+            decided_by=person_ref(request.decided_by),
             decided_at=request.decided_at,
             decision_note=request.decision_note,
             version=request.version,

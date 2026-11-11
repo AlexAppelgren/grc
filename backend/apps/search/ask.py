@@ -91,7 +91,7 @@ from apps.search.schemas import (
 )
 from apps.shared import ai
 from apps.shared.audit import record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ChangeLifecycleKind
 from apps.watch.models import ChangeObligation, ChangeStatus
@@ -222,7 +222,7 @@ def rate_answer(
     another bank's, and a session in no bank find nothing: 404 (hardening H48)."""
     row = ai_log.answer_of(answer_id, tenant_id, asker_id=user_id) if tenant_id is not None else None
     if row is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     if (row.feedback, row.feedback_note) == (body.feedback.value, body.note):
         return
     before = row.feedback

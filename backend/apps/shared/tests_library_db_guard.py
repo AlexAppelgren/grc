@@ -137,6 +137,7 @@ from apps.watch.schemas import (
     WatchSourceInput,
 )
 from apps.watch.write import WATCH_TABLES, WatchWriteRefused, watch_write
+from apps.shared.testing import library_write_reason
 
 APP = "app"
 EVERY_DOOR: tuple[str, ...] = ("proposal", "reverification", "seed", "watch", "index", "eval")
@@ -925,9 +926,9 @@ class EachDoorNamesItselfAndPutsBackTheOneItFound(TestCase):
                 self.assertEqual(open_door(), "index")
                 raise RuntimeError("the rebuild failed")
             self.assertEqual(open_door(), "proposal")
-            self.assertIsNotNone(tenancy.library_write_reason())
+            self.assertIsNotNone(library_write_reason())
         self.assertEqual(open_door(), "")
-        self.assertIsNone(tenancy.library_write_reason())
+        self.assertIsNone(library_write_reason())
 
     def test_the_re_verification_stamp_writes_through_its_own_door(self) -> None:
         with transaction.atomic():

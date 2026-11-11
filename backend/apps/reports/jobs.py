@@ -24,7 +24,7 @@ from apps.reports import exporters, tasks
 from apps.reports.models import ExportJob, ExportKind, JobStatus
 from apps.reports.schemas import ExportInput
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 from apps.shared.storage import get_storage
 
@@ -92,7 +92,7 @@ def create(
 def get(*, tenant: Tenant, job_id: uuid.UUID) -> ExportJob:
     job = ExportJob.objects.filter(pk=job_id, tenant=tenant).first()  # ordering: pk lookup, at most one row
     if job is None:
-        raise ProblemError(status=404, code="not_found", detail="No export with that id.")
+        raise not_found("No export with that id.")
     return job
 
 
@@ -104,7 +104,7 @@ def page(*, tenant: Tenant, limit: int, offset: int) -> tuple[list[ExportJob], i
 def download(*, tenant: Tenant, actor: Actor, permissions: frozenset[str], job_id: uuid.UUID) -> tuple[ExportJob, IO[bytes]]:
     job = ExportJob.objects.select_for_update().filter(pk=job_id, tenant=tenant).first()  # ordering: pk lookup, at most one row
     if job is None:
-        raise ProblemError(status=404, code="not_found", detail="No export with that id.")
+        raise not_found("No export with that id.")
     exporter = exporters.lookup(ExportKind(job.kind))
     if exporter is not None and exporter.check is not None:
         exporter.check(tenant=tenant, permissions=permissions, subject_id=job.subject_id)

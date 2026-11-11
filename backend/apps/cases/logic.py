@@ -35,17 +35,13 @@ from apps.cases.models import CASE_JOINS, Action, CaseTransition, ChangeCase, Ev
 from apps.collab.models import Participant
 from apps.shared.adapters.scanner import ScanState
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.kinds import CaseStatusCategory, CloseReason
 from apps.shared.models import Tenant
 from apps.taxonomy.models import Team
 
 SUBJECT_TYPE = "change_case"
 MOVED = "case.moved"
-
-
-def _not_found() -> ProblemError:
-    return ProblemError(status=404, code="not_found", detail="Not found.")
 
 
 # ---------------------------------------------------------------------------------------
@@ -60,7 +56,7 @@ def load_case(tenant: Tenant, change_id: uuid.UUID, *, for_update: bool = False)
         queryset = queryset.select_for_update(of=("self",))
     case = queryset.first()  # ordering: unique (tenant, change), at most one row
     if case is None:
-        raise _not_found()
+        raise not_found()
     return case
 
 
@@ -73,7 +69,7 @@ def load_action(tenant: Tenant, action_id: uuid.UUID) -> Action:
         .first()  # ordering: pk lookup, at most one row
     )
     if action is None:
-        raise _not_found()
+        raise not_found()
     return action
 
 
@@ -85,7 +81,7 @@ def load_evidence(tenant: Tenant, evidence_id: uuid.UUID) -> Evidence:
         .first()  # ordering: pk lookup, at most one row
     )
     if evidence is None:
-        raise _not_found()
+        raise not_found()
     return evidence
 
 

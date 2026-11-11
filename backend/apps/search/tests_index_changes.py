@@ -27,7 +27,6 @@ from unittest import mock
 
 from django.db import DEFAULT_DB_ALIAS, connections, transaction
 from django.test import TestCase, TransactionTestCase
-from django.utils import timezone
 
 from apps.cases import creation
 from apps.search import hybrid, indexing, sources, tasks
@@ -43,6 +42,8 @@ from apps.watch import curation, registration
 from apps.watch import testing as watch
 from apps.watch.models import ChangeStatus, RegulatoryChange
 from apps.watch.write import watch_write
+from apps.shared.testing import handlers_for
+from apps.shared.testing import flush_outbox
 
 TITLE = "FI adopts amended rules on paying for investment research"
 SUMMARY = "FI's board decided to amend three regulations in the securities area."
@@ -52,12 +53,6 @@ LANGUAGES = sorted(TEXT_SEARCH_CONFIGS)
 def seed_reference() -> None:
     watch.seed_watch_reference()
     seed_term_dimensions()
-
-
-def flush_outbox() -> None:
-    """Mark what the fixtures recorded as delivered, so each test delivers its own rows."""
-    with transaction.atomic():
-        OutboxEvent.objects.filter(published_at__isnull=True).update(published_at=timezone.now())
 
 
 def change_event(change: RegulatoryChange, topic: str, *, tenant: Tenant | None = None) -> OutboxEvent:
@@ -214,11 +209,11 @@ class TheChangeHandler(TestCase):
         )
         for topic in tasks.CHANGE_TOPICS:
             with self.subTest(topic=topic):
-                self.assertEqual(outbox.handlers_for(topic).count(tasks.index_change), 1)
+                self.assertEqual(handlers_for(topic).count(tasks.index_change), 1)
         # A registration also opens every bank's case; that handler is still there, and it
         # is the only other one.
         self.assertEqual(
-            set(outbox.handlers_for(registration.REGISTERED)), {creation.create_cases, tasks.index_change}
+            set(handlers_for(registration.REGISTERED)), {creation.create_cases, tasks.index_change}
         )
 
     def test_each_event_rebuilds_the_change_with_no_tenant_active_and_asks_no_model(self) -> None:

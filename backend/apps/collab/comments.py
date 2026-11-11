@@ -33,15 +33,11 @@ from apps.identity import roles_logic
 from apps.identity.models import Membership, User
 from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 from apps.taxonomy.schemas import PersonRef
 
 logger = logging.getLogger(__name__)
-
-
-def _not_found() -> ProblemError:
-    return ProblemError(status=404, code="not_found", detail="Not found.")
 
 
 def _readable(who: Principal, subject_type: str, subject_id: uuid.UUID) -> tuple[subjects.Subject, Any]:
@@ -50,7 +46,7 @@ def _readable(who: Principal, subject_type: str, subject_id: uuid.UUID) -> tuple
     subject = subjects.subject(subject_type)
     found = subject.lookup(subject_id) if who.has_permission(subject.read_permission) else None
     if found is None:
-        raise _not_found()
+        raise not_found()
     return subject, found
 
 
@@ -100,7 +96,7 @@ def _own(who: Principal, user: User, tenant: Tenant, comment_id: uuid.UUID) -> t
     404; someone else's is 403 `not_author`."""
     comment = Comment.objects.select_for_update().select_related("author").filter(pk=comment_id).first()  # ordering: pk lookup, at most one row
     if comment is None:
-        raise _not_found()
+        raise not_found()
     subject, found = _readable(who, comment.subject_type, comment.subject_id)
     if comment.author_id != user.id:
         raise ProblemError(status=403, code="not_author", detail="Only the person who wrote a comment can change it.")

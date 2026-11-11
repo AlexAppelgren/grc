@@ -61,14 +61,13 @@ from apps.proposals.models import OriginType
 from apps.shared.audit import Actor, record
 from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.schemas import AiCitation
-from apps.watch import keys, so_what_draft
+from apps.watch import curation, keys, so_what_draft
 from apps.watch.schemas import (
     WatchChange,
     WatchChangeDocument,
     WatchChangeDocumentInput,
     WatchChangeEventInput,
     WatchChangeInput,
-    WatchObligationLinkInput,
 )
 from apps.watch.write import watch_write
 
@@ -113,7 +112,7 @@ def register_change(
         else None
     )
     authority_id = keys.authority_named(body.authority_code or "")
-    links = _one_link_per_obligation(body.obligation_links)
+    links = curation.one_link_per_obligation(body.obligation_links)
     # Read for its refusal, before the write opens: an obligation the library does not hold,
     # or has retired, never reaches a link, and no key scope reaches the inventory (AC-PRO1).
     keys.obligations_for(list(links))
@@ -383,23 +382,6 @@ def _screened(texts: Iterable[str]) -> list[str]:
     for text in texts:
         found.update(screen(text))
     return sorted(found)
-
-
-def _one_link_per_obligation(
-    body: list[WatchObligationLinkInput],
-) -> dict[uuid.UUID, WatchObligationLinkInput]:
-    """The links the call carries, keyed by obligation. The same obligation twice is refused
-    rather than quietly resolved, exactly as it is on `PUT /changes/{changeId}/obligations`:
-    the two entries carry two confidences and keeping either would lose the other."""
-    links: dict[uuid.UUID, WatchObligationLinkInput] = {}
-    for link in body:
-        if link.obligation_id in links:
-            raise ValidationError(
-                f"The obligation {link.obligation_id} is named twice in one set of links.",
-                code="validation_error",
-            )
-        links[link.obligation_id] = link
-    return links
 
 
 def _at_most_one_primary(documents: list[WatchChangeDocumentInput]) -> None:

@@ -204,16 +204,16 @@ class Decide(SupportGrantCase):
         for verb in ("approve", "decline", "revoke"):
             with self.subTest(verb=verb):
                 response = self.decide(grant_id, verb, step_up=True)
-                self.assertEqual(response.status_code, 422)
+                self.assertEqual(response.status_code, 409)
                 self.assertEqual(response.json()["code"], "invalid_transition")
 
     def test_a_request_nobody_decides_lapses_and_cannot_be_approved(self) -> None:
         grant_id = self.pending()
         self.age(grant_id, request_expires_at=timezone.now() - datetime.timedelta(seconds=1))
         response = self.decide(grant_id, "approve", step_up=True)
-        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()["code"], "invalid_transition")
-        self.assertEqual(self.decide(grant_id, "decline").status_code, 422)
+        self.assertEqual(self.decide(grant_id, "decline").status_code, 409)
         listed = self.client.get("/api/v1/tenant/support-access", **sign_in(self.reader, tenant=self.tenant)).json()
         self.assertEqual([item["state"] for item in listed["items"]], ["lapsed"])
 

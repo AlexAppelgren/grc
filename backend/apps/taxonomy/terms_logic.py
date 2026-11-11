@@ -26,7 +26,8 @@ from typing import Any
 from django.core.exceptions import ValidationError
 
 from apps.taxonomy.models import TaxonomyTerm, TermDimension
-from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of, label_of
+from apps.taxonomy.reading import CONFIRMATION_JOINS, Labels, confirmation_of
+from apps.shared.vocabulary import label_of
 from apps.taxonomy.schemas import TaxonomyDimensionRef, TaxonomyTermRow, TermRef
 
 MAX_KEYS_IN_MESSAGE = 12

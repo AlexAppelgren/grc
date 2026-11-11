@@ -47,6 +47,8 @@ from apps.shared.tenancy import library_write
 from apps.taxonomy.models import CaseStatusCategory, TermDimension, Urgency
 from apps.watch import testing as watch_build
 from apps.watch.models import RegulatoryChange
+from apps.shared.testing import handlers_for
+from apps.shared.testing import drain
 
 SECURITIES = "regime:securities"
 AML = "regime:aml"
@@ -75,19 +77,6 @@ def cases_of(tenant: Any) -> list[ChangeCase]:
     with transaction.atomic():
         tenancy.activate(tenant.id)
         return list(ChangeCase.objects.select_related("urgency").all())
-
-
-def drain() -> None:
-    """Deliver until the backlog is empty, from the library's zone.
-
-    Not one batch: the reference seed and the tenant factories write hundreds of rows and
-    `OUTBOX_BATCH_SIZE` is 100, so a single pass leaves a fixture's own event behind the
-    seed's and the test reads a case that has not been created yet.
-    """
-    with transaction.atomic():
-        tenancy.clear_tenant()
-    while outbox.deliver_batch().delivered:
-        pass
 
 
 class CaseCreationCase(TestCase):
@@ -243,12 +232,12 @@ class WhatTheAgentSuggestedStaysASuggestion(CaseCreationCase):
 class TheHandlerOnTheCursor(CaseCreationCase):
     def test_it_is_the_only_handler_that_opens_cases_for_the_change_registered_kind(self) -> None:
         # The search index rebuilds the change's chunks from the same row and opens no case.
-        self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases, search_tasks.index_change))
+        self.assertEqual(handlers_for(creation.CHANGE_REGISTERED), (creation.create_cases, search_tasks.index_change))
 
     def test_registering_twice_leaves_one_handler(self) -> None:
         creation.register()
         creation.register()
-        self.assertEqual(outbox.handlers_for(creation.CHANGE_REGISTERED).count(creation.create_cases), 1)
+        self.assertEqual(handlers_for(creation.CHANGE_REGISTERED).count(creation.create_cases), 1)
 
     def test_an_event_naming_no_change_is_delivered_without_a_case(self) -> None:
         """The handler reads the change the event names. A row that is not there leaves

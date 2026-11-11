@@ -34,7 +34,7 @@ from apps.cases import reading
 from apps.cases.models import CaseLinkDecision, CaseObligationLink, ChangeCase
 from apps.cases.schemas import CasesObligationLink
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 
 SUBJECT_TYPE = "case_obligation_link"
@@ -91,7 +91,7 @@ def _decide(
     case = _case_for(tenant, change_id)
     details = reading.obligation_details(obligation_id, order)
     if details is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     stored = (
         CaseObligationLink.objects.filter(tenant_id=case.tenant_id, case=case, obligation_id=obligation_id)
         .first()  # ordering: unique (tenant, case, obligation), at most one row
@@ -133,5 +133,5 @@ def _case_for(tenant: Tenant, change_id: uuid.UUID) -> ChangeCase:
         .first()  # ordering: unique (tenant, change), at most one row
     )
     if case is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return case

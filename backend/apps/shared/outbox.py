@@ -92,12 +92,6 @@ def register_handler(kind: str, fn: Handler) -> None:
         registered.append(fn)
 
 
-def handlers_for(kind: str) -> tuple[Handler, ...]:
-    """Who acts on this kind, in registration order. A consumer's own test reads it to prove
-    that it is the only handler for its kind."""
-    return tuple(_HANDLERS.get(kind, ()))
-
-
 def deliver_batch() -> BatchResult:
     """Deliver one batch of pending rows, in `(created, id)` order, exactly once.
 

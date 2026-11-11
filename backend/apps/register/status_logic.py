@@ -49,9 +49,11 @@ from apps.taxonomy.models import (
     Team,
     TeamLabel,
 )
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import Labels
+from apps.shared.vocabulary import label_of
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
 from apps.tenants.models import OrgUnit, OrgUnitKind
+from apps.shared.people import person_ref
 
 ENTRY_UPDATED = "register.status_updated"
 ENTITY_UPDATED = "register.entity_status_updated"
@@ -108,8 +110,8 @@ def read_register(*, tenant: Tenant, order: list[str], obligation_id: uuid.UUID)
         compliance_status=refs.of(shown),
         status_note=entry.status_note or None,
         risk_rating=refs.maybe(entry.risk_rating),
-        first_line_owner=_person(entry.first_line_owner),
-        compliance_contact=_person(entry.compliance_contact),
+        first_line_owner=person_ref(entry.first_line_owner, RegisterPersonRef),
+        compliance_contact=person_ref(entry.compliance_contact, RegisterPersonRef),
         owner_team=refs.maybe(entry.owner_team),
         process=entry.process or None,
         system=entry.system or None,
@@ -155,7 +157,7 @@ def _entity(scope: TenantObligationScope, refs: _Refs) -> RegisterEntityStatus:
         compliance_status=refs.of(scope.compliance_status),
         status_note=scope.status_note or None,
         risk_rating=refs.maybe(scope.risk_rating),
-        owner=_person(scope.owner),
+        owner=person_ref(scope.owner, RegisterPersonRef),
         owner_team=refs.maybe(scope.owner_team),
         process=scope.process or None,
         system=scope.system or None,
@@ -170,12 +172,8 @@ def _decision(row: TenantObligation | TenantObligationScope) -> dict[str, Any]:
         "applicability": _APPLICABILITY_OUT[row.applicability],
         "applicability_reason": row.applicability_reason or None,
         "applicability_decided_at": row.applicability_decided_at,
-        "applicability_decided_by": _person(row.applicability_decided_by),
+        "applicability_decided_by": person_ref(row.applicability_decided_by, RegisterPersonRef),
     }
-
-
-def _person(user: Any) -> RegisterPersonRef | None:
-    return None if user is None else RegisterPersonRef(id=user.id, name=user.name)
 
 
 _LABEL_MODELS: dict[type[Any], type[Any]] = {

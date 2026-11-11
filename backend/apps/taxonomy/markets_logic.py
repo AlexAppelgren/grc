@@ -22,7 +22,8 @@ from apps.library.models import Jurisdiction, JurisdictionKind, JurisdictionLabe
 from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
 from apps.taxonomy.models import FootprintTerm, WatchedMarket
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import Labels
+from apps.shared.vocabulary import label_of
 from apps.taxonomy.schemas import MarketLevel, MarketRow, TermRef
 
 SUBJECT_TYPE = "watched_market"

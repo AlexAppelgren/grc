@@ -4,7 +4,7 @@
 Every function loads the caller's case under a row lock, so another bank's case answers 404,
 checks `If-Match`, sets what its move supplies and moves the case through
 `logic.transition()`, which asks the state machine, writes the ledger row and the audit row,
-and raises the version. The answer is the whole case as `case_out()` builds it, with the
+and raises the version. The answer is the whole case as `case_response()` builds it, with the
 moves the state machine allows the reader next.
 
 A key a person sends is resolved against the list it names and refused with 422
@@ -24,34 +24,27 @@ signed-off one, which the state machine decides.
 from __future__ import annotations
 
 import uuid
-from typing import Any, cast
+from typing import Any
 
 from django.utils import timezone
 
 from apps.cases import logic, state
-from apps.cases.models import ChangeCase, ImpactAssessment
-from apps.cases.schemas import AssessmentApplies, CaseCategory, CasesAssessment, CasesCase, CasesCloseBody, CasesReasonBody, CasesTriageBody, CasesVocabularyRef
+from apps.cases.schemas import CasesCase, CasesCloseBody, CasesReasonBody, CasesTriageBody
 from apps.collab.logic import notify
 from apps.collab.models import NotificationKind
 from apps.identity.models import Membership, UserStatus
-from apps.library.reading import vocabulary_refs
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor
 from apps.shared.kinds import CaseStatusCategory
 from apps.shared.models import Tenant
-from apps.taxonomy.models import CaseSubStatusLabel, ClosureReasonLabel, DismissalReasonLabel, EffortSizeLabel, TeamLabel
 from apps.taxonomy.registry import REGISTRY
-from apps.taxonomy.schemas import PersonRef
 from apps.taxonomy.tenant_lists_logic import VocabularyProblem
-from apps.watch.reading import urgency_refs
+from apps.cases.responses import case_response
 
 C = CaseStatusCategory
 
 # The categories a case closes from on one person's word (D-92).
 ONE_PERSON_CLOSE_FROM = frozenset({C.ASSIGNED.value, C.ASSESSING.value})
-
-NOT_BUILT = "This part of the case workflow is not available yet."
-
 
 # ---------------------------------------------------------------------------------------
 # What a move is given
@@ -100,72 +93,6 @@ def _owner(tenant: Tenant, owner_id: uuid.UUID) -> Any:
 
 
 # ---------------------------------------------------------------------------------------
-# The answer
-# ---------------------------------------------------------------------------------------
-def _person(user: Any) -> PersonRef | None:
-    return None if user is None else PersonRef(id=user.id, name=user.name)
-
-
-def _ref(label_model: type[Any], row: Any, order: list[str]) -> CasesVocabularyRef | None:
-    if row is None:
-        return None
-    ref = vocabulary_refs(label_model, [row], order)[row.id]
-    return CasesVocabularyRef(key=ref.key, kind=ref.kind, label=ref.label)
-
-
-def _assessment(case: ChangeCase, order: list[str]) -> CasesAssessment | None:
-    row = ImpactAssessment.objects.select_related("effort", "saved_by").filter(case=case).first()  # ordering: one per case
-    if row is None:
-        return None
-    return CasesAssessment(
-        applies=cast(AssessmentApplies, row.applies),
-        why=row.why or None,
-        what_must_change=row.what_must_change or None,
-        internal_deadline=row.internal_deadline,
-        effort=_ref(EffortSizeLabel, row.effort, order),
-        saved=row.saved,
-        saved_by=_person(row.saved_by),
-        saved_at=row.saved_at,
-        version=row.version,
-    )
-
-
-def case_out(case: ChangeCase, *, reader: uuid.UUID | None, order: list[str]) -> CasesCase:
-    """The whole case as every workflow move answers it, with the moves the state machine
-    allows `reader` next (CAS-08)."""
-    facts = logic.case_facts(case, actor=reader)
-    allowed = state.allowed_transitions(C(case.status), facts)
-    return CasesCase(
-        id=case.id,
-        change_id=case.change_id,
-        status=cast(CaseCategory, case.status),
-        sub_status=_ref(CaseSubStatusLabel, case.sub_status, order),
-        urgency=urgency_refs([case.urgency_id], order)[case.urgency_id],
-        urgency_confirmed=case.urgency_confirmed,
-        footprint_match=case.footprint_match,
-        owner=_person(case.owner),
-        owner_team=_ref(TeamLabel, case.owner_team, order),
-        triaged_by=_person(case.triaged_by),
-        triaged_at=case.triaged_at,
-        dismissed_reason=_ref(DismissalReasonLabel, case.dismissed_reason, order),
-        dismissed_by=_person(case.dismissed_by),
-        dismissed_at=case.dismissed_at,
-        signoff_requested_by=_person(case.signoff_requested_by),
-        signoff_requested_at=case.signoff_requested_at,
-        signed_off_by=_person(case.signed_off_by),
-        close_reason=_ref(ClosureReasonLabel, case.close_reason, order),
-        closed_note=case.closed_note or None,
-        closed_at=case.closed_at,
-        assessment=_assessment(case, order),
-        open_action_count=facts.open_action_count,
-        # Sign-off is asked for only from implementing, so the machine allowing the move is the whole rule.
-        can_request_signoff=C.SIGNOFF in allowed,
-        allowed_transitions=[category.value for category in allowed],
-        version=case.version,
-    )
-
-
-# ---------------------------------------------------------------------------------------
 # The moves
 # ---------------------------------------------------------------------------------------
 def triage_change(
@@ -194,7 +121,7 @@ def triage_change(
         candidates=[(case.owner.id, "owner")],
         actor_id=user.id,
     )
-    return case_out(case, reader=user.id, order=order)
+    return case_response(case, reader=user.id, order=order)
 
 
 def dismiss_change(
@@ -208,7 +135,7 @@ def dismiss_change(
     case.dismissed_at = timezone.now()
     case.sub_status = None
     logic.transition(case, C.DISMISSED, actor=actor, user=user, audit={"reasonKey": case.dismissed_reason.key})
-    return case_out(case, reader=user.id, order=order)
+    return case_response(case, reader=user.id, order=order)
 
 
 def restore_change(
@@ -226,7 +153,7 @@ def restore_change(
     case.save(
         update_fields=["dismissed_reason", "dismissed_by", "dismissed_at", "close_reason", "closed_at", "closed_note", "sub_status", "updated_at"]
     )
-    return case_out(case, reader=user.id, order=order)
+    return case_response(case, reader=user.id, order=order)
 
 
 def close_without_action(
@@ -247,4 +174,4 @@ def close_without_action(
     case.closed_at = timezone.now()
     case.sub_status = None
     logic.transition(case, C.CLOSED, actor=actor, user=user, note=body.note, audit={"reasonKey": case.close_reason.key})
-    return case_out(case, reader=user.id, order=order)
+    return case_response(case, reader=user.id, order=order)

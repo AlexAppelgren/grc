@@ -55,7 +55,7 @@ from apps.identity.security_log import log_event
 from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.audit import Actor, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import Tenant
 from apps.taxonomy.reading import FALLBACK_LANGUAGE
 
@@ -106,7 +106,7 @@ def _no_such_feed() -> NoReturn:
     at most one indexed read and one constant-time compare — so the timing tells no more
     than the body does.
     """
-    raise ProblemError(status=404, code="not_found", detail="Not found.")
+    raise not_found()
 
 
 def _feed_out(feed: CalendarFeed) -> HomeCalendarFeed:

@@ -26,6 +26,7 @@ from apps.shared.audit import Actor, record
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ApprovalStatus
 from apps.taxonomy.schemas import PersonRef
+from apps.shared.people import person_ref
 
 SUBJECT_TYPE = "tenant_reach"
 REQUEST_SUBJECT_TYPE = "tenant_reach_request"
@@ -38,17 +39,13 @@ def tenant_reach_on(tenant_id: uuid.UUID) -> bool:
     return TenantReach.objects.filter(tenant_id=tenant_id, enabled=True).exists()
 
 
-def _person(user: Any) -> PersonRef | None:
-    return None if user is None else PersonRef(id=user.id, name=user.name)
-
-
 def request_row(request: TenantReachRequest) -> TenantReachRequestRow:
     return TenantReachRequestRow(
         id=request.id,
         status=request.status,  # type: ignore[arg-type]
         requested_by=PersonRef(id=request.requested_by.id, name=request.requested_by.name),
         requested_at=request.requested_at,
-        decided_by=_person(request.decided_by),
+        decided_by=person_ref(request.decided_by),
         decided_at=request.decided_at,
         version=request.version,
     )
@@ -59,7 +56,7 @@ def view(tenant_id: uuid.UUID) -> TenantReachView:
     waiting = pending(tenant_id)
     return TenantReachView(
         enabled=bool(state and state.enabled),
-        changed_by=_person(state.changed_by if state else None),
+        changed_by=person_ref(state.changed_by if state else None),
         changed_at=state.changed_at if state else None,
         pending=request_row(waiting) if waiting else None,
     )

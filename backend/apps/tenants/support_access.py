@@ -33,7 +33,7 @@ from apps.shared import permissions as perms
 from apps.shared import tenancy
 from apps.shared.audit import Actor, ActorType, batched, record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.shared.models import AuditEvent, Tenant
 from apps.taxonomy.schemas import PersonRef
 from apps.tenants import mail
@@ -46,6 +46,7 @@ from apps.tenants.schemas import (
     SupportAccessPage,
     SupportAccessState,
 )
+from apps.shared.people import person_ref
 
 PENDING: SupportAccessState = "pending"
 ACTIVE: SupportAccessState = "active"
@@ -75,10 +76,6 @@ def pending_requests(*, excluding_user_id: uuid.UUID | None) -> QuerySet[Support
     ).exclude(platform_user_id=excluding_user_id)
 
 
-def _person(user: User | None) -> PersonRef | None:
-    return None if user is None else PersonRef(id=user.id, name=user.name)
-
-
 def _ends_at(grant: SupportAccess) -> datetime.datetime | None:
     return grant.ended_at if grant.status == SupportAccessStatus.REVOKED.value else grant.expires_at
 
@@ -98,7 +95,7 @@ def _out(grant: SupportAccess, now: datetime.datetime) -> SupportAccessGrant:
         hours=grant.hours,
         platform_person=PersonRef(id=grant.platform_user.id, name=grant.platform_user.name),
         requested_at=grant.requested_at,
-        decided_by=_person(grant.ended_by or grant.approved_by),
+        decided_by=person_ref(grant.ended_by or grant.approved_by),
         decided_at=_decided_at(grant),
         ends_at=_ends_at(grant),
     )
@@ -114,7 +111,7 @@ def grant_of(tenant: Tenant, grant_id: uuid.UUID) -> SupportAccess:
         .first()  # ordering: pk lookup, at most one row
     )
     if grant is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return grant
 
 
@@ -139,7 +136,7 @@ def request_access(
     row in the bank, and nothing else, then tells the bank's `security.manage` holders."""
     tenant = Tenant.objects.filter(pk=tenant_id).first()  # ordering: pk lookup, at most one row
     if tenant is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     if not body.purpose.strip():
         raise ValidationError("Say why support needs to look.", code="validation_error")
     if body.hours > settings.SUPPORT_ACCESS_MAX_HOURS:
@@ -241,7 +238,7 @@ def enter(
     with session_logic.own_grants(principal):
         grant = SupportAccess.objects.filter(pk=grant_id, platform_user_id=principal.subject_id).first()  # ordering: pk lookup, at most one row
     if grant is None or state_of(grant, timezone.now()) != ACTIVE:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     user = User.objects.get(pk=principal.subject_id)
     assert principal.session_id is not None  # a person's session always names itself
     bundle = session_logic.create_support_session(user=user, grant=grant, replacing=principal.session_id, request=request)

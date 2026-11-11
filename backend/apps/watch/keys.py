@@ -31,7 +31,7 @@ from django.db.models import OuterRef, Subquery
 
 from apps.library.models import Authority, JurisdictionKind, Obligation, RecordStatus
 from apps.library.reading import agent_ref, localized, vocabulary_refs
-from apps.shared.errors import ProblemError
+from apps.shared.errors import not_found
 from apps.taxonomy.models import (
     ChangeTypeLabel,
     FlagLabel,
@@ -292,7 +292,7 @@ def change_for_write(change_id: uuid.UUID) -> ChangeRow:
         .first()  # ordering: pk lookup, at most one row
     )
     if change is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return change
 
 
@@ -308,7 +308,7 @@ def change_for_update(change_id: uuid.UUID) -> ChangeRow:
     re-typed against the type it joined before, and finds nothing (proven 2026-09-24,
     tests_curation_races.py)."""
     if not list(RegulatoryChange.objects.select_for_update().filter(pk=change_id).values_list("pk", flat=True)):
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return change_for_write(change_id)
 
 
@@ -317,7 +317,7 @@ def event_for_write(change: ChangeRow, event_id: uuid.UUID) -> EventRow:
     as one that never existed does, so a timeline id tells a caller nothing."""
     event = change.events.filter(pk=event_id).first()  # ordering: pk lookup inside one change, at most one row
     if event is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return event
 
 
@@ -397,7 +397,7 @@ def source_for_write(source_id: uuid.UUID) -> SourceRow:
         .first()  # ordering: pk lookup, at most one row
     )
     if source is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return source
 
 

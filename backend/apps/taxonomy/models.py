@@ -42,7 +42,7 @@ from django.db import models
 from apps.shared.audit import AppendOnlyModel
 # Defined in kinds.py so the pure case state machine (apps/cases/state.py) reads them
 # without importing a model; every caller that imports them from here keeps working.
-from apps.shared.kinds import CaseStatusCategory as CaseStatusCategory
+from apps.shared.kinds import CaseStatusCategory as CaseStatusCategory, choices
 from apps.shared.kinds import CloseReason as CloseReason
 from apps.shared.tenancy import LibraryModel, TenantModel
 from apps.shared.vocabulary import (
@@ -52,10 +52,6 @@ from apps.shared.vocabulary import (
     TenantListVocabulary,
     VocabularyLabel,
 )
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
 
 
 # ---------------------------------------------------------------------------------------
@@ -180,7 +176,7 @@ class TermDimension(LibraryVocabulary):
     describes scope, classifies or is opted into (an opt-in dimension restricts whatever the
     flag says, D-36)."""
 
-    KIND_CHOICES = _choices(TermDimensionKind)
+    KIND_CHOICES = choices(TermDimensionKind)
 
     restricts_footprint = models.BooleanField(default=True)
 
@@ -203,7 +199,7 @@ class InstrumentLevel(LibraryVocabulary):
     """Jurisdiction-neutral instrument levels with a binding default and a rank. The kind
     is optional: null on every level but `standard` (D-37)."""
 
-    KIND_CHOICES = _choices(InstrumentLevelKind)
+    KIND_CHOICES = choices(InstrumentLevelKind)
 
     binding_default = models.BooleanField(default=True)
     rank = models.PositiveIntegerField(default=0)
@@ -226,7 +222,7 @@ class InstrumentLevelLabel(LibraryVocabularyLabel):
 class ProvisionKind(LibraryVocabulary):
     """Provision kinds, optionally per jurisdiction, with a fixed structural kind."""
 
-    KIND_CHOICES = _choices(ProvisionStructuralKind)
+    KIND_CHOICES = choices(ProvisionStructuralKind)
 
     jurisdiction = models.ForeignKey("library.Jurisdiction", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
 
@@ -246,7 +242,7 @@ class ProvisionKindLabel(LibraryVocabularyLabel):
 
 
 class ChangeType(LibraryVocabulary):
-    KIND_CHOICES = _choices(ChangeLifecycleKind)
+    KIND_CHOICES = choices(ChangeLifecycleKind)
 
     class Meta:
         db_table = "change_type"
@@ -517,7 +513,7 @@ class ComplianceStatus(TenantListVocabulary):
     """A tenant's compliance scale (VOC-05): `kind` is the fixed category, `ordinal` the
     fixed order reports sort by."""
 
-    KIND_CHOICES = _choices(ComplianceCategory)
+    KIND_CHOICES = choices(ComplianceCategory)
 
     ordinal = models.PositiveIntegerField(default=0)
 
@@ -541,7 +537,7 @@ class RiskRating(TenantListVocabulary):
     """A tenant's risk scale (VOC-05): `kind` is the fixed level the tone reads, `ordinal`
     the bank's own order, which an admin may edit."""
 
-    KIND_CHOICES = _choices(RiskLevel)
+    KIND_CHOICES = choices(RiskLevel)
 
     ordinal = models.PositiveIntegerField(default=0)
 
@@ -564,7 +560,7 @@ class RiskRatingLabel(VocabularyLabel):
 class CaseSubStatus(TenantListVocabulary):
     """A tenant's case sub-statuses inside the seven fixed categories (VOC-04, D-13)."""
 
-    KIND_CHOICES = _choices(CaseStatusCategory)
+    KIND_CHOICES = choices(CaseStatusCategory)
 
     class Meta:
         db_table = "case_sub_status"
@@ -603,7 +599,7 @@ class ClosureReason(TenantListVocabulary):
     """A tenant's closure reasons (VOC-06), each inside a fixed `CloseReason` category.
     Named ClosureReason because `CloseReason` is the kind (apps/shared/kinds.py)."""
 
-    KIND_CHOICES = _choices(CloseReason)
+    KIND_CHOICES = choices(CloseReason)
 
     class Meta:
         db_table = "close_reason"
@@ -624,7 +620,7 @@ class ClosureReasonLabel(VocabularyLabel):
 class GapStatus(TenantListVocabulary):
     """A tenant's gap statuses (REG-03, VOC-04), each inside a fixed `GapCategory`."""
 
-    KIND_CHOICES = _choices(GapCategory)
+    KIND_CHOICES = choices(GapCategory)
 
     class Meta:
         db_table = "gap_status"
@@ -718,7 +714,7 @@ class VocabularySuggestion(TenantModel):
     suggested_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=16, choices=_choices(SuggestionStatus), default=SuggestionStatus.PENDING.value)
+    status = models.CharField(max_length=16, choices=choices(SuggestionStatus), default=SuggestionStatus.PENDING.value)
 
     class Meta:
         db_table = "vocabulary_suggestion"
@@ -757,7 +753,7 @@ class FootprintChangeRequest(TenantModel):
     adds = models.ManyToManyField(TaxonomyTerm, through="taxonomy.FootprintChangeAdd", related_name="+")
     removes = models.ManyToManyField(TaxonomyTerm, through="taxonomy.FootprintChangeRemove", related_name="+")
     preview = models.JSONField(default=dict, blank=True)  # schema: FootprintPreview
-    status = models.CharField(max_length=16, choices=_choices(ApprovalStatus), default=ApprovalStatus.PENDING.value)
+    status = models.CharField(max_length=16, choices=choices(ApprovalStatus), default=ApprovalStatus.PENDING.value)
     decided_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     decided_at = models.DateTimeField(null=True, blank=True)
     decision_note = models.TextField(blank=True)
@@ -841,7 +837,7 @@ class FootprintHistory(AppendOnlyModel, TenantModel):
     # takes the term out of the company's scope and `added` puts it back. Replaying the bank's
     # scope reads only the rows without one.
     org_unit = models.ForeignKey("tenants.OrgUnit", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
-    action = models.CharField(max_length=16, choices=_choices(FootprintAction))
+    action = models.CharField(max_length=16, choices=choices(FootprintAction))
     request = models.ForeignKey(FootprintChangeRequest, null=True, blank=True, on_delete=models.PROTECT, related_name="history")
     changed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
     changed_at = models.DateTimeField(auto_now_add=True)
@@ -920,7 +916,7 @@ class ScopeItem(TenantModel):
     regime_term = models.ForeignKey(TaxonomyTerm, on_delete=models.PROTECT, related_name="+")
     official_reference = models.CharField(max_length=200, blank=True)
     source_url = models.URLField(max_length=2000, validators=[validate_public_https_url])
-    status = models.CharField(max_length=16, choices=_choices(ScopeItemStatus), default=ScopeItemStatus.REQUESTED.value)
+    status = models.CharField(max_length=16, choices=choices(ScopeItemStatus), default=ScopeItemStatus.REQUESTED.value)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -945,7 +941,7 @@ class FootprintChangeScopeItem(TenantModel):
 
     request = models.ForeignKey(FootprintChangeRequest, on_delete=models.CASCADE, related_name="scope_item_links")
     scope_item = models.ForeignKey(ScopeItem, on_delete=models.PROTECT, related_name="request_links")
-    action = models.CharField(max_length=16, choices=_choices(FootprintAction))
+    action = models.CharField(max_length=16, choices=choices(FootprintAction))
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -967,7 +963,7 @@ class FootprintChangeEntityTerm(TenantModel):
     request = models.ForeignKey(FootprintChangeRequest, on_delete=models.CASCADE, related_name="entity_links")
     org_unit = models.ForeignKey("tenants.OrgUnit", on_delete=models.PROTECT, related_name="+")
     term = models.ForeignKey(TaxonomyTerm, on_delete=models.PROTECT, related_name="+")
-    action = models.CharField(max_length=16, choices=_choices(FootprintAction))
+    action = models.CharField(max_length=16, choices=choices(FootprintAction))
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

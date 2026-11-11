@@ -92,13 +92,12 @@ from apps.proposals.schemas import (
 from apps.search.logic import reindex, reindex_obligations, reindex_provision
 from apps.shared.audit import Actor, record
 from apps.shared.tenancy import library_write
+from apps.shared.vocabulary import write_labels
 from apps.taxonomy import repoint
 from apps.taxonomy.models import TaxonomyTerm, TaxonomyTermLabel, TermDimension
 from apps.taxonomy.registry import REGISTRY, VocabularyList
 from apps.taxonomy.tenant_lists_logic import extra_columns
 from apps.taxonomy.terms_logic import refuse_mirrored
-
-ORIGINAL_LANGUAGE = "en"
 
 
 def apply(
@@ -928,28 +927,6 @@ def _restamp(
         setattr(row, name, value)
 
 
-def _write_labels(entry: VocabularyList, row: Any, labels: dict[str, str], reviewer: Reviewer) -> None:
-    """Write `labels` onto a list row. Every label an agent's approval writes, the original
-    included, is machine-made, and an agent never clears the mark; a person's approval
-    confirms exactly the labels it writes (INV-05, D-12, D-62). A row is relabelled in
-    place, so each label carries its own mark rather than leaning on the row's stamp."""
-    machine = reviewer.agent_id is not None
-    existing = {label.language: label for label in entry.label_model._default_manager.filter(vocabulary=row)}
-    original = None
-    if not any(label.is_original for label in existing.values()):
-        original = ORIGINAL_LANGUAGE if ORIGINAL_LANGUAGE in labels else next(iter(labels), None)
-    for language, text in labels.items():
-        label = existing.get(language)
-        if label is not None:
-            label.text = text
-            label.is_machine = machine
-            label.save(update_fields=["text", "is_machine"])
-        else:
-            entry.label_model._default_manager.create(
-                vocabulary=row, language=language, text=text, is_original=language == original, is_machine=machine
-            )
-
-
 def _vocabulary_create(
     payload: ProposalVocabularyCreatePayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
@@ -969,7 +946,7 @@ def _vocabulary_create(
     }
     fields.update(extra_columns(entry, payload.extra))
     row = entry.model._default_manager.create(**fields)
-    _write_labels(entry, row, payload.labels, reviewer)
+    write_labels(entry.label_model, {"vocabulary": row}, payload.labels, is_machine=reviewer.agent_id is not None)
     record(
         action="vocabulary.created",
         actor=actor,
@@ -990,7 +967,7 @@ def _vocabulary_relabel(
     row = _row(entry, payload.key)
     before = {label.language: label.text for label in entry.label_model._default_manager.filter(vocabulary=row)}
     if payload.labels:
-        _write_labels(entry, row, payload.labels, reviewer)
+        write_labels(entry.label_model, {"vocabulary": row}, payload.labels, is_machine=reviewer.agent_id is not None)
     if payload.usage_note is not None:
         row.usage_note = payload.usage_note
     if payload.sort_order is not None:
@@ -1125,7 +1102,7 @@ def _mirrored_term_follows(
         before = {label.language: label.text for label in TaxonomyTermLabel.objects.filter(term=term)}
         was_active = term.active
         if labels and reviewer is not None:
-            _term_labels(term, labels, reviewer)
+            write_labels(TaxonomyTermLabel, {"term": term}, labels, is_machine=reviewer.agent_id is not None)
             _restamp(term, proposal, reviewer, TaxonomyTermLabel.objects.filter(term=term), usage_note_written=False)
         if sort_order is not None:
             term.sort_order = sort_order
@@ -1164,25 +1141,6 @@ def _dimension(key: str) -> TermDimension:
     return dimension
 
 
-def _term_labels(term: TaxonomyTerm, labels: dict[str, str], reviewer: Reviewer) -> None:
-    """A term's labels, marked exactly as a list row's are (`_write_labels`)."""
-    machine = reviewer.agent_id is not None
-    existing = {label.language: label for label in TaxonomyTermLabel.objects.filter(term=term)}
-    original = None
-    if not any(label.is_original for label in existing.values()):
-        original = ORIGINAL_LANGUAGE if ORIGINAL_LANGUAGE in labels else next(iter(labels), None)
-    for language, text in labels.items():
-        label = existing.get(language)
-        if label is not None:
-            label.text = text
-            label.is_machine = machine
-            label.save(update_fields=["text", "is_machine"])
-        else:
-            TaxonomyTermLabel.objects.create(
-                term=term, language=language, text=text, is_original=language == original, is_machine=machine
-            )
-
-
 def _term_create(
     payload: ProposalTermCreatePayload, proposal: Proposal, actor: Actor, reviewer: Reviewer, step_up: uuid.UUID | None
 ) -> None:
@@ -1208,7 +1166,7 @@ def _term_create(
         is_system=False,
         **_confirmation(proposal, reviewer),
     )
-    _term_labels(term, payload.labels, reviewer)
+    write_labels(TaxonomyTermLabel, {"term": term}, payload.labels, is_machine=reviewer.agent_id is not None)
     record(
         action="taxonomy.term_created",
         actor=actor,
@@ -1233,7 +1191,7 @@ def _term_update(
         raise ValidationError(f"{payload.key!r} is not a term of {payload.dimension!r}.", code="not_found")
     before = {label.language: label.text for label in TaxonomyTermLabel.objects.filter(term=term)}
     if payload.labels:
-        _term_labels(term, payload.labels, reviewer)
+        write_labels(TaxonomyTermLabel, {"term": term}, payload.labels, is_machine=reviewer.agent_id is not None)
     if payload.usage_note is not None:
         term.usage_note = payload.usage_note
     if payload.sort_order is not None:

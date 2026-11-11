@@ -39,7 +39,6 @@ from unittest import mock
 from django.conf import settings
 from django.core.management import call_command
 from django.db import transaction
-from django.utils import timezone
 from django.test import TestCase, override_settings
 
 from apps.library.models import (
@@ -69,6 +68,8 @@ from apps.shared.tests_library_fence import WRITE_METHODS
 from apps.taxonomy.models import DutyType, InstrumentLevel, ProvisionKind, TaxonomyTerm
 from apps.taxonomy.seeds import seed_library_vocabularies, seed_taxonomy_terms, seed_term_dimensions
 from config.celery import app as celery_app
+from apps.shared.testing import handlers_for
+from apps.shared.testing import flush_outbox
 
 # From the prototype's data (design/prototype), so the stems and the identifiers are real.
 REF = "FFFS 2017:2"
@@ -76,13 +77,6 @@ TITLE_SV = "Lämna information om kostnader och avgifter"
 TITLE_EN = "Disclose all costs and charges"
 SUMMARY_SV = "Institutet ska i god tid lämna information om samtliga kostnader och avgifter."
 SUMMARY_EN = "The institution discloses all costs and charges in good time."
-
-
-def flush_outbox() -> None:
-    """Mark everything the seeds and the fixture recorded as delivered, so a test that
-    looks at its own event is not reading the hundredth row of a batch."""
-    with transaction.atomic():
-        OutboxEvent.objects.filter(published_at__isnull=True).update(published_at=timezone.now())
 
 
 def library_fixture() -> None:
@@ -540,8 +534,8 @@ class TheEmbeddingRelay(LibraryFixtureMixin, TestCase):
         # collab app also hears of an applied version (c10-producers, COL-02).
         for topic in tasks.INDEX_TOPICS:
             with self.subTest(topic=topic):
-                self.assertEqual(outbox.handlers_for(topic)[0], tasks.embed_rebuilt_chunks)
-                self.assertEqual(outbox.handlers_for(topic).count(tasks.embed_rebuilt_chunks), 1)
+                self.assertEqual(handlers_for(topic)[0], tasks.embed_rebuilt_chunks)
+                self.assertEqual(handlers_for(topic).count(tasks.embed_rebuilt_chunks), 1)
 
     def test_the_sweep_is_a_beat_entry_that_takes_no_tenant(self) -> None:
         # Importing this module registered the task, which is what the worker's own

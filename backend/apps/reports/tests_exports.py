@@ -28,7 +28,6 @@ from apps.reports.models import ExportJob, ExportKind, JobStatus
 from apps.shared import factories, permissions as perms, tenancy
 from apps.identity.models import User
 from apps.shared.models import AuditEvent, Tenant
-from apps.shared.tenancy import is_tenant_task
 from apps.shared.testing import (
     API_KEY_FOR_TESTS,
     SESSION_TOKEN_FOR_TESTS,
@@ -40,6 +39,7 @@ from apps.shared.testing import (
     user_principal,
 )
 from config.celery import app as celery_app
+from apps.shared.testing import is_tenant_task
 
 EXPORTS = "/api/v1/exports"
 FILE = b'{"cases": [{"title": "FI adopts amended rules on paying for investment research"}]}'

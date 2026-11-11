@@ -51,6 +51,8 @@ from apps.shared.testing import (
     user_principal,
 )
 from config.api import api
+from apps.shared.testing import call_route
+from apps.shared.testing import assert_refused
 
 FEED = "11111111-1111-4111-8111-111111111111"
 WEEK = "2026-09-14"
@@ -119,12 +121,6 @@ DECLARED_OPERATIONS = {
 }
 
 
-def _call(client: Any, method: str, url: str, body: Any, headers: dict[str, Any]) -> Any:
-    if body is None:
-        return getattr(client, method)(url, **headers)
-    return getattr(client, method)(url, data=body, content_type="application/json", **headers)
-
-
 class HomeRouteRegistration(TestCase):
     def test_the_nine_operations_are_registered_with_the_ids_the_screens_call(self) -> None:
         """The operation ids are the contract's own names, which the generated TypeScript
@@ -138,21 +134,11 @@ class HomeRouteRegistration(TestCase):
 
 class HomeRouteGates(TestCase):
     def test_no_credential_is_401(self) -> None:
-        for name, method, url, body, _ in SESSION_ROUTES:
-            with self.subTest(operation=name):
-                response = _call(self.client, method, url, body, {})
-                self.assertEqual(response.status_code, 401)
-                self.assertEqual(response.json()["code"], "unauthenticated")
+        assert_refused(self, SESSION_ROUTES, {}, 401, "unauthenticated")
 
     def test_a_session_without_the_permission_is_403_naming_it(self) -> None:
         with stub_session(user_principal(permissions={perms.CASES_READ}, tenant_id=uuid.uuid4())):
-            for name, method, url, body, permission in SESSION_ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 403)
-                    problem = response.json()
-                    self.assertEqual(problem["code"], "permission_denied")
-                    self.assertEqual(problem["requiredPermission"], permission)
+            assert_refused(self, SESSION_ROUTES, AS_SESSION, 403, "permission_denied", naming=True)
 
     def test_home_is_refused_by_permission_and_never_left_ungated(self) -> None:
         """`GET /home` carries `roadmap.read` rather than an entry in the ungated allowlist,
@@ -176,19 +162,13 @@ class HomeRouteGates(TestCase):
         """Every other route here joins a bank's own case, briefing or subscriptions, so a
         key holding every scope there is still gets no session on them (NFR-01)."""
         with stub_api_key(agent_principal(scopes=perms.ALL_SCOPES)):
-            for name, method, url, body in TENANT_ONLY_ROUTES:
-                with self.subTest(operation=name):
-                    self.assertEqual(_call(self.client, method, url, body, AS_KEY).status_code, 401)
+            assert_refused(self, TENANT_ONLY_ROUTES, AS_KEY, 401)
 
     def test_a_console_session_never_reaches_a_banks_home_or_briefing(self) -> None:
         """A library editor holds no tenant permission and belongs to no bank, so these
         answer 403 rather than an empty page of somebody's data."""
         with stub_session(user_principal(permissions={perms.PROPOSALS_REVIEW})):
-            for name, method, url, body, permission in SESSION_ROUTES:
-                with self.subTest(operation=name):
-                    response = _call(self.client, method, url, body, AS_SESSION)
-                    self.assertEqual(response.status_code, 403)
-                    self.assertEqual(response.json()["requiredPermission"], permission)
+            assert_refused(self, SESSION_ROUTES, AS_SESSION, 403, None, naming=True)
 
     def test_a_bad_filter_or_body_is_422_before_the_read(self) -> None:
         cases = [
@@ -208,7 +188,7 @@ class HomeRouteGates(TestCase):
         ):
             for name, method, url, body in cases:
                 with self.subTest(operation=name, url=url, body=body):
-                    response = _call(self.client, method, url, body, AS_SESSION)
+                    response = call_route(self.client, method, url, body, AS_SESSION)
                     self.assertEqual(response.status_code, 422)
                     self.assertEqual(response.json()["code"], "validation_error")
 

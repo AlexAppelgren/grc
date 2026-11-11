@@ -48,7 +48,7 @@ from apps.agents.schemas import AgentRunFinish, AgentRunInput, AgentRunOut, Agen
 from apps.identity.models import ApiKey
 from apps.shared.audit import Actor, ActorType, record
 from apps.shared.authentication import Principal
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 
 SUBJECT_TYPE = "agent_run"
 
@@ -253,7 +253,7 @@ def _own_run(api_key_id: uuid.UUID | None, run_id: uuid.UUID) -> AgentRun:
         .first()  # ordering: pk lookup inside one key, at most one row
     )
     if run is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return run
 
 
@@ -325,7 +325,7 @@ def refuse_person_run(person: Any, run_id: uuid.UUID | None) -> None:
     another key answers, whatever the id, so it tells a person nothing about which runs
     exist."""
     if person is not None and run_id is not None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
 
 
 def require_open_run_of_key(api_key_id: uuid.UUID | None, run_id: uuid.UUID | None) -> AgentRun:

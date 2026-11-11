@@ -17,15 +17,19 @@ a test prove something about a shape R1 does not have.
 
 from __future__ import annotations
 
+import random
 import uuid
+from dataclasses import replace
+from decimal import Decimal
 from types import SimpleNamespace
 from collections.abc import Iterable
 from typing import Any
 
-from apps.agents.models import Agent, AgentKind, AgentRun, AgentScopeKind, AgentWritesTo
+from apps.agents.models import Agent, AgentKind, AgentRun, AgentScopeKind, AgentWritesTo, RunStatus
 from apps.identity import tokens
 from apps.identity.models import ApiKey
 from apps.shared.models import Tenant
+from apps.shared.adapters.agent_runner import RunHandle, RunnerEvent
 from apps.shared.tenancy import library_write
 
 REASON = "test builder"
@@ -144,3 +148,17 @@ def tenant_key(tenant: Tenant, *, scopes: Iterable[str] = ("library:read",)) -> 
     from apps.shared import factories
 
     return factories.api_key(tenant, name="Bank key", scopes=scopes)
+
+
+def mock_run_events(handle: RunHandle) -> list[RunnerEvent]:
+    """What a mock run reports: one progress event, then success with no findings, or that it
+    was interrupted. Every number is drawn from a generator seeded with the run id, so the
+    same run reports the same events and a test never depends on the clock."""
+    seeded = random.Random(handle.run_id.int)  # noqa: S311 - a test double's numbers, not a secret
+    tokens_in, tokens_out, cents = seeded.randint(1_000, 50_000), seeded.randint(100, 5_000), seeded.randint(1, 500)
+    progress = RunnerEvent(
+        run_id=handle.run_id, status=RunStatus.RUNNING, cost=Decimal(cents) / 200, tokens_in=tokens_in // 2, tokens_out=tokens_out // 2
+    )
+    if handle.status is RunStatus.INTERRUPTED:
+        return [replace(progress, status=RunStatus.INTERRUPTED)]
+    return [progress, replace(progress, status=RunStatus.SUCCEEDED, cost=Decimal(cents) / 100, tokens_in=tokens_in, tokens_out=tokens_out)]

@@ -159,7 +159,8 @@ from apps.taxonomy.models import (
     TenantTagLabel,
     WatchedMarket,
 )
-from apps.taxonomy.reading import Labels, agent_ref, label_of, proposing_agent
+from apps.taxonomy.reading import Labels, agent_ref, proposing_agent
+from apps.shared.vocabulary import label_of
 from apps.taxonomy.schemas import PersonRef, TaggingTagRef
 
 

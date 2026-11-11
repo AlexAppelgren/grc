@@ -36,7 +36,7 @@ from apps.reports.models import JobStatus
 from apps.reports.schemas import JobStatusValue
 from apps.shared.adapters.registers import LEI, REGISTRATION_NUMBER, LeiCompany, RegistersAdapter, RegisterUnavailable, digits, get_registers
 from apps.shared.audit import Actor, batched, record
-from apps.shared.errors import ProblemError
+from apps.shared.errors import ProblemError, not_found
 from apps.shared.models import Tenant
 from apps.tenants import organisation, registers_logic
 from apps.tenants.models import OrgUnit, OrgUnitKind, RegisterEntry, RegisterLookup
@@ -120,7 +120,7 @@ def lookup_of(tenant: Tenant, lookup_id: uuid.UUID, *, lock: bool = False) -> Re
     rows = RegisterLookup.objects.select_for_update() if lock else RegisterLookup.objects
     lookup = rows.filter(tenant=tenant, pk=lookup_id).first()  # ordering: pk lookup, at most one row
     if lookup is None:
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return lookup
 
 

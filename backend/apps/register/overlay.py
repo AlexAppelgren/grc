@@ -43,7 +43,7 @@ from apps.shared.authentication import Principal, PrincipalKind
 from apps.shared.errors import ProblemError
 from apps.shared.models import Tenant
 from apps.taxonomy.models import ComplianceCategory, ComplianceStatus, ComplianceStatusLabel, TeamLabel
-from apps.taxonomy.reading import label_of
+from apps.shared.vocabulary import label_of
 
 if TYPE_CHECKING:
     from apps.library.schemas import ObligationQuery

@@ -63,7 +63,6 @@ from django.db.models import (
 )
 
 from apps.cases import logic as case_logic
-from apps.cases import state as case_state
 from apps.cases.models import CaseLinkDecision as CaseLinkDecisionKind
 from apps.cases.models import CaseObligationLink, ChangeCase
 from apps.cases.schemas import CasesVocabularyRef
@@ -86,20 +85,17 @@ from apps.taxonomy.models import (
     CaseSubStatus,
     CaseSubStatusLabel,
     ChangeTypeLabel,
-    ClosureReasonLabel,
-    DismissalReasonLabel,
     FlagLabel,
     TaxonomyTerm,
     TaxonomyTermLabel,
-    TeamLabel,
     Urgency,
     UrgencyLabel,
     WatchedMarket,
 )
-from apps.taxonomy.reading import Labels, label_of
+from apps.taxonomy.reading import Labels
+from apps.shared.vocabulary import label_of
 from apps.watch import keys
 from apps.watch.models import ChangeDocument, ChangeObligation, ChangeTerm, RegulatoryChange
-from apps.taxonomy.schemas import PersonRef
 from apps.watch.schemas import (
     CaseCategory,
     CaseLinkDecision,
@@ -449,52 +445,16 @@ def _case_of(
     )
 
 
-def _person(user: Any) -> PersonRef | None:
-    return None if user is None else PersonRef(id=user.id, name=user.name)
-
-
 def _workflow_of(base: WatchChangeCase, *, reader: uuid.UUID | None, order: list[str]) -> WatchCaseWorkflow:
-    """The change page's workflow block beside what a feed row says (CAS-02 to CAS-08).
-
-    Two queries whatever the case holds — the case with its people, reasons and assessment
-    joined, and the guards' facts — and one label query per reason and per effort the case
-    carries. The moves come
-    from the state machine through `case_facts()`, the same facts every guard reads, for
-    this reader: the sign-off guard compares them with whoever asked.
-    """
-    # Imported here: apps.cases.assessment reads the urgency labels from this module.
-    from apps.cases.assessment import assessment_of
+    """The change page's workflow block beside what a feed row says (CAS-02 to CAS-08): two
+    queries whatever the case holds, the case with its people, reasons and assessment
+    joined and the guards' facts, then one label query per reason and per effort it carries."""
+    # Imported here: apps.cases.responses reads the urgency labels from this module.
+    from apps.cases.responses import workflow_fields
 
     case = ChangeCase.objects.select_related(*case_logic.CASE_JOINS, "assessment__effort", "assessment__saved_by").get(pk=base.id)
-    facts = case_logic.case_facts(case, actor=reader)
-    allowed = case_state.allowed_transitions(CaseStatusCategory(case.status), facts)
-    dismissed = _tenant_refs(DismissalReasonLabel, [case.dismissed_reason] if case.dismissed_reason else [], order)
-    closed = _tenant_refs(ClosureReasonLabel, [case.close_reason] if case.close_reason else [], order)
-    team = _tenant_refs(TeamLabel, [case.owner_team] if case.owner_team else [], order)
-    return WatchCaseWorkflow(
-        **dict(base),
-        owner=_person(case.owner),
-        owner_team=team.get(case.owner_team_id) if case.owner_team_id else None,
-        triaged_by=_person(case.triaged_by),
-        triaged_at=case.triaged_at,
-        dismissed_reason=dismissed.get(case.dismissed_reason_id) if case.dismissed_reason_id else None,
-        dismissed_by=_person(case.dismissed_by),
-        dismissed_at=case.dismissed_at,
-        signoff_requested_by=_person(case.signoff_requested_by),
-        signoff_requested_at=case.signoff_requested_at,
-        signed_off_by=_person(case.signed_off_by),
-        close_reason=closed.get(case.close_reason_id) if case.close_reason_id else None,
-        closed_at=case.closed_at,
-        closed_note=case.closed_note or None,
-        # A reverse one-to-one joined above: no row reads as None, never as a query.
-        assessment=assessment_of(getattr(case, "assessment", None), order),
-        open_action_count=facts.open_action_count,
-        # Sign-off is asked for only from implementing, so "the machine allows the move to
-        # signoff" is the whole rule; nothing here restates it.
-        can_request_signoff=CaseStatusCategory.SIGNOFF in allowed,
-        allowed_transitions=[category.value for category in allowed],
-        version=case.version,
-    )
+    # A reverse one-to-one joined above: no row reads as None, never as a query.
+    return WatchCaseWorkflow(**dict(base), **workflow_fields(case, reader=reader, order=order, assessment=getattr(case, "assessment", None)))
 
 
 def _decisions_by_case(case_ids: Collection[uuid.UUID]) -> dict[uuid.UUID, list[WatchCaseObligationDecision]]:

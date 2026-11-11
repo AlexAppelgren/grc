@@ -47,10 +47,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from apps.shared.tenancy import TenantModel
-
-
-def _choices(kind: type[enum.StrEnum]) -> list[tuple[str, str]]:
-    return [(member.value, member.value) for member in kind]
+from apps.shared.kinds import choices
 
 
 class ProposalKind(enum.StrEnum):
@@ -107,7 +104,7 @@ class OriginType(enum.StrEnum):
 
 class Proposal(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    kind = models.CharField(max_length=40, choices=_choices(ProposalKind))
+    kind = models.CharField(max_length=40, choices=choices(ProposalKind))
     target_type = models.CharField(max_length=64, blank=True)
     target_id = models.UUIDField(null=True, blank=True)
     change_id = models.UUIDField(null=True, blank=True)
@@ -120,7 +117,7 @@ class Proposal(models.Model):
     # queue shows it, and no agent approves while it stands.
     risk_flags = ArrayField(models.CharField(max_length=40), default=list, blank=True)
     effective_from = models.DateField(null=True, blank=True)
-    origin = models.CharField(max_length=16, choices=_choices(OriginType))
+    origin = models.CharField(max_length=16, choices=choices(OriginType))
     agent_run_id = models.UUIDField(null=True, blank=True)
     model = models.CharField(max_length=200, blank=True)
     proposed_by_user = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -128,7 +125,7 @@ class Proposal(models.Model):
     proposed_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     idempotency_key = models.CharField(max_length=200, null=True, blank=True)
     proposed_in_tenant = models.BooleanField(default=False)
-    status = models.CharField(max_length=16, choices=_choices(ProposalStatus), default=ProposalStatus.OPEN.value)
+    status = models.CharField(max_length=16, choices=choices(ProposalStatus), default=ProposalStatus.OPEN.value)
     reviewed_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     reviewed_by_api_key = models.ForeignKey("identity.ApiKey", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     reviewed_by_agent = models.ForeignKey("agents.Agent", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
@@ -246,7 +243,7 @@ class ProposalBatchRow(models.Model):
     subject_id = models.UUIDField()
     before = models.JSONField(default=dict, blank=True)  # schema: ProposalBatchRowPayload
     after = models.JSONField(default=dict, blank=True)  # schema: ProposalBatchRowPayload
-    decision = models.CharField(max_length=16, choices=_choices(BatchRowDecision), default=BatchRowDecision.PENDING.value)
+    decision = models.CharField(max_length=16, choices=choices(BatchRowDecision), default=BatchRowDecision.PENDING.value)
     rejection_reason = models.ForeignKey("taxonomy.RejectionReason", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     decided_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     decided_at = models.DateTimeField(null=True, blank=True)

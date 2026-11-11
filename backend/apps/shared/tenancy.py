@@ -177,13 +177,6 @@ def identity_lookup(*, using: str = DEFAULT_DB_ALIAS) -> Iterator[IdentityLookup
                 cursor.execute("SELECT set_config(%s, %s, true)", [IDENTITY_LOOKUP_SETTING, ""])
 
 
-def identity_lookup_active(*, using: str = DEFAULT_DB_ALIAS) -> bool:
-    with connections[using].cursor() as cursor:
-        cursor.execute("SELECT current_setting(%s, true)", [IDENTITY_LOOKUP_SETTING])
-        row = cursor.fetchone()
-    return bool(row and row[0] == "on")
-
-
 F = TypeVar("F", bound=Callable[..., Any])
 
 
@@ -204,10 +197,6 @@ def tenant_task(fn: F) -> F:
 
     wrapper.__cw_tenant_task__ = True  # type: ignore[attr-defined]
     return wrapper  # type: ignore[return-value]
-
-
-def is_tenant_task(fn: Callable[..., Any]) -> bool:
-    return bool(getattr(fn, "__cw_tenant_task__", False))
 
 
 # ---------------------------------------------------------------------------------------
@@ -251,10 +240,6 @@ def library_door(door: LibraryDoor, *, using: str = DEFAULT_DB_ALIAS) -> Iterato
         yield
         with connections[using].cursor() as cursor:
             cursor.execute("SELECT set_config(%s, %s, true)", [LIBRARY_DOOR_SETTING, row[0] if row else ""])
-
-
-def library_write_reason() -> str | None:
-    return _library_write_reason.get()
 
 
 def _assert_library_write(model_name: str) -> None:

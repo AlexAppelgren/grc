@@ -2,9 +2,8 @@
 and turning a logic `ValidationError` into the one problem shape (playbook 4.2, 4.4).
 
 `answers_problems` is the api.py half of "logic raises ValidationError, api re-raises with
-the right status". It adds what the shared handler in config/api.py cannot: the statuses of
-this chunk's own codes (`in_use`, `system_row`, `request_pending`, `invalid_transition`,
-`idempotency_conflict` are 409, not the default 422) and the `extra` a refusal carries
+the right status". Statuses come from the one table, `apps.shared.errors.STATUS_BY_CODE`;
+it adds what the shared handler in config/api.py cannot: the `extra` a refusal carries
 beside its code (the near match of a duplicate, the usage count of a value in use), so the
 screen offers the next step without a second call. It also marks the request's transaction
 for rollback, so a refusal raised after a partial write can never commit that write.
@@ -30,47 +29,14 @@ from django.http import HttpRequest, HttpResponse
 from apps.shared import permissions as perms
 from apps.shared.audit import Actor, ActorType, key_actor
 from apps.shared.authentication import Principal, PrincipalKind
-from apps.shared.errors import STATUS_BY_CODE, ProblemError, problem_response
-
-# The codes this chunk introduces that are conflicts with the record's state, not fields
-# the caller can fix: 409. Everything else falls through to the shared table, then 422.
-CHUNK_STATUS_BY_CODE: dict[str, int] = {
-    **STATUS_BY_CODE,
-    "in_use": 409,
-    "system_row": 409,
-    "category_empty": 409,
-    # A team still owns open work (TEN-03, c8-vocab-register-usage): a conflict with what
-    # the team holds, which a confirm cannot override.
-    "open_work": 409,
-    "request_pending": 409,
-    "invalid_transition": 409,
-    "approval_running": 409,
-    "idempotency_conflict": 409,
-    "already_watching": 409,
-    "forbidden": 403,
-    # An agent approved a kind whose record cannot name its confirming agent, so it waits
-    # for a person (D-79; a new provision or a provision version): the proposal is fine,
-    # the reviewer is the wrong kind of principal for it.
-    "person_review_required": 409,
-    # An agent approved or confirmed what the injection screen flagged (AGT-07, H40): the
-    # record is fine to decide, but only a person who has read the flag decides it.
-    "risk_flagged": 409,
-    # An agent confirmed a watch fact that it, or another key of its own agent, suggested
-    # (D-74): the fact is fine, the confirmer is not independent of it.
-    "own_suggestion": 409,
-    "same_agent": 409,
-    # c9-signoff: a sign-off request while an action is open or before any evidence passed
-    # the scan (CAS-06, AC-CAS1). The case is fine; its state does not allow the move yet.
-    "open_actions": 409,
-    "evidence_missing": 409,
-}
+from apps.shared.errors import ProblemError, STATUS_BY_CODE, not_found, problem_response
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
 def problem_for(exc: ValidationError) -> HttpResponse:
     code = getattr(exc, "code", None) or "validation_error"
-    status = CHUNK_STATUS_BY_CODE.get(code, 422)
+    status = STATUS_BY_CODE.get(code, 422)
     error = ProblemError(status=status, code=code, detail=" ".join(exc.messages))
     response = problem_response(error)
     extra = getattr(exc, "extra", None)
@@ -132,12 +98,12 @@ def caller_tenant(request: HttpRequest) -> Any:
 
     who = principal(request)
     if who.tenant_id is None:
-        raise ProblemError(status=404, code="not_found", detail="Sign in to a company to see this.")
+        raise not_found("Sign in to a company to see this.")
     if who.tenant is not None:
         return who.tenant
     tenant = Tenant.objects.select_related("default_language").filter(pk=who.tenant_id).first()  # ordering: pk lookup, at most one row
     if tenant is None:  # pragma: no cover - the session's tenant always exists
-        raise ProblemError(status=404, code="not_found", detail="Not found.")
+        raise not_found()
     return tenant
 
 
@@ -246,4 +212,4 @@ def uuid_or_404(value: str) -> uuid.UUID:
     try:
         return uuid.UUID(str(value))
     except ValueError:
-        raise ProblemError(status=404, code="not_found", detail="Not found.") from None
+        raise not_found() from None

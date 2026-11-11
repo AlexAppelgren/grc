@@ -32,11 +32,12 @@ from apps.agents import testing as agent_build
 from apps.cases import creation, testing as case_build
 from apps.cases.models import ChangeCase
 from apps.governance.models import AiGeneration, AiPurpose, AiStatus
-from apps.shared import outbox, tenancy
+from apps.shared import tenancy
 from apps.shared.models import AuditEvent
 from apps.shared.testing import ScenarioTestCase
 from apps.watch import so_what_draft, testing as watch_build
 from apps.watch.models import RegulatoryChange
+from apps.shared.testing import drain
 
 CHANGES = "/api/v1/changes"
 JSON = "application/json"
@@ -77,13 +78,6 @@ def body(**overrides: Any) -> dict[str, Any]:  # compliance: allow-kwargs test h
     }
     payload.update(overrides)
     return payload
-
-
-def drain() -> None:
-    with transaction.atomic():
-        tenancy.clear_tenant()
-    while outbox.deliver_batch().delivered:
-        pass
 
 
 class SoWhatFilingCase(ScenarioTestCase):

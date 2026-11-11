@@ -11,8 +11,11 @@ one source; `apps/shared/tests_celery_registration.py` walks both.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
-from celery import shared_task
+from celery import Task, shared_task
+from django.conf import settings
+from django.db import transaction
 
 from apps.shared import outbox
 
@@ -24,3 +27,13 @@ def deliver_outbox() -> None:
     result = outbox.deliver_batch()
     if result.delivered or result.failed:
         logger.info("outbox batch", extra={"delivered": result.delivered, "failed": result.failed})
+
+
+def queue_after_commit(task: Task, args: tuple[Any, ...]) -> None:
+    """Hand `task` to the worker once the caller's transaction commits, so a request never
+    waits on a relay and nothing leaves for a write that rolled back (F12). Under eager
+    Celery it runs inline at once: `on_commit` never fires inside a TestCase transaction."""
+    if settings.CELERY_TASK_ALWAYS_EAGER:
+        task.apply(args=args)
+        return
+    transaction.on_commit(lambda: task.delay(*args))
