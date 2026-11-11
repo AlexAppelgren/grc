@@ -2504,6 +2504,28 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       `https://talosintelligence.com/reputation_center/web_categorization`, Fortinet
       `https://www.fortiguard.com/webfilter`, Forcepoint `https://support.forcepoint.com/s/site-lookup`
       (checked 2026-09-28, `Verification_Log.md`).
+- [ ] **Broadcom (Symantec) rates the app host Suspicious (2026-11-11).** Its Site Review answers
+      "Suspicious" for `https://app.bleqq.com/sign-in`, "rated by our WebPulse system": the host
+      is not in Broadcom's database, so it was scored in real time on reputation. Seen from
+      outside the same day, the site's own steps are live (www redirects to the apex, the hosts
+      are split, the headers, `security.txt` and the 404 are served), so the filter step above
+      waits on nothing. A review takes one URL and a subdomain can be rated apart from its
+      domain, so submit three: `https://bleqq.com/`, `https://app.bleqq.com/sign-in` and
+      `https://api.bleqq.com/` (the app calls it on every page load; with it blocked a person
+      sees "Loading your session…" and then "Try again"). At `https://sitereview.symantec.com/`
+      look the URL up, press Other under the result, suggest Business/Economy, and say in the
+      comment what the service is, that access is by invitation and that `bleqq.com` is the
+      public page. Broadcom gives 24 to 48 hours for an accepted change. SEB IT allowing
+      `*.bleqq.com` (`r2f-host-split`, step 7) does not wait for it.
+- [ ] **The app host's front page is three words without JavaScript.** `https://app.bleqq.com/`
+      and every signed-in address answer "Compliance Watch, Loading your session…" first: the
+      server cannot see a session (the token is in the browser's memory, the refresh cookie
+      belongs to the API host), so the page waits for `POST /api/v1/auth/refresh`. Sign-in and
+      enrolment were given a readable first byte in `r2f-host-split`; this page was not. Default
+      taken: left as it is, because Broadcom's label names reputation and not content. If a
+      reviewer or another filter still flags the app host after the review, say so and an agent
+      gives that waiting state a `noscript` line saying what the service is, with links to
+      sign-in and the public page.
 
 Defaults taken: the sitemap lists `/welcome` only, since `/` is the signed-in home that sends a
 visitor on to `/welcome`; robots.txt allows `/` so a crawler that starts there follows on, and `/`

@@ -131,7 +131,21 @@ block `r2f-site-trust`; review addresses in `docs/plans/Verification_Log.md`):
    Financial Services where offered) to each vendor: Zscaler, Palo Alto
    Networks, Broadcom (Symantec), Cisco Talos, Fortinet and Forcepoint. Do
    this after steps 1 to 5 and after this package is deployed, so the
-   reviewer sees the fixed site.
+   reviewer sees the fixed site. Submit each host on its own (`bleqq.com`,
+   `app.bleqq.com`, `api.bleqq.com`): Broadcom's review takes one URL, and a
+   subdomain can be rated apart from its domain.
+
+**Seen on 2026-11-11.** Broadcom's Site Review answers "Suspicious" for
+`https://app.bleqq.com/sign-in`, "rated by our WebPulse system". WebPulse is
+Broadcom's real-time rater: a host its database does not hold is scored when
+first requested, and the Suspicious category "is determined by analysis of web
+reputation factors". The fix Broadcom documents is a review request, which puts
+the host in the database under a category (24 to 48 hours once accepted). From
+outside the same day: `www` 301s to the apex, `bleqq.com/sign-in` 301s to
+`app.bleqq.com/sign-in`, both hosts send the headers above, `security.txt`
+answers and an unknown address is a 404. `https://app.bleqq.com/` itself still
+answers only the session gate's "Loading your session…" to a reader without
+JavaScript; the owner's list holds that as an open choice.
 
 ## The public site and the app on their own hosts
 
