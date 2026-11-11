@@ -1,13 +1,10 @@
 """Out of office with a delegate (TEN-04): a member's own absence, read and set.
 
-An absence is two columns on the member's own membership, `out_of_office_until` (the last
-day away, a plain date on the bank's calendar) and `delegate`. While the bank's local today
-is on or before that day, `apps/collab/logic.notify()` sends the member's reminders,
-escalations, assignments and sign-off requests to the delegate instead. Delegation routes
-notices and grants nothing: the delegate acts under their own roles, so they must already
-hold every approve permission the absent person holds (`delegate_cannot_approve`), and four
-eyes still refuses a delegate who asked for what they would approve. `on_behalf_of` names
-the absent approvers a delegate's approval was made for, for the audit row.
+An absence is `out_of_office_until` (the last day away, on the bank's calendar) and `delegate`
+on the member's membership; until then `apps/collab/logic.notify()` routes their notices to the
+delegate. Delegation grants nothing: the delegate must already hold every approve permission
+the absent person holds (`delegate_cannot_approve`), and four eyes still applies.
+`on_behalf_of` names the absent approvers a delegate's approval was made for, for the audit row.
 """
 
 from __future__ import annotations

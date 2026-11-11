@@ -1,31 +1,13 @@
-"""Models of the tenants app. Chunk 1 adds `SupportAccess` (ID-05, TEN-06): every time
-platform staff act inside a tenant, a row the tenant can see. The full grant workflow
-(time-boxed reads) is chunk 8; chunk 1 writes one-shot rows for the last-admin recovery
-(ID-S13).
+"""Models of the tenants app: support access (ID-05, TEN-06), the bank's organisation
+(TEN-02, REG-05, D-43), its teams (TEN-03), session policy (ID-07, ID-08) and the public
+registers (TEN-07, TEN-08).
 
-Chunk 8 adds the bank's organisation (TEN-02, REG-05, tenants 0002): org units with a head,
-the licences and certificates a legal entity holds (D-43), products scoped in the terms
-obligations use, and the internal items a register entry links to. Chunk 11's
-`SecurityPolicy` (ID-07, ID-08) sits in the same migration to keep the tenants migrations in
-order. Every table is under forced row-level security, and every reference to another tenant
-row is also a composite `(tenant_id, …)` foreign key written as SQL in the migration, because
+Every table is under forced row-level security, and every reference to another tenant row is
+also a composite `(tenant_id, …)` foreign key written as SQL in the migration, because
 PostgreSQL checks a foreign key without row-level security: a plain key would let one bank
 point at another's row. A unit, licence, product or item is deactivated or withdrawn, never
-deleted.
-
-The organisation package (tenants 0005) gives a licence and a product the `version` a unit
-already had, so a change to either sends `If-Match` like every other versioned record.
-
-Chunk 8's teams model (TEN-03, tenants 0003) adds `TeamMember`, a person in one of the bank's
-teams (the `team` tenant list, taxonomy 0009), and lets a team own a licence or an internal
-item in place of a person, so the ownership survives the person leaving. Both keys of a team
-member are composite as above; the key to `membership` makes the person a member of the same
-bank. A team member has no lead flag: a department's head sits on its org unit (D-21).
-
-The public registers (TEN-07, TEN-08, tenants 0006, PUBLIC_REGISTERS.md 5.1) add a lookup job
-and a legal entity's register facts. Both hold public register data only; a register entry
-belongs to a legal entity (a trigger refuses any other unit) and is written by the apply and
-the nightly re-read alone, each write audited."""
+deleted. A team member has no lead flag: a department's head sits on its org unit (D-21). A
+register entry belongs to a legal entity (a trigger refuses any other unit)."""
 
 from __future__ import annotations
 
@@ -52,7 +34,7 @@ class SupportAccessStatus(enum.StrEnum):
     """Tier-one kind (apps/shared/kinds.py): where a support access request stands (TEN-06,
     D-49). A pending request and an open window lapse on read, with no job: a `requested` row
     past `request_expires_at` reads as lapsed and an `approved` one past `expires_at` as ended.
-    `expired` is what a row born with no decision is, which is chunk 1's one-shot recovery."""
+    `expired` is a row born with no decision: the one-shot last-admin recovery."""
 
     REQUESTED = "requested"
     APPROVED = "approved"
@@ -106,8 +88,7 @@ class SupportAccess(TenantModel):
                 condition=models.Q(approved_by__isnull=True) | ~models.Q(approved_by=models.F("platform_user")),
                 name="support_access_approver_is_not_the_requester",
             ),
-            # Read-only grants: a write-level row is never approved, which leaves chunk 1's
-            # one-shot recovery as the only write-level row there is.
+            # Read-only grants: the one-shot recovery is the only write-level row there is.
             models.CheckConstraint(
                 condition=models.Q(access_level=SupportAccessLevel.READ.value) | models.Q(approved_by__isnull=True),
                 name="support_access_only_a_read_is_approved",

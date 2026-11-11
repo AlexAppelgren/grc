@@ -2,20 +2,11 @@
 TEN-S5, TEN-S9, TEN-S3).
 
 `owned_work()` is the one read of what a person holds, by kind, straight off the ownership
-columns: the register entries they are the first-line owner or the compliance contact of,
-the legal entities' rows, the gaps not closed, the open duty occurrences, the active internal
-items, the cases not closed or dismissed and the actions neither done nor removed. The
-preview counts it, the plain removal refuses while any of it is left, and the removal moves
-it; My work reads the same service (D-23).
-
-The removal names one new owner per kind, a person or a team. Every row moves, the member's
-own participations end with a stamp and their team memberships end, and the membership is
-deactivated through `members_logic.deactivate_member()`, all in one transaction under the
-removal's step-up: one audit event per item and one for the removal. What a team owns or
-takes part in is never touched, which is how ownership survives a person leaving (TEN-03).
-A case and an action always have a person as owner, so they pass to a person and never to a
-team; a case passes only to someone who may work it, and a team named beside its owner stays
-(`c9-owner-team-and-reassign`).
+columns; the preview counts it, the plain removal refuses while any is left, the removal
+moves it, and My work reads it too (D-23). The removal names one new owner per kind, a person
+or a team, and moves every row, ends the member's participations and team memberships and
+deactivates the membership, in one transaction under the step-up. What a team owns is never
+touched (TEN-03). A case and an action always pass to a person who may work them.
 """
 
 from __future__ import annotations
@@ -104,9 +95,7 @@ def open_work(*, tenant: Tenant, user_id: uuid.UUID) -> dict[str, Any]:
     }
 
 
-# ---------------------------------------------------------------------------------------
-# The removal
-# ---------------------------------------------------------------------------------------
+# --- The removal ---
 Target = tuple[uuid.UUID | None, Team | None]
 
 
@@ -173,8 +162,7 @@ def _new_owner(kind: str, row: Model, user_id: uuid.UUID, target: Target) -> dic
     """The columns that hand `row` to its new owner. A row owned by a person or a team, never
     both, passes to exactly one of them. On a register entry, the person columns the member
     held pass to the new person; to a team, the entry's owner becomes the team and those
-    person columns are cleared, because a compliance contact is always a person (D-108,
-    c8-ten-reassignment)."""
+    person columns are cleared, because a compliance contact is always a person (D-108)."""
     person, team = target
     if kind == "register_entry":
         held = [field for field in ("first_line_owner", "compliance_contact") if getattr(row, f"{field}_id") == user_id]

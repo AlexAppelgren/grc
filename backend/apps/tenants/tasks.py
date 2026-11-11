@@ -1,10 +1,6 @@
-"""The tenants app's worker tasks (TEN-07, TEN-08): a lookup in the public registers, and the
-nightly re-read of every bank's register facts (apps/tenants/registers_jobs.py holds the work).
-
-Each bank's work runs as a `@tenant_task`, activated inside its own transaction. The beat's
-fan-out hands every active bank to its own task: register entries sit under row-level security,
-so the beat, which runs in no bank's zone, cannot tell which banks hold one, and a bank that
-holds none is a single empty read."""
+"""The tenants app's worker tasks (TEN-07, TEN-08): a register lookup and the nightly re-read
+(the work is in apps/tenants/registers_jobs.py). The beat fans out one `@tenant_task` per
+active bank, because register entries sit under row-level security and the beat sees none."""
 
 from __future__ import annotations
 

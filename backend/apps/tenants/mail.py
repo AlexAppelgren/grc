@@ -1,8 +1,7 @@
 """The mail tenants sends: a bank's `security.manage` holders hear that platform support asked
 to read their bank (TEN-06, D-49). Delivered by the identity worker after the request's
-transaction commits, like every other mail (`apps/identity/mail.py`). Plain text, English for
-now, until `c10-mail-catalog` gives every mail the reader's language. The purpose and ticket
-are platform support's own words, written for the bank; nothing here is logged."""
+transaction commits (`apps/identity/mail.py`). Plain text, English for now. The purpose and
+ticket are platform support's own words, written for the bank; nothing here is logged."""
 
 from __future__ import annotations
 

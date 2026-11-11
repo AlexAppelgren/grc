@@ -1,15 +1,9 @@
 """The bank's organisation (TEN-02, D-21, D-43, ADM-01): its groups, legal entities and
 departments with a head, and the licences and certificates a legal entity holds. Every row
-is the bank's own, written under `vocab.manage`, audited with the fields it changed before
-and after, and deactivated or withdrawn, never deleted.
-
-A legal entity's term is a term of the library's `legal_entity` dimension; a licence's type
-and services, and a product's scope (apps/tenants/products.py), are terms of the dimensions
-an obligation's scope is written with (apps/tenants/terms.py).
-
-Free text a person typed (a scope note or statement) never enters the audit row: its before
-and after carry ids, keys, names and dates, and `rewritten` names the text fields that
-changed (R2_CROSS_CUTTING.md (m)).
+is the bank's own, written under `vocab.manage`, audited before and after, and deactivated or
+withdrawn, never deleted. Types, services and scopes are terms of the dimensions an
+obligation's scope is written with (apps/tenants/terms.py). Free text a person typed never
+enters the audit row; `rewritten` names the text fields that changed (R2_CROSS_CUTTING.md (m)).
 """
 
 from __future__ import annotations
@@ -54,9 +48,7 @@ ENTITY_ONLY = ("org_number", "lei", "country_code", "entity_term")
 STALE = "Someone changed this first. Reload and try again."
 
 
-# ---------------------------------------------------------------------------------------
-# What the organisation and product writes share.
-# ---------------------------------------------------------------------------------------
+# --- What the organisation and product writes share ---
 def locked(model: type[Any], tenant: Tenant, pk: uuid.UUID, expected_version: int | None) -> Any:
     """The row, locked for the write, in the caller's bank, or 404; 409 `stale_write` when
     `If-Match` named another version (playbook 4.3)."""
@@ -98,9 +90,7 @@ def ref(value: Any) -> str | None:
     return None if value is None else str(value)
 
 
-# ---------------------------------------------------------------------------------------
-# Units.
-# ---------------------------------------------------------------------------------------
+# --- Units ---
 def org_unit_of(tenant: Tenant, org_unit_id: uuid.UUID) -> OrgUnit:
     """The unit, in the caller's bank and under its row-level security, or 404."""
     unit = OrgUnit.objects.filter(tenant=tenant, pk=org_unit_id).first()  # ordering: pk lookup, at most one row
@@ -306,9 +296,7 @@ def update_org_unit(
     return _unit_out(tenant, unit.id, order)
 
 
-# ---------------------------------------------------------------------------------------
-# Licences and certificates (D-43, ADR 0037).
-# ---------------------------------------------------------------------------------------
+# --- Licences and certificates (D-43, ADR 0037) ---
 LICENCE_DATES = ("granted_on", "withdrawn_on", "issued_on", "valid_until", "next_audit_on")
 LICENCE_STRINGS = ("reference", "issuer", "number")
 LICENCE_TEXTS = {"scope_note": "scopeNote", "scope_statement": "scopeStatement"}

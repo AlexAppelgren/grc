@@ -1,11 +1,9 @@
 """The bank's session policy (ID-08, ADM-01): the read and the write, nothing else.
 
-`apps/identity/session_logic.limits` enforces the limits at every refresh; this module
-decides nothing about a session. A bank with no row reads the platform defaults, and the row
-is created by the first write, never by a backfill. The write is a security change: the
-route asks for `security.manage` and a passkey step-up, and the audit row carries the step-up
-assertion. The credential policy on the same row (ID-07, ADR 0048) is out of R2 (D-100) and
-nothing here reads or writes it.
+`apps/identity/session_logic.limits` enforces the limits at every refresh. A bank with no row
+reads the platform defaults; the first write creates the row. The write is a security change
+under `security.manage` and a step-up, audited with the assertion. The credential policy on
+the same row (ID-07, ADR 0048) is out of R2 (D-100).
 """
 
 from __future__ import annotations

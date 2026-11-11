@@ -1,21 +1,11 @@
 """The public registers' jobs (TEN-07, TEN-08; PUBLIC_REGISTERS.md 3.1, 3.4, 5.2).
 
-A lookup is a job: `start_lookup` writes it and hands it to the worker once the request
-commits; `run_lookup` finds the company in GLEIF, walks its children breadth first and reads
-each company's facts from the register of its country, then stores what it found or fails
-whole (`lookup_not_found`, `lookup_ambiguous`, `register_unavailable`), never with a partial
-result. Nothing in the organisation changes until a person applies it: `apply_lookup` adds or
-links the chosen companies through the organisation's own write path and stores their register
-facts. It writes no licence row and no scope term.
-
-`recheck` is the nightly re-read: for every register entry of an active legal entity it reads
-the register again and stores what changed, with an audit event naming the change. It edits
-neither the organisation nor the scope, and a register that cannot be reached leaves the stored
-facts as they are.
-
-The functions here write the bank's rows and name no library model; the register reads and the
-mapping are apps/tenants/registers_logic.py's. Nothing here logs a number or a name: a skipped
-re-read logs the entry's id.
+`start_lookup` writes a lookup and hands it to the worker; `run_lookup` finds the company in
+GLEIF, walks its children and reads each one's register, then stores the result or fails
+whole, never partially. `apply_lookup` changes the organisation only when a person applies it,
+and writes no licence row or scope term. `recheck` is the nightly re-read: it stores what
+changed with an audit event and leaves the facts as they are when a register is unreachable.
+Nothing here logs a number or a name.
 """
 
 from __future__ import annotations
@@ -57,17 +47,13 @@ LOOKUP = "register_lookup"
 ENTRY = "register_entry"
 
 
-# ---------------------------------------------------------------------------------------
-# The lookup
-# ---------------------------------------------------------------------------------------
+# --- The lookup ---
 def _one_lookup_at_a_time(tenant: Tenant) -> None:
     """One lookup per bank at a time, and at most `REGISTERS_LOOKUPS_PER_HOUR` an hour (review
-    2026-11-11 S-11): each holds a worker and sends GLEIF and Finansinspektionen hundreds of
-    requests from bleqq's address. A bank's starts queue on an advisory lock, so two at once
-    cannot both pass. A lookup still queued or running blocks a new one, 409
-    `lookup_in_progress`, unless it was started more than twice `REGISTERS_JOB_SECONDS` ago,
-    which only a lost worker message leaves behind; past the hourly number it is 429
-    `rate_limited`."""
+    2026-11-11 S-11): each holds a worker and sends the registers hundreds of requests. A bank's
+    starts queue on an advisory lock. A lookup still queued or running blocks a new one, 409
+    `lookup_in_progress`, unless it started more than twice `REGISTERS_JOB_SECONDS` ago (a lost
+    worker message); past the hourly number it is 429 `rate_limited`."""
     with connection.cursor() as cursor:
         cursor.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", [f"{LOOKUP}:{tenant.id}"])
     now = timezone.now()
@@ -277,9 +263,7 @@ def lookup_out(*, tenant: Tenant, lookup: RegisterLookup, order: list[str]) -> R
     )
 
 
-# ---------------------------------------------------------------------------------------
-# Applying a lookup
-# ---------------------------------------------------------------------------------------
+# --- Applying a lookup ---
 def _placed_ancestor(company: RegisterLookupCompany, by_lei: dict[str, RegisterLookupCompany], placed: dict[str, uuid.UUID]) -> uuid.UUID | None:
     """The unit of the nearest company above this one that was chosen, if any."""
     parent, seen = company.parent_lei, set()
@@ -391,9 +375,7 @@ def _store(tenant: Tenant, actor: Actor, unit_id: uuid.UUID, authority_id: uuid.
             _change(entry, facts, source_url, read_at, actor)
 
 
-# ---------------------------------------------------------------------------------------
-# The nightly re-read
-# ---------------------------------------------------------------------------------------
+# --- The nightly re-read ---
 def _added(before: list[str], after: list[str]) -> list[str]:
     return [item for item in dict.fromkeys(after) if item not in set(before)]
 

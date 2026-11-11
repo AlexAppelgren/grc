@@ -1,9 +1,6 @@
-"""The bank's teams and who is in them (TEN-03). A team is a row of the bank's `team` list,
-so creating, renaming, retiring and putting one in a department are the `/vocab/team`
-routes (`department_id` checks the department they name), and putting a person in
-a team is the member's own route (`identity.members_logic.set_member_teams`); this module
-reads. Only a current member counts as in a team: a deactivated member's rows stay until
-their removal ends them, and are never counted or listed here.
+"""The bank's teams and who is in them (TEN-03); this module reads. A team is a row of the
+bank's `team` list (the `/vocab/team` routes write it) and membership is set by
+`identity.members_logic.set_member_teams`. Only a current member counts as in a team.
 """
 
 from __future__ import annotations
