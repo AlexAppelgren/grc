@@ -322,8 +322,7 @@ def create_source(request: HttpRequest, body: WatchSourceInput) -> Any:
     authority the library holds; `duplicate_key` (409) when a source of that name is already
     registered — names are unique across the library, so change the row that exists;
     `validation_error` (422) for a body the schema refuses, including a `url` that is not
-    http or https; `permission_denied` (403) without `sources.manage`; `unauthenticated`
-    (401) without a session.
+    http or https.
     """
     return 201, sources.create_source(
         actor=actor_for(request), order=language_order(request), body=body
@@ -366,8 +365,7 @@ def update_source(
     a body the schema refuses, including a `url` that is not http or https and a
     `checkFrequency` outside `daily`, `weekly` and `monthly`, and when the source would be
     checked automatically on a host of the `STANDARDS_PUBLISHER_HOSTS` setting, since no run
-    reads a standards publisher until its terms are cleared (WAT-07, D-45); `permission_denied` (403)
-    without `sources.manage`; `unauthenticated` (401) without a session.
+    reads a standards publisher until its terms are cleared (WAT-07, D-45).
     """
     return sources.update_source(
         actor=actor_for(request), order=language_order(request), source_id=source_id, body=body
@@ -413,17 +411,17 @@ def record_source_check(
     Errors to branch on: `run_not_open` (422) when the run named is closed, so nothing can
     be filed against it any more; `run_budget_exhausted` (422) when the line is a `recheck`
     and the run has already logged as many re-checks as one run may
-    (`WATCH_RUN_MAX_RECHECKS`, 100 unless the platform sets another number), so close it
-    and open another, while a sweep line is never counted; `unknown_source` (422) when `sourceName` names no
-    registered source — read `GET /sources` at run start and report against those names;
-    `source_inactive` (422) when the source is registered with its automated checks off,
-    as a standards publisher's is until its terms allow an automated check (WAT-07, D-45),
-    so no run reads it and nothing is logged; `validation_error` (422) when a failed check carries no `error`, when a successful one
-    carries an error, when a `recheck` names no `subjectType` and `subjectId`, or when a
-    `sweep` names one; `not_found` (404) when the run belongs to another key or to nobody,
-    answered alike so no run id can be probed for; `tenant_agents_not_available` (403) from
-    a key that belongs to a bank; `permission_denied` (403) without `sources:write`;
-    `unauthenticated` (401) without a key.
+    (`WATCH_RUN_MAX_RECHECKS`, 100 unless the platform sets another number), so close it and
+    open another, while a sweep line is never counted; `unknown_source` (422) when
+    `sourceName` names no registered source — read `GET /sources` at run start and report
+    against those names; `source_inactive` (422) when the source is registered with its
+    automated checks off, as a standards publisher's is until its terms allow an automated
+    check (WAT-07, D-45), so no run reads it and nothing is logged; `validation_error` (422)
+    when a failed check carries no `error`, when a successful one carries an error, when a
+    `recheck` names no `subjectType` and `subjectId`, or when a `sweep` names one;
+    `not_found` (404) when the run belongs to another key or to nobody, answered alike so no
+    run id can be probed for; `tenant_agents_not_available` (403) from a key that belongs to
+    a bank.
     """
     sources.record_check(
         who=principal(request), actor=actor_for(request), run_id=run_id, body=body
@@ -541,7 +539,7 @@ def get_change(request: HttpRequest, change_id: uuid.UUID = Path(..., descriptio
 
     Errors: `not_found` when no change has that id, when the caller may not see it, or when
     the session belongs to no bank — all answered the same way on purpose, so no id can be
-    probed; `permission_denied` without `watch.read`; `unauthenticated` without a session.
+    probed.
     """
     tenant = caller_tenant(request)
     return reading.get_change(tenant, language_order(request, tenant=tenant), change_id, principal(request).subject_id)
@@ -662,24 +660,23 @@ def create_change(request: HttpRequest, body: WatchChangeInput, idempotency_key:
     a refusal stores nothing at all.
 
     Errors to branch on: `run_not_open` (422) when a key names no run in `agentRunId`, or
-    one that is closed; `run_budget_exhausted` (422) when the run has already registered
-    as many new changes as one run may (`WATCH_RUN_MAX_CHANGES`, 50 unless the platform
-    sets another number), so close it and open another, while a second sighting of a
-    change the library holds is never counted;
-    `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
-    `obligationId` or `authorityCode` names a row the library does not hold or has retired,
-    with the valid keys listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a
-    `termId` is a term that mirrors the jurisdiction list, since a change's market comes
-    from its authority and never from a tag; `regime_required` (422) when a new change names
-    no regime term, with the regime keys listed in `validKeys`;
-    `standard_term_only_on_standards` (422) when a new change carries a standard's term (a
-    term of an opt-in dimension) and `authorityCode` names no standards body, that is no
-    authority whose jurisdiction is international, or none at all; `validation_error` (422) for
-    a body the schema refuses, for the same obligation named twice, for two pages both marked primary,
-    and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
-    `tenant_agents_not_available` (403) from a key that belongs to a bank;
-    `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
-    without a credential.
+    one that is closed; `run_budget_exhausted` (422) when the run has already registered as
+    many new changes as one run may (`WATCH_RUN_MAX_CHANGES`, 50 unless the platform sets
+    another number), so close it and open another, while a second sighting of a change the
+    library holds is never counted; `unknown_key` (422) when `changeType`,
+    `suggestedUrgency`, a flag key, a `termId`, an `obligationId` or `authorityCode` names a
+    row the library does not hold or has retired, with the valid keys listed for a
+    vocabulary; `jurisdiction_term_mirrored` (422) when a `termId` is a term that mirrors
+    the jurisdiction list, since a change's market comes from its authority and never from a
+    tag; `regime_required` (422) when a new change names no regime term, with the regime
+    keys listed in `validKeys`; `standard_term_only_on_standards` (422) when a new change
+    carries a standard's term (a term of an opt-in dimension) and `authorityCode` names no
+    standards body, that is no authority whose jurisdiction is international, or none at
+    all; `validation_error` (422) for a body the schema refuses, for the same obligation
+    named twice, for two pages both marked primary, and for a `soWhat` whose words carry no
+    model, no model version or no citation; `not_found` (404) when `agentRunId` names a run
+    belonging to another key; `tenant_agents_not_available` (403) from a key that belongs to
+    a bank; `permission_denied` (403) without the scope or the permission.
     """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
     require_change_writer(request)
@@ -728,8 +725,7 @@ def add_change_document(
     Errors to branch on: `validation_error` (422) when the change already has a primary page
     and this one is marked primary too, and for a body the schema refuses, including a `url`
     that is not http or https; `not_found` (404) when no change has that id;
-    `tenant_agents_not_available` (403) from a key that belongs to a bank;
-    `permission_denied` (403) without `changes:write`; `unauthenticated` (401) without a key.
+    `tenant_agents_not_available` (403) from a key that belongs to a bank.
     """
     return registration.add_document(
         who=principal(request), actor=actor_for(request), order=language_order(request), change_id=change_id, body=body
@@ -805,15 +801,15 @@ def update_change(
     names no regime term, because every change carries a regime (D-39), with the regime keys
     in `validKeys`; `standard_term_only_on_standards` (422) when that set carries a
     standard's term (a term of an opt-in dimension) and the change's authority is not a
-    standards body, whose jurisdiction is international; `editor_only_field` (422) when a key
-    sends `status` or `supersededBy`; `confirmed_fact` (422) when a key's call would drop a
-    flag or a term, or replace a type, that somebody confirmed; `step_up_required` (403) when
-    a person's call would do the same without a fresh passkey assertion; `validation_error` (422) for a field the
-    schema refuses, for a change asked to supersede itself, and for a `soWhat` whose words
-    carry no model, no model version or no citation; `not_found` (404) when no
-    change has that id; `tenant_agents_not_available` (403) from a key that belongs to a
-    bank; `permission_denied` (403) without the scope or the permission;
-    `unauthenticated` (401) without a credential.
+    standards body, whose jurisdiction is international; `editor_only_field` (422) when a
+    key sends `status` or `supersededBy`; `confirmed_fact` (422) when a key's call would
+    drop a flag or a term, or replace a type, that somebody confirmed; `step_up_required`
+    (403) when a person's call would do the same without a fresh passkey assertion;
+    `validation_error` (422) for a field the schema refuses, for a change asked to supersede
+    itself, and for a `soWhat` whose words carry no model, no model version or no citation;
+    `not_found` (404) when no change has that id; `tenant_agents_not_available` (403) from a
+    key that belongs to a bank; `permission_denied` (403) without the scope or the
+    permission.
     """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
     require_change_writer(request)
@@ -867,8 +863,8 @@ def add_change_event(
     that label and other dates; `validation_error` (422) for a body the schema refuses,
     including a timestamp where a plain date belongs and a precision outside `day`, `month`,
     `quarter` and `year`; `not_found` (404) when no change has that id;
-    `tenant_agents_not_available` (403) from a key that belongs to a bank; `permission_denied`
-    (403) without the scope or the permission; `unauthenticated` (401) without a credential.
+    `tenant_agents_not_available` (403) from a key that belongs to a bank;
+    `permission_denied` (403) without the scope or the permission.
     """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
     require_change_writer(request)
@@ -911,8 +907,7 @@ def update_change_event(
     and `year`; `not_found` (404) when no change has that id, or the entry belongs to
     another change — the two are answered alike so no id can be probed;
     `tenant_agents_not_available` (403) from a key that belongs to a bank;
-    `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
-    without a credential.
+    `permission_denied` (403) without the scope or the permission.
     """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
     require_change_writer(request)
@@ -968,13 +963,12 @@ def replace_change_obligations(
 
     Errors to branch on: `unknown_key` (422) when an `obligationId` names no active
     obligation of the library; `validation_error` (422) when the same obligation is named
-    twice, or for a body the schema refuses, including more than 200 links;
-    `confirmed_fact` (422) when a key's new set would drop a link somebody confirmed;
-    `step_up_required` (403) when a person's set would do the same without a fresh passkey
-    assertion; `not_found` (404) when no change has that id;
-    `tenant_agents_not_available` (403) from a key that belongs to a bank;
-    `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
-    without a credential.
+    twice, or for a body the schema refuses, including more than 200 links; `confirmed_fact`
+    (422) when a key's new set would drop a link somebody confirmed; `step_up_required`
+    (403) when a person's set would do the same without a fresh passkey assertion;
+    `not_found` (404) when no change has that id; `tenant_agents_not_available` (403) from a
+    key that belongs to a bank; `permission_denied` (403) without the scope or the
+    permission.
     """
     # Ungated by design: logic-gate (a key with changes:write, or a library editor with proposals.review).
     require_change_writer(request)
@@ -1042,19 +1036,17 @@ def confirm_change_curation(
 
     Errors to branch on: `risk_flagged` (409) when a key confirms a change any of whose
     pages carries a flag from the injection screen, which waits for a person who reads the
-    flag; `own_suggestion` (409) when a named fact was suggested by this very
-    key, or filed by this very person; `same_agent` (409) when it was suggested by another
-    key of the same agent; `validation_error` (422) when the body names nothing, names a
-    type, a flag, a term or an obligation the change does not carry now, when a key sends
-    no `decision` or a person sends one or an `agentRunId`, and for a body the schema
-    refuses, including a decision with no model, version or citation; `run_not_open` (422)
-    when a key names no run or a closed one; `not_found` (404) when no change has that id,
-    or the run belongs to another key; `agent_not_bound` (403) for a key holding the scope
-    but bound to no agent definition;
-    `step_up_required` (403) when a person calls without a fresh passkey assertion;
-    `permission_denied` (403) without `proposals.review` or `proposals:review`, which is
-    what every bank's session and key receives; `unauthenticated` (401) without a
-    credential.
+    flag; `own_suggestion` (409) when a named fact was suggested by this very key, or filed
+    by this very person; `same_agent` (409) when it was suggested by another key of the same
+    agent; `validation_error` (422) when the body names nothing, names a type, a flag, a
+    term or an obligation the change does not carry now, when a key sends no `decision` or a
+    person sends one or an `agentRunId`, and for a body the schema refuses, including a
+    decision with no model, version or citation; `run_not_open` (422) when a key names no
+    run or a closed one; `not_found` (404) when no change has that id, or the run belongs to
+    another key; `agent_not_bound` (403) for a key holding the scope but bound to no agent
+    definition; `step_up_required` (403) when a person calls without a fresh passkey
+    assertion; `permission_denied` (403) without `proposals.review` or `proposals:review`,
+    which is what every bank's session and key receives.
     """
     # Ungated by design: logic-gate (an agent-bound platform key with proposals:review, or a person with proposals.review and a fresh passkey).
     step_up_assertion_id = require_curation_confirmer(request)

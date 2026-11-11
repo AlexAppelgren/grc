@@ -286,8 +286,7 @@ def get_briefing(request: HttpRequest, week_start: datetime.date = Path(..., des
 
     Errors: `not_found` when no briefing was stored for that week, or when the date is not a
     Monday, or when the caller may not see it — answered the same way on purpose, so no week
-    can be probed; `permission_denied` without `watch.read`; `unauthenticated` without a
-    session; `validation_error` when the path segment is not a calendar date.
+    can be probed; `validation_error` when the path segment is not a calendar date.
     """
     tenant = caller_tenant(request)
     return briefing_reads.briefing_for_week(tenant, language_order(request, tenant=tenant), week_start)
@@ -578,8 +577,8 @@ def revoke_calendar_feed(request: HttpRequest, feed_id: uuid.UUID = Path(..., de
     well, so a retry is safe.
 
     Errors: `not_found` when no subscription of the caller's has that id — including one
-    belonging to another person or another bank, answered the same way so no id can be probed;
-    `permission_denied` without `roadmap.read`; `unauthenticated` without a session.
+    belonging to another person or another bank, answered the same way so no id can be
+    probed.
     """
     user = caller_user(request)
     feed_logic.revoke_feed(

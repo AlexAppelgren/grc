@@ -31,6 +31,8 @@ export interface paths {
          *     `stale_write` for a missing or old `If-Match`; `actions_locked` (409) while the case waits
          *     for sign-off or once it is closed; `invalid_transition` (409) while the case is not being
          *     worked.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.work`, named in `requiredPermission`.
          */
         delete: operations["deleteAction"];
         options?: never;
@@ -51,6 +53,8 @@ export interface paths {
          *     for sign-off or once it is closed; `invalid_transition` (409) while the case is not being
          *     worked; `unknown_member` (422) for an owner who is not an active member of this bank;
          *     `validation_error` for a body the schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.contribute`, named in `requiredPermission`.
          */
         patch: operations["updateAction"];
         trace?: never;
@@ -71,6 +75,8 @@ export interface paths {
          *     A read: it changes nothing and writes no audit row. Needs `agent_access.manage` on a person's session in the bank.
          *
          *     Errors: `validation_error` (422) when `limit` is above 100; `permission_denied` (403) without `agent_access.manage`; `unauthenticated` (401) without a live session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_access.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listAgentAccess"];
         put?: never;
@@ -83,6 +89,8 @@ export interface paths {
          *     Needs `agent_access.manage` on a person's session in the bank and a passkey step-up on it younger than the step-up window; an API key or a personal access token is refused, since neither can step up. Records `agent_access.registered` in the audit log with the team, department and product ids and the step-up assertion, never the purpose.
          *
          *     Errors: `unknown_key` (422) for a team, department or product the bank has not got; `name_required` or `purpose_required` (422) for one of spaces alone; `validation_error` (422) for a body the schema refuses; `step_up_required` (403) without a fresh step-up, which the screen answers by opening the passkey prompt and retrying; `permission_denied` (403) without `agent_access.manage`; `unauthenticated` (401) without a live session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_access.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["registerAgentAccess"];
         delete?: never;
@@ -109,6 +117,8 @@ export interface paths {
          *     A key of an agent access entry, or a personal access token, holding `library:read`; a person's session and any other key are refused. A read that takes a body: it writes nothing but the summary's AI log row, and the access log records the call with the description's name alone, never its text. Pages with `limit` and `offset`, 20 by default and 100 at most.
          *
          *     Errors: `description_required` (422) for a description of spaces alone; `description_too_long` (422) beyond `AGENT_ACCESS_DESCRIPTION_MAX_CHARS` characters; `validation_error` (422) for a body the schema refuses or a page out of range; `permission_denied` (403) for a key that is not an agent access credential or one without `library:read`; `rate_limited` (429) over the credential's rate; `unauthenticated` (401) without a live key or token.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a valid API key; `permission_denied` (403) for a key without the `library:read` scope, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         post: operations["whatApplies"];
         delete?: never;
@@ -133,6 +143,8 @@ export interface paths {
          *     A read: it changes nothing and writes no audit row. Needs `agent_access.manage` on a person's session in the bank.
          *
          *     Errors: `not_found` (404) for an entry the bank has not got; `permission_denied` (403) without `agent_access.manage`; `unauthenticated` (401) without a live session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_access.manage`, named in `requiredPermission`.
          */
         get: operations["getAgentAccess"];
         put?: never;
@@ -149,6 +161,8 @@ export interface paths {
          *     Needs `agent_access.manage` on a person's session in the bank and a passkey step-up on it younger than the step-up window; an API key or a personal access token is refused, since neither can step up. Records `agent_access.updated` with the ids and keys before and after, and whether the purpose changed, never its text.
          *
          *     Errors: `invalid_transition` (409) for a revoked entry; `stale_write` (409) when `If-Match` names an old version; `unknown_key` (422) for a team, department or product the bank has not got; `name_required` or `purpose_required` (422) for one of spaces alone; `validation_error` (422) for a body the schema refuses or an `If-Match` that is not a version; `not_found` (404) for an entry the bank has not got; `step_up_required` (403) without a fresh step-up, which the screen answers by opening the passkey prompt and retrying; `permission_denied` (403) without `agent_access.manage`; `unauthenticated` (401) without a live session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_access.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         patch: operations["updateAgentAccess"];
         trace?: never;
@@ -167,6 +181,8 @@ export interface paths {
          *     A read: it changes nothing and writes no audit row. Needs `agent_access.manage` on a person's session in the bank. An entry that has made no call is a 200 with `total` 0.
          *
          *     Errors: `not_found` (404) for an entry the bank has not got; `validation_error` (422) when `limit` is above 100; `permission_denied` (403) without `agent_access.manage`; `unauthenticated` (401) without a live session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_access.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listAgentAccessCalls"];
         put?: never;
@@ -195,6 +211,8 @@ export interface paths {
          *     Needs `agent_access.manage` on a person's session in the bank and a passkey step-up on it younger than the step-up window; an API key or a personal access token is refused, since neither can step up. Records `api_key.created` with the prefix, scopes and expiry, never the secret, and a row for the new key in the security log.
          *
          *     Errors: `invalid_transition` (409) for a revoked entry; `unknown_key` (422) for a scope an entry's key may not hold, the message naming the valid ones; `expiry_in_past` (422) for an expiry that is not in the future; `expiry_too_late` (422) for one beyond the longest a key may live; `name_required` (422) for a name of spaces alone; `validation_error` (422) for a body the schema refuses; `not_found` (404) for an entry the bank has not got; `step_up_required` (403) without a fresh step-up, which the screen answers by opening the passkey prompt and retrying; `permission_denied` (403) without `agent_access.manage`; `unauthenticated` (401) without a live session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_access.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["createAgentAccessKey"];
         delete?: never;
@@ -221,6 +239,8 @@ export interface paths {
          *     Needs `agent_access.manage` on a person's session in the bank and a passkey step-up on it younger than the step-up window; an API key or a personal access token is refused, since neither can step up. Records `api_key.revoked` in the audit log every time, and a row in the security log the first time.
          *
          *     Errors: `not_found` (404) for an entry the bank has not got or a credential not bound to it; `step_up_required` (403) without a fresh step-up, which the screen answers by opening the passkey prompt and retrying; `permission_denied` (403) without `agent_access.manage`; `unauthenticated` (401) without a live session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_access.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["revokeAgentAccessKey"];
         delete?: never;
@@ -247,6 +267,8 @@ export interface paths {
          *     Needs `agent_access.manage` on a person's session in the bank and a passkey step-up on it younger than the step-up window; an API key or a personal access token is refused, since neither can step up. Records `agent_access.revoked` with the prefixes of the credentials it revoked, and one row per revoked credential in the security log.
          *
          *     Errors: `invalid_transition` (409) for an entry already revoked; `stale_write` (409) when `If-Match` names an old version; `validation_error` (422) for an `If-Match` that is not a version; `not_found` (404) for an entry the bank has not got; `step_up_required` (403) without a fresh step-up, which the screen answers by opening the passkey prompt and retrying; `permission_denied` (403) without `agent_access.manage`; `unauthenticated` (401) without a live session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_access.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         post: operations["revokeAgentAccess"];
         delete?: never;
@@ -272,6 +294,8 @@ export interface paths {
          *     Needs `agent_access.manage` on a person's session in the bank and a passkey step-up on it younger than the step-up window; an API key or a personal access token is refused, since neither can step up. Records `agent_access.reach_set` with the toggle before and after.
          *
          *     Errors: `invalid_transition` (409) for a revoked entry; `stale_write` (409) when `If-Match` names an old version; `validation_error` (422) for a body the schema refuses or an `If-Match` that is not a version; `not_found` (404) for an entry the bank has not got; `step_up_required` (403) without a fresh step-up, which the screen answers by opening the passkey prompt and retrying; `permission_denied` (403) without `agent_access.manage`; `unauthenticated` (401) without a live session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_access.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         put: operations["setAgentAccessReach"];
         post?: never;
@@ -303,9 +327,7 @@ export interface paths {
          *     this call only reads them: it changes nothing and writes nothing to the audit log. An
          *     empty list is a 200 with `total` 0.
          *
-         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `permission_denied` without `agent_definitions.manage`; `unauthenticated`
-         *     without a session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listAgentDefinitions"];
         put?: never;
@@ -333,8 +355,9 @@ export interface paths {
          *     session inside a bank and no API key reaches a definition, in any release (AGT-03). It
          *     reads and writes nothing to the audit log.
          *
-         *     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
-         *     `agent_definitions.manage`; `not_found` (404) for a key no definition has.
+         *     Errors: `not_found` (404) for a key no definition has.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`.
          */
         get: operations["getAgentDefinition"];
         put?: never;
@@ -361,8 +384,9 @@ export interface paths {
          *     A person's session in the platform console holding `agent_definitions.manage`. It
          *     reads and writes nothing to the audit log.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
-         *     `agent_definitions.manage`; `not_found` (404) for a key no platform agent has.
+         *     Errors: `not_found` (404) for a key no platform agent has.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`.
          */
         get: operations["getPlatformAgentSettings"];
         /**
@@ -374,11 +398,11 @@ export interface paths {
          *     fresh passkey step-up. Records one audit event with the settings before and after, the
          *     person and the assertion, and no bank.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
-         *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-         *     `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
+         *     Errors: `not_found` (404) for a key no platform agent has; `unknown_key` (422) for a
          *     jurisdiction the vocabulary does not hold, with the valid keys; `validation_error`
          *     (422).
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         put: operations["updatePlatformAgentSettings"];
         post?: never;
@@ -409,10 +433,10 @@ export interface paths {
          *     Records one audit event naming the person, the definition, the version and the
          *     assertion.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
-         *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-         *     `not_found` (404) for a key no definition has; `validation_error` (422) for a version
-         *     number the build does not ship or a missing note.
+         *     Errors: `not_found` (404) for a key no definition has; `validation_error` (422) for a
+         *     version number the build does not ship or a missing note.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["publishAgentVersion"];
         delete?: never;
@@ -439,9 +463,9 @@ export interface paths {
          *     fresh passkey step-up. Records one audit event naming the person, the version and the
          *     assertion.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
-         *     `agent_definitions.manage`; `step_up_required` (403) without a fresh passkey assertion;
-         *     `not_found` (404) for a definition or version that does not exist.
+         *     Errors: `not_found` (404) for a definition or version that does not exist.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["retireAgentVersion"];
         delete?: never;
@@ -471,9 +495,7 @@ export interface paths {
          *     It changes nothing and writes nothing to the audit log. An empty list is a 200 with
          *     `total` 0.
          *
-         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `permission_denied` without `agent_definitions.manage`; `unauthenticated`
-         *     without a session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listAgentKeys"];
         put?: never;
@@ -500,15 +522,14 @@ export interface paths {
          *     that confirmed it; the security log records the event "key_created". Answers 201 with
          *     the key.
          *
-         *     Errors: `step_up_required` without a fresh passkey assertion, which the console answers
-         *     by opening the passkey prompt and retrying; `unknown_key` when `agentId` names no agent
-         *     definition or a scope does not exist, the message naming the valid scopes;
-         *     `agent_inactive` (422) when the agent is retired or switched off; `scope_not_for_kind`
-         *     (422) for a scope the agent's kind does not take, the message naming it;
-         *     `name_required` for a name of spaces alone; `expiry_in_past` for an expiry that is not
-         *     in the future; `validation_error` for a field the schema refuses, a field it does not
-         *     name among them; `permission_denied` without `agent_definitions.manage`;
-         *     `unauthenticated` without a session.
+         *     Errors: `unknown_key` when `agentId` names no agent definition or a scope does not
+         *     exist, the message naming the valid scopes; `agent_inactive` (422) when the agent is
+         *     retired or switched off; `scope_not_for_kind` (422) for a scope the agent's kind does
+         *     not take, the message naming it; `name_required` for a name of spaces alone;
+         *     `expiry_in_past` for an expiry that is not in the future; `validation_error` for a field
+         *     the schema refuses, a field it does not name among them.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["createAgentKey"];
         delete?: never;
@@ -544,6 +565,8 @@ export interface paths {
          *     Answers 200 with the key. Errors: `not_found` when no platform key has that identifier;
          *     `permission_denied` without `agent_definitions.manage`; `unauthenticated` without a
          *     session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`.
          */
         post: operations["revokeAgentKey"];
         delete?: never;
@@ -579,9 +602,10 @@ export interface paths {
          *     It changes nothing and writes nothing to the audit log. An empty list is a 200 with
          *     `total` 0 and means nothing has run yet, not that something is wrong.
          *
-         *     Errors: `validation_error` when `limit` is above 100, `offset` beyond the accepted
-         *     depth or `tenantAgentId` is not a UUID; `not_found` for a session that belongs to no
-         *     bank; `permission_denied` without `agents.manage`; `unauthenticated` without a session.
+         *     Errors: `validation_error` when `limit` is above 100, `offset` beyond the accepted depth
+         *     or `tenantAgentId` is not a UUID; `not_found` for a session that belongs to no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listAgentRuns"];
         put?: never;
@@ -616,6 +640,8 @@ export interface paths {
          *     `unauthenticated` when the key is missing, revoked or expired; `idempotency_conflict`
          *     when the same `Idempotency-Key` is sent with a different body; and `validation_error`
          *     for a field the caller can fix.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a valid API key; `permission_denied` (403) for a key without the `agent-runs:write` scope, named in `requiredPermission`.
          */
         post: operations["startAgentRun"];
         delete?: never;
@@ -673,6 +699,8 @@ export interface paths {
          *     `agent-runs:write`; `unauthenticated` when the key is missing, revoked or expired; and
          *     `validation_error` for a field the caller can fix, such as an error message over its
          *     length.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a valid API key; `permission_denied` (403) for a key without the `agent-runs:write` scope, named in `requiredPermission`.
          */
         patch: operations["finishAgentRun"];
         trace?: never;
@@ -697,10 +725,12 @@ export interface paths {
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
          *     event naming the person.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
-         *     naming `agent_definitions.manage` for a run of one of bleqq's agents; `not_found` (404)
-         *     for a run the bank cannot see; `run_finished` (409) for a run that has already ended,
-         *     which changes nothing.
+         *     Errors: `permission_denied` (403) without `agents.manage`, or naming
+         *     `agent_definitions.manage` for a run of one of bleqq's agents; `not_found` (404) for a
+         *     run the bank cannot see; `run_finished` (409) for a run that has already ended, which
+         *     changes nothing.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
          */
         post: operations["interruptAgentRun"];
         delete?: never;
@@ -742,17 +772,19 @@ export interface paths {
          *     Errors to branch on: `run_not_open` (422) when the run named is closed, so nothing can
          *     be filed against it any more; `run_budget_exhausted` (422) when the line is a `recheck`
          *     and the run has already logged as many re-checks as one run may
-         *     (`WATCH_RUN_MAX_RECHECKS`, 100 unless the platform sets another number), so close it
-         *     and open another, while a sweep line is never counted; `unknown_source` (422) when `sourceName` names no
-         *     registered source — read `GET /sources` at run start and report against those names;
-         *     `source_inactive` (422) when the source is registered with its automated checks off,
-         *     as a standards publisher's is until its terms allow an automated check (WAT-07, D-45),
-         *     so no run reads it and nothing is logged; `validation_error` (422) when a failed check carries no `error`, when a successful one
-         *     carries an error, when a `recheck` names no `subjectType` and `subjectId`, or when a
-         *     `sweep` names one; `not_found` (404) when the run belongs to another key or to nobody,
-         *     answered alike so no run id can be probed for; `tenant_agents_not_available` (403) from
-         *     a key that belongs to a bank; `permission_denied` (403) without `sources:write`;
-         *     `unauthenticated` (401) without a key.
+         *     (`WATCH_RUN_MAX_RECHECKS`, 100 unless the platform sets another number), so close it and
+         *     open another, while a sweep line is never counted; `unknown_source` (422) when
+         *     `sourceName` names no registered source — read `GET /sources` at run start and report
+         *     against those names; `source_inactive` (422) when the source is registered with its
+         *     automated checks off, as a standards publisher's is until its terms allow an automated
+         *     check (WAT-07, D-45), so no run reads it and nothing is logged; `validation_error` (422)
+         *     when a failed check carries no `error`, when a successful one carries an error, when a
+         *     `recheck` names no `subjectType` and `subjectId`, or when a `sweep` names one;
+         *     `not_found` (404) when the run belongs to another key or to nobody, answered alike so no
+         *     run id can be probed for; `tenant_agents_not_available` (403) from a key that belongs to
+         *     a bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a valid API key; `permission_denied` (403) for a key without the `sources:write` scope, named in `requiredPermission`.
          */
         post: operations["recordSourceCheck"];
         delete?: never;
@@ -776,8 +808,7 @@ export interface paths {
          *     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
          *     nothing to the audit log. An empty list is a 200 and means the bank has added none.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `validation_error` (422) when `limit` is above 100.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listTenantAgents"];
         put?: never;
@@ -791,13 +822,15 @@ export interface paths {
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
          *     event naming the person and the definition.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
-         *     naming `agent_definitions.manage` when the definition is one of bleqq's own agents,
-         *     which no bank adds or steers; `unknown_key` (422) for a definition key that does not
-         *     exist, or a scope key the vocabulary does not hold, with the valid keys in `validKeys`;
+         *     Errors: `permission_denied` (403) without `agents.manage`, or naming
+         *     `agent_definitions.manage` when the definition is one of bleqq's own agents, which no
+         *     bank adds or steers; `unknown_key` (422) for a definition key that does not exist, or a
+         *     scope key the vocabulary does not hold, with the valid keys in `validKeys`;
          *     `above_plan_limit` (422) for a cadence more frequent than the plan allows, or one agent
          *     more than it allows; `duplicate_key` (409) when the bank has already added this
          *     definition; `validation_error` (422).
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
          */
         post: operations["createTenantAgent"];
         delete?: never;
@@ -828,8 +861,7 @@ export interface paths {
          *     is a cadence after the last run started, or now when the agent has never run or is
          *     overdue, and null for an agent that runs only when asked. An empty list is a 200.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `watch.read`;
-         *     `validation_error` (422) when `limit` is above 100.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `watch.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listPlatformWatch"];
         put?: never;
@@ -862,11 +894,13 @@ export interface paths {
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
          *     event with the fields before and after.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `not_found` (404) for an agent the bank does not have; `unknown_key` (422) for a scope
-         *     key the vocabulary does not hold, with the valid keys in `validKeys`; `above_plan_limit`
-         *     (422) for a cadence more frequent than the plan allows; `budget_cap_required` (422) when
-         *     switching on before the bank has set its monthly cap; `validation_error` (422).
+         *     Errors: `not_found` (404) for an agent the bank does not have; `unknown_key` (422) for a
+         *     scope key the vocabulary does not hold, with the valid keys in `validKeys`;
+         *     `above_plan_limit` (422) for a cadence more frequent than the plan allows;
+         *     `budget_cap_required` (422) when switching on before the bank has set its monthly cap;
+         *     `validation_error` (422).
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
          */
         patch: operations["updateTenantAgent"];
         trace?: never;
@@ -891,8 +925,9 @@ export interface paths {
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
          *     event naming the person.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `not_found` (404) for an agent the bank does not have.
+         *     Errors: `not_found` (404) for an agent the bank does not have.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
          */
         post: operations["pauseTenantAgent"];
         /**
@@ -906,8 +941,9 @@ export interface paths {
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
          *     event naming the person.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `not_found` (404) for an agent the bank does not have.
+         *     Errors: `not_found` (404) for an agent the bank does not have.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
          */
         delete: operations["resumeTenantAgent"];
         options?: never;
@@ -936,12 +972,13 @@ export interface paths {
          *     opening in the audit log, naming the person, before the runner is asked to start it; a
          *     runner that cannot start it leaves the run recorded as failed.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `not_found` (404) for an agent the bank does not have; `agent_disabled` (409) for an
-         *     agent switched off; `agent_paused` (409) for a paused one; `no_published_version` (409)
-         *     when every version of its definition is retired; `feature_off` (422) while the bank's AI
-         *     features are off; `budget_cap_reached` (422) when the run could take the month's spend
-         *     past the cap. A refused run writes nothing.
+         *     Errors: `not_found` (404) for an agent the bank does not have; `agent_disabled` (409)
+         *     for an agent switched off; `agent_paused` (409) for a paused one; `no_published_version`
+         *     (409) when every version of its definition is retired; `feature_off` (422) while the
+         *     bank's AI features are off; `budget_cap_reached` (422) when the run could take the
+         *     month's spend past the cap. A refused run writes nothing.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
          */
         post: operations["runTenantAgentNow"];
         delete?: never;
@@ -992,6 +1029,8 @@ export interface paths {
          *     `ai_log.read`, with `requiredPermission` named; `validation_error` (422) when
          *     `subjectId` is not a UUID, `purpose` is longer than 32 characters, `status` longer than
          *     16, or `limit` or `offset` is out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `ai_log.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listAiGenerations"];
         put?: never;
@@ -1034,9 +1073,9 @@ export interface paths {
          *
          *     Errors: `not_found` (404) for an answer the caller was not given themselves, or a
          *     session that belongs to no bank; `validation_error` (422) for a verdict other than
-         *     `helpful` or `wrong`, a note over the cap or a field the contract does not name;
-         *     `permission_denied` (403) without `search.use`; `unauthenticated` (401) without a
-         *     session.
+         *     `helpful` or `wrong`, a note over the cap or a field the contract does not name.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `search.use`, named in `requiredPermission`.
          */
         post: operations["rateAnswer"];
         delete?: never;
@@ -1066,12 +1105,13 @@ export interface paths {
          *     100 by default. Records one audit event per row naming the person, the value before and
          *     after, and the reason.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
-         *     `applicability.approve`; `not_found` (404) when any row names an obligation, entity or unit
-         *     the bank cannot see, or a legal entity its obligation does not span; `validation_error`
-         *     (422) for an empty list, a list over the cap, the same target twice or a row the schema
-         *     refuses; `scope_not_applicable` (422) for a unit whose legal entity no longer follows the
+         *     Errors: `not_found` (404) when any row names an obligation, entity or unit the bank
+         *     cannot see, or a legal entity its obligation does not span; `validation_error` (422) for
+         *     an empty list, a list over the cap, the same target twice or a row the schema refuses;
+         *     `scope_not_applicable` (422) for a unit whose legal entity no longer follows the
          *     standard.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`.
          */
         post: operations["setApplicabilityMany"];
         delete?: never;
@@ -1135,6 +1175,8 @@ export interface paths {
          *     byte, the one way a stream ends badly is a `problem` event with `model_unavailable`:
          *     the model could not be reached, declined or ran out of time, and asking again may
          *     succeed.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `search.use`, named in `requiredPermission`.
          */
         post: operations["ask"];
         delete?: never;
@@ -1178,13 +1220,14 @@ export interface paths {
          *     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no
          *     rows, or filters matching none, is a 200 with an empty `items` and a `total` of 0.
          *
-         *     Errors: `unauthenticated` (401) without a session, an agent's key included;
-         *     `permission_denied` (403) without `audit.read`, with `requiredPermission` named, which
-         *     is also what a platform console session gets, since no platform role holds
-         *     `audit.read`; `not_found` (404) for a session that holds `audit.read` but belongs to
-         *     no bank, because the audit log is a bank's own; `validation_error` (422) when
-         *     `subjectId` or `actorId` is not a UUID, `from` or `to` is not a timestamp,
-         *     `subjectType` is longer than 64 characters, or `limit` or `offset` is out of range.
+         *     Errors: `permission_denied` (403) without `audit.read`, with `requiredPermission` named,
+         *     which is also what a platform console session gets, since no platform role holds
+         *     `audit.read`; `not_found` (404) for a session that holds `audit.read` but belongs to no
+         *     bank, because the audit log is a bank's own; `validation_error` (422) when `subjectId`
+         *     or `actorId` is not a UUID, `from` or `to` is not a timestamp, `subjectType` is longer
+         *     than 64 characters, or `limit` or `offset` is out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `audit.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listAuditEvents"];
         put?: never;
@@ -1453,7 +1496,7 @@ export interface paths {
          *     passkey for their own account. It stores the challenge and writes the audit event
          *     `auth.challenge_issued`.
          *
-         *     Errors: `unauthenticated` (401) without a live session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or an enrolment session.
          */
         post: operations["passkeyRegisterOptions"];
         delete?: never;
@@ -1497,8 +1540,10 @@ export interface paths {
          *     lifetime, and start again from the options call; `invalid_credential` (400) when the
          *     credential cannot be read; `registration_failed` (400) when it does not verify or that
          *     passkey is already registered; `step_up_required` (403) when a full session is older
-         *     than the step-up window and holds no fresh assertion; `unauthenticated` (401) without a live session; `validation_error` (422) for a malformed
-         *     body.
+         *     than the step-up window and holds no fresh assertion; `validation_error` (422) for a
+         *     malformed body.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or an enrolment session.
          */
         post: operations["passkeyRegisterVerify"];
         delete?: never;
@@ -1611,8 +1656,9 @@ export interface paths {
          *     Needs a full session and no permission; an agent's API key can never step up. It stores
          *     the challenge and writes the audit event `auth.challenge_issued`.
          *
-         *     Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
-         *     enrolment session.
+         *     Errors: `enrolment_only` (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["stepUpOptions"];
         delete?: never;
@@ -1647,8 +1693,10 @@ export interface paths {
          *
          *     Errors: `step_up_failed` (400) for every refusal (a passkey that is not the caller's or
          *     is retired, a spent or expired challenge, a user handle naming someone else, a bad
-         *     signature); `unauthenticated` (401) without a live session; `enrolment_only` (403) from
-         *     an enrolment session; `validation_error` (422) for a malformed body.
+         *     signature); `enrolment_only` (403) from an enrolment session; `validation_error` (422)
+         *     for a malformed body.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["stepUpVerify"];
         delete?: never;
@@ -1681,8 +1729,9 @@ export interface paths {
          *     Ordered by the authority's key, so the list a picker renders is the same on every call.
          *     An empty library would be a 200 with an empty array.
          *
-         *     Errors: `permission_denied` without `library.read` or `library:read`; `unauthenticated`
-         *     without a credential.
+         *     Errors: `permission_denied` without `library.read` or `library:read`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["listAuthorities"];
         put?: never;
@@ -1726,6 +1775,8 @@ export interface paths {
          *
          *     A quiet week is a 200 with an empty `items` and a null `lead`, never a 404. Errors:
          *     `permission_denied` without `watch.read`, `unauthenticated` without a session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `watch.read`, named in `requiredPermission`.
          */
         get: operations["getCurrentBriefing"];
         put?: never;
@@ -1762,8 +1813,9 @@ export interface paths {
          *
          *     Errors: `not_found` when no briefing was stored for that week, or when the date is not a
          *     Monday, or when the caller may not see it — answered the same way on purpose, so no week
-         *     can be probed; `permission_denied` without `watch.read`; `unauthenticated` without a
-         *     session; `validation_error` when the path segment is not a calendar date.
+         *     can be probed; `validation_error` when the path segment is not a calendar date.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `watch.read`, named in `requiredPermission`.
          */
         get: operations["getBriefing"];
         put?: never;
@@ -1807,6 +1859,8 @@ export interface paths {
          *
          *     A person with no subscriptions gets a 200 with an empty array, never a 404. Errors:
          *     `permission_denied` without `roadmap.read`, `unauthenticated` without a session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `roadmap.read`, named in `requiredPermission`.
          */
         get: operations["listCalendarFeeds"];
         put?: never;
@@ -1845,6 +1899,8 @@ export interface paths {
          *     subscriptions that still work — revoke one and ask again — and `validation_error` for a
          *     field the body does not know, including the `filter` the designed contract once offered,
          *     which is gone.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `roadmap.read`, named in `requiredPermission`.
          */
         post: operations["createCalendarFeed"];
         delete?: never;
@@ -1884,8 +1940,10 @@ export interface paths {
          *     well, so a retry is safe.
          *
          *     Errors: `not_found` when no subscription of the caller's has that id — including one
-         *     belonging to another person or another bank, answered the same way so no id can be probed;
-         *     `permission_denied` without `roadmap.read`; `unauthenticated` without a session.
+         *     belonging to another person or another bank, answered the same way so no id can be
+         *     probed.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `roadmap.read`, named in `requiredPermission`.
          */
         delete: operations["revokeCalendarFeed"];
         options?: never;
@@ -1974,6 +2032,8 @@ export interface paths {
          *     A change's jurisdiction comes from its authority at match time and is never stored; a
          *     change with no authority is not restricted by jurisdiction. Watching a market sets no
          *     urgency and opens no triage: `footprint=watched` only reads.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `watch.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listChanges"];
         put?: never;
@@ -2042,24 +2102,25 @@ export interface paths {
          *     a refusal stores nothing at all.
          *
          *     Errors to branch on: `run_not_open` (422) when a key names no run in `agentRunId`, or
-         *     one that is closed; `run_budget_exhausted` (422) when the run has already registered
-         *     as many new changes as one run may (`WATCH_RUN_MAX_CHANGES`, 50 unless the platform
-         *     sets another number), so close it and open another, while a second sighting of a
-         *     change the library holds is never counted;
-         *     `unknown_key` (422) when `changeType`, `suggestedUrgency`, a flag key, a `termId`, an
-         *     `obligationId` or `authorityCode` names a row the library does not hold or has retired,
-         *     with the valid keys listed for a vocabulary; `jurisdiction_term_mirrored` (422) when a
-         *     `termId` is a term that mirrors the jurisdiction list, since a change's market comes
-         *     from its authority and never from a tag; `regime_required` (422) when a new change names
-         *     no regime term, with the regime keys listed in `validKeys`;
-         *     `standard_term_only_on_standards` (422) when a new change carries a standard's term (a
-         *     term of an opt-in dimension) and `authorityCode` names no standards body, that is no
-         *     authority whose jurisdiction is international, or none at all; `validation_error` (422) for
-         *     a body the schema refuses, for the same obligation named twice, for two pages both marked primary,
-         *     and for a `soWhat` whose words carry no model, no model version or no citation; `not_found` (404) when `agentRunId` names a run belonging to another key;
-         *     `tenant_agents_not_available` (403) from a key that belongs to a bank;
-         *     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
-         *     without a credential.
+         *     one that is closed; `run_budget_exhausted` (422) when the run has already registered as
+         *     many new changes as one run may (`WATCH_RUN_MAX_CHANGES`, 50 unless the platform sets
+         *     another number), so close it and open another, while a second sighting of a change the
+         *     library holds is never counted; `unknown_key` (422) when `changeType`,
+         *     `suggestedUrgency`, a flag key, a `termId`, an `obligationId` or `authorityCode` names a
+         *     row the library does not hold or has retired, with the valid keys listed for a
+         *     vocabulary; `jurisdiction_term_mirrored` (422) when a `termId` is a term that mirrors
+         *     the jurisdiction list, since a change's market comes from its authority and never from a
+         *     tag; `regime_required` (422) when a new change names no regime term, with the regime
+         *     keys listed in `validKeys`; `standard_term_only_on_standards` (422) when a new change
+         *     carries a standard's term (a term of an opt-in dimension) and `authorityCode` names no
+         *     standards body, that is no authority whose jurisdiction is international, or none at
+         *     all; `validation_error` (422) for a body the schema refuses, for the same obligation
+         *     named twice, for two pages both marked primary, and for a `soWhat` whose words carry no
+         *     model, no model version or no citation; `not_found` (404) when `agentRunId` names a run
+         *     belonging to another key; `tenant_agents_not_available` (403) from a key that belongs to
+         *     a bank; `permission_denied` (403) without the scope or the permission.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         post: operations["createChange"];
         delete?: never;
@@ -2105,7 +2166,9 @@ export interface paths {
          *
          *     Errors: `not_found` when no change has that id, when the caller may not see it, or when
          *     the session belongs to no bank — all answered the same way on purpose, so no id can be
-         *     probed; `permission_denied` without `watch.read`; `unauthenticated` without a session.
+         *     probed.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `watch.read`, named in `requiredPermission`.
          */
         get: operations["getChange"];
         put?: never;
@@ -2166,15 +2229,17 @@ export interface paths {
          *     names no regime term, because every change carries a regime (D-39), with the regime keys
          *     in `validKeys`; `standard_term_only_on_standards` (422) when that set carries a
          *     standard's term (a term of an opt-in dimension) and the change's authority is not a
-         *     standards body, whose jurisdiction is international; `editor_only_field` (422) when a key
-         *     sends `status` or `supersededBy`; `confirmed_fact` (422) when a key's call would drop a
-         *     flag or a term, or replace a type, that somebody confirmed; `step_up_required` (403) when
-         *     a person's call would do the same without a fresh passkey assertion; `validation_error` (422) for a field the
-         *     schema refuses, for a change asked to supersede itself, and for a `soWhat` whose words
-         *     carry no model, no model version or no citation; `not_found` (404) when no
-         *     change has that id; `tenant_agents_not_available` (403) from a key that belongs to a
-         *     bank; `permission_denied` (403) without the scope or the permission;
-         *     `unauthenticated` (401) without a credential.
+         *     standards body, whose jurisdiction is international; `editor_only_field` (422) when a
+         *     key sends `status` or `supersededBy`; `confirmed_fact` (422) when a key's call would
+         *     drop a flag or a term, or replace a type, that somebody confirmed; `step_up_required`
+         *     (403) when a person's call would do the same without a fresh passkey assertion;
+         *     `validation_error` (422) for a field the schema refuses, for a change asked to supersede
+         *     itself, and for a `soWhat` whose words carry no model, no model version or no citation;
+         *     `not_found` (404) when no change has that id; `tenant_agents_not_available` (403) from a
+         *     key that belongs to a bank; `permission_denied` (403) without the scope or the
+         *     permission.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         patch: operations["updateChange"];
         trace?: never;
@@ -2197,6 +2262,8 @@ export interface paths {
          *
          *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `validation_error` for a page size or offset outside
          *     its limits.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listActions"];
         put?: never;
@@ -2217,6 +2284,8 @@ export interface paths {
          *     maximum of live actions, 200 by default (`CASE_ACTIONS_MAX`); `why_required` (422) when
          *     the move to implementing finds no saved `why`; `unknown_member` (422) for an owner who is
          *     not an active member of this bank; `validation_error` for a body the schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.work`, named in `requiredPermission`.
          */
         post: operations["addAction"];
         delete?: never;
@@ -2257,6 +2326,8 @@ export interface paths {
          *     sub-status key the lists do not hold, or a sub-status of another category, with the
          *     valid keys in `validKeys`; `validation_error` for a body the schema refuses, including
          *     an empty `why`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.contribute`, named in `requiredPermission`.
          */
         put: operations["saveAssessment"];
         post?: never;
@@ -2286,6 +2357,8 @@ export interface paths {
          *     the person. Send the case's `version` in `If-Match`: without it, or with an older one, the write is refused with 409 `stale_write` carrying `currentVersion`, and nothing changes.
          *
          *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.work`, named in `requiredPermission`.
          */
         post: operations["startAssessment"];
         delete?: never;
@@ -2313,6 +2386,8 @@ export interface paths {
          *     case. The same content as a downloadable file is an export job.
          *
          *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.read`, named in `requiredPermission`.
          */
         get: operations["getCaseFile"];
         put?: never;
@@ -2350,6 +2425,8 @@ export interface paths {
          *     when no change has that id, this bank has no case for it, or the obligation is not one
          *     the caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a
          *     session; `validation_error` for a body the schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.work`, named in `requiredPermission`.
          */
         post: operations["acceptCaseObligationLink"];
         delete?: never;
@@ -2385,6 +2462,8 @@ export interface paths {
          *     when no change has that id, this bank has no case for it, or the obligation is not one
          *     the caller may see; `permission_denied` without `cases.work`; `unauthenticated` without a
          *     session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.work`, named in `requiredPermission`.
          */
         delete: operations["removeCaseObligationLink"];
         options?: never;
@@ -2418,6 +2497,8 @@ export interface paths {
          *     "signed_off" kind, which needs a second person; `reason_required` when no reason is
          *     given; `unknown_key` for a reason key the list does not hold, with the valid keys in
          *     `validKeys`; `validation_error` for a body the schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.work`, named in `requiredPermission`.
          */
         post: operations["closeWithoutAction"];
         delete?: never;
@@ -2476,19 +2557,19 @@ export interface paths {
          *
          *     Errors to branch on: `risk_flagged` (409) when a key confirms a change any of whose
          *     pages carries a flag from the injection screen, which waits for a person who reads the
-         *     flag; `own_suggestion` (409) when a named fact was suggested by this very
-         *     key, or filed by this very person; `same_agent` (409) when it was suggested by another
-         *     key of the same agent; `validation_error` (422) when the body names nothing, names a
-         *     type, a flag, a term or an obligation the change does not carry now, when a key sends
-         *     no `decision` or a person sends one or an `agentRunId`, and for a body the schema
-         *     refuses, including a decision with no model, version or citation; `run_not_open` (422)
-         *     when a key names no run or a closed one; `not_found` (404) when no change has that id,
-         *     or the run belongs to another key; `agent_not_bound` (403) for a key holding the scope
-         *     but bound to no agent definition;
-         *     `step_up_required` (403) when a person calls without a fresh passkey assertion;
-         *     `permission_denied` (403) without `proposals.review` or `proposals:review`, which is
-         *     what every bank's session and key receives; `unauthenticated` (401) without a
-         *     credential.
+         *     flag; `own_suggestion` (409) when a named fact was suggested by this very key, or filed
+         *     by this very person; `same_agent` (409) when it was suggested by another key of the same
+         *     agent; `validation_error` (422) when the body names nothing, names a type, a flag, a
+         *     term or an obligation the change does not carry now, when a key sends no `decision` or a
+         *     person sends one or an `agentRunId`, and for a body the schema refuses, including a
+         *     decision with no model, version or citation; `run_not_open` (422) when a key names no
+         *     run or a closed one; `not_found` (404) when no change has that id, or the run belongs to
+         *     another key; `agent_not_bound` (403) for a key holding the scope but bound to no agent
+         *     definition; `step_up_required` (403) when a person calls without a fresh passkey
+         *     assertion; `permission_denied` (403) without `proposals.review` or `proposals:review`,
+         *     which is what every bank's session and key receives.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         post: operations["confirmChangeCuration"];
         delete?: never;
@@ -2520,6 +2601,8 @@ export interface paths {
          *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`; `reason_required` when no
          *     reason is given; `unknown_key` for a reason key the list does not hold, with the valid
          *     keys in `validKeys`; `validation_error` for a body the schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.triage`, named in `requiredPermission`.
          */
         post: operations["dismissChange"];
         delete?: never;
@@ -2562,8 +2645,9 @@ export interface paths {
          *     Errors to branch on: `validation_error` (422) when the change already has a primary page
          *     and this one is marked primary too, and for a body the schema refuses, including a `url`
          *     that is not http or https; `not_found` (404) when no change has that id;
-         *     `tenant_agents_not_available` (403) from a key that belongs to a bank;
-         *     `permission_denied` (403) without `changes:write`; `unauthenticated` (401) without a key.
+         *     `tenant_agents_not_available` (403) from a key that belongs to a bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a valid API key; `permission_denied` (403) for a key without the `changes:write` scope, named in `requiredPermission`.
          */
         post: operations["addChangeDocument"];
         delete?: never;
@@ -2608,8 +2692,10 @@ export interface paths {
          *     that label and other dates; `validation_error` (422) for a body the schema refuses,
          *     including a timestamp where a plain date belongs and a precision outside `day`, `month`,
          *     `quarter` and `year`; `not_found` (404) when no change has that id;
-         *     `tenant_agents_not_available` (403) from a key that belongs to a bank; `permission_denied`
-         *     (403) without the scope or the permission; `unauthenticated` (401) without a credential.
+         *     `tenant_agents_not_available` (403) from a key that belongs to a bank;
+         *     `permission_denied` (403) without the scope or the permission.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         post: operations["addChangeEvent"];
         delete?: never;
@@ -2653,8 +2739,9 @@ export interface paths {
          *     and `year`; `not_found` (404) when no change has that id, or the entry belongs to
          *     another change — the two are answered alike so no id can be probed;
          *     `tenant_agents_not_available` (403) from a key that belongs to a bank;
-         *     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
-         *     without a credential.
+         *     `permission_denied` (403) without the scope or the permission.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         patch: operations["updateChangeEvent"];
         trace?: never;
@@ -2677,6 +2764,8 @@ export interface paths {
          *
          *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `validation_error` for a page size or offset outside
          *     its limits.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listEvidence"];
         put?: never;
@@ -2701,6 +2790,8 @@ export interface paths {
          *     `evidence_locked` (409) while the case waits for sign-off (send it back to add more).
          *     `scanner_unavailable` (503) when the malware scanner is unavailable, and nothing is
          *     stored.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.contribute`, named in `requiredPermission`.
          */
         post: operations["addEvidence"];
         delete?: never;
@@ -2750,13 +2841,14 @@ export interface paths {
          *
          *     Errors to branch on: `unknown_key` (422) when an `obligationId` names no active
          *     obligation of the library; `validation_error` (422) when the same obligation is named
-         *     twice, or for a body the schema refuses, including more than 200 links;
-         *     `confirmed_fact` (422) when a key's new set would drop a link somebody confirmed;
-         *     `step_up_required` (403) when a person's set would do the same without a fresh passkey
-         *     assertion; `not_found` (404) when no change has that id;
-         *     `tenant_agents_not_available` (403) from a key that belongs to a bank;
-         *     `permission_denied` (403) without the scope or the permission; `unauthenticated` (401)
-         *     without a credential.
+         *     twice, or for a body the schema refuses, including more than 200 links; `confirmed_fact`
+         *     (422) when a key's new set would drop a link somebody confirmed; `step_up_required`
+         *     (403) when a person's set would do the same without a fresh passkey assertion;
+         *     `not_found` (404) when no change has that id; `tenant_agents_not_available` (403) from a
+         *     key that belongs to a bank; `permission_denied` (403) without the scope or the
+         *     permission.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         put: operations["replaceChangeObligations"];
         post?: never;
@@ -2790,6 +2882,8 @@ export interface paths {
          *     finish enrolling, `permission_denied` without `cases.read` (naming it in
          *     `requiredPermission`), `not_found` for a platform session and for a change the bank has
          *     no case for, and `validation_error` for a `limit` outside 1 to 100.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listCaseParticipants"];
         put?: never;
@@ -2818,6 +2912,8 @@ export interface paths {
          *     cases, `already_participant` (409) when they already take part, and
          *     `too_many_participants` when the case already holds as many as the deployment allows (50
          *     unless configured otherwise).
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.contribute`, named in `requiredPermission`.
          */
         post: operations["addCaseParticipant"];
         delete?: never;
@@ -2853,6 +2949,8 @@ export interface paths {
          *     `cases.contribute` (naming it in `requiredPermission`), and `not_found` for a platform
          *     session, for a change the bank has no case for and for a participation that is not live
          *     on this bank's case for it.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         delete: operations["removeCaseParticipant"];
         options?: never;
@@ -2881,6 +2979,8 @@ export interface paths {
          *
          *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`, including a case that was
          *     signed off.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.triage`, named in `requiredPermission`.
          */
         post: operations["restoreChange"];
         delete?: never;
@@ -2914,6 +3014,8 @@ export interface paths {
          *     answered before anything is read; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`; `four_eyes_violation` when
          *     the caller asked for the sign-off themself; `validation_error` for a body the schema
          *     refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.signoff`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["approveSignoff"];
         delete?: never;
@@ -2947,6 +3049,8 @@ export interface paths {
          *     the scan. Both of those answer 409 and carry `openActionCount` (how many live actions
          *     are not done) and `cleanEvidenceCount` (how many live pieces of evidence passed the
          *     scan) beside the code, so the screen can say what is missing.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.work`, named in `requiredPermission`.
          */
         post: operations["requestSignoff"];
         delete?: never;
@@ -2976,6 +3080,8 @@ export interface paths {
          *
          *     Errors: `not_found` when no change has that id, this bank has no case for it, or the case is another bank's; `permission_denied` without the permission above, naming it in `requiredPermission`; `unauthenticated` without a session, including any API key; `invalid_transition` when the case is not in a category this move leaves from; `stale_write` for a missing or old `If-Match`; `validation_error` for a body
          *     the schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.signoff`, named in `requiredPermission`.
          */
         post: operations["sendBackSignoff"];
         delete?: never;
@@ -3011,6 +3117,8 @@ export interface paths {
          *     `stale_write` and reloads. Errors: `not_found` when no change has that id or this
          *     bank has no case for it; `permission_denied` without `cases.work`; `unauthenticated`
          *     without a session; `validation_error` for empty text or text over the cap.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.work`, named in `requiredPermission`.
          */
         put: operations["saveSoWhat"];
         post?: never;
@@ -3046,6 +3154,8 @@ export interface paths {
          *     `version`, like a save. Errors: `not_found` when no change has
          *     that id, this bank has no case for it, or the case holds no draft to confirm;
          *     `permission_denied` without `cases.work`; `unauthenticated` without a session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.work`, named in `requiredPermission`.
          */
         post: operations["confirmSoWhat"];
         delete?: never;
@@ -3079,6 +3189,8 @@ export interface paths {
          *     `unknown_key` for an urgency or sub-status key the lists do not hold, with the valid
          *     keys in `validKeys`; `validation_error` for a body the schema refuses, including a
          *     missing `ownerId`, which the error names.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.triage`, named in `requiredPermission`.
          */
         post: operations["triageChange"];
         delete?: never;
@@ -3114,6 +3226,8 @@ export interface paths {
          *     hold or the caller may not read, and `validation_error` for a missing or malformed kind or
          *     id, or a `limit` outside 1 to 100. A kind comments are not taken on is refused with a 422
          *     `unsupported_subject`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listComments"];
         put?: never;
@@ -3140,6 +3254,8 @@ export interface paths {
          *     (4,000 characters unless configured otherwise) with a 422 `comment_too_long`, and a
          *     mentioned id that is not a member of the bank with a 422 `unknown_member`, the same answer
          *     for another bank's member as for an id nobody holds; each writes nothing.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["addComment"];
         delete?: never;
@@ -3173,6 +3289,8 @@ export interface paths {
          *     `requiredPermission`), and `not_found` for a platform session and for a comment the bank
          *     does not hold or whose record the caller may not read. A delete by someone other than the
          *     author is refused with a 403 `not_author`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `comments.write`, named in `requiredPermission`.
          */
         delete: operations["deleteComment"];
         options?: never;
@@ -3197,6 +3315,8 @@ export interface paths {
          *     allows is refused with a 422 `comment_too_long`, an edit by someone other than the author
          *     with a 403 `not_author`, and one after the window or of a deleted comment with a 409
          *     `edit_window_closed`; each keeps nothing.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `comments.write`, named in `requiredPermission`.
          */
         patch: operations["editComment"];
         trace?: never;
@@ -3217,9 +3337,7 @@ export interface paths {
          *     A person's session in the platform console holding `agent_definitions.manage`. It reads
          *     and writes nothing to the audit log. An empty list is a 200 with `total` 0.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
-         *     `agent_definitions.manage`; `validation_error` (422) when `limit` is above 100 or
-         *     `offset` beyond the accepted depth.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agent_definitions.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listPlatformRuns"];
         put?: never;
@@ -3254,6 +3372,8 @@ export interface paths {
          *     the reform was first seen. An empty queue is a 200 with an empty `items` and a `total` of
          *     0. Errors: `permission_denied` without `proposals.review`, `unauthenticated` without a
          *     session, `validation_error` for a filter value the schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listConsoleChanges"];
         put?: never;
@@ -3285,9 +3405,11 @@ export interface paths {
          *     run of bleqq's agent in no bank's zone and reads no bank's record. Records one audit
          *     event naming the person, and one more when the run files its batch.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`,
-         *     and for every bank's session; `validation_error` (422) for a topic that is empty or too
-         *     long; `no_published_version` (409) when bleqq's agent has no version to run.
+         *     Errors: `permission_denied` (403) without `proposals.review`, and for every bank's
+         *     session; `validation_error` (422) for a topic that is empty or too long;
+         *     `no_published_version` (409) when bleqq's agent has no version to run.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`.
          */
         post: operations["createRetagRequest"];
         delete?: never;
@@ -3313,8 +3435,9 @@ export interface paths {
          *     own requests with `GET /research-requests`. It reads and writes nothing to
          *     the audit log.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `proposals.review`;
-         *     `not_found` (404) for a request that is not a re-tag.
+         *     Errors: `not_found` (404) for a request that is not a re-tag.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`.
          */
         get: operations["getRetagRequest"];
         put?: never;
@@ -3341,8 +3464,7 @@ export interface paths {
          *     Needs the platform permission `support_access.grant`. It changes nothing and writes no
          *     audit event. A caller who never asked is a 200 with `total` 0.
          *
-         *     Errors: `validation_error` (422) for a page size above 100; `permission_denied` (403)
-         *     without `support_access.grant`; `unauthenticated` (401).
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `support_access.grant`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listConsoleSupportAccess"];
         put?: never;
@@ -3375,9 +3497,9 @@ export interface paths {
          *     Needs the platform permission `support_access.grant` and a fresh passkey step-up.
          *     Recorded in the bank's audit log as `support_access.entered` with the step-up assertion.
          *
-         *     Errors: `not_found` (404) for a grant that is not the caller's own or not active;
-         *     `step_up_required` (403) without a fresh passkey assertion; `permission_denied` (403)
-         *     without `support_access.grant`; `unauthenticated` (401).
+         *     Errors: `not_found` (404) for a grant that is not the caller's own or not active.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `support_access.grant`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["enterConsoleSupportAccess"];
         delete?: never;
@@ -3405,8 +3527,9 @@ export interface paths {
          *     platform session reads a bank's identity and never its work. It changes nothing and
          *     writes nothing to the audit log. An empty list is a 200 with `total` 0, never an error.
          *
-         *     Errors: a 422 when `limit` is above 100 or `offset` beyond the accepted depth;
-         *     `permission_denied` without `tenants.manage`; `unauthenticated` without a session.
+         *     Errors: a 422 when `limit` is above 100 or `offset` beyond the accepted depth.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `tenants.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listConsoleTenants"];
         put?: never;
@@ -3439,6 +3562,8 @@ export interface paths {
          *     fresh passkey assertion, which the screen answers by opening the passkey prompt and
          *     retrying; a 422 for a blank name or a malformed address, each with its own `code` and a
          *     message to show; `permission_denied` without `tenants.manage`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `tenants.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["createConsoleTenant"];
         delete?: never;
@@ -3473,8 +3598,9 @@ export interface paths {
          *
          *     Errors: `invitation_closed` (409) once the person has joined or the invitation was
          *     revoked inside the bank; `not_found` (404) for an unknown bank or one this console did
-         *     not create; `permission_denied` (403) without `tenants.manage`; `unauthenticated` (401)
-         *     without a live session.
+         *     not create.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `tenants.manage`, named in `requiredPermission`.
          */
         post: operations["resendConsoleFirstAdministrator"];
         delete?: never;
@@ -3517,9 +3643,9 @@ export interface paths {
          *     bank does not exist or the person is not an active member of it;
          *     `account_held_elsewhere` (409) when the person is also an active member of another bank
          *     or holds a platform role, whose enrolment only the platform owner re-issues, and nothing
-         *     is written; `step_up_required`
-         *     when no fresh passkey assertion accompanies the call; `permission_denied` without
-         *     `support_access.grant`.
+         *     is written.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `support_access.grant`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["consoleReissueEnrolment"];
         delete?: never;
@@ -3549,9 +3675,11 @@ export interface paths {
          *     nothing; entering an approved grant takes one. Recorded in the bank's own audit log as
          *     `support_access.requested`.
          *
-         *     Errors: `validation_error` (422) for a blank purpose, a window under an hour or above the
-         *     maximum, or a field the body does not name; `not_found` (404) for a bank that does not
-         *     exist; `permission_denied` (403) without `support_access.grant`; `unauthenticated` (401).
+         *     Errors: `validation_error` (422) for a blank purpose, a window under an hour or above
+         *     the maximum, or a field the body does not name; `not_found` (404) for a bank that does
+         *     not exist.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `support_access.grant`, named in `requiredPermission`.
          */
         post: operations["requestConsoleSupportAccess"];
         delete?: never;
@@ -3578,9 +3706,10 @@ export interface paths {
          *     A person's session holding `register.edit`. No step-up. Records one audit event naming
          *     the person.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-         *     `not_found` (404) for an occurrence the bank does not have; `validation_error` (422) for a
-         *     note over the limit.
+         *     Errors: `not_found` (404) for an occurrence the bank does not have; `validation_error`
+         *     (422) for a note over the limit.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`.
          */
         post: operations["completeDutyOccurrence"];
         delete?: never;
@@ -3650,7 +3779,7 @@ export interface paths {
          *     editor holds; no session inside a bank and no API key can read it. It changes nothing and
          *     writes nothing to the audit log.
          *
-         *     Errors: `permission_denied` without `eval.manage`; `unauthenticated` without a session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `eval.manage`, named in `requiredPermission`.
          */
         get: operations["getEvalBaseline"];
         put?: never;
@@ -3680,8 +3809,7 @@ export interface paths {
          *     editor holds; no session inside a bank and no API key can read it. It changes nothing and
          *     writes nothing to the audit log. An empty set is a 200 with `total` 0.
          *
-         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `permission_denied` without `eval.manage`; `unauthenticated` without a session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `eval.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listEvalQuestions"];
         put?: never;
@@ -3705,8 +3833,9 @@ export interface paths {
          *     Errors: `duplicate_key` (409) when the set already has a question with that `key`;
          *     `unknown_key` (422) when `lang` names no language row; `validation_error` (422) for a
          *     body the schema refuses, including a key that breaks its pattern, a question over the
-         *     cap or a field the schema does not name; `permission_denied` (403) without
-         *     `eval.manage`; `unauthenticated` (401) without a session.
+         *     cap or a field the schema does not name.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `eval.manage`, named in `requiredPermission`.
          */
         post: operations["createEvalQuestion"];
         delete?: never;
@@ -3735,8 +3864,7 @@ export interface paths {
          *     editor holds; no session inside a bank and no API key can read it. It changes nothing and
          *     writes nothing to the audit log. No run recorded yet is a 200 with `total` 0.
          *
-         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `permission_denied` without `eval.manage`; `unauthenticated` without a session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `eval.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listEvalRuns"];
         put?: never;
@@ -3771,6 +3899,8 @@ export interface paths {
          *     (409) while the case waits for sign-off, whose evidence is what the second person signs
          *     off (send the case back to change it); `permission_denied` without `cases.work`;
          *     `unauthenticated` without a session, including any API key.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.work`, named in `requiredPermission`.
          */
         delete: operations["removeEvidence"];
         options?: never;
@@ -3801,6 +3931,8 @@ export interface paths {
          *     reference; `scan_pending` (409) while the malware scan runs; `scan_failed` (422) when the
          *     file was found infected or could not be scanned; `permission_denied` without
          *     `cases.read`; `unauthenticated` without a session, including any API key.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `cases.read`, named in `requiredPermission`.
          */
         get: operations["downloadEvidence"];
         put?: never;
@@ -3828,8 +3960,7 @@ export interface paths {
          *     ever listed. It only reads and writes nothing to the audit log. An empty list is a 200
          *     with `total` 0.
          *
-         *     Errors: `validation_error` when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `permission_denied` without `exports.create`; `unauthenticated` without a session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `exports.create`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listExports"];
         put?: never;
@@ -3847,13 +3978,14 @@ export interface paths {
          *     worker records the file's SHA-256 when it is built. The file is kept for a limited
          *     number of days (`expiresAt`).
          *
-         *     Errors: `step_up_required` without a fresh passkey confirmation; `permission_denied`
-         *     without `exports.create`; `unauthenticated` without a session; `not_built` (501) for a
-         *     kind whose file is not built yet, before any job is written; `format_not_offered` for a
-         *     format the kind does not come in; `validation_error` for a body that is not the shape
-         *     above, or a case file that names no case in `subjectId` or another kind that names one;
-         *     for a case file, `not_found` when `subjectId` is not a case of the caller's bank, and
-         *     `permission_denied` without `cases.read`, both before any job is written.
+         *     Errors: `not_built` (501) for a kind whose file is not built yet, before any job is
+         *     written; `format_not_offered` for a format the kind does not come in; `validation_error`
+         *     for a body that is not the shape above, or a case file that names no case in `subjectId`
+         *     or another kind that names one; for a case file, `not_found` when `subjectId` is not a
+         *     case of the caller's bank, and `permission_denied` without `cases.read`, both before any
+         *     job is written.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `exports.create`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["createExport"];
         delete?: never;
@@ -3879,8 +4011,9 @@ export interface paths {
          *     nothing to the audit log.
          *
          *     Errors: `not_found` when no job of this bank has that id, which is also what another
-         *     bank's job answers; `permission_denied` without `exports.create`; `unauthenticated`
-         *     without a session.
+         *     bank's job answers.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `exports.create`, named in `requiredPermission`.
          */
         get: operations["getExport"];
         put?: never;
@@ -3912,8 +4045,9 @@ export interface paths {
          *     Errors: `not_found` when no job of this bank has that id, which is also what another
          *     bank's job answers; `export_not_ready` (409) while the job is queued, running or failed;
          *     `export_expired` (409) once `expiresAt` has passed, when a new export is needed;
-         *     `permission_denied` without `exports.create`, or for a case file without `cases.read`;
-         *     `unauthenticated` without a session.
+         *     `permission_denied` without `exports.create`, or for a case file without `cases.read`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `exports.create`, named in `requiredPermission`.
          */
         get: operations["downloadExport"];
         put?: never;
@@ -3941,9 +4075,10 @@ export interface paths {
          *     default and 100 at most; filters matching nothing are a 200 with an empty page. A query
          *     parameter the list does not name is ignored.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-         *     `validation_error` (422) for an owner or entity that is not a UUID, a date that is not a
-         *     date, a key longer than 64 characters or a page out of range.
+         *     Errors: `validation_error` (422) for an owner or entity that is not a UUID, a date that
+         *     is not a date, a key longer than 64 characters or a page out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listRegisterGaps"];
         put?: never;
@@ -3978,15 +4113,17 @@ export interface paths {
          *     required. No step-up. Records one audit event naming the person with the keys, ids and
          *     dates before and after, and the names (never the text) of the typed fields it changed.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
-         *     `not_found` (404) for a gap the bank does not have; `stale_write` (409) for an `If-Match`
-         *     that is absent or not the current version; `invalid_transition` (409) for a status the gap
-         *     cannot move to here, or for a change to the title, description, plan, severity or target
-         *     date of a gap whose risk was accepted (reopen it first; its owner may still change);
-         *     `request_pending` (409) for such a change while a risk acceptance waits for approval, so
-         *     the approver decides on the gap as it was asked for; `unknown_key` (422) for a key the bank's list does not hold;
-         *     `unknown_member` (422) for an owner who is not an active member; `validation_error`
-         *     (422) for a body the schema refuses or a person and a team as owner together.
+         *     Errors: `not_found` (404) for a gap the bank does not have; `stale_write` (409) for an
+         *     `If-Match` that is absent or not the current version; `invalid_transition` (409) for a
+         *     status the gap cannot move to here, or for a change to the title, description, plan,
+         *     severity or target date of a gap whose risk was accepted (reopen it first; its owner may
+         *     still change); `request_pending` (409) for such a change while a risk acceptance waits
+         *     for approval, so the approver decides on the gap as it was asked for; `unknown_key`
+         *     (422) for a key the bank's list does not hold; `unknown_member` (422) for an owner who
+         *     is not an active member; `validation_error` (422) for a body the schema refuses or a
+         *     person and a team as owner together.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `gaps.edit`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         patch: operations["updateGap"];
         trace?: never;
@@ -4009,11 +4146,13 @@ export interface paths {
          *     A person's session holding `gaps.edit`. No step-up. Records one audit event naming the
          *     person and the reason key; the note stays on the gap and never enters the audit row.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
-         *     `not_found` (404) for a gap the bank does not have; `invalid_transition` (409) for a gap
-         *     that is closed or already accepted; `request_pending` (409) when an acceptance is already
-         *     waiting for approval; `unknown_key` (422) for a reason the bank's list does not hold,
-         *     naming the keys it does; `validation_error` (422) for a body the schema refuses.
+         *     Errors: `not_found` (404) for a gap the bank does not have; `invalid_transition` (409)
+         *     for a gap that is closed or already accepted; `request_pending` (409) when an acceptance
+         *     is already waiting for approval; `unknown_key` (422) for a reason the bank's list does
+         *     not hold, naming the keys it does; `validation_error` (422) for a body the schema
+         *     refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `gaps.edit`, named in `requiredPermission`.
          */
         post: operations["requestRiskAcceptance"];
         delete?: never;
@@ -4041,11 +4180,11 @@ export interface paths {
          *     configured freshness window. No body. Records one audit event naming both people, the
          *     reason key and the step-up assertion, and never the requester's note.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
-         *     `risk.accept.approve`; `step_up_required` (403) without a fresh step-up, which the screen
-         *     answers by opening the passkey prompt and retrying; `not_found` (404) for a gap the bank
-         *     does not have; `four_eyes_violation` (409) when the caller asked for the acceptance,
-         *     before anything is written; `invalid_transition` (409) when no acceptance is waiting.
+         *     Errors: `not_found` (404) for a gap the bank does not have; `four_eyes_violation` (409)
+         *     when the caller asked for the acceptance, before anything is written;
+         *     `invalid_transition` (409) when no acceptance is waiting.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `risk.accept.approve`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["approveRiskAcceptance"];
         delete?: never;
@@ -4071,9 +4210,10 @@ export interface paths {
          *     A person's session holding `gaps.edit`. No body and no step-up. Records one audit event
          *     naming the person.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
-         *     `not_found` (404) for a gap the bank does not have; `invalid_transition` (409) for a gap
-         *     that is open or remediating.
+         *     Errors: `not_found` (404) for a gap the bank does not have; `invalid_transition` (409)
+         *     for a gap that is open or remediating.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `gaps.edit`, named in `requiredPermission`.
          */
         post: operations["reopenGap"];
         delete?: never;
@@ -4116,6 +4256,8 @@ export interface paths {
          *
          *     Errors: `permission_denied` when the session lacks `roadmap.read`, and `unauthenticated`
          *     when there is no session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `roadmap.read`, named in `requiredPermission`.
          */
         get: operations["getHome"];
         put?: never;
@@ -4157,14 +4299,15 @@ export interface paths {
          *     `asOf` filters are deferred: "as of" applies to obligations only, and the Instruments
          *     tab lists every visible instrument with its own in-force dates.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope, which is checked first, so a
-         *     platform key without the scope gets this; `not_found` (404) when the caller is a
-         *     platform key carrying the scope, since it belongs to no bank; `unknown_filter` (422)
-         *     when an agent access credential sends footprint all or watched; `validation_error` (422)
-         *     when footprint is not in, all or watched, when the retired outsideFootprint is sent,
-         *     when regime is longer than 80 characters, when the phrase is longer than 200 characters
-         *     or the page size or offset is out of range.
+         *     Errors to branch on: `permission_denied` (403) without library.read or the library:read
+         *     scope, which is checked first, so a platform key without the scope gets this;
+         *     `not_found` (404) when the caller is a platform key carrying the scope, since it belongs
+         *     to no bank; `unknown_filter` (422) when an agent access credential sends footprint all
+         *     or watched; `validation_error` (422) when footprint is not in, all or watched, when the
+         *     retired outsideFootprint is sent, when regime is longer than 80 characters, when the
+         *     phrase is longer than 200 characters or the page size or offset is out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listInstruments"];
         put?: never;
@@ -4199,12 +4342,13 @@ export interface paths {
          *     entry's scope, and its lineage names only instruments it could open; any other is the
          *     404 of an instrument that does not exist.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope, which is checked first;
-         *     `not_found` (404) when no instrument has that id or it is one this caller may not
-         *     see, the two answering alike so that no id can be probed for, and when the caller is
-         *     a platform key carrying the scope; `validation_error` (422) when the path segment is
-         *     not a UUID.
+         *     Errors to branch on: `permission_denied` (403) without library.read or the library:read
+         *     scope, which is checked first; `not_found` (404) when no instrument has that id or it is
+         *     one this caller may not see, the two answering alike so that no id can be probed for,
+         *     and when the caller is a platform key carrying the scope; `validation_error` (422) when
+         *     the path segment is not a UUID.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["getInstrument"];
         put?: never;
@@ -4237,6 +4381,8 @@ export interface paths {
          *     Needs the `problems.report` permission, which every member of a bank holds and no platform role does. Answers 201 with the report's id, its status and when it was filed, and never reads the reader's own words back. Writes one audit event, library.problem_reported, carrying the record, the report's id and the version and language on screen, and never the text itself.
          *
          *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the instrument is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or holds a NUL character, or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language; `rate_limited` (429) when this person has filed 30 reports in the last hour (`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `problems.report`, named in `requiredPermission`.
          */
         post: operations["reportInstrumentProblem"];
         delete?: never;
@@ -4275,11 +4421,12 @@ export interface paths {
          *     entry's key or token reads the tree of an instrument it could open, and each node names
          *     only the citing duties it could open itself.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope, which is checked first;
-         *     `not_found` (404) when no instrument has that id or it is one this caller may not
-         *     see, and when the caller is a platform key carrying the scope; `validation_error`
-         *     (422) when the path segment is not a UUID or asOf is not a date.
+         *     Errors to branch on: `permission_denied` (403) without library.read or the library:read
+         *     scope, which is checked first; `not_found` (404) when no instrument has that id or it is
+         *     one this caller may not see, and when the caller is a platform key carrying the scope;
+         *     `validation_error` (422) when the path segment is not a UUID or asOf is not a date.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["listInstrumentProvisions"];
         put?: never;
@@ -4307,8 +4454,10 @@ export interface paths {
          *     audit event. Pages with `limit` and `offset`, 20 by default and 100 at most; nothing
          *     matching is a 200 with an empty page.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-         *     `validation_error` (422) for a `q` longer than 300 characters or a page out of range.
+         *     Errors: `validation_error` (422) for a `q` longer than 300 characters or a page out of
+         *     range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listInternalItems"];
         put?: never;
@@ -4338,8 +4487,9 @@ export interface paths {
          *     A person's session holding `register.edit`. No step-up. Records one audit event naming
          *     the person.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-         *     `not_found` (404) for a link the bank does not have or one already removed.
+         *     Errors: `not_found` (404) for a link the bank does not have or one already removed.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`.
          */
         delete: operations["removeInternalLink"];
         options?: never;
@@ -4381,9 +4531,9 @@ export interface paths {
          *     Needs `library.read`, which every member holds, and a session in an organisation: an API
          *     key has no bookmark of its own, so this list is a person's.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
-         *     without `library.read`; `not_found` (404) for a principal in no organisation;
-         *     `validation_error` (422) when the page size or offset is out of range.
+         *     Errors to branch on: `not_found` (404) for a principal in no organisation.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `library.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listLibraryUpdates"];
         put?: never;
@@ -4456,6 +4606,8 @@ export interface paths {
          *     one JSON-RPC request or notification, -32601 for an unknown method, -32602 for missing
          *     or malformed parameters or protocol metadata. A browser `Origin` other than the app's
          *     own answers 403 with -32600.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a valid API key.
          */
         post: operations["mcpMessage"];
         delete?: never;
@@ -4485,6 +4637,8 @@ export interface paths {
          *
          *     Errors: `unauthenticated` (401) without a live session. An agent's API key is not a
          *     session and is refused the same way.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or an enrolment session.
          */
         get: operations["getMe"];
         put?: never;
@@ -4509,8 +4663,10 @@ export interface paths {
          *     that is not an active language or a switch that does not exist, and then nothing is
          *     saved; `not_found` (404) for switches sent from a platform session, which belongs to no
          *     bank; `validation_error` (422) for a name over 200 characters, a language key over 8 or
-         *     a switch that is not true, false or null; `unauthenticated` (401) without a live
-         *     session; `enrolment_only` (403) from an enrolment session.
+         *     a switch that is not true, false or null; `enrolment_only` (403) from an enrolment
+         *     session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         patch: operations["updateMe"];
         trace?: never;
@@ -4540,6 +4696,8 @@ export interface paths {
          *     finish enrolling, `not_found` for a platform session, which belongs to no bank, and
          *     `validation_error` for an `about` other than `written` or `mentioned`, or a `limit`
          *     outside 1 to 100.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listMyComments"];
         put?: never;
@@ -4579,12 +4737,13 @@ export interface paths {
          *     and the audit events `session.created` and `session.context_switched`, the latter
          *     carrying the step-up.
          *
-         *     Errors: `step_up_required` (403) without a fresh passkey assertion on this session;
-         *     `not_found` (404) for a bank the person is not an active member of, the console for a
-         *     person without an active platform role, or the place this session is already in, and
-         *     nothing is written; `validation_error` (422) when `tenantId` is missing or not a UUID or
-         *     null; `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
-         *     enrolment session; `support_read_only` (403) from a support session.
+         *     Errors: `not_found` (404) for a bank the person is not an active member of, the console
+         *     for a person without an active platform role, or the place this session is already in,
+         *     and nothing is written; `validation_error` (422) when `tenantId` is missing or not a
+         *     UUID or null; `enrolment_only` (403) from an enrolment session; `support_read_only`
+         *     (403) from a support session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["switchContext"];
         delete?: never;
@@ -4618,13 +4777,13 @@ export interface paths {
          *     with the reason "invitation_accepted" to the security log and the audit event
          *     `invitation.accepted`, carrying the step-up. The invitation then stops working.
          *
-         *     Errors: `step_up_required` (403) without a fresh passkey assertion on this session;
-         *     `invitation_expired` (410) when the token is unknown, already used, past its
-         *     72 hours, revoked or replaced, a re-enrolment, or sent to another address,
-         *     one answer for all of them, and nothing is written; `validation_error` (422) for a
-         *     missing token or one over 128 characters; `unauthenticated` (401) without a live session;
-         *     `enrolment_only` (403) from an enrolment session; `support_read_only` (403) from a
-         *     support session.
+         *     Errors: `invitation_expired` (410) when the token is unknown, already used, past its
+         *     72 hours, revoked or replaced, a re-enrolment, or sent to another
+         *     address, one answer for all of them, and nothing is written; `validation_error` (422)
+         *     for a missing token or one over 128 characters; `enrolment_only` (403) from an enrolment
+         *     session; `support_read_only` (403) from a support session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["acceptInvitation"];
         delete?: never;
@@ -4650,8 +4809,9 @@ export interface paths {
          *     Any signed-in member may read their own; the route names nobody, so no other person's
          *     absence can be asked for. It changes nothing and writes nothing to the audit log.
          *
-         *     Errors: `not_found` (404) for a session that belongs to no bank; `unauthenticated` (401)
-         *     without a session.
+         *     Errors: `not_found` (404) for a session that belongs to no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["getMyOutOfOffice"];
         /**
@@ -4675,8 +4835,9 @@ export interface paths {
          *     `delegate_cannot_approve` (422) for a delegate whose roles lack an approve permission
          *     the caller holds; `validation_error` (422) for a past day, a delegate who is the caller
          *     or not an active member of the bank, only one of the two fields, or any other field,
-         *     naming the field in `errors`; `not_found` (404) for a session that belongs to no bank;
-         *     `unauthenticated` (401) without a session.
+         *     naming the field in `errors`; `not_found` (404) for a session that belongs to no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         put: operations["putMyOutOfOffice"];
         post?: never;
@@ -4704,8 +4865,9 @@ export interface paths {
          *     Self-service: needs a full session and no permission, and lists only the caller's own. It
          *     changes nothing and writes no audit event.
          *
-         *     Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
-         *     enrolment session.
+         *     Errors: `enrolment_only` (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["listMyPasskeys"];
         put?: never;
@@ -4742,8 +4904,9 @@ export interface paths {
          *     Errors: `last_passkey` (409) for the only live passkey; `not_found` (404) when the
          *     passkey does not exist, is already retired or belongs to someone else;
          *     `step_up_required` (403) when the session is older than the step-up window and holds no
-         *     fresh assertion; `unauthenticated` (401) without a live session; `enrolment_only` (403)
-         *     from an enrolment session.
+         *     fresh assertion; `enrolment_only` (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         delete: operations["removeMyPasskey"];
         options?: never;
@@ -4759,8 +4922,9 @@ export interface paths {
          *
          *     Errors: `not_found` (404) when the passkey does not exist, is retired or belongs to
          *     someone else, one answer for all three; `validation_error` (422) for a name over 100
-         *     characters; `unauthenticated` (401) without a live session; `enrolment_only` (403) from
-         *     an enrolment session.
+         *     characters; `enrolment_only` (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         patch: operations["renameMyPasskey"];
         trace?: never;
@@ -4786,8 +4950,9 @@ export interface paths {
          *     Self-service: needs a full session and no permission, and lists only the caller's own. It
          *     changes nothing and writes no audit event.
          *
-         *     Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
-         *     enrolment session.
+         *     Errors: `enrolment_only` (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["listMySessions"];
         put?: never;
@@ -4821,8 +4986,10 @@ export interface paths {
          *     themselves.
          *
          *     Errors: `not_found` (404) when the session does not exist, belongs to someone else or is
-         *     one of the caller's own in another bank, one answer for all three; `unauthenticated`
-         *     (401) without a live session; `enrolment_only` (403) from an enrolment session.
+         *     one of the caller's own in another bank, one answer for all three; `enrolment_only`
+         *     (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         delete: operations["revokeMySession"];
         options?: never;
@@ -4848,9 +5015,9 @@ export interface paths {
          *     `tokens.create` still sees what they minted. A token cannot list tokens. It changes
          *     nothing and writes no audit event. An empty page is a 200 with `total` 0.
          *
-         *     Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `not_found` (404) on a platform session, which has no bank; `unauthenticated` (401)
-         *     without a live session.
+         *     Errors: `not_found` (404) on a platform session, which has no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listMyTokens"];
         put?: never;
@@ -4876,13 +5043,14 @@ export interface paths {
          *     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
          *     opening the passkey prompt and retrying, and always to a key or token; `unknown_key`
          *     (422) for a scope a token may not hold, the message naming the valid ones, or for an
-         *     entry the bank has not got or has revoked; `scope_not_held` (422) for a scope the caller's
-         *     permissions do not back; `entry_required` (422) for `tenant:read` without an entry;
-         *     `expiry_in_past` (422) for an expiry that is not in the future; `expiry_too_late` (422)
-         *     for one beyond 90 days; `name_required` (422) for a name of spaces alone;
-         *     `validation_error` (422) for a missing expiry, an empty scope list, a name over 200
-         *     characters or a field the body does not take; `permission_denied` (403) without
-         *     `tokens.create`; `unauthenticated` (401) without a live session.
+         *     entry the bank has not got or has revoked; `scope_not_held` (422) for a scope the
+         *     caller's permissions do not back; `entry_required` (422) for `tenant:read` without an
+         *     entry; `expiry_in_past` (422) for an expiry that is not in the future; `expiry_too_late`
+         *     (422) for one beyond 90 days; `name_required` (422) for a name of spaces
+         *     alone; `validation_error` (422) for a missing expiry, an empty scope list, a name over
+         *     200 characters or a field the body does not take.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `tokens.create`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["createMyToken"];
         delete?: never;
@@ -4916,9 +5084,10 @@ export interface paths {
          *     Writes "token_revoked" to the security log the first time and the audit event
          *     `personal_token.revoked` each time.
          *
-         *     Errors: `not_found` (404) when the caller has no token with that identifier in this bank,
-         *     one answer for someone else's token, a service key and an unknown identifier;
-         *     `unauthenticated` (401) without a live session.
+         *     Errors: `not_found` (404) when the caller has no token with that identifier in this
+         *     bank, one answer for someone else's token, a service key and an unknown identifier.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         delete: operations["revokeMyToken"];
         options?: never;
@@ -4955,6 +5124,8 @@ export interface paths {
          *     Answers 204 with no body. Platform staff read the library itself rather than a bank's
          *     view of it and hold no membership, so a session with no bank answers 404 `not_found`
          *     and writes nothing; an expired or missing session answers 401.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["markVisit"];
         delete?: never;
@@ -5001,6 +5172,8 @@ export interface paths {
          *     finish enrolling, `not_found` for a platform session, which belongs to no bank, and for a
          *     `unit` the bank does not have, and `validation_error` for `scope=unit` without a `unit`,
          *     `scope=mine` with one, a `bucket` other than the four, or a `limit` outside 1 to 100.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["getMyWork"];
         put?: never;
@@ -5035,6 +5208,8 @@ export interface paths {
          *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
          *     finish enrolling, `not_found` for a platform session, which belongs to no bank, and
          *     `validation_error` for a `limit` above the maximum or below 1.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listNotifications"];
         put?: never;
@@ -5066,6 +5241,8 @@ export interface paths {
          *
          *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
          *     finish enrolling, and `not_found` for a platform session, which belongs to no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["markAllNotificationsRead"];
         delete?: never;
@@ -5094,6 +5271,8 @@ export interface paths {
          *     Errors: `unauthenticated` without a session, `enrolment_only` for a session that may only
          *     finish enrolling, and `not_found` for a platform session or for a notification that is
          *     not the caller's own, in their bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["markNotificationRead"];
         delete?: never;
@@ -5142,23 +5321,25 @@ export interface paths {
          *     why each of them would have been hidden; setting it to watched lists only what the
          *     markets the bank watches add, each row naming its jurisdiction.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope, or for an overlay filter sent by a
-         *     caller in a bank who does not hold `register.read`; `unknown_filter` (422) when a
-         *     caller that belongs to no bank, such as a platform key, sends tenantTag or an overlay
-         *     filter, since it has no tags or register of its own; `not_found` (404) when such a caller
-         *     reads the list at all; `unknown_filter` (422) when an agent access credential sends
-         *     footprint all or watched; `tenant_reach_off` (403) when one sends an overlay or tenantTag
-         *     filter while it may not read the bank's register (it lacks `tenant:read`, or tenant reach
-         *     is off for the bank or its entry); `validation_error` (422) when a term filter is not written
-         *     dimension:key, when instrument, dutyType, complianceStatus, ownerTeam or any term, tag or
-         *     tenantTag value is longer than 80 characters, when applicability is not applies,
-         *     not_applicable or under_assessment, when owner is not a UUID, when more than 20 terms, tags or
-         *     tenant tags are sent, when footprint is not in, all or watched, when the retired
-         *     outsideFootprint is sent, when the phrase is longer than 200 characters or when the page
-         *     size or offset is out of range; `unknown_key` (422) when a term filter names no active
-         *     term, a tag filter no library tag or a tenantTag filter none of the bank's own tags,
-         *     listing every one that was not found.
+         *     Errors to branch on: `permission_denied` (403) without library.read or the library:read
+         *     scope, or for an overlay filter sent by a caller in a bank who does not hold
+         *     `register.read`; `unknown_filter` (422) when a caller that belongs to no bank, such as a
+         *     platform key, sends tenantTag or an overlay filter, since it has no tags or register of
+         *     its own; `not_found` (404) when such a caller reads the list at all; `unknown_filter`
+         *     (422) when an agent access credential sends footprint all or watched; `tenant_reach_off`
+         *     (403) when one sends an overlay or tenantTag filter while it may not read the bank's
+         *     register (it lacks `tenant:read`, or tenant reach is off for the bank or its entry);
+         *     `validation_error` (422) when a term filter is not written dimension:key, when
+         *     instrument, dutyType, complianceStatus, ownerTeam or any term, tag or tenantTag value is
+         *     longer than 80 characters, when applicability is not applies, not_applicable or
+         *     under_assessment, when owner is not a UUID, when more than 20 terms, tags or tenant tags
+         *     are sent, when footprint is not in, all or watched, when the retired outsideFootprint is
+         *     sent, when the phrase is longer than 200 characters or when the page size or offset is
+         *     out of range; `unknown_key` (422) when a term filter names no active term, a tag filter
+         *     no library tag or a tenantTag filter none of the bank's own tags, listing every one that
+         *     was not found.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listObligations"];
         put?: never;
@@ -5205,12 +5386,13 @@ export interface paths {
          *     first version answers the record with a null version and a null summary rather than a
          *     404.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope; `not_found` (404) when no
-         *     obligation has that id or key or it is one this caller may not see, the two answering
-         *     alike so that nothing can be probed for; `validation_error` (422) when the path segment
-         *     is neither a UUID nor a key (letters, digits, hyphens and underscores, at most 120
-         *     characters) or asOf is not a date.
+         *     Errors to branch on: `permission_denied` (403) without library.read or the library:read
+         *     scope; `not_found` (404) when no obligation has that id or key or it is one this caller
+         *     may not see, the two answering alike so that nothing can be probed for;
+         *     `validation_error` (422) when the path segment is neither a UUID nor a key (letters,
+         *     digits, hyphens and underscores, at most 120 characters) or asOf is not a date.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["getObligation"];
         put?: never;
@@ -5242,13 +5424,14 @@ export interface paths {
          *     row's `version`. Records one audit event naming the person, the value before and after,
          *     and the reason.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without
-         *     `applicability.approve`; `not_found` (404) for an obligation, entity or unit the bank
-         *     cannot see, or a legal entity the obligation does not span; `stale_write` (409);
-         *     `validation_error` (422) for an unknown value, an empty reason, or both `orgUnitId` and
-         *     `unitId`; `scope_not_applicable` (422) for a unit whose legal entity no longer follows the
-         *     standard. A unit's answer is stored on the unit, never on its entity's conformance row, and
-         *     joins the unit's history in the Statement of Applicability.
+         *     Errors: `not_found` (404) for an obligation, entity or unit the bank cannot see, or a
+         *     legal entity the obligation does not span; `validation_error` (422) for an unknown
+         *     value, an empty reason, or both `orgUnitId` and `unitId`; `scope_not_applicable` (422)
+         *     for a unit whose legal entity no longer follows the standard. A unit's answer is stored
+         *     on the unit, never on its entity's conformance row, and joins the unit's history in the
+         *     Statement of Applicability.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `applicability.approve`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         put: operations["setApplicability"];
         post?: never;
@@ -5274,9 +5457,10 @@ export interface paths {
          *     A person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by
          *     default and 100 at most; no assessments is a 200 with an empty page.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-         *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-         *     page out of range.
+         *     Errors: `not_found` (404) for an obligation the bank cannot see; `validation_error`
+         *     (422) for a page out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listAssessments"];
         put?: never;
@@ -5315,6 +5499,8 @@ export interface paths {
          *     `items`, a `total` of 0 and an `openCount` of 0. Errors: `not_found` when no obligation
          *     has that id, when the caller may not see it, or when the session belongs to no bank;
          *     `permission_denied` without `watch.read`; `unauthenticated` without a session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `watch.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listObligationChanges"];
         put?: never;
@@ -5353,13 +5539,14 @@ export interface paths {
          *     something. An agent access entry's key or token reads the diff of a duty it could open
          *     itself, and gets the 404 of a missing duty for any other.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope; `not_found` (404) when no
-         *     obligation has that id or it is one this caller may not see; `unknown_key` (422) when a
-         *     version number is asked for that this obligation has no version for; `validation_error`
-         *     (422) when the obligation has fewer than two versions and neither number was given, when
-         *     the two versions share no language at all, when lang is longer than 8 characters, or
-         *     when the path segment is not a UUID.
+         *     Errors to branch on: `permission_denied` (403) without library.read or the library:read
+         *     scope; `not_found` (404) when no obligation has that id or it is one this caller may not
+         *     see; `unknown_key` (422) when a version number is asked for that this obligation has no
+         *     version for; `validation_error` (422) when the obligation has fewer than two versions
+         *     and neither number was given, when the two versions share no language at all, when lang
+         *     is longer than 8 characters, or when the path segment is not a UUID.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["getObligationDiff"];
         put?: never;
@@ -5386,10 +5573,11 @@ export interface paths {
          *     A person's session holding `register.read`. Pages with `limit` and `offset`, 20 by
          *     default and 100 at most; an obligation with no recurring duty is a 200 with an empty page.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-         *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-         *     page out of range. A read writes nothing: a duty whose obligation does not yet apply to
-         *     the bank has a null next occurrence.
+         *     Errors: `not_found` (404) for an obligation the bank cannot see; `validation_error`
+         *     (422) for a page out of range. A read writes nothing: a duty whose obligation does not
+         *     yet apply to the bank has a null next occurrence.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listDuties"];
         put?: never;
@@ -5416,9 +5604,10 @@ export interface paths {
          *     A person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by
          *     default and 100 at most; an obligation with no gaps is a 200 with an empty page.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-         *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-         *     page out of range.
+         *     Errors: `not_found` (404) for an obligation the bank cannot see; `validation_error`
+         *     (422) for a page out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listObligationGaps"];
         put?: never;
@@ -5433,8 +5622,7 @@ export interface paths {
          *     A person's session holding `gaps.edit`. No step-up. Records one audit event naming the
          *     person, with ids and keys and never the text they typed. Answers 201 with the gap.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `gaps.edit`;
-         *     `not_found` (404) for an obligation or legal entity the bank cannot see;
+         *     Errors: `not_found` (404) for an obligation or legal entity the bank cannot see;
          *     `does_not_apply` (409) when the obligation, or its answer for that legal entity, is
          *     "does not apply": a gap is a fact about how the bank complies with a rule that applies;
          *     `unknown_key` (422) for a severity, source or team key the bank's list does not hold;
@@ -5443,6 +5631,8 @@ export interface paths {
          *     together; `unknown_unit` (422) for a `unitId` that is not a live unit under this
          *     obligation, or not of the legal entity the gap names. A gap on a unit is in the unit's
          *     legal entity, and fixes the unit's reference and title from then on.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `gaps.edit`, named in `requiredPermission`.
          */
         post: operations["createGap"];
         delete?: never;
@@ -5467,9 +5657,10 @@ export interface paths {
          *     A person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by
          *     default and 100 at most; no links is a 200 with an empty page.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-         *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for a
-         *     page out of range.
+         *     Errors: `not_found` (404) for an obligation the bank cannot see; `validation_error`
+         *     (422) for a page out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listInternalLinks"];
         put?: never;
@@ -5484,13 +5675,14 @@ export interface paths {
          *     link, and one more for the item when the call creates it, each naming the person.
          *     Answers 201 with the link.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-         *     `not_found` (404) for an obligation or internal item the bank cannot see; `already_linked`
-         *     (409) when the item is already linked to this obligation; `duplicate_key` (409) when a new
-         *     item's kind and name are taken, so pick that item instead; `unknown_key` (422) for a kind
-         *     that is not an active row of the bank's link kind list; `validation_error` (422) for a
-         *     url that is not a web address, a picked item of another kind, an item picked and
-         *     described at once, or an owner who is not a member.
+         *     Errors: `not_found` (404) for an obligation or internal item the bank cannot see;
+         *     `already_linked` (409) when the item is already linked to this obligation;
+         *     `duplicate_key` (409) when a new item's kind and name are taken, so pick that item
+         *     instead; `unknown_key` (422) for a kind that is not an active row of the bank's link
+         *     kind list; `validation_error` (422) for a url that is not a web address, a picked item
+         *     of another kind, an item picked and described at once, or an owner who is not a member.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`.
          */
         post: operations["addInternalLink"];
         delete?: never;
@@ -5516,9 +5708,10 @@ export interface paths {
          *     A person's session holding `register.edit`. Send `If-Match` with the current `versionNo`,
          *     0 when there is none. No step-up. Records one audit event naming the person.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-         *     `not_found` (404) for an obligation the bank cannot see; `stale_write` (409) when somebody
-         *     wrote a version in between; `validation_error` (422) for empty or over-long text.
+         *     Errors: `not_found` (404) for an obligation the bank cannot see; `validation_error`
+         *     (422) for empty or over-long text.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         put: operations["saveInterpretation"];
         post?: never;
@@ -5551,6 +5744,8 @@ export interface paths {
          *     finish enrolling, `permission_denied` without `register.read` (naming it in
          *     `requiredPermission`), `not_found` for a platform session and for an obligation the bank
          *     cannot see, and `validation_error` for a `limit` outside 1 to 100.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listObligationParticipants"];
         put?: never;
@@ -5577,6 +5772,8 @@ export interface paths {
          *     cannot read the register, `already_participant` (409) when they already take part, and
          *     `too_many_participants` when the entry already holds as many as the deployment allows (50
          *     unless configured otherwise).
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`.
          */
         post: operations["addObligationParticipant"];
         delete?: never;
@@ -5613,6 +5810,8 @@ export interface paths {
          *     else without `register.edit` (naming the permission in `requiredPermission`), and `not_found` for a platform session, for an
          *     obligation the bank cannot see and for a participation that is not live on this bank's
          *     entry for it.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`.
          */
         delete: operations["removeObligationParticipant"];
         options?: never;
@@ -5642,6 +5841,8 @@ export interface paths {
          *     Needs the `problems.report` permission, which every member of a bank holds and no platform role does. Answers 201 with the report's id, its status and when it was filed, and never reads the reader's own words back. Writes one audit event, library.problem_reported, carrying the record, the report's id and the version and language on screen, and never the text itself.
          *
          *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission, including for every platform role; `not_found` (404) when the obligation is not one this caller may read; `validation_error` (422) when the body is malformed, the text is longer than 4000 characters or holds a NUL character, or the path segment is not a UUID; `description_required` (422) when the description is only whitespace; `unknown_key` (422) when the language is not an active content language; `rate_limited` (429) when this person has filed 30 reports in the last hour (`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `problems.report`, named in `requiredPermission`.
          */
         post: operations["reportObligationProblem"];
         delete?: never;
@@ -5680,8 +5881,9 @@ export interface paths {
          *     Where legal entities the obligation applies to have rows, `complianceStatus` is the worst
          *     of theirs by category: gap, then partly, then not assessed, then compliant.
          *
-         *     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
-         *     `register.read`; `not_found` (404) for an obligation the bank cannot see.
+         *     Errors: `not_found` (404) for an obligation the bank cannot see.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`.
          */
         get: operations["getRegisterEntry"];
         put?: never;
@@ -5703,14 +5905,15 @@ export interface paths {
          *     is merged. Records one audit event naming the person with keys, ids and dates before and
          *     after, and the names of the text fields that changed, never their words. No step-up.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-         *     `not_found` (404) for an obligation the bank cannot see; `stale_write` (409) when
-         *     `If-Match` is not the current version; `invalid_transition` (409) for a status outside the not
-         *     assessed category while the obligation does not apply or is still under assessment;
-         *     `unknown_key` (422) for a status, risk or team key that is not an active row of the bank's
-         *     list, with `validKeys` listing those that are; `unknown_member` (422) for an owner or
-         *     contact who is not an active member of the bank; `validation_error` (422) for a missing
-         *     `If-Match`, one that is not a version, or a body the schema refuses.
+         *     Errors: `not_found` (404) for an obligation the bank cannot see; `invalid_transition`
+         *     (409) for a status outside the not assessed category while the obligation does not apply
+         *     or is still under assessment; `unknown_key` (422) for a status, risk or team key that is
+         *     not an active row of the bank's list, with `validKeys` listing those that are;
+         *     `unknown_member` (422) for an owner or contact who is not an active member of the bank;
+         *     `validation_error` (422) for a missing `If-Match`, one that is not a version, or a body
+         *     the schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         patch: operations["updateRegister"];
         trace?: never;
@@ -5735,8 +5938,9 @@ export interface paths {
          *     recorded gets an empty list with 200. The list is the bank's legal entities, a handful, so
          *     it is not paged.
          *
-         *     Errors: `unauthenticated` (401) without a session; `permission_denied` (403) without
-         *     `register.read`; `not_found` (404) for an obligation the bank cannot see.
+         *     Errors: `not_found` (404) for an obligation the bank cannot see.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`.
          */
         get: operations["listSpannedEntities"];
         put?: never;
@@ -5774,14 +5978,15 @@ export interface paths {
          *     dates before and after, and the names of the text fields that changed, never their words.
          *     No step-up.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-         *     `not_found` (404) for an obligation the bank cannot see, or an org unit that is not one of
-         *     its active legal entities; `stale_write` (409); `invalid_transition` (409) for a status
-         *     outside the not assessed category while the entity's applicability is not `applies`;
+         *     Errors: `not_found` (404) for an obligation the bank cannot see, or an org unit that is
+         *     not one of its active legal entities; `invalid_transition` (409) for a status outside
+         *     the not assessed category while the entity's applicability is not `applies`;
          *     `unknown_key` (422) for a status, risk or team key the bank's list does not hold, with
          *     `validKeys`; `unknown_member` (422) for an owner who is not an active member;
-         *     `validation_error` (422) for a missing `If-Match`, an owner and a team sent together, or a
-         *     body the schema refuses.
+         *     `validation_error` (422) for a missing `If-Match`, an owner and a team sent together, or
+         *     a body the schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         patch: operations["updateRegisterEntity"];
         trace?: never;
@@ -5815,6 +6020,8 @@ export interface paths {
          *     from. Errors: `not_found` when no obligation has that id or the caller may not see it;
          *     `permission_denied` without `library.read` or `library:read`; `unauthenticated` without a
          *     credential.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["getRecordSources"];
         put?: never;
@@ -5842,12 +6049,13 @@ export interface paths {
          *     A person's session holding `register.read`. A read. `entity` is required. Units page with
          *     `limit` and `offset`, 20 by default and 100 at most, by reference.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-         *     `not_found` (404) for an obligation or entity the bank cannot see, or a standard outside
-         *     the bank's regulatory scope, which hides the statement and deletes nothing;
+         *     Errors: `not_found` (404) for an obligation or entity the bank cannot see, or a standard
+         *     outside the bank's regulatory scope, which hides the statement and deletes nothing;
          *     `units_only_under_standards` (422) for an obligation that is not a standard's;
          *     `scope_not_applicable` (422) for an entity that does not follow the standard;
          *     `validation_error` (422) without `entity` or with a page out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["getStatementOfApplicability"];
         put?: never;
@@ -5875,9 +6083,10 @@ export interface paths {
          *     A person's session holding `register.read`. A read. Pages with `limit` and `offset`, 20 by
          *     default and 100 at most; no units is a 200 with an empty page.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.read`;
-         *     `not_found` (404) for an obligation the bank cannot see; `validation_error` (422) for an
-         *     entity that is not a UUID or a page out of range.
+         *     Errors: `not_found` (404) for an obligation the bank cannot see; `validation_error`
+         *     (422) for an entity that is not a UUID or a page out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.read`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listUnits"];
         put?: never;
@@ -5890,9 +6099,10 @@ export interface paths {
          *     A person's session holding `register.edit`. No step-up. Records one audit event naming
          *     the person. Answers 201 with the unit.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-         *     `not_found` (404) for an obligation or entity the bank cannot see; `validation_error`
-         *     (422) for an empty or over-long reference or title.
+         *     Errors: `not_found` (404) for an obligation or entity the bank cannot see;
+         *     `validation_error` (422) for an empty or over-long reference or title.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`.
          */
         post: operations["createUnit"];
         delete?: never;
@@ -5924,13 +6134,15 @@ export interface paths {
          *     step-up. A commit records one audit event per unit naming the person, and one per answer
          *     naming the person, the value before and after, and the reason.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`, or
-         *     without `applicability.approve` for a line with an answer; `not_found` (404) for an
-         *     obligation or entity the bank cannot see; `units_only_under_standards` (422) under an
-         *     obligation that is not a standard's; `scope_not_applicable` (422) for an entity that does
-         *     not follow the standard; `duplicate_key` (409) when another write listed a reference
-         *     first; `validation_error` (422) for no lines, too many lines, an unknown answer or a line
+         *     Errors: `permission_denied` (403) without `register.edit`, or without
+         *     `applicability.approve` for a line with an answer; `not_found` (404) for an obligation
+         *     or entity the bank cannot see; `units_only_under_standards` (422) under an obligation
+         *     that is not a standard's; `scope_not_applicable` (422) for an entity that does not
+         *     follow the standard; `duplicate_key` (409) when another write listed a reference first;
+         *     `validation_error` (422) for no lines, too many lines, an unknown answer or a line
          *     longer than the paste allows.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`.
          */
         post: operations["pasteUnits"];
         delete?: never;
@@ -5959,6 +6171,8 @@ export interface paths {
          *     Needs the `proposals.review` permission and a fresh passkey assertion (a step-up). No tenant role holds `proposals.review`, and the route takes a person's session only, so no API key scope reaches it and an agent can never stamp a record. Writes one audit event, library.reverified, carrying the assertion the passkey produced.
          *
          *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403) without the permission; `step_up_required` (403) when the session carries no fresh passkey assertion; `not_found` (404) when the obligation is not one this caller may read; `validation_error` (422) when the body is malformed, the note is longer than 4000 characters or the path segment is not a UUID; `unknown_key` (422) when the outcome is not one of the three.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["reverifyObligation"];
         delete?: never;
@@ -5992,9 +6206,7 @@ export interface paths {
          *     never a platform permission and never an API key scope, so no key and no platform session
          *     reaches it.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
-         *     without `private_records.approve`; `validation_error` (422) when the page size or offset is
-         *     out of range.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `private_records.approve`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listPrivateProposals"];
         put?: never;
@@ -6029,15 +6241,15 @@ export interface paths {
          *     the four-eyes constraint refuses that row on its own. An agent never approves here, so a
          *     record an agent found reads as found by the agent and approved by this person.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
-         *     without `private_records.approve`; `step_up_required` (403) without a fresh passkey
-         *     assertion; `not_found` (404) for another organisation's proposal, a proposal to the shared
-         *     library, one that does not exist and anything that is not a UUID; `four_eyes_violation`
-         *     (409) when the caller filed the proposal; `invalid_transition` (409) when it is already
-         *     decided; `duplicate_key` (409) when its key was taken while it waited; `unknown_key` (422)
-         *     when a row it names was retired while it waited; `validation_error` (422) for a field the
-         *     body does not name, a note longer than 2000 characters, or a record whose instrument is
-         *     not the organisation's own.
+         *     Errors to branch on: `not_found` (404) for another organisation's proposal, a proposal
+         *     to the shared library, one that does not exist and anything that is not a UUID;
+         *     `four_eyes_violation` (409) when the caller filed the proposal; `invalid_transition`
+         *     (409) when it is already decided; `duplicate_key` (409) when its key was taken while it
+         *     waited; `unknown_key` (422) when a row it names was retired while it waited;
+         *     `validation_error` (422) for a field the body does not name, a note longer than 2000
+         *     characters, or a record whose instrument is not the organisation's own.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `private_records.approve`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["approvePrivateProposal"];
         delete?: never;
@@ -6068,13 +6280,14 @@ export interface paths {
          *     person rejecting is never the proposer. The audit and outbox rows carry the reason's key
          *     and never the note.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied` (403)
-         *     without `private_records.approve`; `not_found` (404) for another organisation's proposal, a
-         *     proposal to the shared library, one that does not exist and anything that is not a UUID;
-         *     `four_eyes_violation` (409) when the caller filed the proposal; `invalid_transition` (409)
-         *     when it is already decided; `reason_required` (422) without a live row of the rejection
-         *     reason list or without a note; `validation_error` (422) for a field the body does not name
-         *     or a note longer than 2000 characters.
+         *     Errors to branch on: `not_found` (404) for another organisation's proposal, a proposal
+         *     to the shared library, one that does not exist and anything that is not a UUID;
+         *     `four_eyes_violation` (409) when the caller filed the proposal; `invalid_transition`
+         *     (409) when it is already decided; `reason_required` (422) without a live row of the
+         *     rejection reason list or without a note; `validation_error` (422) for a field the body
+         *     does not name or a note longer than 2000 characters.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `private_records.approve`, named in `requiredPermission`.
          */
         post: operations["rejectPrivateProposal"];
         delete?: never;
@@ -6099,6 +6312,8 @@ export interface paths {
          *     A read: it changes nothing and writes no audit row. Pages with `limit` and `offset`, 20 rows by default and 100 at most. No report, or filters matching none, is a 200 with an empty `items` and a `total` of 0.
          *
          *     Errors: `unauthenticated` (401) without a session, an agent's key included; `permission_denied` (403) without `problems.report`, with `requiredPermission` named, which is what a platform console session gets; `not_found` (404) for a session in no bank; `validation_error` (422) when `subjectId` is not a UUID, a filter is too long, or `limit` or `offset` is out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `problems.report`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listProblemReports"];
         put?: never;
@@ -6131,6 +6346,8 @@ export interface paths {
          *     Records `problem_report.closed` in the audit log, with the states before and after and never the words, and emits the outbox event of the same name. No passkey step-up and no second person: the close changes nothing outside the report. Answers the closed report.
          *
          *     Errors: `unauthenticated` (401) without a session, an agent's key included; `permission_denied` (403) without `problems.report`, or on a colleague's report without `proposals.create`, with `requiredPermission` naming the one missing; `not_found` (404) for an id this bank has no report under; `already_closed` (409) for a report that is closed already; `validation_error` (422) for a status other than the three or a note that is missing, too long or holding a NUL character, and `note_required` (422) for a note that is only whitespace; `rate_limited` (429) when this person has closed 30 reports in the last hour (`PROBLEM_REPORTS_PER_USER_PER_HOUR`), to wait out and retry.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `problems.report`, named in `requiredPermission`.
          */
         patch: operations["closeProblemReport"];
         trace?: never;
@@ -6174,25 +6391,26 @@ export interface paths {
          *     answers **201**. Every text it arrives with is read by the injection screen and stored
          *     as it arrived; what the screen finds is returned in `riskFlags`.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session or a key;
-         *     `permission_denied` (403) without `proposals.review` or `proposals:write`, and for a
-         *     bank's session or key; `batch_too_large` (422) above `PROPOSAL_BATCH_MAX_ROWS` rows;
-         *     `unknown_key` (422) for a kind that is not a batch kind, an obligation the library does
-         *     not hold in force, or a term that is not a live term; `jurisdiction_term_mirrored`
-         *     (422) for a term of a dimension that mirrors the jurisdiction list; `source_missing`
-         *     (422) for an entry without a source; `standard_term_only_on_standards` (422) when a
-         *     standard's term would sit on a law's obligation; `standard_term_required` (422) when a
-         *     standard's obligation would carry no standard term or more than one; `licensed_text`
-         *     (422) for a source on a standard's obligation that is not an https link, or a
-         *     `sourceLabel` under a standard that is not its official reference; `run_not_open`
-         *     (422) when a key names no run or a closed one; `run_budget_exhausted` (422) when the
-         *     run has filed as many proposals as one run may; `not_found` (404) when the run is not
-         *     one this key opened; `idempotency_conflict` (409) when the same proposer's
-         *     `Idempotency-Key` arrives with a different body; `validation_error` (422) for a body
-         *     the schema refuses, an obligation named twice, a term both added and removed, an entry
-         *     that changes nothing, a source that is neither a link nor a provision's key, a
-         *     `sourceUrl` that is not an https link, or an `Idempotency-Key` longer than 200
-         *     characters.
+         *     Errors to branch on: `permission_denied` (403) without `proposals.review` or
+         *     `proposals:write`, and for a bank's session or key; `batch_too_large` (422) above
+         *     `PROPOSAL_BATCH_MAX_ROWS` rows; `unknown_key` (422) for a kind that is not a batch kind,
+         *     an obligation the library does not hold in force, or a term that is not a live term;
+         *     `jurisdiction_term_mirrored` (422) for a term of a dimension that mirrors the
+         *     jurisdiction list; `source_missing` (422) for an entry without a source;
+         *     `standard_term_only_on_standards` (422) when a standard's term would sit on a law's
+         *     obligation; `standard_term_required` (422) when a standard's obligation would carry no
+         *     standard term or more than one; `licensed_text` (422) for a source on a standard's
+         *     obligation that is not an https link, or a `sourceLabel` under a standard that is not
+         *     its official reference; `run_not_open` (422) when a key names no run or a closed one;
+         *     `run_budget_exhausted` (422) when the run has filed as many proposals as one run may;
+         *     `not_found` (404) when the run is not one this key opened; `idempotency_conflict` (409)
+         *     when the same proposer's `Idempotency-Key` arrives with a different body;
+         *     `validation_error` (422) for a body the schema refuses, an obligation named twice, a
+         *     term both added and removed, an entry that changes nothing, a source that is neither a
+         *     link nor a provision's key, a `sourceUrl` that is not an https link, or an
+         *     `Idempotency-Key` longer than 200 characters.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         post: operations["createProposalBatch"];
         delete?: never;
@@ -6224,9 +6442,10 @@ export interface paths {
          *
          *     Needs the platform permission `proposals.review`. No bank role reaches it.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without `proposals.review`; `not_found` (404) for a batch that does not exist, a
-         *     proposal that is not a batch, and anything that is not a UUID.
+         *     Errors to branch on: `not_found` (404) for a batch that does not exist, a proposal that
+         *     is not a batch, and anything that is not a UUID.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`.
          */
         get: operations["getProposalBatch"];
         put?: never;
@@ -6271,16 +6490,17 @@ export interface paths {
          *
          *     Errors to branch on: `unauthenticated` (401) without a session, a key included;
          *     `permission_denied` (403) without `proposals.review`, a bank's session included;
-         *     `step_up_required` (403) without a fresh passkey assertion; `not_found` (404) for a batch
-         *     that does not exist, a proposal that is not a batch, and anything that is not a UUID;
-         *     `four_eyes_violation` (409) when the reviewer proposed the batch or asked for the
-         *     re-tag that filed it, which decides nothing;
-         *     `invalid_transition` (409) when the batch or a named row is already decided;
-         *     `stale_write` (409) when a row named for approval is stale, or every row left to approve
-         *     is; `reason_required` (422) for a rejection without a live row of the rejection reason
-         *     list; `unknown_key` (422) for a row id that is not a row of this batch;
-         *     `validation_error` (422) for a decision that is not `approved` or `rejected`, a row
-         *     named twice, a reason on an approval, and a body that decides nothing.
+         *     `not_found` (404) for a batch that does not exist, a proposal that is not a batch, and
+         *     anything that is not a UUID; `four_eyes_violation` (409) when the reviewer proposed the
+         *     batch or asked for the re-tag that filed it, which decides nothing; `invalid_transition`
+         *     (409) when the batch or a named row is already decided; `stale_write` (409) when a row
+         *     named for approval is stale, or every row left to approve is; `reason_required` (422)
+         *     for a rejection without a live row of the rejection reason list; `unknown_key` (422) for
+         *     a row id that is not a row of this batch; `validation_error` (422) for a decision that
+         *     is not `approved` or `rejected`, a row named twice, a reason on an approval, and a body
+         *     that decides nothing.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["decideProposalBatch"];
         delete?: never;
@@ -6325,12 +6545,12 @@ export interface paths {
          *     scope `proposals:review` from a key bound to an agent definition (D-62, ADR 0054). No
          *     bank role and no tenant key reaches it either way.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session or a key;
-         *     `permission_denied` (403) without `proposals.review` or `proposals:review`;
-         *     `agent_not_bound` (403) for a key holding the scope but bound to no agent definition;
-         *     `unknown_key` (422) when `origin` is a value that is neither `agent` nor `user`, or
-         *     `order` one that is neither `oldest` nor `newest`;
-         *     `validation_error` (422) when the page size or offset is out of range.
+         *     Errors to branch on: `permission_denied` (403) without `proposals.review` or
+         *     `proposals:review`; `agent_not_bound` (403) for a key holding the scope but bound to no
+         *     agent definition; `unknown_key` (422) when `origin` is a value that is neither `agent`
+         *     nor `user`, or `order` one that is neither `oldest` nor `newest`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listProposals"];
         put?: never;
@@ -6390,16 +6610,16 @@ export interface paths {
          *     at most `WATCH_RUN_MAX_PROPOSALS` proposals (50 unless the platform sets another
          *     number); a retry of one it filed is not a new proposal and still answers.
          *
-         *     Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or
-         *     a closed one; `run_budget_exhausted` (422) when the run has already filed as many
+         *     Errors to branch on: `run_not_open` (422) when a key bound to an agent names no run or a
+         *     closed one; `run_budget_exhausted` (422) when the run has already filed as many
          *     proposals as one run may, so close it and open another; `not_found` (404) when the run
-         *     named is not one this key opened;
-         *     `source_missing` (422) when a changed value carries no source, or a new record no
-         *     `sourceUrl`; `unknown_key` (422) for a kind, a list, a language, a term, a target
-         *     obligation or provision, an instrument, a parent provision, a provision kind, a level, a jurisdiction, an authority or a duty type the
-         *     library does not hold; `not_a_regime` (422) when a new instrument's regime is not a
-         *     term of the regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes
-         *     an obligation with a term of a dimension that mirrors the jurisdiction list;
+         *     named is not one this key opened; `source_missing` (422) when a changed value carries no
+         *     source, or a new record no `sourceUrl`; `unknown_key` (422) for a kind, a list, a
+         *     language, a term, a target obligation or provision, an instrument, a parent provision, a
+         *     provision kind, a level, a jurisdiction, an authority or a duty type the library does
+         *     not hold; `not_a_regime` (422) when a new instrument's regime is not a term of the
+         *     regime dimension; `jurisdiction_term_mirrored` (422) when the payload scopes an
+         *     obligation with a term of a dimension that mirrors the jurisdiction list;
          *     `duplicate_key` (409) when a new record's key is already a record's;
          *     `invalid_recurrence` (422) when a recurring duty's rule does not parse, is finer than a
          *     day, never falls due, or falls due more often than the cap in ten years;
@@ -6408,17 +6628,18 @@ export interface paths {
          *     `PROPOSAL_TEXT_MAX_CHARS` (50000 unless the platform sets another number);
          *     `standard_term_only_on_standards` (422) when the scope puts a standard's term on an
          *     obligation whose instrument is not a standard; `licensed_text` (422) for a provision or
-         *     provision version under a standard, a source on a standard's obligation that is not
-         *     an https link, a standard's new obligation whose `refLabel` is not the standard's
-         *     official reference, or a `sourceLabel` under a standard that is anything but that
-         *     reference; `one_conformance_obligation` (422) for a new obligation under a standard
-         *     that already holds one; `standard_term_required` (422) when a standard's obligation
-         *     would carry no standard term, or more than one; `idempotency_conflict` (409) when the
-         *     same proposer's `Idempotency-Key` arrives with a different body or from another bank
-         *     (a key is its sender's own: another caller's value files a proposal of its own);
-         *     `validation_error` (422) also for an `Idempotency-Key` longer than 200 characters;
-         *     `permission_denied` (403) without
-         *     the permission or the scope; `unauthenticated` (401) without a credential.
+         *     provision version under a standard, a source on a standard's obligation that is not an
+         *     https link, a standard's new obligation whose `refLabel` is not the standard's official
+         *     reference, or a `sourceLabel` under a standard that is anything but that reference;
+         *     `one_conformance_obligation` (422) for a new obligation under a standard that already
+         *     holds one; `standard_term_required` (422) when a standard's obligation would carry no
+         *     standard term, or more than one; `idempotency_conflict` (409) when the same proposer's
+         *     `Idempotency-Key` arrives with a different body or from another bank (a key is its
+         *     sender's own: another caller's value files a proposal of its own); `validation_error`
+         *     (422) also for an `Idempotency-Key` longer than 200 characters; `permission_denied`
+         *     (403) without the permission or the scope.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         post: operations["createProposal"];
         delete?: never;
@@ -6445,8 +6666,7 @@ export interface paths {
          *     A read: it changes nothing and writes no audit row. Each reviewer reads only their own
          *     run. Needs the platform permission `proposals.review` from a person.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without `proposals.review`.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`.
          */
         get: operations["readApproveAllProposals"];
         put?: never;
@@ -6468,11 +6688,11 @@ export interface paths {
          *     Needs the platform permission `proposals.review` from a person, stepped up fresh. An
          *     agent's key approves one proposal at a time and never reaches this route.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without `proposals.review`; `step_up_required` (403) without a fresh passkey
-         *     assertion; `approval_running` (409) while the caller's earlier run is still running;
-         *     `unknown_key` (422) when `origin` is neither `agent` nor `user`; `validation_error` (422)
-         *     when `kind` is longer than 200 characters.
+         *     Errors to branch on: `approval_running` (409) while the caller's earlier run is still
+         *     running; `unknown_key` (422) when `origin` is neither `agent` nor `user`;
+         *     `validation_error` (422) when `kind` is longer than 200 characters.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `proposals.review`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["approveAllProposals"];
         delete?: never;
@@ -6513,11 +6733,12 @@ export interface paths {
          *     independent agent opens the same proposal a person opens before it decides. No bank role
          *     and no bank's key reaches it.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session or a key;
-         *     `permission_denied` (403) without `proposals.review` or `proposals:review`, or for a
-         *     bank's key; `agent_not_bound` (403) for a key holding the scope but bound to no agent
-         *     definition; `not_found` (404) for a proposal that does not exist and for anything that
-         *     is not a UUID.
+         *     Errors to branch on: `permission_denied` (403) without `proposals.review` or
+         *     `proposals:review`, or for a bank's key; `agent_not_bound` (403) for a key holding the
+         *     scope but bound to no agent definition; `not_found` (404) for a proposal that does not
+         *     exist and for anything that is not a UUID.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["getProposal"];
         put?: never;
@@ -6599,6 +6820,8 @@ export interface paths {
          *     puts a standard's term on an obligation whose instrument is not a standard;
          *     `invalid_recurrence` (422) when a recurring duty's rule, as proposed or as corrected, no
          *     longer falls due between once and the cap in the ten years from today.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         post: operations["approveProposal"];
         delete?: never;
@@ -6650,6 +6873,8 @@ export interface paths {
          *     the reviewer is the person, key or agent who made the proposal; `invalid_transition`
          *     (409) when the proposal was already approved or rejected, or is a batch, which is
          *     decided row by row through `POST /proposal-batches/{batchId}/decide`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         post: operations["rejectProposal"];
         delete?: never;
@@ -6684,14 +6909,15 @@ export interface paths {
          *     belongs to no bank and answers 404 even when it carries `library:read`. An agent access
          *     entry's key or token reads only a provision of an instrument it could open.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a credential; `permission_denied`
-         *     (403) without library.read or the library:read scope, which is checked first;
-         *     `not_found` (404) when no provision has that id or it is one this caller may not see,
-         *     and when the caller is a platform key carrying the scope; `unknown_key` (422) when
-         *     a version number is asked for that this provision has no version for;
-         *     `validation_error` (422) when the provision has fewer than two versions and neither
-         *     number was given, when the two versions share no language at all, when lang is
+         *     Errors to branch on: `permission_denied` (403) without library.read or the library:read
+         *     scope, which is checked first; `not_found` (404) when no provision has that id or it is
+         *     one this caller may not see, and when the caller is a platform key carrying the scope;
+         *     `unknown_key` (422) when a version number is asked for that this provision has no
+         *     version for; `validation_error` (422) when the provision has fewer than two versions and
+         *     neither number was given, when the two versions share no language at all, when lang is
          *     longer than 8 characters, or when the path segment is not a UUID.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["getProvisionDiff"];
         put?: never;
@@ -6722,7 +6948,7 @@ export interface paths {
          *     A read: it changes nothing and writes no audit event. Open to any person's session with
          *     no permission beyond it; an API key is refused.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["listJurisdictions"];
         put?: never;
@@ -6757,6 +6983,8 @@ export interface paths {
          *     Answers a plain array in key order rather than a page, like the other short reference
          *     reads, and an empty array would be a 200. Errors to branch on: `unauthenticated` (401)
          *     without a session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["listLanguages"];
         put?: never;
@@ -6788,6 +7016,8 @@ export interface paths {
          *     `validation_error` (422) for a permission longer than 64 characters; `not_found` (404) for
          *     a session that belongs to no bank; `unauthenticated` (401) without a member session;
          *     `enrolment_only` (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["listPeople"];
         put?: never;
@@ -6814,8 +7044,9 @@ export interface paths {
          *     Any signed-in session may read it, with no permission; API keys cannot. It changes
          *     nothing and writes no audit event.
          *
-         *     Errors: `unauthenticated` (401) without a live session; `enrolment_only` (403) from an
-         *     enrolment session.
+         *     Errors: `enrolment_only` (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["listPermissions"];
         put?: never;
@@ -6854,6 +7085,8 @@ export interface paths {
          *     which never holds it; `tenant_reach_off` (403) while the bank's tenant reach or the
          *     entry's own toggle is off; `read_only_credential` (403) for any write; `rate_limited`
          *     (429) over the credential's rate; `validation_error` (422) for a page out of range.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a valid API key; `permission_denied` (403) for a key without the `tenant:read` scope, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listRegisterEntries"];
         put?: never;
@@ -6888,6 +7121,8 @@ export interface paths {
          *     entry's own toggle is off; `read_only_credential` (403) for any write; `rate_limited`
          *     (429) over the credential's rate; `not_found` (404) for an obligation outside the entry's
          *     scope, a private obligation, one under a standard or one that does not exist, alike.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a valid API key; `permission_denied` (403) for a key without the `tenant:read` scope, named in `requiredPermission`.
          */
         get: operations["readRegisterEntry"];
         put?: never;
@@ -6913,8 +7148,7 @@ export interface paths {
          *     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
          *     nothing to the audit log.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `validation_error` (422) when `limit` is above 100.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listResearchRequests"];
         put?: never;
@@ -6931,22 +7165,24 @@ export interface paths {
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
          *     event naming the person and the kind, never the topic's text or the address.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`, or
-         *     for an agent the bank may not steer; `not_found` (404) for an agent or source the bank
-         *     does not have; `no_tenant_agent` (409) when the bank has no agent of its own, since
-         *     bleqq's agents take no requests; `no_published_version` (409) when the agent has no
-         *     version to run; `validation_error` (422) for a topic or address that is empty, too long,
-         *     missing for its kind or sent for another kind; `source_not_checked` (422) for a source
-         *     the agents do not check; `url_not_allowed` (422) for an address that is not https on the
-         *     standard port, carries a user name, is a standards publisher's, or is or redirects to a
-         *     host off the public internet; `url_unreachable` (422) when the address answers no page
-         *     within `RESEARCH_URL_MAX_REDIRECTS` redirects; `feature_off` (422) when the bank has
-         *     switched its AI features off; `budget_cap_reached` (422) when the bank has set no cap or
-         *     this month's spend has reached it; `plan_limit_reached` (429) past the bank's
+         *     Errors: `permission_denied` (403) without `agents.manage`, or for an agent the bank may
+         *     not steer; `not_found` (404) for an agent or source the bank does not have;
+         *     `no_tenant_agent` (409) when the bank has no agent of its own, since bleqq's agents take
+         *     no requests; `no_published_version` (409) when the agent has no version to run;
+         *     `validation_error` (422) for a topic or address that is empty, too long, missing for its
+         *     kind or sent for another kind; `source_not_checked` (422) for a source the agents do not
+         *     check; `url_not_allowed` (422) for an address that is not https on the standard port,
+         *     carries a user name, is a standards publisher's, or is or redirects to a host off the
+         *     public internet; `url_unreachable` (422) when the address answers no page within
+         *     `RESEARCH_URL_MAX_REDIRECTS` redirects; `feature_off` (422) when the bank has switched
+         *     its AI features off; `budget_cap_reached` (422) when the bank has set no cap or this
+         *     month's spend has reached it; `plan_limit_reached` (429) past the bank's
          *     `RESEARCH_REQUESTS_PER_MONTH` requests this month; `research_in_progress` (429) while
          *     another request of the bank is still being made, so try again when it has finished;
          *     `rate_limited` (429) when the bank has had `RESEARCH_URL_RATE_PER_HOUR` web addresses
          *     fetched in the last hour, failed fetches included.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
          */
         post: operations["createResearchRequest"];
         delete?: never;
@@ -6999,6 +7235,8 @@ export interface paths {
          *     it names, or a `from` or `to` that is not a calendar date. A query parameter this route
          *     does not read is ignored rather than refused, so check a filter's spelling against
          *     `kind`, `from` and `to` when it seems to have no effect.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `roadmap.read`, named in `requiredPermission`.
          */
         get: operations["getRoadmap"];
         put?: never;
@@ -7049,14 +7287,15 @@ export interface paths {
          *     writes no audit row, because nothing changed. It is a POST so the query never travels
          *     in a URL: what a reader types is the bank's own text.
          *
-         *     Errors: `rate_limited` when that reader or key has searched more than the limit above
-         *     in the last minute, which is a 429 to wait out and retry rather than a call to change;
+         *     Errors: `rate_limited` when that reader or key has searched more than the limit above in
+         *     the last minute, which is a 429 to wait out and retry rather than a call to change;
          *     `unknown_key` for a `lang` that is not one of the library's language rows;
          *     `validation_error` for a query over the cap, a `limit` above 100 or a filter the
          *     contract does not name; `unknown_filter` (422) when an agent access credential sends
-         *     `footprint` `all` or `watched`; `not_found` when the session or the key belongs to no bank;
-         *     `permission_denied` without `search.use`, or a key without `search:read`;
-         *     `unauthenticated` without a session or a key.
+         *     `footprint` `all` or `watched`; `not_found` when the session or the key belongs to no
+         *     bank; `permission_denied` without `search.use`, or a key without `search:read`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         post: operations["search"];
         delete?: never;
@@ -7104,9 +7343,10 @@ export interface paths {
          *
          *     Errors: `rate_limited` when that key has called more than the limit above in the last
          *     minute, a 429 to wait out and retry; `validation_error` for a text over the cap, a
-         *     `limit` above 100 or a field the contract does not name; `permission_denied` without
-         *     the `search:read` scope; `unauthenticated` without a key, which is also what a
-         *     person's session gets here.
+         *     `limit` above 100 or a field the contract does not name; `unauthenticated` without a
+         *     key, which is also what a person's session gets here.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a valid API key; `permission_denied` (403) for a key without the `search:read` scope, named in `requiredPermission`.
          */
         post: operations["findSimilar"];
         delete?: never;
@@ -7140,6 +7380,8 @@ export interface paths {
          *     404. Errors: `permission_denied` without one of those three, or to a bank's own agent (an
          *     agent access credential, which reads the library and not the registry); `unauthenticated`
          *     without a credential.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["listSources"];
         put?: never;
@@ -7170,8 +7412,9 @@ export interface paths {
          *     authority the library holds; `duplicate_key` (409) when a source of that name is already
          *     registered — names are unique across the library, so change the row that exists;
          *     `validation_error` (422) for a body the schema refuses, including a `url` that is not
-         *     http or https; `permission_denied` (403) without `sources.manage`; `unauthenticated`
-         *     (401) without a session.
+         *     http or https.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `sources.manage`, named in `requiredPermission`.
          */
         post: operations["createSource"];
         delete?: never;
@@ -7210,6 +7453,8 @@ export interface paths {
          *     in it is a 200 with an empty list. Errors: `permission_denied` without `watch.read`,
          *     `sources.manage` or the `library:read` scope, or to a bank's own agent (an agent access
          *     credential); `unauthenticated` without a credential.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["getSourceCoverage"];
         put?: never;
@@ -7256,8 +7501,9 @@ export interface paths {
          *     a body the schema refuses, including a `url` that is not http or https and a
          *     `checkFrequency` outside `daily`, `weekly` and `monthly`, and when the source would be
          *     checked automatically on a host of the `STANDARDS_PUBLISHER_HOSTS` setting, since no run
-         *     reads a standards publisher until its terms are cleared (WAT-07, D-45); `permission_denied` (403)
-         *     without `sources.manage`; `unauthenticated` (401) without a session.
+         *     reads a standards publisher until its terms are cleared (WAT-07, D-45).
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `sources.manage`, named in `requiredPermission`.
          */
         patch: operations["updateSource"];
         trace?: never;
@@ -7286,6 +7532,8 @@ export interface paths {
          *     not exist, is another bank's or the caller may not read; `permission_denied` (403)
          *     without `vocab.manage`; `unauthenticated` (401) without a session; `validation_error`
          *     (422) for a body the schema rejects.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["tagRecord"];
         delete?: never;
@@ -7320,6 +7568,8 @@ export interface paths {
          *     `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
          *     session; `validation_error` (422) for a body the schema rejects, such as an empty
          *     selection.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["tagRecords"];
         delete?: never;
@@ -7351,6 +7601,8 @@ export interface paths {
          *     (422) for a tag the bank does not have or has retired; `permission_denied` (403)
          *     without `vocab.manage`; `unauthenticated` (401) without a session; `validation_error`
          *     (422) for a body the schema rejects, such as an empty selection.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["previewTagging"];
         delete?: never;
@@ -7382,6 +7634,8 @@ export interface paths {
          *     for a record that does not exist, is another bank's or the caller may not read;
          *     `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
          *     session; `validation_error` (422) for a body the schema rejects.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["untagRecord"];
         delete?: never;
@@ -7412,8 +7666,10 @@ export interface paths {
          *     to an agent's API key with the `library:read` scope.
          *
          *     Errors to branch on: `unknown_key` (422) for a `dimension` that is not an active
-         *     dimension, with the valid keys in `detail`; `unauthenticated` (401) without a session or
-         *     a valid key; `permission_denied` (403) for an API key without `library:read`.
+         *     dimension, with the valid keys in `detail`; `permission_denied` (403) for an API key
+         *     without `library:read`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["listTerms"];
         put?: never;
@@ -7434,8 +7690,9 @@ export interface paths {
          *     that is not one, a label in a language the platform does not hold, or a parent that is
          *     not a term of the dimension; `duplicate_key` (409) when the key is taken in the
          *     dimension, a retired term's included; `validation_error` (422) for a key that is not a
-         *     slug or a body the schema refuses; `permission_denied` (403) without either permission;
-         *     `unauthenticated` (401) without a session.
+         *     slug or a body the schema refuses; `permission_denied` (403) without either permission.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["createTerm"];
         delete?: never;
@@ -7472,11 +7729,12 @@ export interface paths {
          *
          *     Errors to branch on: `jurisdiction_term_mirrored` (422) for a term of a dimension that
          *     mirrors the jurisdiction list; `stale_write` (409) when `If-Match` names a version that
-         *     is no longer the term's; `unknown_key` (422) for a label in a language the platform
-         *     does not hold; `validation_error` (422) for an `If-Match` that is not a version or a
-         *     body the schema refuses; `not_found` (404) when no term has that id, and for anything
-         *     that is not a UUID; `permission_denied` (403) without either permission;
-         *     `unauthenticated` (401) without a session.
+         *     is no longer the term's; `unknown_key` (422) for a label in a language the platform does
+         *     not hold; `validation_error` (422) for an `If-Match` that is not a version or a body the
+         *     schema refuses; `not_found` (404) when no term has that id, and for anything that is not
+         *     a UUID; `permission_denied` (403) without either permission.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         patch: operations["updateTerm"];
         trace?: never;
@@ -7500,8 +7758,10 @@ export interface paths {
          *     one, and nothing here is ever shared with another bank. It changes nothing and writes
          *     nothing to the audit log.
          *
-         *     Errors: `unauthenticated` when there is no session; `not_found` when the session
-         *     belongs to no organisation, which is what a platform console session gets here.
+         *     Errors: `not_found` when the session belongs to no organisation, which is what a
+         *     platform console session gets here.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["getTenant"];
         put?: never;
@@ -7524,10 +7784,10 @@ export interface paths {
          *     later. Nothing here leaves the bank.
          *
          *     Errors: a 422 for a field the caller can fix — a blank name, an empty content-language
-         *     list — each carrying its own `code` and a message to show; `unknown_key` for a
-         *     timezone the IANA database does not hold or a language key that is not an active
-         *     language row; `permission_denied` without `security.manage`; `unauthenticated`
-         *     without a session.
+         *     list — each carrying its own `code` and a message to show; `unknown_key` for a timezone
+         *     the IANA database does not hold or a language key that is not an active language row.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`.
          */
         patch: operations["updateTenant"];
         trace?: never;
@@ -7548,7 +7808,7 @@ export interface paths {
          *     A person's session in a bank holding `agents.manage`; no API key. It reads and writes
          *     nothing to the audit log.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
          */
         get: operations["getAgentBudget"];
         /**
@@ -7561,8 +7821,9 @@ export interface paths {
          *     A person's session in a bank holding `agents.manage`; no API key. Records one audit
          *     event with the cap before and after, and one more for each agent the cap pauses.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `agents.manage`;
-         *     `validation_error` (422) for a negative or malformed amount.
+         *     Errors: `validation_error` (422) for a negative or malformed amount.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `agents.manage`, named in `requiredPermission`.
          */
         put: operations["putAgentBudget"];
         post?: never;
@@ -7602,9 +7863,9 @@ export interface paths {
          *     bank already has leaves it as it is and is still recorded.
          *
          *     Errors: `validation_error` (422) for a body without a boolean `enabled` or with any
-         *     other field; `step_up_required` (403) without a fresh passkey assertion;
-         *     `permission_denied` (403) without `security.manage`, naming it in
-         *     `requiredPermission`; `unauthenticated` (401) without a session.
+         *     other field.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         put: operations["setTenantAi"];
         post?: never;
@@ -7634,9 +7895,7 @@ export interface paths {
          *     Needs `integrations.manage` on a person's session in the bank; an API key cannot list
          *     keys. It changes nothing and writes no audit event. An empty page is a 200 with `total` 0.
          *
-         *     Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `permission_denied` (403) without `integrations.manage`; `unauthenticated` (401)
-         *     without a live session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `integrations.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listApiKeys"];
         put?: never;
@@ -7658,12 +7917,12 @@ export interface paths {
          *     `api_key.created` with the prefix, scopes and expiry, never the secret, and with the
          *     step-up assertion.
          *
-         *     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
-         *     opening the passkey prompt and retrying; `unknown_key` (422) for a scope a bank's key may
-         *     not hold, the message naming the valid scopes; `name_required` (422) for a name of spaces
-         *     alone; `expiry_in_past` (422) for an expiry that is not in the future; `validation_error`
-         *     (422) for an empty scope list or a name over 200 characters; `permission_denied` (403)
-         *     without `integrations.manage`; `unauthenticated` (401) without a live session.
+         *     Errors: `unknown_key` (422) for a scope a bank's key may not hold, the message naming
+         *     the valid scopes; `name_required` (422) for a name of spaces alone; `expiry_in_past`
+         *     (422) for an expiry that is not in the future; `validation_error` (422) for an empty
+         *     scope list or a name over 200 characters.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `integrations.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["createApiKey"];
         delete?: never;
@@ -7699,9 +7958,9 @@ export interface paths {
          *     "key_revoked" to the security log the first time, "token_revoked" for a personal access
          *     token, and the audit event `api_key.revoked` each time.
          *
-         *     Errors: `not_found` (404) when the bank has no credential with that identifier;
-         *     `permission_denied` (403) without `integrations.manage`; `unauthenticated` (401) without
-         *     a live session.
+         *     Errors: `not_found` (404) when the bank has no credential with that identifier.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `integrations.manage`, named in `requiredPermission`.
          */
         delete: operations["revokeApiKey"];
         options?: never;
@@ -7732,8 +7991,9 @@ export interface paths {
          *     beyond membership, and an API key is refused. The path says `footprint`, the code's name
          *     for what the screens call the regulatory scope.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
-         *     principal in no organisation.
+         *     Errors to branch on: `not_found` (404) for a principal in no organisation.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["getFootprint"];
         put?: never;
@@ -7775,9 +8035,9 @@ export interface paths {
          *     person's session and no permission beyond membership, and an API key is refused. The
          *     path says `footprint`, the code's name for what the screens call the regulatory scope.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
-         *     principal in no organisation; `validation_error` (422) when the page size or offset is
-         *     out of range.
+         *     Errors to branch on: `not_found` (404) for a principal in no organisation.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listFootprintRequests"];
         put?: never;
@@ -7820,14 +8080,16 @@ export interface paths {
          *     Errors to branch on: `request_pending` (409) when a change already waits for a decision;
          *     `unknown_key` (422) for a dimension, term, jurisdiction or regime term that is not an
          *     active one, or a scope item to remove that is not in scope, with the valid keys in
-         *     `detail`; `source_not_public` (422) for a scope item's address that is not a public https
-         *     page; `not_a_legal_entity` (422) for a company line naming anything but an active legal
-         *     entity of the organisation; `dimension_not_narrowable` (422) for a company line in any
-         *     dimension but the three licence-bound ones named above; `validation_error`
-         *     (422) for a change with nothing in it, a term both added and removed, a term, scope item
-         *     or company line named twice, an exclusion of a term already outside that company's scope
-         *     or an inclusion of one inside it, a list over its cap, or a body the schema refuses; `permission_denied` (403) without `footprint.request`; `unauthenticated` (401)
-         *     without a session; `not_found` (404) for a principal in no organisation.
+         *     `detail`; `source_not_public` (422) for a scope item's address that is not a public
+         *     https page; `not_a_legal_entity` (422) for a company line naming anything but an active
+         *     legal entity of the organisation; `dimension_not_narrowable` (422) for a company line in
+         *     any dimension but the three licence-bound ones named above; `validation_error` (422) for
+         *     a change with nothing in it, a term both added and removed, a term, scope item or
+         *     company line named twice, an exclusion of a term already outside that company's scope or
+         *     an inclusion of one inside it, a list over its cap, or a body the schema refuses;
+         *     `not_found` (404) for a principal in no organisation.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `footprint.request`, named in `requiredPermission`.
          */
         post: operations["createFootprintRequest"];
         delete?: never;
@@ -7869,11 +8131,11 @@ export interface paths {
          *     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
          *     `stale_write` (409) when `If-Match` names an old version, or when a term the change
          *     adds, or a scope item's jurisdiction or regime term, was retired while it waited, which
-         *     the approver rejects so the requester can ask again; `step_up_required` (403) without a
-         *     fresh passkey step-up; `permission_denied` (403) without `footprint.approve`;
-         *     `not_found` (404) for a request that is not here; `validation_error` (422) for an
-         *     `If-Match` that is not a version, a note longer than 2000 characters or a body the
-         *     schema refuses; `unauthenticated` (401) without a session.
+         *     the approver rejects so the requester can ask again; `not_found` (404) for a request
+         *     that is not here; `validation_error` (422) for an `If-Match` that is not a version, a
+         *     note longer than 2000 characters or a body the schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `footprint.approve`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         post: operations["approveFootprintRequest"];
         delete?: never;
@@ -7907,11 +8169,11 @@ export interface paths {
          *
          *     Errors to branch on: `four_eyes_violation` (409) when the requester rejects their own
          *     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
-         *     `stale_write` (409) when `If-Match` names an old version; `permission_denied` (403)
-         *     without `footprint.approve`; `not_found` (404) for a request that is not here;
-         *     `validation_error` (422) for an `If-Match` that is not a version, a note longer than
-         *     2000 characters or a body the schema refuses; `unauthenticated` (401) without a
-         *     session.
+         *     `not_found` (404) for a request that is not here; `validation_error` (422) for an
+         *     `If-Match` that is not a version, a note longer than 2000 characters or a body the
+         *     schema refuses.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `footprint.approve`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         post: operations["rejectFootprintRequest"];
         delete?: never;
@@ -7943,9 +8205,10 @@ export interface paths {
          *
          *     Errors to branch on: `permission_denied` (403) without `footprint.request`, and for a
          *     request someone else sent; `invalid_transition` (409) when it was already approved,
-         *     rejected or withdrawn; `stale_write` (409) when `If-Match` names an old version;
-         *     `not_found` (404) for a request that is not here; `validation_error` (422) for an
-         *     `If-Match` that is not a version; `unauthenticated` (401) without a session.
+         *     rejected or withdrawn; `not_found` (404) for a request that is not here;
+         *     `validation_error` (422) for an `If-Match` that is not a version.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `footprint.request`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         post: operations["withdrawFootprintRequest"];
         delete?: never;
@@ -7979,9 +8242,9 @@ export interface paths {
          *     Needs `footprint.request` in the caller's organisation and a person's session; an API key
          *     is refused.
          *
-         *     Errors to branch on: `permission_denied` (403) without `footprint.request`;
-         *     `unauthenticated` (401) without a session; `not_found` (404) for a principal in no
-         *     organisation.
+         *     Errors to branch on: `not_found` (404) for a principal in no organisation.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `footprint.request`, named in `requiredPermission`.
          */
         get: operations["getFootprintSuggestions"];
         put?: never;
@@ -8013,6 +8276,8 @@ export interface paths {
          *     Requires `footprint.request` in the caller's tenant, the same permission that starts a
          *     footprint change. Errors: `permission_denied` without it, `unauthenticated` without a
          *     session, `validation_error` for a body the schema rejects.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `footprint.request`, named in `requiredPermission`.
          */
         post: operations["watchMarket"];
         delete?: never;
@@ -8041,6 +8306,8 @@ export interface paths {
          *     Requires `footprint.request` in the caller's tenant. Errors: `permission_denied`
          *     without it, `unauthenticated` without a session, `not_found` for a market not
          *     currently watched.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `footprint.request`, named in `requiredPermission`.
          */
         post: operations["unwatchMarket"];
         delete?: never;
@@ -8066,9 +8333,7 @@ export interface paths {
          *     Needs `members.manage`. It changes nothing and writes no audit event. An empty page is a
          *     200 with an empty list.
          *
-         *     Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `permission_denied` (403) without `members.manage`; `unauthenticated` (401)
-         *     without a live session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listInvitations"];
         put?: never;
@@ -8098,8 +8363,9 @@ export interface paths {
          *
          *     Needs `members.manage`. Records the audit event `invitation.revoked`, the retry included.
          *
-         *     Errors: `not_found` (404) when this bank has no such invitation; `permission_denied`
-         *     (403) without `members.manage`; `unauthenticated` (401) without a live session.
+         *     Errors: `not_found` (404) when this bank has no such invitation.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`.
          */
         delete: operations["revokeInvitation"];
         options?: never;
@@ -8127,8 +8393,9 @@ export interface paths {
          *     the token is never recorded.
          *
          *     Errors: `invitation_closed` (409) when the invitation was already accepted or revoked;
-         *     `not_found` (404) when this bank has no such invitation; `permission_denied` (403)
-         *     without `members.manage`; `unauthenticated` (401) without a live session.
+         *     `not_found` (404) when this bank has no such invitation.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`.
          */
         post: operations["resendInvitation"];
         delete?: never;
@@ -8161,12 +8428,12 @@ export interface paths {
          *     field before and after, the scope note and statement named in `rewritten`, never copied.
          *     No step-up.
          *
-         *     Errors: `not_found` (404) for a licence that is not the bank's own; `stale_write` (409)
-         *     when `If-Match` is not the current version; `validation_error` (422) for an `If-Match`
-         *     that is not a version, a body the schema refuses, or an end date before its start;
-         *     `unknown_key` (422) for an unknown term; `unknown_member` (422) for an owner who is not
-         *     an active member of the bank; `permission_denied` (403) without `vocab.manage`;
-         *     `unauthenticated` (401).
+         *     Errors: `not_found` (404) for a licence that is not the bank's own; `validation_error`
+         *     (422) for an `If-Match` that is not a version, a body the schema refuses, or an end date
+         *     before its start; `unknown_key` (422) for an unknown term; `unknown_member` (422) for an
+         *     owner who is not an active member of the bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         patch: operations["updateLicence"];
         trace?: never;
@@ -8189,9 +8456,9 @@ export interface paths {
          *     Needs `members.manage` on a person's session in the bank; API keys cannot reach it. It
          *     changes nothing and writes no audit event. An empty page is a 200 with an empty list.
          *
-         *     Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `permission_denied` (403) without `members.manage`; `unauthenticated` (401)
-         *     without a live session; `enrolment_only` (403) from an enrolment session.
+         *     Errors: `enrolment_only` (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listMembers"];
         put?: never;
@@ -8209,13 +8476,12 @@ export interface paths {
          *     grant any role, `admin` included. Records the audit event `invitation.created` with the
          *     roles, the expiry and the step-up assertion; the token is never recorded.
          *
-         *     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
-         *     opening the passkey prompt and retrying; `already_member` (409) when the address belongs
-         *     to a current member;
+         *     Errors: `already_member` (409) when the address belongs to a current member;
          *     `unknown_key` (422) for a role key the bank does not have or has retired;
-         *     `invalid_email` (422) for an address without an `@`; `validation_error` (422) for an empty role list or a field over its length;
-         *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
-         *     live session.
+         *     `invalid_email` (422) for an address without an `@`; `validation_error` (422) for an
+         *     empty role list or a field over its length.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["inviteMember"];
         delete?: never;
@@ -8255,8 +8521,9 @@ export interface paths {
          *     the change would leave nobody holding `members.manage`; `roles_required` (422) for an
          *     empty role list; `unknown_key` (422) for a role the bank does not have or has retired;
          *     `not_found` (404) when the person is not a current member; `validation_error` (422) for
-         *     a title over 200 characters; `permission_denied` (403) without `members.manage`;
-         *     `unauthenticated` (401) without a live session.
+         *     a title over 200 characters.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`.
          */
         patch: operations["updateMember"];
         trace?: never;
@@ -8281,8 +8548,9 @@ export interface paths {
          *     member is its first-line owner, its compliance contact or both; a closed gap and a retired
          *     internal item are history and are not counted. `teams` names the teams the member is in.
          *
-         *     Errors: `not_found` (404) for somebody who is not an active member of the bank;
-         *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401).
+         *     Errors: `not_found` (404) for somebody who is not an active member of the bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`.
          */
         get: operations["getMemberOpenWork"];
         put?: never;
@@ -8318,13 +8586,12 @@ export interface paths {
          *     `enrolment.reissued` for the new invitation and `member.enrolment_reissued` with how many
          *     sessions and passkeys were affected and the step-up assertion.
          *
-         *     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
-         *     opening the passkey prompt and retrying; `not_found` (404) when the person is not a
-         *     current member; `account_held_elsewhere` (409) when the person is also an active member
-         *     of another bank or holds a platform role, whose passkeys open those places too, so only
-         *     the platform owner may re-issue their enrolment, and nothing is written;
-         *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
-         *     live session.
+         *     Errors: `not_found` (404) when the person is not a current member;
+         *     `account_held_elsewhere` (409) when the person is also an active member of another bank
+         *     or holds a platform role, whose passkeys open those places too, so only the platform
+         *     owner may re-issue their enrolment, and nothing is written.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["reissueEnrolment"];
         delete?: never;
@@ -8366,8 +8633,9 @@ export interface paths {
          *     current member of the bank, the member being removed included; `unknown_key` (422) for a
          *     team that is not one of the bank's active teams; `not_found` (404) for somebody who is
          *     not an active member of the bank; `last_admin` (409) when the member is the bank's last
-         *     administrator; `step_up_required` (403) without a fresh passkey assertion;
-         *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401).
+         *     administrator.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["removeMember"];
         delete?: never;
@@ -8394,8 +8662,9 @@ export interface paths {
          *
          *     Needs `members.manage`. It changes nothing and writes no audit event.
          *
-         *     Errors: `not_found` (404) when the person is not a current member; `permission_denied`
-         *     (403) without `members.manage`; `unauthenticated` (401) without a live session.
+         *     Errors: `not_found` (404) when the person is not a current member.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`.
          */
         get: operations["listMemberSessions"];
         put?: never;
@@ -8413,8 +8682,9 @@ export interface paths {
          *     "revoked_by_admin", the audit event `session.revoked` for each, and
          *     `member.sessions_revoked` with how many there were.
          *
-         *     Errors: `not_found` (404) when the person is not a current member; `permission_denied`
-         *     (403) without `members.manage`; `unauthenticated` (401) without a live session.
+         *     Errors: `not_found` (404) when the person is not a current member.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`.
          */
         delete: operations["revokeMemberSessions"];
         options?: never;
@@ -8443,10 +8713,11 @@ export interface paths {
          *     after, even when nothing changed.
          *
          *     Errors: `unknown_member` (422) when the person is not a current member of this bank;
-         *     `unknown_key` (422) for a team the bank does not have, or a retired team the member is not
-         *     already in, and then nothing is saved; `validation_error` (422) for a missing `teams`, more
-         *     than 50 keys or a key over 80 characters; `permission_denied` (403) without
-         *     `members.manage`; `unauthenticated` (401) without a live session.
+         *     `unknown_key` (422) for a team the bank does not have, or a retired team the member is
+         *     not already in, and then nothing is saved; `validation_error` (422) for a missing
+         *     `teams`, more than 50 keys or a key over 80 characters.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `members.manage`, named in `requiredPermission`.
          */
         put: operations["setMemberTeams"];
         post?: never;
@@ -8474,9 +8745,10 @@ export interface paths {
          *     Any member of the bank may call it; beyond a session no permission is needed. It changes
          *     nothing and writes no audit event. An empty organisation is a 200 with `total` 0.
          *
-         *     Errors: `unauthenticated` (401) without a session; `not_found` (404) for a session that
-         *     belongs to no bank, which is what a console session gets; `validation_error` (422) for a
-         *     page size above 100.
+         *     Errors: `not_found` (404) for a session that belongs to no bank, which is what a console
+         *     session gets.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listOrgUnits"];
         put?: never;
@@ -8490,14 +8762,14 @@ export interface paths {
          *     administration (ADM-03). No step-up. Recorded in the audit log as `org_unit.created` with
          *     the new unit, in the same transaction as the write.
          *
-         *     Errors: `validation_error` (422) for a blank or multi-line name, an unknown kind, a field
-         *     the body does not name, an LEI that is not 20 letters and digits, a country that is not
-         *     two letters, or a registration number, LEI, country or term on a unit that is not a
-         *     legal entity; `unknown_key` (422) for a term that is not a legal-entity term;
+         *     Errors: `validation_error` (422) for a blank or multi-line name, an unknown kind, a
+         *     field the body does not name, an LEI that is not 20 letters and digits, a country that
+         *     is not two letters, or a registration number, LEI, country or term on a unit that is not
+         *     a legal entity; `unknown_key` (422) for a term that is not a legal-entity term;
          *     `unknown_member` (422) for a head who is not an active member of the bank; `not_found`
-         *     (404) for a parent that is not the bank's own; `permission_denied` (403) without
-         *     `vocab.manage`, naming it in `requiredPermission`; `unauthenticated` (401) without a
-         *     session.
+         *     (404) for a parent that is not the bank's own.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["createOrgUnit"];
         delete?: never;
@@ -8530,12 +8802,12 @@ export interface paths {
          *     with every changed field before and after. No step-up.
          *
          *     Errors: `not_found` (404) for a unit or parent that is not the bank's own;
-         *     `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
-         *     for an `If-Match` that is not a version, a body the schema refuses, a parent that is the
-         *     unit itself or sits under it, or a legal entity's field on another kind of unit;
-         *     `unknown_key` (422) for an unknown term; `unknown_member` (422) for a head who is not an
-         *     active member of the bank; `permission_denied` (403) without `vocab.manage`;
-         *     `unauthenticated` (401).
+         *     `validation_error` (422) for an `If-Match` that is not a version, a body the schema
+         *     refuses, a parent that is the unit itself or sits under it, or a legal entity's field on
+         *     another kind of unit; `unknown_key` (422) for an unknown term; `unknown_member` (422)
+         *     for a head who is not an active member of the bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         patch: operations["updateOrgUnit"];
         trace?: never;
@@ -8560,12 +8832,13 @@ export interface paths {
          *     new row, in the same transaction as the write; the scope note and statement a person
          *     typed are named in `rewritten`, never copied.
          *
-         *     Errors: `not_found` (404) for a unit that is not the bank's own; `validation_error` (422)
-         *     for a unit that is not a legal entity, a missing type, a field the body does not name, or
-         *     a withdrawal or validity end before the date it starts from; `unknown_key` (422) for a
-         *     type or service term that is not a term obligations are scoped with; `unknown_member`
-         *     (422) for an owner who is not an active member of the bank; `permission_denied` (403)
-         *     without `vocab.manage`; `unauthenticated` (401).
+         *     Errors: `not_found` (404) for a unit that is not the bank's own; `validation_error`
+         *     (422) for a unit that is not a legal entity, a missing type, a field the body does not
+         *     name, or a withdrawal or validity end before the date it starts from; `unknown_key`
+         *     (422) for a type or service term that is not a term obligations are scoped with;
+         *     `unknown_member` (422) for an owner who is not an active member of the bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["createLicence"];
         delete?: never;
@@ -8590,8 +8863,9 @@ export interface paths {
          *     Any member of the bank may call it. It changes nothing and writes no audit event. A bank
          *     with no product is a 200 with `total` 0.
          *
-         *     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a session
-         *     that belongs to no bank; `unauthenticated` (401).
+         *     Errors: `not_found` (404) for a session that belongs to no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listProducts"];
         put?: never;
@@ -8606,10 +8880,12 @@ export interface paths {
          *     never copied.
          *
          *     Errors: `validation_error` (422) for a blank or multi-line name, a name the bank already
-         *     uses, an unknown status or a field the body does not name; `unknown_key` (422) for a term
-         *     that is not a term obligations are scoped with; `unknown_member` (422) for an owner who
-         *     is not an active member of the bank; `not_found` (404) for a unit that is not the bank's
-         *     own; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401).
+         *     uses, an unknown status or a field the body does not name; `unknown_key` (422) for a
+         *     term that is not a term obligations are scoped with; `unknown_member` (422) for an owner
+         *     who is not an active member of the bank; `not_found` (404) for a unit that is not the
+         *     bank's own.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["createProduct"];
         delete?: never;
@@ -8642,11 +8918,11 @@ export interface paths {
          *     field before and after, the description named in `rewritten`, never copied. No step-up.
          *
          *     Errors: `not_found` (404) for a product or unit that is not the bank's own;
-         *     `stale_write` (409) when `If-Match` is not the current version; `validation_error` (422)
-         *     for an `If-Match` that is not a version, a body the schema refuses or a name the bank
-         *     already uses; `unknown_key` (422) for an unknown term; `unknown_member` (422) for an
-         *     owner who is not an active member of the bank; `permission_denied` (403) without
-         *     `vocab.manage`; `unauthenticated` (401).
+         *     `validation_error` (422) for an `If-Match` that is not a version, a body the schema
+         *     refuses or a name the bank already uses; `unknown_key` (422) for an unknown term;
+         *     `unknown_member` (422) for an owner who is not an active member of the bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         patch: operations["updateProduct"];
         trace?: never;
@@ -8676,9 +8952,9 @@ export interface paths {
          *
          *     Needs `vocab.manage`, the permission that manages this organisation's vocabularies.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without `vocab.manage`; `not_found` (404) for a principal in no organisation;
-         *     `validation_error` (422) when the page size or offset is out of range.
+         *     Errors to branch on: `not_found` (404) for a principal in no organisation.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listTenantProposals"];
         put?: never;
@@ -8705,6 +8981,8 @@ export interface paths {
          *     A read: it changes nothing and writes no audit row. Needs `security.manage` in the caller's bank and a person's session; an API key is refused.
          *
          *     Errors: `permission_denied` (403) without `security.manage`, with `requiredPermission` named; `unauthenticated` (401) without a session; `not_found` (404) for a principal in no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`.
          */
         get: operations["getTenantReach"];
         put?: never;
@@ -8733,6 +9011,8 @@ export interface paths {
          *     Needs `security.manage` in the caller's bank and a passkey step-up younger than the configured freshness window (`POST /auth/step-up/options`, then `POST /auth/step-up/verify`); an API key or a personal access token is refused, because neither can step up. Records `tenant_reach.switched_off` in the audit log, naming the person and the passkey assertion.
          *
          *     Errors: `invalid_transition` (409) when reach is already off; `step_up_required` (403) without a fresh passkey step-up; `permission_denied` (403) without `security.manage`, with `requiredPermission` named; `unauthenticated` (401) without a session; `not_found` (404) for a principal in no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["switchOffTenantReach"];
         delete?: never;
@@ -8759,6 +9039,8 @@ export interface paths {
          *     Needs `security.manage` in the caller's bank and a passkey step-up younger than the configured freshness window (`POST /auth/step-up/options`, then `POST /auth/step-up/verify`); an API key or a personal access token is refused, because neither can step up. Records `tenant_reach.requested` in the audit log, naming the requester and the passkey assertion.
          *
          *     Errors: `request_pending` (409) when a request already waits for a decision; `invalid_transition` (409) when reach is already on; `step_up_required` (403) without a fresh passkey step-up; `permission_denied` (403) without `security.manage`, with `requiredPermission` named; `unauthenticated` (401) without a session; `not_found` (404) for a principal in no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["requestTenantReach"];
         delete?: never;
@@ -8785,6 +9067,8 @@ export interface paths {
          *     Needs `security.manage` in the caller's bank and a passkey step-up younger than the configured freshness window (`POST /auth/step-up/options`, then `POST /auth/step-up/verify`); an API key or a personal access token is refused, because neither can step up. Records `tenant_reach.approved` in the audit log, naming the approver, the requester and the passkey assertion.
          *
          *     Errors: `four_eyes_violation` (409) when the requester approves their own request; `invalid_transition` (409) when it was already decided; `stale_write` (409) when `If-Match` names an old version; `validation_error` (422) for an `If-Match` that is not a version; `not_found` (404) for a request that is not here; `step_up_required` (403) without a fresh passkey step-up; `permission_denied` (403) without `security.manage`, with `requiredPermission` named; `unauthenticated` (401) without a session; `not_found` (404) for a principal in no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         post: operations["approveTenantReach"];
         delete?: never;
@@ -8811,6 +9095,8 @@ export interface paths {
          *     Needs `security.manage` in the caller's bank and a passkey step-up younger than the configured freshness window (`POST /auth/step-up/options`, then `POST /auth/step-up/verify`); an API key or a personal access token is refused, because neither can step up. Records `tenant_reach.rejected` in the audit log, naming the person, the requester and the passkey assertion.
          *
          *     Errors: `four_eyes_violation` (409) when the requester rejects their own request; `invalid_transition` (409) when it was already decided; `stale_write` (409) when `If-Match` names an old version; `validation_error` (422) for an `If-Match` that is not a version; `not_found` (404) for a request that is not here; `step_up_required` (403) without a fresh passkey step-up; `permission_denied` (403) without `security.manage`, with `requiredPermission` named; `unauthenticated` (401) without a session; `not_found` (404) for a principal in no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         post: operations["rejectTenantReach"];
         delete?: never;
@@ -8843,13 +9129,14 @@ export interface paths {
          *     the outcome and the number of companies when the worker is done.
          *
          *     Errors: `invalid_query` (422) for a query that is neither a registration number nor an
-         *     LEI; `validation_error` (422) for a body the schema refuses; `permission_denied` (403)
-         *     without `vocab.manage`, naming it in `requiredPermission`; `unauthenticated` (401) without
-         *     a session; `not_found` (404) for a session that belongs to no bank; `lookup_in_progress`
-         *     (409) while another lookup of the bank is still queued or running, so wait for it to
-         *     finish; `rate_limited` (429) once the bank has started `REGISTERS_LOOKUPS_PER_HOUR`
-         *     lookups in the last hour. A lookup that finds nothing still answers 202: the job then fails with `lookup_not_found`, `lookup_ambiguous`
-         *     or `register_unavailable`, which `GET` reports in `error`.
+         *     LEI; `validation_error` (422) for a body the schema refuses; `not_found` (404) for a
+         *     session that belongs to no bank; `lookup_in_progress` (409) while another lookup of the
+         *     bank is still queued or running, so wait for it to finish; `rate_limited` (429) once the
+         *     bank has started `REGISTERS_LOOKUPS_PER_HOUR` lookups in the last hour. A lookup that
+         *     finds nothing still answers 202: the job then fails with `lookup_not_found`,
+         *     `lookup_ambiguous` or `register_unavailable`, which `GET` reports in `error`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["startRegisterLookup"];
         delete?: never;
@@ -8876,8 +9163,9 @@ export interface paths {
          *
          *     Needs `vocab.manage`. It changes nothing and writes no audit event.
          *
-         *     Errors: `not_found` (404) for a lookup that is not the bank's own; `permission_denied`
-         *     (403) without `vocab.manage`; `unauthenticated` (401) without a session.
+         *     Errors: `not_found` (404) for a lookup that is not the bank's own.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         get: operations["getRegisterLookup"];
         put?: never;
@@ -8916,8 +9204,9 @@ export interface paths {
          *     Errors: `lookup_not_done` (409) for a lookup that has not succeeded; `unknown_lei` (422)
          *     for an LEI the lookup did not find; `validation_error` (422) for a body the schema
          *     refuses, such as an empty list; `not_found` (404) for a lookup that is not the bank's
-         *     own; `permission_denied` (403) without `vocab.manage`; `unauthenticated` (401) without a
-         *     session.
+         *     own.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["applyRegisterLookup"];
         delete?: never;
@@ -8945,8 +9234,9 @@ export interface paths {
          *     event.
          *
          *     Errors: `not_found` (404) from a platform session, which belongs to no bank;
-         *     `unauthenticated` (401) without a live session; `enrolment_only` (403) from an enrolment
-         *     session.
+         *     `enrolment_only` (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["listRoles"];
         put?: never;
@@ -8961,12 +9251,12 @@ export interface paths {
          *     minutes. Records the audit event `role.created` with the key, labels and permissions and
          *     the step-up assertion.
          *
-         *     Errors: `step_up_required` (403) without a fresh step-up; `duplicate_key` (409) for a
-         *     key the bank already has, retired roles included; `key_required` (422) for a blank key;
-         *     `label_required` (422) when no label is given; `unknown_key` (422) for a language the
-         *     product does not offer or a key that is not a bank permission; `validation_error` (422)
-         *     for a field over its length; `permission_denied` (403) without `roles.manage`;
-         *     `unauthenticated` (401) without a live session.
+         *     Errors: `duplicate_key` (409) for a key the bank already has, retired roles included;
+         *     `key_required` (422) for a blank key; `label_required` (422) when no label is given;
+         *     `unknown_key` (422) for a language the product does not offer or a key that is not a
+         *     bank permission; `validation_error` (422) for a field over its length.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `roles.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["createRole"];
         delete?: never;
@@ -9004,9 +9294,9 @@ export interface paths {
          *     `system_role` (422) for a change of a system role's permissions; `label_required` (422)
          *     when every label sent is blank; `unknown_key` (422) for a language the product does not
          *     offer or a key that is not a bank permission; `not_found` (404) when the bank has no
-         *     role with that key; `validation_error` (422) for a note over 1000 characters;
-         *     `permission_denied` (403) without `roles.manage`; `unauthenticated` (401) without a live
-         *     session.
+         *     role with that key; `validation_error` (422) for a note over 1000 characters.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `roles.manage`, named in `requiredPermission`.
          */
         patch: operations["updateRole"];
         trace?: never;
@@ -9033,8 +9323,9 @@ export interface paths {
          *
          *     Errors: `role_in_use` (409) while a current member holds the role, the message saying
          *     how many; `system_role` (422) for a system role; `not_found` (404) when the bank has no
-         *     role with that key; `permission_denied` (403) without `roles.manage`; `unauthenticated`
-         *     (401) without a live session.
+         *     role with that key.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `roles.manage`, named in `requiredPermission`.
          */
         post: operations["retireRole"];
         delete?: never;
@@ -9063,9 +9354,9 @@ export interface paths {
          *     Reading it changes nothing and writes no audit event. An empty page is a 200 with an
          *     empty list.
          *
-         *     Errors: `validation_error` (422) when `limit` is above 100 or `offset` beyond the accepted
-         *     depth; `permission_denied` (403) without `security.manage`; `unauthenticated` (401)
-         *     without a live session; `enrolment_only` (403) from an enrolment session.
+         *     Errors: `enrolment_only` (403) from an enrolment session.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listSecurityLog"];
         put?: never;
@@ -9095,8 +9386,7 @@ export interface paths {
          *     the route names no bank, so no other bank's policy can be asked for. It changes nothing
          *     and writes nothing to the audit log.
          *
-         *     Errors: `permission_denied` (403) without `security.manage`, naming it in
-         *     `requiredPermission`; `unauthenticated` (401) without a session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`.
          */
         get: operations["getSecurityPolicy"];
         /**
@@ -9116,9 +9406,9 @@ export interface paths {
          *
          *     Errors: `above_platform_maximum` (422) for a limit above its platform maximum, naming
          *     the field in `errors`; `validation_error` (422) for a missing limit, one below 1 or not
-         *     a whole number, or any other field; `step_up_required` (403) without a fresh passkey
-         *     assertion; `permission_denied` (403) without `security.manage`, naming it in
-         *     `requiredPermission`; `unauthenticated` (401) without a session.
+         *     a whole number, or any other field.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         put: operations["putSecurityPolicy"];
         post?: never;
@@ -9147,8 +9437,9 @@ export interface paths {
          *     everything they asked for. It changes nothing and writes no audit event. A bank support
          *     never asked is a 200 with `total` 0.
          *
-         *     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
-         *     session that belongs to no bank; `unauthenticated` (401).
+         *     Errors: `not_found` (404) for a session that belongs to no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listTenantSupportAccess"];
         put?: never;
@@ -9179,11 +9470,12 @@ export interface paths {
          *     person who asked. Recorded in the audit log as `support_access.approved` with the step-up
          *     assertion, in the same transaction.
          *
-         *     Errors: `not_found` (404) for a request that is not the bank's own; `four_eyes_violation`
-         *     (409) when the approver is the person who asked; `invalid_transition` (422) for a request
-         *     that is no longer pending, because it was decided or lapsed; `step_up_required` (403)
-         *     without a fresh passkey assertion; `permission_denied` (403) without `security.manage`;
-         *     `unauthenticated` (401).
+         *     Errors: `not_found` (404) for a request that is not the bank's own;
+         *     `four_eyes_violation` (409) when the approver is the person who asked;
+         *     `invalid_transition` (422) for a request that is no longer pending, because it was
+         *     decided or lapsed.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`; `step_up_required` (403) without a passkey assertion younger than the step-up window, which a screen answers by opening the passkey prompt and retrying.
          */
         post: operations["approveSupportAccess"];
         delete?: never;
@@ -9209,8 +9501,9 @@ export interface paths {
          *     Needs `security.manage`. Recorded in the audit log as `support_access.declined`.
          *
          *     Errors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`
-         *     (422) for a request that is no longer pending, because it was decided or lapsed;
-         *     `permission_denied` (403) without `security.manage`; `unauthenticated` (401).
+         *     (422) for a request that is no longer pending, because it was decided or lapsed.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`.
          */
         post: operations["declineSupportAccess"];
         delete?: never;
@@ -9237,9 +9530,10 @@ export interface paths {
          *     Needs `security.manage`. Recorded in the audit log as `support_access.revoked`.
          *
          *     Errors: `not_found` (404) for a request that is not the bank's own; `invalid_transition`
-         *     (422) for a grant that is not open, because it is still pending, was declined or revoked,
-         *     or its window passed; `permission_denied` (403) without `security.manage`;
-         *     `unauthenticated` (401).
+         *     (422) for a grant that is not open, because it is still pending, was declined or
+         *     revoked, or its window passed.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `security.manage`, named in `requiredPermission`.
          */
         post: operations["revokeSupportAccess"];
         delete?: never;
@@ -9265,8 +9559,9 @@ export interface paths {
          *
          *     Any member of the bank may call it. It changes nothing and writes no audit event.
          *
-         *     Errors: `validation_error` (422) for a page size above 100; `not_found` (404) for a
-         *     session that belongs to no bank; `unauthenticated` (401).
+         *     Errors: `not_found` (404) for a session that belongs to no bank.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listTeams"];
         put?: never;
@@ -9312,9 +9607,9 @@ export interface paths {
          *     Errors: `validation_error` (422) with the field named in `errors` for a number or a day
          *     out of range, an empty or over-long list, or a field the body does not name;
          *     `unknown_key` (422) with the field named in `errors` for a role that is not an active
-         *     role of this bank or a weekday that is not one of the seven; `permission_denied` (403)
-         *     without `workflow.manage`, naming it in `requiredPermission`; `unauthenticated` (401)
-         *     without a session.
+         *     role of this bank or a weekday that is not one of the seven.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `workflow.manage`, named in `requiredPermission`.
          */
         patch: operations["updateTenantWorkflow"];
         trace?: never;
@@ -9337,8 +9632,9 @@ export interface paths {
          *     A person's session holding `register.edit`. Send `If-Match` with the unit's `version`. No
          *     step-up. Records one audit event naming the person.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-         *     `not_found` (404) for a unit the bank does not have; `stale_write` (409).
+         *     Errors: `not_found` (404) for a unit the bank does not have.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         delete: operations["removeUnit"];
         options?: never;
@@ -9352,9 +9648,9 @@ export interface paths {
          *     A person's session holding `register.edit`. Send `If-Match` with the unit's `version`. No
          *     step-up. Records one audit event naming the person with the values before and after.
          *
-         *     Errors: `unauthenticated` (401); `permission_denied` (403) without `register.edit`;
-         *     `not_found` (404) for a unit the bank does not have; `stale_write` (409);
-         *     `validation_error` (422).
+         *     Errors: `not_found` (404) for a unit the bank does not have; `validation_error` (422).
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `register.edit`, named in `requiredPermission`; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         patch: operations["updateUnit"];
         trace?: never;
@@ -9398,6 +9694,8 @@ export interface paths {
          *     `upcoming:read`, `unauthenticated` when there is neither, and `validation_error` for a
          *     `limit` above the maximum or below 1. A query parameter other than `limit` and `offset`
          *     is ignored rather than refused.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listUpcoming"];
         put?: never;
@@ -9428,7 +9726,7 @@ export interface paths {
          *     call it; an API key is refused, and an agent reads the lists it needs by name with
          *     `GET /vocab/{list}`.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a person's session.
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         get: operations["listVocabularies"];
         put?: never;
@@ -9463,12 +9761,13 @@ export interface paths {
          *     Not paginated: a list is short enough to arrive whole, and a list with no values is a
          *     200 with an empty list. A read: it changes nothing and writes no audit event.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session or a key;
-         *     `permission_denied` (403) for a key without `library:read`, or an organisation's list
-         *     read from outside any organisation; `tenant_reach_off` (403) for an organisation's list
-         *     read by an agent access credential that may not read the bank's register; `not_found`
-         *     (404) for a name that is not a vocabulary list, with the valid names in `detail`;
-         *     `validation_error` (422) when `includeRetired` is not a boolean.
+         *     Errors to branch on: `permission_denied` (403) for a key without `library:read`, or an
+         *     organisation's list read from outside any organisation; `tenant_reach_off` (403) for an
+         *     organisation's list read by an agent access credential that may not read the bank's
+         *     register; `not_found` (404) for a name that is not a vocabulary list, with the valid
+         *     names in `detail`; `validation_error` (422) when `includeRetired` is not a boolean.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["listVocabularyRows"];
         put?: never;
@@ -9492,19 +9791,21 @@ export interface paths {
          *     `vocabulary.created` in the organisation's audit with the value's own columns, a team's
          *     department among them, or the proposal's `proposal.created` for a library list.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without the permission above, which `requiredPermission` names; `not_found` (404)
-         *     for a name that is not a vocabulary list, or a team's `orgUnitId` naming a unit the
-         *     organisation does not have; `duplicate_key` (409) when the key exists,
-         *     with the value in `candidates`; `near_duplicate` (422) when the label is close to an
-         *     existing value's, with the close matches in `candidates`; `unknown_key` (422) for an
-         *     unknown language, a kind the list does not take or a missing required kind, or a
-         *     reference in `extra` to a value that does not exist; `validation_error` (422) for no
-         *     label, a key that normalises to nothing, a bad `extra` value (a team's `orgUnitId`
-         *     naming a group, a legal entity or a deactivated department among them), a library list
-         *     that is reference data, or a field the body does not name; `list_full` (422) when one of the
-         *     organisation's own lists already holds `TENANT_LIST_MAX_ROWS` values, retired ones
-         *     included (500 unless the operator set another number), and nothing is added.
+         *     Errors to branch on: `permission_denied` (403) without the permission above, which
+         *     `requiredPermission` names; `not_found` (404) for a name that is not a vocabulary list,
+         *     or a team's `orgUnitId` naming a unit the organisation does not have; `duplicate_key`
+         *     (409) when the key exists, with the value in `candidates`; `near_duplicate` (422) when
+         *     the label is close to an existing value's, with the close matches in `candidates`;
+         *     `unknown_key` (422) for an unknown language, a kind the list does not take or a missing
+         *     required kind, or a reference in `extra` to a value that does not exist;
+         *     `validation_error` (422) for no label, a key that normalises to nothing, a bad `extra`
+         *     value (a team's `orgUnitId` naming a group, a legal entity or a deactivated department
+         *     among them), a library list that is reference data, or a field the body does not name;
+         *     `list_full` (422) when one of the organisation's own lists already holds
+         *     `TENANT_LIST_MAX_ROWS` values, retired ones included (500 unless the operator set
+         *     another number), and nothing is added.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["createVocabularyRow"];
         delete?: never;
@@ -9536,11 +9837,12 @@ export interface paths {
          *     and a person's session; an API key is refused. Records one audit event,
          *     `vocabulary.reordered`, with every value's place before and after.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without `vocab.manage`, or on a library list, with `library_vocab.manage` as the
-         *     permission it would need; `not_found` (404) for a name that is not a vocabulary list;
-         *     `unknown_key` (422) when a key is not on the list, and then nothing moves;
-         *     `validation_error` (422) for a field the body does not name.
+         *     Errors to branch on: `permission_denied` (403) without `vocab.manage`, or on a library
+         *     list, with `library_vocab.manage` as the permission it would need; `not_found` (404) for
+         *     a name that is not a vocabulary list; `unknown_key` (422) when a key is not on the list,
+         *     and then nothing moves; `validation_error` (422) for a field the body does not name.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["reorderVocabulary"];
         delete?: never;
@@ -9575,14 +9877,15 @@ export interface paths {
          *     refused. Records `vocabulary.suggested` in the organisation's audit, or the proposal's
          *     `proposal.created` for a library list.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
-         *     name that is not a vocabulary list, or an organisation's list from a session outside
-         *     any organisation; `duplicate_key` (409) when the key exists, with the value in
-         *     `candidates`; `near_duplicate` (422) when the label is close to an existing value's,
-         *     with the close matches in `candidates`; `unknown_key` (422) for a label in a language
-         *     that is not a content language; `validation_error` (422) for no label, a key that
-         *     normalises to nothing, a library list that is reference data, or a field the body does
-         *     not name.
+         *     Errors to branch on: `not_found` (404) for a name that is not a vocabulary list, or an
+         *     organisation's list from a session outside any organisation; `duplicate_key` (409) when
+         *     the key exists, with the value in `candidates`; `near_duplicate` (422) when the label is
+         *     close to an existing value's, with the close matches in `candidates`; `unknown_key`
+         *     (422) for a label in a language that is not a content language; `validation_error` (422)
+         *     for no label, a key that normalises to nothing, a library list that is reference data,
+         *     or a field the body does not name.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["suggestVocabularyRow"];
         delete?: never;
@@ -9620,10 +9923,10 @@ export interface paths {
          *     A read: it changes nothing and writes no audit event. Needs `vocab.manage` in the
          *     caller's organisation and a person's session; an API key is refused.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without `vocab.manage`; `not_found` (404) for a list name that is not a
-         *     vocabulary list, with the valid names in `detail`; `validation_error` (422) when the
-         *     page size or offset is out of range.
+         *     Errors to branch on: `not_found` (404) for a list name that is not a vocabulary list,
+         *     with the valid names in `detail`.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`; `validation_error` (422) when `limit` is above 100 or `offset` above 100000.
          */
         get: operations["listVocabularySuggestions"];
         put?: never;
@@ -9653,10 +9956,11 @@ export interface paths {
          *     Needs `vocab.manage` in the caller's organisation and a person's session; an API key is
          *     refused. Records one audit event, `vocabulary.suggestion_declined`.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without `vocab.manage`; `not_found` (404) for a name that is not a vocabulary list
-         *     or a suggestion that is not waiting on this list in the caller's organisation;
+         *     Errors to branch on: `not_found` (404) for a name that is not a vocabulary list or a
+         *     suggestion that is not waiting on this list in the caller's organisation;
          *     `invalid_transition` (409) when the suggestion was already accepted or declined.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `permission_denied` (403) without `vocab.manage`, named in `requiredPermission`.
          */
         post: operations["declineVocabularySuggestion"];
         delete?: never;
@@ -9684,12 +9988,13 @@ export interface paths {
          *     bank's own agent only when it may read the bank's register, as the list. A read: it
          *     changes nothing and writes no audit event.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session or a key;
-         *     `permission_denied` (403) for a key without `library:read`; `tenant_reach_off` (403) for
-         *     an organisation's value read by an agent access credential that may not read the bank's
-         *     register; `not_found` (404) for a name
-         *     that is not a vocabulary list, a key the list does not hold, or an organisation's list
-         *     read from outside any organisation.
+         *     Errors to branch on: `permission_denied` (403) for a key without `library:read`;
+         *     `tenant_reach_off` (403) for an organisation's value read by an agent access credential
+         *     that may not read the bank's register; `not_found` (404) for a name that is not a
+         *     vocabulary list, a key the list does not hold, or an organisation's list read from
+         *     outside any organisation.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session or a valid API key.
          */
         get: operations["getVocabularyRow"];
         put?: never;
@@ -9717,15 +10022,15 @@ export interface paths {
          *     after (a team moved to another department names both), or the proposal's
          *     `proposal.created` for a library list.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without the permission above; `not_found` (404) for an unknown list or key, or a
-         *     team's `orgUnitId` naming a unit the organisation does not have;
-         *     `stale_write` (409) when `If-Match` is not the current version; `unknown_key` (422) for
-         *     an unknown language or a reference in `extra` to a value that does not exist;
-         *     `validation_error` (422) for an `If-Match` that is not a version, labels whose every
-         *     text is empty, a bad `extra` value (a team's `orgUnitId` naming a group, a legal entity
-         *     or a deactivated department among them), a library list that is reference data, or a field
-         *     the body does not name.
+         *     Errors to branch on: `permission_denied` (403) without the permission above; `not_found`
+         *     (404) for an unknown list or key, or a team's `orgUnitId` naming a unit the organisation
+         *     does not have; `unknown_key` (422) for an unknown language or a reference in `extra` to
+         *     a value that does not exist; `validation_error` (422) for an `If-Match` that is not a
+         *     version, labels whose every text is empty, a bad `extra` value (a team's `orgUnitId`
+         *     naming a group, a legal entity or a deactivated department among them), a library list
+         *     that is reference data, or a field the body does not name.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session; `stale_write` (409) when `If-Match` names a version that is no longer the current one.
          */
         patch: operations["updateVocabularyRow"];
         trace?: never;
@@ -9763,14 +10068,15 @@ export interface paths {
          *     `vocabulary.merged` with the counts, or the proposal's `proposal.created` for a library
          *     list.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without the permission above; `not_found` (404) for an unknown list, or a key or
-         *     `into` the list does not hold; `system_row` (409) when the value in the path is a system
-         *     value; `duplicate_key` (409) when an internal item under the value would share its name
-         *     with one already under `into`, and nothing moves; `validation_error` (422) when `into`
-         *     is the value itself or sits in another fixed category (a compliance status, a risk
-         *     level, a gap state), for a library list that is reference data, or for a field the body
-         *     does not name.
+         *     Errors to branch on: `permission_denied` (403) without the permission above; `not_found`
+         *     (404) for an unknown list, or a key or `into` the list does not hold; `system_row` (409)
+         *     when the value in the path is a system value; `duplicate_key` (409) when an internal
+         *     item under the value would share its name with one already under `into`, and nothing
+         *     moves; `validation_error` (422) when `into` is the value itself or sits in another fixed
+         *     category (a compliance status, a risk level, a gap state), for a library list that is
+         *     reference data, or for a field the body does not name.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["mergeVocabularyRow"];
         delete?: never;
@@ -9803,10 +10109,11 @@ export interface paths {
          *     console. A person's session is needed and an API key is refused. Records
          *     `vocabulary.restored`, or the proposal's `proposal.created` for a library list.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without the permission above; `not_found` (404) for an unknown list or key;
-         *     `invalid_transition` (409) when the value is not retired; `validation_error` (422) for a
-         *     library list that is reference data.
+         *     Errors to branch on: `permission_denied` (403) without the permission above; `not_found`
+         *     (404) for an unknown list or key; `invalid_transition` (409) when the value is not
+         *     retired; `validation_error` (422) for a library list that is reference data.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["restoreVocabularyRow"];
         delete?: never;
@@ -9841,15 +10148,16 @@ export interface paths {
          *     `vocabulary.retired` with the usage count, or the proposal's `proposal.created` for a
          *     library list.
          *
-         *     Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-         *     (403) without the permission above; `not_found` (404) for an unknown list or key;
-         *     `system_row` (409) for a system value; `in_use` (409) when records carry the value and
-         *     `confirm` is not true, with the count in `usageCount`; `open_work` (409) for a team
-         *     that still owns open work (a register entry or entity row, a gap not closed, a licence
-         *     not withdrawn or an active internal item), whatever `confirm` says, with the count per
-         *     table in `openWork`; `invalid_transition` (409) when the value is already retired;
-         *     `validation_error` (422) for a library list that is reference data or a field the body
-         *     does not name.
+         *     Errors to branch on: `permission_denied` (403) without the permission above; `not_found`
+         *     (404) for an unknown list or key; `system_row` (409) for a system value; `in_use` (409)
+         *     when records carry the value and `confirm` is not true, with the count in `usageCount`;
+         *     `open_work` (409) for a team that still owns open work (a register entry or entity row,
+         *     a gap not closed, a licence not withdrawn or an active internal item), whatever
+         *     `confirm` says, with the count per table in `openWork`; `invalid_transition` (409) when
+         *     the value is already retired; `validation_error` (422) for a library list that is
+         *     reference data or a field the body does not name.
+         *
+         *     Errors every call can meet: `unauthenticated` (401) without a signed-in session.
          */
         post: operations["retireVocabularyRow"];
         delete?: never;

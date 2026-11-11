@@ -68,13 +68,12 @@ def list_audit_events(request: HttpRequest, filters: Query[AuditEventQuery], pag
     Pages with `limit` and `offset`, 20 rows by default and 100 at most. A bank with no
     rows, or filters matching none, is a 200 with an empty `items` and a `total` of 0.
 
-    Errors: `unauthenticated` (401) without a session, an agent's key included;
-    `permission_denied` (403) without `audit.read`, with `requiredPermission` named, which
-    is also what a platform console session gets, since no platform role holds
-    `audit.read`; `not_found` (404) for a session that holds `audit.read` but belongs to
-    no bank, because the audit log is a bank's own; `validation_error` (422) when
-    `subjectId` or `actorId` is not a UUID, `from` or `to` is not a timestamp,
-    `subjectType` is longer than 64 characters, or `limit` or `offset` is out of range.
+    Errors: `permission_denied` (403) without `audit.read`, with `requiredPermission` named,
+    which is also what a platform console session gets, since no platform role holds
+    `audit.read`; `not_found` (404) for a session that holds `audit.read` but belongs to no
+    bank, because the audit log is a bank's own; `validation_error` (422) when `subjectId`
+    or `actorId` is not a UUID, `from` or `to` is not a timestamp, `subjectType` is longer
+    than 64 characters, or `limit` or `offset` is out of range.
     """
     tenant_id = cast(Principal, request.auth).tenant_id  # type: ignore[attr-defined]
     events, total = logic.audit_events(tenant_id, filters, limit=page.limit, offset=page.offset)

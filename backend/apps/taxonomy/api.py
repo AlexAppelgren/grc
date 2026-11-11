@@ -118,8 +118,6 @@ def list_vocabularies(request: HttpRequest) -> VocabularyListPage:
     whole. A read: it changes nothing and writes no audit event. Any signed-in person may
     call it; an API key is refused, and an agent reads the lists it needs by name with
     `GET /vocab/{list}`.
-
-    Errors to branch on: `unauthenticated` (401) without a person's session.
     """
     # Ungated by design: capability (any session; the admin screens' index, VOC-02).
     items = lists.list_of_lists(principal(request).tenant_id)
@@ -152,11 +150,10 @@ def reorder_vocabulary(request: HttpRequest, list_name: ListName, body: Vocabula
     and a person's session; an API key is refused. Records one audit event,
     `vocabulary.reordered`, with every value's place before and after.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `vocab.manage`, or on a library list, with `library_vocab.manage` as the
-    permission it would need; `not_found` (404) for a name that is not a vocabulary list;
-    `unknown_key` (422) when a key is not on the list, and then nothing moves;
-    `validation_error` (422) for a field the body does not name.
+    Errors to branch on: `permission_denied` (403) without `vocab.manage`, or on a library
+    list, with `library_vocab.manage` as the permission it would need; `not_found` (404) for
+    a name that is not a vocabulary list; `unknown_key` (422) when a key is not on the list,
+    and then nothing moves; `validation_error` (422) for a field the body does not name.
     """
     tenant = caller_tenant(request)
     entry = lists.entry_for(list_name)
@@ -192,14 +189,13 @@ def suggest_vocabulary_row(request: HttpRequest, list_name: ListName, body: Voca
     refused. Records `vocabulary.suggested` in the organisation's audit, or the proposal's
     `proposal.created` for a library list.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
-    name that is not a vocabulary list, or an organisation's list from a session outside
-    any organisation; `duplicate_key` (409) when the key exists, with the value in
-    `candidates`; `near_duplicate` (422) when the label is close to an existing value's,
-    with the close matches in `candidates`; `unknown_key` (422) for a label in a language
-    that is not a content language; `validation_error` (422) for no label, a key that
-    normalises to nothing, a library list that is reference data, or a field the body does
-    not name.
+    Errors to branch on: `not_found` (404) for a name that is not a vocabulary list, or an
+    organisation's list from a session outside any organisation; `duplicate_key` (409) when
+    the key exists, with the value in `candidates`; `near_duplicate` (422) when the label is
+    close to an existing value's, with the close matches in `candidates`; `unknown_key`
+    (422) for a label in a language that is not a content language; `validation_error` (422)
+    for no label, a key that normalises to nothing, a library list that is reference data,
+    or a field the body does not name.
     """
     # Ungated by design: capability (any member may suggest, VOC-03 "Suggest" without vocab.manage).
     entry = lists.entry_for(list_name)
@@ -257,10 +253,8 @@ def list_vocabulary_suggestions(
     A read: it changes nothing and writes no audit event. Needs `vocab.manage` in the
     caller's organisation and a person's session; an API key is refused.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `vocab.manage`; `not_found` (404) for a list name that is not a
-    vocabulary list, with the valid names in `detail`; `validation_error` (422) when the
-    page size or offset is out of range.
+    Errors to branch on: `not_found` (404) for a list name that is not a vocabulary list,
+    with the valid names in `detail`.
     """
     tenant = caller_tenant(request)
     rows, total = lists.suggestions_of(list_name, tenant.id, limit=page.limit, offset=page.offset)
@@ -288,9 +282,8 @@ def decline_vocabulary_suggestion(
     Needs `vocab.manage` in the caller's organisation and a person's session; an API key is
     refused. Records one audit event, `vocabulary.suggestion_declined`.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without `vocab.manage`; `not_found` (404) for a name that is not a vocabulary list
-    or a suggestion that is not waiting on this list in the caller's organisation;
+    Errors to branch on: `not_found` (404) for a name that is not a vocabulary list or a
+    suggestion that is not waiting on this list in the caller's organisation;
     `invalid_transition` (409) when the suggestion was already accepted or declined.
     """
     tenant = caller_tenant(request)
@@ -327,12 +320,11 @@ def list_vocabulary_rows(request: HttpRequest, list_name: ListName, query: Query
     Not paginated: a list is short enough to arrive whole, and a list with no values is a
     200 with an empty list. A read: it changes nothing and writes no audit event.
 
-    Errors to branch on: `unauthenticated` (401) without a session or a key;
-    `permission_denied` (403) for a key without `library:read`, or an organisation's list
-    read from outside any organisation; `tenant_reach_off` (403) for an organisation's list
-    read by an agent access credential that may not read the bank's register; `not_found`
-    (404) for a name that is not a vocabulary list, with the valid names in `detail`;
-    `validation_error` (422) when `includeRetired` is not a boolean.
+    Errors to branch on: `permission_denied` (403) for a key without `library:read`, or an
+    organisation's list read from outside any organisation; `tenant_reach_off` (403) for an
+    organisation's list read by an agent access credential that may not read the bank's
+    register; `not_found` (404) for a name that is not a vocabulary list, with the valid
+    names in `detail`; `validation_error` (422) when `includeRetired` is not a boolean.
     """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     who = require_library_reader(request)
@@ -372,19 +364,19 @@ def create_vocabulary_row(request: HttpRequest, list_name: ListName, body: Vocab
     `vocabulary.created` in the organisation's audit with the value's own columns, a team's
     department among them, or the proposal's `proposal.created` for a library list.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without the permission above, which `requiredPermission` names; `not_found` (404)
-    for a name that is not a vocabulary list, or a team's `orgUnitId` naming a unit the
-    organisation does not have; `duplicate_key` (409) when the key exists,
-    with the value in `candidates`; `near_duplicate` (422) when the label is close to an
-    existing value's, with the close matches in `candidates`; `unknown_key` (422) for an
-    unknown language, a kind the list does not take or a missing required kind, or a
-    reference in `extra` to a value that does not exist; `validation_error` (422) for no
-    label, a key that normalises to nothing, a bad `extra` value (a team's `orgUnitId`
-    naming a group, a legal entity or a deactivated department among them), a library list
-    that is reference data, or a field the body does not name; `list_full` (422) when one of the
-    organisation's own lists already holds `TENANT_LIST_MAX_ROWS` values, retired ones
-    included (500 unless the operator set another number), and nothing is added.
+    Errors to branch on: `permission_denied` (403) without the permission above, which
+    `requiredPermission` names; `not_found` (404) for a name that is not a vocabulary list,
+    or a team's `orgUnitId` naming a unit the organisation does not have; `duplicate_key`
+    (409) when the key exists, with the value in `candidates`; `near_duplicate` (422) when
+    the label is close to an existing value's, with the close matches in `candidates`;
+    `unknown_key` (422) for an unknown language, a kind the list does not take or a missing
+    required kind, or a reference in `extra` to a value that does not exist;
+    `validation_error` (422) for no label, a key that normalises to nothing, a bad `extra`
+    value (a team's `orgUnitId` naming a group, a legal entity or a deactivated department
+    among them), a library list that is reference data, or a field the body does not name;
+    `list_full` (422) when one of the organisation's own lists already holds
+    `TENANT_LIST_MAX_ROWS` values, retired ones included (500 unless the operator set
+    another number), and nothing is added.
     """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
@@ -440,12 +432,11 @@ def get_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKey) -
     bank's own agent only when it may read the bank's register, as the list. A read: it
     changes nothing and writes no audit event.
 
-    Errors to branch on: `unauthenticated` (401) without a session or a key;
-    `permission_denied` (403) for a key without `library:read`; `tenant_reach_off` (403) for
-    an organisation's value read by an agent access credential that may not read the bank's
-    register; `not_found` (404) for a name
-    that is not a vocabulary list, a key the list does not hold, or an organisation's list
-    read from outside any organisation.
+    Errors to branch on: `permission_denied` (403) for a key without `library:read`;
+    `tenant_reach_off` (403) for an organisation's value read by an agent access credential
+    that may not read the bank's register; `not_found` (404) for a name that is not a
+    vocabulary list, a key the list does not hold, or an organisation's list read from
+    outside any organisation.
     """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     who = require_library_reader(request)
@@ -481,15 +472,13 @@ def update_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKey
     after (a team moved to another department names both), or the proposal's
     `proposal.created` for a library list.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without the permission above; `not_found` (404) for an unknown list or key, or a
-    team's `orgUnitId` naming a unit the organisation does not have;
-    `stale_write` (409) when `If-Match` is not the current version; `unknown_key` (422) for
-    an unknown language or a reference in `extra` to a value that does not exist;
-    `validation_error` (422) for an `If-Match` that is not a version, labels whose every
-    text is empty, a bad `extra` value (a team's `orgUnitId` naming a group, a legal entity
-    or a deactivated department among them), a library list that is reference data, or a field
-    the body does not name.
+    Errors to branch on: `permission_denied` (403) without the permission above; `not_found`
+    (404) for an unknown list or key, or a team's `orgUnitId` naming a unit the organisation
+    does not have; `unknown_key` (422) for an unknown language or a reference in `extra` to
+    a value that does not exist; `validation_error` (422) for an `If-Match` that is not a
+    version, labels whose every text is empty, a bad `extra` value (a team's `orgUnitId`
+    naming a group, a legal entity or a deactivated department among them), a library list
+    that is reference data, or a field the body does not name.
     """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
@@ -549,15 +538,14 @@ def retire_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKey
     `vocabulary.retired` with the usage count, or the proposal's `proposal.created` for a
     library list.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without the permission above; `not_found` (404) for an unknown list or key;
-    `system_row` (409) for a system value; `in_use` (409) when records carry the value and
-    `confirm` is not true, with the count in `usageCount`; `open_work` (409) for a team
-    that still owns open work (a register entry or entity row, a gap not closed, a licence
-    not withdrawn or an active internal item), whatever `confirm` says, with the count per
-    table in `openWork`; `invalid_transition` (409) when the value is already retired;
-    `validation_error` (422) for a library list that is reference data or a field the body
-    does not name.
+    Errors to branch on: `permission_denied` (403) without the permission above; `not_found`
+    (404) for an unknown list or key; `system_row` (409) for a system value; `in_use` (409)
+    when records carry the value and `confirm` is not true, with the count in `usageCount`;
+    `open_work` (409) for a team that still owns open work (a register entry or entity row,
+    a gap not closed, a licence not withdrawn or an active internal item), whatever
+    `confirm` says, with the count per table in `openWork`; `invalid_transition` (409) when
+    the value is already retired; `validation_error` (422) for a library list that is
+    reference data or a field the body does not name.
     """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
@@ -593,10 +581,9 @@ def restore_vocabulary_row(request: HttpRequest, list_name: ListName, key: RowKe
     console. A person's session is needed and an API key is refused. Records
     `vocabulary.restored`, or the proposal's `proposal.created` for a library list.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without the permission above; `not_found` (404) for an unknown list or key;
-    `invalid_transition` (409) when the value is not retired; `validation_error` (422) for a
-    library list that is reference data.
+    Errors to branch on: `permission_denied` (403) without the permission above; `not_found`
+    (404) for an unknown list or key; `invalid_transition` (409) when the value is not
+    retired; `validation_error` (422) for a library list that is reference data.
     """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
@@ -641,14 +628,13 @@ def merge_vocabulary_row(
     `vocabulary.merged` with the counts, or the proposal's `proposal.created` for a library
     list.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `permission_denied`
-    (403) without the permission above; `not_found` (404) for an unknown list, or a key or
-    `into` the list does not hold; `system_row` (409) when the value in the path is a system
-    value; `duplicate_key` (409) when an internal item under the value would share its name
-    with one already under `into`, and nothing moves; `validation_error` (422) when `into`
-    is the value itself or sits in another fixed category (a compliance status, a risk
-    level, a gap state), for a library list that is reference data, or for a field the body
-    does not name.
+    Errors to branch on: `permission_denied` (403) without the permission above; `not_found`
+    (404) for an unknown list, or a key or `into` the list does not hold; `system_row` (409)
+    when the value in the path is a system value; `duplicate_key` (409) when an internal
+    item under the value would share its name with one already under `into`, and nothing
+    moves; `validation_error` (422) when `into` is the value itself or sits in another fixed
+    category (a compliance status, a risk level, a gap state), for a library list that is
+    reference data, or for a field the body does not name.
     """
     # Ungated by design: logic-gate (vocab.manage for a tenant list; a proposal for a library list, VOC-07).
     entry = lists.entry_for(list_name)
@@ -697,8 +683,8 @@ def list_terms(request: HttpRequest, query: Query[TaxonomyTermQuery]) -> Taxonom
     to an agent's API key with the `library:read` scope.
 
     Errors to branch on: `unknown_key` (422) for a `dimension` that is not an active
-    dimension, with the valid keys in `detail`; `unauthenticated` (401) without a session or
-    a valid key; `permission_denied` (403) for an API key without `library:read`.
+    dimension, with the valid keys in `detail`; `permission_denied` (403) for an API key
+    without `library:read`.
     """
     # Ungated by design: logic-gate (a person's session, or an agent's key with library:read; AGT-02).
     require_library_reader(request)
@@ -732,8 +718,7 @@ def create_term(request: HttpRequest, body: TaxonomyTermCreateBody) -> Any:
     that is not one, a label in a language the platform does not hold, or a parent that is
     not a term of the dimension; `duplicate_key` (409) when the key is taken in the
     dimension, a retired term's included; `validation_error` (422) for a key that is not a
-    slug or a body the schema refuses; `permission_denied` (403) without either permission;
-    `unauthenticated` (401) without a session.
+    slug or a body the schema refuses; `permission_denied` (403) without either permission.
     """
     # Ungated by design: logic-gate (proposals.create from a tenant, library_vocab.manage from the console; VOC-07).
     require_proposer(request)
@@ -796,11 +781,10 @@ def update_term(
 
     Errors to branch on: `jurisdiction_term_mirrored` (422) for a term of a dimension that
     mirrors the jurisdiction list; `stale_write` (409) when `If-Match` names a version that
-    is no longer the term's; `unknown_key` (422) for a label in a language the platform
-    does not hold; `validation_error` (422) for an `If-Match` that is not a version or a
-    body the schema refuses; `not_found` (404) when no term has that id, and for anything
-    that is not a UUID; `permission_denied` (403) without either permission;
-    `unauthenticated` (401) without a session.
+    is no longer the term's; `unknown_key` (422) for a label in a language the platform does
+    not hold; `validation_error` (422) for an `If-Match` that is not a version or a body the
+    schema refuses; `not_found` (404) when no term has that id, and for anything that is not
+    a UUID; `permission_denied` (403) without either permission.
     """
     # Ungated by design: logic-gate (proposals.create from a tenant, library_vocab.manage from the console; VOC-07).
     require_proposer(request)
@@ -843,8 +827,7 @@ def get_footprint(request: HttpRequest) -> FootprintView:
     beyond membership, and an API key is refused. The path says `footprint`, the code's name
     for what the screens call the regulatory scope.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
-    principal in no organisation.
+    Errors to branch on: `not_found` (404) for a principal in no organisation.
     """
     # Ungated by design: capability (any member reads the footprint every surface is filtered by, FP-03).
     tenant = caller_tenant(request)
@@ -883,9 +866,7 @@ def list_footprint_requests(request: HttpRequest, page: Query[PageQuery]) -> Foo
     person's session and no permission beyond membership, and an API key is refused. The
     path says `footprint`, the code's name for what the screens call the regulatory scope.
 
-    Errors to branch on: `unauthenticated` (401) without a session; `not_found` (404) for a
-    principal in no organisation; `validation_error` (422) when the page size or offset is
-    out of range.
+    Errors to branch on: `not_found` (404) for a principal in no organisation.
     """
     # Ungated by design: capability (any member sees what was asked and decided, FP-02).
     tenant = caller_tenant(request)
@@ -943,14 +924,14 @@ def create_footprint_request(request: HttpRequest, body: FootprintRequestBody, q
     Errors to branch on: `request_pending` (409) when a change already waits for a decision;
     `unknown_key` (422) for a dimension, term, jurisdiction or regime term that is not an
     active one, or a scope item to remove that is not in scope, with the valid keys in
-    `detail`; `source_not_public` (422) for a scope item's address that is not a public https
-    page; `not_a_legal_entity` (422) for a company line naming anything but an active legal
-    entity of the organisation; `dimension_not_narrowable` (422) for a company line in any
-    dimension but the three licence-bound ones named above; `validation_error`
-    (422) for a change with nothing in it, a term both added and removed, a term, scope item
-    or company line named twice, an exclusion of a term already outside that company's scope
-    or an inclusion of one inside it, a list over its cap, or a body the schema refuses; `permission_denied` (403) without `footprint.request`; `unauthenticated` (401)
-    without a session; `not_found` (404) for a principal in no organisation.
+    `detail`; `source_not_public` (422) for a scope item's address that is not a public
+    https page; `not_a_legal_entity` (422) for a company line naming anything but an active
+    legal entity of the organisation; `dimension_not_narrowable` (422) for a company line in
+    any dimension but the three licence-bound ones named above; `validation_error` (422) for
+    a change with nothing in it, a term both added and removed, a term, scope item or
+    company line named twice, an exclusion of a term already outside that company's scope or
+    an inclusion of one inside it, a list over its cap, or a body the schema refuses;
+    `not_found` (404) for a principal in no organisation.
     """
     tenant = caller_tenant(request)
     order = reading.language_order(request, tenant=tenant)
@@ -1012,9 +993,7 @@ def footprint_suggestions(request: HttpRequest) -> Any:
     Needs `footprint.request` in the caller's organisation and a person's session; an API key
     is refused.
 
-    Errors to branch on: `permission_denied` (403) without `footprint.request`;
-    `unauthenticated` (401) without a session; `not_found` (404) for a principal in no
-    organisation.
+    Errors to branch on: `not_found` (404) for a principal in no organisation.
     """
     tenant = caller_tenant(request)
     return suggestions_logic.suggestions_of(tenant.id, reading.language_order(request, tenant=tenant))
@@ -1067,11 +1046,9 @@ def approve_footprint_request(request: HttpRequest, request_id: _FootprintReques
     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
     `stale_write` (409) when `If-Match` names an old version, or when a term the change
     adds, or a scope item's jurisdiction or regime term, was retired while it waited, which
-    the approver rejects so the requester can ask again; `step_up_required` (403) without a
-    fresh passkey step-up; `permission_denied` (403) without `footprint.approve`;
-    `not_found` (404) for a request that is not here; `validation_error` (422) for an
-    `If-Match` that is not a version, a note longer than 2000 characters or a body the
-    schema refuses; `unauthenticated` (401) without a session.
+    the approver rejects so the requester can ask again; `not_found` (404) for a request
+    that is not here; `validation_error` (422) for an `If-Match` that is not a version, a
+    note longer than 2000 characters or a body the schema refuses.
     """
     tenant = caller_tenant(request)
     user = caller_user(request)
@@ -1112,11 +1089,9 @@ def reject_footprint_request(request: HttpRequest, request_id: _FootprintRequest
 
     Errors to branch on: `four_eyes_violation` (409) when the requester rejects their own
     change; `invalid_transition` (409) when it was already approved, rejected or withdrawn;
-    `stale_write` (409) when `If-Match` names an old version; `permission_denied` (403)
-    without `footprint.approve`; `not_found` (404) for a request that is not here;
-    `validation_error` (422) for an `If-Match` that is not a version, a note longer than
-    2000 characters or a body the schema refuses; `unauthenticated` (401) without a
-    session.
+    `not_found` (404) for a request that is not here; `validation_error` (422) for an
+    `If-Match` that is not a version, a note longer than 2000 characters or a body the
+    schema refuses.
     """
     tenant = caller_tenant(request)
     user = caller_user(request)
@@ -1154,9 +1129,8 @@ def withdraw_footprint_request(request: HttpRequest, request_id: _FootprintReque
 
     Errors to branch on: `permission_denied` (403) without `footprint.request`, and for a
     request someone else sent; `invalid_transition` (409) when it was already approved,
-    rejected or withdrawn; `stale_write` (409) when `If-Match` names an old version;
-    `not_found` (404) for a request that is not here; `validation_error` (422) for an
-    `If-Match` that is not a version; `unauthenticated` (401) without a session.
+    rejected or withdrawn; `not_found` (404) for a request that is not here;
+    `validation_error` (422) for an `If-Match` that is not a version.
     """
     tenant = caller_tenant(request)
     user = caller_user(request)
@@ -1271,8 +1245,6 @@ def list_jurisdictions(request: HttpRequest) -> list[JurisdictionRow]:
 
     A read: it changes nothing and writes no audit event. Open to any person's session with
     no permission beyond it; an API key is refused.
-
-    Errors to branch on: `unauthenticated` (401) without a session.
     """
     # Ungated by design: capability (any session; a reference read for pickers, I18N-01).
     from apps.library.models import Jurisdiction, JurisdictionLabel

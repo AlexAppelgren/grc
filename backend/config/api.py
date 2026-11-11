@@ -37,7 +37,8 @@ from apps.search.api import router as search_router
 from apps.shared.api import router as shared_router
 from apps.shared.errors import STATUS_BY_CODE, ProblemError, problem_response
 from apps.shared.middleware import loggable_route
-from apps.shared.openapi import without_unreferenced_schemas
+from apps.shared.openapi import with_generated_errors, without_unreferenced_schemas
+from apps.shared.routes import iter_operations
 from apps.taxonomy.api import router as taxonomy_router
 from apps.tenants.api import router as tenants_router
 from apps.watch.api import router as watch_router
@@ -45,11 +46,13 @@ from apps.watch.api import router as watch_router
 logger = logging.getLogger(__name__)
 
 class PublishedAPI(NinjaAPI):
-    """The API as published: Ninja's document without the schemas no operation reaches."""
+    """The API as published: Ninja's document without the schemas no operation reaches, and
+    with each operation's gate errors written from its auth class and decorators."""
 
     def get_openapi_schema(self, *, path_prefix: str | None = None, path_params: dict[str, Any] | None = None) -> OpenAPISchema:
         schema = super().get_openapi_schema(path_prefix=path_prefix, path_params=path_params)
         without_unreferenced_schemas(schema)
+        with_generated_errors(schema, list(iter_operations(self)))
         return schema
 
 
