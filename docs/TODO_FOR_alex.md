@@ -2517,6 +2517,23 @@ this order; `docs/runbooks/DNS_DOMAINS.md` ("Site trust") has what was found and
       comment what the service is, that access is by invitation and that `bleqq.com` is the
       public page. Broadcom gives 24 to 48 hours for an accepted change. SEB IT allowing
       `*.bleqq.com` (`r2f-host-split`, step 7) does not wait for it.
+- [ ] **Two Cloudflare switches that change the sign-in page (2026-11-11).** Broadcom's rater
+      votes on what a page loads, and names "obfuscated scripts" on a new, low-traffic site as a
+      reason for a higher risk level. Cloudflare adds two scripts to our pages that the repo does
+      not contain. (1) **Email Address Obfuscation**, on by default: on sign-in and enrolment it
+      rewrites the privacy and security addresses to `/cdn-cgi/l/email-protection#…` and adds
+      `email-decode.min.js`. Turn it off: Security › Settings › Email Address Obfuscation › Off.
+      (2) **Web Analytics**, automatic setup: every page, the signed-in screens included, loads
+      `static.cloudflareinsights.com/beacon.min.js` and posts to `/cdn-cgi/rum`. That is
+      third-party analytics inside the application, which a bank's vendor review will ask about.
+      Turn it off: Web Analytics › Manage site › Disable. Then ask an agent to check from outside
+      that both scripts are gone.
+- [ ] **Where a visitor without a session lands on the app host.** Today `https://app.bleqq.com/`
+      shows "Loading your session…" and then moves to the public page on `bleqq.com`. Since
+      2026-11-11 that move is a page load the server answers (before, the router's own request
+      for it was refused by the browser first, on the sign-in page too). Default taken: the
+      destination is unchanged. Say if such a visitor should land on `/sign-in` on the app host
+      instead, which is what a person with a bookmark wants and leaves no move between hosts.
 - [ ] **The app host's front page is three words without JavaScript.** `https://app.bleqq.com/`
       and every signed-in address answer "Compliance Watch, Loading your session…" first: the
       server cannot see a session (the token is in the browser's memory, the refresh cookie

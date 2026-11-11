@@ -352,6 +352,15 @@ test.describe('the public site and the app on hosts of their own', () => {
 
   test('a visitor goes from the public host to sign in on the app host, and back', async ({ page, apiGuard }) => {
     allowFreshContext(apiGuard);
+    // Nothing either host's pages ask for may be refused. The app's router once fetched the public page's address
+    // ahead of a click on Back, and again to send a visitor without a session on; on the app host that address
+    // moves to the public host, another origin, so the browser refused the answer each time. An abort is only a
+    // request the next page load cut short.
+    const refused: string[] = [];
+    page.on('requestfailed', (request) => {
+      const reason = request.failure()?.errorText ?? '';
+      if (reason !== 'net::ERR_ABORTED') refused.push(`${request.url()} ${reason}`);
+    });
     await page.goto(`${PUBLIC}/`);
     await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
     await page.getByRole('banner').getByRole('link', { name: 'Sign in' }).click();
@@ -370,6 +379,12 @@ test.describe('the public site and the app on hosts of their own', () => {
     await page.goto('/');
     await expect(page).toHaveURL(`${PUBLIC}/`);
     await expect(page.getByRole('heading', HEADWORD)).toBeVisible();
+
+    // The sign-in page at rest asks for nothing that is refused either: its back link is not fetched ahead.
+    await page.goto('/sign-in');
+    await expect(page.getByRole('link', { name: '← Back' })).toHaveAttribute('href', '/welcome');
+    await page.waitForLoadState('networkidle');
+    expect(refused).toEqual([]);
   });
 
   test('a passkey signs in on the app host', async ({ page, apiGuard }) => {

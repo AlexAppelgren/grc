@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState, type FormEvent, type ReactNode } from 'react';
 
 import { SupportSessionBanner } from '@/components/shell/SupportSessionBanner';
@@ -18,7 +17,7 @@ import { useConsoleTenants } from '@/features/console-tenants/hooks';
 import { useFormatContext, useSignOut } from '@/features/identity/hooks';
 import { presentSupportGrant } from '@/features/support-access/support-access-presentation';
 import { useT } from '@/shared/i18n/LocaleProvider';
-import { PUBLIC_HOME } from '@/shared/navigation/registry';
+import { leaveForPublicPage } from '@/shared/navigation/leave';
 import { formatDateTime } from '@/shared/utils/format';
 
 // Support access, the platform side (design/screens/console-support-access.html,
@@ -164,11 +163,10 @@ function AskModal({ open, onClose, onAsked }: { open: boolean; onClose: () => vo
 
 export function ConsoleSupportAccessScreen() {
   const t = useT();
-  const router = useRouter();
   const [inside, setInside] = useState<ConsoleSupportGrant | null>(null);
   const grants = useMySupportAccess(inside === null);
   const enter = useEnterSupportAccess();
-  const leave = useSignOut(() => router.replace(PUBLIC_HOME));
+  const leave = useSignOut(leaveForPublicPage);
   const [asking, setAsking] = useState(false);
   const [asked, setAsked] = useState<ConsoleSupportGrant | null>(null);
   const [entering, setEntering] = useState<string | null>(null);

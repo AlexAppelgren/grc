@@ -147,6 +147,32 @@ answers and an unknown address is a 404. `https://app.bleqq.com/` itself still
 answers only the session gate's "Loading your session…" to a reader without
 JavaScript; the owner's list holds that as an open choice.
 
+**What Broadcom's rater votes on, and what our pages gave it (2026-11-11).** A
+new host alone does not reach "Suspicious". Broadcom's white paper on threat
+risk levels puts "very new sites, or some evidence of shady behavior" at level
+6 and "shady behavior" at 7, the level that returns the Suspicious category,
+and says the level is a vote of module groups in which "two medium votes may
+equal a high vote". The groups it names: at the request, shady traffic
+("Traffic Cops"), new or untrusted, shady name, shady hosting; at DNS, the
+address and its range ("Shady Neighborhood"); at the response, shady response,
+network error, "Lie Detector" and shady content ("EXE, JAR/ZIP, PDF,
+JScript"); afterwards, phishing detectors. Which votes a host drew is not
+published, so each row below is what a headless browser measured on the live
+hosts, not a proven cause.
+
+| Measured | Whose | State |
+|---|---|---|
+| The sign-in page asked for `/welcome` ahead of a click on Back; the app host answers that with a move to the public host, another origin, so the browser refused it (`net::ERR_FAILED`) on every load | Code | Fixed: the back link is a plain link |
+| `https://app.bleqq.com/` without a session: the same refused request, then a page load to the public host. Sign-out likewise | Code | Fixed: leaving for the public page is a page load (`shared/navigation/leave.ts`); the host-split journey fails on any refused request |
+| Cloudflare's `email-decode.min.js` and encoded addresses on sign-in and enrolment | Cloudflare, Email Address Obfuscation (on by default) | The owner's list |
+| Cloudflare's analytics beacon on every page, the application included | Cloudflare, Web Analytics automatic setup | The owner's list |
+| `https://app.bleqq.com/` answers only "Loading your session…" to a reader without JavaScript; Broadcom: "information will be missing if the website is blank" | Code | Open choice, the owner's list |
+| `POST /api/v1/auth/refresh` answers 401 to a visitor without a session | Code | Left: it is the answer the client reads as "not signed in" |
+| The host name first served in autumn 2026; shared Cloudflare addresses | Neither | Only time and Broadcom's database entry change these |
+
+Cloudflare did not challenge a reader without a browser on any host (five
+user agents, 200 each), so its bot settings do not hide the site from a rater.
+
 ## The public site and the app on their own hosts
 
 Package `r2f-host-split`, approved by Alex on 2026-09-28. Seen without
