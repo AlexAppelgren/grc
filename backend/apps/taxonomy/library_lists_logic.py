@@ -1,18 +1,14 @@
 """Library vocabulary and taxonomy term changes as proposals (VOC-07, PRO-01, AC-PRO1).
 
-A tier-2 list is shared by every tenant: a new change type moves every tenant's feed, a
-renamed urgency every tenant's pill. So nobody writes one directly, not a tenant admin with
-every permission and not a platform editor: every write on a library list, through the same
-routes a tenant list uses, answers 202 with a proposal, and a second person's approval in
-the console applies it (apps/proposals/apply.py).
+A library list is shared by every tenant, so nobody writes one directly: every write on it,
+through the same routes a tenant list uses, answers 202 with a proposal, and a second
+person's approval applies it (apps/proposals/apply.py).
 
-The same checks a tenant write makes run here before the proposal exists: the labels are
-in real languages, the kind is one the list knows, the key is not taken, the value is not a
-near-duplicate, a system row is not retired (on a list of fixed keys, the jurisdictions, one
-may be, and no value is added or merged away: D-94). A proposal the reviewer could only reject for
-a reason the proposer could have been told at once wastes both people's time. A term of a
-mirrored dimension is not proposed at all (FP-S12), nor is a change to that dimension's own
-row (H28): the reference seed owns those.
+A tenant write's checks run here first, so a proposal is never one the reviewer could only
+reject for a reason the proposer could have been told: real languages, a known kind, a free
+key, no near-duplicate, no retired system row, and on the fixed-key jurisdictions no add or
+merge (D-94). A mirrored dimension's terms (FP-S12) and its own row (H28) are not proposed at
+all: the reference seed owns them.
 
 This module writes proposals, never library rows, and names no `LibraryModel` class.
 """

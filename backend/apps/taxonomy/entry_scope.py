@@ -1,19 +1,15 @@
 """An agent access entry's scope (ACC-02, D-70, AC-ACC1), beside the footprint matcher.
 
-The entry's terms are the terms of the products it names and of the products under each
-department it names and every unit below it, intersected with the tenant's footprint. They
-are derived per request by the SQL function `taxonomy_entry_scope` (taxonomy 0011), never
-stored and never taken from the caller, so an entry can only narrow what the bank itself
-sees. A record is in scope when it passes the footprint rule and then the same rule again,
-`matching.in_footprint`, against the entry's term map: an empty dimension does not restrict
-and an opt-in dimension matches only what the entry's terms name (FP-01).
+The entry's terms are those of the products and departments (with every unit below) it
+names, intersected with the footprint, derived per request by `taxonomy_entry_scope` and
+never stored or taken from the caller, so an entry only narrows what the bank sees. A record
+is in scope when it passes `matching.in_footprint` against the footprint and then against
+the entry's terms (FP-01).
 
-Naming no department and no product narrows nothing: the entry's terms are then the whole
-footprint and the second pass repeats the first, through the same code. Naming departments
-or products that derive no term inside the footprint reads nothing, and says why
-(`EMPTY_SCOPE`), because an entry that silently saw everything would be the widening this
-rule exists to prevent. `admits` is the pure rule and `taxonomy_entry_admits` the
-database's, and apps/taxonomy/tests_entry_scope.py pins the two to each other."""
+Naming nothing narrows nothing. Naming departments or products that derive no term reads
+nothing and says why (`EMPTY_SCOPE`): an entry that silently saw everything would be the
+widening this rule prevents. `admits` and `taxonomy_entry_admits` are pinned to each other
+(apps/taxonomy/tests_entry_scope.py)."""
 
 from __future__ import annotations
 
