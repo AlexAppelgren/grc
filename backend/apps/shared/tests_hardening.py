@@ -174,6 +174,7 @@ class BankInvitationsReachPlatformStaff(TestCase):
             email=staff.email,
             role_keys=["reader"],
             title="Analyst",
+            step_up_assertion_id=None,
         )
         self.assertTrue(Invitation.objects.filter(tenant=self.tenant, email=staff.email).exists())
         membership = invitation_logic.accept_invitation(issued, staff, timezone.now())
@@ -198,6 +199,7 @@ class BankInvitationsReachPlatformStaff(TestCase):
             email="analyst@bank.test.example",
             role_keys=["reader"],
             title="Analyst",
+            step_up_assertion_id=None,
         )
         person = invitation_logic.get_or_create_user(issued.email)
         membership = invitation_logic.accept_invitation(issued, person, timezone.now())

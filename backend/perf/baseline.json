@@ -229,11 +229,6 @@
     "p95Ms": 23.6,
     "queries": 18
   },
-  "deactivateMember": {
-    "medianMs": 22.2,
-    "p95Ms": 24.7,
-    "queries": 22
-  },
   "decideProposalBatch": {
     "medianMs": 124.7,
     "p95Ms": 158.9,

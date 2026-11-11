@@ -155,7 +155,7 @@ def sign_in(user: Any, *, tenant: Any = None, step_up: bool = False, kind: str =
             consumed_at=timezone.now(),
         )
         StepUpAssertion.objects.create(session=bundle.session, credential=credential, challenge=challenge)
-    return {"HTTP_AUTHORIZATION": f"Bearer {bundle.access_token}", "HTTP_COOKIE": f"cw_refresh={bundle.refresh_value}"}
+    return {"HTTP_AUTHORIZATION": f"Bearer {bundle.access_token}", "HTTP_COOKIE": f"{session_logic.refresh_cookie_name()}={bundle.refresh_value}"}
 
 
 class AuditAssertingClient(Client):

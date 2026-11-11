@@ -3,7 +3,7 @@ import type { APIRequestContext, APIResponse } from '@playwright/test';
 import { DEMO_FRAME_NAME } from '@/features/demo/frame';
 
 import { expect, test } from './support/api-guard';
-import { allowFreshContext, BACKEND_URL, LOGINS, signInAs, signOut } from './support/passkeys';
+import { allowFreshContext, BACKEND_URL, LOGINS, REFRESH_COOKIE, signInAs, signOut } from './support/passkeys';
 
 const PLATE = 'Agents watch the regulators. You make the decisions.';
 // The web app's content policy (next.config.ts, review 2026-11-11 S-12): everything from
@@ -49,7 +49,7 @@ test.describe('public page', () => {
     await signInAs(page, LOGINS.reader);
     // The refresh cookie is scoped to the auth routes (REFRESH_COOKIE_PATH).
     const authUrl = `${BACKEND_URL}/api/v1/auth/refresh`;
-    const refresh = (await page.context().cookies(authUrl)).find((cookie) => cookie.name === 'cw_refresh');
+    const refresh = (await page.context().cookies(authUrl)).find((cookie) => cookie.name === REFRESH_COOKIE);
     expect(refresh, 'the refresh cookie a signed-in browser holds').toBeDefined();
 
     await signOut(page);
@@ -57,8 +57,8 @@ test.describe('public page', () => {
 
     // The browser no longer holds the cookie, and a copy taken before sign-out
     // is dead too: the session row is revoked, and every access token checks it.
-    expect((await page.context().cookies(authUrl)).some((cookie) => cookie.name === 'cw_refresh')).toBe(false);
-    const replay = await page.request.post(authUrl, { headers: { Cookie: `cw_refresh=${refresh?.value ?? ''}` } });
+    expect((await page.context().cookies(authUrl)).some((cookie) => cookie.name === REFRESH_COOKIE)).toBe(false);
+    const replay = await page.request.post(authUrl, { headers: { Cookie: `${REFRESH_COOKIE}=${refresh?.value ?? ''}` } });
     expect(replay.status()).toBe(401);
 
     // Back at the front door nothing signs the person in again.

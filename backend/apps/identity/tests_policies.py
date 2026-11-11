@@ -376,18 +376,19 @@ class BootstrapPlatform(TestCase):
     def test_creates_the_admin_with_a_platform_invitation_once(self) -> None:
         MockMailer.reset()
         out = StringIO()
-        call_command("bootstrap_platform", "--admin-email", "Root@Bleqq.test", stdout=out)
+        call_command("bootstrap_platform", "--admin-email", "Root@Bleqq.test", "--role", "platform_admin", stdout=out)
         user = User.objects.get(email="root@bleqq.test")
         self.assertEqual(PlatformRoleAssignment.objects.filter(user=user, role__key="platform_admin").count(), 1)
         invitation = Invitation.objects.get(email="root@bleqq.test", tenant__isnull=True)
         self.assertIsNone(invitation.tenant_id)
         self.assertIn("/invite#", out.getvalue())
         self.assertEqual(MockMailer.sent[-1].to, "root@bleqq.test")
-        call_command("bootstrap_platform", "--admin-email", "root@bleqq.test", stdout=StringIO())
+        call_command("bootstrap_platform", "--admin-email", "root@bleqq.test", "--role", "platform_admin", stdout=StringIO())
         self.assertEqual(PlatformRoleAssignment.objects.filter(user=user).count(), 1)
         factories.passkey(user)
+        User.objects.filter(pk=user.pk).update(status=UserStatus.ACTIVE.value)  # what registering the passkey does
         with self.assertRaises(CommandError):
-            call_command("bootstrap_platform", "--admin-email", "root@bleqq.test", stdout=StringIO())
+            call_command("bootstrap_platform", "--admin-email", "root@bleqq.test", "--role", "platform_admin", stdout=StringIO())
         # The platform session that follows carries the platform grants and no tenant.
         headers = sign_in(user, tenant=None)
         me = self.client.get("/api/v1/me", **headers).json()
@@ -915,7 +916,7 @@ class InvitationCodeByToken(TestCase):
         response = self._verify(self.token, code)
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json()["sessionKind"], "enrolment")
-        self.assertIn(settings.REFRESH_COOKIE_NAME, response.cookies)
+        self.assertIn(session_logic.refresh_cookie_name(), response.cookies)
         tenancy.activate(self.tenant.id)
         session = UserSession.objects.get(user__email="anna@token.example")
         self.assertEqual((session.kind, session.tenant_id), (SessionKind.ENROLMENT.value, self.tenant.id))

@@ -54,7 +54,7 @@ at a role that can bypass row-level security.
 1. Deploy `db`, `redis`, `bucket`. Run the role script.
 2. Deploy `api`. Check `/health/` answers 200 (`{"status": "ok"}`). On 503 the api log line `health check failing` names the failing component; the body never does.
 3. Deploy `worker`, `beat`, `web`. Attach the test host to `web`.
-4. `python manage.py bootstrap_platform --admin-email you@…` (lands with chunk 1; after Phase 0 only `seed_reference`, `seed_e2e`, `migrate_from_zero` and `export_openapi` exist) creates the first
+4. `python manage.py bootstrap_platform --admin-email you@… --role platform_admin` (lands with chunk 1; after Phase 0 only `seed_reference`, `seed_e2e`, `migrate_from_zero` and `export_openapi` exist) creates the first
    platform admin invitation. Open the emailed link, enter the code, enrol a
    passkey.
 5. In the console, create the first tenant and invite its admin.

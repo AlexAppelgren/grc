@@ -51,6 +51,9 @@ STATUS_BY_CODE: dict[str, int] = {
     # A lookup in the public registers applied before it succeeded (TEN-07): the job's state
     # does not allow the move yet, so a conflict and not a field to fix.
     "lookup_not_done": 409,
+    # A bank re-enrols only an account that is in no other bank and not platform staff
+    # (review 2026-11-11 S-2): the platform owner re-enrols the others.
+    "account_held_elsewhere": 409,
 }
 
 

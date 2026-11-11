@@ -96,11 +96,6 @@ export function useUpdateMember(): UseMutationResult<Member, unknown, { userId: 
   return useMutation({ mutationFn: ({ userId, body }) => admin.updateMember(userId, body), onSuccess: () => invalidate() });
 }
 
-export function useDeactivateMember(): UseMutationResult<void, unknown, string> {
-  const invalidate = useInvalidateMembers();
-  return useMutation({ mutationFn: (userId) => admin.deactivateMember(userId), onSuccess: () => invalidate() });
-}
-
 export function useReissueEnrolment(): UseMutationResult<void, unknown, string> {
   const queryClient = useQueryClient();
   const invalidate = useInvalidateMembers();

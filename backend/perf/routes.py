@@ -1115,7 +1115,7 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("listMembers", admin),
     PerfRoute(
         "inviteMember",
-        admin,
+        stepped_up(ADMIN, TENANT_A_SLUG),
         lambda: Call(body={"email": "new.analyst@example-bank.test", "roleKeys": ["reader"], "title": "Compliance analyst"}),
         status=201,
     ),
@@ -1124,8 +1124,6 @@ ROUTES: list[PerfRoute] = [
         stepped_up(ADMIN, TENANT_A_SLUG),
         lambda: Call(params={"user_id": _user("contributor@example-bank.test").id}, body={"roleKeys": ["contributor", "owner"]}),
     ),
-    # The auditor holds no open work, which a plain removal refuses since chunk 8 (TEN-05).
-    PerfRoute("deactivateMember", admin, _member("auditor@example-bank.test"), status=204),
     PerfRoute("listMemberSessions", admin, _member(READER)),
     PerfRoute("revokeMemberSessions", admin, _member(READER), status=204),
     PerfRoute("reissueEnrolment", stepped_up(ADMIN, TENANT_A_SLUG), _member("reissue@example-bank.test"), status=202),
@@ -1167,7 +1165,7 @@ ROUTES: list[PerfRoute] = [
     PerfRoute("listConsoleTenants", platform),
     PerfRoute(
         "createConsoleTenant",
-        platform,
+        stepped_up(PLATFORM),
         lambda: Call(body={"name": "Third Bank Oyj", "firstAdminEmail": "admin@third-bank.test", "firstAdminTitle": "Head of Compliance"}),
         status=201,
     ),

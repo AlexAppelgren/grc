@@ -138,7 +138,7 @@ function InviteModal({ open, onClose, onSent }: { open: boolean; onClose: () => 
               />
             ))}
         </CheckGroup>
-        {invite.isError ? <ProblemAlert error={invite.error} /> : null}
+        {invite.isError ? <ProblemAlert error={invite.error} codes={{ step_up_required: t('problem.stepUpCancelled') }} /> : null}
         <ButtonBar>
           <Button variant="outline" onClick={onClose} disabled={invite.isPending}>
             {t('common.cancel')}

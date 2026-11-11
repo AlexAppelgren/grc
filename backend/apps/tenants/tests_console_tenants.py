@@ -57,7 +57,7 @@ class ConsoleTenants(ScenarioTestCase):
         MockMailer.reset()
         seed_languages()
         self.platform_admin = factories.platform_user(roles=("platform_admin",))
-        self.headers = sign_in(self.platform_admin)
+        self.headers = sign_in(self.platform_admin, step_up=True)
 
     def _create(self, payload: dict[str, Any] | None = None) -> Any:
         return self.client.post(
@@ -207,7 +207,7 @@ class ConsoleTenants(ScenarioTestCase):
             Tenant.objects.create(id=existing.id, name="Clash", slug="clash-bank")
         attempts = mock.Mock(side_effect=clash.exception)
         with mock.patch.object(Tenant.objects, "create", attempts), self.assertRaises(IntegrityError):
-            logic.create_tenant(actor=Actor.system("test"), name="Third Bank AB", first_admin_email="third@example-bank.test", first_admin_title="")
+            logic.create_tenant(actor=Actor.system("test"), name="Third Bank AB", first_admin_email="third@example-bank.test", first_admin_title="", step_up_assertion_id=None)
         self.assertEqual(attempts.call_count, 1)
 
     # -- refusals --------------------------------------------------------------------
@@ -295,7 +295,7 @@ class SameNameRace(TransactionTestCase):
                 if wait_for is not None and not wait_for.wait(WAIT_SECONDS):
                     raise AssertionError("the first session never created its tenant")
                 tenant = logic.create_tenant(
-                    actor=Actor.system("test"), name="Example Bank Oyj", first_admin_email=email, first_admin_title=""
+                    actor=Actor.system("test"), name="Example Bank Oyj", first_admin_email=email, first_admin_title="", step_up_assertion_id=None
                 )
                 if created is not None:
                     created.set()

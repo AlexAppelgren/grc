@@ -53,10 +53,6 @@ export async function updateMember(userId: string, body: MemberUpdate): Promise<
   return (await api.patch<Member>(`${TENANT}/members/${id(userId)}`, body)).data;
 }
 
-export async function deactivateMember(userId: string): Promise<void> {
-  await api.delete(`${TENANT}/members/${id(userId)}`);
-}
-
 export async function reissueEnrolment(userId: string): Promise<void> {
   await api.post(`${TENANT}/members/${id(userId)}/reissue-enrolment`, {});
 }

@@ -37,11 +37,11 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import connection
 from django.contrib.postgres.aggregates import JSONBAgg
-from django.db.models import Case, OuterRef, QuerySet, Subquery, When
+from django.db.models import Case, OuterRef, Q, QuerySet, Subquery, When
 from django.http import HttpRequest, HttpResponse
 from django.utils import timezone
 
-from apps.identity import tokens
+from apps.identity import rate_limit, tokens
 from apps.identity.models import (
     LoginEventKind,
     LoginMethod,
@@ -116,12 +116,40 @@ def limits(tenant_id: uuid.UUID | None) -> tuple[timedelta, timedelta]:
 # ---------------------------------------------------------------------------------------
 # Cookies
 # ---------------------------------------------------------------------------------------
+def refresh_cookie_name() -> str:
+    """`__Secure-cw_refresh` wherever the cookie is `Secure`: a browser then refuses the
+    name from a page that is not https, or without the flag, so no other site or a script
+    on plain http can plant or shadow it (review 2026-11-11 L-5). The plain name only where
+    `REFRESH_COOKIE_SECURE` is off (local development over http), where the prefix would
+    make the browser drop the cookie."""
+    base = settings.REFRESH_COOKIE_NAME
+    return f"__Secure-{base}" if settings.REFRESH_COOKIE_SECURE else base
+
+
+def presented_refresh(request: HttpRequest) -> str | None:
+    return request.COOKIES.get(refresh_cookie_name())
+
+
+def guard_cookie_route(request: HttpRequest) -> None:
+    """Refresh and sign-out take the cookie as their only credential, so each is bounded
+    per address like every other auth step (review 2026-11-11 L-4), in a bucket of its
+    own so a busy office's refreshes never use up its sign-ins, and refused with 403
+    `origin_refused` when a browser names an `Origin` the API does not serve (L-5);
+    `SameSite=Strict` already keeps the cookie off another site's request, and this says
+    so on the server as well. A request with no `Origin` (a same-origin navigation, a
+    server-side client) is not refused for that."""
+    rate_limit.enforce("session:ip", client_ip(request) or "", settings.AUTH_RATE_PER_IP_PER_MINUTE, 60, e2e_exempt=True)
+    origin = request.headers.get("Origin")
+    if origin is not None and origin not in settings.CORS_ALLOWED_ORIGINS:
+        raise ProblemError(status=403, code="origin_refused", detail="This request came from a page the service does not serve.")
+
+
 def set_refresh_cookie(response: HttpResponse, value: str) -> None:
     """The cookie lives as long as its session may: until the session's absolute end."""
     session, _ = _load_by_refresh(value)
     remaining = session.expires_at - timezone.now() if session is not None else timedelta(0)
     response.set_cookie(
-        settings.REFRESH_COOKIE_NAME,
+        refresh_cookie_name(),
         value,
         max_age=max(0, int(remaining.total_seconds())),
         httponly=True,
@@ -132,7 +160,8 @@ def set_refresh_cookie(response: HttpResponse, value: str) -> None:
 
 
 def clear_refresh_cookie(response: HttpResponse) -> None:
-    response.delete_cookie(settings.REFRESH_COOKIE_NAME, path=settings.REFRESH_COOKIE_PATH, samesite="Strict")
+    # Django marks the deletion `Secure` itself for a `__Secure-` name, as the browser requires.
+    response.delete_cookie(refresh_cookie_name(), path=settings.REFRESH_COOKIE_PATH, samesite="Strict")
 
 
 # ---------------------------------------------------------------------------------------
@@ -346,12 +375,16 @@ def resolve_access_token(token: str, *, want: PrincipalKind) -> Principal | None
     if session is None or session.tenant_id != claims.tenant_id:
         _refuse_claim(claims)
         return None
-    usable = (
-        session.kind == claims.kind
-        and session.revoked_at is None
-        and (support or _live(session, now))
-        and session.user.status != UserStatus.DEACTIVATED.value
-    )
+    # An enrolment session belongs to an account awaiting its passkey (`invited`), and a
+    # deactivated one has none; every other session needs an `active` account, so a
+    # re-enrolment, which sets the account back to `invited`, ends its sessions in every zone
+    # at once, even where row-level security hid them from the revocation (review 2026-11-11
+    # S-2). Registration refuses an enrolment session of an enrolled account on its own.
+    if claims.kind == SessionKind.ENROLMENT.value:
+        standing = session.user.status != UserStatus.DEACTIVATED.value
+    else:
+        standing = session.user.status == UserStatus.ACTIVE.value
+    usable = session.kind == claims.kind and session.revoked_at is None and (support or _live(session, now)) and standing
     if not usable:
         return None
     # A support session ends with its grant: past the window, or revoked by the bank, every
@@ -487,7 +520,7 @@ def switch_context(
     """Replace the caller's full session with one in another context they hold: a bank they
     are an active member of (`tenant_id`), or the console (None) when they hold an active
     platform role. The route has already demanded a fresh step-up on the current session;
-    the assertion stays with that session, so each switch costs one.
+    the assertion stays with that session, which the switch ends, so each switch costs one.
 
     The old session is revoked in its own zone first, then the zone is changed and the new
     session written there, so neither zone ever holds the other's session row. A context the
@@ -502,7 +535,11 @@ def switch_context(
     actor = actor_of(user)
     assert principal.session_id is not None  # a person's session always names itself
     old = UserSession.objects.select_related("user").get(pk=principal.session_id, user=user)
-    revoke_session(old, reason=CONTEXT_SWITCHED, actor=actor, request=request)
+    # The step-up belongs to the session it was made on, so ending that session spends it:
+    # of two switches sent with one assertion, only the one whose conditional revocation
+    # lands goes on, and the other starts no session (review 2026-11-11 L-6).
+    if not revoke_session(old, reason=CONTEXT_SWITCHED, actor=actor, request=request):
+        raise ValidationError("Sign in again.", code="unauthenticated")
     if tenant_id is None:
         tenancy.clear_tenant()
     bundle = create_session(user=user, kind=SessionKind.FULL, tenant_id=tenant_id, request=request)
@@ -543,6 +580,38 @@ def _load_by_refresh(value: str | None) -> tuple[UserSession | None, str | None]
     return session, presented_hash
 
 
+def _replayed(session: UserSession, presented_hash: str, request: HttpRequest | None, now: datetime) -> tuple[str, int, None]:
+    """The refresh secret the session rotated away from, presented again: inside the grace
+    window a concurrent tab, answered with an access token and no third refresh token;
+    after it a stolen copy, and the whole session ends (ID-S9)."""
+    previous = session.previous_refresh_hash is not None and tokens.constant_equal(presented_hash, session.previous_refresh_hash)
+    if not previous or session.rotated_at is None:
+        raise ValidationError("Sign in again.", code="unauthenticated")
+    if now - session.rotated_at <= timedelta(seconds=settings.REFRESH_REPLAY_GRACE_SECONDS):
+        access_token, expires_in = tokens.issue_access_token(session.id, session.kind, session.tenant_id, now)
+        record(
+            action="session.refreshed",
+            actor=actor_of(session.user),
+            subject_type="user_session",
+            subject_id=session.id,
+            subject_title=session.user.name,
+            summary="Refresh replayed inside the grace window (concurrent tab).",
+            tenant_id=session.tenant_id,
+        )
+        return access_token, expires_in, None
+    revoke_session(session, reason="refresh_replay", actor=actor_of(session.user), request=request)
+    log_event(
+        event=LoginEventKind.REFRESH_REPLAY,
+        method=LoginMethod.PASSKEY,
+        success=False,
+        request=request,
+        user=session.user,
+        tenant_id=session.tenant_id,
+        failure_reason="refresh_replay",
+    )
+    raise ValidationError("Sign in again.", code="unauthenticated")
+
+
 def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, str | None]:
     """Rotate the refresh token. Returns (access token, expires in, new refresh value or
     None when a replay inside the grace window is answered without a third token)."""
@@ -551,36 +620,12 @@ def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, s
     if session is None or presented_hash is None or not _live(session, now):
         raise ValidationError("Sign in again.", code="unauthenticated")
     idle_limit, absolute_limit = limits(session.tenant_id)
-    current = tokens.constant_equal(presented_hash, session.refresh_token_hash)
-    previous = session.previous_refresh_hash is not None and tokens.constant_equal(
-        presented_hash, session.previous_refresh_hash
-    )
-    if previous and session.rotated_at is not None:
-        within_grace = now - session.rotated_at <= timedelta(seconds=settings.REFRESH_REPLAY_GRACE_SECONDS)
-        if within_grace:
-            access_token, expires_in = tokens.issue_access_token(session.id, session.kind, session.tenant_id, now)
-            record(
-                action="session.refreshed",
-                actor=actor_of(session.user),
-                subject_type="user_session",
-                subject_id=session.id,
-                subject_title=session.user.name,
-                summary="Refresh replayed inside the grace window (concurrent tab).",
-                tenant_id=session.tenant_id,
-            )
-            return access_token, expires_in, None
-        revoke_session(session, reason="refresh_replay", actor=actor_of(session.user), request=request)
-        log_event(
-            event=LoginEventKind.REFRESH_REPLAY,
-            method=LoginMethod.PASSKEY,
-            success=False,
-            request=request,
-            user=session.user,
-            tenant_id=session.tenant_id,
-            failure_reason="refresh_replay",
-        )
-        raise ValidationError("Sign in again.", code="unauthenticated")
-    if not current:
+    if not tokens.constant_equal(presented_hash, session.refresh_token_hash):
+        return _replayed(session, presented_hash, request, now)
+    if session.kind != SessionKind.ENROLMENT.value and session.user.status != UserStatus.ACTIVE.value:
+        # Re-enrolled or deactivated since sign-in: the session ends here, in its own zone
+        # (S-2), as `resolve_access_token` already refuses its access token.
+        revoke_session(session, reason="account_not_active", actor=actor_of(session.user), request=request)
         raise ValidationError("Sign in again.", code="unauthenticated")
     # A limit the bank lowered since sign-in applies now; a raised one never extends.
     deadline = min(session.expires_at, session.created_at + absolute_limit)
@@ -593,13 +638,22 @@ def refresh(value: str | None, request: HttpRequest | None) -> tuple[str, int, s
     if session.kind == SessionKind.SUPPORT.value and not _grant_live(session):
         revoke_session(session, reason="support_access_ended", actor=actor_of(session.user), request=request)
         raise ProblemError(status=401, code="support_access_ended", detail="The bank's support access has ended.")
-    session.expires_at = deadline
     new_value, new_hash = tokens.new_refresh_token(session.id)
-    session.previous_refresh_hash = session.refresh_token_hash
-    session.refresh_token_hash = new_hash
-    session.rotated_at = now
-    session.last_seen_at = now
-    session.save(update_fields=["previous_refresh_hash", "refresh_token_hash", "rotated_at", "last_seen_at", "expires_at"])
+    # One conditional UPDATE on the secret that was read: of two refreshes presenting the
+    # same token, one rotates it and the other is then the replay it is (review 2026-11-11
+    # L-6), answered by the grace window as a tab that came second would be.
+    rotated = UserSession.objects.filter(pk=session.pk, refresh_token_hash=session.refresh_token_hash, revoked_at__isnull=True).update(
+        previous_refresh_hash=session.refresh_token_hash,
+        refresh_token_hash=new_hash,
+        rotated_at=now,
+        last_seen_at=now,
+        expires_at=deadline,
+    )
+    if not rotated:
+        session.refresh_from_db()
+        if session.revoked_at is not None:
+            raise ValidationError("Sign in again.", code="unauthenticated")
+        return _replayed(session, presented_hash, request, now)
     access_token, expires_in = tokens.issue_access_token(session.id, session.kind, session.tenant_id, now)
     record(
         action="session.refreshed",
@@ -627,12 +681,16 @@ def _holds_secret(session: UserSession, presented_hash: str, now: datetime) -> b
 
 
 def sign_out(value: str | None, request: HttpRequest | None) -> None:
-    """Idempotent: a stale or missing cookie still answers 204, and the attempt is still a
-    write for the audit rule (AC-AUD1), recorded with no subject.
+    """Idempotent: a stale or missing cookie still answers 204. A stale cookie is still a
+    write for the audit rule (AC-AUD1), recorded with no subject; a call with no cookie at
+    all changes nothing and writes nothing, so it cannot fill the audit trail and its
+    outbox (review 2026-11-11 L-4).
 
     The cookie is the only credential here, and a session id is no secret (every
     `session.created` audit row names one), so a cookie naming a session without holding
     its refresh secret signs nobody out and writes nothing in that person's name."""
+    if not value:
+        return
     session, presented_hash = _load_by_refresh(value)
     if (
         session is None
@@ -655,12 +713,17 @@ def sign_out(value: str | None, request: HttpRequest | None) -> None:
     revoke_session(session, reason="sign_out", actor=actor_of(session.user), request=request)
 
 
-def revoke_session(session: UserSession, *, reason: str, actor: Actor, request: HttpRequest | None = None) -> None:
-    if session.revoked_at is not None:
-        return
-    session.revoked_at = timezone.now()
+def revoke_session(session: UserSession, *, reason: str, actor: Actor, request: HttpRequest | None = None) -> bool:
+    """End the session, with its security log and audit rows, once: the revocation is one
+    conditional UPDATE, so of two requests ending the same session only one does it and
+    writes the rows; the other is answered False (review 2026-11-11 L-6)."""
+    now = timezone.now()
+    if session.revoked_at is not None or not UserSession.objects.filter(pk=session.pk, revoked_at__isnull=True).update(
+        revoked_at=now, revoked_reason=reason
+    ):
+        return False
+    session.revoked_at = now
     session.revoked_reason = reason
-    session.save(update_fields=["revoked_at", "revoked_reason"])
     log_event(
         event=LoginEventKind.SESSION_REVOKED,
         method=LoginMethod.PASSKEY if session.kind == SessionKind.FULL.value else LoginMethod.EMAIL_CODE,
@@ -680,34 +743,64 @@ def revoke_session(session: UserSession, *, reason: str, actor: Actor, request: 
         tenant_id=session.tenant_id,
         after={"reason": reason},
     )
+    return True
 
 
-def revoke_all(user: User, *, tenant_id: uuid.UUID | None, reason: str, actor: Actor, request: HttpRequest | None = None) -> int:
-    """Revoke every live session of `user`; in one tenant when `tenant_id` is given
-    (an admin acts inside their tenant), everywhere when None (the person themself)."""
-    queryset = UserSession.objects.filter(user=user, revoked_at__isnull=True).select_related("user")
-    if tenant_id is not None:
-        queryset = queryset.filter(tenant_id=tenant_id)
-    count = 0
-    for session in queryset:
-        revoke_session(session, reason=reason, actor=actor, request=request)
-        count += 1
-    return count
+def _in_zone(user: User, tenant_id: uuid.UUID | None) -> QuerySet[UserSession]:
+    """The person's sessions in one zone: the bank `tenant_id`, or the platform zone when
+    None. A bank's zone also reads the platform sessions (the mixed read) but may not change
+    them, so every read that may lead to a write names the zone rather than taking whatever
+    row-level security shows (review 2026-11-11 S-2: a re-enrolment from a bank raised
+    `NotUpdated` on the person's console session)."""
+    return UserSession.objects.filter(_zone(tenant_id), user=user)
+
+
+def _zone(tenant_id: uuid.UUID | None) -> Q:
+    return Q(tenant__isnull=True) if tenant_id is None else Q(tenant_id=tenant_id)
+
+
+def revoke_all(
+    user: User,
+    *,
+    tenant_id: uuid.UUID | None,
+    reason: str,
+    actor: Actor,
+    request: HttpRequest | None = None,
+    kind: SessionKind | None = None,
+) -> int:
+    """Revoke every live session of `user` in one zone (`_in_zone`), of one `kind` when
+    given. The caller has activated that zone; a person's other zones are revoked from each
+    of them in turn (`bootstrap_platform --reenrol`)."""
+    queryset = _in_zone(user, tenant_id).filter(revoked_at__isnull=True).select_related("user").order_by("created_at", "id")
+    if kind is not None:
+        queryset = queryset.filter(kind=kind.value)
+    return sum(revoke_session(session, reason=reason, actor=actor, request=request) for session in queryset)
+
+
+def revoke_enrolment_sessions(
+    user: User, *, tenant_id: uuid.UUID | None, reason: str, actor: Actor, request: HttpRequest | None = None
+) -> int:
+    """End every enrolment session of `user` in one zone: one exists per code verified, and
+    each would otherwise outlive the first passkey or the invitation it enrols through
+    (review 2026-11-11 S-1). `passkey_logic` refuses one in another zone on its own."""
+    return revoke_all(user, tenant_id=tenant_id, reason=reason, actor=actor, request=request, kind=SessionKind.ENROLMENT)
 
 
 def live_sessions(user: User, *, tenant_id: uuid.UUID | None) -> list[UserSession]:
+    """The person's live full sessions in one zone (`_in_zone`), most recent first."""
     now = timezone.now()
-    queryset = UserSession.objects.filter(
-        user=user, revoked_at__isnull=True, expires_at__gt=now, kind=SessionKind.FULL.value
-    )
-    if tenant_id is not None:
-        queryset = queryset.filter(tenant_id=tenant_id)
+    queryset = _in_zone(user, tenant_id).filter(revoked_at__isnull=True, expires_at__gt=now, kind=SessionKind.FULL.value)
     return list(queryset.order_by("-last_seen_at", "-id"))
 
 
 def revoke_own_session(principal: Principal, session_id: uuid.UUID, request: HttpRequest | None) -> None:
-    """A person revokes one of their own sessions (ID-04); another user's is a 404."""
-    session = UserSession.objects.select_related("user").filter(pk=session_id, user_id=principal.subject_id).first()  # ordering: pk lookup, at most one row
+    """A person revokes one of their own sessions in the zone they are signed in to (ID-04);
+    another user's, or one of theirs in another zone, is a 404 (S-2)."""
+    session = (
+        UserSession.objects.select_related("user")
+        .filter(_zone(principal.tenant_id), pk=session_id, user_id=principal.subject_id)
+        .first()
+    )  # ordering: pk lookup, at most one row
     if session is None:
         raise ValidationError("Not found.", code="not_found")
     revoke_session(session, reason="revoked_by_user", actor=actor_of(session.user), request=request)

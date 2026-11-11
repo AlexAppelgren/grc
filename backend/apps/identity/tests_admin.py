@@ -70,11 +70,15 @@ class MembersAndInvitations(ScenarioTestCase):
         self.assertEqual(len(default["items"]), min(6, settings.API_PAGE_SIZE_DEFAULT))
 
     def test_invitations_are_listed_resent_and_revoked(self) -> None:
+        # An invitation grants roles, so it needs a step-up (review 2026-11-11 S-4).
+        stepped_up = sign_in(self.admin, tenant=self.tenant, step_up=True)
+        refused = self.client.post("/api/v1/tenant/members", data={"email": "new@bank.example", "roleKeys": ["reader"]}, content_type="application/json", **self.headers)
+        self.assertEqual((refused.status_code, refused.json()["code"]), (403, "step_up_required"))
         invited = self.client.post(
             "/api/v1/tenant/members",
             data={"email": "new@bank.example", "roleKeys": ["reader"], "title": "Analyst"},
             content_type="application/json",
-            **self.headers,
+            **stepped_up,
         )
         self.assertEqual(invited.status_code, 201, invited.content)
         invitation_id = invited.json()["id"]
@@ -97,10 +101,10 @@ class MembersAndInvitations(ScenarioTestCase):
         closed = self.client.post(f"/api/v1/tenant/invitations/{invitation_id}/resend", **self.headers)
         self.assertEqual(closed.status_code, 409)
         self.assertEqual(closed.json()["code"], "invitation_closed")
-        again = self.client.post("/api/v1/tenant/members", data={"email": self.admin.email, "roleKeys": ["reader"]}, content_type="application/json", **self.headers)
+        again = self.client.post("/api/v1/tenant/members", data={"email": self.admin.email, "roleKeys": ["reader"]}, content_type="application/json", **stepped_up)
         self.assertEqual(again.status_code, 409)
         self.assertEqual(again.json()["code"], "already_member")
-        unknown_role = self.client.post("/api/v1/tenant/members", data={"email": "x@bank.example", "roleKeys": ["nope"]}, content_type="application/json", **self.headers)
+        unknown_role = self.client.post("/api/v1/tenant/members", data={"email": "x@bank.example", "roleKeys": ["nope"]}, content_type="application/json", **stepped_up)
         self.assertEqual(unknown_role.json()["code"], "unknown_key")
         self.assertEqual(self.client.delete("/api/v1/tenant/invitations/00000000-0000-4000-8000-000000000001", **self.headers).status_code, 404)
 
@@ -116,7 +120,9 @@ class MembersAndInvitations(ScenarioTestCase):
         self.assertEqual(revoked.status_code, 204)
         self.assertEqual(self.client.get(f"/api/v1/tenant/members/{member.id}/sessions", **self.headers).json(), [])
         self.assertEqual(self.client.get(f"/api/v1/tenant/members/{self.tenant.id}/sessions", **self.headers).status_code, 404)
-        gone = self.client.delete(f"/api/v1/tenant/members/{member.id}", **self.headers)
+        gone = self.client.post(
+            f"/api/v1/tenant/members/{member.id}/remove", data={}, content_type="application/json", **sign_in(self.admin, tenant=self.tenant, step_up=True)
+        )
         self.assertEqual(gone.status_code, 204)
         self.assertEqual(self.client.get(f"/api/v1/tenant/members/{member.id}/sessions", **self.headers).status_code, 404)
         listed_members = self.client.get("/api/v1/tenant/members?limit=100", **self.headers).json()

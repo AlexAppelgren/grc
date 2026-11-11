@@ -1540,7 +1540,10 @@ export interface paths {
          *     `session.revoked`.
          *
          *     Errors: `unauthenticated` (401) when the cookie is missing, unreadable or replayed late,
-         *     or its session is revoked, idle too long or past its absolute limit: sign in again.
+         *     or its session is revoked, idle too long or past its absolute limit: sign in again;
+         *     `origin_refused` (403) when the browser sends an `Origin` header naming a page this API
+         *     does not serve; `rate_limited` (429) past 30 calls a minute from
+         *     one network address.
          */
         post: operations["refreshSession"];
         delete?: never;
@@ -1570,8 +1573,13 @@ export interface paths {
          *     `/api/v1/auth`, names the session and carries its secret, which is the proof. A cookie
          *     that names a session without holding its current secret signs nobody out. A live
          *     session is revoked with an entry in the security log and the audit event
-         *     `session.revoked`; a call that proves no live session still writes the audit event
-         *     `session.sign_out_without_session`. There is no error code to branch on.
+         *     `session.revoked`; a cookie that proves no live session still writes the audit event
+         *     `session.sign_out_without_session`, and a call with no cookie at all writes nothing.
+         *
+         *     Errors: `origin_refused` (403) when the browser sends an `Origin` header naming a page
+         *     this API does not serve; `rate_limited` (429) past 30 calls a
+         *     minute from one network address. Neither changes anything; otherwise there is no error
+         *     code to branch on.
          */
         post: operations["signOut"];
         delete?: never;
@@ -3410,7 +3418,9 @@ export interface paths {
          *     run it. Call it once per bank, when a new customer is being onboarded; there is no
          *     second step that turns the bank on.
          *
-         *     Needs the platform permission `tenants.manage`. One call writes the organisation with
+         *     Needs the platform permission `tenants.manage` and a passkey step-up on this session
+         *     younger than the step-up window, since the invitation grants the bank's administrator
+         *     role; the creation and the invitation carry the assertion. One call writes the organisation with
          *     its name and a short name derived from it; gives it the system roles and the starting
          *     set of its own lists, which its administrator may extend afterwards; and sends the
          *     first administrator an enrolment invitation carrying the system role that can invite
@@ -3427,9 +3437,10 @@ export interface paths {
          *     account may be a bank's member and platform staff, each session holding one zone's
          *     permissions only, and the bank's member list marks them.
          *
-         *     Answers 201 with the new bank's console row. Errors: a 422 for a blank name or a
-         *     malformed address, each with its own `code` and a message to show;
-         *     `permission_denied` without `tenants.manage`.
+         *     Answers 201 with the new bank's console row. Errors: `step_up_required` (403) without a
+         *     fresh passkey assertion, which the screen answers by opening the passkey prompt and
+         *     retrying; a 422 for a blank name or a malformed address, each with its own `code` and a
+         *     message to show; `permission_denied` without `tenants.manage`.
          */
         post: operations["createConsoleTenant"];
         delete?: never;
@@ -3505,7 +3516,10 @@ export interface paths {
          *     and is never returned here.
          *
          *     Errors: a 422 when the reason or the out-of-band check is blank; `not_found` when the
-         *     bank does not exist or the person is not an active member of it; `step_up_required`
+         *     bank does not exist or the person is not an active member of it;
+         *     `account_held_elsewhere` (409) when the person is also an active member of another bank
+         *     or holds a platform role, whose enrolment only the platform owner re-issues, and nothing
+         *     is written; `step_up_required`
          *     when no fresh passkey assertion accompanies the call; `permission_denied` without
          *     `support_access.grant`.
          */
@@ -8207,7 +8221,7 @@ export interface paths {
          * @description Withdraws an invitation or re-issued enrolment at once: its link stops working and it
          *     is listed as `revoked`. An invitation already revoked, or already accepted, is left as it
          *     is and still answers 204, so a retry is safe; revoking an accepted invitation does not
-         *     remove the member, which is `DELETE /tenant/members/{user_id}`.
+         *     remove the member, which is `POST /tenant/members/{user_id}/remove`.
          *
          *     Needs `members.manage`. Records the audit event `invitation.revoked`, the retry included.
          *
@@ -8317,10 +8331,14 @@ export interface paths {
          *     invitation already sent to the same address by this bank is replaced and stops working.
          *     A deactivated member can be invited back this way and returns with the new roles.
          *
-         *     Needs `members.manage` on a person's session in the bank. Records the audit event
-         *     `invitation.created` with the roles and the expiry; the token is never recorded.
+         *     Needs `members.manage` on a person's session in the bank and a passkey step-up on this
+         *     session younger than 5 minutes, as a role change does: an invitation can
+         *     grant any role, `admin` included. Records the audit event `invitation.created` with the
+         *     roles, the expiry and the step-up assertion; the token is never recorded.
          *
-         *     Errors: `already_member` (409) when the address belongs to a current member;
+         *     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
+         *     opening the passkey prompt and retrying; `already_member` (409) when the address belongs
+         *     to a current member;
          *     `unknown_key` (422) for a role key the bank does not have or has retired;
          *     `invalid_email` (422) for an address without an `@`; `validation_error` (422) for an empty role list or a field over its length;
          *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
@@ -8343,31 +8361,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /**
-         * Remove a person from your bank
-         * @description Deactivates a member: every session they have open in this bank ends at once, any
-         *     invitation or re-issued enrolment still open for their address here is closed, and they
-         *     can no longer sign in to this bank. Nothing is deleted: the member stays listed with the
-         *     status `deactivated` and everything they did stays in the audit trail. Their account and
-         *     passkeys are left alone, because the same person may belong to another bank. To let them
-         *     back in, invite them again.
-         *
-         *     Needs `members.manage`. A bank always keeps at least one member holding
-         *     `members.manage`, so the last one cannot be removed. Writes a "session_revoked" entry to
-         *     the security log for each ended session, and the audit events `session.revoked` for each
-         *     and `member.deactivated` with how many sessions and invitations were closed. Answers 204.
-         *     Removing someone already removed answers `not_found`. A member who still owns work, takes
-         *     part in items or is in a team is refused and nothing changes: `GET
-         *     /tenant/members/{userId}/open-work` shows what they hold and `POST
-         *     /tenant/members/{userId}/remove` hands it on and removes them in one step.
-         *
-         *     Errors: `reassignment_required` (422) while the member holds work, listing in `errors`
-         *     each kind they hold as `field` with its `count`; `last_admin` (409) for the last member
-         *     holding `members.manage`; `not_found`
-         *     (404) when the person is not a current member; `permission_denied` (403) without
-         *     `members.manage`; `unauthenticated` (401) without a live session.
-         */
-        delete: operations["deactivateMember"];
+        delete?: never;
         options?: never;
         head?: never;
         /**
@@ -8439,7 +8433,7 @@ export interface paths {
          * Let a member who lost their passkeys enrol again
          * @description The only way back in for a member who lost every passkey, and the way to lock out a
          *     passkey that may be compromised. It retires every passkey the person holds, ends every
-         *     session they have, in this bank and in any other, sets them back to `invited`, and
+         *     session and personal access token they have in this bank, sets them back to `invited`, and
          *     emails them a re-enrolment link that works for 72 hours, keeping their
          *     roles and title. Every other member holding `members.manage`, apart from the caller, is
          *     told by email. The person enrols a new passkey through the link exactly as at their first
@@ -8453,7 +8447,10 @@ export interface paths {
          *
          *     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
          *     opening the passkey prompt and retrying; `not_found` (404) when the person is not a
-         *     current member; `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
+         *     current member; `account_held_elsewhere` (409) when the person is also an active member
+         *     of another bank or holds a platform role, whose passkeys open those places too, so only
+         *     the platform owner may re-issue their enrolment, and nothing is written;
+         *     `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
          *     live session.
          */
         post: operations["reissueEnrolment"];
@@ -43958,27 +43955,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["InvitationOut"];
                 };
-            };
-        };
-    };
-    deactivateMember: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The account identifier of a current member of the bank this session is signed in to, the UUID `GET /tenant/members` lists as `userId`. A deactivated member, a member of another bank or an unknown identifier all answer `not_found` alike. */
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

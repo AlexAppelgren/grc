@@ -571,10 +571,14 @@ def refresh_session(request: HttpRequest, response: HttpResponse) -> RefreshResu
     `session.revoked`.
 
     Errors: `unauthenticated` (401) when the cookie is missing, unreadable or replayed late,
-    or its session is revoked, idle too long or past its absolute limit: sign in again.
+    or its session is revoked, idle too long or past its absolute limit: sign in again;
+    `origin_refused` (403) when the browser sends an `Origin` header naming a page this API
+    does not serve; `rate_limited` (429) past $auth_calls_per_ip_minute calls a minute from
+    one network address.
     """
     # Ungated by design: bootstrap (the cookie is the credential).
-    access_token, expires_in, new_refresh = session_logic.refresh(request.COOKIES.get(settings.REFRESH_COOKIE_NAME), request)
+    session_logic.guard_cookie_route(request)
+    access_token, expires_in, new_refresh = session_logic.refresh(session_logic.presented_refresh(request), request)
     if new_refresh is not None:
         session_logic.set_refresh_cookie(response, new_refresh)
     me = me_logic.me_after_refresh(access_token)
@@ -589,6 +593,7 @@ def refresh_session(request: HttpRequest, response: HttpResponse) -> RefreshResu
     by_alias=True,
     summary="Sign out on this device",
 )
+@_quoting_settings
 def sign_out(request: HttpRequest, response: HttpResponse) -> tuple[int, None]:
     """Revokes the session behind the refresh cookie and clears the cookie, so neither token
     works again; drop the access token from memory as well. It answers 204 whatever the state
@@ -600,11 +605,17 @@ def sign_out(request: HttpRequest, response: HttpResponse) -> tuple[int, None]:
     `/api/v1/auth`, names the session and carries its secret, which is the proof. A cookie
     that names a session without holding its current secret signs nobody out. A live
     session is revoked with an entry in the security log and the audit event
-    `session.revoked`; a call that proves no live session still writes the audit event
-    `session.sign_out_without_session`. There is no error code to branch on.
+    `session.revoked`; a cookie that proves no live session still writes the audit event
+    `session.sign_out_without_session`, and a call with no cookie at all writes nothing.
+
+    Errors: `origin_refused` (403) when the browser sends an `Origin` header naming a page
+    this API does not serve; `rate_limited` (429) past $auth_calls_per_ip_minute calls a
+    minute from one network address. Neither changes anything; otherwise there is no error
+    code to branch on.
     """
     # Ungated by design: bootstrap.
-    session_logic.sign_out(request.COOKIES.get(settings.REFRESH_COOKIE_NAME), request)
+    session_logic.guard_cookie_route(request)
+    session_logic.sign_out(session_logic.presented_refresh(request), request)
     session_logic.clear_refresh_cookie(response)
     return 204, None
 
@@ -934,7 +945,7 @@ def list_my_sessions(request: HttpRequest) -> list[SessionOut]:
     # Ungated by design: self.
     principal = _principal(request)
     user = _actor_user(request)
-    return [_session_out(row, principal.session_id) for row in session_logic.live_sessions(user, tenant_id=None)]
+    return [_session_out(row, principal.session_id) for row in session_logic.live_sessions(user, tenant_id=principal.tenant_id)]
 
 
 @router.delete(
@@ -1186,6 +1197,7 @@ def list_members(request: HttpRequest, page: PageQuery = Query(...)) -> MembersP
     summary="Invite a person to your bank with the roles they will hold",
 )
 @requires_permission(perms.MEMBERS_MANAGE)
+@requires_step_up
 @_quoting_settings
 def invite_member(request: HttpRequest, body: MemberInvite) -> tuple[int, InvitationOut]:
     """Sends an invitation to a work email address and answers it with the status
@@ -1195,10 +1207,14 @@ def invite_member(request: HttpRequest, body: MemberInvite) -> tuple[int, Invita
     invitation already sent to the same address by this bank is replaced and stops working.
     A deactivated member can be invited back this way and returns with the new roles.
 
-    Needs `members.manage` on a person's session in the bank. Records the audit event
-    `invitation.created` with the roles and the expiry; the token is never recorded.
+    Needs `members.manage` on a person's session in the bank and a passkey step-up on this
+    session younger than $step_up_minutes minutes, as a role change does: an invitation can
+    grant any role, `admin` included. Records the audit event `invitation.created` with the
+    roles, the expiry and the step-up assertion; the token is never recorded.
 
-    Errors: `already_member` (409) when the address belongs to a current member;
+    Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
+    opening the passkey prompt and retrying; `already_member` (409) when the address belongs
+    to a current member;
     `unknown_key` (422) for a role key the bank does not have or has retired;
     `invalid_email` (422) for an address without an `@`; `validation_error` (422) for an empty role list or a field over its length;
     `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
@@ -1206,7 +1222,13 @@ def invite_member(request: HttpRequest, body: MemberInvite) -> tuple[int, Invita
     """
     actor_user = _actor_user(request)
     invitation = members_logic.invite_member(
-        tenant=_tenant(request), actor=session_logic.actor_of(actor_user), invited_by=actor_user, email=body.email, role_keys=body.role_keys, title=body.title
+        tenant=_tenant(request),
+        actor=session_logic.actor_of(actor_user),
+        invited_by=actor_user,
+        email=body.email,
+        role_keys=body.role_keys,
+        title=body.title,
+        step_up_assertion_id=request.step_up_assertion_id,  # type: ignore[attr-defined]
     )
     return 201, InvitationOut.model_validate(members_logic.invitation_out(invitation, _order(request)))
 
@@ -1297,42 +1319,6 @@ def set_member_teams(request: HttpRequest, body: MemberTeamsBody, user_id: uuid.
     return MemberOut.model_validate(members_logic.member_detail(membership.tenant_id, membership.user_id, _order(request)))
 
 
-@router.delete(
-    "/tenant/members/{user_id}",
-    response={204: None},
-    auth=SessionAuth(),
-    operation_id="deactivateMember",
-    by_alias=True,
-    summary="Remove a person from your bank",
-)
-@requires_permission(perms.MEMBERS_MANAGE)
-def deactivate_member(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> tuple[int, None]:
-    """Deactivates a member: every session they have open in this bank ends at once, any
-    invitation or re-issued enrolment still open for their address here is closed, and they
-    can no longer sign in to this bank. Nothing is deleted: the member stays listed with the
-    status `deactivated` and everything they did stays in the audit trail. Their account and
-    passkeys are left alone, because the same person may belong to another bank. To let them
-    back in, invite them again.
-
-    Needs `members.manage`. A bank always keeps at least one member holding
-    `members.manage`, so the last one cannot be removed. Writes a "session_revoked" entry to
-    the security log for each ended session, and the audit events `session.revoked` for each
-    and `member.deactivated` with how many sessions and invitations were closed. Answers 204.
-    Removing someone already removed answers `not_found`. A member who still owns work, takes
-    part in items or is in a team is refused and nothing changes: `GET
-    /tenant/members/{userId}/open-work` shows what they hold and `POST
-    /tenant/members/{userId}/remove` hands it on and removes them in one step.
-
-    Errors: `reassignment_required` (422) while the member holds work, listing in `errors`
-    each kind they hold as `field` with its `count`; `last_admin` (409) for the last member
-    holding `members.manage`; `not_found`
-    (404) when the person is not a current member; `permission_denied` (403) without
-    `members.manage`; `unauthenticated` (401) without a live session.
-    """
-    members_logic.deactivate_member(tenant=_tenant(request), actor=session_logic.actor_of(_actor_user(request)), user_id=user_id, request=request)
-    return 204, None
-
-
 @router.get(
     "/tenant/members/{user_id}/sessions",
     response=list[SessionOut],
@@ -1402,7 +1388,7 @@ def revoke_member_sessions(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID
 def reissue_enrolment(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> tuple[int, Empty]:
     """The only way back in for a member who lost every passkey, and the way to lock out a
     passkey that may be compromised. It retires every passkey the person holds, ends every
-    session they have, in this bank and in any other, sets them back to `invited`, and
+    session and personal access token they have in this bank, sets them back to `invited`, and
     emails them a re-enrolment link that works for $invitation_hours hours, keeping their
     roles and title. Every other member holding `members.manage`, apart from the caller, is
     told by email. The person enrols a new passkey through the link exactly as at their first
@@ -1416,7 +1402,10 @@ def reissue_enrolment(request: HttpRequest, user_id: uuid.UUID = _MEMBER_ID) -> 
 
     Errors: `step_up_required` (403) without a fresh step-up, which the screen answers by
     opening the passkey prompt and retrying; `not_found` (404) when the person is not a
-    current member; `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
+    current member; `account_held_elsewhere` (409) when the person is also an active member
+    of another bank or holds a platform role, whose passkeys open those places too, so only
+    the platform owner may re-issue their enrolment, and nothing is written;
+    `permission_denied` (403) without `members.manage`; `unauthenticated` (401) without a
     live session.
     """
     actor_user = _actor_user(request)
@@ -1499,7 +1488,7 @@ def revoke_invitation(request: HttpRequest, invitation_id: uuid.UUID = _INVITATI
     """Withdraws an invitation or re-issued enrolment at once: its link stops working and it
     is listed as `revoked`. An invitation already revoked, or already accepted, is left as it
     is and still answers 204, so a retry is safe; revoking an accepted invitation does not
-    remove the member, which is `DELETE /tenant/members/{user_id}`.
+    remove the member, which is `POST /tenant/members/{user_id}/remove`.
 
     Needs `members.manage`. Records the audit event `invitation.revoked`, the retry included.
 

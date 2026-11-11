@@ -337,6 +337,7 @@ def console_reissue_enrolment(
     membership = Membership.objects.filter(tenant=tenant, user_id=user_id, deactivated_at__isnull=True).select_related("user").first()  # ordering: unique (tenant, user), at most one row
     if membership is None:
         raise ValidationError("Not found.", code="not_found")
+    invitation_logic.assert_reenrolment_here(tenant, membership.user)
     now = timezone.now()
     access = SupportAccess.objects.create(
         tenant=tenant,
@@ -471,6 +472,7 @@ def create_tenant(
     name: str,
     first_admin_email: str,
     first_admin_title: str,
+    step_up_assertion_id: uuid.UUID | None,
 ) -> Tenant:
     """Write the bank and invite its first administrator, in the caller's transaction
     (FIRST_RUN_SETUP steps 6 and 7). The timezone, default language and content languages
@@ -499,6 +501,7 @@ def create_tenant(
         summary="Organisation created from the platform console.",
         tenant_id=tenant.id,
         after={"name": tenant.name, "slug": tenant.slug, "timezone": tenant.timezone},
+        step_up_assertion_id=step_up_assertion_id,
     )
     # The first administrator gets the system role that can invite the rest of the bank,
     # chosen by its permission and never by a role name (playbook 4.2). roles_by_keys
@@ -513,6 +516,7 @@ def create_tenant(
         # members of the bank they open.
         invited_by=None,
         actor=actor,
+        step_up_assertion_id=step_up_assertion_id,
         first_administrator=True,
     )
     return tenant

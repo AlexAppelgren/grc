@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 from unittest import mock
 
+from django.test import TestCase
 from django.utils import timezone
 
 from apps.agents import testing as agents_testing
@@ -274,3 +275,30 @@ class BankKeyScopes(ScenarioTestCase):
         assert principal is not None
         self.assertEqual(principal.scopes, frozenset(agents_testing.WATCH_SCOPES))
         self.assertFalse(LoginEvent.objects.filter(api_key=key.row, event=LoginEventKind.KEY_SCOPES_WITHHELD.value).exists())
+
+
+class EveryKeyMintIsInTheSecurityLog(TestCase):
+    def test_a_banks_own_key_writes_key_created_like_the_other_kinds(self) -> None:
+        """Review 2026-11-11 L-17: `create_api_key` wrote no `key_created` row; every mint now
+        goes through one function that writes it, beside its audit row and step-up."""
+        tenant = factories.tenant()
+        admin = factories.member(tenant, roles=("admin",)).user
+        answer = self.client.post(
+            "/api/v1/tenant/api-keys",
+            data={"name": "Integration", "scopes": ["library:read"]},
+            content_type="application/json",
+            **sign_in(admin, tenant=tenant, step_up=True),
+        )
+        self.assertEqual(answer.status_code, 201, answer.content)
+        tenancy.activate(tenant.id)
+        created = LoginEvent.objects.get(tenant=tenant, event=LoginEventKind.KEY_CREATED.value)
+        self.assertEqual((created.user_id, str(created.api_key_id)), (admin.id, answer.json()["id"]))
+        audit = AuditEvent.objects.get(action="api_key.created", subject_id=answer.json()["id"])
+        self.assertIsNotNone(audit.step_up_assertion_id)
+        revoked = self.client.delete(f"/api/v1/tenant/api-keys/{answer.json()['id']}", **sign_in(admin, tenant=tenant))
+        self.assertEqual(revoked.status_code, 204)
+        tenancy.activate(tenant.id)
+        row = AuditEvent.objects.get(action="api_key.revoked", subject_id=answer.json()["id"])
+        self.assertEqual(row.before, {"revokedAt": None})
+        self.assertIsNotNone(row.after["revokedAt"])
+

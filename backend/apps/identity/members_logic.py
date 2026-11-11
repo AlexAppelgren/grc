@@ -135,8 +135,17 @@ def admins_besides(tenant_id: uuid.UUID, user_id: uuid.UUID) -> int:
 
 
 def assert_not_last_admin(tenant_id: uuid.UUID, membership: Membership, *, keeps_members_manage: bool) -> None:
+    """Refuse a change that would leave the bank without a member holding `members.manage`.
+    The bank's row is locked before the others are counted, so two administrators demoting
+    or removing each other at once are counted one after the other and the second is
+    refused (review 2026-11-11 L-6); the caller's transaction holds the lock to its end. One
+    row is the lock, never the memberships themselves, which `/remove` already locks one by
+    one and which two removals would otherwise take in opposite orders."""
     holds = perms.MEMBERS_MANAGE in roles_logic.permissions_of(membership.roles.all())
-    if holds and not keeps_members_manage and admins_besides(tenant_id, membership.user_id) == 0:
+    if not holds or keeps_members_manage:
+        return
+    Tenant.objects.select_for_update().get(pk=tenant_id)
+    if admins_besides(tenant_id, membership.user_id) == 0:
         raise ValidationError("A tenant always keeps one administrator.", code="last_admin")
 
 
@@ -156,9 +165,13 @@ def invitation_out(invitation: Invitation, order: list[str]) -> dict[str, Any]:
     }
 
 
-def invite_member(*, tenant: Tenant, actor: Actor, invited_by: User, email: str, role_keys: Iterable[str], title: str) -> Invitation:
+def invite_member(
+    *, tenant: Tenant, actor: Actor, invited_by: User, email: str, role_keys: Iterable[str], title: str, step_up_assertion_id: uuid.UUID | None
+) -> Invitation:
     roles = roles_logic.roles_by_keys(tenant.id, role_keys)
-    issued = invitation_logic.create_invitation(tenant=tenant, email=email, roles=roles, title=title, invited_by=invited_by, actor=actor)
+    issued = invitation_logic.create_invitation(
+        tenant=tenant, email=email, roles=roles, title=title, invited_by=invited_by, actor=actor, step_up_assertion_id=step_up_assertion_id
+    )
     return Invitation.objects.prefetch_related("role_links__role__labels").get(pk=issued.invitation.pk)
 
 

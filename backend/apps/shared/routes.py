@@ -47,7 +47,6 @@ def iter_operations(api: NinjaAPI) -> Iterator[RegisteredOperation]:
 # an empty registry rather than skipping.
 TENANT_SCOPED_ROUTES: list[tuple[str, str, str, str]] = [
     ("PATCH", "/tenant/members/{user_id}", "identity.Membership", "member_user"),
-    ("DELETE", "/tenant/members/{user_id}", "identity.Membership", "member_user"),
     ("GET", "/tenant/members/{user_id}/sessions", "identity.Membership", "member_user"),
     ("DELETE", "/tenant/members/{user_id}/sessions", "identity.Membership", "member_user"),
     ("DELETE", "/tenant/invitations/{invitation_id}", "identity.Invitation", "invitation"),

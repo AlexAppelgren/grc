@@ -134,7 +134,7 @@ function CreateTenantModal({
         <Field id="tenant-admin-title" label={t('console.tenants.adminTitle')}>
           <TextInput id="tenant-admin-title" value={title} placeholder={t('console.tenants.adminTitlePlaceholder')} onChange={(e) => setTitle(e.target.value)} />
         </Field>
-        {create.isError ? <ProblemAlert error={create.error} /> : null}
+        {create.isError ? <ProblemAlert error={create.error} codes={{ step_up_required: t('problem.stepUpCancelled') }} /> : null}
         <ButtonBar>
           <Button variant="outline" onClick={onClose} disabled={create.isPending}>
             {t('common.cancel')}
