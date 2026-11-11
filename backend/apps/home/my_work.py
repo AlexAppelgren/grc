@@ -1,39 +1,22 @@
-"""My work (HOM-05, TEN-03, CAS-04, REG-07, D-23, D-24, D-97): what a person or a department is responsible
-for or takes part in, bucketed overdue, due soon, changes on your items and the rest.
+"""My work (HOM-05, TEN-03, CAS-04, REG-07, D-23, D-24, D-97): what a person or a department
+is responsible for or takes part in, bucketed overdue, due soon, changes on your items and
+the rest. The one definition the page, reminders, digest and member-removal preview read;
+ORM under the activated tenant, reads only, query count flat in the rows (HOM-S12).
 
-One definition, read by the page and later by the reminders, the digest and the member
-removal preview: ORM queries under the activated tenant, so row-level security applies
-exactly as it does everywhere else, and no database view. A read module: nothing here
-writes.
-
-1. **Who.** `mine` is the caller and the caller's teams. `unit` is the teams of that
-   organisation unit and of every unit below it, with their active members; a department
-   view is a filter, never a grant.
-2. **What.** Register entries where the person is first-line owner or compliance contact,
-   or a team owns it; entity rows, gaps, duty occurrences and internal items they or their
-   teams own; entries they or their teams take part in (COL-04). Open cases they own or
-   they or their teams take part in, and open cases holding a live action they own
-   (CAS-04), one row per case. Hidden: entries and entity rows that do not apply, closed
-   gaps, finished duty occurrences, inactive internal items, finished cases, done or
-   removed actions and ended participations.
-3. **When.** A person involved in the entry itself is dated by the earliest open date on
-   it (its review, every applying entity row's review, every open gap's target, every open
-   duty occurrence); one involved only through an entity row, a gap or a duty occurrence by
-   that child's own date. Likewise a case's owner or participant is dated by its internal
-   deadline, every live action and its key date while ahead; an action's owner only by
-   their own action. Compared with the bank's own today.
-4. **Changes on your items.** Open cases whose change has a confirmed link to an obligation
-   in the list (confirmed by a person or by an agent other than the suggesting one, D-97),
-   new obligation versions applied within `MY_WORK_AWARE_DAYS`, and comments on a record in
-   the list written within the same window, mentions included (D-25). Never the caller's own
-   confirmation, approval or comment, never an unconfirmed suggestion, never a deleted
-   comment or one on a kind of record the reader may not read.
-5. **Permissions.** Register and internal-item rows need `register.read`, case rows
-   `cases.read`, and a case reached only through a link needs both. Rows and counts come from
-   the filtered set; a kind the reader may not read is named in `permission_limited`.
-6. **The footprint** is never applied (D-24).
-
-The number of queries does not grow with the number of rows (HOM-S12).
+1. Who: `mine` is the caller and their teams; `unit` the teams of a unit and every unit
+   below, with their active members (a view is a filter, never a grant).
+2. What: register entries, entity rows, gaps, duty occurrences and internal items they or
+   their teams own or take part in (COL-04); open cases they own or take part in, or that
+   hold a live action they own (CAS-04). What does not apply, is closed, finished, done,
+   removed or ended is hidden.
+3. When: involvement in an entry dates it by its earliest open date; involvement through a
+   child by that child's date; likewise for cases and actions. Against the bank's today.
+4. Changes on your items: open cases with a confirmed link to a listed obligation (D-97),
+   new versions applied and comments within `MY_WORK_AWARE_DAYS` (D-25), never the
+   caller's own act, an unconfirmed suggestion, a deleted comment or an unreadable kind.
+5. Permissions: register rows need `register.read`, case rows `cases.read`, a linked case
+   both; a hidden kind is named in `permission_limited`.
+6. The footprint is never applied (D-24).
 """
 
 from __future__ import annotations
@@ -194,9 +177,7 @@ def _limited(principal: Principal) -> list[WorkItemKind]:
     return limited
 
 
-# ---------------------------------------------------------------------------------------
-# Who: the caller, or a department
-# ---------------------------------------------------------------------------------------
+# --- Who: the caller, or a department ---
 def _mine(principal: Principal) -> _Who:
     teams = TeamMember.objects.filter(user_id=principal.subject_id).values_list(
         "team_id", flat=True
@@ -249,9 +230,7 @@ def _named(
     return reasons
 
 
-# ---------------------------------------------------------------------------------------
-# What: the sources, each one query
-# ---------------------------------------------------------------------------------------
+# --- What: the sources, each one query ---
 def _rows(tenant: Tenant, principal: Principal, who: _Who) -> list[_Row]:
     """Every row the caller may read, an obligation's still untitled (`_titles`)."""
     register: dict[uuid.UUID, _Row] = {}
@@ -386,11 +365,10 @@ def _versions(tenant: Tenant, principal: Principal, register: dict[uuid.UUID, _R
 def _cases(
     tenant: Tenant, principal: Principal, who: _Who, register: dict[uuid.UUID, _Row]
 ) -> list[_Row]:
-    """The bank's open cases, one row each: those someone listed owns or takes part in,
-    those holding a live action someone listed owns, and those on changes with a confirmed
-    link to an obligation on the list. Every linked case counts toward its obligation's
-    `open_change_count`; a link only the caller confirmed puts no case on the list by itself.
-    Four queries whatever the number of cases."""
+    """The bank's open cases, one row each: owned or taken part in, holding a live action
+    someone listed owns, or linked (confirmed) to a listed obligation. Every linked case
+    counts toward `open_change_count`; a link only the caller confirmed lists nothing by
+    itself. Four queries."""
     open_cases = ChangeCase.objects.exclude(status__in=FINISHED)
     live = Q(done_at__isnull=True, removed_at__isnull=True)
     links = list(
@@ -472,10 +450,8 @@ def _cases(
 
 
 def _comments(tenant: Tenant, principal: Principal, rows: list[_Row]) -> None:
-    """A comment someone other than the caller wrote on a record on the list, within the
-    window and not deleted, marks its row (D-25): one query for every row. A mention is a
-    comment too, so it marks the row it was written on. Only kinds of record whose comments
-    the reader may read count (the subject registry); an internal item takes no comments."""
+    """A comment by someone else on a listed record, within the window and not deleted,
+    marks its row (D-25), mentions included; one query, readable kinds only."""
     subjects: dict[tuple[str, uuid.UUID], _Row] = {}
     for row in rows:
         if row.kind == OBLIGATION:
@@ -497,9 +473,7 @@ def _comments(tenant: Tenant, principal: Principal, rows: list[_Row]) -> None:
         subjects[kind, subject_id].aware.add(_Date(_local_day(tenant, created_at), "commented"))
 
 
-# ---------------------------------------------------------------------------------------
-# When: the bucket and the date that put a row there
-# ---------------------------------------------------------------------------------------
+# --- When: the bucket and the date that put a row there ---
 def _earliest(dates: Iterable[_Date]) -> _Date | None:
     return min(
         dates,
@@ -550,13 +524,10 @@ def _sort_key(
     )
 
 
-# ---------------------------------------------------------------------------------------
-# The rows of one page, named in a fixed number of queries
-# ---------------------------------------------------------------------------------------
+# --- The rows of one page, named in a fixed number of queries ---
 def _titles(shown: list[tuple[WorkBucket, _Date | None, _Row]], order: list[str]) -> dict[uuid.UUID, str]:
-    """The titles of the obligations the page shows, as rows and as the way a case came in.
-    A department's list holds hundreds and a page twenty, and the order never reads a title,
-    so only these are read (r2-perf, NFR-02)."""
+    """The titles of the obligations the page shows. A department's list holds hundreds and
+    a page twenty, so only these are read (NFR-02)."""
     rows = [row for _bucket, _date, row in shown]
     wanted = {row.subject_id for row in rows if row.kind == OBLIGATION}
     wanted |= {reason.via for row in rows for reason in row.reasons if reason.via}
